@@ -23,6 +23,7 @@ import { envFlag } from "@/lib/env";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { offlineGeoReady } from "@/lib/geo";
 import { annotate } from "@/lib/logging/context";
+import { logCaught } from "@/lib/logging/signal";
 
 export const GEOLITE2_FETCH_QUEUE = "geolite2-fetch";
 
@@ -71,7 +72,8 @@ export async function enqueueGeolite2FetchBootDiscovery(): Promise<{
       meta: { enqueued },
     });
     return { enqueued };
-  } catch {
+  } catch (err) {
+    logCaught("geolite2.fetch.enqueue_failed", err);
     // A transient send failure is a no-op — the monthly cron and the next boot
     // both re-attempt.
     return { enqueued: 0 };

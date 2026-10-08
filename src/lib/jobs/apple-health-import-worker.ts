@@ -54,6 +54,7 @@ import {
   sweepStaleImportStaging,
   type StagingInUse,
 } from "@/lib/import/apple-health-staging";
+import { caughtAs, logCaught } from "@/lib/logging/signal";
 
 /**
  * Queue + cron for the periodic orphan-ImportJob sweep. v1.32.1
@@ -100,10 +101,16 @@ export async function handleImportJobReconcileTick(
       // deploy), the person's export does not stay in /tmp past this.
       // A queued or running import keeps its files whatever their age;
       // when that cannot be read, nothing is swept this tick.
-      const inUse = await stagedImportFilesInUse().catch(() => null);
+      const inUse = await stagedImportFilesInUse().catch((err: unknown) => {
+        logCaught("apple_health.import.staging_probe_failed", err);
+        return null;
+      });
       const swept = inUse
         ? await sweepStaleImportStaging(undefined, undefined, inUse).catch(
-            () => 0,
+            (err: unknown) => {
+              logCaught("apple_health.import.staging_sweep_failed", err);
+              return 0;
+            },
           )
         : 0;
       evt.addMeta("import_staging_swept", swept);
@@ -463,7 +470,7 @@ export async function handleAppleHealthImport(
         onExportDate: async (exportedAt) => {
           await prisma.importJob
             .update({ where: { id: importJobId }, data: { exportedAt } })
-            .catch(() => {});
+            .catch(caughtAs("apple_health.import.export_date_failed"));
         },
       })),
       ecg: {

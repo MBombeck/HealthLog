@@ -39,6 +39,7 @@ import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { enqueueDocumentSummary } from "@/lib/jobs/document-summary";
 import { annotate } from "@/lib/logging/context";
+import { logCaught } from "@/lib/logging/signal";
 
 export const DOCUMENT_SUMMARY_CATCHUP_QUEUE = "document-summary-catchup";
 
@@ -184,6 +185,7 @@ export async function enqueueSummaryCatchUp(
       action: { name: "documents.autoRead.catchUpEnqueueFailed" },
       meta: { reason: err instanceof Error ? err.name : "unknown" },
     });
+    logCaught("documents.auto_read.catch_up_enqueue_failed", err);
     return { enqueued: false };
   }
 }

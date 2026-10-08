@@ -20,6 +20,7 @@ import {
   providerWorkAuthorityForRecord,
   type ProviderWorkAuthority,
 } from "@/lib/sharing/provider-work-authority";
+import { logCaught } from "@/lib/logging/signal";
 
 export const INSIGHT_STATUS_GENERATE_QUEUE = "insight-status-generate";
 
@@ -165,7 +166,10 @@ export async function enqueueStatusGeneration(
       action: { name: "insights.status.generate.enqueued" },
       meta: { metric: payload.metric },
     });
-  } catch {
+  } catch (err) {
+    logCaught("insights.status.enqueue_failed", err, {
+      metric: payload.metric,
+    });
     // Enqueue is best-effort; a failure here just means the card stays
     // in `preparing` until the next poll / nightly cron warms the cache.
   }

@@ -44,6 +44,7 @@ import { isArrivalKind, type DataArrival } from "@/lib/arrivals/types";
 import { enqueueWorkoutInsight } from "@/lib/jobs/workout-insight-generate-shared";
 
 import { getWorkerPrisma, workerLog } from "./reminder/shared";
+import { logCaught } from "@/lib/logging/signal";
 
 export { DATA_ARRIVAL_QUEUE };
 
@@ -274,7 +275,8 @@ export async function runDataArrival(
   // process, and it costs nothing when it is not.
   try {
     invalidateUserDashboardSnapshot(arrival.userId);
-  } catch {
+  } catch (err) {
+    logCaught("daily.arrival.cache_evict_failed", err);
     // A cache miss is never worth failing a job over.
   }
 

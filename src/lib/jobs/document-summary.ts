@@ -48,6 +48,7 @@ import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
 import type { DocumentSummaryState } from "@/generated/prisma/client";
+import { logCaught } from "@/lib/logging/signal";
 
 export const DOCUMENT_SUMMARY_QUEUE = "document-summary";
 
@@ -311,7 +312,8 @@ export async function runDocumentSummaryJob(
         persisted: written.count > 0,
       },
     });
-  } catch {
+  } catch (err) {
+    logCaught("documents.summary.auto_failed", err);
     // Refund the reservation on a provider miss; the document keeps no summary
     // (the on-demand route remains the manual fallback). Never rethrow — a
     // transient provider error must not retry-loop or fail the queue.
@@ -394,6 +396,7 @@ export async function enqueueDocumentSummary(
       action: { name: "documents.summary.enqueueFailed" },
       meta: { documentId, reason: err instanceof Error ? err.name : "unknown" },
     });
+    logCaught("documents.summary.enqueue_failed", err);
     return { enqueued: false };
   }
 }
