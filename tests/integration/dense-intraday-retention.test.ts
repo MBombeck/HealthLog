@@ -12,7 +12,7 @@
  * adopts, retires a pre-hourly daily row atomically, stays idempotent,
  * and preserves the dense-tier scope.
  */
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { runDenseIntradayRetention } from "@/lib/measurements/dense-intraday-retention";
@@ -223,12 +223,21 @@ describe("runDenseIntradayRetention (real Postgres)", () => {
       },
     });
 
-    // Must not throw P2002 — the fold adopts the existing hourly row.
-    const summary = await runDenseIntradayRetention(prisma, {
-      userId: TEST_USER_ID,
-      retentionDays: 0,
-      log: () => {},
-    });
+    // Must not throw P2002 — the fold adopts the existing hourly row. Run
+    // a few days after the fold, inside the tombstone horizon, where the
+    // stored hour may be recomputed from all of its samples.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-05-05T00:00:00.000Z"));
+    let summary: Awaited<ReturnType<typeof runDenseIntradayRetention>>;
+    try {
+      summary = await runDenseIntradayRetention(prisma, {
+        userId: TEST_USER_ID,
+        retentionDays: 0,
+        log: () => {},
+      });
+    } finally {
+      vi.useRealTimers();
+    }
     expect(summary.totals.daysConsolidated).toBe(1);
 
     const live = await prisma.measurement.findMany({

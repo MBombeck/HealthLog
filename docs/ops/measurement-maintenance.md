@@ -11,8 +11,12 @@ indexes. Three pieces deal with them, in this order:
    second run stored the mean of the later part of the day only. The repair
    recomputes those hourly and daily means from all of the day's samples,
    including the compaction tombstones, and corrects a stored mean only when
-   it differs. When it has finished an account it records that in
-   `measurement_fold_repairs`.
+   it differs. It does so only where every sample of the day is provably
+   still in the table: the last 75 days for daily means, and for hourly
+   means (folded 90 days late) the 75 days before that. Older days stay as
+   they are, because the deleted rows of their samples have passed the
+   75-day retention and what is left can be a fragment of the day. When it
+   has finished an account it records that in `measurement_fold_repairs`.
 2. **The backlog purge** runs by itself, after the repair. Every worker boot queues one
    `compaction-tombstone-purge` job. It deletes the leftovers 5,000 rows at a
    time, one account at a time, pausing briefly between batches, and stops
@@ -35,9 +39,11 @@ seen keeps its wrong value for good once its tombstones are gone.
 
 The repair reports every run on the wide event `job.measurement_fold_repair`
 (`fold_repair_means_checked`, `fold_repair_means_corrected`,
-`fold_repair_resting_corrected`, and `fold_repair_by_type` with the same
-counts per type; counts only, never a value). It is finished when every
-account has a row:
+`fold_repair_resting_corrected`, `fold_repair_skipped_beyond_horizon` for the
+older windows it left as they are, `fold_repair_samples_absorbed` for live
+samples it took into a checked mean, and `fold_repair_by_type` with the same
+counts per type; counts only, never a value). A second run over an account
+corrects nothing. It is finished when every account has a row:
 
 ```sql
 SELECT count(*) AS accounts_left

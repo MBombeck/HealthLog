@@ -23,12 +23,54 @@
  * day folded in two runs left the tombstones of its first run in a window
  * that was not yet complete, so they are class B (kept for the 75-day
  * retention) and still constituents of the day's mean.
+ *
+ * The horizon. Tombstones are purged 75 days after they were written, so for
+ * an older window the samples present may be a fragment: what a re-upload
+ * after an anchor reset put back, the rows of one later run, nothing of the
+ * samples the stored mean was taken from. A mean recomputed from those can be
+ * far off a stored mean that was computed from the whole window. Every fold
+ * tombstone of a day was written after `dayStart + foldedAfter` (the fold
+ * only took samples older than its threshold), so when that instant is still
+ * inside the retention, none of them has been purged yet, and the live rows
+ * plus the fold leftovers are the whole window. {@link foldConstituentHorizon}
+ * is the earliest day start for which that holds; a pass recomputes a stored
+ * mean only for a day starting at or after it, and leaves an older one as it
+ * is. For the daily means that is the last 75 days; for the dense hourly
+ * means, which are folded 90 days late, the 75 days before the raw window.
+ *
+ * A pass that takes a window's live samples into a stored mean it recomputed
+ * soft-deletes them ({@link absorbIntoFold}) rather than deleting them, so they
+ * stay fold leftovers: a second pass over the same window then computes the
+ * same mean from the same samples instead of from the leftovers alone.
  */
 import type {
   MeasurementSource,
   MeasurementType,
   Prisma,
 } from "@/generated/prisma/client";
+import { TOMBSTONE_RETENTION_DAYS } from "@/lib/auth/native-client";
+
+const DAY_MS = 86_400_000;
+
+/**
+ * Slack on the horizon: a pass runs for minutes, and a tombstone right at the
+ * edge of the retention must not be purged by the cleanup while it does.
+ */
+export const FOLD_HORIZON_MARGIN_MS = DAY_MS;
+
+/**
+ * The earliest day start whose fold leftovers are certainly all still in the
+ * table, for a fold that takes samples `foldedAfterMs` after they were
+ * measured. See the header. Pure.
+ */
+export function foldConstituentHorizon(now: Date, foldedAfterMs: number): Date {
+  return new Date(
+    now.getTime() -
+      TOMBSTONE_RETENTION_DAYS * DAY_MS -
+      foldedAfterMs +
+      FOLD_HORIZON_MARGIN_MS,
+  );
+}
 
 export interface FoldConstituent {
   id: string;
@@ -113,6 +155,58 @@ export async function loadFoldLeftovers(
       value: row.value,
       measuredAt: row.measuredAt,
     }));
+}
+
+/**
+ * The live raw samples of one `[from, to)` span of one account, type and
+ * source: the rows a fold of that span would take. A `stats:` row and a
+ * collision retirement are never samples.
+ */
+export async function loadLiveSamples(
+  client: Pick<Prisma.TransactionClient, "measurement">,
+  input: {
+    userId: string;
+    type: MeasurementType;
+    source: MeasurementSource;
+    from: Date;
+    to: Date;
+  },
+): Promise<FoldConstituent[]> {
+  return client.measurement.findMany({
+    where: {
+      userId: input.userId,
+      type: input.type,
+      source: input.source,
+      deletedAt: null,
+      externalId: { not: null },
+      NOT: [
+        { externalId: { startsWith: "stats:" } },
+        { externalId: { startsWith: "retired:" } },
+      ],
+      measuredAt: { gte: input.from, lt: input.to },
+    },
+    select: { id: true, value: true, measuredAt: true },
+  });
+}
+
+/**
+ * Soft-delete live samples a pass has just taken into a stored mean it
+ * recomputed, leaving them as fold leftovers (see the header). Raw HealthKit
+ * and Health Connect samples are never updated in place, so they keep
+ * `syncVersion = 1`, which {@link isFoldLeftover} reads. Returns how many rows
+ * it took.
+ */
+export async function absorbIntoFold(
+  tx: Pick<Prisma.TransactionClient, "measurement">,
+  ids: readonly string[],
+  at: Date = new Date(),
+): Promise<number> {
+  if (ids.length === 0) return 0;
+  const res = await tx.measurement.updateMany({
+    where: { id: { in: [...ids] }, deletedAt: null },
+    data: { deletedAt: at },
+  });
+  return res.count;
 }
 
 /** Arithmetic mean of a non-empty list of values. */

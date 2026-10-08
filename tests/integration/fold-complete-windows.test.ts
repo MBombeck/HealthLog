@@ -406,6 +406,9 @@ describe("folded_window", () => {
   });
 });
 
+/** The instant the repair tests read the horizon against. */
+const REPAIR_NOW = "2026-10-08T12:00:00.000Z";
+
 /** The prod shape: a mean an old two-run fold left, and its tombstones. */
 async function seedPartialFolds(userId: string) {
   const prisma = getPrismaClient();
@@ -511,6 +514,8 @@ async function seedPartialFolds(userId: string) {
 
 describe("fold repair", () => {
   it("corrects a partial mean from the tombstones, leaves a correct one alone, and is idempotent", async () => {
+    // Inside the horizon of every seeded window.
+    at(REPAIR_NOW);
     const prisma = getPrismaClient();
     await account("repair");
     await seedPartialFolds("repair");
@@ -528,11 +533,15 @@ describe("fold repair", () => {
       windowsChecked: 2,
       windowsCorrected: 1,
       restingCorrected: 0,
+      windowsSkippedBeyondHorizon: 0,
+      samplesAbsorbed: 0,
     });
     expect(first.byType.HEART_RATE_VARIABILITY).toEqual({
       windowsChecked: 1,
       windowsCorrected: 1,
       restingCorrected: 0,
+      windowsSkippedBeyondHorizon: 0,
+      samplesAbsorbed: 0,
     });
     expect(
       (await live("repair", "WALKING_SPEED", `stats:${WS_HK}:2026-09-18`))
@@ -564,6 +573,8 @@ describe("fold repair", () => {
   });
 
   it("stops between days and resumes where it stopped", async () => {
+    // Inside the horizon of every seeded window.
+    at(REPAIR_NOW);
     const prisma = getPrismaClient();
     await account("repair-resume");
     await seedPartialFolds("repair-resume");
@@ -600,6 +611,8 @@ describe("fold repair", () => {
   });
 
   it("the handler marks the account and the purge refuses before it", async () => {
+    // Inside the horizon of every seeded window.
+    at(REPAIR_NOW);
     const prisma = getPrismaClient();
     await account("gate");
     await seedPartialFolds("gate");

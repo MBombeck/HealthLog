@@ -41,6 +41,7 @@ import { candidateLookup, createManyVia } from "./hourly-mint-mock";
 vi.mock("@/lib/export/restore-lock", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/export/restore-lock")>()),
   holdAccountAgainstRestore: vi.fn(async () => {}),
+  holdAccountFoldLock: vi.fn(async () => {}),
 }));
 
 function pulseRow(id: string, value: number, iso: string): PerSampleRow {

@@ -145,9 +145,16 @@ export function bucketRowsByDay(
   return byDay;
 }
 
-/** Outcome of writing a single per-day bucket. */
+/**
+ * Outcome of writing a single per-day bucket. `left-as-stored`: the day
+ * already has its `stats:` mean and the samples in hand cannot be shown to be
+ * all of the day (`fold-constituents.ts`), so the stored mean and the rows
+ * stay exactly as they are.
+ */
 export type DayWriteOutcome =
-  { kind: "written"; sourceRowsRemoved: number } | { kind: "skipped-conflict" };
+  | { kind: "written"; sourceRowsRemoved: number }
+  | { kind: "skipped-conflict" }
+  | { kind: "left-as-stored" };
 
 /**
  * Context a per-day write strategy receives. The strategy owns its own

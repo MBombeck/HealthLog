@@ -130,8 +130,13 @@ an earlier fold computed from part of a day.
   instead of the local day boundary, so a second run replaced a mean-type
   day, and the boundary hour of heart rate, HRV and SpO2, with the mean of
   its later part. Folds now stop at the local day boundary, and a one-time
-  repair per account recomputes each mean from its remaining samples and
-  writes only values that differ (migration 0389). The purge waits for it.
+  repair per account recomputes each mean from its samples and writes only
+  values that differ (migration 0389). It covers the last 75 days of daily
+  means and the 75 days before the 90-day raw window of hourly means, where
+  every sample of the day is still kept. Older days stay as they are: their
+  remaining samples can be a fragment of the day, and a mean over them would
+  be worse than the stored one. The nightly folds follow the same rule for a
+  day or hour that already has a mean. The purge waits for the repair.
 - **Push after an update.** Reload on the new-version hint unregistered the
   service worker, which ended the Web Push subscription; it now updates the
   worker instead.

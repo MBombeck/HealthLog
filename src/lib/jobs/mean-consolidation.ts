@@ -65,6 +65,7 @@ export async function runMeanConsolidationForUser(
         days: summary.totals.daysConsolidated,
         per_sample_rows_soft_deleted: summary.totals.perSampleRowsSoftDeleted,
         daily_rows_upserted: summary.totals.dailyRowsUpserted,
+        days_left_as_stored: summary.totals.daysLeftAsStored,
         stopped_early: summary.stoppedEarly,
       },
     },

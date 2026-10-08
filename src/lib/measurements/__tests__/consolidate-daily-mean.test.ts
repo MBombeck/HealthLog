@@ -22,6 +22,7 @@ import type { MeasurementType, PrismaClient } from "@/generated/prisma/client";
 vi.mock("@/lib/export/restore-lock", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/export/restore-lock")>()),
   holdAccountAgainstRestore: vi.fn(async () => {}),
+  holdAccountFoldLock: vi.fn(async () => {}),
 }));
 
 function row(
@@ -434,56 +435,166 @@ describe("consolidateDailyMean — canonical-slot collision (second unique index
     expect(summary.totals.daysFailed).toBe(0);
   });
 
-  it("re-run path: a slot row already carrying the target externalId is updated in place, with the mean over every sample of the day", async () => {
-    const { mock, upsert, update, txFindFirst, txFindMany } = buildPrismaMock({
-      WALKING_SPEED: [row("late", 1.2, "2026-05-01T18:00:00.000Z")],
-    });
-    occupySlot(txFindFirst, {
-      id: "mean-1",
-      externalId: targetExternalId,
-      deletedAt: null,
-    });
-    // A sample an earlier fold of the same day soft-deleted.
-    txFindMany.mockResolvedValue([
-      {
-        id: "early",
-        value: 1.0,
-        measuredAt: new Date("2026-05-01T07:00:00.000Z"),
-        externalId: "uuid-early",
-        deletedAt: new Date("2026-05-03T03:00:00.000Z"),
-        syncVersion: 1,
-      },
-    ]);
+  /** The live daily row the stored-day branch finds, with its value. */
+  function storedDay(
+    txFindFirst: ReturnType<typeof vi.fn>,
+    stored: { id: string; value: number },
+  ) {
+    txFindFirst.mockImplementation(
+      async (args: { where: { measuredAt?: Date; externalId?: string } }) =>
+        args.where.measuredAt === undefined &&
+        args.where.externalId === targetExternalId
+          ? stored
+          : null,
+    );
+  }
 
-    await consolidateDailyMean(mock, { log: () => {} });
+  /** Live samples and fold leftovers of the day, told apart by `deletedAt`. */
+  function daySamples(
+    txFindMany: ReturnType<typeof vi.fn>,
+    liveRows: Array<{ id: string; value: number; iso: string }>,
+    leftovers: Array<{ id: string; value: number; iso: string }>,
+    deletedAt: Date,
+  ) {
+    txFindMany.mockImplementation(
+      async (args: { where: { deletedAt: null | { not: null } } }) =>
+        args.where.deletedAt === null
+          ? liveRows.map((r) => ({
+              id: r.id,
+              value: r.value,
+              measuredAt: new Date(r.iso),
+            }))
+          : leftovers.map((r) => ({
+              id: r.id,
+              value: r.value,
+              measuredAt: new Date(r.iso),
+              externalId: `uuid-${r.id}`,
+              deletedAt,
+              syncVersion: 1,
+            })),
+    );
+  }
 
-    // No shift, no yield — the upsert's update branch owns the row.
-    expect(update).not.toHaveBeenCalled();
-    const upsertArg = upsert.mock.calls[0]?.[0] as {
-      create: { measuredAt: Date };
-      update: { value: number };
-    };
-    expect(upsertArg.create.measuredAt.getTime()).toBe(noon.getTime());
-    // Not the late sample alone: the whole day.
-    expect(upsertArg.update.value).toBeCloseTo(1.1, 9);
-    // The live-row lookup and the single slot probe — no free-instant search.
-    expect(txFindFirst).toHaveBeenCalledTimes(2);
+  it("a day with a live daily row inside the horizon gets the mean over every sample, and its live rows stay as leftovers", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-05-04T03:00:00.000Z"));
+    try {
+      const {
+        mock,
+        upsert,
+        update,
+        updateMany,
+        deleteMany,
+        txFindFirst,
+        txFindMany,
+      } = buildPrismaMock({
+        WALKING_SPEED: [row("late", 1.2, "2026-05-01T18:00:00.000Z")],
+      });
+      storedDay(txFindFirst, { id: "mean-1", value: 1.2 });
+      updateMany.mockResolvedValue({ count: 1 });
+      daySamples(
+        txFindMany,
+        [{ id: "late", value: 1.2, iso: "2026-05-01T18:00:00.000Z" }],
+        [{ id: "early", value: 1.0, iso: "2026-05-01T07:00:00.000Z" }],
+        new Date("2026-05-03T03:00:00.000Z"),
+      );
+
+      const summary = await consolidateDailyMean(mock, { log: () => {} });
+
+      // Not re-minted, not the late sample alone: the whole day.
+      expect(upsert).not.toHaveBeenCalled();
+      expect(update).toHaveBeenCalledTimes(1);
+      const updArg = update.mock.calls[0]?.[0] as {
+        where: { id: string };
+        data: { value: number };
+      };
+      expect(updArg.where.id).toBe("mean-1");
+      expect(updArg.data.value).toBeCloseTo(1.1, 9);
+      // The live sample becomes a leftover, never deleted outright.
+      expect(deleteMany).not.toHaveBeenCalled();
+      const absorbArg = updateMany.mock.calls[0]?.[0] as {
+        where: { id: { in: string[] } };
+        data: { deletedAt: Date };
+      };
+      expect(absorbArg.where.id.in).toEqual(["late"]);
+      expect(absorbArg.data.deletedAt).toBeInstanceOf(Date);
+      expect(summary.totals.daysLeftAsStored).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
-  it("re-run path without fold leftovers keeps the stored mean and drops the raw rows", async () => {
-    const { mock, upsert, deleteMany, txFindFirst } = buildPrismaMock({
-      WALKING_SPEED: [row("late", 1.2, "2026-05-01T18:00:00.000Z")],
-    });
-    occupySlot(txFindFirst, {
-      id: "mean-1",
-      externalId: targetExternalId,
-      deletedAt: null,
-    });
+  it("a day with a live daily row inside the horizon but no fold leftovers is left as stored", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-05-04T03:00:00.000Z"));
+    try {
+      const {
+        mock,
+        upsert,
+        update,
+        updateMany,
+        deleteMany,
+        txFindFirst,
+        txFindMany,
+      } = buildPrismaMock({
+        WALKING_SPEED: [row("late", 1.2, "2026-05-01T18:00:00.000Z")],
+      });
+      storedDay(txFindFirst, { id: "mean-1", value: 1.0 });
+      daySamples(
+        txFindMany,
+        [{ id: "late", value: 1.2, iso: "2026-05-01T18:00:00.000Z" }],
+        [],
+        new Date("2026-05-03T03:00:00.000Z"),
+      );
 
-    await consolidateDailyMean(mock, { log: () => {} });
+      const summary = await consolidateDailyMean(mock, { log: () => {} });
 
-    expect(upsert).not.toHaveBeenCalled();
-    expect(deleteMany).toHaveBeenCalledTimes(1);
+      expect(upsert).not.toHaveBeenCalled();
+      expect(update).not.toHaveBeenCalled();
+      expect(updateMany).not.toHaveBeenCalled();
+      expect(deleteMany).not.toHaveBeenCalled();
+      expect(summary.totals.daysLeftAsStored).toBe(1);
+      expect(summary.totals.daysConsolidated).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a day with a live daily row before the horizon keeps its mean and its live rows, whatever the leftovers", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    // 2026-05-01 lies about 160 days back: tombstones of it may be purged.
+    vi.setSystemTime(new Date("2026-10-08T03:00:00.000Z"));
+    try {
+      const {
+        mock,
+        upsert,
+        update,
+        updateMany,
+        deleteMany,
+        txFindFirst,
+        txFindMany,
+      } = buildPrismaMock({
+        WALKING_SPEED: [row("late", 9, "2026-05-01T18:00:00.000Z")],
+      });
+      storedDay(txFindFirst, { id: "mean-1", value: 1.0 });
+      daySamples(
+        txFindMany,
+        [{ id: "late", value: 9, iso: "2026-05-01T18:00:00.000Z" }],
+        [{ id: "early", value: 9, iso: "2026-05-01T07:00:00.000Z" }],
+        new Date("2026-09-01T03:00:00.000Z"),
+      );
+
+      const summary = await consolidateDailyMean(mock, { log: () => {} });
+
+      expect(upsert).not.toHaveBeenCalled();
+      expect(update).not.toHaveBeenCalled();
+      expect(updateMany).not.toHaveBeenCalled();
+      expect(deleteMany).not.toHaveBeenCalled();
+      expect(summary.totals.daysLeftAsStored).toBe(1);
+      expect(recomputeBucketsForMeasurement).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("a failing day bucket does not abort the pass — later buckets still consolidate", async () => {
