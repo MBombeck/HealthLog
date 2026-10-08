@@ -540,6 +540,11 @@
       "errorRateLimit": "Trop de tentatives. Attendez quelques minutes puis réessayez.",
       "errorFailed": "Cela n'a pas fonctionné. Réessayez dans un instant.",
       "errorOffline": "Le serveur n'a pas été atteint. Vérifiez votre connexion et réessayez."
+    },
+    "inviteInvalid": {
+      "title": "Invitation invalide",
+      "description": "Ce lien d’invitation est incomplet ou a été mal copié. Demandez un nouveau lien à la personne qui vous a invité.",
+      "toLogin": "Aller à la connexion"
     }
   },
   "dashboard": {
@@ -8713,7 +8718,11 @@
     },
     "course": "Traitement {n}",
     "courseRange": "du {start} au {end}",
-    "courseSince": "depuis le {start}"
+    "courseSince": "depuis le {start}",
+    "unavailable": {
+      "title": "Lien expiré ou invalide",
+      "description": "Ce lien de partage a expiré, a été révoqué ou est incomplet. Demandez un nouveau lien à la personne qui l’a partagé."
+    }
   },
   "cycle": {
     "symptomCategory": {

@@ -540,6 +540,11 @@
       "errorRateLimit": "Demasiados intentos. Espera unos minutos y vuelve a intentarlo.",
       "errorFailed": "No ha funcionado. Vuelve a intentarlo en un momento.",
       "errorOffline": "No se llegó al servidor. Comprueba tu conexión y vuelve a intentarlo."
+    },
+    "inviteInvalid": {
+      "title": "Invitación no válida",
+      "description": "Este enlace de invitación está incompleto o se copió mal. Pide un enlace nuevo a la persona que te invitó.",
+      "toLogin": "Ir a iniciar sesión"
     }
   },
   "dashboard": {
@@ -8713,7 +8718,11 @@
     },
     "course": "Tratamiento {n}",
     "courseRange": "del {start} al {end}",
-    "courseSince": "desde el {start}"
+    "courseSince": "desde el {start}",
+    "unavailable": {
+      "title": "Enlace caducado o no válido",
+      "description": "Este enlace para compartir ha caducado, se ha revocado o está incompleto. Pide un enlace nuevo a la persona que lo compartió."
+    }
   },
   "cycle": {
     "symptomCategory": {

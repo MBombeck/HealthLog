@@ -540,6 +540,11 @@
       "errorRateLimit": "Too many attempts. Wait a few minutes and try again.",
       "errorFailed": "That did not work. Try again in a moment.",
       "errorOffline": "That did not reach the server. Check your connection and try again."
+    },
+    "inviteInvalid": {
+      "title": "Invitation invalid",
+      "description": "This invitation link is incomplete or was copied wrongly. Ask the person who invited you for a new link.",
+      "toLogin": "Go to sign in"
     }
   },
   "dashboard": {
@@ -8713,7 +8718,11 @@
     },
     "course": "Course {n}",
     "courseRange": "{start} to {end}",
-    "courseSince": "since {start}"
+    "courseSince": "since {start}",
+    "unavailable": {
+      "title": "Link expired or invalid",
+      "description": "This share link has expired, was revoked, or is incomplete. Ask the person who shared it for a new link."
+    }
   },
   "cycle": {
     "symptomCategory": {

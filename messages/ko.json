@@ -540,6 +540,11 @@
       "errorRateLimit": "시도 횟수가 너무 많습니다. 몇 분 후 다시 시도하세요.",
       "errorFailed": "처리하지 못했습니다. 잠시 후 다시 시도하세요.",
       "errorOffline": "서버에 연결하지 못했습니다. 연결을 확인하고 다시 시도하세요."
+    },
+    "inviteInvalid": {
+      "title": "유효하지 않은 초대예요",
+      "description": "이 초대 링크가 불완전하거나 잘못 복사되었어요. 초대한 분께 새 링크를 요청해 주세요.",
+      "toLogin": "로그인으로 이동"
     }
   },
   "dashboard": {
@@ -8713,7 +8718,11 @@
     },
     "course": "복용 기간 {n}",
     "courseRange": "{start}부터 {end}까지",
-    "courseSince": "{start}부터"
+    "courseSince": "{start}부터",
+    "unavailable": {
+      "title": "링크가 만료되었거나 유효하지 않아요",
+      "description": "이 공유 링크는 만료되었거나 취소되었거나 불완전해요. 공유한 분께 새 링크를 요청해 주세요."
+    }
   },
   "cycle": {
     "symptomCategory": {

@@ -540,6 +540,11 @@
       "errorRateLimit": "Zu viele Versuche. Warte ein paar Minuten und versuche es erneut.",
       "errorFailed": "Das hat nicht geklappt. Versuche es gleich noch einmal.",
       "errorOffline": "Das hat den Server nicht erreicht. Prüfe deine Verbindung und versuche es erneut."
+    },
+    "inviteInvalid": {
+      "title": "Einladung ungültig",
+      "description": "Dieser Einladungslink ist unvollständig oder falsch kopiert. Bitte die Person, die dich eingeladen hat, um einen neuen Link.",
+      "toLogin": "Zur Anmeldung"
     }
   },
   "dashboard": {
@@ -8713,7 +8718,11 @@
     },
     "course": "Phase {n}",
     "courseRange": "{start} bis {end}",
-    "courseSince": "seit {start}"
+    "courseSince": "seit {start}",
+    "unavailable": {
+      "title": "Link abgelaufen oder ungültig",
+      "description": "Dieser Freigabelink ist abgelaufen, wurde zurückgezogen oder ist unvollständig. Bitte die Person, die ihn geteilt hat, um einen neuen Link."
+    }
   },
   "cycle": {
     "symptomCategory": {
