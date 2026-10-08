@@ -9,7 +9,7 @@ import { MonitoringBootstrap } from "@/components/monitoring/bootstrap";
 import { WebVitalsReporter } from "@/components/monitoring/web-vitals-reporter";
 import { resolveInitialLocale } from "@/lib/i18n/resolve-initial-locale";
 import { isKeyMismatch } from "@/lib/boot/key-mismatch-state";
-import { THEME_COLOR } from "@/lib/pwa/theme-color";
+import { THEME_BOOT_SCRIPT, THEME_COLOR } from "@/lib/pwa/theme-color";
 import { KeyMismatchPage } from "./key-mismatch-page";
 
 const inter = Inter({
@@ -80,9 +80,6 @@ export const viewport: Viewport = {
   ],
 };
 
-// Inline script to apply theme before first paint (prevents FOUC)
-const themeScript = `(function(){try{var t=localStorage.getItem("healthlog-theme");var c=(t==="light"||t==="dark")?t:(t==="system"?(window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"):"dark");document.documentElement.classList.add(c)}catch(e){document.documentElement.classList.add("dark")}})()`;
-
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -101,7 +98,9 @@ export default async function RootLayout({
         <script
           suppressHydrationWarning
           nonce={nonce}
-          dangerouslySetInnerHTML={{ __html: themeScript }}
+          // Applies the theme (and its status-bar colour) before
+          // first paint, so neither flashes the wrong theme.
+          dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }}
         />
         {/*
           Locale-catalog boot script (generated into public/i18n/ by

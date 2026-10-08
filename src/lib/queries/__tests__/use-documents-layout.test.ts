@@ -72,6 +72,41 @@ describe("runSetDocumentsLayout", () => {
     await run;
   });
 
+  it("is not undone by a first read still in flight", async () => {
+    const queryClient = new QueryClient();
+    let answerRead: (value: DocumentsLayout) => void = () => {};
+    const read = queryClient
+      .fetchQuery({
+        queryKey: key,
+        queryFn: () =>
+          new Promise<DocumentsLayout>((resolve) => {
+            answerRead = resolve;
+          }),
+      })
+      .catch(() => undefined);
+    let settle: (value: DocumentsLayout) => void = () => {};
+    vi.mocked(apiPut).mockReturnValue(
+      new Promise<DocumentsLayout>((resolve) => {
+        settle = resolve;
+      }),
+    );
+
+    const run = runSetDocumentsLayout({
+      patch: { view: "list" },
+      queryClient,
+      t,
+    });
+    // The read answers with the stored layout while the save is pending.
+    answerRead(STORED);
+    await read;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(queryClient.getQueryData<DocumentsLayout>(key)?.view).toBe("list");
+
+    settle({ ...STORED, view: "list" });
+    await run;
+    expect(queryClient.getQueryData<DocumentsLayout>(key)?.view).toBe("list");
+  });
+
   it("rolls back and says so when the save fails", async () => {
     const queryClient = new QueryClient();
     queryClient.setQueryData(key, STORED);

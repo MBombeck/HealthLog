@@ -74,6 +74,8 @@ export interface ChartDayLinksOptions {
 
 export interface ChartDayLinks {
   active: boolean;
+  /** The calendar day of each drawn point, as the chart passed them in. */
+  days: ReadonlyArray<DateKey | null>;
   coarse: boolean;
   /** Index of the open day's point, for the dashed line. */
   openIndex: number | undefined;
@@ -158,6 +160,7 @@ export function useChartDayLinks({
 
   return {
     active: enabled,
+    days,
     coarse,
     openIndex,
     openDay: enabled ? openKey : null,
@@ -198,7 +201,8 @@ export function ChartDayFooter({
   insetRight,
   mark = "point",
 }: {
-  links: Pick<ChartDayLinks, "active" | "coarse">;
+  links: Pick<ChartDayLinks, "active" | "coarse"> &
+    Partial<Pick<ChartDayLinks, "days">>;
   /** The drawn points' noon-UTC day anchors (or instants), in data order. */
   points: ReadonlyArray<{ timestamp: number }>;
   axis?: ChartDayAxis;
@@ -211,6 +215,7 @@ export function ChartDayFooter({
     <>
       <DayRug
         points={points}
+        pointDays={links.days}
         axis={axis}
         insetLeft={insetLeft}
         insetRight={insetRight}

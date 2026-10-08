@@ -76,6 +76,13 @@
   }
 }
 
+/*
+ * `keyboard-open:` — while the on-screen keyboard is up (see the keyboard
+ * rules further down). A bottom sheet then stands on the keyboard, not on
+ * the home indicator, so its safe-area padding has nothing left to clear.
+ */
+@custom-variant keyboard-open (html[data-keyboard="open"] &);
+
 @custom-variant shell-mobile {
   @media (max-width: 47.98rem), (pointer: coarse) and (max-height: 520px) {
     @slot;
@@ -587,66 +594,92 @@
 }
 
 /*
- * `.shell-safe-area` — the authenticated app shell's share of the installed
- * app's safe area (see the note in `auth-shell.tsx`). The shell takes the top
- * and side insets as padding, and the strip behind the status bar is painted
- * in the chrome colour (`--card`, the top bar and the sidebar) rather than
- * the page colour, so the status bar reads as part of the bar beneath it. A
- * zero inset makes the gradient zero tall: nothing changes in a browser tab.
+ * The shell's safe area, the on-screen keyboard and the sheet clearances sit
+ * in the components layer, under the utilities, so a utility on the same
+ * element still wins and these rules cannot silently override one. The
+ * bottom sheet takes its `bottom` from here alone for that reason (the
+ * sheet primitive sets no `bottom-*`); the keyboard rules that must beat a
+ * utility say `!important`, which in a layer outranks any utility.
  */
-.shell-safe-area {
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
-  padding-left: env(safe-area-inset-left, 0px);
-  background: linear-gradient(var(--card), var(--card)) top / 100%
-    env(safe-area-inset-top, 0px) no-repeat;
+@layer components {
+  /*
+   * `.shell-safe-area` — the authenticated app shell's share of the installed
+   * app's safe area (see the note in `auth-shell.tsx`). The shell takes the top
+   * and side insets as padding, and the strip behind the status bar is painted
+   * in the chrome colour (`--card`, the top bar and the sidebar) rather than
+   * the page colour, so the status bar reads as part of the bar beneath it. A
+   * zero inset makes the gradient zero tall: nothing changes in a browser tab.
+   */
+  .shell-safe-area {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    background: linear-gradient(var(--card), var(--card)) top / 100%
+      env(safe-area-inset-top, 0px) no-repeat;
+  }
+
+  /*
+   * The on-screen keyboard. iOS Safari, and Chrome on Android by default,
+   * shrink only the visual viewport when the keyboard opens: everything
+   * `position: fixed` stays anchored to the layout viewport, so a bottom sheet
+   * keeps its footer (Save, the Coach composer) behind the keyboard and the
+   * bottom bar floats somewhere under it. `useKeyboardInset()` (mounted once
+   * in the providers) publishes the covered height as `--keyboard-inset` and
+   * sets `data-keyboard` on `<html>` while it is open.
+   *
+   * Bottom sheets then stand on the keyboard and give up the height it takes,
+   * so their own scroll body (every bottom sheet is a flex column with a
+   * scrolling middle) carries the form, and the bottom bar and the Coach
+   * button step aside until the keyboard is gone.
+   */
+  [data-sheet-side="bottom"] {
+    bottom: var(--keyboard-inset, 0px);
+  }
+  html[data-keyboard="open"] [data-sheet-side="bottom"] {
+    max-height: calc(
+      100dvh - var(--keyboard-inset, 0px) - env(safe-area-inset-top, 0px) -
+        0.5rem
+    ) !important;
+  }
+  html[data-keyboard="open"] [data-keyboard-hide] {
+    display: none !important;
+  }
+
+  /*
+   * Side and top sheets run the full height of the window. In an installed
+   * app on a tablet the status bar sits over their first 24 px, and a phone
+   * held sideways has its notch over one side, so the panel keeps its header
+   * clear of both. A transparent border rather than padding: every consumer
+   * sets its own padding (often `p-0`), which would override a padding here,
+   * while the border adds the clearance under any of them and lets the
+   * panel's own background show through it.
+   */
+  [data-sheet-side="right"],
+  [data-sheet-side="left"],
+  [data-sheet-side="top"] {
+    border-top: env(safe-area-inset-top, 0px) solid transparent;
+  }
+  [data-sheet-side="right"] {
+    border-right: env(safe-area-inset-right, 0px) solid transparent;
+  }
+  [data-sheet-side="left"] {
+    border-left: env(safe-area-inset-left, 0px) solid transparent;
+  }
 }
 
 /*
- * The on-screen keyboard. iOS Safari, and Chrome on Android by default,
- * shrink only the visual viewport when the keyboard opens: everything
- * `position: fixed` stays anchored to the layout viewport, so a bottom sheet
- * keeps its footer (Save, the Coach composer) behind the keyboard and the
- * bottom bar floats somewhere under it. `useKeyboardInset()` (mounted once
- * in the providers) publishes the covered height as `--keyboard-inset` and
- * sets `data-keyboard` on `<html>` while it is open.
- *
- * Bottom sheets then stand on the keyboard and give up the height it takes,
- * so their own scroll body (every bottom sheet is a flex column with a
- * scrolling middle) carries the form, and the bottom bar and the Coach
- * button step aside until the keyboard is gone.
+ * Toasts clear the bottom bar wherever the phone shell shows it. The
+ * toaster's `mobileOffset` (providers.tsx) applies below 600 px only, while
+ * the bar follows the shell (up to `md`, and a phone held sideways): between
+ * the two the "new version" toast sat over the tabs. Unlayered and one `html`
+ * deeper than Sonner's injected `[data-sonner-toaster][data-y-position]`
+ * rule, which is unlayered too and lands after this sheet. The Coach panel's
+ * rule further down still outranks it while that panel is open.
  */
-[data-sheet-side="bottom"] {
-  bottom: var(--keyboard-inset, 0px);
-}
-html[data-keyboard="open"] [data-sheet-side="bottom"] {
-  max-height: calc(
-    100dvh - var(--keyboard-inset, 0px) - env(safe-area-inset-top, 0px) - 0.5rem
-  ) !important;
-}
-html[data-keyboard="open"] [data-keyboard-hide] {
-  display: none !important;
-}
-
-/*
- * Side and top sheets run the full height of the window. In an installed
- * app on a tablet the status bar sits over their first 24 px, and a phone
- * held sideways has its notch over one side, so the panel keeps its header
- * clear of both. A transparent border rather than padding: every consumer
- * sets its own padding (often `p-0`), which would override a padding here,
- * while the border adds the clearance under any of them and lets the
- * panel's own background show through it.
- */
-[data-sheet-side="right"],
-[data-sheet-side="left"],
-[data-sheet-side="top"] {
-  border-top: env(safe-area-inset-top, 0px) solid transparent;
-}
-[data-sheet-side="right"] {
-  border-right: env(safe-area-inset-right, 0px) solid transparent;
-}
-[data-sheet-side="left"] {
-  border-left: env(safe-area-inset-left, 0px) solid transparent;
+html [data-sonner-toaster][data-y-position="bottom"] {
+  @variant shell-mobile {
+    bottom: calc(4rem + env(safe-area-inset-bottom, 0px) + 0.75rem);
+  }
 }
 
 /*

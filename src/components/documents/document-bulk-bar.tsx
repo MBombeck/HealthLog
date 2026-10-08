@@ -112,7 +112,10 @@ export function DocumentBulkBar({
         role="toolbar"
         aria-label={t("documents.bulk.barLabel")}
         className={cn(
-          "bg-card border-border fixed bottom-20 left-1/2 z-40 -translate-x-1/2 md:bottom-6",
+          // Clear of the bottom bar (and the home indicator) for as long as
+          // the bar shows, which is the shell's call, not a width's: a phone
+          // held sideways is wider than `md` and still has the bar.
+          "bg-card border-border shell-desktop:bottom-6 fixed bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)] left-1/2 z-40 -translate-x-1/2",
           // v1.42 — while a day is docked on the right, the bar sits against
           // the page's right edge instead of the window's centre, clear of the
           // day's footer actions and of an expanded sidebar.

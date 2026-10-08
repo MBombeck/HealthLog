@@ -15,7 +15,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { resolveVersionPollDecision } from "../version-poller";
+import { cachesToEvict, resolveVersionPollDecision } from "../version-poller";
 
 describe("resolveVersionPollDecision", () => {
   it("is up-to-date when live matches the shell", () => {
@@ -142,5 +142,33 @@ describe("evictAndReload", () => {
       "healthlog-pages-v1.41.2",
       "healthlog-static-v1.41.2",
     ]);
+  });
+});
+
+describe("cachesToEvict", () => {
+  const keys = [
+    "healthlog-static-v1.41.2",
+    "healthlog-pages-v1.41.2",
+    "healthlog-data-v1.41.2",
+    "healthlog-static-v1.42.0",
+    "another-app-cache",
+  ];
+
+  it("keeps the target release's caches the new worker just filled", () => {
+    expect(cachesToEvict(keys, "1.42.0")).toEqual([
+      "healthlog-static-v1.41.2",
+      "healthlog-pages-v1.41.2",
+      "healthlog-data-v1.41.2",
+    ]);
+  });
+
+  it("reads the target with or without its v", () => {
+    expect(cachesToEvict(keys, "v1.42.0")).not.toContain(
+      "healthlog-static-v1.42.0",
+    );
+  });
+
+  it("never touches another app's caches", () => {
+    expect(cachesToEvict(keys, "1.43.0")).not.toContain("another-app-cache");
   });
 });

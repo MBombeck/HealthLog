@@ -52,6 +52,21 @@ export interface HeatmapCellInput {
   describe: () => string;
 }
 
+/**
+ * Where the heatmap tooltip sits beside the pointer: 10 px to its right,
+ * clamped so a tap near the right border keeps at least 200 px of room, and
+ * never wider than the room to the right edge less an 8 px gutter. The box
+ * shrinks to fit that room and wraps its text, so it cannot run past the
+ * edge; the width cap keeps the gutter the clamp meant to leave.
+ */
+export function tooltipBox(
+  x: number,
+  viewportWidth: number,
+): { left: number; maxWidth: number } {
+  const left = Math.max(8, Math.min(x + 10, viewportWidth - 200 - 8));
+  return { left, maxWidth: viewportWidth - left - 8 };
+}
+
 export function useHeatmapDay(containerRef: RefObject<HTMLElement | null>) {
   const [tooltip, setTooltip] = useState<HeatmapTooltip | null>(null);
   // The pointer type of the last press decides whether the click that
@@ -139,13 +154,10 @@ export function useHeatmapDay(containerRef: RefObject<HTMLElement | null>) {
       className={`bg-popover text-popover-foreground border-border fixed z-50 max-w-[calc(100vw-1rem)] rounded-md border px-2.5 py-1.5 text-xs shadow-md ${
         tooltip.day ? "pointer-events-auto" : "pointer-events-none"
       }`}
-      // Clamp the left edge so a tap near the right border doesn't push
-      // the pinned label off-screen on a narrow viewport.
       style={{
-        left:
-          typeof window !== "undefined"
-            ? Math.max(8, Math.min(tooltip.x + 10, window.innerWidth - 200 - 8))
-            : tooltip.x + 10,
+        ...(typeof window !== "undefined"
+          ? tooltipBox(tooltip.x, window.innerWidth)
+          : { left: tooltip.x + 10 }),
         top: tooltip.y - 30,
       }}
     >

@@ -28,3 +28,14 @@ export function applyThemeColor(
     meta.setAttribute("content", THEME_COLOR[resolved]);
   }
 }
+
+/**
+ * The inline boot script the root layout runs before first paint. It stamps
+ * the theme class (no flash of the wrong theme) and rewrites the theme-color
+ * tags to that theme, which until now waited for hydration: a phone in light
+ * mode running the app in dark mode showed a light status bar until React
+ * caught up. The tags may stream in after the script, so it repeats the
+ * rewrite once the document is parsed. Built from constants only — the
+ * layout's one `dangerouslySetInnerHTML` stays file-literal content.
+ */
+export const THEME_BOOT_SCRIPT = `(function(){var c="dark";try{var t=localStorage.getItem("healthlog-theme");c=(t==="light"||t==="dark")?t:(t==="system"?(window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"):"dark")}catch(e){}document.documentElement.classList.add(c);var k=c==="light"?${JSON.stringify(THEME_COLOR.light)}:${JSON.stringify(THEME_COLOR.dark)};function m(){var a=document.querySelectorAll('meta[name="theme-color"]');for(var i=0;i<a.length;i++)a[i].setAttribute("content",k)}m();document.addEventListener("DOMContentLoaded",m)})()`;

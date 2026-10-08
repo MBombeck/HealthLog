@@ -18,6 +18,7 @@ import {
   type MoodAggregates,
 } from "@/lib/insights/mood-aggregates";
 import type { MoodDailySeries } from "@/lib/analytics/mood-series";
+import { settleWithin } from "@/lib/async/settle-within";
 import { resolveModuleMap } from "@/lib/modules/gate";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -32,12 +33,7 @@ import InsightsMoodPageClient from "./page-client";
 const PREFETCH_BUDGET_MS = 1_500;
 
 function withinBudget<T>(work: Promise<T>): Promise<T | null> {
-  return Promise.race([
-    work,
-    new Promise<null>((resolve) =>
-      setTimeout(() => resolve(null), PREFETCH_BUDGET_MS),
-    ),
-  ]).catch(() => null);
+  return settleWithin(work, PREFETCH_BUDGET_MS, null).catch(() => null);
 }
 
 /**

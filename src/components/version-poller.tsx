@@ -101,6 +101,27 @@ async function fetchLiveVersion(signal: AbortSignal): Promise<string | null> {
 // to break the loop within one document lifetime.
 let inMemoryReloadGuard: string | null = null;
 
+/**
+ * The worker caches the "new version" reload clears: every HealthLog cache
+ * except the target release's own. `registration.update()` resolves as soon
+ * as the new worker starts installing, so its freshly precached logos and
+ * favicon (`healthlog-static-v<target>`) may already exist by then; deleting
+ * them left the installed app without them offline until they were fetched
+ * again. Cache names carry the version with a `v`, the version endpoint may
+ * answer without one.
+ */
+export function cachesToEvict(
+  keys: readonly string[],
+  targetVersion: string,
+): string[] {
+  const target = targetVersion.replace(/^v/, "");
+  return keys.filter((key) => {
+    if (!HEALTHLOG_CACHE_NAME_RE.test(key)) return false;
+    const version = key.replace(HEALTHLOG_CACHE_NAME_RE, "").replace(/^v/, "");
+    return version !== target;
+  });
+}
+
 export async function evictAndReload(targetVersion: string): Promise<void> {
   inMemoryReloadGuard = targetVersion;
   try {
@@ -123,9 +144,7 @@ export async function evictAndReload(targetVersion: string): Promise<void> {
     try {
       const keys = await caches.keys();
       await Promise.all(
-        keys
-          .filter((k) => HEALTHLOG_CACHE_NAME_RE.test(k))
-          .map((k) => caches.delete(k)),
+        cachesToEvict(keys, targetVersion).map((k) => caches.delete(k)),
       );
     } catch {
       /* best effort */

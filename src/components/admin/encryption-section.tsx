@@ -410,87 +410,93 @@ export function ColumnCoverage({
               count: withRows.length,
             })}
       </button>
-      {open ? (
-        <div id="encryption-columns-panel" className="space-y-3">
-          {shown.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              {t("admin.section.encryption.columnsNoneWithRows")}
-            </p>
-          ) : (
-            /* Focusable, named scroll region: on a phone the table scrolls
+      {/* The panel stays in the tree, empty and hidden, while closed, so
+          the toggle's aria-controls always names an element. */}
+      <div id="encryption-columns-panel" hidden={!open} className="space-y-3">
+        {open ? (
+          <>
+            {shown.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                {t("admin.section.encryption.columnsNoneWithRows")}
+              </p>
+            ) : (
+              /* Focusable, named scroll region: on a phone the table scrolls
                sideways, and a keyboard user has to be able to reach it
                (axe scrollable-region-focusable). */
-            <div
-              className="overflow-x-auto"
-              tabIndex={0}
-              role="region"
-              aria-label={t("admin.section.encryption.columnsTitle")}
-            >
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-muted-foreground border-b text-left">
-                    <th className="py-2 pr-3 font-medium">
-                      {t("admin.section.encryption.colColumn")}
-                    </th>
-                    <th className="py-2 pr-3 font-medium">
-                      {t("admin.section.encryption.colTotal")}
-                    </th>
-                    <th className="py-2 pr-3 font-medium">
-                      {t("admin.section.encryption.colActive")}
-                    </th>
-                    <th className="py-2 font-medium">
-                      {t("admin.section.encryption.colStale")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody data-slot="encryption-column-rows">
-                  {shown.map((c) => {
-                    const active = c.byKeyId[activeKeyId] ?? 0;
-                    const stale = c.total - active;
-                    return (
-                      <tr key={`${c.model}.${c.field}`} className="border-b">
-                        <td className="py-2 pr-3 font-mono text-xs">
-                          {c.model}.{c.field}
-                        </td>
-                        <td className="py-2 pr-3">
-                          {c.total.toLocaleString()}
-                        </td>
-                        <td className="py-2 pr-3">{active.toLocaleString()}</td>
-                        <td className="py-2">
-                          {stale > 0 ? (
-                            <Badge variant="secondary">
-                              {stale.toLocaleString()}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground">0</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-          {withRows.length < columns.length ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="min-h-11 sm:min-h-9"
-              onClick={() => setShowAll((prev) => !prev)}
-              aria-pressed={showAll}
-              data-testid="encryption-columns-show-all"
-            >
-              {showAll
-                ? t("admin.section.encryption.columnsShowWithRows")
-                : t("admin.section.encryption.columnsShowAll", {
-                    count: columns.length,
-                  })}
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
+              <div
+                className="overflow-x-auto"
+                tabIndex={0}
+                role="region"
+                aria-label={t("admin.section.encryption.columnsTitle")}
+              >
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-muted-foreground border-b text-left">
+                      <th className="py-2 pr-3 font-medium">
+                        {t("admin.section.encryption.colColumn")}
+                      </th>
+                      <th className="py-2 pr-3 font-medium">
+                        {t("admin.section.encryption.colTotal")}
+                      </th>
+                      <th className="py-2 pr-3 font-medium">
+                        {t("admin.section.encryption.colActive")}
+                      </th>
+                      <th className="py-2 font-medium">
+                        {t("admin.section.encryption.colStale")}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody data-slot="encryption-column-rows">
+                    {shown.map((c) => {
+                      const active = c.byKeyId[activeKeyId] ?? 0;
+                      const stale = c.total - active;
+                      return (
+                        <tr key={`${c.model}.${c.field}`} className="border-b">
+                          <td className="py-2 pr-3 font-mono text-xs">
+                            {c.model}.{c.field}
+                          </td>
+                          <td className="py-2 pr-3">
+                            {c.total.toLocaleString()}
+                          </td>
+                          <td className="py-2 pr-3">
+                            {active.toLocaleString()}
+                          </td>
+                          <td className="py-2">
+                            {stale > 0 ? (
+                              <Badge variant="secondary">
+                                {stale.toLocaleString()}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">0</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {withRows.length < columns.length ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="min-h-11 sm:min-h-9"
+                onClick={() => setShowAll((prev) => !prev)}
+                aria-pressed={showAll}
+                data-testid="encryption-columns-show-all"
+              >
+                {showAll
+                  ? t("admin.section.encryption.columnsShowWithRows")
+                  : t("admin.section.encryption.columnsShowAll", {
+                      count: columns.length,
+                    })}
+              </Button>
+            ) : null}
+          </>
+        ) : null}
+      </div>
     </div>
   );
 }

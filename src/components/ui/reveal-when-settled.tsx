@@ -1,7 +1,29 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
+
+/**
+ * Scroll to the element the URL's hash names, when it sits inside
+ * `container`. Returns whether it scrolled.
+ */
+export function scrollToHashTarget(
+  container: Pick<Element, "contains"> | null,
+  hash: string,
+  doc: Pick<Document, "getElementById">,
+): boolean {
+  if (!container || hash.length < 2) return false;
+  let id: string;
+  try {
+    id = decodeURIComponent(hash.slice(1));
+  } catch {
+    return false;
+  }
+  const target = doc.getElementById(id);
+  if (!target || !container.contains(target)) return false;
+  target.scrollIntoView({ block: "start" });
+  return true;
+}
 
 /**
  * Holds a page body out of layout until its first reads have settled, then
@@ -21,6 +43,10 @@ import { useIsFetching, useQueryClient } from "@tanstack/react-query";
  * slow or polling read elsewhere in the app can delay it but never strand
  * it. Revealing is latched: a later background refetch does not hide the
  * body again.
+ *
+ * A deep link into the body (`/settings/layout/insights#insights-pill-order`)
+ * found its target hidden on arrival, so the browser had nothing to scroll
+ * to. Once the body shows, it scrolls to the hash target itself.
  */
 export function RevealWhenSettled({
   children,
@@ -39,6 +65,12 @@ export function RevealWhenSettled({
   const queryClient = useQueryClient();
   const fetching = useIsFetching();
   const [revealed, setRevealed] = useState(false);
+  const bodyRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!revealed) return;
+    scrollToHashTarget(bodyRef.current, window.location.hash, document);
+  }, [revealed]);
 
   useEffect(() => {
     if (revealed || fetching > 0) return;
@@ -67,6 +99,7 @@ export function RevealWhenSettled({
     <>
       {revealed ? null : fallback}
       <div
+        ref={bodyRef}
         data-slot="reveal-when-settled"
         data-revealed={revealed ? "true" : "false"}
         aria-busy={revealed ? undefined : true}

@@ -425,3 +425,17 @@ export function measurementUnitLabel(
 }
 
 const UNITLESS_TOKENS: ReadonlySet<string> = new Set(["score", "rating"]);
+
+/**
+ * The unit as the lead of a row's meta line ("kg · 2 days ago"), or null
+ * when the row has no unit word to show: a score or a rating would otherwise
+ * open the line with a bare separator.
+ */
+export function measurementUnitMetaLead(
+  type: string,
+  unit: string,
+  t: (key: string) => string,
+): string | null {
+  const label = measurementUnitLabel(type, unit, t);
+  return label ? `${label} · ` : null;
+}

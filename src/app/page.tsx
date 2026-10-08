@@ -13,6 +13,7 @@ import {
   type BatchWindow,
 } from "@/lib/dashboard/batch-chart-types";
 import { resolveDashboardLayout } from "@/lib/dashboard-layout";
+import { settleWithin } from "@/lib/async/settle-within";
 import { loadDailyDigest } from "@/lib/daily/load-digest";
 import { readSeriesBatch } from "@/lib/measurements/series-batch-read";
 import { queryKeys } from "@/lib/query-keys";
@@ -29,11 +30,6 @@ import DashboardPageClient from "./page-client";
  * SWR cell, so the client fetch that follows a skipped dehydrate lands warm.
  */
 const DIGEST_SOFT_BUDGET_MS = 400;
-
-/** Resolve `undefined` after `ms` — the soft-budget loser in the digest race. */
-function softTimeout<T>(ms: number): Promise<T | undefined> {
-  return new Promise((resolve) => setTimeout(() => resolve(undefined), ms));
-}
 
 /**
  * Thin RSC wrapper around the (client) dashboard page.
@@ -144,7 +140,7 @@ export default async function DashboardPage() {
           : Promise.resolve(undefined);
 
       const [digest, series] = await Promise.all([
-        Promise.race([digestWork, softTimeout(DIGEST_SOFT_BUDGET_MS)]),
+        settleWithin(digestWork, DIGEST_SOFT_BUDGET_MS, undefined),
         seriesWork,
       ]);
 

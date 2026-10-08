@@ -24,6 +24,8 @@ import { computeReadiness, type ReadinessComponent } from "./readiness";
 import { resolveCanonicalRecovery } from "./recovery-resolve";
 import { SPARKLINE_MAX_POINTS, type Derived } from "./types";
 import { dateOnlyKey } from "@/lib/tz/date-only";
+import { dayKeyForUserTz } from "@/lib/measurements/consolidation-tz";
+import { resolveUserTimezone } from "@/lib/measurements/consolidation-base";
 
 /** A 0–100 wellness score band. Higher is better for recovery; for stress a
  *  higher score is worse, so the band direction flips (see `WELLNESS_DIR`). */
@@ -208,7 +210,18 @@ export async function computeWellnessScore(
       orderBy: { measuredAt: "desc" },
     });
     if (deviceRows.length > 0) {
-      return buildDeviceStrain(deviceRows, windowDays, computedAt);
+      if (timezone === null) {
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { timezone: true },
+        });
+        timezone = user?.timezone ?? null;
+      }
+      return buildDeviceStrain(
+        deviceStrainDays(deviceRows, timezone),
+        windowDays,
+        computedAt,
+      );
     }
   }
 
@@ -312,6 +325,42 @@ export async function computeWellnessScore(
 function deviceStrainShare(value: number): number {
   const clamped = Math.min(Math.max(value, 0), DEVICE_STRAIN_SCALE_MAX);
   return Math.round((clamped / DEVICE_STRAIN_SCALE_MAX) * 100);
+}
+
+/**
+ * One row per local calendar day from the band's DAY_STRAIN rows. The band
+ * writes one row per physiological cycle, stamped at the cycle's start, and
+ * a bedtime either side of midnight puts two cycle starts on one calendar
+ * day. Counted as rows, those days were counted twice and the sparkline
+ * carried an extra point the recovery page's daily chart does not have. The
+ * day's value is the mean of its rows, which is the chart's own daily value;
+ * the day stands at its latest row. Newest day first.
+ */
+export function deviceStrainDays(
+  rows: readonly { value: number; measuredAt: Date }[],
+  timezone: string | null,
+): { value: number; measuredAt: Date }[] {
+  const tz = resolveUserTimezone(timezone);
+  const byDay = new Map<
+    string,
+    { sum: number; count: number; measuredAt: Date }
+  >();
+  for (const row of rows) {
+    const key = dayKeyForUserTz(row.measuredAt, tz);
+    const day = byDay.get(key);
+    if (!day) {
+      byDay.set(key, { sum: row.value, count: 1, measuredAt: row.measuredAt });
+      continue;
+    }
+    day.sum += row.value;
+    day.count += 1;
+    if (row.measuredAt.getTime() > day.measuredAt.getTime()) {
+      day.measuredAt = row.measuredAt;
+    }
+  }
+  return [...byDay.values()]
+    .map((day) => ({ value: day.sum / day.count, measuredAt: day.measuredAt }))
+    .sort((a, b) => b.measuredAt.getTime() - a.measuredAt.getTime());
 }
 
 function buildDeviceStrain(

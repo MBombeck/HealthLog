@@ -559,3 +559,16 @@ describe("<SidebarNav> width transition never overflows the nav", () => {
     );
   });
 });
+
+describe("<SidebarNav> carries no rules for a viewport it never shows on", () => {
+  it("has no short-touch variants, which the phone shell owns", () => {
+    // A touch screen at most 520 px tall gets the phone shell (the
+    // `shell-mobile` variant), so the rail is hidden there and a class keyed
+    // on that query can never apply.
+    const source = readFileSync(
+      join(__dirname, "..", "sidebar-nav.tsx"),
+      "utf8",
+    );
+    expect(source).not.toMatch(/pointer:coarse\)_and_\(height<=520px\)/);
+  });
+});

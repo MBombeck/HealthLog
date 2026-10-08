@@ -66,6 +66,9 @@ function SheetContent({
         // full-height sides keep clear of the status bar and the notch.
         // Its own attribute rather than `data-slot`, which consumers
         // replace with theirs (`responsive-sheet-content`, `day-panel`).
+        // A bottom sheet's `bottom` comes from that rule (0 until the
+        // keyboard opens), so its branch below carries no `bottom-*`: a
+        // utility would outrank the layered rule and pin it to the edge.
         data-sheet-side={side}
         className={cn(
           "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
@@ -76,7 +79,7 @@ function SheetContent({
           side === "top" &&
             "data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top inset-x-0 top-0 h-auto border-b",
           side === "bottom" &&
-            "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom inset-x-0 bottom-0 h-auto border-t",
+            "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom inset-x-0 h-auto border-t",
           className,
         )}
         {...props}
