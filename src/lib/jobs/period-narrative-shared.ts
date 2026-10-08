@@ -20,6 +20,7 @@ import {
 } from "@/lib/sharing/provider-work-authority";
 import type { NarrativePeriod } from "@/lib/insights/narrative/period-narrative";
 import type { Locale } from "@/lib/i18n/config";
+import { logCaught } from "@/lib/logging/signal";
 
 export const PERIOD_NARRATIVE_QUEUE = "period-narrative-warm";
 
@@ -100,7 +101,10 @@ export async function enqueueNarrativeWarm(payload: {
       action: { name: "insights.narrative.warm.enqueued" },
       meta: { period: payload.period, locale: payload.locale },
     });
-  } catch {
+  } catch (err) {
+    logCaught("insights.narrative.enqueue_failed", err, {
+      period: payload.period,
+    });
     // Best-effort — a failure just means the narrative stays as-is until the
     // next read or the nightly cron warms it.
   }

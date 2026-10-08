@@ -28,6 +28,7 @@
  * least every second run.
  */
 import type { PrismaClient } from "@/generated/prisma/client";
+import { logCaught } from "@/lib/logging/signal";
 
 /** The pass's queue name, which is also the marker's key. */
 export type BackupPass = "data-backup" | "data-backup-offhost";
@@ -46,7 +47,8 @@ export async function markBackupAttemptStarted(
       update: { startedAt: at },
       create: { userId, pass, startedAt: at },
     });
-  } catch {
+  } catch (err) {
+    logCaught("backup.attempt.mark_failed", err, { phase: "started" });
     // Bookkeeping only; an account deleted meanwhile has no row to write.
   }
 }
@@ -62,7 +64,8 @@ export async function markBackupAttemptFinished(
       where: { userId, pass },
       data: { finishedAt: at },
     });
-  } catch {
+  } catch (err) {
+    logCaught("backup.attempt.mark_failed", err, { phase: "finished" });
     // Bookkeeping only.
   }
 }
@@ -87,7 +90,8 @@ export async function readInterruptedBackupAttempts(
         )
         .map((row) => [row.userId, row.startedAt]),
     );
-  } catch {
+  } catch (err) {
+    logCaught("backup.attempt.read_failed", err);
     return new Map();
   }
 }
@@ -131,7 +135,8 @@ export async function readAccountsToTakeLast(
       select: { userId: true, startedAt: true, finishedAt: true },
     });
     return heldBackAccounts(rows);
-  } catch {
+  } catch (err) {
+    logCaught("backup.attempt.read_failed", err);
     return new Map();
   }
 }

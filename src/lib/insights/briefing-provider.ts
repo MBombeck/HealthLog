@@ -57,7 +57,7 @@ import { resolveJobReasoning } from "@/lib/ai/reasoning/controls";
  * correction did not).
  */
 export type BriefingCompletionStage =
-  "generate" | "json-retry" | "grounding-retry" | "reroll";
+  "generate" | "json-retry" | "grounding-retry" | "screen-retry" | "reroll";
 
 /**
  * Thrown when the reservation would push the user past the day's ceiling.

@@ -49,6 +49,7 @@ import type { EventType } from "@/lib/notifications/types";
 import { isCycleReminderClientManaged } from "@/lib/validations/notification-prefs";
 import { getEvent } from "@/lib/logging/context";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { logCaught } from "@/lib/logging/signal";
 
 /**
  * Local-time hour (0–23) at which the daily cycle reminder fires. 09:00 is
@@ -266,7 +267,10 @@ async function alreadyNotifiedToday(
       select: { id: true },
     });
     return row !== null;
-  } catch {
+  } catch (err) {
+    // Fail toward "not yet notified": a read failure must not silence the
+    // reminder for the day, but it has to be visible.
+    logCaught("cycle.reminder.dedupe_read_failed", err);
     return false;
   }
 }
@@ -548,7 +552,8 @@ async function hasObservedPeriodNearPrediction(
         delta >= -PERIOD_CONFIRM_GRACE_DAYS && delta <= PERIOD_SOON_LEAD_DAYS
       );
     });
-  } catch {
+  } catch (err) {
+    logCaught("cycle.reminder.period_read_failed", err);
     return false;
   }
 }

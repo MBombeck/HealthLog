@@ -1,6 +1,7 @@
 import { safeFetch } from "@/lib/safe-fetch";
 import { callTimeoutMs } from "./effective-timeout";
 import { annotate } from "@/lib/logging/context";
+import { emitSignal } from "@/lib/logging/signal";
 import type { AIProvider, CompletionParams, CompletionResult } from "./types";
 import {
   isCanonicalOpenAIEndpoint,
@@ -28,6 +29,7 @@ import {
   rememberJsonModeDialect,
 } from "./json-dialect";
 import { aiEgressPolicyFor } from "./local-host-allowlist";
+import { probeModelListing } from "./model-availability";
 import type { ReasoningEffort } from "./reasoning-effort";
 import {
   buildOpenAIMessages,
@@ -111,6 +113,33 @@ export class OpenAIClient implements AIProvider {
   constructor(config: OpenAIClientConfig) {
     this.config = config;
     this.type = config.providerType ?? "admin-key";
+  }
+
+  /**
+   * v1.42 — after a server error from an operator- or person-configured
+   * endpoint (never the canonical `api.openai.com`, which names a missing
+   * model in its own 404), check whether it still lists the configured
+   * model. A 4xx already carries its reason in the body; a 5xx from a proxy
+   * often carries none. See `model-availability.ts`.
+   */
+  private async modelNoLongerServed(status: number): Promise<boolean> {
+    if (status < 500) return false;
+    if (this.type === "codex") return false;
+    if (isCanonicalOpenAIEndpoint(this.config.baseUrl)) return false;
+    const listing = await probeModelListing({
+      baseUrl: this.config.baseUrl,
+      apiKey: this.config.apiKey,
+      model: this.config.model,
+      operatorTrusted: this.config.operatorTrusted,
+    });
+    if (listing === "not_listed") {
+      emitSignal({
+        action: "ai.provider.model_not_served",
+        level: "error",
+        meta: { provider: this.type, model: this.config.model, status },
+      });
+    }
+    return listing === "not_listed";
   }
 
   /**
@@ -306,8 +335,15 @@ export class OpenAIClient implements AIProvider {
         });
         return this.generateCompletion(params);
       }
+      // v1.42 — a proxy that stopped offering the configured model answers
+      // with a bare 500 that names nothing. Ask its model listing (free, no
+      // completion) and say so plainly when the name is gone, so the chain,
+      // the health card and the log name the actual fix.
+      const modelNotServed = await this.modelNoLongerServed(res.status);
       const err = new Error(
-        `${this.isGateway ? "OpenAI-compatible gateway" : "OpenAI"} request failed (${res.status})`,
+        modelNotServed
+          ? `${this.isGateway ? "OpenAI-compatible gateway" : "OpenAI"} request failed (${res.status}): model "${this.config.model}" is not offered by this endpoint`
+          : `${this.isGateway ? "OpenAI-compatible gateway" : "OpenAI"} request failed (${res.status})`,
       );
       // Keep the body in a structured field rather than the message so
       // Error.message stays short and the excerpt lands in dedicated log
@@ -317,6 +353,7 @@ export class OpenAIClient implements AIProvider {
         upstream: this.isGateway ? "openai-compatible" : "openai",
         model: this.config.model,
         bodyExcerpt,
+        ...(modelNotServed ? { modelNotServed: true } : {}),
       });
       throw err;
     }

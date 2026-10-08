@@ -33,6 +33,7 @@
 import { coachPromptCacheKey } from "@/lib/ai/coach/prompt-cache-key";
 import type { CoachHistoryReach } from "@/lib/ai/coach/history-reach";
 import { annotate } from "@/lib/logging/context";
+import { emitSignal } from "@/lib/logging/signal";
 import type { Locale } from "@/lib/i18n/config";
 import { runRawCompletionWithFallback } from "@/lib/ai/provider-runner";
 import type { ProviderChainResolved } from "@/lib/ai/provider-runner";
@@ -295,6 +296,7 @@ export async function runCoachToolLoop(args: {
   let planProposal: CoachPlanProposal | undefined;
   let callCount = 0;
   let stopReason: CoachStopReason | null = null;
+  let stopSignalled = false;
   let progressStalled = false;
 
   for (let round = 1; ; round += 1) {
@@ -308,6 +310,23 @@ export async function runCoachToolLoop(args: {
     }
     const isFinal = stopReason !== null;
     if (stopReason) {
+      // v1.42 — a turn cut short by its budget is not a failure, but an
+      // operator who sees answers getting thin needs to count it. It used to
+      // be one `stop` meta key on the turn's info line.
+      if (!stopSignalled && stopReason !== "no_progress") {
+        stopSignalled = true;
+        emitSignal({
+          action: "coach.turn.budget_stop",
+          level: "warn",
+          meta: {
+            reason: stopReason,
+            round,
+            spent: budget.spent(),
+            elapsedMs: budget.elapsedMs(),
+            payer: budget.payer,
+          },
+        });
+      }
       const label = stopActivityLabel(locale, stopReason);
       const id = activity.start({
         phase: "stop",

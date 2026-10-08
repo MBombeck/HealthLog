@@ -12,7 +12,8 @@
  * The `data` payload is the flat `Derived<T>` union so iOS can decode +
  * combine values across metrics: `{ metric, status, value?, coverage,
  * confidence?, provenance, reason? }`. Numbers are pure compute over the
- * rollup tier (Tier-1, no narrative) — no provider call, no cache table.
+ * rollup tier (Tier-1, no narrative) — no provider call, no cache table;
+ * since v1.42 the in-process derived cache, as the batch route uses.
  *
  * Wave 1 implements `VITALS_BASELINE` end-to-end; other registered ids
  * return a `not_implemented` insufficient until their compute lands in a
@@ -36,6 +37,7 @@ import { DERIVED_MAX_WINDOW_DAYS } from "@/lib/insights/derived/types";
 import { resolveDerivedAssessment } from "@/lib/insights/derived/derived-assessment-ai";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { aiCapabilityToServe } from "@/lib/ai/capabilities/gate";
+import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -122,14 +124,31 @@ export const GET = apiHandler(async (request: NextRequest) => {
     if (!gate.enabled) return gate.response;
   }
 
-  const profile = await loadBaselineProfile(prisma, user.id);
-  const derived = await computeDerivedMetric({
-    metric,
-    userId: user.id,
-    profile,
-    type: parsed.data.type ?? null,
-    windowDays: parsed.data.windowDays,
-  });
+  // v1.42 — read-through the per-user derived cache with
+  // stale-while-revalidate, like the batch grid beside it. This single-score
+  // read was the one derived surface that recomputed on every request: the
+  // score detail sheet asks for it on each open, and a composite walks the
+  // rollup tier once per input. Same bucket, so the invalidation the batch
+  // relies on covers it unchanged (measurement writes evict or mark the
+  // `${userId}|` prefix stale, mood writes mark it stale). The module gate
+  // above and the AI assessment below stay per request.
+  const type = parsed.data.type ?? null;
+  const windowDays = parsed.data.windowDays;
+  const derived = await cachedSwr(
+    caches.insightsDerived as ServerCache<
+      Awaited<ReturnType<typeof computeDerivedMetric>>
+    >,
+    `${user.id}|single|${metric}|${type ?? ""}|${windowDays ?? ""}`,
+    async () =>
+      computeDerivedMetric({
+        metric,
+        userId: user.id,
+        profile: await loadBaselineProfile(prisma, user.id),
+        type,
+        windowDays,
+      }),
+    annotate,
+  );
 
   annotate({
     action: { name: "insights.derived" },

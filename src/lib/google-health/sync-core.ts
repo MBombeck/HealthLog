@@ -59,6 +59,16 @@ const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
  */
 export const GOOGLE_HEALTH_DEFAULT_OVERLAP_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * v1.42 (#1023) — the overlap for intraday samples (heart rate, one point a
+ * minute). The 24 h overlap exists for daily summaries and sleep, which
+ * Google re-scores after the fact; a minute sample is final when it is
+ * written. Re-reading a whole day of it every hour meant 38 to 40 pages per
+ * sync on a per-minute stream, which a slow host felt. Two hours still
+ * covers a watch that syncs to the phone late.
+ */
+export const GOOGLE_HEALTH_INTRADAY_OVERLAP_MS = 2 * 60 * 60 * 1000;
+
 export interface GoogleHealthTokenInfo {
   accessToken: string;
   connection: { id: string; googleUserId: string };
@@ -354,6 +364,12 @@ export interface GoogleHealthResourceSyncOptions {
   fullSync?: boolean;
   /** The incremental lower bound, snapshotted once by the orchestrator. */
   start?: Date;
+  /**
+   * v1.42 — the incremental lower bound for intraday samples, from the same
+   * snapshot with `GOOGLE_HEALTH_INTRADAY_OVERLAP_MS`. Undefined on a full
+   * run, like `start`; a resource that does not set it falls back to `start`.
+   */
+  intradayStart?: Date;
   /**
    * When true, `upsertGoogleHealthMeasurements` writes the rows but SKIPS the
    * inline per-(type,day) DAY-rollup recompute + status-insight invalidate,

@@ -115,6 +115,12 @@ export interface WideEvent {
     duration_ms: number;
     status?: number;
     error?: string;
+    /**
+     * v1.42 — an expected non-2xx the caller recovers from by design (a
+     * filter dialect probe), recorded without `error` so a query for
+     * failed calls does not find it.
+     */
+    note?: string;
   }>;
 
   // Hintergrundaufgabe (nur bei kind === "background")

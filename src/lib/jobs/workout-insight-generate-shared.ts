@@ -14,6 +14,7 @@
  */
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
+import { logCaught } from "@/lib/logging/signal";
 
 export const WORKOUT_INSIGHT_GENERATE_QUEUE = "workout-insight-generate";
 
@@ -57,11 +58,12 @@ export async function enqueueWorkoutInsight(
       retryBackoff: true,
     });
     return { enqueued: true };
-  } catch {
+  } catch (err) {
     annotate({
       action: { name: "workouts.insight.enqueue_failed" },
       meta: { workoutId: payload.workoutId },
     });
+    logCaught("workouts.insight.enqueue_failed", err);
     return { enqueued: false };
   }
 }

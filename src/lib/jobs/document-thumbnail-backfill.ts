@@ -29,6 +29,7 @@ import { nativeCanvasSupported } from "@/lib/documents/native-canvas-support";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { enqueueDocumentThumbnail } from "@/lib/jobs/document-thumbnail";
 import { annotate } from "@/lib/logging/context";
+import { logCaught } from "@/lib/logging/signal";
 
 export const DOCUMENT_THUMBNAIL_BACKFILL_QUEUE = "document-thumbnail-backfill";
 
@@ -211,7 +212,8 @@ export async function enqueueBootTimeThumbnailBackfill(): Promise<{
         },
       );
       if (jobId) enqueued += 1;
-    } catch {
+    } catch (err) {
+      logCaught("documents.thumbnail.backfill_enqueue_failed", err);
       // A transient send failure is a no-op — the next boot re-discovers the
       // still-missing thumbnails.
     }

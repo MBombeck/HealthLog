@@ -288,12 +288,106 @@ export async function refreshDeviceTokens(
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(
-      `Codex device-token refresh failed (${res.status}): ${body}`,
-    );
+    throw codexRefreshError(res.status, body);
   }
   const tokens = (await res.json()) as RawTokenResponse;
   return buildCreds(tokens, refreshToken);
+}
+
+/**
+ * OAuth error codes on the refresh grant that mean the stored refresh token
+ * is dead for good: revoked, expired, already rotated, or issued to another
+ * client. Retrying cannot help; only signing in again can.
+ */
+const DEAD_REFRESH_TOKEN_CODES: ReadonlySet<string> = new Set([
+  "invalid_grant",
+  "invalid_refresh_token",
+  "refresh_token_expired",
+  "refresh_token_reused",
+  "refresh_token_invalidated",
+  "invalid_token",
+]);
+
+/**
+ * A failed refresh of the Codex OAuth token.
+ *
+ * The refresh used to throw a bare `Error` with the status only in its
+ * message. The chain runner reads `httpStatus` to classify a failure, so a
+ * dead refresh token read as a network error: the health ledger recorded
+ * `hard_failed` instead of `auth_failed`, nothing told the person to
+ * reconnect, and every night tried the same dead token again.
+ *
+ * `httpStatus` is 401 whenever the grant itself is dead (whatever status the
+ * token endpoint chose to send it with, 400 for `invalid_grant` included), so
+ * every classifier downstream (`classifyFailure`, `AllProvidersFailedError`,
+ * the briefing failure marker) reads it as an expired credential. Any other
+ * refusal keeps the endpoint's status. The body is not quoted: only the
+ * OAuth error code, which is the endpoint's vocabulary, rides on the error.
+ */
+export class CodexRefreshError extends Error {
+  readonly httpStatus: number;
+  readonly upstream = "codex";
+  /** True when the person has to sign in to ChatGPT again. */
+  readonly credentialExpired: boolean;
+  /** The OAuth `error` code from the response body, when it had one. */
+  readonly oauthError: string | null;
+
+  constructor(status: number, oauthError: string | null) {
+    const credentialExpired =
+      status === 401 ||
+      status === 403 ||
+      (oauthError !== null && DEAD_REFRESH_TOKEN_CODES.has(oauthError));
+    super(
+      credentialExpired
+        ? `Codex sign-in expired (${status}${oauthError ? ` ${oauthError}` : ""}); reconnect ChatGPT`
+        : `Codex device-token refresh failed (${status}${oauthError ? ` ${oauthError}` : ""})`,
+    );
+    this.name = "CodexRefreshError";
+    this.credentialExpired = credentialExpired;
+    this.oauthError = oauthError;
+    this.httpStatus = credentialExpired && status !== 403 ? 401 : status;
+  }
+}
+
+/**
+ * The stored Codex credential cannot be used at all (missing refresh token,
+ * or storage that no longer decrypts). Same contract as a dead refresh token:
+ * the person has to reconnect.
+ */
+export function codexReconnectRequired(reason: string): CodexRefreshError {
+  const err = new CodexRefreshError(401, null);
+  err.message = `Codex sign-in unusable (${reason}); reconnect ChatGPT`;
+  return err;
+}
+
+/** Read the OAuth error code from a token-endpoint error body. */
+function readOAuthErrorCode(body: string): string | null {
+  try {
+    const parsed = JSON.parse(body) as {
+      error?: unknown;
+      code?: unknown;
+    };
+    const error = parsed.error;
+    if (typeof error === "string") return normaliseCode(error);
+    if (error && typeof error === "object") {
+      const code = (error as { code?: unknown; type?: unknown }).code;
+      if (typeof code === "string") return normaliseCode(code);
+    }
+    if (typeof parsed.code === "string") return normaliseCode(parsed.code);
+  } catch {
+    // Not JSON: no code to read. The status still classifies the failure.
+  }
+  return null;
+}
+
+/** Codes are the endpoint's own vocabulary; keep them short and plain. */
+function normaliseCode(code: string): string | null {
+  const trimmed = code.trim().toLowerCase();
+  return /^[a-z0-9_.-]{1,64}$/.test(trimmed) ? trimmed : null;
+}
+
+function codexRefreshError(status: number, body: string): CodexRefreshError {
+  return new CodexRefreshError(status, readOAuthErrorCode(body));
 }
 
 // ─── Encrypted-storage codec ────────────────────────────────────────

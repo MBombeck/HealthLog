@@ -26,6 +26,12 @@ vi.mock("../coach/budget", async () => {
   };
 });
 
+// v1.42 — the per-hop failure lines.
+const emitSignal = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/logging/signal", () => ({
+  emitSignal: (...a: unknown[]) => emitSignal(...a),
+}));
+
 vi.mock("../provider-health-ledger", async () => {
   const actual = await vi.importActual<
     typeof import("../provider-health-ledger")
@@ -52,8 +58,11 @@ import {
 } from "../provider-runner";
 import {
   AUTH_FAILURE_COOLDOWN_MS,
+  PROVIDER_PAUSE_BASE_MS,
+  PROVIDER_PAUSE_THRESHOLD,
   createInMemoryProviderHealthLedger,
 } from "../provider-health-ledger";
+import { CodexRefreshError } from "../codex-oauth";
 
 const VALID_RESPONSE = JSON.stringify({
   summary: "ok",
@@ -113,6 +122,7 @@ function err(status: number, msg = "boom"): Error & { httpStatus: number } {
 
 beforeEach(() => {
   clearLastWorkingProviderCache();
+  emitSignal.mockClear();
   budgetState.spent = 0;
   budgetState.operatorSpent = 0;
 });
@@ -944,5 +954,147 @@ describe("runRawCompletionWithFallback — operator-cost cap at hop time", () =>
     // The user's own key is not the operator's money — the cap does not
     // apply and the call proceeds regardless of the recorded spend.
     expect(outcome.workingProvider.providerType).toBe("openai");
+  });
+});
+
+describe("v1.42 — failed hops get their own line", () => {
+  function linkSignals() {
+    return emitSignal.mock.calls
+      .map(
+        (c) =>
+          c[0] as {
+            action: string;
+            level: string;
+            meta: Record<string, unknown>;
+          },
+      )
+      .filter((x) => x.action === "ai.chain.link_failed");
+  }
+
+  it("logs a hop the next provider covered at warn, with a stable cause", async () => {
+    const admin = new ScriptedProvider({
+      type: "admin-key",
+      script: [{ ok: false, error: err(500) }],
+    });
+    const codex = new ScriptedProvider({
+      type: "codex",
+      script: [{ ok: true }],
+    });
+    await runRawCompletionWithFallback({
+      userId: "u-signal-warn",
+      surface: "job",
+      providers: [
+        { providerType: "admin-openai", instance: admin },
+        { providerType: "codex", instance: codex },
+      ],
+      params: singleUserTurn({ system: "s", user: "u" }),
+    });
+    expect(linkSignals()).toEqual([
+      expect.objectContaining({
+        level: "warn",
+        meta: expect.objectContaining({
+          provider: "admin-openai",
+          status: 500,
+          cause: "upstream_5xx",
+          recovered: true,
+        }),
+      }),
+    ]);
+  });
+
+  it("logs every hop at error when nothing answered", async () => {
+    const a = new ScriptedProvider({
+      type: "codex",
+      script: [
+        { ok: false, error: new CodexRefreshError(401, "invalid_grant") },
+      ],
+    });
+    const b = new ScriptedProvider({
+      type: "admin-key",
+      script: [
+        {
+          ok: false,
+          error: Object.assign(err(500), { modelNotServed: true }),
+        },
+      ],
+    });
+    await expect(
+      runRawCompletionWithFallback({
+        userId: "u-signal-error",
+        surface: "job",
+        providers: [
+          { providerType: "codex", instance: a },
+          { providerType: "admin-openai", instance: b },
+        ],
+        params: singleUserTurn({ system: "s", user: "u" }),
+      }),
+    ).rejects.toMatchObject({ primaryCredentialExpired: true });
+    const signals = linkSignals();
+    expect(signals.map((x) => x.level)).toEqual(["error", "error"]);
+    expect(signals.map((x) => x.meta.cause)).toEqual([
+      "credential_expired",
+      "model_not_served",
+    ]);
+  });
+
+  it("records a dead Codex refresh token as an auth failure, not a network one", async () => {
+    const ledger = createInMemoryProviderHealthLedger();
+    const codex = new ScriptedProvider({
+      type: "codex",
+      script: [
+        { ok: false, error: new CodexRefreshError(400, "invalid_grant") },
+      ],
+    });
+    await expect(
+      runRawCompletionWithFallback({
+        userId: "u-dead-refresh",
+        surface: "job",
+        providers: [{ providerType: "codex", instance: codex }],
+        params: singleUserTurn({ system: "s", user: "u" }),
+        ledger,
+      }),
+    ).rejects.toBeInstanceOf(AllProvidersFailedError);
+    expect(ledger.inspect("u-dead-refresh").get("codex")?.reason).toBe(
+      "credential_expired",
+    );
+  });
+
+  it("walks a paused provider last, so the healthy one answers without the failing hop", async () => {
+    vi.useFakeTimers();
+    const ledger = createInMemoryProviderHealthLedger();
+    for (let i = 0; i < PROVIDER_PAUSE_THRESHOLD; i += 1) {
+      await ledger.recordFailure("u-paused", "admin-openai", 500);
+    }
+    const admin = new ScriptedProvider({
+      type: "admin-key",
+      script: [{ ok: true }],
+    });
+    const codex = new ScriptedProvider({
+      type: "codex",
+      script: [{ ok: true }],
+    });
+    const run = () =>
+      runRawCompletionWithFallback({
+        userId: "u-paused",
+        surface: "job",
+        providers: [
+          { providerType: "admin-openai", instance: admin },
+          { providerType: "codex", instance: codex },
+        ],
+        params: singleUserTurn({ system: "s", user: "u" }),
+        ledger,
+      });
+
+    // Well past the old five-minute backoff: still paused, never asked.
+    vi.advanceTimersByTime(20 * 60 * 1000);
+    clearLastWorkingProviderCache();
+    expect((await run()).workingProvider.providerType).toBe("codex");
+    expect(admin.callCount).toBe(0);
+
+    // Once the pause lifts it leads the chain again and answers.
+    vi.advanceTimersByTime(PROVIDER_PAUSE_BASE_MS);
+    clearLastWorkingProviderCache();
+    expect((await run()).workingProvider.providerType).toBe("admin-openai");
+    expect(admin.callCount).toBe(1);
   });
 });

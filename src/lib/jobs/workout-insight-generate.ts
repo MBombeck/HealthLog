@@ -79,6 +79,7 @@ import {
   WORKOUT_INSIGHT_GENERATE_QUEUE,
   type WorkoutInsightGeneratePayload,
 } from "./workout-insight-generate-shared";
+import { caughtAs, logCaught } from "@/lib/logging/signal";
 
 export { WORKOUT_INSIGHT_GENERATE_CONCURRENCY, WORKOUT_INSIGHT_GENERATE_QUEUE };
 export type { WorkoutInsightGeneratePayload };
@@ -418,12 +419,12 @@ export async function runWorkoutInsightGenerate(
   })().catch(async (err) => {
     // Nothing could have reached a provider. Delete the reservation so a
     // backed-off retry can safely reclaim both ownership and daily capacity.
-    await releaseClaim().catch(() => {});
+    await releaseClaim().catch(caughtAs("workouts.insight.cleanup_failed"));
     throw err;
   });
 
   if (prepared.status === "unchanged") {
-    await releaseClaim().catch(() => {});
+    await releaseClaim().catch(caughtAs("workouts.insight.cleanup_failed"));
     annotate({
       action: { name: "workouts.insight.skipped" },
       meta: { workoutId, reason: "unchanged" },
@@ -472,13 +473,18 @@ export async function runWorkoutInsightGenerate(
       temperature: AI_BUDGETS.workoutInsight.temperature,
       maxTokens: AI_BUDGETS.workoutInsight.maxTokens,
     });
-  } catch {
-    await finishTerminalAttempt().catch(() => {});
+  } catch (err) {
+    logCaught("workouts.insight.provider_failed", err, { workoutId });
+    await finishTerminalAttempt().catch(
+      caughtAs("workouts.insight.cleanup_failed"),
+    );
     return { status: "skipped", reason: "provider_uncertain" };
   }
 
   if (outcome.kind !== "ok") {
-    await finishTerminalAttempt().catch(() => {});
+    await finishTerminalAttempt().catch(
+      caughtAs("workouts.insight.cleanup_failed"),
+    );
     annotate({
       action: { name: "workouts.insight.skipped" },
       meta: { workoutId, reason: outcome.kind },
@@ -488,7 +494,9 @@ export async function runWorkoutInsightGenerate(
 
   const screened = finalizeStatusSummary(outcome.content, prepared.locale);
   if (!screened.ok || !screened.text) {
-    await finishTerminalAttempt().catch(() => {});
+    await finishTerminalAttempt().catch(
+      caughtAs("workouts.insight.cleanup_failed"),
+    );
     annotate({
       action: { name: "workouts.insight.outbound_blocked" },
       meta: { workoutId, reason: screened.ok ? "empty" : screened.reason },
@@ -531,8 +539,11 @@ export async function runWorkoutInsightGenerate(
         throw new Error("Workout insight generation claim was lost");
       }
     });
-  } catch {
-    await finishTerminalAttempt().catch(() => {});
+  } catch (err) {
+    logCaught("workouts.insight.persist_failed", err, { workoutId });
+    await finishTerminalAttempt().catch(
+      caughtAs("workouts.insight.cleanup_failed"),
+    );
     return { status: "skipped", reason: "persistence_uncertain" };
   }
 

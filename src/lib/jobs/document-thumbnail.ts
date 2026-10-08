@@ -33,6 +33,7 @@ import { generateThumbnail } from "@/lib/documents/thumbnail";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { annotate } from "@/lib/logging/context";
+import { logCaught } from "@/lib/logging/signal";
 
 export const DOCUMENT_THUMBNAIL_QUEUE = "document-thumbnail";
 
@@ -213,6 +214,7 @@ export async function enqueueDocumentThumbnail(
       action: { name: "documents.thumbnail.enqueueFailed" },
       meta: { documentId, reason: err instanceof Error ? err.name : "unknown" },
     });
+    logCaught("documents.thumbnail.enqueue_failed", err);
     return { enqueued: false };
   }
 }
