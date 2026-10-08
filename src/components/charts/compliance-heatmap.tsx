@@ -375,6 +375,8 @@ export function ComplianceHeatmap({
             points={activeCells.map((cell) => ({
               date: cell.dateKey,
               timestamp: dayAnchor(cell.dateKey),
+              taken: cell.data.taken,
+              expected: cell.data.expected,
               rate:
                 cell.data.expected > 0
                   ? Math.min(
@@ -383,8 +385,16 @@ export function ComplianceHeatmap({
                     )
                   : undefined,
             }))}
-            columns={[{ key: "rate", label: t("medications.compliance") }]}
-            formatValue={(value) => `${value} %`}
+            columns={[
+              { key: "taken", label: t("medications.taken") },
+              { key: "expected", label: t("doctorReport.colExpected") },
+              {
+                key: "rate",
+                label: t("medications.compliance"),
+                format: (value) => `${value} %`,
+              },
+            ]}
+            formatValue={(value) => String(value)}
             formatDate={(date) => formatDay(dateOnlyKey(date))}
             bucket="day"
             metricLabel={t("insights.medicationCompliance")}

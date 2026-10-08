@@ -63,6 +63,11 @@ export interface ChartDataTableColumn {
   key: string;
   /** Resolved column label, from the chart's own series-label helper. */
   label: string;
+  /**
+   * The column's own formatter, where its values are not the chart's (a
+   * count beside a rate). Defaults to the table's `formatValue`.
+   */
+  format?: (value: number) => string;
 }
 
 export interface ChartDataTableProps {
@@ -229,7 +234,7 @@ export function ChartDataTable({
                           </span>
                         </>
                       ) : (
-                        formatValue(numeric)
+                        (column.format ?? formatValue)(numeric)
                       )}
                     </TableCell>
                   );

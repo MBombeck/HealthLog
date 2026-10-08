@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { I18nProvider } from "@/lib/i18n/context";
 import {
@@ -31,9 +32,13 @@ import {
  *     path stays render-safe)
  */
 
+// v1.42 — the chart's row of day dots reads the day index through
+// react-query, so the static render carries a client (it never fetches).
 function render(node: React.ReactNode, locale: "en" | "de" = "en") {
   return renderToStaticMarkup(
-    <I18nProvider initialLocale={locale}>{node}</I18nProvider>,
+    <QueryClientProvider client={new QueryClient()}>
+      <I18nProvider initialLocale={locale}>{node}</I18nProvider>
+    </QueryClientProvider>,
   );
 }
 

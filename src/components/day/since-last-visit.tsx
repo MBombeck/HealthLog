@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useQueries } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
   CircleDashed,
@@ -24,8 +24,7 @@ import type {
   DateKey,
   DayEventKind,
   DayNotable,
-  DayResponse,
-  DaySectionKey,
+  DayNotableWindowResponse,
 } from "@/lib/day/contract";
 import {
   useDisplayTimezone,
@@ -37,9 +36,8 @@ import { queryKeys } from "@/lib/query-keys";
 
 import { DAY_SECTION_LABEL, useNotableText } from "./day-sections";
 import { DayLink } from "./day-link";
-import { dateKeyOfInstant, shiftDateKey, daysBetween } from "./day-url";
+import { dateKeyOfInstant } from "./day-url";
 import { tileKeyOf } from "./day-values-model";
-import { useDayIndex } from "./use-day";
 import { useDayValueFormat } from "./use-day-value-format";
 import { useTodayKey } from "./use-today-key";
 
@@ -50,34 +48,11 @@ import { useTodayKey } from "./use-today-key";
  * opening its day. Compiled from the record without any judgement; the
  * wording is the day view's own.
  *
- * Built from what the day routes already answer: the index names the days
- * that carry a context change or a notable observation, and those days (at
- * most {@link MAX_DAYS_READ}) are read for their entries. Nothing is
- * recomputed here.
+ * One read, `GET /api/day/notable` for the window from the last visit to
+ * today: the server lists every context change in it (a dose change always,
+ * however quiet the day around it) and every notable observation. Nothing is
+ * recomputed here; this only spells the rows.
  */
-
-/** Sections whose presence alone makes a day worth reading here. */
-const CONTEXT_SECTIONS: readonly DaySectionKey[] = [
-  "illness",
-  "labs",
-  "vaccinations",
-  "visits",
-  "allergies",
-];
-
-/** Entry kinds that are a change of context, the rows this block lists. */
-const CONTEXT_EVENTS: ReadonlySet<DayEventKind> = new Set<DayEventKind>([
-  "doseChange",
-  "medicationStart",
-  "medicationEnd",
-  "pauseStart",
-  "courseStart",
-  "illnessOnset",
-  "allergyOnset",
-  "labResult",
-  "procedure",
-  "vaccination",
-]);
 
 const EVENT_ICON: Partial<Record<DayEventKind, LucideIcon>> = {
   doseChange: Pill,
@@ -92,12 +67,10 @@ const EVENT_ICON: Partial<Record<DayEventKind, LucideIcon>> = {
   vaccination: Syringe,
 };
 
-/** Days read for their entries, newest kept when there are more. */
-export const MAX_DAYS_READ = 12;
 /** Rows shown before "All". */
 export const VISIBLE_ROWS = 5;
 
-interface PrepRow {
+export interface PrepRow {
   key: string;
   date: DateKey;
   Icon: LucideIcon;
@@ -105,28 +78,41 @@ interface PrepRow {
   meta: string | null;
 }
 
-/** The days to read: notable ones first, then context days, newest first. */
-export function pickPreparationDays(
-  index: {
-    days: Record<string, readonly string[]>;
-    notable: readonly string[];
+/**
+ * The window's rows, oldest first: each context change as the server named
+ * it, each notable observation spelled by the caller. A first reading of a
+ * kind is left out here (it says nothing about the stretch since the visit).
+ */
+export function preparationRows(
+  window: Pick<DayNotableWindowResponse, "observations" | "changes">,
+  spell: {
+    notableTitle: (notable: DayNotable) => string;
+    notableText: (notable: DayNotable) => string | null;
+    countMeta: (count: number) => string | null;
   },
-  max = MAX_DAYS_READ,
-): DateKey[] {
-  const notable = [...new Set(index.notable)].sort().reverse();
-  const context = Object.entries(index.days)
-    .filter(([, sections]) =>
-      sections.some((s) => CONTEXT_SECTIONS.includes(s as DaySectionKey)),
-    )
-    .map(([day]) => day)
-    .sort()
-    .reverse();
-  const picked: DateKey[] = [];
-  for (const day of [...notable, ...context]) {
-    if (!picked.includes(day)) picked.push(day);
-    if (picked.length >= max) break;
+): PrepRow[] {
+  const rows: PrepRow[] = [];
+  for (const change of window.changes) {
+    rows.push({
+      key: `${change.kind}-${change.id}-${change.date}`,
+      date: change.date,
+      Icon: EVENT_ICON[change.kind] ?? FileText,
+      title: change.title,
+      meta: spell.countMeta(change.count),
+    });
   }
-  return picked.sort();
+  for (const notable of window.observations) {
+    if (notable.kind === "firstValue") continue;
+    rows.push({
+      key: `notable-${notable.date}-${notable.kind}-${notable.type ?? ""}`,
+      date: notable.date,
+      Icon: notable.kind === "gap" ? CircleDashed : Activity,
+      title: spell.notableTitle(notable),
+      meta: spell.notableText(notable),
+    });
+  }
+  // A stable sort: the server's order holds within a day.
+  return rows.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 }
 
 export function SinceLastVisit({
@@ -147,20 +133,16 @@ export function SinceLastVisit({
   const [showAll, setShowAll] = useState(false);
 
   const lastDay = dateKeyOfInstant(last.occurredAt, timeZone);
-  // The window starts the day after the last visit and ends today; the index
-  // answers at most a year at a time, which is the stretch that matters here.
-  const from =
-    daysBetween(shiftDateKey(lastDay, 1), today) > 365
-      ? shiftDateKey(today, -365)
-      : shiftDateKey(lastDay, 1);
-  const index = useDayIndex(from, today, from <= today);
-  const days = index.data ? pickPreparationDays(index.data) : [];
-  const reads = useQueries({
-    queries: days.map((day) => ({
-      queryKey: queryKeys.day(day),
-      queryFn: () => apiGet<DayResponse>(`/api/day/${day}`),
-      staleTime: 5 * 60_000,
-    })),
+  // From the last visit's own day (a dose changed at the visit belongs to
+  // what the next one should know) to today. The server caps the span.
+  const window = useQuery({
+    queryKey: queryKeys.dayNotable(lastDay, today),
+    queryFn: () => {
+      const params = new URLSearchParams({ from: lastDay, to: today });
+      return apiGet<DayNotableWindowResponse>(`/api/day/notable?${params}`);
+    },
+    enabled: lastDay <= today,
+    staleTime: 5 * 60_000,
   });
 
   // "Blood pressure 152/94 mmHg": the reading a notable day is about, in the
@@ -186,37 +168,17 @@ export function SinceLastVisit({
     return `${label} ${shown.value}${shown.unit ? ` ${shown.unit}` : ""}`;
   };
 
-  const rows: PrepRow[] = [];
-  reads.forEach((read, i) => {
-    const day = days[i];
-    if (!day || !read.data) return;
-    for (const event of read.data.events) {
-      if (!CONTEXT_EVENTS.has(event.kind)) continue;
-      rows.push({
-        key: `${event.kind}-${event.id}`,
-        date: day,
-        Icon: EVENT_ICON[event.kind] ?? FileText,
-        title: event.title,
-        meta: event.meta,
-      });
-    }
-    for (const notable of read.data.notable) {
-      if (notable.kind === "firstValue") continue;
-      rows.push({
-        key: `notable-${day}-${notable.kind}-${notable.type ?? ""}`,
-        date: day,
-        Icon: notable.kind === "gap" ? CircleDashed : Activity,
-        title: notableTitle(notable),
-        meta: notableText(notable),
-      });
-    }
-  });
-  rows.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  const rows = window.data
+    ? preparationRows(window.data, {
+        notableTitle,
+        notableText,
+        countMeta: (count) =>
+          count > 1 ? tCount("day.countEntries", count) : null,
+      })
+    : [];
 
-  const loading =
-    index.isPending ||
-    reads.some((read) => read.isPending && read.fetchStatus !== "idle");
-  const failed = index.isError || reads.some((read) => read.isError);
+  const loading = window.isPending && window.fetchStatus !== "idle";
+  const failed = window.isError;
   if (!loading && !failed && rows.length === 0) return null;
   // A preparation that could not be read is left out rather than shown half:
   // the visit card stands on its own, and the day links stay everywhere else.

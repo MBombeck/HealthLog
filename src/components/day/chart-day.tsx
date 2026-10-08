@@ -8,7 +8,7 @@ import { dateOnlyKey } from "@/lib/tz/date-only";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
-import { openDay, useOpenDay, type DayFocus } from "./day-layer-controller";
+import { useOpenDay } from "./day-layer-controller";
 import { isOpenableDay } from "./day-url";
 import { useDayIndex } from "./use-day";
 import { useTodayKey } from "./use-today-key";
@@ -57,19 +57,6 @@ export function useCoarsePointer(): boolean {
  */
 export function chartPointDayKey(timestamp: number): DateKey {
   return dateOnlyKey(new Date(timestamp));
-}
-
-/** Open the day of a chart point, carrying the value as the day's focus. */
-export function openChartDay(
-  timestamp: number,
-  focus: Omit<DayFocus, "date"> | null,
-  trigger?: HTMLElement | null,
-): void {
-  const date = chartPointDayKey(timestamp);
-  openDay(date, {
-    focus: focus ? { ...focus, date } : null,
-    trigger: trigger ?? null,
-  });
 }
 
 /** The tooltip's way to the day on a touch screen. */

@@ -1760,7 +1760,6 @@ export function HealthChart({
       : [],
     focusFor: (index) => dayFocusFor(dayLinkSource?.[index]),
   });
-  const coarsePointer = chartDays.coarse;
   const openDayIndex = chartDays.openIndex;
   const openDayPoint =
     openDayIndex !== undefined ? chartData?.[openDayIndex] : undefined;
