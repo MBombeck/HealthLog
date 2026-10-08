@@ -250,7 +250,10 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "measurement.restore.invalid",
       "measurement.update.server_owned_source",
     ],
-    medication: ["medication.intake.import.invalid_format"],
+    medication: [
+      "medication.intake.import.invalid_format",
+      "medication.intake.notTracked",
+    ],
     medications: [
       "medications.category.invalid",
       "medications.category.limitReached",
@@ -307,6 +310,12 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "onboarding.restart.invalid",
       "onboarding.restart.rateLimited",
       "onboarding.tour.invalid",
+    ],
+    passkey: [
+      "passkey.challenge.expired",
+      "passkey.response.invalid",
+      "passkey.unknown",
+      "passkey.verification.failed",
     ],
     personal_records: ["personal_records.invalid_query"],
     practitioner: ["practitioner.invalid"],

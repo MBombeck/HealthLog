@@ -37,7 +37,7 @@ import {
   settleRefusedRecordSessionTransition,
 } from "@/lib/query-keys/record-session-transition";
 import type { AccountAccess } from "@/lib/sharing/account-access-view";
-import { parseAccountAccess } from "@/lib/sharing/account-access-schema";
+import { parseAccountAccess } from "@/lib/sharing/account-access-parse";
 
 /**
  * v1.36.0 — an account with no sharing at all. The shape `fetchMe` falls back

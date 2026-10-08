@@ -7,6 +7,7 @@ import {
   buildCompliancePayload,
   complianceCacheKey,
   type CompliancePayload,
+  type CompliancePayloadWire,
 } from "@/lib/medications/compliance-payload";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -113,6 +114,16 @@ export const GET = apiHandler(
           },
     });
 
-    return apiSuccess(payload);
+    // The report windows ride the cached cell for the batched read only; this
+    // route's published shape does not carry them.
+    const wire: CompliancePayloadWire = {
+      applicable: payload.applicable,
+      notApplicableReason: payload.notApplicableReason,
+      compliance7: payload.compliance7,
+      compliance30: payload.compliance30,
+      dailyCompliance: payload.dailyCompliance,
+      complianceDisplay: payload.complianceDisplay,
+    };
+    return apiSuccess(wire);
   },
 );

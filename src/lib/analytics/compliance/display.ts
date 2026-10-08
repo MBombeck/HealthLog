@@ -496,9 +496,20 @@ export function calculateCompliance(
  * `[ledgerFrom, now]`; the caller carves the 90-day heatmap out of it by
  * filtering on `row.at`.
  */
+/**
+ * The report windows a client may ask the batched compliance read for
+ * (`GET /api/medications/compliance?days=N`), beyond the 7 and 30 days every
+ * payload carries. Each is a suffix of the 365-day ledger window, so all of
+ * them are tallies over the rows the bundle already minted.
+ */
+export const COMPLIANCE_REPORT_DAYS = [30, 60, 90, 180, 365] as const;
+export type ComplianceReportDays = (typeof COMPLIANCE_REPORT_DAYS)[number];
+
 export interface MedicationComplianceBundle {
   compliance7: ComplianceResult;
   compliance30: ComplianceResult;
+  /** One result per report window, keyed by its length in days. */
+  reportWindows: Record<ComplianceReportDays, ComplianceResult>;
   complianceDisplay: ComplianceDisplay;
   /** Unified ledger rows over `[ledgerFrom, now]`, chronological. */
   ledgerRows: DoseHistoryRow[];
@@ -704,9 +715,17 @@ export function buildMedicationComplianceBundle(
     currentDose,
   };
 
+  const reportWindows = Object.fromEntries(
+    COMPLIANCE_REPORT_DAYS.map((days) => [
+      days,
+      days === 30 ? compliance30 : resultForWindow(days),
+    ]),
+  ) as Record<ComplianceReportDays, ComplianceResult>;
+
   return {
     compliance7,
     compliance30,
+    reportWindows,
     complianceDisplay,
     ledgerRows,
     ledgerFrom,

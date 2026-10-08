@@ -410,6 +410,23 @@ describe("computeMoodAggregates", () => {
     ]);
     expect(agg.stability).toBeNull();
   });
+
+  it("scores stability per trailing window, so a steady month after a turbulent year reads steady", () => {
+    // Days 0..29 sit at 4; days 30..119 swing between 1 and 5.
+    const entries: MoodAggregateEntry[] = [];
+    for (let d = 0; d < 30; d++) entries.push(entry(d, 4));
+    for (let d = 30; d < 120; d++) entries.push(entry(d, d % 2 ? 1 : 5));
+    const agg = computeMoodAggregates({ entries, measurements: [], now: NOW });
+
+    expect(agg.stabilityByWindow[30]?.score).toBe(100);
+    expect(agg.stabilityByWindow[30]?.days).toBe(30);
+    expect(agg.stabilityByWindow[90]?.score).toBeLessThan(
+      agg.stabilityByWindow[30]!.score,
+    );
+    // The whole-year entry is the score `stability` has always carried.
+    expect(agg.stabilityByWindow[365]).toEqual(agg.stability);
+    expect(agg.stability?.days).toBe(120);
+  });
 });
 
 describe("bucketForHour", () => {

@@ -501,6 +501,30 @@ const accountPayload = z
   .looseObject({
     id: z.string(),
     username: z.string(),
+    // Enumerated because clients cut days and convert glucose by them: the
+    // day key and the unit must be the server's, not the device's.
+    timezone: z
+      .string()
+      .describe(
+        "The IANA zone the server cuts this account's days in: the stored zone, or the instance default when the stored one is unusable. Resolved, never the raw column, so bucket day keys by this value.",
+      ),
+    glucoseUnit: z
+      .enum(["mg/dL", "mmol/L"])
+      .nullable()
+      .describe(
+        "The account's chosen glucose display unit, as stored. `null` means the person never chose one (or the stored value is neither unit), and the server then shows glucose in mg/dL.",
+      ),
+    features: z
+      .object({
+        trackIntake: z
+          .literal(true)
+          .describe(
+            "Medications take `trackIntake`: a medication can be kept as a record whose doses are never due, and a dose written against one is refused with `medication.intake.notTracked`.",
+          ),
+      })
+      .describe(
+        "What this server understands, for a client released apart from it. Constant across accounts; a flag appears once the server supports the feature and stays `true`. Absent on servers older than v1.42.0. A client that meets a flag it does not know ignores it.",
+      ),
     accountAccess: accountAccessBlock,
     moduleAccess: moduleAccessMap,
     // v1.39 — enumerated because every AI surface decides on it: a client

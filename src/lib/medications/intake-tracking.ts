@@ -66,3 +66,15 @@ export function scheduleWireFields<T>(
     ? { schedules: [], recordedSchedules: schedules }
     : { schedules };
 }
+
+/**
+ * Error code for a dose written against a record-only medication. Every route
+ * that records a dose answers it the same way (iOS #116, item 15): the history
+ * the medication already has stays, but nothing new is counted, so a new
+ * write is refused by name rather than stored and then counted nowhere.
+ * The bulk route reports the same decision per entry as `intake_not_tracked`.
+ */
+export const INTAKE_NOT_TRACKED_ERROR_CODE = "medication.intake.notTracked";
+
+/** Per-entry skip reason for the bulk route, the batch form of the code. */
+export const INTAKE_NOT_TRACKED_REASON = "intake_not_tracked";

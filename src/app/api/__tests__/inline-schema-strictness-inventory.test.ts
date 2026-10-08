@@ -119,6 +119,14 @@ const DELIBERATELY_OPEN: Record<string, { count: number; reason: string }> = {
     count: 1,
     reason: "read filter over whole searchParams",
   },
+  "medications/compliance/route.ts": {
+    count: 1,
+    reason: "read filter over whole searchParams",
+  },
+  "mood/insights/route.ts": {
+    count: 1,
+    reason: "read filter over whole searchParams",
+  },
 
   // ---------------------------------------------------------------
   // 3. Native-client ingest and device registration. This is where the

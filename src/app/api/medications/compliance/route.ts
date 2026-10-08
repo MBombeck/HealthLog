@@ -1,15 +1,22 @@
 import pLimit from "p-limit";
+import { z } from "zod/v4";
 
 import { COURSES_COMPLIANCE_SELECT } from "@/lib/analytics/compliance";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import { apiSuccess, apiError } from "@/lib/api-response";
 import {
+  apiError,
+  apiSuccessWithMeta,
+  returnAllZodIssues,
+} from "@/lib/api-response";
+import {
+  aggregateCompliance,
   buildCompliancePayload,
   complianceCacheKey,
   type CompliancePayload,
 } from "@/lib/medications/compliance-payload";
+import { COMPLIANCE_REPORT_DAYS } from "@/lib/analytics/compliance";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
@@ -28,8 +35,28 @@ import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
  * wire shape — the cards render rates / streak / display block only; the
  * detail page keeps the per-id route for the grid.
  */
-export const GET = apiHandler(async () => {
+/**
+ * `?days=N` adds a `complianceN` block per medication and to the account
+ * aggregate, for a report that covers its own window rather than the fixed 7
+ * and 30 days. Only the windows the ledger serves are accepted; anything else
+ * is a 422, never a silently rounded window.
+ */
+const querySchema = z.object({
+  days: z
+    .enum(COMPLIANCE_REPORT_DAYS.map(String) as [string, ...string[]])
+    .transform(Number)
+    .optional(),
+});
+
+export const GET = apiHandler(async (request: Request) => {
   const { user, actor } = await requireRecordAuth("read", "medications");
+
+  const query = querySchema.safeParse(
+    Object.fromEntries(new URL(request.url).searchParams),
+  );
+  if (!query.success) return returnAllZodIssues(query.error, 422);
+  const days = query.data.days as
+    (typeof COMPLIANCE_REPORT_DAYS)[number] | undefined;
 
   // v1.36.0 — the bucket keys on the ACTOR while everything below it scopes to
   // the record. Two reasons, and both are the same reason from opposite ends:
@@ -74,7 +101,7 @@ export const GET = apiHandler(async () => {
   // on a cold cache. Warm / stale cells return without touching the
   // database at all; `Promise.all` keeps the response in list order.
   const limit = pLimit(3);
-  const items = await Promise.all(
+  const results = await Promise.all(
     medications.map((medication) =>
       limit(async () => {
         const payload = await cachedSwr(
@@ -83,22 +110,69 @@ export const GET = apiHandler(async () => {
           () => buildCompliancePayload(medication, user.id, userTz),
           annotate,
         );
-        return {
-          medicationId: medication.id,
-          applicable: payload.applicable,
-          notApplicableReason: payload.notApplicableReason,
-          compliance7: payload.compliance7,
-          compliance30: payload.compliance30,
-          complianceDisplay: payload.complianceDisplay,
-        };
+        return { payload, medicationId: medication.id };
       }),
     ),
   );
 
+  // A cell cached before the report windows existed carries none; it reads
+  // as the not-applicable placeholder until its next rebuild rather than
+  // failing the whole read.
+  const windowFor = (payload: CompliancePayload, n: number) =>
+    payload.reportWindows?.[n as keyof CompliancePayload["reportWindows"]];
+
+  const items = results.map(({ payload, medicationId }) => ({
+    medicationId,
+    applicable: payload.applicable,
+    notApplicableReason: payload.notApplicableReason,
+    compliance7: payload.compliance7,
+    compliance30: payload.compliance30,
+    ...(days !== undefined && days !== 30
+      ? { [`compliance${days}`]: windowFor(payload, days) ?? null }
+      : {}),
+    complianceDisplay: payload.complianceDisplay,
+  }));
+
+  // The account-wide figure the widget ring and the report show, built only
+  // from medications whose adherence means something (`applicable`).
+  const applicable = results
+    .map((r) => r.payload)
+    .filter((payload) => payload.applicable);
+  const reportWindow =
+    days !== undefined && days !== 30
+      ? applicable.map((payload) => windowFor(payload, days))
+      : [];
+  const aggregate =
+    applicable.length === 0
+      ? null
+      : {
+          compliance7: aggregateCompliance(
+            applicable.map((p) => p.compliance7),
+          ),
+          compliance30: aggregateCompliance(
+            applicable.map((p) => p.compliance30),
+          ),
+          ...(days !== undefined && days !== 30
+            ? {
+                [`compliance${days}`]: reportWindow.every(Boolean)
+                  ? aggregateCompliance(
+                      reportWindow as NonNullable<
+                        (typeof reportWindow)[number]
+                      >[],
+                    )
+                  : null,
+              }
+            : {}),
+          medicationCount: applicable.length,
+        };
+
   annotate({
     action: { name: "medication.compliance_summary.read" },
-    meta: { count: items.length },
+    meta: { count: items.length, days: days ?? null },
   });
 
-  return apiSuccess(items);
+  return apiSuccessWithMeta(items, {
+    aggregate,
+    ...(days !== undefined ? { days } : {}),
+  });
 });

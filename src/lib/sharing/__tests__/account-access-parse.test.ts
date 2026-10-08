@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { parseAccountAccess } from "../account-access-schema";
+import {
+  parseAccountAccess,
+  validateAccountAccessBlock,
+} from "../account-access-parse";
+import { accountAccessBlockSchema } from "../account-access-schema";
 
 const sharedEntry = {
   accountId: "record-a",
@@ -218,5 +222,110 @@ describe("parseAccountAccess", () => {
         canSwitch: true,
       }),
     ).toBeNull();
+  });
+});
+
+/**
+ * The browser parse carries no Zod (it rides the shell every route shares),
+ * so it is a second statement of the published schema. This holds the two to
+ * one verdict: over every fixture below, and every single-field breakage of
+ * each, the hand-written check accepts exactly what the schema accepts and
+ * returns the same stripped value. Change one without the other and this
+ * fails with the input that tells them apart.
+ */
+describe("validateAccountAccessBlock agrees with the published schema", () => {
+  const BAD_VALUES: unknown[] = [
+    undefined,
+    null,
+    0,
+    1,
+    true,
+    "",
+    "bogus",
+    [],
+    ["labs"],
+    ["labs", "labs"],
+    ["nope"],
+    {},
+  ];
+
+  const managerEntry = {
+    ...sharedEntry,
+    accountId: "record-m",
+    username: "record-m",
+    access: "write",
+    level: "manage",
+    recordKind: "managed",
+    sections: null,
+    canWrite: true,
+    writableDomains: ["measurements", "mind"],
+    manageableDomains: ["measurements"],
+  };
+  const writerEntry = {
+    ...sharedEntry,
+    accountId: "record-w",
+    username: "record-w",
+    access: "write",
+    level: "write",
+    sections: ["labs", "measurements"],
+    canWrite: true,
+    writableDomains: ["measurements"],
+  };
+
+  const bases: Record<string, unknown>[] = [
+    accessBlock(),
+    { accounts: [], active: null, recordKind: "self", canSwitch: false },
+    {
+      accounts: [managerEntry, writerEntry],
+      active: null,
+      recordKind: "self",
+      canSwitch: true,
+    },
+    {
+      accounts: [writerEntry],
+      active: { ...writerEntry, extra: "stripped" },
+      recordKind: "shared",
+      canSwitch: true,
+    },
+  ];
+
+  function variants(): unknown[] {
+    const out: unknown[] = [...bases, null, "x", [], 42];
+    for (const base of bases) {
+      for (const key of Object.keys(base)) {
+        for (const bad of BAD_VALUES) out.push({ ...base, [key]: bad });
+      }
+      const accounts = base.accounts as Record<string, unknown>[];
+      accounts.forEach((entry, index) => {
+        for (const key of [...Object.keys(entry), "unknownKey"]) {
+          for (const bad of BAD_VALUES) {
+            const broken = { ...entry, [key]: bad };
+            const next = [...accounts];
+            next[index] = broken;
+            out.push({ ...base, accounts: next });
+            if (base.active) out.push({ ...base, active: broken });
+          }
+        }
+      });
+    }
+    return out;
+  }
+
+  it("accepts and rejects the same blocks, with the same output", () => {
+    const corpus = variants();
+    expect(corpus.length).toBeGreaterThan(500);
+    let accepted = 0;
+    for (const input of corpus) {
+      const zod = accountAccessBlockSchema.safeParse(input);
+      const mine = validateAccountAccessBlock(input);
+      expect(mine !== null, JSON.stringify(input)).toBe(zod.success);
+      if (zod.success) {
+        expect(mine, JSON.stringify(input)).toEqual(zod.data);
+        accepted += 1;
+      }
+    }
+    // Both arms exercised: the corpus is not all-reject or all-accept.
+    expect(accepted).toBeGreaterThan(10);
+    expect(accepted).toBeLessThan(corpus.length - 100);
   });
 });

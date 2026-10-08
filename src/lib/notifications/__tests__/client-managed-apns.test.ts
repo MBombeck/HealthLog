@@ -146,6 +146,43 @@ describe("dispatchNotification — client-managed APNs suppression", () => {
     });
   });
 
+  it("keeps a follow-up for a dose still open on APNs, because the phone sends none", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      notificationPrefs: { medication: { clientManaged: true } },
+    } as never);
+
+    await dispatchNotification({
+      ...MEDICATION_PAYLOAD,
+      metadata: {
+        ...MEDICATION_PAYLOAD.metadata,
+        phase: "ORANGE",
+        followUp: true,
+      },
+    });
+
+    expect(sendViaApnsMock).toHaveBeenCalledTimes(1);
+    expect(sendViaTelegramMock).toHaveBeenCalledTimes(1);
+    expect(recordPushAttemptMock).not.toHaveBeenCalled();
+  });
+
+  it("still keeps the reminder that announces the dose off APNs", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      notificationPrefs: { medication: { clientManaged: true } },
+    } as never);
+
+    await dispatchNotification({
+      ...MEDICATION_PAYLOAD,
+      metadata: {
+        ...MEDICATION_PAYLOAD.metadata,
+        phase: "YELLOW",
+        followUp: false,
+      },
+    });
+
+    expect(sendViaApnsMock).not.toHaveBeenCalled();
+    expect(sendViaTelegramMock).toHaveBeenCalledTimes(1);
+  });
+
   it("honours the roaming deliveryDefault mapping", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       notificationPrefs: { medication: { deliveryDefault: "client" } },

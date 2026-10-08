@@ -32,7 +32,7 @@ import { createBatchWorkoutSchema as createBatchWorkoutSchemaBase } from "@/lib/
  * built for could not read it from the contract. `params` never ships: some
  * Zod codes embed the offending value in it and that is user content.
  */
-const validationIssue = z
+export const validationIssue = z
   .object({
     path: z
       .string()

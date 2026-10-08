@@ -955,7 +955,14 @@ const moodAggregatesResponse = z
         days: z.number().int(),
       })
       .nullable()
-      .describe("Null for a sparse logger below the day floor."),
+      .describe(
+        "Day-to-day steadiness over the trailing `stabilityWindowDays` days. Null below the day floor (seven days with an entry) inside that window, so a short window can be null where the year is not.",
+      ),
+    stabilityWindowDays: z
+      .union([z.literal(30), z.literal(90), z.literal(180), z.literal(365)])
+      .describe(
+        "The window `stability` covers: the `days` query parameter, or 365 (the whole daily series) when it was not sent. Added in v1.42.0; absent from older servers, whose score always covers the year.",
+      ),
     tags: z
       .array(
         z.object({
@@ -1277,7 +1284,17 @@ export const moodPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Mood"],
       summary: "Pre-computed mood aggregates (v1.8.5)",
       description:
-        "The whole Mood Insights page in one read. The compute runs server-side and only pre-shaped blocks leave — no raw mood row is on this wire, and no LLM is reachable from this path. Stale-while-revalidate: past the fresh window the prior aggregate is served immediately while one background recompute warms a new one, so an active logger never re-pays the cold compute. Module-gated on `mood`; a disabled module answers 403 `module.disabled` even for a valid Bearer token. Cookie or Bearer auth; the caller is always resolved as themselves, so this read cannot be delegated to a shared record — which makes it the one mood surface a delegate cannot reach.",
+        "The whole Mood Insights page in one read. The compute runs server-side and only pre-shaped blocks leave — no raw mood row is on this wire, and no LLM is reachable from this path. Stale-while-revalidate: past the fresh window the prior aggregate is served immediately while one background recompute warms a new one, so an active logger never re-pays the cold compute. Module-gated on `mood`; a disabled module answers 403 `module.disabled` even for a valid Bearer token. Cookie or Bearer auth; the caller is always resolved as themselves, so this read cannot be delegated to a shared record — which makes it the one mood surface a delegate cannot reach. v1.42.0 — `days` cuts `stability` to the period a client shows; every other block is unchanged by it.",
+      requestParams: {
+        query: z.object({
+          days: z
+            .enum(["30", "90", "180", "365"])
+            .optional()
+            .describe(
+              "Trailing window for `stability`, in days. Omitted: 365. Any other value is a 422.",
+            ),
+        }),
+      },
       responses: {
         "200": {
           description: "The aggregate bundle.",

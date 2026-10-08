@@ -197,6 +197,32 @@ describe("per-user timezone — Pacific/Auckland end-to-end", () => {
     }
   });
 
+  // The fields a native client decides on, enumerated in `AccountPayload`:
+  // the unit as the closed pair the contract names (a restored backup can
+  // write anything into the free-text column), and the capability flags.
+  it("GET /api/auth/me publishes the glucose unit as the closed pair and the server features", async () => {
+    const user = await seedAucklandUser();
+    const prisma = getPrismaClient();
+    const { GET } = await import("@/app/api/auth/me/route");
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { glucoseUnit: "mmol/L" },
+    });
+    let body = (await (await GET()).json()) as {
+      data: { glucoseUnit: string | null; features: Record<string, unknown> };
+    };
+    expect(body.data.glucoseUnit).toBe("mmol/L");
+    expect(body.data.features).toEqual({ trackIntake: true });
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { glucoseUnit: "mmol" },
+    });
+    body = (await (await GET()).json()) as typeof body;
+    expect(body.data.glucoseUnit).toBeNull();
+  });
+
   it("PUT /api/auth/me/timezone rejects an invalid IANA zone with 422", async () => {
     await seedAucklandUser();
 

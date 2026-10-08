@@ -22,6 +22,7 @@
  */
 
 import { apiError } from "@/lib/api-response";
+import { INTAKE_NOT_TRACKED_ERROR_CODE } from "@/lib/medications/intake-tracking";
 
 interface MedicationOwnershipPrisma {
   medication: {
@@ -50,6 +51,51 @@ export async function assertMedicationOwnership(
   if (!med || med.userId !== userId) {
     return apiError("Medication not found", 404);
   }
+  return null;
+}
+
+/** The 422 a dose write against a record-only medication answers with. */
+export function refuseUntrackedIntake(): Response {
+  return apiError(
+    "This medication is kept as a record; its intake is not tracked",
+    422,
+    { errorCode: INTAKE_NOT_TRACKED_ERROR_CODE },
+  );
+}
+
+interface MedicationIntakeGuardPrisma {
+  medication: {
+    findUnique: (args: {
+      where: { id: string };
+      select: { id: true; userId: true; trackIntake: true };
+    }) => Promise<{ id: string; userId: string; trackIntake: boolean } | null>;
+  };
+}
+
+/**
+ * The ownership guard for a route that RECORDS a dose against the
+ * medication: the same 404 as {@link assertMedicationOwnership}, and then a
+ * 422 `medication.intake.notTracked` when the medication is kept as a record
+ * only (`trackIntake: false`). One read answers both, so the refusal cannot
+ * be reached for a medication the caller does not hold — an unknown id and a
+ * foreign one still look identical.
+ */
+export async function assertMedicationTakesIntake(
+  medicationId: string,
+  userId: string,
+  prismaClient?: MedicationIntakeGuardPrisma,
+): Promise<Response | null> {
+  const client =
+    prismaClient ??
+    ((await loadPrisma()) as unknown as MedicationIntakeGuardPrisma);
+  const med = await client.medication.findUnique({
+    where: { id: medicationId },
+    select: { id: true, userId: true, trackIntake: true },
+  });
+  if (!med || med.userId !== userId) {
+    return apiError("Medication not found", 404);
+  }
+  if (med.trackIntake === false) return refuseUntrackedIntake();
   return null;
 }
 

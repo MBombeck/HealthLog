@@ -74,8 +74,16 @@ import { recordSessionForPayload } from "@/lib/sharing/record-session-fence";
 import { loadAiCapabilities } from "@/lib/ai/capabilities/load";
 import { loadCoachReasoningState } from "@/lib/ai/reasoning/controls";
 import { parseCoachPrefs } from "@/lib/validations/coach-prefs";
+import { storedGlucoseUnit } from "@/lib/glucose";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Capability flags for clients that are not shipped with the server. Constant
+ * by design: a feature the server supports is supported for every account,
+ * and a per-account answer belongs in `modules` or `ai`, not here.
+ */
+const SERVER_FEATURES = { trackIntake: true } as const;
 
 export const GET = apiHandler(async () => {
   const auth = await requireActorAuth();
@@ -331,7 +339,8 @@ export const GET = apiHandler(async () => {
     avatarUrl: user.avatarUpdatedAt
       ? buildAvatarUrl(user.id, user.avatarUpdatedAt)
       : null,
-    glucoseUnit: user.glucoseUnit ?? null,
+    // The stored choice, published as the closed pair the contract names.
+    glucoseUnit: storedGlucoseUnit(user.glucoseUnit),
     // v1.7.0 — global metric/imperial display preference. Canonical
     // storage stays SI; this only drives the display-time transform
     // branch. Null defaults to "metric" on the client.
@@ -442,5 +451,11 @@ export const GET = apiHandler(async () => {
     // behind it have one reader by design, and a route that projected them
     // itself would be a second statement of what a record context is.
     recordSession: recordSessionForPayload(auth),
+    // v1.42 — what this server understands, for a client released on its own
+    // schedule (iOS #116, item 18). `trackIntake: true` says medications take
+    // the record-only switch, so an add form can offer it before the account
+    // has a medication to learn it from. A flag only ever appears here once
+    // the server supports it, and stays `true`; absence means an older server.
+    features: SERVER_FEATURES,
   });
 });

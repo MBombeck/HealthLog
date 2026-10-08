@@ -1079,7 +1079,7 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...stdResponses,
         "422": {
           description:
-            "The batch exceeded the 500-entry limit (`measurement.batch.too_large`), failed validation (`measurement.batch.invalid`, with every issue under `details.issues`), or (`measurement.batch.source_not_permitted`) carried an entry naming a source, any source, under a narrow `measurements:write` credential. Nothing was written in any of the three cases, and all three are permanent for the batch as sent: resending it unchanged is refused the same way.",
+            'The batch exceeded the 500-entry limit (`measurement.batch.too_large`), failed validation (`measurement.batch.invalid`, with every issue under `details.issues`), or (`measurement.batch.source_not_permitted`) carried an entry naming a source, any source, under a narrow `measurements:write` credential. Nothing was written in any of the three cases, and all three are permanent for the batch as sent: resending it unchanged is refused the same way. Which issues belong to an entry: every issue caused by one entry has a `path` that starts `entries.<n>` (the entry\'s index in the request, then the field, e.g. `entries.3.startDate`, or just `entries.4` when the entry is not an object). Those are the only per-entry issues, so a client may drop the named entries and resend the rest. An issue whose `path` is `""` (the body is not an object), `entries` (missing, not an array, or empty) or `syncTrigger` is about the batch itself, and no split recovers it.',
           content: { "application/json": { schema: errorEnvelope } },
         },
       },

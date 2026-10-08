@@ -7867,6 +7867,34 @@
         "backupsStillNeed": "Alle Zeilen sind rotiert, aber Sicherungen brauchen noch {keys}",
         "backupsUnrecordedBadge": "Alle Zeilen sind rotiert, aber ältere Sicherungen können noch einen ausgemusterten Schlüssel brauchen",
         "backupsDetail": "Die Rotation verschlüsselt jede Zeile neu, aber eine Sicherung behält den Schlüssel, unter dem ihr Inhalt geschrieben wurde, und ihre Wiederherstellung braucht ihn. Behalte einen ausgemusterten Schlüssel in ENCRYPTION_KEYS, bis er unten nicht mehr aufgeführt ist."
+      },
+      "maintenance": {
+        "title": "Pflege der Messwert-Tabelle",
+        "description": "Gibt den Platz frei, den alte Sync-Reste belegt haben, sobald die Bereinigung gelaufen ist.",
+        "body": "Sie räumt die Messwert-Tabelle auf und baut danach ihre Indizes neu auf, einen nach dem anderen. Lesen und Speichern funktionieren währenddessen weiter. Wähle eine ruhige Stunde und halte freien Speicher für eine weitere Kopie des größten Index bereit.",
+        "tableSize": "Tabelle mit Indizes",
+        "indexSize": "Indizes",
+        "loading": "Stand der Pflege wird geprüft…",
+        "loadError": "Der Stand der Pflege konnte nicht gelesen werden.",
+        "unavailable": "Es ist kein Hintergrunddienst verbunden, deshalb kann die Pflege hier nicht laufen.",
+        "purgePending": "Die Bereinigung alter Sync-Reste läuft noch. Die Pflege kann starten, sobald sie fertig ist.",
+        "state": {
+          "idle": "Noch nicht gelaufen.",
+          "queued": "Wartet auf den Hintergrunddienst.",
+          "running": "Läuft seit {since}. Auf einer großen Instanz kann das eine Weile dauern.",
+          "completed": "Fertig am {at}.",
+          "refusedPurge": "Nicht gestartet, weil die Bereinigung noch lief. Starte sie erneut, sobald die Bereinigung fertig ist.",
+          "alreadyRunning": "Nicht gestartet, weil bereits ein anderer Lauf arbeitete.",
+          "failed": "Angehalten am {at}. Das App-Protokoll nennt den Schritt, das Runbook erklärt, was zu prüfen ist."
+        },
+        "start": "Pflege starten",
+        "confirmTitle": "Pflege jetzt starten?",
+        "confirmBody": "Sie läuft im Hintergrund, Schritt für Schritt, und kann eine Weile dauern. Wenn du heute noch keine Sicherung erstellt hast, erstelle zuerst eine.",
+        "confirm": "Starten",
+        "cancel": "Abbrechen",
+        "started": "Pflege gestartet.",
+        "alreadyQueued": "Ein Pflegelauf ist bereits eingeplant oder läuft.",
+        "startFailed": "Die Pflege konnte nicht gestartet werden."
       }
     },
     "carrier": "Netzbetreiber",

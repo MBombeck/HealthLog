@@ -97,6 +97,11 @@ const PINNED_AFFORDANCES: Record<
     "toast.success": 1,
   },
   "src/components/admin/glitchtip-section.tsx": { "toast.success": 1 },
+  // Fires only when the route answered `enqueued: true`; a run already queued
+  // reads as an info toast instead, and the outcome itself is the status line.
+  "src/components/admin/measurement-maintenance-card.tsx": {
+    "toast.success": 1,
+  },
   "src/components/admin/invite-tokens-section.tsx": {
     "text-success": 2,
     "toast.success": 3,

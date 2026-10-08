@@ -7867,6 +7867,34 @@
         "backupsStillNeed": "Toutes les lignes sont renouvelées, mais des sauvegardes ont encore besoin de {keys}",
         "backupsUnrecordedBadge": "Toutes les lignes sont renouvelées, mais d'anciennes sauvegardes peuvent encore avoir besoin d'une clé retirée",
         "backupsDetail": "La rotation rechiffre chaque ligne, mais une sauvegarde garde la clé sous laquelle son contenu a été écrit, et sa restauration en a besoin. Gardez une clé retirée dans ENCRYPTION_KEYS tant qu'elle figure ci-dessous."
+      },
+      "maintenance": {
+        "title": "Maintenance de la table des mesures",
+        "description": "Libère la place qu'occupaient les anciens restes de synchronisation, une fois le nettoyage terminé.",
+        "body": "Elle exécute un vacuum de la table des mesures puis reconstruit ses index, un par un. La lecture et l'enregistrement continuent de fonctionner pendant ce temps. Choisissez une heure calme et prévoyez de l'espace disque libre pour une copie supplémentaire du plus grand index.",
+        "tableSize": "Table avec index",
+        "indexSize": "Index",
+        "loading": "Vérification de l'état de la maintenance…",
+        "loadError": "Impossible de lire l'état de la maintenance.",
+        "unavailable": "Aucun processus d'arrière-plan n'est connecté, la maintenance ne peut donc pas s'exécuter ici.",
+        "purgePending": "Le nettoyage des anciens restes de synchronisation est toujours en cours. La maintenance pourra démarrer une fois qu'il sera terminé.",
+        "state": {
+          "idle": "Pas encore exécutée.",
+          "queued": "En attente du processus d'arrière-plan.",
+          "running": "En cours depuis {since}. Sur une grande instance, cela peut prendre un moment.",
+          "completed": "Terminée le {at}.",
+          "refusedPurge": "Pas démarrée, car le nettoyage était encore en cours. Relancez-la une fois le nettoyage terminé.",
+          "alreadyRunning": "Pas démarrée, car une autre exécution était déjà en cours.",
+          "failed": "Arrêtée le {at}. Le journal de l'application indique l'étape et le runbook explique quoi vérifier."
+        },
+        "start": "Lancer la maintenance",
+        "confirmTitle": "Lancer la maintenance maintenant ?",
+        "confirmBody": "Elle s'exécute en arrière-plan, étape par étape, et peut prendre un moment. Si vous n'avez pas encore fait de sauvegarde aujourd'hui, faites-en une d'abord.",
+        "confirm": "Lancer",
+        "cancel": "Annuler",
+        "started": "Maintenance lancée.",
+        "alreadyQueued": "Une maintenance est déjà en file d'attente ou en cours.",
+        "startFailed": "Impossible de lancer la maintenance."
       }
     },
     "carrier": "Opérateur",

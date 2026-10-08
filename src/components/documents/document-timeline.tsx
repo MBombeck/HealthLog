@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * The vault timeline: a virtualized, month-sectioned card grid windowed
+ * The vault timeline: a virtualized, month-sectioned grid of preview tiles
+ * (`document-month-grid.tsx`) windowed
  * with `@tanstack/react-virtual` over the shell's scroll container
  * (`#main-content` — single scroll owner per the design standards; the
  * timeline never brings its own scrollport). The flat item list (month
@@ -9,8 +10,9 @@
  * mounted DOM stays bounded (< ~400 nodes) regardless of corpus size.
  *
  * Columns are measured, not breakpoint-classed: a ResizeObserver on the
- * grid container drives the per-row chunking (4 / 3 / 2 / 1), which keeps
- * the virtualizer's row model and the painted grid in lockstep.
+ * grid container drives the per-row chunking (4 / 3 on a desktop, 2 on a
+ * phone, 1 on the narrowest screens), which keeps the virtualizer's row model
+ * and the painted grid in lockstep.
  *
  * In-flight / failed uploads render as a small non-virtualized grid above
  * the timeline — they are few (client concurrency 3) and must appear
@@ -28,19 +30,17 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { useTranslations } from "@/lib/i18n/context";
 import type { InboundDocumentDto } from "@/lib/validations/inbound-documents";
-import { DocumentCard, UploadStateCard } from "./document-card";
+import { UploadStateCard } from "./document-card";
+import {
+  columnsForWidth,
+  DocumentMonthHeading,
+  DocumentMonthRow,
+  estimatedRowHeight,
+} from "./document-month-grid";
 import type { UploadQueueItem } from "./use-document-upload";
 import { buildTimelineItems, formatMonthLabel } from "./vault-utils";
 
 const SCROLL_CONTAINER_ID = "main-content";
-
-/** Measured-width → column count (desktop 4/3, tablet 2, phone 1). */
-function columnsForWidth(width: number): number {
-  if (width >= 1200) return 4;
-  if (width >= 900) return 3;
-  if (width >= 600) return 2;
-  return 1;
-}
 
 export function DocumentTimeline({
   documents,
@@ -77,6 +77,7 @@ export function DocumentTimeline({
   const { t, locale } = useTranslations();
   const listRef = useRef<HTMLDivElement | null>(null);
   const [columns, setColumns] = useState(1);
+  const [gridWidth, setGridWidth] = useState(0);
   const [scrollMargin, setScrollMargin] = useState(0);
 
   // Roving tabindex over the card grid: exactly one card is tabbable; the
@@ -88,7 +89,10 @@ export function DocumentTimeline({
   useEffect(() => {
     const el = listRef.current;
     if (!el) return;
-    const update = () => setColumns(columnsForWidth(el.clientWidth));
+    const update = () => {
+      setColumns(columnsForWidth(el.clientWidth));
+      setGridWidth(el.clientWidth);
+    };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
@@ -127,7 +131,10 @@ export function DocumentTimeline({
   const virtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => document.getElementById(SCROLL_CONTAINER_ID),
-    estimateSize: (index) => (items[index].type === "month" ? 40 : 140),
+    estimateSize: (index) =>
+      items[index].type === "month"
+        ? 40
+        : estimatedRowHeight(gridWidth, columns),
     getItemKey: (index) => items[index].key,
     overscan: 6,
     scrollMargin,
@@ -282,31 +289,22 @@ export function DocumentTimeline({
                 }}
               >
                 {item.type === "month" ? (
-                  <h2 className="text-muted-foreground pt-2 pb-3 text-xs font-medium tracking-wide uppercase">
-                    {formatMonthLabel(item.key, locale)}
-                  </h2>
+                  <DocumentMonthHeading
+                    label={formatMonthLabel(item.key, locale)}
+                  />
                 ) : (
-                  <div
-                    className="grid gap-4 pb-4"
-                    style={{
-                      gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-                    }}
-                  >
-                    {item.documents.map((doc) => (
-                      <DocumentCard
-                        key={doc.id}
-                        document={doc}
-                        selected={selectedIds.has(doc.id)}
-                        onToggleSelected={onToggleSelected}
-                        onOpen={onOpen}
-                        onDelete={onDelete}
-                        highlighted={highlightId === doc.id}
-                        tabIndex={rovingId === doc.id ? 0 : -1}
-                        onCardFocus={setActiveId}
-                        onPrefetch={onPrefetch}
-                      />
-                    ))}
-                  </div>
+                  <DocumentMonthRow
+                    documents={item.documents}
+                    columns={columns}
+                    selectedIds={selectedIds}
+                    onToggleSelected={onToggleSelected}
+                    onOpen={onOpen}
+                    onDelete={onDelete}
+                    highlightId={highlightId}
+                    rovingId={rovingId}
+                    onCardFocus={setActiveId}
+                    onPrefetch={onPrefetch}
+                  />
                 )}
               </div>
             );

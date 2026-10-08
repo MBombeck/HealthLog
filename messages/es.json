@@ -7867,6 +7867,34 @@
         "backupsStillNeed": "Todas las filas están rotadas, pero las copias aún necesitan {keys}",
         "backupsUnrecordedBadge": "Todas las filas están rotadas, pero copias antiguas pueden necesitar aún una clave retirada",
         "backupsDetail": "La rotación vuelve a cifrar cada fila, pero una copia conserva la clave con la que se escribió su contenido, y restaurarla necesita esa clave. Mantén una clave retirada en ENCRYPTION_KEYS hasta que no aparezca abajo."
+      },
+      "maintenance": {
+        "title": "Mantenimiento de la tabla de mediciones",
+        "description": "Libera el espacio que ocupaban los restos antiguos de sincronización, cuando la limpieza ya ha terminado.",
+        "body": "Ejecuta un vacuum de la tabla de mediciones y después reconstruye sus índices, uno a uno. Leer y guardar siguen funcionando mientras se ejecuta. Elige una hora tranquila y deja espacio libre en disco para una copia más del índice más grande.",
+        "tableSize": "Tabla con índices",
+        "indexSize": "Índices",
+        "loading": "Comprobando el estado del mantenimiento…",
+        "loadError": "No se pudo leer el estado del mantenimiento.",
+        "unavailable": "No hay ningún proceso en segundo plano conectado, así que el mantenimiento no puede ejecutarse aquí.",
+        "purgePending": "La limpieza de restos antiguos de sincronización sigue en marcha. El mantenimiento podrá empezar cuando termine.",
+        "state": {
+          "idle": "Aún no se ha ejecutado.",
+          "queued": "Esperando al proceso en segundo plano.",
+          "running": "En marcha desde las {since}. En una instancia grande puede tardar un rato.",
+          "completed": "Terminado el {at}.",
+          "refusedPurge": "No empezó porque la limpieza seguía en marcha. Vuelve a iniciarlo cuando la limpieza haya terminado.",
+          "alreadyRunning": "No empezó porque ya había otra ejecución trabajando.",
+          "failed": "Detenido el {at}. El registro de la aplicación indica el paso y el runbook explica qué revisar."
+        },
+        "start": "Iniciar mantenimiento",
+        "confirmTitle": "¿Iniciar el mantenimiento ahora?",
+        "confirmBody": "Se ejecuta en segundo plano, paso a paso, y puede tardar un rato. Si hoy aún no has hecho una copia de seguridad, hazla antes.",
+        "confirm": "Iniciar",
+        "cancel": "Cancelar",
+        "started": "Mantenimiento iniciado.",
+        "alreadyQueued": "Ya hay un mantenimiento en cola o en marcha.",
+        "startFailed": "No se pudo iniciar el mantenimiento."
       }
     },
     "carrier": "Operador",

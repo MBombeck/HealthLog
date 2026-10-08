@@ -336,3 +336,40 @@ describe("<UploadStateCard>", () => {
     expect(html).toContain("1 GB");
   });
 });
+
+describe('<DocumentCard variant="tile"> (the archive grid)', () => {
+  it("puts a 4:3 preview above the title, falling back to the kind icon", () => {
+    const html = render(
+      <DocumentCard
+        variant="tile"
+        document={doc()}
+        selected={false}
+        onToggleSelected={noop}
+        onOpen={noop}
+        highlighted={false}
+      />,
+    );
+    expect(html).toContain('data-variant="tile"');
+    const preview = html.indexOf('data-slot="document-preview"');
+    expect(preview).toBeGreaterThan(-1);
+    expect(html).toMatch(/data-slot="document-preview"[^>]*aspect-\[4\/3\]/);
+    // Preview first, title after it.
+    expect(html.indexOf("MRT Knie")).toBeGreaterThan(preview);
+    // No thumbnail rendered yet: the kind icon fills the preview, no <img>.
+    expect(html).not.toContain("<img");
+  });
+
+  it("keeps the row card as the default for every other surface", () => {
+    const html = render(
+      <DocumentCard
+        document={doc()}
+        selected={false}
+        onToggleSelected={noop}
+        onOpen={noop}
+        highlighted={false}
+      />,
+    );
+    expect(html).toContain('data-variant="row"');
+    expect(html).not.toContain('data-slot="document-preview"');
+  });
+});

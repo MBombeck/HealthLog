@@ -223,6 +223,7 @@ describe("handleReminderCheck per-slot reminder windows", () => {
         metadata: expect.objectContaining({
           phase: "ORANGE",
           timeOfDay: "08:00",
+          followUp: true,
         }),
       }),
     );
@@ -248,6 +249,34 @@ describe("handleReminderCheck per-slot reminder windows", () => {
         metadata: expect.objectContaining({
           phase: "YELLOW",
           timeOfDay: "08:00",
+          // GREEN announced this window; YELLOW escalates an open dose.
+          followUp: true,
+        }),
+      }),
+    );
+  });
+
+  it("marks the phase that announces the dose as the one reminder that is not a follow-up", async () => {
+    vi.useFakeTimers();
+    // 55 minutes before the 09:30 end of a 07:30 to 09:30 window: GREEN.
+    vi.setSystemTime(new Date("2026-07-28T08:35:00.000Z"));
+    prismaMock.medication.findMany.mockResolvedValue([
+      medicationWithSchedule({
+        windowEnd: "18:00",
+        timesOfDay: ["08:00", "18:00"],
+        doseWindows: [{ timeOfDay: "08:00", start: "07:30", end: "09:30" }],
+      }),
+    ] as never);
+    setIntakeEvents([]);
+
+    await handleReminderCheck([]);
+
+    expect(dispatchNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          phase: "GREEN",
+          timeOfDay: "08:00",
+          followUp: false,
         }),
       }),
     );

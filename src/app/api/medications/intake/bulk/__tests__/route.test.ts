@@ -244,6 +244,29 @@ describe("POST /api/medications/intake/bulk — v1.8.2 reconcile", () => {
     vi.useRealTimers();
   });
 
+  it("skips an entry for a record-only medication as intake_not_tracked and keeps the rest", async () => {
+    vi.mocked(prisma.medication.findMany).mockResolvedValue([
+      { id: "med-1", trackIntake: false },
+    ] as never);
+    const res = await POST(
+      postReq({
+        entries: [
+          {
+            medicationId: "med-1",
+            scheduledFor: "2026-06-15T05:00:00.000Z",
+            takenAt: "2026-06-15T05:01:00.000Z",
+          },
+        ],
+      }),
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data.entries).toEqual([
+      { index: 0, status: "skipped", reason: "intake_not_tracked" },
+    ]);
+    expect(prisma.medicationIntakeEvent.create).not.toHaveBeenCalled();
+  });
+
   it("C2 — a pending echo onto an already-TAKEN slot is reported duplicate, NOT a downgrade", async () => {
     // Existing TAKEN row at the 07:00 slot. The bulk entry is a pending
     // echo (no takenAt, skipped false) — must NOT clear takenAt.

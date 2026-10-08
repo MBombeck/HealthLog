@@ -381,6 +381,45 @@ describe("POST /api/medications/intake", () => {
     expect(res.status).toBe(422);
   });
 
+  it("refuses to resolve an open dose of a record-only medication with medication.intake.notTracked", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValue({
+      id: "e1",
+      userId: "user-1",
+      medicationId: "m1",
+      takenAt: null,
+      skipped: false,
+      scheduledFor: new Date("2026-05-18T10:00:00.000Z"),
+      medication: { trackIntake: false },
+    } as never);
+    const res = await POST(req({ intakeId: "e1", status: "taken" }));
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.meta?.errorCode).toBe("medication.intake.notTracked");
+    expect(prisma.medicationIntakeEvent.update).not.toHaveBeenCalled();
+    expect(consumeForIntake).not.toHaveBeenCalled();
+  });
+
+  it("still lets the owner correct a dose a record-only medication already has", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValue({
+      id: "e1",
+      userId: "user-1",
+      medicationId: "m1",
+      takenAt: new Date("2026-05-18T10:05:00.000Z"),
+      skipped: false,
+      scheduledFor: new Date("2026-05-18T10:00:00.000Z"),
+      medication: { trackIntake: false },
+    } as never);
+    vi.mocked(prisma.medicationIntakeEvent.update).mockResolvedValue({
+      id: "e1",
+      skipped: true,
+      takenAt: null,
+    } as never);
+    const res = await POST(req({ intakeId: "e1", status: "skipped" }));
+    expect(res.status).toBe(200);
+  });
+
   it("marks event as skipped", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValue({

@@ -1,6 +1,11 @@
+/**
+ * The account-access block's contract as a Zod schema, for the OpenAPI
+ * document. The browser does not import it: its parse is the Zod-free
+ * `account-access-parse.ts`, kept out of the shell every route shares, and
+ * `account-access-parse.test.ts` holds the two to the same verdicts.
+ */
 import { z } from "zod/v4";
 
-import type { AccountAccess } from "./account-access-view";
 import { SHARE_DOMAINS } from "./scope";
 
 const accountAccessLevelSchema = z.enum(["read", "write", "manage"]);
@@ -21,7 +26,7 @@ function isSubset(
   return inner.every((domain) => set.has(domain));
 }
 
-/** The browser's resolved account-access payload, shared with OpenAPI. */
+/** One account-access entry, as OpenAPI publishes it. */
 export const accountAccessEntrySchema = z
   .object({
     accountId: z.string().min(1),
@@ -125,73 +130,3 @@ export const accountAccessBlockSchema = z.object({
   recordKind: z.enum(["self", "shared", "managed"]),
   canSwitch: z.boolean(),
 });
-
-/** Both published views of the active record must name the same resolved grant. */
-function matchesCanonicalAccountAccessEntry(
-  active: z.infer<typeof accountAccessEntrySchema>,
-  canonical: z.infer<typeof accountAccessEntrySchema>,
-): boolean {
-  const activeSections = active.sections;
-  const canonicalSections = canonical.sections;
-  const sameSections =
-    activeSections === null || canonicalSections === null
-      ? activeSections === canonicalSections
-      : activeSections.length === canonicalSections.length &&
-        activeSections.every(
-          (section, index) => section === canonicalSections[index],
-        );
-
-  const sameList = (a: readonly string[], b: readonly string[]) =>
-    a.length === b.length && a.every((domain, index) => domain === b[index]);
-
-  return (
-    sameList(active.writableDomains, canonical.writableDomains) &&
-    sameList(active.manageableDomains, canonical.manageableDomains) &&
-    active.accountId === canonical.accountId &&
-    active.username === canonical.username &&
-    active.displayName === canonical.displayName &&
-    active.fullName === canonical.fullName &&
-    active.access === canonical.access &&
-    active.level === canonical.level &&
-    active.recordKind === canonical.recordKind &&
-    active.canWrite === canonical.canWrite &&
-    sameSections
-  );
-}
-
-/** Parse the server-resolved access block as a closed presentation contract. */
-export function parseAccountAccess(value: unknown): AccountAccess | null {
-  const parsed = accountAccessBlockSchema.safeParse(value);
-  if (!parsed.success) return null;
-
-  const { accounts, active, recordKind, canSwitch } = parsed.data;
-  const accountIds = new Set(accounts.map((entry) => entry.accountId));
-  if (
-    accountIds.size !== accounts.length ||
-    canSwitch !== accounts.length > 0
-  ) {
-    return null;
-  }
-
-  if (active === null) {
-    return recordKind === "self"
-      ? { accounts, active: null, recordKind, canSwitch }
-      : null;
-  }
-
-  if (!accountIds.has(active.accountId) || recordKind !== active.recordKind) {
-    return null;
-  }
-
-  const canonicalActive = accounts.find(
-    (entry) => entry.accountId === active.accountId,
-  );
-  if (
-    !canonicalActive ||
-    !matchesCanonicalAccountAccessEntry(active, canonicalActive)
-  ) {
-    return null;
-  }
-
-  return { accounts, active: canonicalActive, recordKind, canSwitch };
-}

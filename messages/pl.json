@@ -7867,6 +7867,34 @@
         "backupsStillNeed": "Wszystkie wiersze są zrotowane, ale kopie nadal potrzebują {keys}",
         "backupsUnrecordedBadge": "Wszystkie wiersze są zrotowane, ale starsze kopie mogą nadal potrzebować wycofanego klucza",
         "backupsDetail": "Rotacja ponownie szyfruje każdy wiersz, ale kopia zachowuje klucz, którym zapisano jej zawartość, a jej przywrócenie wymaga tego klucza. Trzymaj wycofany klucz w ENCRYPTION_KEYS, dopóki widnieje poniżej."
+      },
+      "maintenance": {
+        "title": "Konserwacja tabeli pomiarów",
+        "description": "Zwalnia miejsce zajmowane przez stare pozostałości synchronizacji, gdy czyszczenie już się zakończy.",
+        "body": "Wykonuje vacuum tabeli pomiarów, a potem odbudowuje jej indeksy, jeden po drugim. Odczyt i zapis działają w tym czasie dalej. Wybierz spokojną godzinę i zapewnij wolne miejsce na dysku na jeszcze jedną kopię największego indeksu.",
+        "tableSize": "Tabela z indeksami",
+        "indexSize": "Indeksy",
+        "loading": "Sprawdzanie stanu konserwacji…",
+        "loadError": "Nie udało się odczytać stanu konserwacji.",
+        "unavailable": "Nie jest podłączony żaden proces w tle, więc konserwacja nie może tu działać.",
+        "purgePending": "Czyszczenie starych pozostałości synchronizacji wciąż trwa. Konserwacja może się rozpocząć, gdy się zakończy.",
+        "state": {
+          "idle": "Jeszcze nie uruchomiona.",
+          "queued": "Czeka na proces w tle.",
+          "running": "Trwa od {since}. Na dużej instancji może to chwilę potrwać.",
+          "completed": "Zakończona {at}.",
+          "refusedPurge": "Nie rozpoczęła się, bo czyszczenie wciąż trwało. Uruchom ją ponownie, gdy czyszczenie się zakończy.",
+          "alreadyRunning": "Nie rozpoczęła się, bo inny przebieg już działał.",
+          "failed": "Zatrzymana {at}. Dziennik aplikacji podaje krok, a runbook wyjaśnia, co sprawdzić."
+        },
+        "start": "Uruchom konserwację",
+        "confirmTitle": "Uruchomić konserwację teraz?",
+        "confirmBody": "Działa w tle, krok po kroku, i może chwilę potrwać. Jeśli dziś nie zrobiono jeszcze kopii zapasowej, najpierw ją zrób.",
+        "confirm": "Uruchom",
+        "cancel": "Anuluj",
+        "started": "Konserwacja uruchomiona.",
+        "alreadyQueued": "Konserwacja jest już w kolejce lub trwa.",
+        "startFailed": "Nie udało się uruchomić konserwacji."
       }
     },
     "carrier": "Operator",

@@ -2644,7 +2644,15 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PasskeyLoginVerifyResponse"
-        "401": *a1
+        "401":
+          description: The sign-in did not prove anything (v1.42.0 codes; before, the first case answered 500). `meta.errorCode` =
+            `passkey.challenge.expired` when the challenge is gone — it expired after five minutes, was already used, or
+            was begun for a different account — so start a new sign-in; `passkey.verification.failed` when the assertion
+            was checked and refused (signature, origin, relying-party id or challenge mismatch).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "403":
           description: Passkey login is disabled — the operator runs `OIDC_ONLY=true`. `meta.errorCode` = `oidc_only`.
           content:
@@ -2652,12 +2660,20 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "404":
-          description: The assertion resolved to a user row that no longer exists.
+          description: "`meta.errorCode` = `passkey.unknown` (v1.42.0): no passkey with this credential id is registered on this
+            server — it was removed here, or belongs to another server. Tell the person to sign in another way. Without
+            a code: the assertion resolved to a user row that no longer exists."
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a4
+        "422":
+          description: "`challengeId` or `credential` is missing, or (`meta.errorCode` = `passkey.response.invalid`, v1.42.0)
+            `credential` is not a WebAuthn authentication response."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
   /api/auth/refresh:
     post:
@@ -4491,7 +4507,12 @@ paths:
             (`measurement.batch.invalid`, with every issue under `details.issues`), or
             (`measurement.batch.source_not_permitted`) carried an entry naming a source, any source, under a narrow
             `measurements:write` credential. Nothing was written in any of the three cases, and all three are permanent
-            for the batch as sent: resending it unchanged is refused the same way."
+            for the batch as sent: resending it unchanged is refused the same way. Which issues belong to an entry:
+            every issue caused by one entry has a `path` that starts `entries.<n>` (the entry's index in the request,
+            then the field, e.g. `entries.3.startDate`, or just `entries.4` when the entry is not an object). Those are
+            the only per-entry issues, so a client may drop the named entries and resend the rest. An issue whose `path`
+            is `\"\"` (the body is not an object), `entries` (missing, not an array, or empty) or `syncTrigger` is about
+            the batch itself, and no split recovers it."
           content:
             application/json:
               schema:
@@ -5125,11 +5146,14 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422":
-          description: Body validation failed (multi-issue envelope, breadcrumbed as
+          description: "Body validation failed (multi-issue envelope, breadcrumbed as
             `medications.intake.update.validation-failed`), or `meta.errorCode` =
             `medications.intake.injection_site.disallowed` when the site is outside the medication's effective allowed
             set, or `medications.intake.force_slot.invalid` when `forceSlotInstant` is not a real slot of the
-            medication. The latter two carry no issue list — branch on the code.
+            medication, or (v1.42.0) `medication.intake.notTracked` when the event is still open and its medication is
+            kept as a record only (`trackIntake: false`): resolving or snoozing it would record a new dose that is
+            counted nowhere. Correcting an event that is already taken or skipped stays open. The coded refusals carry
+            no issue list — branch on the code."
           content:
             application/json:
               schema:
@@ -6391,7 +6415,16 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "409": *a7
-        "422": *a4
+        "422":
+          description: "Body validation failed (multi-issue envelope), or `meta.errorCode` names the refusal:
+            `medications.intake.injection_site.disallowed`, `medications.intake.force_slot.invalid`, or (v1.42.0)
+            `medication.intake.notTracked` when the medication is kept as a record only (`trackIntake: false`). Its
+            stored history stays; a new dose is refused rather than stored and counted nowhere. The check runs after
+            ownership, so a foreign medication is still a 404."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a12
     get:
       tags:
@@ -6715,13 +6748,36 @@ paths:
       tags:
         - Medications
       summary: Batched adherence read for every medication of the caller
-      description: Returns one compact row per non-PRN medication. A scheduled medication with no local schedule remains in
-        the array with applicable=false and reason NO_LOCAL_SCHEDULE. compliance7/compliance30 stay non-null as all-zero
+      description: >-
+        Returns one compact row per non-PRN medication. A scheduled medication with no local schedule remains in the
+        array with applicable=false and reason NO_LOCAL_SCHEDULE. compliance7/compliance30 stay non-null as all-zero
         compatibility placeholders for released clients; aware clients must ignore those percentages when
         applicable=false. complianceDisplay is null.
+
+
+        v1.42.0, additive: `meta.aggregate` carries one figure for the whole account (`MedicationComplianceAggregate`,
+        weighted by expected doses across the applicable medications; `null` when none applies), so a client never
+        averages the rows itself. `days` (30, 60, 90, 180 or 365) adds a `complianceN` block in the same shape to every
+        row and to the aggregate, for a report that covers its own window; `meta.days` echoes it. Any other `days` is a
+        422 rather than a rounded window.
+      parameters:
+        - in: query
+          name: days
+          schema:
+            description: Report window in days. 30 is already `compliance30`; the others add `compliance60` / `compliance90` /
+              `compliance180` / `compliance365`.
+            type: string
+            enum:
+              - "30"
+              - "60"
+              - "90"
+              - "180"
+              - "365"
+          description: Report window in days. 30 is already `compliance30`; the others add `compliance60` / `compliance90` /
+            `compliance180` / `compliance365`.
       responses:
         "200":
-          description: One adherence row per medication.
+          description: One adherence row per medication, and the account aggregate in `meta`.
           content:
             application/json:
               schema:
@@ -8767,9 +8823,10 @@ paths:
       summary: Update per-user notification preferences
       description: 'Deep-merges the supplied partial shape over the persisted row — a PATCH touching only one category leaves
         the siblings intact. Always returns the fully-resolved next state so clients can hard-set their optimistic
-        update. `medication.clientManaged: true` (or `deliveryDefault: "client"`) suppresses server-side
-        MEDICATION_REMINDER APNs; `medication.lowStockRunwayDays` (1–60, nullable, default 7) tunes the low-stock alert
-        — null switches it off. Rate-limit 60/min per user.'
+        update. `medication.clientManaged: true` (or `deliveryDefault: "client"`) keeps the MEDICATION_REMINDER that
+        announces a dose off APNs and leaves the follow-ups for a dose still open on it (v1.42.0);
+        `medication.lowStockRunwayDays` (1–60, nullable, default 7) tunes the low-stock alert — null switches it off.
+        Rate-limit 60/min per user.'
       requestBody:
         required: true
         content:
@@ -11043,6 +11100,23 @@ paths:
         "422": *a4
         "429": *a5
   /api/admin/maintenance/measurements:
+    get:
+      tags:
+        - Admin
+      summary: Where measurement table maintenance stands
+      description: "The newest maintenance run and its state, whether the compaction-tombstone purge is still at work, and the
+        table's size right now. The admin card polls it while a run is queued or running. Cookie auth only:
+        `requireAdmin()` refuses every Bearer caller."
+      responses:
+        "200":
+          description: The status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMeasurementMaintenanceStatusResponse"
+        "401": *a1
+        "422": *a4
+        "429": *a5
     post:
       tags:
         - Admin
@@ -12620,7 +12694,20 @@ paths:
         window the prior aggregate is served immediately while one background recompute warms a new one, so an active
         logger never re-pays the cold compute. Module-gated on `mood`; a disabled module answers 403 `module.disabled`
         even for a valid Bearer token. Cookie or Bearer auth; the caller is always resolved as themselves, so this read
-        cannot be delegated to a shared record — which makes it the one mood surface a delegate cannot reach."
+        cannot be delegated to a shared record — which makes it the one mood surface a delegate cannot reach. v1.42.0 —
+        `days` cuts `stability` to the period a client shows; every other block is unchanged by it."
+      parameters:
+        - in: query
+          name: days
+          schema:
+            description: "Trailing window for `stability`, in days. Omitted: 365. Any other value is a 422."
+            type: string
+            enum:
+              - "30"
+              - "90"
+              - "180"
+              - "365"
+          description: "Trailing window for `stability`, in days. Omitted: 365. Any other value is a 422."
       responses:
         "200":
           description: The aggregate bundle.
@@ -22369,7 +22456,10 @@ paths:
         "422":
           description: "Validation failed, with every issue listed rather than the first — an integration operator should see the
             whole shape at once. An empty or unstable `idempotencyKey` fails here: the column is unique table-wide, so
-            an empty key would resolve to whichever unrelated row stored it first."
+            an empty key would resolve to whichever unrelated row stored it first. Also 422 with `meta.errorCode` =
+            `medication.intake.notTracked` (v1.42.0) when the named medication is kept as a record only (`trackIntake:
+            false`); checked after the token's scope, so a token without this medication's scope learns nothing about
+            it."
           content:
             application/json:
               schema:
@@ -33687,25 +33777,26 @@ components:
                 measurement.batch.source_not_permitted, measurement.batch.too_large, measurement.bulk-delete.invalid,
                 measurement.create.invalid, measurement.create.source_not_permitted, measurement.delete.too_large,
                 measurement.duplicate_timestamp, measurement.restore.invalid, measurement.update.server_owned_source;
-                medication — medication.intake.import.invalid_format; medications — medications.category.invalid,
-                medications.category.limitReached, medications.category.unknown, medications.course.currentOpen,
-                medications.course.invalid, medications.course.invalidRange, medications.course.notFound,
-                medications.course.oneShot, medications.course.overlap, medications.course.windowRequired,
-                medications.intake.bulk.apple_health_not_mirrored, medications.intake.bulk.invalid,
-                medications.intake.bulk.too_large, medications.intake.force_slot.invalid,
-                medications.intake.force_slot.occupied, medications.intake.injection_site.disallowed,
-                medications.intake.taken_at.before_start, medications.mirror.limit_exceeded; mentalHealth —
-                mentalHealth.rateLimited; module — module.disabled; modules — modules.body.invalid_json,
-                modules.invalid; mood — mood.bulk-delete.invalid, mood.bulk.invalid, mood.bulk.too_large,
-                mood.create.external_id_not_delegable, mood.create.invalid, mood.duplicate_timestamp,
-                mood.linkedContext.invalid, mood.list.invalid, mood.not_found, mood.ratedFactor.out_of_range,
-                mood.restore.invalid, mood.update.invalid; notification-prefs — notification-prefs.body.invalid_json;
-                nutrient — nutrient.batch.invalid, nutrient.batch.too_large, nutrient.daily.invalid,
-                nutrient.read.invalid, nutrient.water.invalid, nutrient.water.invalid_day; onboarding —
-                onboarding.answers.invalid, onboarding.answers.rateLimited, onboarding.complete.invalid,
+                medication — medication.intake.import.invalid_format, medication.intake.notTracked; medications —
+                medications.category.invalid, medications.category.limitReached, medications.category.unknown,
+                medications.course.currentOpen, medications.course.invalid, medications.course.invalidRange,
+                medications.course.notFound, medications.course.oneShot, medications.course.overlap,
+                medications.course.windowRequired, medications.intake.bulk.apple_health_not_mirrored,
+                medications.intake.bulk.invalid, medications.intake.bulk.too_large,
+                medications.intake.force_slot.invalid, medications.intake.force_slot.occupied,
+                medications.intake.injection_site.disallowed, medications.intake.taken_at.before_start,
+                medications.mirror.limit_exceeded; mentalHealth — mentalHealth.rateLimited; module — module.disabled;
+                modules — modules.body.invalid_json, modules.invalid; mood — mood.bulk-delete.invalid,
+                mood.bulk.invalid, mood.bulk.too_large, mood.create.external_id_not_delegable, mood.create.invalid,
+                mood.duplicate_timestamp, mood.linkedContext.invalid, mood.list.invalid, mood.not_found,
+                mood.ratedFactor.out_of_range, mood.restore.invalid, mood.update.invalid; notification-prefs —
+                notification-prefs.body.invalid_json; nutrient — nutrient.batch.invalid, nutrient.batch.too_large,
+                nutrient.daily.invalid, nutrient.read.invalid, nutrient.water.invalid, nutrient.water.invalid_day;
+                onboarding — onboarding.answers.invalid, onboarding.answers.rateLimited, onboarding.complete.invalid,
                 onboarding.complete.recordNotFound, onboarding.complete.recordTargetMismatch,
                 onboarding.disclaimer.invalid, onboarding.restart.invalid, onboarding.restart.rateLimited,
-                onboarding.tour.invalid; personal_records — personal_records.invalid_query; practitioner —
+                onboarding.tour.invalid; passkey — passkey.challenge.expired, passkey.response.invalid, passkey.unknown,
+                passkey.verification.failed; personal_records — personal_records.invalid_query; practitioner —
                 practitioner.invalid; profile — profile.update.emailInUse, profile.update.emailRateLimited,
                 profile.update.emailSecondFactorRequired, profile.update.invalidBody, profile.update.nothingSaved;
                 profile_claim — profile_claim.invalid, profile_claim.oidc_only_unsupported, profile_claim.taken;
@@ -42652,19 +42743,7 @@ components:
             accepted once the window rolls over."
           type: array
           items:
-            type: object
-            properties:
-              path:
-                type: string
-              code:
-                type: string
-              message:
-                type: string
-            required:
-              - path
-              - code
-              - message
-            additionalProperties: false
+            $ref: "#/components/schemas/ValidationIssue"
       required:
         - id
         - username
@@ -46663,6 +46742,11 @@ components:
           description: "`inserted`/`updated`/`duplicate` — the row landed (advance the cursor). `skipped` — not stored; see
             `reason`."
         reason:
+          description: "Why a `skipped` entry was not stored. Among others: `medication_not_found`, `unstable_external_id`,
+            `force_slot_invalid`, `force_slot_occupied`, `injection_site_not_allowed`, and (v1.42.0)
+            `intake_not_tracked` for an entry against a medication kept as a record only (`trackIntake: false`), the
+            per-entry form of `medication.intake.notTracked`. A skip is final: resending the entry gives the same
+            answer."
           type: string
         id:
           description: The landed row id (absent on skips).
@@ -48257,12 +48341,33 @@ components:
         meta:
           type: object
           properties:
+            aggregate:
+              anyOf:
+                - $ref: "#/components/schemas/MedicationComplianceAggregate"
+                - type: "null"
+            days:
+              description: The `days` the request asked for.
+              anyOf:
+                - type: number
+                  const: 30
+                - type: number
+                  const: 60
+                - type: number
+                  const: 90
+                - type: number
+                  const: 180
+                - type: number
+                  const: 365
             requestId:
               type: string
+          required:
+            - aggregate
           additionalProperties: false
+          description: Absent on servers older than v1.42.0; a client that reads it treats absence as no aggregate.
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     MedicationComplianceSummaryEntry:
       type: object
@@ -48284,6 +48389,18 @@ components:
           $ref: "#/components/schemas/ComplianceResult"
         compliance30:
           description: Thirty-day adherence summary, or an all-zero compatibility placeholder when applicable is false.
+          $ref: "#/components/schemas/ComplianceResult"
+        compliance60:
+          description: "Present only on `?days=60`: the trailing 60 days."
+          $ref: "#/components/schemas/ComplianceResult"
+        compliance90:
+          description: "Present only on `?days=90`: the trailing 90 days."
+          $ref: "#/components/schemas/ComplianceResult"
+        compliance180:
+          description: "Present only on `?days=180`: the trailing 180 days."
+          $ref: "#/components/schemas/ComplianceResult"
+        compliance365:
+          description: "Present only on `?days=365`: the trailing 365 days."
           $ref: "#/components/schemas/ComplianceResult"
         complianceDisplay:
           anyOf:
@@ -48510,6 +48627,45 @@ components:
       additionalProperties: false
       description: The two-row card block whose windows scale with dosing cadence (dense meds keep 7 / 30 days, sparse meds
         step both windows up). NOT the 30-day denominator — read `compliance30.totalExpected` for that.
+    MedicationComplianceAggregate:
+      type: object
+      properties:
+        compliance7:
+          $ref: "#/components/schemas/ComplianceResult"
+        compliance30:
+          $ref: "#/components/schemas/ComplianceResult"
+        compliance60:
+          anyOf:
+            - $ref: "#/components/schemas/ComplianceResult"
+            - type: "null"
+        compliance90:
+          anyOf:
+            - $ref: "#/components/schemas/ComplianceResult"
+            - type: "null"
+        compliance180:
+          anyOf:
+            - $ref: "#/components/schemas/ComplianceResult"
+            - type: "null"
+        compliance365:
+          anyOf:
+            - $ref: "#/components/schemas/ComplianceResult"
+            - type: "null"
+        medicationCount:
+          type: integer
+          exclusiveMinimum: 0
+          maximum: 9007199254740991
+          description: How many applicable medications the figure is built from.
+      required:
+        - compliance7
+        - compliance30
+        - medicationCount
+      additionalProperties: false
+      description: "One adherence figure for the whole account in the `ComplianceResult` shape, weighted by expected doses:
+        `taken`, `skipped` and `missed` are summed across every medication with `applicable: true`, and `rate` is
+        recomputed from the sums by the per-medication rule (round(100 · taken / (taken + missed)), capped at 100, 100
+        when nothing was expected). Averaging the per-medication rates would let a weekly injection weigh as much as a
+        three-times-daily tablet. `streak` is the shortest per-medication streak. The `complianceN` block for a
+        requested `days` is present when `days` was sent and is not 30."
     GetMedicationComplianceResponse:
       type: object
       properties:
@@ -52562,19 +52718,7 @@ components:
             it was published only on PUT /api/auth/profile."
           type: array
           items:
-            type: object
-            properties:
-              path:
-                type: string
-              code:
-                type: string
-              message:
-                type: string
-            required:
-              - path
-              - code
-              - message
-            additionalProperties: false
+            $ref: "#/components/schemas/ValidationIssue"
       required:
         - username
         - email
@@ -52620,8 +52764,10 @@ components:
           properties:
             clientManaged:
               type: boolean
-              description: True when the iOS app owns local medication reminders; the server-side MEDICATION_REMINDER APNs cron is
-                suppressed.
+              description: True when the iOS app delivers medication reminders locally. The server then keeps the reminder that
+                announces a dose off APNs (the phone shows its own at dose time) and still pushes the follow-ups for a
+                dose that stays open, which the phone does not send (v1.42.0; before, every MEDICATION_REMINDER push was
+                suppressed). Other channels are never affected.
             deliveryDefault:
               type: string
               enum:
@@ -57672,6 +57818,104 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    AdminMeasurementMaintenanceStatusResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AdminMeasurementMaintenanceStatus"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AdminMeasurementMaintenanceStatus:
+      type: object
+      properties:
+        available:
+          type: boolean
+          description: False when there is no background queue to ask (a web-only deployment); nothing can be started then.
+        purgePending:
+          type: boolean
+          description: The compaction-tombstone purge is queued or running. A run started now finishes at once with
+            `refused_purge_running`.
+        run:
+          anyOf:
+            - type: object
+              properties:
+                state:
+                  type: string
+                  enum:
+                    - queued
+                    - running
+                    - completed
+                    - failed
+                requestedAt:
+                  type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+                startedAt:
+                  anyOf:
+                    - type: string
+                      format: date-time
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+                    - type: "null"
+                finishedAt:
+                  anyOf:
+                    - type: string
+                      format: date-time
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+                    - type: "null"
+                outcome:
+                  anyOf:
+                    - type: string
+                      enum:
+                        - completed
+                        - refused_purge_running
+                        - already_running
+                    - type: "null"
+                  description: "How a `completed` run ended: `completed` did the work, the two refusals finished without touching the
+                    table. Null for any other state."
+              required:
+                - state
+                - requestedAt
+                - startedAt
+                - finishedAt
+                - outcome
+              additionalProperties: false
+            - type: "null"
+          description: The newest run pg-boss still keeps (terminal rows live seven days), or null when there is none.
+        sizes:
+          anyOf:
+            - type: object
+              properties:
+                tableBytes:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                  description: "`measurements` with its indexes and TOAST."
+                indexBytes:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                  description: Its indexes alone.
+              required:
+                - tableBytes
+                - indexBytes
+              additionalProperties: false
+            - type: "null"
+      required:
+        - available
+        - purgePending
+        - run
+        - sizes
       additionalProperties: false
     AdminMeasurementMaintenanceResponse:
       type: object
@@ -63475,7 +63719,20 @@ components:
                 - days
               additionalProperties: false
             - type: "null"
-          description: Null for a sparse logger below the day floor.
+          description: Day-to-day steadiness over the trailing `stabilityWindowDays` days. Null below the day floor (seven days
+            with an entry) inside that window, so a short window can be null where the year is not.
+        stabilityWindowDays:
+          anyOf:
+            - type: number
+              const: 30
+            - type: number
+              const: 90
+            - type: number
+              const: 180
+            - type: number
+              const: 365
+          description: "The window `stability` covers: the `days` query parameter, or 365 (the whole daily series) when it was not
+            sent. Added in v1.42.0; absent from older servers, whose score always covers the year."
         tags:
           type: array
           items:
@@ -63931,6 +64188,7 @@ components:
         - weekday
         - timeOfDay
         - stability
+        - stabilityWindowDays
         - tags
         - contextComparison
         - structuredTags
@@ -76524,6 +76782,33 @@ components:
           type: string
         username:
           type: string
+        timezone:
+          type: string
+          description: "The IANA zone the server cuts this account's days in: the stored zone, or the instance default when the
+            stored one is unusable. Resolved, never the raw column, so bucket day keys by this value."
+        glucoseUnit:
+          anyOf:
+            - type: string
+              enum:
+                - mg/dL
+                - mmol/L
+            - type: "null"
+          description: The account's chosen glucose display unit, as stored. `null` means the person never chose one (or the
+            stored value is neither unit), and the server then shows glucose in mg/dL.
+        features:
+          type: object
+          properties:
+            trackIntake:
+              type: boolean
+              const: true
+              description: "Medications take `trackIntake`: a medication can be kept as a record whose doses are never due, and a dose
+                written against one is refused with `medication.intake.notTracked`."
+          required:
+            - trackIntake
+          additionalProperties: false
+          description: What this server understands, for a client released apart from it. Constant across accounts; a flag appears
+            once the server supports the feature and stays `true`. Absent on servers older than v1.42.0. A client that
+            meets a flag it does not know ignores it.
         accountAccess:
           $ref: "#/components/schemas/AccountAccess"
         moduleAccess:
@@ -76555,6 +76840,9 @@ components:
       required:
         - id
         - username
+        - timezone
+        - glucoseUnit
+        - features
         - accountAccess
         - moduleAccess
         - ai

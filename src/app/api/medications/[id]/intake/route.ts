@@ -27,7 +27,10 @@ import {
   restoreForIntake,
 } from "@/lib/medications/inventory/consumption";
 import { reconcileOneShotState } from "@/lib/medications/lifecycle";
-import { assertMedicationOwnership } from "@/lib/medications/route-guards";
+import {
+  assertMedicationOwnership,
+  assertMedicationTakesIntake,
+} from "@/lib/medications/route-guards";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
 import { dispatchMedicationIntakeWebClear } from "@/lib/notifications/web-push-clear";
@@ -111,8 +114,11 @@ async function postIntake(request: NextRequest, { params }: RouteParams) {
   const intakeSource = authMethod === "bearer" ? "API" : "WEB";
 
   const { id } = await params;
-  // v1.4.25 W21 Fix-N — privacy gate hoisted to the shared helper.
-  const guard = await assertMedicationOwnership(id, user.id);
+  // v1.4.25 W21 Fix-N — privacy gate hoisted to the shared helper. This is a
+  // dose write, so the guard also refuses a record-only medication with
+  // `medication.intake.notTracked` (iOS #116, item 15): its history stays,
+  // but a new dose would be stored and then counted nowhere.
+  const guard = await assertMedicationTakesIntake(id, user.id);
   if (guard) return guard;
 
   const { data: body, error: jsonError } = await safeJson(request, {

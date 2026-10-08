@@ -993,10 +993,17 @@ export function DocumentsView() {
       {list.isPending ? (
         <div
           data-slot="documents-loading"
-          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          // The archive's tile shape (a 4:3 preview over two text lines), in
+          // the timeline's column counts, so the grid does not jump when the
+          // first page lands.
+          className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4"
         >
-          {Array.from({ length: 9 }, (_, i) => (
-            <Skeleton key={i} className="h-28 rounded-xl" />
+          {Array.from({ length: 8 }, (_, i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="aspect-[4/3] w-full rounded-xl" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
           ))}
         </div>
       ) : list.isError ? (
