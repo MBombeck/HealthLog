@@ -186,8 +186,13 @@ export function ChartDataTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((point) => (
-              <TableRow key={point.timestamp} data-slot="chart-data-table-row">
+            {rows.map((point, index) => (
+              // Two readings can share a day (a list of entries, not of
+              // days), so the timestamp alone is not a key.
+              <TableRow
+                key={`${point.timestamp}-${index}`}
+                data-slot="chart-data-table-row"
+              >
                 {/* The date is the row's header, so a screen reader reads
                     "12 July, systolic 128" rather than a bare number. */}
                 <TableHead

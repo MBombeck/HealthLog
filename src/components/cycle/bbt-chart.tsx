@@ -24,7 +24,7 @@
  * it surfaces a "log your morning temperature" hint rather than a flat dot.
  */
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { Thermometer } from "lucide-react";
 import {
   CartesianGrid,
@@ -46,6 +46,13 @@ import { cn } from "@/lib/utils";
 import type { CalendarDay, CervicalMucus, OvulationTest } from "./types";
 import { PHASE_HUE, OVULATION_HUE } from "./phase-tokens";
 import { shiftDateKey } from "@/lib/tz/format";
+import { dateOnlyKey } from "@/lib/tz/date-only";
+import { ChartDataTable } from "@/components/charts/chart-data-table";
+import {
+  ChartDayFooter,
+  OPEN_DAY_LINE,
+  useChartDayLinks,
+} from "@/components/day/chart-day-links";
 
 /** Trailing fallback window (days) when no MENSTRUAL-anchored cycle is active. */
 const FALLBACK_WINDOW_DAYS = 35;
@@ -190,6 +197,27 @@ export function BbtChart({
 
   const hasCurve = points.length >= 2;
 
+  // v1.42 — each logged temperature opens its day through the doors every
+  // day-linked chart has. Tapping a cycle-calendar cell still logs the day;
+  // the chart is where a day is read.
+  const chartDays = useChartDayLinks({
+    enabled: hasCurve,
+    days: points.map((p) => dateOnlyKey(new Date(p.t))),
+    focusFor: (index) => {
+      const p = points[index];
+      return p
+        ? {
+            label: t("cycle.bbt.title"),
+            value: fmt.number(p.temp),
+            unit: unitDisplay.unitFor("BODY_TEMPERATURE"),
+            types: ["BODY_TEMPERATURE"],
+          }
+        : null;
+    },
+  });
+  const openPoint =
+    chartDays.openIndex !== undefined ? points[chartDays.openIndex] : undefined;
+
   return (
     <Card data-slot="cycle-bbt-chart">
       <CardHeader>
@@ -213,14 +241,16 @@ export function BbtChart({
               {t("cycle.bbt.caption")}
             </p>
             <div
-              className="touch-pan-y"
+              className={cn("touch-pan-y", chartDays.plotClassName)}
               style={{ height: "210px" }}
               data-slot="cycle-bbt-area"
+              {...chartDays.plotProps}
             >
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={points}
                   margin={{ top: 10, right: 14, bottom: 16, left: 4 }}
+                  onClick={chartDays.onChartClick}
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -248,13 +278,30 @@ export function BbtChart({
                     axisLine={false}
                     tickFormatter={(v) => `${fmt.number(v as number)}°`}
                   />
+                  {openPoint ? (
+                    <ReferenceLine x={openPoint.t} {...OPEN_DAY_LINE} />
+                  ) : null}
                   <Tooltip
+                    {...chartDays.tooltipProps}
                     cursor={{
                       stroke: "var(--muted-foreground)",
                       strokeOpacity: 0.3,
                       strokeDasharray: "3 3",
                     }}
-                    content={<BbtTooltip />}
+                    content={(props) => {
+                      const payload = props.payload as unknown as
+                        { payload: BbtPoint }[] | undefined;
+                      const point = payload?.[0]?.payload;
+                      return (
+                        <BbtTooltip
+                          active={props.active}
+                          payload={payload}
+                          action={chartDays.tooltipAction(
+                            point ? points.indexOf(point) : undefined,
+                          )}
+                        />
+                      );
+                    }}
                   />
                   {ovulationMs != null ? (
                     <ReferenceLine
@@ -290,6 +337,29 @@ export function BbtChart({
                 </LineChart>
               </ResponsiveContainer>
             </div>
+            <ChartDayFooter
+              links={chartDays}
+              points={points.map((p) => ({ timestamp: p.t }))}
+              axis="time"
+              // The margin (4) + the y axis (40) on the left, the margin (14)
+              // on the right.
+              insetLeft={4 + 40}
+              insetRight={14}
+            />
+            <ChartDataTable
+              points={points.map((p) => ({
+                date: dateOnlyKey(new Date(p.t)),
+                timestamp: p.t,
+                temp: p.temp,
+              }))}
+              columns={[{ key: "temp", label: t("cycle.bbt.title") }]}
+              unit={unitDisplay.unitFor("BODY_TEMPERATURE")}
+              formatValue={(value) => fmt.number(value)}
+              formatDate={(date) => fmt.dateShortSmartCalendar(date)}
+              bucket="day"
+              metricLabel={t("cycle.bbt.title")}
+              dayLinks
+            />
           </>
         )}
       </CardContent>
@@ -317,6 +387,8 @@ function PhaseDot(props: { cx?: number; cy?: number; payload?: BbtPoint }) {
 export function BbtTooltip(props: {
   active?: boolean;
   payload?: { payload: BbtPoint }[];
+  /** v1.42 — the tooltip's way to the day on a touch screen. */
+  action?: ReactNode;
 }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
@@ -350,6 +422,7 @@ export function BbtTooltip(props: {
           {t(`cycle.ovulationTest.${p.ovulationTest}`)}
         </p>
       ) : null}
+      {props.action ?? null}
     </div>
   );
 }

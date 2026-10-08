@@ -78,6 +78,7 @@ export function HydrationCard() {
               unit={data.unit}
               valueLabel={t("nutrients.names.water")}
               referenceValue={data.reference?.value ?? null}
+              dayLinks
             />
           </>
         )}

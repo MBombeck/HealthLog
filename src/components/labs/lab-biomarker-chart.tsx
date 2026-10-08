@@ -26,8 +26,11 @@ import {
 import { dateOnlyKey, isNoonUtcAnchor } from "@/lib/tz/date-only";
 
 import { RichChartTooltip, type RichTooltipRow } from "../charts/chart-tooltip";
-import { TooltipDayAction, useCoarsePointer } from "../day/chart-day";
-import { openDay, useOpenDay } from "../day/day-layer-controller";
+import {
+  ChartDayFooter,
+  OPEN_DAY_LINE,
+  useChartDayLinks,
+} from "../day/chart-day-links";
 import { dateKeyOfInstant } from "../day/day-url";
 import type { LabResultDto } from "./types";
 import { useLabNumber } from "./use-lab-format";
@@ -114,44 +117,12 @@ export function LabBiomarkerChart({
       : fmt.dateShortSmart(instant);
   };
   const [range, setRange] = useState<RangeKey>("365");
-  // v1.42 — a reading opens its day: a click on a fine pointer, the
-  // tooltip's button on a touch screen. The open day's reading is ringed.
   const timeZone = useDisplayTimezone();
-  const coarse = useCoarsePointer();
-  const openDayKey = useOpenDay();
   const dayOf = (timestamp: number) => {
     const instant = new Date(timestamp);
     return isNoonUtcAnchor(instant)
       ? dateOnlyKey(instant)
       : dateKeyOfInstant(instant, timeZone);
-  };
-  const openReadingDay = (point: ChartPoint | undefined) => {
-    if (!point) return;
-    const ordered = [...readings]
-      .filter((r) => r.value !== null)
-      .sort(
-        (a, b) => new Date(a.takenAt).getTime() - new Date(b.takenAt).getTime(),
-      );
-    const at = ordered.findIndex((r) => r.id === point.id);
-    const before = at > 0 ? ordered[at - 1] : undefined;
-    const date = dayOf(point.timestamp);
-    openDay(date, {
-      focus: {
-        date,
-        label: readings[0]?.analyte ?? "",
-        value: labNumber(point.value),
-        unit,
-        compare:
-          before && before.value !== null
-            ? {
-                label: t("day.previousReading", {
-                  date: labShortDate(before.takenAt),
-                }),
-                value: `${labNumber(before.value)} ${unit}`.trim(),
-              }
-            : undefined,
-      },
-    });
   };
   // Capture "now" once at mount so the recency filter stays pure across
   // re-renders (an inline `Date.now()` in render is impure).
@@ -230,6 +201,43 @@ export function LabBiomarkerChart({
     return [min >= 0 ? Math.max(0, min - pad) : min - pad, max + pad];
   }, [points, lowerBound, upperBound, sourceBand]);
 
+  // v1.42 — a reading opens its day through the doors every day-linked
+  // chart has; the day opens with the reading on top and the one before it
+  // beside it. The open day's reading is ringed and its line dashed.
+  const chartDays = useChartDayLinks({
+    enabled: true,
+    days: points.map((point) => dayOf(point.timestamp)),
+    focusFor: (index) => {
+      const point = points[index];
+      if (!point) return null;
+      // The reading before it, in or out of the range in view.
+      const ordered = [...readings]
+        .filter((r) => r.value !== null)
+        .sort(
+          (x, y) =>
+            new Date(x.takenAt).getTime() - new Date(y.takenAt).getTime(),
+        );
+      const at = ordered.findIndex((r) => r.id === point.id);
+      const before = at > 0 ? ordered[at - 1] : undefined;
+      return {
+        label: readings[0]?.analyte ?? "",
+        value: labNumber(point.value),
+        unit,
+        compare:
+          before && before.value !== null
+            ? {
+                label: t("day.previousReading", {
+                  date: labShortDate(before.takenAt),
+                }),
+                value: `${labNumber(before.value)} ${unit}`.trim(),
+              }
+            : undefined,
+      };
+    },
+  });
+  const openPoint =
+    chartDays.openIndex !== undefined ? points[chartDays.openIndex] : undefined;
+
   const animate = !prefersReducedMotion();
   const primary = "var(--primary)";
   // A second muted hue from the chart palette. Distinct from the primary band
@@ -260,188 +268,187 @@ export function LabBiomarkerChart({
         </p>
       ) : (
         <div>
-          <ResponsiveContainer width="100%" height={CHART_HEIGHT_PX}>
-            <ComposedChart
-              data={points}
-              margin={{ top: 8, right: 12, bottom: 4, left: 0 }}
-              className={coarse ? undefined : "cursor-pointer"}
-              onClick={
-                coarse
-                  ? undefined
-                  : (state) => {
-                      const index = Number(state?.activeTooltipIndex);
-                      if (Number.isInteger(index))
-                        openReadingDay(points[index]);
-                    }
-              }
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="var(--border)"
-                vertical={false}
-              />
-              <XAxis
-                dataKey="timestamp"
-                type="number"
-                scale="time"
-                domain={["dataMin", "dataMax"]}
-                tickFormatter={(ts: number) => labShortDate(ts)}
-                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                stroke="var(--border)"
-                minTickGap={32}
-              />
-              <YAxis
-                domain={yDomain}
-                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                stroke="var(--border)"
-                width={44}
-                tickFormatter={(v: number) => labNumber(v)}
-              />
-              {/* Reference window — muted band + dashed bounds. No alarm
+          <div
+            data-slot="chart-plot"
+            {...chartDays.plotProps}
+            className={chartDays.plotClassName}
+          >
+            <ResponsiveContainer width="100%" height={CHART_HEIGHT_PX}>
+              <ComposedChart
+                data={points}
+                margin={{ top: 8, right: 12, bottom: 4, left: 0 }}
+                onClick={chartDays.onChartClick}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--border)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="timestamp"
+                  type="number"
+                  scale="time"
+                  domain={["dataMin", "dataMax"]}
+                  tickFormatter={(ts: number) => labShortDate(ts)}
+                  tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                  stroke="var(--border)"
+                  minTickGap={32}
+                />
+                <YAxis
+                  domain={yDomain}
+                  tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                  stroke="var(--border)"
+                  width={44}
+                  tickFormatter={(v: number) => labNumber(v)}
+                />
+                {/* Reference window — muted band + dashed bounds. No alarm
                   colour: the in/out verdict is shown by the neutral badge,
                   not by painting the chart red. */}
-              {lowerBound != null && upperBound != null ? (
-                <ReferenceArea
-                  y1={lowerBound}
-                  y2={upperBound}
-                  fill={primary}
-                  fillOpacity={0.1}
-                  stroke="none"
-                />
-              ) : null}
-              {lowerBound != null ? (
-                <ReferenceLine
-                  y={lowerBound}
-                  stroke={primary}
-                  strokeOpacity={0.4}
-                  strokeDasharray="4 4"
-                />
-              ) : null}
-              {upperBound != null ? (
-                <ReferenceLine
-                  y={upperBound}
-                  stroke={primary}
-                  strokeOpacity={0.4}
-                  strokeDasharray="4 4"
-                />
-              ) : null}
-              {/* The source window — outlined, not filled, so it reads as a
+                {lowerBound != null && upperBound != null ? (
+                  <ReferenceArea
+                    y1={lowerBound}
+                    y2={upperBound}
+                    fill={primary}
+                    fillOpacity={0.1}
+                    stroke="none"
+                  />
+                ) : null}
+                {lowerBound != null ? (
+                  <ReferenceLine
+                    y={lowerBound}
+                    stroke={primary}
+                    strokeOpacity={0.4}
+                    strokeDasharray="4 4"
+                  />
+                ) : null}
+                {upperBound != null ? (
+                  <ReferenceLine
+                    y={upperBound}
+                    stroke={primary}
+                    strokeOpacity={0.4}
+                    strokeDasharray="4 4"
+                  />
+                ) : null}
+                {/* The source window — outlined, not filled, so it reads as a
                   second band over the catalog one rather than a second fill
                   competing with it. Same no-alarm-colour rule. */}
-              {sourceBand &&
-              sourceBand.low != null &&
-              sourceBand.high != null ? (
-                <ReferenceArea
-                  y1={sourceBand.low}
-                  y2={sourceBand.high}
-                  fill={secondary}
-                  fillOpacity={0.06}
-                  stroke={secondary}
-                  strokeOpacity={0.5}
-                  strokeDasharray="2 3"
-                />
-              ) : null}
-              {sourceBand &&
-              sourceBand.low != null &&
-              sourceBand.high == null ? (
-                <ReferenceLine
-                  y={sourceBand.low}
-                  stroke={secondary}
-                  strokeOpacity={0.6}
-                  strokeDasharray="2 3"
-                />
-              ) : null}
-              {sourceBand &&
-              sourceBand.high != null &&
-              sourceBand.low == null ? (
-                <ReferenceLine
-                  y={sourceBand.high}
-                  stroke={secondary}
-                  strokeOpacity={0.6}
-                  strokeDasharray="2 3"
-                />
-              ) : null}
-              <Tooltip
-                trigger={coarse ? "click" : "hover"}
-                wrapperStyle={
-                  coarse ? { pointerEvents: "auto", zIndex: 20 } : undefined
-                }
-                content={(props) => {
-                  const active = props.active ?? false;
-                  const payload = props.payload as
-                    ReadonlyArray<{ payload?: ChartPoint }> | undefined;
-                  const point = payload?.[0]?.payload;
-                  if (!active || !point) {
-                    return <RichChartTooltip active={false} rows={[]} />;
-                  }
-                  const rows: RichTooltipRow[] = [
-                    {
-                      name: t("labs.chart.valueLabel"),
-                      value: `${labNumber(point.value)} ${unit}`,
-                      color: primary,
-                    },
-                  ];
-                  // Name the window THIS reading was judged against. Two
-                  // readings on one chart can carry different printed windows,
-                  // so the band alone cannot answer it per point.
-                  if (point.referenceOrigin === "source") {
-                    rows.push({
-                      name: t("labs.chart.sourceRangeLabel"),
-                      value:
-                        point.sourceReferenceText ??
-                        `${formatReferenceRange(
-                          point.referenceLow,
-                          point.referenceHigh,
-                          labNumber,
-                        )} ${unit}`.trim(),
-                      color: secondary,
-                    });
-                  }
-                  return (
-                    <RichChartTooltip
-                      active
-                      label={labShortDate(point.timestamp)}
-                      rows={rows}
-                      action={
-                        coarse ? (
-                          <TooltipDayAction
-                            onOpen={() => openReadingDay(point)}
-                          />
-                        ) : undefined
-                      }
-                    />
-                  );
-                }}
-              />
-              {points
-                .filter(
-                  (point) =>
-                    openDayKey !== null &&
-                    dayOf(point.timestamp) === openDayKey,
-                )
-                .map((point) => (
-                  <ReferenceDot
-                    key={`open-day-${point.id}`}
-                    x={point.timestamp}
-                    y={point.value}
-                    r={6.5}
-                    fill="var(--card)"
-                    stroke={primary}
-                    strokeWidth={2.5}
-                    ifOverflow="discard"
+                {sourceBand &&
+                sourceBand.low != null &&
+                sourceBand.high != null ? (
+                  <ReferenceArea
+                    y1={sourceBand.low}
+                    y2={sourceBand.high}
+                    fill={secondary}
+                    fillOpacity={0.06}
+                    stroke={secondary}
+                    strokeOpacity={0.5}
+                    strokeDasharray="2 3"
                   />
-                ))}
-              <Line
-                type="monotone"
-                dataKey="value"
-                stroke={primary}
-                strokeWidth={2}
-                dot={{ r: 3, fill: primary }}
-                activeDot={{ r: 5 }}
-                isAnimationActive={animate}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
+                ) : null}
+                {sourceBand &&
+                sourceBand.low != null &&
+                sourceBand.high == null ? (
+                  <ReferenceLine
+                    y={sourceBand.low}
+                    stroke={secondary}
+                    strokeOpacity={0.6}
+                    strokeDasharray="2 3"
+                  />
+                ) : null}
+                {sourceBand &&
+                sourceBand.high != null &&
+                sourceBand.low == null ? (
+                  <ReferenceLine
+                    y={sourceBand.high}
+                    stroke={secondary}
+                    strokeOpacity={0.6}
+                    strokeDasharray="2 3"
+                  />
+                ) : null}
+                {openPoint ? (
+                  <ReferenceLine x={openPoint.timestamp} {...OPEN_DAY_LINE} />
+                ) : null}
+                <Tooltip
+                  {...chartDays.tooltipProps}
+                  content={(props) => {
+                    const active = props.active ?? false;
+                    const payload = props.payload as
+                      ReadonlyArray<{ payload?: ChartPoint }> | undefined;
+                    const point = payload?.[0]?.payload;
+                    if (!active || !point) {
+                      return <RichChartTooltip active={false} rows={[]} />;
+                    }
+                    const rows: RichTooltipRow[] = [
+                      {
+                        name: t("labs.chart.valueLabel"),
+                        value: `${labNumber(point.value)} ${unit}`,
+                        color: primary,
+                      },
+                    ];
+                    // Name the window THIS reading was judged against. Two
+                    // readings on one chart can carry different printed windows,
+                    // so the band alone cannot answer it per point.
+                    if (point.referenceOrigin === "source") {
+                      rows.push({
+                        name: t("labs.chart.sourceRangeLabel"),
+                        value:
+                          point.sourceReferenceText ??
+                          `${formatReferenceRange(
+                            point.referenceLow,
+                            point.referenceHigh,
+                            labNumber,
+                          )} ${unit}`.trim(),
+                        color: secondary,
+                      });
+                    }
+                    return (
+                      <RichChartTooltip
+                        active
+                        label={labShortDate(point.timestamp)}
+                        rows={rows}
+                        action={chartDays.tooltipAction(points.indexOf(point))}
+                      />
+                    );
+                  }}
+                />
+                {points
+                  .filter(
+                    (point) =>
+                      chartDays.openDay !== null &&
+                      dayOf(point.timestamp) === chartDays.openDay,
+                  )
+                  .map((point) => (
+                    <ReferenceDot
+                      key={`open-day-${point.id}`}
+                      x={point.timestamp}
+                      y={point.value}
+                      r={6.5}
+                      fill="var(--card)"
+                      stroke={primary}
+                      strokeWidth={2.5}
+                      ifOverflow="discard"
+                    />
+                  ))}
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke={primary}
+                  strokeWidth={2}
+                  dot={{ r: 3, fill: primary }}
+                  activeDot={{ r: 5 }}
+                  isAnimationActive={animate}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+          <ChartDayFooter
+            links={chartDays}
+            points={points}
+            axis="time"
+            // The y axis (44) on the left, the margin (12) on the right.
+            insetLeft={44}
+            insetRight={12}
+          />
           {sourceBand ? (
             <p className="text-muted-foreground mt-2 text-xs">
               {sourceBand.mixed

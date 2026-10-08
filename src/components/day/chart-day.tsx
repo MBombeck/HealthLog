@@ -120,18 +120,61 @@ export function rugPosition(
 }
 
 /**
+ * How a chart spreads its points along the x axis, which decides where a
+ * day's dot sits under it:
+ *
+ *   - `index`: the axis is the point index, the first point at the left edge
+ *     of the plot and the last at the right (`HealthChart`, the mood line, a
+ *     category line chart);
+ *   - `band`: one band per point, the point at the band's centre (a bar
+ *     chart);
+ *   - `time`: the axis is the timestamp itself, from the first point to the
+ *     last (a lab chart, any `scale="time"` axis).
+ */
+export type ChartDayAxis = "index" | "band" | "time";
+
+/**
+ * Where along the plot (0 at the left edge, 1 at the right) a day's dot
+ * belongs, or null outside the drawn span.
+ */
+export function rugFraction(
+  day: DateKey,
+  points: readonly RugPoint[],
+  axis: ChartDayAxis,
+): number | null {
+  const at = rugPosition(day, points);
+  if (at === null) return null;
+  const n = points.length;
+  if (axis === "band") return (at + 0.5) / n;
+  if (n === 1) return 0.5;
+  if (axis === "time") {
+    const first = points[0]!.timestamp;
+    const last = points[n - 1]!.timestamp;
+    const t = Date.parse(`${day}T12:00:00.000Z`);
+    return last === first ? 0.5 : (t - first) / (last - first);
+  }
+  return at / (n - 1);
+}
+
+/**
  * The row of day dots under a daily chart. `insetLeft` / `insetRight` are the
  * pixels between the chart box and the first and last point (margin, axis,
  * padding), so a dot lands under its day.
+ *
+ * The row is always drawn at its full height, dots or not: the index that
+ * fills it arrives after the chart, and a row that appeared then would push
+ * everything under the chart down by its height.
  */
 export function DayRug({
   points,
   insetLeft,
   insetRight,
+  axis = "index",
 }: {
   points: readonly RugPoint[];
   insetLeft: number;
   insetRight: number;
+  axis?: ChartDayAxis;
 }) {
   const today = useTodayKey();
   const open = useOpenDay();
@@ -141,18 +184,16 @@ export function DayRug({
   const to = last ? chartPointDayKey(last.timestamp) : null;
   const index = useDayIndex(from, to);
   const data = index.data;
-  if (!data?.days || points.length === 0) return null;
-  const notable = new Set(data.notable ?? []);
-  const maxIndex = Math.max(points.length - 1, 1);
-  const days = Object.keys(data.days)
+  const notable = new Set(data?.notable ?? []);
+  const days = Object.keys(data?.days ?? {})
     .filter((day) => isOpenableDay(day, today))
-    .map((day) => ({ day, at: rugPosition(day, points) }))
+    .map((day) => ({ day, at: rugFraction(day, points, axis) }))
     .filter((entry): entry is { day: string; at: number } => entry.at !== null);
-  if (days.length === 0) return null;
   return (
     <div
       aria-hidden="true"
       data-slot="day-rug"
+      data-axis={axis}
       className="pointer-events-none relative h-3"
       style={{ marginLeft: insetLeft, marginRight: insetRight }}
     >
@@ -173,9 +214,7 @@ export function DayRug({
                   ? "border-muted-foreground size-[7px] border-[1.5px]"
                   : "bg-muted-foreground/55 size-1",
             )}
-            style={{
-              left: `${(points.length === 1 ? 0.5 : at / maxIndex) * 100}%`,
-            }}
+            style={{ left: `${at * 100}%` }}
           />
         );
       })}
@@ -183,16 +222,40 @@ export function DayRug({
   );
 }
 
-/** The one line under a day-linked chart: what the dots mean, and the click. */
-export function ChartDayCaption({ coarse }: { coarse: boolean }) {
+/**
+ * What a day-linked surface is made of, which names the thing to click in
+ * the caption: a point on a line, a bar, or a cell of a calendar.
+ */
+export type ChartDayMark = "point" | "bar" | "cell";
+
+const HINT_KEYS: Record<ChartDayMark, { fine: string; coarse: string }> = {
+  point: { fine: "day.chartHint", coarse: "day.chartHintTouch" },
+  bar: { fine: "day.chartHintBar", coarse: "day.chartHintTouchBar" },
+  cell: { fine: "day.chartHintCell", coarse: "day.chartHintTouchCell" },
+};
+
+/**
+ * The one line under a day-linked chart: what the dots mean (when the chart
+ * has the row of dots), and the click.
+ */
+export function ChartDayCaption({
+  coarse,
+  mark = "point",
+  rug = true,
+}: {
+  coarse: boolean;
+  mark?: ChartDayMark;
+  rug?: boolean;
+}) {
   const { t } = useTranslations();
+  const hint = HINT_KEYS[mark];
   return (
     <p
       data-slot="chart-day-caption"
       className="text-muted-foreground mt-1 flex flex-wrap justify-between gap-x-4 gap-y-1 text-xs"
     >
-      <span>{t("day.rugLegend")}</span>
-      <span>{coarse ? t("day.chartHintTouch") : t("day.chartHint")}</span>
+      {rug ? <span>{t("day.rugLegend")}</span> : null}
+      <span>{coarse ? t(hint.coarse) : t(hint.fine)}</span>
     </p>
   );
 }

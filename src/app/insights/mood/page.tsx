@@ -148,7 +148,7 @@ export default function InsightsStimmungPage() {
           MeasurementType series, so the period-over-period range read
           (`/api/analytics/range`, keyed on a MeasurementType enum) has
           nothing to aggregate. */}
-      <MoodChart chartKey="mood" compareBaseline={compareBaseline} />
+      <MoodChart chartKey="mood" compareBaseline={compareBaseline} dayLinks />
 
       <MetricTargetSummary slug="mood" />
 
