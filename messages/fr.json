@@ -463,7 +463,6 @@
       "signOut": "Se déconnecter et accepter l'invitation"
     },
     "createAccount": "Créer un compte",
-    "newAccount": "Créer un nouveau compte",
     "backToPasskey": "Revenir à la passkey",
     "passkeySetupLater": "Tu peux configurer les passkeys plus tard dans les paramètres.",
     "passwordMinLength": "Min. 12 caractères",
@@ -583,7 +582,6 @@
     "quickAddLifeEvent": "Enregistrer un événement de vie",
     "customizeDashboard": "Personnaliser le tableau de bord",
     "medicationIntakeQuickAdd": {
-      "sheetTitle": "Saisir une prise de médicament",
       "sheetDescription": "Enregistre la dose, l’heure et le médicament en quelques touches.",
       "medicationLabel": "Médicament",
       "medicationPlaceholder": "Sélectionner un médicament",
@@ -12118,7 +12116,6 @@
     "unreadableLabel": "Symptôme illisible",
     "intensityPill": "{value}/10",
     "entry": {
-      "sheetTitle": "Noter un symptôme",
       "sheetDescription": "L'un de tes propres symptômes, son intensité et quand.",
       "symptom": "Symptôme",
       "symptomRequired": "Choisis un symptôme.",

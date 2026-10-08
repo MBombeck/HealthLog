@@ -463,7 +463,6 @@
       "signOut": "Sign out and accept the invitation"
     },
     "createAccount": "Create account",
-    "newAccount": "Create new account",
     "backToPasskey": "Back to Passkey",
     "passkeySetupLater": "You can set up passkeys at any time in Settings.",
     "passwordMinLength": "Min. 12 characters",
@@ -583,7 +582,6 @@
     "quickAddLifeEvent": "Log life event",
     "customizeDashboard": "Customize dashboard",
     "medicationIntakeQuickAdd": {
-      "sheetTitle": "Log medication intake",
       "sheetDescription": "Record dose, time, and medication in a few taps.",
       "medicationLabel": "Medication",
       "medicationPlaceholder": "Select a medication",
@@ -12118,7 +12116,6 @@
     "unreadableLabel": "Unreadable symptom",
     "intensityPill": "{value}/10",
     "entry": {
-      "sheetTitle": "Log symptom",
       "sheetDescription": "One of your own symptoms, how strong and when.",
       "symptom": "Symptom",
       "symptomRequired": "Choose a symptom.",

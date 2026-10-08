@@ -182,7 +182,7 @@ export default function MeasurementsPage() {
             setReturnTo(null);
           }
         }}
-        title={t("measurements.addMeasurement")}
+        title={t("dashboard.quickAddMeasurement")}
         footer={<div ref={setFooterEl} className="flex w-full" />}
       >
         <MeasurementForm

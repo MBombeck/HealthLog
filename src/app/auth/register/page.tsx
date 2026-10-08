@@ -175,14 +175,11 @@ export default function RegisterPage() {
           <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-lg">
             <Logo className="text-primary" size={28} />
           </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">
-              {t("auth.createAccount")}
-            </h1>
-            <p className="text-muted-foreground mt-1 text-sm">
-              {t("auth.newAccount")}
-            </p>
-          </div>
+          {/* The title says it; a subtitle repeating "new account" said it
+              twice. */}
+          <h1 className="text-xl font-bold tracking-tight">
+            {t("auth.createAccount")}
+          </h1>
         </div>
 
         {inviteToken && (

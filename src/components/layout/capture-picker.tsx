@@ -263,18 +263,21 @@ export function CapturePicker({
   ];
   const options = allOptions.filter((opt) => offered.includes(opt.kind));
 
+  // One title per kind, the same verb phrase the dashboard's add menu
+  // shows, so the sheet names what is being logged wherever it opens from.
   const formTitleByKind: Record<CaptureKind, string> = {
-    measurement: t("measurements.addMeasurement"),
-    medication: t("nav.capture.medication"),
-    mood: t("mood.addEntry"),
-    symptom: t("symptoms.entry.sheetTitle"),
-    workout: t("insights.workouts.manual.sheetTitle"),
-    lifeEvent: t("lifeEvents.title"),
+    measurement: t("dashboard.quickAddMeasurement"),
+    medication: t("dashboard.quickAddMedicationIntake"),
+    mood: t("dashboard.quickAddMood"),
+    symptom: t("dashboard.quickAddSymptom"),
+    workout: t("dashboard.quickAddWorkout"),
+    lifeEvent: t("dashboard.quickAddLifeEvent"),
   };
   // `openKind === null` keeps the form sheet closed (the title is unread
-  // then); the mood label is the harmless default, matching the prior
-  // ternary's else branch.
-  const formTitle = openKind ? formTitleByKind[openKind] : t("mood.addEntry");
+  // then); the mood label is the harmless default.
+  const formTitle = openKind
+    ? formTitleByKind[openKind]
+    : t("dashboard.quickAddMood");
 
   return (
     <>

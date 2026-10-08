@@ -190,12 +190,6 @@ export function DashboardHeader({
                     {t("dashboard.quickAddMeasurement")}
                   </DropdownMenuItem>
                 )}
-                {canAddMood && (
-                  <DropdownMenuItem onClick={() => onQuickEntry("mood")}>
-                    <Waves className="mr-2 h-4 w-4" aria-hidden="true" />
-                    {t("dashboard.quickAddMood")}
-                  </DropdownMenuItem>
-                )}
                 {/* v1.4.37 W7b — third quick-add row: medication intake.
                   Same Sheet-on-mobile / Dialog-on-desktop primitive as
                   the other two; the menu label is a self-contained
@@ -207,6 +201,12 @@ export function DashboardHeader({
                   >
                     <Pill className="mr-2 h-4 w-4" aria-hidden="true" />
                     {t("dashboard.quickAddMedicationIntake")}
+                  </DropdownMenuItem>
+                )}
+                {canAddMood && (
+                  <DropdownMenuItem onClick={() => onQuickEntry("mood")}>
+                    <Waves className="mr-2 h-4 w-4" aria-hidden="true" />
+                    {t("dashboard.quickAddMood")}
                   </DropdownMenuItem>
                 )}
                 {canAddSymptom && (

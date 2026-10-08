@@ -183,6 +183,10 @@ describe("<DashboardHeader> — every entry follows its module, as the capture p
           `${kind} ${JSON.stringify(modules)}`,
         ).toBe(picker.includes(kind));
       }
+      // Same order as the picker, so the two ways in never disagree on
+      // where an entry sits.
+      const positions = picker.map((kind) => html.indexOf(label[kind]));
+      expect(positions).toEqual([...positions].sort((x, y) => x - y));
     }
   });
 });

@@ -463,7 +463,6 @@
       "signOut": "Esci e accetta l'invito"
     },
     "createAccount": "Crea account",
-    "newAccount": "Crea un nuovo account",
     "backToPasskey": "Torna a passkey",
     "passkeySetupLater": "Puoi configurare le passkey più tardi dalle impostazioni.",
     "passwordMinLength": "Min. 12 caratteri",
@@ -583,7 +582,6 @@
     "quickAddLifeEvent": "Registra evento di vita",
     "customizeDashboard": "Personalizza dashboard",
     "medicationIntakeQuickAdd": {
-      "sheetTitle": "Registra assunzione del farmaco",
       "sheetDescription": "Registra dose, orario e farmaco con pochi tap.",
       "medicationLabel": "Farmaco",
       "medicationPlaceholder": "Seleziona un farmaco",
@@ -12118,7 +12116,6 @@
     "unreadableLabel": "Sintomo illeggibile",
     "intensityPill": "{value}/10",
     "entry": {
-      "sheetTitle": "Registra sintomo",
       "sheetDescription": "Uno dei tuoi sintomi, quanto forte e quando.",
       "symptom": "Sintomo",
       "symptomRequired": "Scegli un sintomo.",

@@ -463,7 +463,6 @@
       "signOut": "Wyloguj się i przyjmij zaproszenie"
     },
     "createAccount": "Utwórz konto",
-    "newAccount": "Utwórz nowe konto",
     "backToPasskey": "Wróć do passkey",
     "passkeySetupLater": "Passkey możesz skonfigurować później w ustawieniach.",
     "passwordMinLength": "Min. 12 znaków",
@@ -583,7 +582,6 @@
     "quickAddLifeEvent": "Zapisz wydarzenie życiowe",
     "customizeDashboard": "Dostosuj pulpit",
     "medicationIntakeQuickAdd": {
-      "sheetTitle": "Zarejestruj przyjęcie leku",
       "sheetDescription": "Zapisz dawkę, godzinę i lek w kilku stuknięciach.",
       "medicationLabel": "Lek",
       "medicationPlaceholder": "Wybierz lek",
@@ -12118,7 +12116,6 @@
     "unreadableLabel": "Nieczytelny objaw",
     "intensityPill": "{value}/10",
     "entry": {
-      "sheetTitle": "Zapisz objaw",
       "sheetDescription": "Jeden z twoich objawów, jak silny i kiedy.",
       "symptom": "Objaw",
       "symptomRequired": "Wybierz objaw.",

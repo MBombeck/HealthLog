@@ -463,7 +463,6 @@
       "signOut": "로그아웃하고 초대 수락하기"
     },
     "createAccount": "계정 만들기",
-    "newAccount": "새 계정 만들기",
     "backToPasskey": "패스키로 돌아가기",
     "passkeySetupLater": "패스키는 설정에서 언제든 등록할 수 있어요.",
     "passwordMinLength": "최소 12자",
@@ -583,7 +582,6 @@
     "quickAddLifeEvent": "삶의 사건 기록",
     "customizeDashboard": "대시보드 맞춤 설정",
     "medicationIntakeQuickAdd": {
-      "sheetTitle": "복용 기록",
       "sheetDescription": "몇 번의 탭으로 약과 용량, 시각을 기록해요.",
       "medicationLabel": "약",
       "medicationPlaceholder": "약 선택",
@@ -12118,7 +12116,6 @@
     "unreadableLabel": "읽을 수 없는 증상",
     "intensityPill": "{value}/10",
     "entry": {
-      "sheetTitle": "증상 기록",
       "sheetDescription": "직접 정한 증상과 강도, 시각을 기록합니다.",
       "symptom": "증상",
       "symptomRequired": "증상을 선택하세요.",
