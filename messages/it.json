@@ -12497,5 +12497,12 @@
       "title": "Eliminare questo evento di vita?",
       "body": "Titolo e nota non ci saranno più."
     }
+  },
+  "aboutPage": {
+    "eyebrow": "Informazioni",
+    "title": "Informazioni su HealthLog",
+    "lastUpdated": "Ultimo aggiornamento: {date}",
+    "project": "Progetto",
+    "credits": "Riconoscimenti"
   }
 }

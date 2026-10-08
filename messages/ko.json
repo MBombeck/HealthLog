@@ -12497,5 +12497,12 @@
       "title": "이 삶의 사건을 삭제할까요?",
       "body": "제목과 메모가 사라져요."
     }
+  },
+  "aboutPage": {
+    "eyebrow": "정보",
+    "title": "HealthLog 정보",
+    "lastUpdated": "마지막 업데이트: {date}",
+    "project": "프로젝트",
+    "credits": "크레딧"
   }
 }

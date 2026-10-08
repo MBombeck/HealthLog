@@ -12497,5 +12497,12 @@
       "title": "Usunąć to wydarzenie życiowe?",
       "body": "Tytuł i notatka znikną."
     }
+  },
+  "aboutPage": {
+    "eyebrow": "Informacje",
+    "title": "O HealthLog",
+    "lastUpdated": "Ostatnia aktualizacja: {date}",
+    "project": "Projekt",
+    "credits": "Podziękowania"
   }
 }

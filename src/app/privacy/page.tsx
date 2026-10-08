@@ -38,6 +38,16 @@ export const dynamic = "force-dynamic";
 
 const POLICY_VERSION = "1.37.12";
 const LAST_UPDATED = "2026-08-11";
+const LAST_UPDATED_DATE = new Date(`${LAST_UPDATED}T12:00:00Z`);
+// The date as each language writes it, on the line that language reads.
+const LAST_UPDATED_DE = new Intl.DateTimeFormat("de-DE", {
+  dateStyle: "long",
+  timeZone: "UTC",
+}).format(LAST_UPDATED_DATE);
+const LAST_UPDATED_EN = new Intl.DateTimeFormat("en-GB", {
+  dateStyle: "long",
+  timeZone: "UTC",
+}).format(LAST_UPDATED_DATE);
 
 export const metadata: Metadata = {
   title: "Datenschutzerklärung / Privacy Policy — HealthLog",
@@ -67,8 +77,14 @@ function Section({
 }: SectionProps) {
   return (
     <section id={id} className="scroll-mt-28 space-y-4">
+      {/* German first, like the body under it; the English title rides
+          along so the scan spine still matches the English table of
+          contents and the in-app link target. */}
       <h2 className="text-xl font-semibold tracking-tight md:text-2xl">
-        {`${numberLabel}. ${titleEn}`}
+        <span lang="de">{`${numberLabel}. ${titleDe}`}</span>
+        <span className="text-muted-foreground" lang="en">
+          {` / ${titleEn}`}
+        </span>
       </h2>
       <div
         className="text-foreground space-y-3 text-sm leading-relaxed md:text-base"
@@ -76,7 +92,7 @@ function Section({
         lang="de"
       >
         <p className="text-foreground/80 text-xs font-medium tracking-wider uppercase">
-          Deutsch — {titleDe}
+          Deutsch
         </p>
         {bodyDe}
       </div>
@@ -166,7 +182,7 @@ function SubProcessor({
           rel="noopener noreferrer"
           className="text-primary underline underline-offset-2"
         >
-          Privacy policy / Datenschutzerklärung
+          Datenschutzerklärung / Privacy policy
         </a>
       </p>
     </li>
@@ -212,13 +228,20 @@ export default function PrivacyPage() {
             Policy version {POLICY_VERSION}
           </p>
           <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
-            Datenschutzerklärung / Privacy Policy
+            <span lang="de">Datenschutzerklärung</span>{" "}
+            <span className="text-muted-foreground" lang="en">
+              / Privacy Policy
+            </span>
           </h1>
           <p
             className="text-muted-foreground text-sm"
             data-slot="privacy-last-updated"
           >
-            Last updated: {LAST_UPDATED} · Stand: {LAST_UPDATED}
+            <time dateTime={LAST_UPDATED}>
+              <span lang="de">Stand: {LAST_UPDATED_DE}</span>
+              {" · "}
+              <span lang="en">Last updated: {LAST_UPDATED_EN}</span>
+            </time>
           </p>
           <p className="text-muted-foreground text-sm" lang="de">
             Diese Erklärung ist deutsch-englisch geführt. Jeder Abschnitt
@@ -253,7 +276,7 @@ export default function PrivacyPage() {
                   className="hover:text-foreground hover:underline"
                   href="#intro"
                 >
-                  1. Overview / Überblick
+                  1. Überblick / Overview
                 </a>
               </li>
               <li>
@@ -261,7 +284,7 @@ export default function PrivacyPage() {
                   className="hover:text-foreground hover:underline"
                   href="#data-we-collect"
                 >
-                  2. Data we collect / Erhobene Daten
+                  2. Erhobene Daten / Data we collect
                 </a>
               </li>
               <li>
@@ -269,7 +292,7 @@ export default function PrivacyPage() {
                   className="hover:text-foreground hover:underline"
                   href="#purpose"
                 >
-                  3. Why we collect each category / Zwecke der Verarbeitung
+                  3. Zwecke der Verarbeitung / Why we collect each category
                 </a>
               </li>
               <li>
@@ -277,7 +300,7 @@ export default function PrivacyPage() {
                   className="hover:text-foreground hover:underline"
                   href="#sub-processors"
                 >
-                  4. Third-party sub-processors / Auftragsverarbeiter
+                  4. Auftragsverarbeiter / Third-party sub-processors
                 </a>
               </li>
               <li>
@@ -285,8 +308,8 @@ export default function PrivacyPage() {
                   className="hover:text-foreground hover:underline"
                   href="#storage"
                 >
-                  5. Data storage and retention / Speicherung &amp;
-                  Speicherdauer
+                  5. Speicherung &amp; Speicherdauer / Data storage and
+                  retention
                 </a>
               </li>
               <li>
@@ -294,7 +317,7 @@ export default function PrivacyPage() {
                   className="hover:text-foreground hover:underline"
                   href="#rights"
                 >
-                  6. Your rights (GDPR Art. 15-22, DSGVO) / Ihre Rechte
+                  6. Ihre Rechte / Your rights (GDPR Art. 15-22, DSGVO)
                 </a>
               </li>
               <li>
@@ -302,8 +325,8 @@ export default function PrivacyPage() {
                   className="hover:text-foreground hover:underline"
                   href="#medical-boundary"
                 >
-                  7. Medical-device boundary (EU MDR 2017/745, MDCG 2021-24) /
-                  Medizinprodukte-Grenze
+                  7. Medizinprodukte-Grenze / Medical-device boundary (EU MDR
+                  2017/745, MDCG 2021-24)
                 </a>
               </li>
               <li>
@@ -311,8 +334,8 @@ export default function PrivacyPage() {
                   className="hover:text-foreground hover:underline"
                   href="#apple-categories"
                 >
-                  8. Apple App Store privacy categories / Apple-App-Store-
-                  Datenschutzkategorien
+                  8. Apple-App-Store- Datenschutzkategorien / Apple App Store
+                  privacy categories
                 </a>
               </li>
               <li>
@@ -320,7 +343,7 @@ export default function PrivacyPage() {
                   className="hover:text-foreground hover:underline"
                   href="#children"
                 >
-                  9. Children / Kinder
+                  9. Kinder / Children
                 </a>
               </li>
               <li>
@@ -328,7 +351,7 @@ export default function PrivacyPage() {
                   className="hover:text-foreground hover:underline"
                   href="#changes"
                 >
-                  10. Changes to this policy / Änderungen
+                  10. Änderungen / Changes to this policy
                 </a>
               </li>
               <li>
@@ -336,7 +359,7 @@ export default function PrivacyPage() {
                   className="hover:text-foreground hover:underline"
                   href="#contact"
                 >
-                  11. Contact / Kontakt
+                  11. Kontakt / Contact
                 </a>
               </li>
             </ol>

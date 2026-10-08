@@ -12497,5 +12497,12 @@
       "title": "Delete this life event?",
       "body": "Its title and note will be gone."
     }
+  },
+  "aboutPage": {
+    "eyebrow": "About",
+    "title": "About HealthLog",
+    "lastUpdated": "Last updated: {date}",
+    "project": "Project",
+    "credits": "Credits"
   }
 }

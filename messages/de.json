@@ -12497,5 +12497,12 @@
       "title": "Lebensereignis löschen?",
       "body": "Titel und Notiz sind danach nicht mehr da."
     }
+  },
+  "aboutPage": {
+    "eyebrow": "Info",
+    "title": "Über HealthLog",
+    "lastUpdated": "Zuletzt aktualisiert: {date}",
+    "project": "Projekt",
+    "credits": "Danksagungen"
   }
 }
