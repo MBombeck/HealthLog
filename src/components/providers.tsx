@@ -19,6 +19,7 @@ import { I18nProvider, useTranslations } from "@/lib/i18n/context";
 import type { Locale } from "@/lib/i18n/config";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import { KeyboardInsetBridge } from "@/components/keyboard-inset-bridge";
 import { VersionPoller } from "@/components/version-poller";
 import { ServiceWorkerRegistrar } from "@/components/service-worker-registrar";
 import { SharedRecordGrantLossBridge } from "@/components/layout/shared-record-grant-loss-bridge";
@@ -405,6 +406,7 @@ export function Providers({
           <RecordSessionFenceBridge />
           {children}
           <Toaster position="bottom-right" richColors />
+          <KeyboardInsetBridge />
           <VersionPoller />
           <ServiceWorkerRegistrar />
         </I18nProvider>

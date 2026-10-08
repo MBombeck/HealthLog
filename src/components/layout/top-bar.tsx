@@ -92,14 +92,9 @@ export function TopBar() {
         "bg-card/80 border-border sticky top-0 z-40 flex items-center justify-between px-4 backdrop-blur-md md:px-6",
         SHELL_HEADER_BAND,
       )}
-      // iOS PWA on notched iPhones overlays the status bar onto the
-      // sticky header unless we reserve the safe-area inset. The
-      // inline style adds `safe-area-inset-top` as padding-top on
-      // devices that report one and is a no-op on every other
-      // platform. The band stays 4rem tall either way (border-box), so
-      // on a device that reports an inset the content area inside it
-      // gives up those pixels.
-      style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+      // The status-bar inset of the installed app is the shell's
+      // (`shell-safe-area` in `auth-shell.tsx`), not this band's: padded
+      // inside its own 4rem, a 59 px inset left the bar a 5 px content box.
     >
       {/* Mobile logo */}
       <Link href="/" className="flex items-center gap-2 md:hidden">

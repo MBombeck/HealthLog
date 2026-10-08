@@ -293,8 +293,10 @@ export default function CoachPlansPage() {
       data-slot="coach-plans-page"
       // Match `/coach/conversations`' full-bleed sizing: cancel the AuthShell
       // padding and claim the viewport height below the top bar (minus the
-      // mobile-only BottomNav band).
-      className="bg-background -mx-4 -mt-6 -mb-20 flex h-[calc(100dvh-8rem-env(safe-area-inset-bottom,0px))] min-h-[32rem] flex-col overflow-hidden md:-mx-6 md:h-[calc(100dvh-4rem)]"
+      // mobile-only BottomNav band). The status-bar inset of an installed
+      // app comes off as well, at every width: the shell takes it above
+      // the top bar (`shell-safe-area`).
+      className="bg-background -mx-4 -mt-6 -mb-20 flex h-[calc(100dvh-8rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] min-h-[32rem] flex-col overflow-hidden md:-mx-6 md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px))]"
     >
       <CoachPlansBody readOnly={!coach.available} />
     </div>
