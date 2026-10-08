@@ -427,7 +427,9 @@
       "workout": "운동",
       "workoutDescription": "기기가 기록하지 못한 운동",
       "symptom": "증상",
-      "symptomDescription": "직접 정한 증상과 강도"
+      "symptomDescription": "직접 정한 증상과 강도",
+      "lifeEventDescription": "이사, 출산, 새 직장",
+      "lifeEvent": "삶의 사건"
     },
     "cycle": "생리 주기",
     "labs": "검사",
@@ -578,6 +580,7 @@
     "quickAddMood": "기분 기록",
     "quickAddMedicationIntake": "복용 기록",
     "quickAddWorkout": "운동 기록",
+    "quickAddLifeEvent": "삶의 사건 기록",
     "customizeDashboard": "대시보드 맞춤 설정",
     "medicationIntakeQuickAdd": {
       "sheetTitle": "복용 기록",
@@ -12229,8 +12232,8 @@
   },
   "timeline": {
     "title": "타임라인",
-    "subtitle": "몇 년을 한눈에.",
-    "legend": "나란히 보여줄 뿐, 원인과 결과를 뜻하지 않아요.",
+    "subtitle": "언제 무엇이 있었는지, 내 수치와 나란히.",
+    "legend": "위아래로 놓인 것은 같은 시기라는 뜻이지, 원인과 결과가 아니에요.",
     "standing": "지속",
     "startMissing": "시작일 없음",
     "openDay": "{date} 열기",
@@ -12269,16 +12272,151 @@
       "lanes": {
         "values": "수치",
         "mood": "기분",
-        "environment": "환경"
+        "environment": "환경",
+        "life": "삶의 사건"
+      },
+      "meter": "{total}개 중 {carrying}개 줄이 채워졌어요",
+      "carriesDetail": "{total}개 중 {carrying}개 줄로 {since}부터 한눈에 볼 수 있어요.",
+      "loadFailed": "현황을 불러오지 못했어요.",
+      "card": {
+        "title": "타임라인에 이미 담긴 것",
+        "summary": "{since}까지 거슬러 올라가며, {total}개 중 {carrying}개 줄이 이미 채워졌어요.",
+        "dismiss": "숨기기"
+      },
+      "detail": {
+        "valuesOne": "{since}부터 측정 항목 {count}개",
+        "valuesFew": "{since}부터 측정 항목 {count}개",
+        "valuesOther": "{since}부터 측정 항목 {count}개",
+        "illnessOne": "에피소드 {count}개, 만성 {chronic}개",
+        "illnessFew": "에피소드 {count}개, 만성 {chronic}개",
+        "illnessOther": "에피소드 {count}개, 만성 {chronic}개",
+        "allergiesOne": "알레르기 {count}개",
+        "allergiesFew": "알레르기 {count}개",
+        "allergiesOther": "알레르기 {count}개",
+        "medicationsOne": "약 {count}개, 시작일 없음 {missingStart}개",
+        "medicationsFew": "약 {count}개, 시작일 없음 {missingStart}개",
+        "medicationsOther": "약 {count}개, 시작일 없음 {missingStart}개",
+        "medicationsDatedOne": "시작일 있는 약 {count}개",
+        "medicationsDatedFew": "시작일 있는 약 {count}개",
+        "medicationsDatedOther": "시작일 있는 약 {count}개",
+        "vaccinationsOne": "예방접종 {count}건",
+        "vaccinationsFew": "예방접종 {count}건",
+        "vaccinationsOther": "예방접종 {count}건",
+        "visitsOne": "진료 {count}건 · 시술 {procedures}건",
+        "visitsFew": "진료 {count}건 · 시술 {procedures}건",
+        "visitsOther": "진료 {count}건 · 시술 {procedures}건",
+        "visitsPlannedOne": "예정된 진료만 {count}건",
+        "visitsPlannedFew": "예정된 진료만 {count}건",
+        "visitsPlannedOther": "예정된 진료만 {count}건",
+        "labsOne": "결과가 있는 날 {count}일",
+        "labsFew": "결과가 있는 날 {count}일",
+        "labsOther": "결과가 있는 날 {count}일",
+        "documentsOne": "날짜 있는 문서 {count}개",
+        "documentsFew": "날짜 있는 문서 {count}개",
+        "documentsOther": "날짜 있는 문서 {count}개",
+        "lifeOne": "삶의 사건 {count}개",
+        "lifeFew": "삶의 사건 {count}개",
+        "lifeOther": "삶의 사건 {count}개",
+        "cycleOne": "주기 {count}개",
+        "cycleFew": "주기 {count}개",
+        "cycleOther": "주기 {count}개",
+        "moodOne": "{since}부터 기록 {count}개",
+        "moodFew": "{since}부터 기록 {count}개",
+        "moodOther": "{since}부터 기록 {count}개",
+        "environmentOne": "환경 데이터가 있는 날 {count}일",
+        "environmentFew": "환경 데이터가 있는 날 {count}일",
+        "environmentOther": "환경 데이터가 있는 날 {count}일",
+        "empty": "아직 없음"
+      },
+      "gap": {
+        "valuesEmpty": "소스 연결",
+        "illnessEmpty": "에피소드 추가",
+        "medicationsWithoutStart": "채우기",
+        "visitsEmpty": "진료 추가",
+        "documentsUndated": "확인하기",
+        "labsEmpty": "결과 추가",
+        "vaccinationsEmpty": "예방접종 추가",
+        "lifeEventsEmpty": "추가"
+      },
+      "gapLine": {
+        "medicationsWithoutStartOne": "시작일 없는 약 {count}개",
+        "medicationsWithoutStartFew": "시작일 없는 약 {count}개",
+        "medicationsWithoutStartOther": "시작일 없는 약 {count}개",
+        "documentsUndatedOne": "날짜 없는 문서 {count}개",
+        "documentsUndatedFew": "날짜 없는 문서 {count}개",
+        "documentsUndatedOther": "날짜 없는 문서 {count}개",
+        "valuesEmpty": "아직 오랜 기간의 수치가 없어요",
+        "illnessEmpty": "아직 시작일이 있는 질환이 없어요",
+        "visitsEmpty": "아직 완료된 진료가 없어요",
+        "labsEmpty": "아직 검사 결과가 없어요",
+        "vaccinationsEmpty": "아직 예방접종이 없어요",
+        "lifeEventsEmpty": "아직 삶의 사건이 없어요"
       }
-    }
+    },
+    "legendSpan": "기간",
+    "legendEvent": "사건",
+    "legendMean": "월평균",
+    "today": "오늘",
+    "noDataYet": "아직 데이터 없음",
+    "layers": "레이어",
+    "layersLanes": "줄",
+    "zoomLabel": "보기 범위",
+    "chartLabel": "{from}부터 {to}까지의 타임라인",
+    "keyboardHint": "화살표 키로 선택을 옮기고, Home과 End로 양 끝으로 이동하며, Enter로 그날을 열어요.",
+    "loadFailed": "타임라인을 불러오지 못했어요.",
+    "empty": {
+      "title": "아직 타임라인에 아무것도 없어요",
+      "description": "날짜가 있는 기록이 생기면 여기에 나타나요."
+    },
+    "values": {
+      "menuLabel": "최대 세 가지 수치",
+      "none": "수치 없음",
+      "noneInWindow": "이 기간에 수치 없음",
+      "series": {
+        "BLOOD_PRESSURE_SYS": "수축기 혈압",
+        "BLOOD_PRESSURE_DIA": "이완기 혈압"
+      }
+    },
+    "table": {
+      "caption": "타임라인 기록",
+      "lane": "줄",
+      "entry": "기록",
+      "start": "시작",
+      "end": "끝"
+    },
+    "selection": {
+      "empty": "이번 달 기록 없음",
+      "ongoing": "진행 중",
+      "range": "{from}~{to}",
+      "mean": "Ø {values}"
+    },
+    "chronicle": {
+      "months": "월",
+      "years": "연도",
+      "groupingLabel": "묶기",
+      "gap": "{from}~{to} · 기록 없음",
+      "gapSingle": "{period} · 기록 없음",
+      "ended": "{label} 끝남",
+      "afterDaysOne": "{count}일 후",
+      "afterDaysFew": "{count}일 후",
+      "afterDaysOther": "{count}일 후",
+      "notable": {
+        "extremeHigh": "오랜만의 최고값",
+        "extremeLow": "오랜만의 최저값",
+        "firstValue": "측정 항목의 첫 수치",
+        "gap": "수치에 긴 공백"
+      },
+      "notableMeta": "자세한 내용은 그날을 열어 보세요"
+    },
+    "standingAllergiesOne": "알레르기 {count}개",
+    "standingAllergiesFew": "알레르기 {count}개",
+    "standingAllergiesOther": "알레르기 {count}개"
   },
   "lifeEvents": {
     "title": "삶의 사건",
     "add": "삶의 사건",
     "subtitle": "측정값이 아니라 타임라인의 기준점이에요.",
     "privacy": "제목과 메모는 암호화되어 저장돼요. 어떤 AI에도 보내지 않아요.",
-    "empty": "아직 삶의 사건이 없어요",
     "emptyHint": "이사, 출산, 새 직장 같은 일이 몇 년에 기준점을 만들어 줘요.",
     "save": "저장",
     "cancel": "취소",
@@ -12294,7 +12432,8 @@
       "endDate": "종료",
       "note": "메모",
       "optionalTag": "선택",
-      "notePlaceholder": "나중에 알고 싶은 내용"
+      "notePlaceholder": "나중에 알고 싶은 내용",
+      "removeEnd": "종료일 삭제"
     },
     "category": {
       "FAMILY": "가족",
@@ -12307,6 +12446,21 @@
       "DAY": "일",
       "MONTH": "월",
       "YEAR": "연"
+    },
+    "edit": "삶의 사건 편집",
+    "errors": {
+      "titleRequired": "사건의 이름을 적어 주세요.",
+      "titleTooLong": "최대 120자까지예요.",
+      "categoryRequired": "종류를 골라 주세요.",
+      "dateRequired": "올바른 날짜를 입력해 주세요.",
+      "endBeforeStart": "끝이 시작보다 앞서요.",
+      "noteTooLong": "최대 2000자까지예요."
+    },
+    "saveFailed": "저장하지 못했어요.",
+    "deleteFailed": "삭제하지 못했어요.",
+    "deleteConfirm": {
+      "title": "이 삶의 사건을 삭제할까요?",
+      "body": "제목과 메모가 사라져요."
     }
   }
 }

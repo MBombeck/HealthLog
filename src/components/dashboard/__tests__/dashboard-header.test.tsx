@@ -155,6 +155,8 @@ describe("<DashboardHeader> — every entry follows its module, as the capture p
       { workouts: false },
       { illness: false },
       { mood: false, medications: false, workouts: false, illness: false },
+      { timeline: false },
+      { timeline: true },
     ];
     for (const modules of cases) {
       modulesRef.value = modules;
@@ -173,6 +175,7 @@ describe("<DashboardHeader> — every entry follows its module, as the capture p
         mood: "Log mood",
         symptom: "Log symptom",
         workout: "Log workout",
+        lifeEvent: "Log life event",
       } as const;
       for (const kind of CAPTURE_KIND_ORDER) {
         expect(

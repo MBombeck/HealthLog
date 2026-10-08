@@ -133,6 +133,7 @@ const STATIC_SURFACE_MODULE = {
   "capture:workout": "workouts",
   // v1.40 — an occurrence of a person-defined symptom rides the illness module.
   "capture:symptom": "illness",
+  "capture:lifeEvent": "timeline",
 
   // ── Dashboard widgets ──
   // CORE widgets (weight, blood pressure, pulse, body fat, the vital-derived

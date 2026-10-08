@@ -79,8 +79,6 @@ const DYNAMIC_ALLOWLIST_PREFIXES = [
  */
 const RELEASE_PENDING_PREFIXES: Record<string, string> = {
   "labs.convertedFrom": "v1.42 lab unit conversion note (#1095)",
-  timeline: "v1.42 timeline and its readiness inventory (#613)",
-  lifeEvents: "v1.42 life-event form and list (#613)",
 };
 
 /**

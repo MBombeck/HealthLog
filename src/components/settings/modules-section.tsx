@@ -33,6 +33,7 @@
  * A module is enabled unless its key is explicitly `false` — default-on.
  */
 
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -63,6 +64,7 @@ import {
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { ModuleToggleRow } from "@/components/settings/module-toggle-row";
+import { TimelineReadinessSheet } from "@/components/timeline/readiness-sheet.lazy";
 import { useAuth } from "@/hooks/use-auth";
 import { useAiCapability } from "@/hooks/use-ai-capability";
 import { useTranslations } from "@/lib/i18n/context";
@@ -127,6 +129,10 @@ export function ModulesSection() {
   const { user } = useAuth();
   const coach = useAiCapability("coach");
   const queryClient = useQueryClient();
+  // v1.42 (#613) — switching the timeline on opens its readiness inventory:
+  // an honest look at what it can already show, with one link per gap,
+  // before the person goes there. It blocks nothing.
+  const [readinessOpen, setReadinessOpen] = useState(false);
 
   const modules = user?.modules ?? {};
   const moduleAvailability = user?.moduleAvailability ?? {};
@@ -186,6 +192,7 @@ export function ModulesSection() {
         void queryClient.invalidateQueries({ queryKey: queryKeys.cycle() });
       }
       toast.success(t("settings.sections.modules.saved"));
+      if (vars.key === "timeline" && vars.enabled) setReadinessOpen(true);
     },
     onError: (err) => {
       // v1.32.22 (R5b) — instant-write disposition: a 409 means the module map
@@ -283,6 +290,10 @@ export function ModulesSection() {
             );
           })}
       </div>
+      <TimelineReadinessSheet
+        open={readinessOpen}
+        onOpenChange={setReadinessOpen}
+      />
     </SettingsCard>
   );
 }

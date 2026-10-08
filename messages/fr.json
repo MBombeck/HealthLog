@@ -427,7 +427,9 @@
       "workout": "Entraînement",
       "workoutDescription": "Une séance que vos appareils n’ont pas enregistrée",
       "symptom": "Symptôme",
-      "symptomDescription": "L'un de tes propres symptômes, avec son intensité"
+      "symptomDescription": "L'un de tes propres symptômes, avec son intensité",
+      "lifeEventDescription": "Un déménagement, une naissance, un nouvel emploi",
+      "lifeEvent": "Événement de vie"
     },
     "cycle": "Cycle",
     "labs": "Analyses",
@@ -578,6 +580,7 @@
     "quickAddMood": "Saisir une humeur",
     "quickAddMedicationIntake": "Saisir une prise",
     "quickAddWorkout": "Saisir un entraînement",
+    "quickAddLifeEvent": "Enregistrer un événement de vie",
     "customizeDashboard": "Personnaliser le tableau de bord",
     "medicationIntakeQuickAdd": {
       "sheetTitle": "Saisir une prise de médicament",
@@ -12229,8 +12232,8 @@
   },
   "timeline": {
     "title": "Chronologie",
-    "subtitle": "Des années d’un coup d’œil.",
-    "legend": "Présentés côte à côte, pas comme cause et effet.",
+    "subtitle": "Ce qui s’est passé et quand, à côté de vos valeurs.",
+    "legend": "Superposé signifie simultané, pas cause et effet.",
     "standing": "Permanent",
     "startMissing": "Date de début manquante",
     "openDay": "Ouvrir le {date}",
@@ -12269,16 +12272,151 @@
       "lanes": {
         "values": "Valeurs",
         "mood": "Humeur",
-        "environment": "Environnement"
+        "environment": "Environnement",
+        "life": "Événements de vie"
+      },
+      "meter": "{carrying} pistes sur {total} sont remplies",
+      "carriesDetail": "{carrying} pistes sur {total} donnent une vue d’ensemble depuis {since}.",
+      "loadFailed": "L’inventaire n’a pas pu être chargé.",
+      "card": {
+        "title": "Ce que la chronologie contient déjà",
+        "summary": "Elle remonte à {since} ; {carrying} pistes sur {total} sont déjà remplies.",
+        "dismiss": "Masquer"
+      },
+      "detail": {
+        "valuesOne": "{count} mesure depuis {since}",
+        "valuesFew": "{count} mesures depuis {since}",
+        "valuesOther": "{count} mesures depuis {since}",
+        "illnessOne": "{count} épisode ; chroniques : {chronic}",
+        "illnessFew": "{count} épisodes ; chroniques : {chronic}",
+        "illnessOther": "{count} épisodes ; chroniques : {chronic}",
+        "allergiesOne": "{count} allergie",
+        "allergiesFew": "{count} allergies",
+        "allergiesOther": "{count} allergies",
+        "medicationsOne": "{count} médicament ; sans date de début : {missingStart}",
+        "medicationsFew": "{count} médicaments ; sans date de début : {missingStart}",
+        "medicationsOther": "{count} médicaments ; sans date de début : {missingStart}",
+        "medicationsDatedOne": "{count} médicament avec date de début",
+        "medicationsDatedFew": "{count} médicaments avec date de début",
+        "medicationsDatedOther": "{count} médicaments avec date de début",
+        "vaccinationsOne": "{count} vaccin",
+        "vaccinationsFew": "{count} vaccins",
+        "vaccinationsOther": "{count} vaccins",
+        "visitsOne": "{count} consultation · avec intervention : {procedures}",
+        "visitsFew": "{count} consultations · avec intervention : {procedures}",
+        "visitsOther": "{count} consultations · avec intervention : {procedures}",
+        "visitsPlannedOne": "{count} consultation, seulement prévue",
+        "visitsPlannedFew": "{count} consultations, seulement prévues",
+        "visitsPlannedOther": "{count} consultations, seulement prévues",
+        "labsOne": "{count} jour avec résultats",
+        "labsFew": "{count} jours avec résultats",
+        "labsOther": "{count} jours avec résultats",
+        "documentsOne": "{count} document daté",
+        "documentsFew": "{count} documents datés",
+        "documentsOther": "{count} documents datés",
+        "lifeOne": "{count} événement de vie",
+        "lifeFew": "{count} événements de vie",
+        "lifeOther": "{count} événements de vie",
+        "cycleOne": "{count} cycle",
+        "cycleFew": "{count} cycles",
+        "cycleOther": "{count} cycles",
+        "moodOne": "{count} entrée depuis {since}",
+        "moodFew": "{count} entrées depuis {since}",
+        "moodOther": "{count} entrées depuis {since}",
+        "environmentOne": "{count} jour avec données d’environnement",
+        "environmentFew": "{count} jours avec données d’environnement",
+        "environmentOther": "{count} jours avec données d’environnement",
+        "empty": "Rien pour l’instant"
+      },
+      "gap": {
+        "valuesEmpty": "Connecter des sources",
+        "illnessEmpty": "Ajouter un épisode",
+        "medicationsWithoutStart": "Compléter",
+        "visitsEmpty": "Ajouter une visite",
+        "documentsUndated": "Vérifier",
+        "labsEmpty": "Ajouter un résultat",
+        "vaccinationsEmpty": "Ajouter des vaccins",
+        "lifeEventsEmpty": "Ajouter"
+      },
+      "gapLine": {
+        "medicationsWithoutStartOne": "{count} médicament sans date de début",
+        "medicationsWithoutStartFew": "{count} médicaments sans date de début",
+        "medicationsWithoutStartOther": "{count} médicaments sans date de début",
+        "documentsUndatedOne": "{count} document sans date",
+        "documentsUndatedFew": "{count} documents sans date",
+        "documentsUndatedOther": "{count} documents sans date",
+        "valuesEmpty": "Pas encore de valeurs sur une longue période",
+        "illnessEmpty": "Pas encore de maladies avec une date de début",
+        "visitsEmpty": "Pas encore de consultations effectuées",
+        "labsEmpty": "Pas encore de résultats d’analyses",
+        "vaccinationsEmpty": "Pas encore de vaccins",
+        "lifeEventsEmpty": "Aucun événement de vie pour l’instant"
       }
-    }
+    },
+    "legendSpan": "Période",
+    "legendEvent": "Événement",
+    "legendMean": "Moyenne mensuelle",
+    "today": "Aujourd’hui",
+    "noDataYet": "Pas encore de données",
+    "layers": "Calques",
+    "layersLanes": "Pistes",
+    "zoomLabel": "Période affichée",
+    "chartLabel": "Chronologie de {from} à {to}",
+    "keyboardHint": "Les flèches déplacent la sélection, Début et Fin vont aux extrémités, Entrée ouvre le jour.",
+    "loadFailed": "La chronologie n’a pas pu être chargée.",
+    "empty": {
+      "title": "Rien dans la chronologie pour l’instant",
+      "description": "Les entrées datées apparaîtront ici dès qu’il y en aura."
+    },
+    "values": {
+      "menuLabel": "Jusqu’à trois valeurs",
+      "none": "Aucune valeur",
+      "noneInWindow": "Aucune valeur sur cette période",
+      "series": {
+        "BLOOD_PRESSURE_SYS": "Tension systolique",
+        "BLOOD_PRESSURE_DIA": "Tension diastolique"
+      }
+    },
+    "table": {
+      "caption": "Entrées de la chronologie",
+      "lane": "Piste",
+      "entry": "Entrée",
+      "start": "Début",
+      "end": "Fin"
+    },
+    "selection": {
+      "empty": "Aucune entrée ce mois-ci",
+      "ongoing": "en cours",
+      "range": "{from} au {to}",
+      "mean": "Ø {values}"
+    },
+    "chronicle": {
+      "months": "Mois",
+      "years": "Années",
+      "groupingLabel": "Regroupement",
+      "gap": "{from} à {to} · aucune entrée",
+      "gapSingle": "{period} · aucune entrée",
+      "ended": "Fin : {label}",
+      "afterDaysOne": "après 1 jour",
+      "afterDaysFew": "après {count} jours",
+      "afterDaysOther": "après {count} jours",
+      "notable": {
+        "extremeHigh": "Valeur la plus haute depuis longtemps",
+        "extremeLow": "Valeur la plus basse depuis longtemps",
+        "firstValue": "Première valeur d’une mesure",
+        "gap": "Une longue interruption des valeurs"
+      },
+      "notableMeta": "Ouvrez le jour pour les détails"
+    },
+    "standingAllergiesOne": "{count} allergie",
+    "standingAllergiesFew": "{count} allergies",
+    "standingAllergiesOther": "{count} allergies"
   },
   "lifeEvents": {
     "title": "Événement de vie",
     "add": "Événement de vie",
     "subtitle": "Un repère pour la chronologie, pas une mesure.",
     "privacy": "Le titre et la note sont chiffrés. Ils ne sont envoyés à aucune IA.",
-    "empty": "Aucun événement de vie pour l’instant",
     "emptyHint": "Un déménagement, une naissance ou un nouvel emploi donnent un repère aux années.",
     "save": "Enregistrer",
     "cancel": "Annuler",
@@ -12294,7 +12432,8 @@
       "endDate": "Jusqu’au",
       "note": "Note",
       "optionalTag": "facultatif",
-      "notePlaceholder": "Quelque chose que vous voudrez savoir plus tard"
+      "notePlaceholder": "Quelque chose que vous voudrez savoir plus tard",
+      "removeEnd": "Retirer la date de fin"
     },
     "category": {
       "FAMILY": "Famille",
@@ -12307,6 +12446,21 @@
       "DAY": "Jour",
       "MONTH": "Mois",
       "YEAR": "Année"
+    },
+    "edit": "Modifier l’événement de vie",
+    "errors": {
+      "titleRequired": "Donnez un nom à l’événement.",
+      "titleTooLong": "120 caractères au maximum.",
+      "categoryRequired": "Choisissez un type.",
+      "dateRequired": "Indiquez une date valide.",
+      "endBeforeStart": "La fin précède le début.",
+      "noteTooLong": "2000 caractères au maximum."
+    },
+    "saveFailed": "L’enregistrement a échoué.",
+    "deleteFailed": "La suppression a échoué.",
+    "deleteConfirm": {
+      "title": "Supprimer cet événement de vie ?",
+      "body": "Son titre et sa note disparaîtront."
     }
   }
 }

@@ -18,6 +18,7 @@ import {
   MoodForm,
   SymptomEntryForm,
 } from "@/components/dashboard/quick-entry-forms.lazy";
+import { LifeEventForm } from "@/components/timeline/life-event-form.lazy";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,7 +37,13 @@ import {
 import type { ShareDomain } from "@/lib/sharing/scope";
 
 export type QuickEntryDialog =
-  "measurement" | "mood" | "medicationIntake" | "symptom" | "workout" | null;
+  | "measurement"
+  | "mood"
+  | "medicationIntake"
+  | "symptom"
+  | "workout"
+  | "lifeEvent"
+  | null;
 
 /**
  * The section each sheet writes to; see the capture picker. `null` marks a
@@ -51,6 +58,8 @@ const QUICK_ENTRY_DOMAIN: Readonly<
   mood: "mind",
   symptom: "illness",
   workout: null,
+  // v1.42 — life events are written in one's own record only.
+  lifeEvent: null,
 };
 
 /**
@@ -170,6 +179,8 @@ export function QuickEntrySheets({
   const [symptomFooterEl, setSymptomFooterEl] = useState<HTMLDivElement | null>(
     null,
   );
+  const [lifeEventFooterEl, setLifeEventFooterEl] =
+    useState<HTMLDivElement | null>(null);
   // v1.11.3 F3 — when an open quick-entry sheet is dismissed with
   // unsaved input, hold the close in this flag and surface a confirm
   // instead of nulling the dialog outright. Cleared once the user
@@ -265,6 +276,24 @@ export function QuickEntrySheets({
             onSuccess={onClose}
             onCancel={onClose}
             footerSlot={workoutFooterEl}
+          />
+        )}
+      </ResponsiveSheet>
+
+      {/* v1.42 — a life event (the opt-in timeline module). Mounted only
+          while open, so every opening starts from an empty draft. */}
+      <ResponsiveSheet
+        open={openSheet === "lifeEvent"}
+        onOpenChange={handleQuickEntryOpenChange}
+        title={t("lifeEvents.title")}
+        description={t("lifeEvents.subtitle")}
+        footer={<div ref={setLifeEventFooterEl} className="flex w-full" />}
+      >
+        {openSheet === "lifeEvent" && (
+          <LifeEventForm
+            onSuccess={onClose}
+            onCancel={onClose}
+            footerSlot={lifeEventFooterEl}
           />
         )}
       </ResponsiveSheet>

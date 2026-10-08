@@ -427,7 +427,9 @@
       "workout": "Workout",
       "workoutDescription": "A session your devices did not record",
       "symptom": "Symptom",
-      "symptomDescription": "One of your own symptoms, with how strong"
+      "symptomDescription": "One of your own symptoms, with how strong",
+      "lifeEventDescription": "A move, a birth, a new job",
+      "lifeEvent": "Life event"
     },
     "cycle": "Cycle",
     "labs": "Labs",
@@ -578,6 +580,7 @@
     "quickAddMood": "Log mood",
     "quickAddMedicationIntake": "Log medication intake",
     "quickAddWorkout": "Log workout",
+    "quickAddLifeEvent": "Log life event",
     "customizeDashboard": "Customize dashboard",
     "medicationIntakeQuickAdd": {
       "sheetTitle": "Log medication intake",
@@ -12229,8 +12232,8 @@
   },
   "timeline": {
     "title": "Timeline",
-    "subtitle": "Years at a glance.",
-    "legend": "Shown side by side, not as cause and effect.",
+    "subtitle": "What happened when, beside your values.",
+    "legend": "Stacked means at the same time, not cause and effect.",
     "standing": "Ongoing",
     "startMissing": "Start date missing",
     "openDay": "Open {date}",
@@ -12269,16 +12272,151 @@
       "lanes": {
         "values": "Values",
         "mood": "Mood",
-        "environment": "Environment"
+        "environment": "Environment",
+        "life": "Life events"
+      },
+      "meter": "{carrying} of {total} lanes carry",
+      "carriesDetail": "{carrying} of {total} lanes give an overview from {since}.",
+      "loadFailed": "The inventory could not be loaded.",
+      "card": {
+        "title": "What the timeline already carries",
+        "summary": "It reaches back to {since}; {carrying} of {total} lanes already carry.",
+        "dismiss": "Hide"
+      },
+      "detail": {
+        "valuesOne": "{count} measure since {since}",
+        "valuesFew": "{count} measures since {since}",
+        "valuesOther": "{count} measures since {since}",
+        "illnessOne": "{count} episode, {chronic} of them chronic",
+        "illnessFew": "{count} episodes, {chronic} of them chronic",
+        "illnessOther": "{count} episodes, {chronic} of them chronic",
+        "allergiesOne": "{count} allergy",
+        "allergiesFew": "{count} allergies",
+        "allergiesOther": "{count} allergies",
+        "medicationsOne": "{count} medication, {missingStart} without a start date",
+        "medicationsFew": "{count} medications, {missingStart} without a start date",
+        "medicationsOther": "{count} medications, {missingStart} without a start date",
+        "medicationsDatedOne": "{count} medication with a start date",
+        "medicationsDatedFew": "{count} medications with a start date",
+        "medicationsDatedOther": "{count} medications with a start date",
+        "vaccinationsOne": "{count} vaccination",
+        "vaccinationsFew": "{count} vaccinations",
+        "vaccinationsOther": "{count} vaccinations",
+        "visitsOne": "{count} visit · {procedures} with a procedure",
+        "visitsFew": "{count} visits · {procedures} with a procedure",
+        "visitsOther": "{count} visits · {procedures} with a procedure",
+        "visitsPlannedOne": "{count} visit, planned only",
+        "visitsPlannedFew": "{count} visits, planned only",
+        "visitsPlannedOther": "{count} visits, planned only",
+        "labsOne": "{count} day with results",
+        "labsFew": "{count} days with results",
+        "labsOther": "{count} days with results",
+        "documentsOne": "{count} dated document",
+        "documentsFew": "{count} dated documents",
+        "documentsOther": "{count} dated documents",
+        "lifeOne": "{count} life event",
+        "lifeFew": "{count} life events",
+        "lifeOther": "{count} life events",
+        "cycleOne": "{count} cycle",
+        "cycleFew": "{count} cycles",
+        "cycleOther": "{count} cycles",
+        "moodOne": "{count} entry since {since}",
+        "moodFew": "{count} entries since {since}",
+        "moodOther": "{count} entries since {since}",
+        "environmentOne": "{count} day with environment data",
+        "environmentFew": "{count} days with environment data",
+        "environmentOther": "{count} days with environment data",
+        "empty": "None yet"
+      },
+      "gap": {
+        "valuesEmpty": "Connect sources",
+        "illnessEmpty": "Add an episode",
+        "medicationsWithoutStart": "Complete",
+        "visitsEmpty": "Add a visit",
+        "documentsUndated": "Review",
+        "labsEmpty": "Add a result",
+        "vaccinationsEmpty": "Add vaccinations",
+        "lifeEventsEmpty": "Add"
+      },
+      "gapLine": {
+        "medicationsWithoutStartOne": "{count} medication without a start date",
+        "medicationsWithoutStartFew": "{count} medications without a start date",
+        "medicationsWithoutStartOther": "{count} medications without a start date",
+        "documentsUndatedOne": "{count} document without a date",
+        "documentsUndatedFew": "{count} documents without a date",
+        "documentsUndatedOther": "{count} documents without a date",
+        "valuesEmpty": "No values over a longer period yet",
+        "illnessEmpty": "No conditions with a start date yet",
+        "visitsEmpty": "No completed doctor visits yet",
+        "labsEmpty": "No lab results yet",
+        "vaccinationsEmpty": "No vaccinations yet",
+        "lifeEventsEmpty": "No life events yet"
       }
-    }
+    },
+    "legendSpan": "Period",
+    "legendEvent": "Event",
+    "legendMean": "Monthly mean",
+    "today": "Today",
+    "noDataYet": "No data yet",
+    "layers": "Layers",
+    "layersLanes": "Lanes",
+    "zoomLabel": "View range",
+    "chartLabel": "Timeline from {from} to {to}",
+    "keyboardHint": "Arrow keys move the selection, Home and End jump to either end, Enter opens the day.",
+    "loadFailed": "The timeline could not be loaded.",
+    "empty": {
+      "title": "Nothing on the timeline yet",
+      "description": "Dated entries appear here as soon as there are some."
+    },
+    "values": {
+      "menuLabel": "Up to three values",
+      "none": "No values",
+      "noneInWindow": "No values in this range",
+      "series": {
+        "BLOOD_PRESSURE_SYS": "Blood pressure sys.",
+        "BLOOD_PRESSURE_DIA": "Blood pressure dia."
+      }
+    },
+    "table": {
+      "caption": "Timeline entries",
+      "lane": "Lane",
+      "entry": "Entry",
+      "start": "Start",
+      "end": "End"
+    },
+    "selection": {
+      "empty": "No entries this month",
+      "ongoing": "ongoing",
+      "range": "{from} to {to}",
+      "mean": "Ø {values}"
+    },
+    "chronicle": {
+      "months": "Months",
+      "years": "Years",
+      "groupingLabel": "Grouping",
+      "gap": "{from} to {to} · no entries",
+      "gapSingle": "{period} · no entries",
+      "ended": "{label} ended",
+      "afterDaysOne": "after 1 day",
+      "afterDaysFew": "after {count} days",
+      "afterDaysOther": "after {count} days",
+      "notable": {
+        "extremeHigh": "Highest value in a long while",
+        "extremeLow": "Lowest value in a long while",
+        "firstValue": "First value of a measure",
+        "gap": "A longer gap in the values"
+      },
+      "notableMeta": "Open the day for details"
+    },
+    "standingAllergiesOne": "{count} allergy",
+    "standingAllergiesFew": "{count} allergies",
+    "standingAllergiesOther": "{count} allergies"
   },
   "lifeEvents": {
     "title": "Life event",
     "add": "Life event",
     "subtitle": "An anchor for the timeline, not a reading.",
     "privacy": "Title and note are stored encrypted. They go to no AI.",
-    "empty": "No life events yet",
     "emptyHint": "A move, a birth or a new job gives the years an anchor.",
     "save": "Save",
     "cancel": "Cancel",
@@ -12294,7 +12432,8 @@
       "endDate": "Until",
       "note": "Note",
       "optionalTag": "optional",
-      "notePlaceholder": "Something you want to know later"
+      "notePlaceholder": "Something you want to know later",
+      "removeEnd": "Remove end date"
     },
     "category": {
       "FAMILY": "Family",
@@ -12307,6 +12446,21 @@
       "DAY": "Day",
       "MONTH": "Month",
       "YEAR": "Year"
+    },
+    "edit": "Edit life event",
+    "errors": {
+      "titleRequired": "Give the event a name.",
+      "titleTooLong": "At most 120 characters.",
+      "categoryRequired": "Choose a kind.",
+      "dateRequired": "Enter a valid date.",
+      "endBeforeStart": "The end is before the start.",
+      "noteTooLong": "At most 2000 characters."
+    },
+    "saveFailed": "Saving did not work.",
+    "deleteFailed": "Deleting did not work.",
+    "deleteConfirm": {
+      "title": "Delete this life event?",
+      "body": "Its title and note will be gone."
     }
   }
 }
