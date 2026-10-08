@@ -30,6 +30,7 @@ import {
   zipHealthConnectDb,
 } from "../fixtures/health-connect/build-fixture";
 import { importHealthConnectExport } from "@/lib/import/health-connect/import";
+import { runDenseIntradayRetention } from "@/lib/measurements/dense-intraday-retention";
 import {
   HEALTH_CONNECT_IMPORT_KIND,
   HEALTH_CONNECT_IMPORT_QUEUE,
@@ -403,6 +404,53 @@ describe("Health Connect import, heart rate history", () => {
     });
     expect(later.skipped["PULSE::hour_already_raw"]).toBe(24);
     expect((await countBy(user.id)).PULSE).toBe(24 * 60);
+  });
+});
+
+describe("Health Connect import, folded heart rate", () => {
+  it("folds raw heart rate once it ages out, and a later import does not put it back", async () => {
+    const prisma = getPrismaClient();
+    const user = await createUser("hc-folded");
+    // A day of minute-by-minute heart rate, 120 days back, imported while it
+    // was recent so it lands raw.
+    const { path, endUtc } = fixtureDb("folded", {
+      days: 1,
+      endUtc: today - 120 * DAY,
+    });
+    const args = {
+      prisma,
+      dbPath: path,
+      userId: user.id,
+      userTimezone: "Europe/Berlin",
+      connectedIntegrations: [],
+      now: new Date(endUtc),
+    } as const;
+    await importHealthConnectExport(args);
+    expect((await countBy(user.id)).PULSE).toBe(24 * 60);
+
+    // The nightly fold, at today's clock: the samples are past the window.
+    await runDenseIntradayRetention(prisma, {
+      userId: user.id,
+      log: () => {},
+    });
+    const folded = await prisma.measurement.findMany({
+      where: { userId: user.id, type: "PULSE", source: "HEALTH_CONNECT" },
+    });
+    expect(folded).toHaveLength(24);
+    expect(
+      folded.every(
+        (row) =>
+          row.deletedAt === null &&
+          row.externalId?.startsWith(
+            "stats:HKQuantityTypeIdentifierHeartRate:",
+          ),
+      ),
+    ).toBe(true);
+
+    // The same export again: every raw sample's hour is folded already.
+    const again = await importHealthConnectExport(args);
+    expect(again.skipped["PULSE::folded_window"]).toBe(24 * 60);
+    expect((await countBy(user.id)).PULSE).toBe(24);
   });
 });
 

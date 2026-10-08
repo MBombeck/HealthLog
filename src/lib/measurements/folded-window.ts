@@ -1,14 +1,13 @@
 /**
  * The `folded_window` ingest guard and the compaction-tombstone class (v1.42).
  *
- * The dense-intraday consolidation folds the raw Apple Health samples of a
- * DENSE type into one `stats:` row per local hour once they are older than
+ * The dense-intraday consolidation folds the raw samples of a DENSE type into one `stats:` row per local hour once they are older than
  * the retention window, and a MEAN type into one `stats:` row per local day
  * once the consolidation grace has passed. Since v1.42 the folded raw rows are
  * deleted outright rather than left as tombstones, so a client that re-uploads
  * an old sample after losing its anchor would put it back beside the hour or
- * day that already accounts for it. A raw (non-`stats:`) Apple Health value of
- * such a type, old enough to have been folded, is therefore a duplicate when a
+ * day that already accounts for it. A raw (non-`stats:`) value of such a source
+ * and type, old enough to have been folded, is therefore a duplicate when a
  * live `stats:` row covers its hour or day. The batch route and the ZIP import
  * apply the same rule.
  *
@@ -29,8 +28,12 @@
  * the other zone; such a row is then simply not recognised, which is the
  * pre-v1.42 behaviour, never a wrong refusal.
  *
- * Health Connect does not use this: its importer writes the folded shape
- * itself.
+ * Health Connect folds its raw heart-rate history the same way under its own
+ * source (the importer writes samples of the last 90 days raw, and the
+ * nightly pass folds them once they age out), so the hour rule covers both
+ * sources and a covering row is always looked up under the sample's own
+ * source. The day rule stays Apple Health only: the nightly mean
+ * consolidation reads no other source.
  */
 import type {
   MeasurementSource,
@@ -49,6 +52,7 @@ import {
   hourOfDayForUserTz,
 } from "@/lib/measurements/consolidation-tz";
 import {
+  DENSE_INTRADAY_FOLD_SOURCES,
   DENSE_INTRADAY_RETENTION_DAYS,
   DENSE_INTRADAY_RETENTION_TYPES,
   hourlyStatsExternalId,
@@ -60,15 +64,17 @@ export const FOLDED_WINDOW_REASON: FoldedWindowReason = "folded_window";
 
 const HOUR_MS = 3_600_000;
 
-/** Which types fold into which window, and from what age. */
+/** Which sources and types fold into which window, and from what age. */
 export const FOLDED_WINDOW_RULES = [
   {
     window: "hour",
+    sources: DENSE_INTRADAY_FOLD_SOURCES,
     types: DENSE_INTRADAY_RETENTION_TYPES,
     foldedAfterMs: DENSE_INTRADAY_RETENTION_DAYS * 24 * HOUR_MS,
   },
   {
     window: "day",
+    sources: ["APPLE_HEALTH"] as const,
     types: HIGH_FREQUENCY_MEAN_TYPES,
     foldedAfterMs: CONSOLIDATION_GRACE_CUTOFF_HOURS * HOUR_MS,
   },
@@ -98,7 +104,6 @@ export function isFoldedWindowCandidate(
   row: FoldedWindowCandidateRow,
   now: Date = new Date(),
 ): boolean {
-  if (row.source !== "APPLE_HEALTH") return false;
   if (row.externalId === null) return false;
   if (row.externalId.startsWith("stats:")) return false;
   // A collision retirement (`reconcile-external-measurement.ts`) parks the
@@ -106,7 +111,10 @@ export function isFoldedWindowCandidate(
   if (row.externalId.startsWith("retired:")) return false;
   const age = now.getTime() - row.measuredAt.getTime();
   return FOLDED_WINDOW_RULES.some(
-    (rule) => rule.types.has(row.type) && age > rule.foldedAfterMs,
+    (rule) =>
+      (rule.sources as readonly MeasurementSource[]).includes(row.source) &&
+      rule.types.has(row.type) &&
+      age > rule.foldedAfterMs,
   );
 }
 
@@ -153,8 +161,9 @@ export async function loadFoldTimezone(
 }
 
 /**
- * Indexes (into `rows`) whose covering `stats:` row is live. One query over
- * the unique `(user_id, type, source, external_id)` index for the whole set.
+ * Indexes (into `rows`) whose covering `stats:` row is live under the row's
+ * own source. One query per source present, each over the unique
+ * `(user_id, type, source, external_id)` index for the whole set.
  */
 async function coveredIndexes(
   client: Pick<LookupClient, "measurement">,
@@ -163,35 +172,49 @@ async function coveredIndexes(
   rows: ReadonlyArray<{
     index: number;
     type: MeasurementType;
+    source: MeasurementSource;
     measuredAt: Date;
   }>,
 ): Promise<Set<number>> {
   const covered = new Set<number>();
   if (rows.length === 0) return covered;
-  const keyOf = new Map<number, string>();
-  const ids = new Set<string>();
-  const types = new Set<MeasurementType>();
+  const bySource = new Map<
+    MeasurementSource,
+    {
+      keyOf: Map<number, string>;
+      ids: Set<string>;
+      types: Set<MeasurementType>;
+    }
+  >();
   for (const row of rows) {
     const id = coveringStatsExternalId(row, tz);
     if (!id) continue;
-    keyOf.set(row.index, `${row.type}|${id}`);
-    ids.add(id);
-    types.add(row.type);
+    let group = bySource.get(row.source);
+    if (!group) {
+      group = { keyOf: new Map(), ids: new Set(), types: new Set() };
+      bySource.set(row.source, group);
+    }
+    group.keyOf.set(row.index, `${row.type}|${id}`);
+    group.ids.add(id);
+    group.types.add(row.type);
   }
-  if (ids.size === 0) return covered;
-  const live = await client.measurement.findMany({
-    where: {
-      userId,
-      type: { in: [...types] },
-      source: "APPLE_HEALTH",
-      externalId: { in: [...ids] },
-      deletedAt: null,
-    },
-    select: { type: true, externalId: true },
-  });
-  const liveKeys = new Set(live.map((row) => `${row.type}|${row.externalId}`));
-  for (const [index, key] of keyOf) {
-    if (liveKeys.has(key)) covered.add(index);
+  for (const [source, group] of bySource) {
+    const live = await client.measurement.findMany({
+      where: {
+        userId,
+        type: { in: [...group.types] },
+        source,
+        externalId: { in: [...group.ids] },
+        deletedAt: null,
+      },
+      select: { type: true, externalId: true },
+    });
+    const liveKeys = new Set(
+      live.map((row) => `${row.type}|${row.externalId}`),
+    );
+    for (const [index, key] of group.keyOf) {
+      if (liveKeys.has(key)) covered.add(index);
+    }
   }
   return covered;
 }
@@ -211,7 +234,14 @@ export async function findFoldedWindowDuplicates(
   const now = options.now ?? new Date();
   const candidates = rows.flatMap((row, index) =>
     isFoldedWindowCandidate(row, now)
-      ? [{ index, type: row.type, measuredAt: row.measuredAt }]
+      ? [
+          {
+            index,
+            type: row.type,
+            source: row.source,
+            measuredAt: row.measuredAt,
+          },
+        ]
       : [],
   );
   if (candidates.length === 0) return new Set();
@@ -230,7 +260,7 @@ export interface TombstoneCandidateRow extends FoldedWindowCandidateRow {
 
 /**
  * Indexes (into `rows`) of the compaction tombstones ("class A"): soft-deleted
- * raw Apple Health samples of a folded type that were already past the fold
+ * raw samples of a folded source and type that were already past the fold
  * threshold when they were deleted, and whose hour or day a live `stats:` row
  * covers. Everything else, in particular a person's own deletions of recent
  * samples, is class B and keeps the 75-day tombstone retention.
@@ -243,7 +273,14 @@ export async function findCompactionTombstones(
 ): Promise<Set<number>> {
   const candidates = rows.flatMap((row, index) =>
     row.deletedAt !== null && isFoldedWindowCandidate(row, row.deletedAt)
-      ? [{ index, type: row.type, measuredAt: row.measuredAt }]
+      ? [
+          {
+            index,
+            type: row.type,
+            source: row.source,
+            measuredAt: row.measuredAt,
+          },
+        ]
       : [],
   );
   return coveredIndexes(client, userId, tz, candidates);

@@ -135,6 +135,12 @@ export again writes nothing; a newer export that overlaps an older one
 adds only what is new. A value that changed on the phone is updated;
 a value you deleted in HealthLog stays deleted.
 
+Heart rate imported per minute ages the way Apple Health heart rate
+does: once a minute is older than 90 days, the nightly pass folds its
+hour into one hourly mean and removes the minutes. A later import of
+an export that still holds those minutes leaves them out, so an hour
+is never counted twice.
+
 ## Privacy
 
 - The uploaded ZIP and the extracted database are deleted as soon as

@@ -226,3 +226,80 @@ describe("findCompactionTombstones", () => {
     expect(found.size).toBe(0);
   });
 });
+
+/**
+ * Health Connect folds its raw heart-rate history the way Apple Health does:
+ * past the 90-day window into one `stats:` row per local hour, under its own
+ * source. The mean-day rule stays Apple Health only, because the nightly
+ * mean consolidation never reads another source.
+ */
+describe("Health Connect", () => {
+  const old = new Date("2026-03-01T10:15:00.000Z");
+  const hc = (
+    type: string,
+    at: Date,
+    overrides: Record<string, unknown> = {},
+  ) =>
+    raw(type, at, {
+      source: "HEALTH_CONNECT",
+      externalId: "hc:00000000-0000-0000-0000-000000000001:1",
+      ...overrides,
+    });
+
+  /** A lookup that answers per source, as the database does. */
+  function sourceAwareClient(
+    live: Array<{ type: string; source: string; externalId: string }>,
+  ) {
+    const findMany = vi.fn(async (args: { where: { source: string } }) =>
+      live.filter((row) => row.source === args.where.source),
+    );
+    return {
+      findMany,
+      client: {
+        measurement: { findMany },
+      } as unknown as Parameters<typeof findFoldedWindowDuplicates>[0],
+    };
+  }
+
+  it("takes a raw dense sample past the window, and not a mean-type one", () => {
+    expect(isFoldedWindowCandidate(hc("PULSE", old), NOW)).toBe(true);
+    expect(
+      isFoldedWindowCandidate(
+        hc("PULSE", new Date(NOW.getTime() - 89 * DAY)),
+        NOW,
+      ),
+    ).toBe(false);
+    expect(isFoldedWindowCandidate(hc("RESPIRATORY_RATE", old), NOW)).toBe(
+      false,
+    );
+    expect(
+      isFoldedWindowCandidate(
+        hc("PULSE", old, {
+          externalId: "stats:HKQuantityTypeIdentifierHeartRate:2026-03-01T10",
+        }),
+        NOW,
+      ),
+    ).toBe(false);
+  });
+
+  it("is covered only by a `stats:` row of its own source", async () => {
+    const hour = "stats:HKQuantityTypeIdentifierHeartRate:2026-03-01T10";
+    const { client: c, findMany } = sourceAwareClient([
+      { type: "PULSE", source: "HEALTH_CONNECT", externalId: hour },
+    ]);
+    const found = await findFoldedWindowDuplicates(
+      c,
+      "u1",
+      [hc("PULSE", old), raw("PULSE", old)],
+      { now: NOW, tz: "UTC" },
+    );
+    // The Health Connect sample is a duplicate; the Apple Health sample of
+    // the same hour is not, because no Apple Health `stats:` row covers it.
+    expect([...found]).toEqual([0]);
+    const sources = findMany.mock.calls.map(
+      (call) =>
+        (call as unknown as [{ where: { source: string } }])[0].where.source,
+    );
+    expect(sources.sort()).toEqual(["APPLE_HEALTH", "HEALTH_CONNECT"]);
+  });
+});

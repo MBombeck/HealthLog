@@ -84,8 +84,12 @@ function buildPrismaMock(opts: {
   };
 
   // Top-level client.
-  const findMany = vi.fn(async (args: { where: { type: string } }) =>
-    args.where.type === "PULSE" ? opts.pulseRows : [],
+  // The seeded rows are Apple Health's; the Health Connect walk finds none.
+  const findMany = vi.fn(
+    async (args: { where: { type: string; source: string } }) =>
+      args.where.type === "PULSE" && args.where.source === "APPLE_HEALTH"
+        ? opts.pulseRows
+        : [],
   );
   // Native-resting probe is the only top-level `findFirst` call.
   const topFindFirst = vi
