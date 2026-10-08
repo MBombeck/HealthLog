@@ -7188,7 +7188,10 @@
       "typeCodex": "Accesso ChatGPT (personale)",
       "typeLocal": "Modello locale (personale)",
       "typeGateway": "Gateway compatibile OpenAI (personale)",
-      "spendToday": "Oggi ({date}): {total} token, di cui {operator} sulla chiave dell'operatore."
+      "spendToday": "Oggi ({date}): {total} token, di cui {operator} sulla chiave dell'operatore.",
+      "statusPaused": "In pausa",
+      "pausedHint": "In pausa dopo errori ripetuti per {count} utenti fino al {at}. Poi viene ritentato automaticamente.",
+      "modelNotServed": "L’endpoint non offre più il modello {model}. Scegli nelle impostazioni IA un modello che offre."
     },
     "aiQuality": {
       "title": "Qualità delle analisi",

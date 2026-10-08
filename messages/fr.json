@@ -7188,7 +7188,10 @@
       "typeCodex": "Connexion ChatGPT (personnelle)",
       "typeLocal": "Modèle local (personnel)",
       "typeGateway": "Passerelle compatible OpenAI (personnelle)",
-      "spendToday": "Aujourd'hui ({date}) : {total} jetons, dont {operator} sur la clé de l'opérateur."
+      "spendToday": "Aujourd'hui ({date}) : {total} jetons, dont {operator} sur la clé de l'opérateur.",
+      "statusPaused": "En pause",
+      "pausedHint": "En pause après des échecs répétés pour {count} utilisateurs jusqu’au {at}. Il sera ensuite réessayé automatiquement.",
+      "modelNotServed": "Le point d’accès ne propose plus le modèle {model}. Choisissez dans les réglages IA un modèle qu’il propose."
     },
     "aiQuality": {
       "title": "Qualité des analyses",

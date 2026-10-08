@@ -40,6 +40,7 @@ import { withJobLock } from "@/lib/jobs/job-lock";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { reportJobRun, type JobRunCandidate } from "@/lib/jobs/job-run-report";
 import { withBackgroundEvent } from "@/lib/logging/background";
+import { logCaught } from "@/lib/logging/signal";
 
 export const MEASUREMENT_MAINTENANCE_QUEUE = "measurement-maintenance";
 
@@ -176,6 +177,7 @@ async function dropInvalidCopies(
         ok: true,
       });
     } catch (err) {
+      logCaught("measurements.maintenance.drop_invalid_failed", err);
       steps.push({
         step: "drop_invalid",
         target: index.name,
@@ -240,6 +242,7 @@ export async function runMeasurementMaintenance(
         ok: true,
       });
     } catch (err) {
+      logCaught("measurements.maintenance.vacuum_failed", err);
       steps.push({
         step: "vacuum",
         target: "measurements",
@@ -273,6 +276,7 @@ export async function runMeasurementMaintenance(
           ok: true,
         });
       } catch (err) {
+        logCaught("measurements.maintenance.reindex_failed", err);
         steps.push({
           step: "reindex",
           target: index.name,
@@ -316,7 +320,14 @@ export async function handleMeasurementMaintenance(
         try {
           return await runMeasurementMaintenance(client, payload);
         } finally {
-          await client.end().catch(() => {});
+          await client
+            .end()
+            .catch((err) =>
+              logCaught(
+                "measurements.maintenance.connection_close_failed",
+                err,
+              ),
+            );
         }
       },
     );

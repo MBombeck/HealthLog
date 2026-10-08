@@ -7188,7 +7188,10 @@
       "typeCodex": "ChatGPT sign-in (personal)",
       "typeLocal": "Local model (personal)",
       "typeGateway": "OpenAI-compatible gateway (personal)",
-      "spendToday": "Today ({date}): {total} tokens, {operator} of them on the operator's own key."
+      "spendToday": "Today ({date}): {total} tokens, {operator} of them on the operator's own key.",
+      "statusPaused": "Paused",
+      "pausedHint": "Paused after repeated failures for {count} users until {at}. It is tried again automatically then.",
+      "modelNotServed": "The endpoint no longer offers the model {model}. Choose a model it lists in the AI settings."
     },
     "aiQuality": {
       "title": "Insights Quality",

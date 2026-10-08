@@ -7188,7 +7188,10 @@
       "typeCodex": "Inicio de sesión de ChatGPT (personal)",
       "typeLocal": "Modelo local (personal)",
       "typeGateway": "Pasarela compatible con OpenAI (personal)",
-      "spendToday": "Hoy ({date}): {total} tokens, {operator} de ellos en la clave del operador."
+      "spendToday": "Hoy ({date}): {total} tokens, {operator} de ellos en la clave del operador.",
+      "statusPaused": "En pausa",
+      "pausedHint": "En pausa tras fallos repetidos para {count} usuarios hasta {at}. Después se vuelve a intentar automáticamente.",
+      "modelNotServed": "El endpoint ya no ofrece el modelo {model}. Elige en los ajustes de IA un modelo que ofrezca."
     },
     "aiQuality": {
       "title": "Calidad de los análisis",

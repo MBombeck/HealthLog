@@ -7188,7 +7188,10 @@
       "typeCodex": "ChatGPT-Anmeldung (persönlich)",
       "typeLocal": "Lokales Modell (persönlich)",
       "typeGateway": "OpenAI-kompatibles Gateway (persönlich)",
-      "spendToday": "Heute ({date}): {total} Tokens, davon {operator} auf dem Schlüssel des Betreibers."
+      "spendToday": "Heute ({date}): {total} Tokens, davon {operator} auf dem Schlüssel des Betreibers.",
+      "statusPaused": "Pausiert",
+      "pausedHint": "Nach wiederholten Fehlern für {count} Nutzer pausiert bis {at}. Danach wird er automatisch wieder versucht.",
+      "modelNotServed": "Der Endpunkt bietet das Modell {model} nicht mehr an. Wähle in den KI-Einstellungen ein Modell, das er anbietet."
     },
     "aiQuality": {
       "title": "Auswertungs-Qualität",

@@ -7188,7 +7188,10 @@
       "typeCodex": "Logowanie ChatGPT (osobiste)",
       "typeLocal": "Model lokalny (osobisty)",
       "typeGateway": "Brama zgodna z OpenAI (osobista)",
-      "spendToday": "Dzisiaj ({date}): {total} tokenów, w tym {operator} na kluczu operatora."
+      "spendToday": "Dzisiaj ({date}): {total} tokenów, w tym {operator} na kluczu operatora.",
+      "statusPaused": "Wstrzymany",
+      "pausedHint": "Wstrzymany po powtarzających się błędach dla {count} użytkowników do {at}. Potem zostanie automatycznie ponowiony.",
+      "modelNotServed": "Punkt końcowy nie oferuje już modelu {model}. Wybierz w ustawieniach AI model, który oferuje."
     },
     "aiQuality": {
       "title": "Jakość analiz",
