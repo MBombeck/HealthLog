@@ -178,7 +178,7 @@ export function NewEpisodeSheet({
       }
       footer={
         <>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t("common.cancel")}
           </Button>
           <Button
@@ -203,9 +203,9 @@ export function NewEpisodeSheet({
         </div>
 
         <div className="space-y-1.5">
-          <Label>{t("illness.new.type")}</Label>
+          <Label htmlFor="illness-type">{t("illness.new.type")}</Label>
           <Select value={type} onValueChange={(v) => setType(v as IllnessType)}>
-            <SelectTrigger>
+            <SelectTrigger id="illness-type" className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -228,12 +228,14 @@ export function NewEpisodeSheet({
         />
 
         <div className="space-y-1.5">
-          <Label>{t("illness.new.lifecycle")}</Label>
+          <Label htmlFor="illness-lifecycle">
+            {t("illness.new.lifecycle")}
+          </Label>
           <Select
             value={lifecycle}
             onValueChange={(v) => setLifecycle(v as IllnessLifecycle)}
           >
-            <SelectTrigger>
+            <SelectTrigger id="illness-lifecycle" className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -248,9 +250,9 @@ export function NewEpisodeSheet({
 
         {showParent ? (
           <div className="space-y-1.5">
-            <Label>{t("illness.new.parent")}</Label>
+            <Label htmlFor="illness-parent">{t("illness.new.parent")}</Label>
             <Select value={parentId} onValueChange={setParentId}>
-              <SelectTrigger>
+              <SelectTrigger id="illness-parent" className="w-full">
                 <SelectValue placeholder={t("illness.new.parentNone")} />
               </SelectTrigger>
               <SelectContent>

@@ -480,7 +480,6 @@ export function VorsorgeSection({
             ? "measurementReminders.form.editTitle"
             : "measurementReminders.form.createTitle",
         )}
-        description={t("measurementReminders.sectionDescription")}
         footer={
           <>
             <Button type="button" variant="outline" onClick={closeSheet}>

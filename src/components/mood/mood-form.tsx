@@ -353,6 +353,7 @@ export function MoodForm({
             doubled heading. */}
         <Label
           id="mood-level-label"
+          noColon
           className="text-muted-foreground text-sm font-normal"
         >
           {t("mood.heroQuestion")}
@@ -479,8 +480,8 @@ export function MoodForm({
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <Label htmlFor="tags">
-                  {t("mood.tags")}{" "}
-                  <span className="text-muted-foreground font-normal">
+                  {t("mood.tags")}
+                  <span className="text-muted-foreground ml-1 font-normal">
                     ({t("common.optional")})
                   </span>
                 </Label>
@@ -554,8 +555,8 @@ export function MoodForm({
               htmlFor="mood-note"
               label={
                 <>
-                  {t("mood.note")}{" "}
-                  <span className="text-muted-foreground font-normal">
+                  {t("mood.note")}
+                  <span className="text-muted-foreground ml-1 font-normal">
                     ({t("common.optional")})
                   </span>
                 </>

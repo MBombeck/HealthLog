@@ -300,7 +300,9 @@ function UnitLabel({ htmlFor, label }: { htmlFor: string; label: string }) {
   const name = match ? match[1] : label;
   const unit = match ? match[2] : null;
   return (
-    <Label htmlFor={htmlFor} className="flex items-baseline gap-1">
+    // `after:-ml-1` pulls the label's colon back against the unit: the colon
+    // is a flex item of its own here, and the row gap set it apart.
+    <Label htmlFor={htmlFor} className="flex items-baseline gap-1 after:-ml-1">
       <span className="truncate">{name}</span>
       {unit ? (
         <span className="text-muted-foreground shrink-0 text-xs font-normal">
@@ -773,8 +775,8 @@ export function MeasurementForm({
         htmlFor="notes"
         label={
           <>
-            {t("measurements.notes")}{" "}
-            <span className="text-muted-foreground font-normal">
+            {t("measurements.notes")}
+            <span className="text-muted-foreground ml-1 font-normal">
               ({t("common.optional")})
             </span>
           </>

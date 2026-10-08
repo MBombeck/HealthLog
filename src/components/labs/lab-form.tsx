@@ -348,7 +348,7 @@ export function LabForm({
       {onCancel ? (
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           onClick={onCancel}
           disabled={submitting}
         >

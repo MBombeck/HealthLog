@@ -105,7 +105,7 @@ vi.mock("@/components/ui/dialog", () => ({
   ),
 }));
 
-import { ResponsiveSheet } from "../responsive-sheet";
+import { keepKeyboardDownOnOpen, ResponsiveSheet } from "../responsive-sheet";
 
 describe("<ResponsiveSheet>", () => {
   it("renders the Dialog branch on `md+` viewports", () => {
@@ -322,5 +322,36 @@ describe("<ResponsiveSheet>", () => {
     );
     onOpenChange(true);
     expect(onOpenChange).toHaveBeenCalledWith(true);
+  });
+});
+
+describe("keepKeyboardDownOnOpen (phone branch open focus)", () => {
+  function setup(activeInside: boolean) {
+    const focus = vi.fn();
+    const preventDefault = vi.fn();
+    const active = { id: "active" };
+    const content = {
+      focus,
+      contains: (node: unknown) => activeInside && node === active,
+    };
+    vi.stubGlobal("document", { activeElement: active });
+    keepKeyboardDownOnOpen({
+      preventDefault,
+      currentTarget: content,
+    } as unknown as Event);
+    vi.unstubAllGlobals();
+    return { focus, preventDefault };
+  }
+
+  it("focuses the sheet itself instead of its first field", () => {
+    const { focus, preventDefault } = setup(false);
+    expect(preventDefault).toHaveBeenCalledOnce();
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+  });
+
+  it("leaves a field the form focused on purpose alone", () => {
+    const { focus, preventDefault } = setup(true);
+    expect(preventDefault).toHaveBeenCalledOnce();
+    expect(focus).not.toHaveBeenCalled();
   });
 });
