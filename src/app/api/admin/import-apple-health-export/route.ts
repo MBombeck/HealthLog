@@ -22,6 +22,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import {
   APPLE_HEALTH_IMPORT_V2_QUEUE,
+  APPLE_HEALTH_IMPORT_KIND,
   APPLE_HEALTH_IMPORT_PARSER_REVISION,
   APPLE_HEALTH_IMPORT_SEND_OPTIONS,
   type AppleHealthImportPayload,
@@ -31,6 +32,7 @@ import {
   createImportJobUnlessBusy,
   discardStagedUpload,
   IMPORT_BUSY_CODE,
+  IMPORT_BUSY_MESSAGE,
 } from "@/lib/import/apple-health-staging";
 import { unlink } from "node:fs/promises";
 
@@ -128,6 +130,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const existing = await prisma.importJob.findFirst({
     where: {
       userId: targetUser.id,
+      kind: APPLE_HEALTH_IMPORT_KIND,
       uploadSha256: uploaded.sha256,
       parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
       status: { not: "failed" },
@@ -170,11 +173,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
   });
   if ("busy" in staged) {
     await discardStagedUpload(uploaded.filePath);
-    return apiError(
-      "An Apple Health import is already running for this account. Wait for it to finish, then upload again.",
-      409,
-      { errorCode: IMPORT_BUSY_CODE, jobId: staged.busy.id },
-    );
+    return apiError(IMPORT_BUSY_MESSAGE, 409, {
+      errorCode: IMPORT_BUSY_CODE,
+      jobId: staged.busy.id,
+    });
   }
   const importJob = staged.created;
 

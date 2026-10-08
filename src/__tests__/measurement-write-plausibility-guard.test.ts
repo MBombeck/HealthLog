@@ -76,6 +76,10 @@ const WRITERS: Record<string, Disposition> = {
   "lib/mcp/writes.ts": { kind: "validator" },
   "lib/measurements/create-from-telegram.ts": { kind: "validator" },
   "lib/measurements/import-apple-health-export.ts": { kind: "validator" },
+  // v1.42 — the Health Connect export import. Spot rows go through the bulk
+  // insert after `validateMeasurementRange`; day totals through the gated
+  // reconcile seam.
+  "lib/import/health-connect/import.ts": { kind: "validator" },
   "app/api/import/csv/route.ts": {
     kind: "upstream",
     validatedIn: "lib/import/csv-measurements.ts",

@@ -5587,10 +5587,12 @@ model ImportJob {
   pgBossJobId        String?   @unique @map("pg_boss_job_id")
   /// `queued | unpacking | parsing | upserting | done | failed`.
   status             String    @default("queued")
-  /// @pending-consumer(#972) v1.42 — which importer owns the row:
-  /// `apple_health` (every row before v1.42) or `health_connect`. The
-  /// reconcile cron and the staged-file sweep scope by it so one importer
-  /// never fails or deletes the other's running job.
+  /// v1.42 (#972) — which importer owns the row: `apple_health` (every row
+  /// before v1.42) or `health_connect`. The reconcile cron and the
+  /// staged-file sweep look each row up on its own kind's queue
+  /// (`src/lib/jobs/apple-health-import-worker.ts`), so one importer never
+  /// fails or deletes the other's running job; the upload dedupe and the
+  /// Health Connect status route scope by it.
   kind               String    @default("apple_health")
   /// Free-text reason on `failed`; null otherwise.
   failureReason      String?   @map("failure_reason")

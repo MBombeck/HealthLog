@@ -62,10 +62,41 @@ describe("sweepStaleImportStaging", () => {
     expect(
       await sweepStaleImportStaging(dir, now, {
         paths: new Set([join(dir, queued)]),
-        xmlInUse: true,
+        extractedInUse: true,
       }),
     ).toBe(1);
     expect(readdirSync(dir).sort()).toEqual([queued, xml].sort());
+  });
+
+  it("removes a Health Connect upload and its extracted database once they are old", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "healthlog-sweep-"));
+    const uuid = "0b7f3c2a-1d4e-4f5a-9b8c-7d6e5f4a3b2c";
+    const upload = `healthlog-health-connect-import-${uuid}.bin`;
+    const db = `healthlog-hc-import-${"ef".repeat(12)}.db`;
+    const foreign = "health_connect_export.db";
+    const now = Date.now();
+    const old = new Date(now - STAGING_MAX_AGE_MS - 60_000);
+    for (const name of [upload, db, foreign]) {
+      writeFileSync(join(dir, name), "x");
+      utimesSync(join(dir, name), old, old);
+    }
+    expect(await sweepStaleImportStaging(dir, now)).toBe(2);
+    expect(readdirSync(dir)).toEqual([foreign]);
+  });
+
+  it("keeps an extracted database while an import is reading one", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "healthlog-sweep-"));
+    const db = `healthlog-hc-import-${"ab".repeat(12)}.db`;
+    const now = Date.now();
+    const old = new Date(now - STAGING_MAX_AGE_MS - 60_000);
+    writeFileSync(join(dir, db), "x");
+    utimesSync(join(dir, db), old, old);
+    expect(
+      await sweepStaleImportStaging(dir, now, {
+        paths: new Set(),
+        extractedInUse: true,
+      }),
+    ).toBe(0);
   });
 
   it("answers zero for a directory that is not there", async () => {

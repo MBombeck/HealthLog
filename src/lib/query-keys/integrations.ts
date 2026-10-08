@@ -80,4 +80,12 @@ export const integrationKeys = {
    */
   importJobStatus: (jobId: string) =>
     ["import", "apple-health", "status", jobId] as const,
+
+  /**
+   * v1.42 (#972) — the account's latest Health Connect export import. One key
+   * per account rather than per job: the status route answers the newest
+   * job, so the card shows the last outcome after a reload as well.
+   */
+  healthConnectImportStatus: () =>
+    ["import", "health-connect", "status"] as const,
 };

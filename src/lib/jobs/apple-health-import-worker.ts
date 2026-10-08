@@ -55,6 +55,26 @@ import {
   type StagingInUse,
 } from "@/lib/import/apple-health-staging";
 import { caughtAs, logCaught } from "@/lib/logging/signal";
+import {
+  HEALTH_CONNECT_IMPORT_KIND,
+  HEALTH_CONNECT_IMPORT_QUEUE,
+} from "@/lib/jobs/health-connect-import-worker";
+
+/** `ImportJob.kind` of the rows this worker owns. */
+export const APPLE_HEALTH_IMPORT_KIND = "apple_health";
+
+/**
+ * The pg-boss queues a job of each `ImportJob.kind` can live on, in lookup
+ * order. The reconcile and the staging sweep share one cron across both
+ * importers, and each row is checked against its own importer's queue: a
+ * Health Connect job looked up on the Apple Health queue reads as gone, and
+ * the reconcile used to fail it while it was still running.
+ */
+function queuesForKind(kind: string): readonly string[] {
+  return kind === HEALTH_CONNECT_IMPORT_KIND
+    ? [HEALTH_CONNECT_IMPORT_QUEUE]
+    : [APPLE_HEALTH_IMPORT_V2_QUEUE, APPLE_HEALTH_IMPORT_LEGACY_QUEUE];
+}
 
 /**
  * Queue + cron for the periodic orphan-ImportJob sweep. v1.32.1
@@ -676,26 +696,24 @@ const LIVE_PG_BOSS_STATES = new Set(["active", "created", "retry"]);
 /**
  * The staged files a queued or running import still owns: the upload each
  * live pg-boss job names, and whether any import is past the queue (it has
- * an extracted XML open). `null` when that cannot be read, so the caller
- * sweeps nothing rather than guess.
+ * an extracted XML or database open). `null` when that cannot be read, so the
+ * caller sweeps nothing rather than guess. Covers both importers; each row is
+ * looked up on its own kind's queue.
  */
 export async function stagedImportFilesInUse(): Promise<StagingInUse | null> {
   const prisma = getWorkerPrisma();
   const rows = await prisma.importJob.findMany({
     where: { status: { in: [...ACTIVE_IMPORT_STATUSES] } },
-    select: { status: true, pgBossJobId: true },
+    select: { status: true, pgBossJobId: true, kind: true },
   });
   const paths = new Set<string>();
-  if (rows.length === 0) return { paths, xmlInUse: false };
+  if (rows.length === 0) return { paths, extractedInUse: false };
   const boss = getGlobalBoss();
   if (!boss) return null;
   for (const row of rows) {
     if (!row.pgBossJobId) continue;
     let job: { state: string; data: unknown } | null = null;
-    for (const queue of [
-      APPLE_HEALTH_IMPORT_V2_QUEUE,
-      APPLE_HEALTH_IMPORT_LEGACY_QUEUE,
-    ]) {
+    for (const queue of queuesForKind(row.kind)) {
       job = await boss.getJobById(queue, row.pgBossJobId);
       if (job) break;
     }
@@ -706,7 +724,7 @@ export async function stagedImportFilesInUse(): Promise<StagingInUse | null> {
   }
   return {
     paths,
-    xmlInUse: rows.some((row) => row.status !== "queued"),
+    extractedInUse: rows.some((row) => row.status !== "queued"),
   };
 }
 
@@ -718,6 +736,9 @@ export async function stagedImportFilesInUse(): Promise<StagingInUse | null> {
  * dedup no longer short-circuits future re-uploads onto a dead job).
  * Revision-1 rows are deliberately excluded: during a rolling deployment
  * their backing jobs live on the legacy queue and remain owned by old workers.
+ * Health Connect rows (v1.42) are reconciled by the same rule against their
+ * own queue; they carry their own parser revision, so the Apple Health
+ * revision filter applies to Apple Health rows only.
  *
  * The reconcile is deliberately NOT unconditional. In a multi-replica
  * or rolling-deploy topology a booting worker must not flip a row that
@@ -744,10 +765,16 @@ export async function reconcileOrphanImportJobs(): Promise<void> {
   const prisma = getWorkerPrisma();
   const candidates = await prisma.importJob.findMany({
     where: {
-      parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
       status: { in: ["unpacking", "parsing", "upserting"] },
+      OR: [
+        {
+          kind: APPLE_HEALTH_IMPORT_KIND,
+          parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
+        },
+        { kind: HEALTH_CONNECT_IMPORT_KIND },
+      ],
     },
-    select: { id: true, pgBossJobId: true, updatedAt: true },
+    select: { id: true, pgBossJobId: true, updatedAt: true, kind: true },
   });
   if (candidates.length === 0) return;
 
@@ -768,7 +795,9 @@ export async function reconcileOrphanImportJobs(): Promise<void> {
     let live = false;
     try {
       const job = await boss.getJobById(
-        APPLE_HEALTH_IMPORT_V2_QUEUE,
+        row.kind === HEALTH_CONNECT_IMPORT_KIND
+          ? HEALTH_CONNECT_IMPORT_QUEUE
+          : APPLE_HEALTH_IMPORT_V2_QUEUE,
         row.pgBossJobId,
       );
       live = job !== null && LIVE_PG_BOSS_STATES.has(job.state);

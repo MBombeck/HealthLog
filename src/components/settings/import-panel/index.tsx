@@ -8,6 +8,8 @@
  *
  *   1. Apple Health `export.zip`  — `apple-health-import-card.tsx`
  *      (multipart POST + status poll).
+ *   1b. Health Connect export ZIP — `health-connect-import-card.tsx`
+ *      (v1.42; multipart POST + poll of the account's latest job).
  *   2. Generic JSON import        — `json-import-card.tsx`
  *      (file/paste, client-side parseability guard).
  *   3. CSV import                 — `csv-import-card.tsx`
@@ -22,6 +24,7 @@ import { Upload } from "lucide-react";
 import { useTranslations } from "@/lib/i18n/context";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { AppleHealthImportCard } from "./apple-health-import-card";
+import { HealthConnectImportCard } from "./health-connect-import-card";
 import { JsonImportCard } from "./json-import-card";
 import { CsvImportCard } from "./csv-import-card";
 import { DoseHistoryImportCard } from "./dose-history-import-card";
@@ -48,6 +51,7 @@ export function ImportPanel() {
       />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <AppleHealthImportCard />
+        <HealthConnectImportCard />
         <JsonImportCard />
         <CsvImportCard />
         <DoseHistoryImportCard />

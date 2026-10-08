@@ -5653,7 +5653,6 @@
             "uploading": "Envoi en cours…",
             "uploadFailed": "L’envoi a échoué. Réessaie.",
             "tooLarge": "Le fichier dépasse la taille acceptée par ce serveur.",
-            "unsupportedVersion": "Cet export Health Connect est trop ancien pour être lu.",
             "doneSummary": "{count} valeurs importées.",
             "failed": "L’import a échoué : {reason}",
             "phase": {
@@ -5663,6 +5662,31 @@
               "upserting": "Enregistrement des valeurs",
               "done": "Terminé",
               "failed": "Échec"
+            },
+            "steps": {
+              "export": "Sur ton téléphone Android, ouvre Health Connect, va dans Gérer les données, puis Exporter et importer, et lance une exportation.",
+              "cloud": "Health Connect enregistre l’exportation uniquement dans une app de stockage cloud comme Google Drive, Dropbox ou Nextcloud, jamais sur le téléphone lui-même. Choisis-en une.",
+              "upload": "Télécharge le fichier ZIP de ce cloud sur cet appareil et importe-le ici."
+            },
+            "dropLabel": "Dépose ici le ZIP de Health Connect",
+            "dropHint": "ou clique pour le choisir. Jusqu’à 1 Go.",
+            "fileInputLabel": "Fichier ZIP de l’exportation Health Connect",
+            "privacyNote": "Le fichier est supprimé du serveur dès la fin de l’importation. Les enregistrements des apps que tu connectes déjà directement, comme Withings ou Fitbit, sont ignorés pour que rien n’arrive en double. Importer à nouveau le même fichier ne change rien.",
+            "rateLimited": "Trop d’envois en peu de temps. Attends une minute et réessaie.",
+            "busy": "Une importation est déjà en cours pour ton compte. Attends qu’elle soit terminée.",
+            "rowsSoFar": "{count} valeurs enregistrées jusqu’ici",
+            "doneNothing": "L’importation est terminée, mais il n’y avait rien de nouveau à ajouter.",
+            "workouts": "Entraînements",
+            "leftOutConnected": "{count} enregistrements d’apps que tu connectes déjà directement ont été ignorés.",
+            "nutrientsModuleOff": "Les totaux d’eau et de nutriments n’ont pas été importés, car le module Nutriments est désactivé.",
+            "cycleModuleOff": "Les données de règles n’ont pas été importées, car le suivi du cycle est désactivé.",
+            "failure": {
+              "unsupportedVersion": "Cette exportation Health Connect est trop ancienne pour être lue. Mets à jour Health Connect sur le téléphone et exporte à nouveau.",
+              "notHealthConnect": "Ce fichier n’est pas une exportation Health Connect. Choisis le fichier ZIP enregistré par Health Connect.",
+              "unsafeSchema": "Ce fichier n’a pas la structure d’une exportation Health Connect et n’a pas été lu.",
+              "tooLarge": "L’exportation est plus volumineuse que ce que ce serveur accepte.",
+              "stagingMissing": "Le fichier envoyé n’était plus sur le serveur. Envoie-le à nouveau.",
+              "interrupted": "Un redémarrage du serveur a interrompu l’importation. Envoie le fichier à nouveau."
             }
           }
         },

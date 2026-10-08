@@ -81,8 +81,6 @@ const RELEASE_PENDING_PREFIXES: Record<string, string> = {
   "auth.claim": "v1.42 managed-profile claim page (#959)",
   "recordSharing.managed.handover":
     "v1.42 managed-profile handover dialog (#959)",
-  "settings.sections.export.import.healthConnect":
-    "v1.42 Health Connect import card (#972)",
   "settings.sections.environment.airQuality":
     "v1.42 environment settings, air quality (#615)",
   "environment.fields.apparentMax": "v1.42 air-quality field label (#615)",

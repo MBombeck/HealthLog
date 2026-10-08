@@ -158,17 +158,26 @@ describe("reconcileOrphanImportJobs", () => {
     });
   });
 
-  it("only ever scopes the candidate query to the current parser revision", async () => {
+  it("scopes Apple Health rows to the current parser revision and takes every Health Connect row", async () => {
+    // v1.42: the table holds both importers' rows. A revision filter alone
+    // would either skip the Health Connect rows (they carry their own
+    // revision) or, matched by accident, look them up on the wrong queue.
     mocks.findMany.mockResolvedValue([]);
 
     await reconcileOrphanImportJobs();
 
     expect(mocks.findMany).toHaveBeenCalledWith({
       where: {
-        parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
         status: { in: ["unpacking", "parsing", "upserting"] },
+        OR: [
+          {
+            kind: "apple_health",
+            parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
+          },
+          { kind: "health_connect" },
+        ],
       },
-      select: { id: true, pgBossJobId: true, updatedAt: true },
+      select: { id: true, pgBossJobId: true, updatedAt: true, kind: true },
     });
   });
 });
@@ -240,14 +249,30 @@ describe("stagedImportFilesInUse", () => {
       "/tmp/a.bin",
       "/tmp/b.bin",
     ]);
-    expect(inUse?.xmlInUse).toBe(true);
+    expect(inUse?.extractedInUse).toBe(true);
 
     await handleImportJobReconcileTick([] as never);
     expect(sweepStaleImportStaging).toHaveBeenCalledWith(
       undefined,
       undefined,
-      expect.objectContaining({ xmlInUse: true }),
+      expect.objectContaining({ extractedInUse: true }),
     );
+  });
+
+  it("looks a Health Connect upload up on its own queue", async () => {
+    const rows = [
+      { status: "queued", pgBossJobId: "boss-hc", kind: "health_connect" },
+    ];
+    mocks.findMany.mockResolvedValueOnce(rows);
+    mocks.getGlobalBoss.mockReturnValue({ getJobById: mocks.getJobById });
+    mocks.getJobById.mockImplementation(async (queue: string) =>
+      queue === "health-connect-import"
+        ? { state: "created", data: { uploadPath: "/tmp/hc.bin" } }
+        : null,
+    );
+
+    const inUse = await stagedImportFilesInUse();
+    expect([...(inUse?.paths ?? [])]).toEqual(["/tmp/hc.bin"]);
   });
 
   it("sweeps nothing when the queue cannot be read", async () => {
