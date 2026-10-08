@@ -69,7 +69,9 @@ function charts(html: string): Array<{ types: string; title: string }> {
   );
 }
 
-beforeEach(() => analyticsMock.mockReset());
+beforeEach(() => {
+  analyticsMock.mockReset();
+});
 
 describe("/insights/hrv — SDNN and RMSSD kept apart (#1110)", () => {
   it("charts each measure on its own when both have readings", () => {
