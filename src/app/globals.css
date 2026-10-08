@@ -106,6 +106,9 @@
   --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
+  --color-switch-off: var(--switch-off);
+  --color-primary-disabled: var(--primary-disabled);
+  --color-primary-disabled-foreground: var(--primary-disabled-foreground);
   --color-input-focus: var(--input-focus);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
@@ -292,6 +295,19 @@
   --destructive: #ff5555;
   --border: #44475a;
   --input: #44475a;
+  /* An off switch's track, and a disabled primary button. Dark keeps the
+   * look these had (input at 80 %, primary at half strength). */
+  --switch-off: color-mix(in oklab, var(--input) 80%, transparent);
+  --primary-disabled: color-mix(
+    in oklab,
+    var(--primary) 50%,
+    var(--background)
+  );
+  --primary-disabled-foreground: color-mix(
+    in oklab,
+    var(--primary-foreground) 70%,
+    var(--primary-disabled)
+  );
   /* Text-field focus border: a neutral, foreground-based tone, no colour
    * ring. ~5.2:1 on --background, ~6:1 on --card. */
   --input-focus: #9a9b9d;
@@ -423,6 +439,15 @@
   --success-foreground: #ffffff;
   --border: oklch(0.885 0.008 300);
   --input: oklch(0.87 0.009 300);
+  /* An off switch's track: the input grey sat at ~1.4:1 on the card, so an
+   * off switch all but vanished. ~3.5:1 on --card clears the 3:1 floor for
+   * a control boundary. *
+  --switch-off: oklch(0.62 0.012 295);
+  /* A disabled primary button: opacity-50 left white text on a washed
+   * violet at ~2:1. A pale violet fill with a dark violet label (~5.5:1)
+   * still reads as the primary action, and as unavailable. */
+  --primary-disabled: oklch(0.88 0.035 290);
+  --primary-disabled-foreground: oklch(0.44 0.06 290);
   /* Text-field focus border, neutral: ~4.2:1 on --background. */
   --input-focus: oklch(0.56 0.012 295);
   --ring: oklch(0.48 0.012 290); /* neutral: no purple focus frames anywhere */
