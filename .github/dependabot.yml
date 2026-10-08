@@ -10,6 +10,19 @@ updates:
         applies-to: security-updates
         update-types:
           - "patch"
+      # One weekly pull request per dependency kind instead of a trickle of
+      # single bumps: patch and minor updates travel together and pass the
+      # same checks once. Majors stay single so each gets its own review.
+      production-weekly:
+        dependency-type: "production"
+        update-types:
+          - "patch"
+          - "minor"
+      development-weekly:
+        dependency-type: "development"
+        update-types:
+          - "patch"
+          - "minor"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
