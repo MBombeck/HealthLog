@@ -4042,7 +4042,6 @@
     "navWalkingSpeed": "Walking Speed",
     "mood": {
       "logLink": "Log a mood entry",
-      "mentalWellbeingLink": "Take a mental-wellbeing check-in",
       "heatmapTitle": "Mood calendar",
       "heatmapNoEntry": "No entry",
       "legendGreat": "Great",
@@ -4281,7 +4280,6 @@
         "contributorsLabel": "Contributors",
         "contributorValue": "{value} · {weight}% weight",
         "contributorMissing": "no data",
-        "disclaimer": "Indicative — not a clinical assessment.",
         "insufficient": "Not enough data yet to score this. Keep tracking and it will appear here."
       },
       "composite": {
@@ -4307,8 +4305,7 @@
             "sleep": "Sleep",
             "respiratory": "Respiratory rate",
             "mood": "Mood stability"
-          },
-          "caveat": "A wellness proxy, not a recovery or clinical score."
+          }
         },
         "VITALS_BASELINE": {
           "method": "Your personal typical range is the median of your daily values over the window, ± a robust spread (median absolute deviation, scaled). It tracks YOUR readings, not a population norm — so a value inside the band is typical for you."
@@ -4333,19 +4330,16 @@
         },
         "RECOVERY_SCORE": {
           "method": "A nightly 0–100 recovery proxy blended from your HRV, resting heart rate and sleep against your own baseline. Higher means better-recovered. Computed once each night and read back here — never recomputed on the fly.",
-          "caveat": "A descriptive wellness proxy, not a training-grade or clinical recovery measure.",
           "description": "A nightly recovery proxy from your HRV, resting heart rate and sleep."
         },
         "STRESS_SCORE": {
           "method": "A nightly 0–100 stress proxy from the shape of your intra-day HRV against your baseline. Higher means more physiological load.",
-          "caveat": "An HRV-derived proxy, NOT an EDA / galvanic-skin stress measurement — your watch has no EDA sensor. Descriptive, not clinical.",
           "description": "A nightly stress proxy from the shape of your intra-day HRV."
         },
         "STRAIN_SCORE": {
           "method": "A nightly 0–100 strain proxy from your heart-rate-weighted activity load (a TRIMP-style training-impulse model). Higher means a harder day.",
           "anchorPersonal": "Anchored to your own recent training-day load — scored relative to your typical effort, so a genuinely hard day for you reads high.",
           "anchorPopulation": "Scored against a general reference while you build training history; once you have enough it switches to your own typical effort.",
-          "caveat": "A descriptive activity-load proxy, not a clinical or training-grade load measure.",
           "description": "A nightly activity-load proxy from your heart-rate-weighted effort, relative to your typical effort."
         },
         "WRIST_TEMPERATURE_BASELINE": {
@@ -4381,7 +4375,9 @@
         "recovery": "Recovery score",
         "recoveryCrossLink": "See your wearable's recovery & strain data",
         "stress": "Stress",
-        "strain": "Strain"
+        "strain": "Strain",
+        "historyTitle": "History",
+        "historyWindow": "Last {days} days"
       },
       "coincident": {
         "label": "Several vitals off baseline",
@@ -5357,6 +5353,10 @@
         "mood": {
           "title": "Mood tags",
           "description": "Groups, tags, and archived tags for the mood picker."
+        },
+        "documents": {
+          "title": "Documents",
+          "description": "View and how the months are arranged."
         }
       },
       "dashboard": {
@@ -11072,6 +11072,21 @@
       "finishedHint": "Search again or change a filter to pick more documents.",
       "maxReached": "You can import up to {max} documents at a time.",
       "noMatchHint": "Try part of the name, or clear the tag and dates."
+    },
+    "customize": "Customize view",
+    "layout": {
+      "viewDescription": "Preview cards with thumbnails, or a compact list.",
+      "arrangementHeading": "Arrangement",
+      "arrangementDescription": "Each month as its own block, or everything flowing across the full width.",
+      "stacked": "Months stacked",
+      "flow": "Continuous",
+      "saveFailed": "Couldn't save the view."
+    },
+    "deleteConfirm": {
+      "titleOne": "Delete this document?",
+      "titleMany": "Delete {count} documents?",
+      "body": "You can undo this right afterwards. After 30 days it is removed for good.",
+      "action": "Delete"
     }
   },
   "selfDescription": {

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { InboundDocumentDto } from "@/lib/validations/inbound-documents";
 import {
   buildProcedureChoices,
+  buildFlowTimelineItems,
   buildTimelineItems,
   buildVaultListApiSearch,
   classifyUploadFailure,
@@ -127,6 +128,28 @@ describe("API list search", () => {
 });
 
 describe("timeline items", () => {
+  it("flowing: rows run across month boundaries and mark where each month opens", () => {
+    const docs = [
+      doc({ id: "a", documentDate: "2026-03-20" }),
+      doc({ id: "b", documentDate: "2026-03-15" }),
+      doc({ id: "c", documentDate: "2026-02-28" }),
+      doc({ id: "d", documentDate: "2026-02-10" }),
+      doc({ id: "e", documentDate: "2026-01-05" }),
+    ];
+    const items = buildFlowTimelineItems(docs, 3, "UTC");
+    // No row is spent on a month: five documents in three columns are two rows.
+    expect(items.map((i) => i.type)).toEqual(["row", "row"]);
+    expect(items[0]).toMatchObject({
+      documents: [docs[0], docs[1], docs[2]],
+      monthStarts: { a: "2026-03", c: "2026-02" },
+    });
+    // February continues into the second row without a second marker.
+    expect(items[1]).toMatchObject({
+      documents: [docs[3], docs[4]],
+      monthStarts: { e: "2026-01" },
+    });
+  });
+
   it("buckets by month and chunks rows to the column count", () => {
     const docs = [
       doc({ id: "a", documentDate: "2026-03-20" }),

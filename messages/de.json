@@ -4042,7 +4042,6 @@
     "navWalkingSpeed": "Gehgeschwindigkeit",
     "mood": {
       "logLink": "Stimmung eintragen",
-      "mentalWellbeingLink": "Check-in zum seelischen Wohlbefinden machen",
       "heatmapTitle": "Stimmungskalender",
       "heatmapNoEntry": "Kein Eintrag",
       "legendGreat": "Super",
@@ -4281,7 +4280,6 @@
         "contributorsLabel": "Faktoren",
         "contributorValue": "{value} · {weight}% Gewicht",
         "contributorMissing": "keine Daten",
-        "disclaimer": "Richtwert — keine klinische Bewertung.",
         "insufficient": "Noch nicht genug Daten für eine Bewertung. Tracke weiter, dann erscheint sie hier."
       },
       "composite": {
@@ -4307,8 +4305,7 @@
             "sleep": "Schlaf",
             "respiratory": "Atemfrequenz",
             "mood": "Stimmungsstabilität"
-          },
-          "caveat": "Ein Wellness-Proxy, kein Erholungs- oder klinischer Wert."
+          }
         },
         "VITALS_BASELINE": {
           "method": "Dein persönlicher Normalbereich ist der Median deiner Tageswerte über den Zeitraum, ± eine robuste Streuung (skalierte mittlere absolute Abweichung). Er folgt DEINEN Werten, keiner Bevölkerungsnorm — ein Wert im Band ist also typisch für dich."
@@ -4333,19 +4330,16 @@
         },
         "RECOVERY_SCORE": {
           "method": "Ein nächtlicher 0–100-Erholungs-Proxy aus HRV, Ruhepuls und Schlaf gegenüber deiner Baseline. Höher heißt besser erholt. Einmal pro Nacht berechnet und hier nur ausgelesen — nie spontan neu berechnet.",
-          "caveat": "Ein beschreibender Wellness-Proxy, kein trainings- oder klinikgerechtes Erholungsmaß.",
           "description": "Ein nächtlicher Erholungs-Proxy aus HRV, Ruhepuls und Schlaf."
         },
         "STRESS_SCORE": {
           "method": "Ein nächtlicher 0–100-Stress-Proxy aus dem Verlauf deiner HRV über den Tag gegenüber deiner Baseline. Höher heißt mehr physiologische Belastung.",
-          "caveat": "Ein aus der HRV abgeleiteter Proxy, KEINE EDA-/Hautleitwert-Stressmessung — deine Uhr hat keinen EDA-Sensor. Beschreibend, nicht klinisch.",
           "description": "Ein nächtlicher Stress-Proxy aus dem Tagesverlauf deiner HRV."
         },
         "STRAIN_SCORE": {
           "method": "Ein nächtlicher 0–100-Belastungs-Proxy aus deiner herzfrequenzgewichteten Aktivitätslast (ein TRIMP-ähnliches Trainingsimpuls-Modell). Höher heißt ein anstrengenderer Tag.",
           "anchorPersonal": "An deine eigene jüngste Trainingstagslast angelehnt — bewertet relativ zu deiner typischen Anstrengung, sodass ein für dich wirklich harter Tag hoch ausfällt.",
           "anchorPopulation": "Gegen einen allgemeinen Referenzwert bewertet, während du noch Trainingsverlauf aufbaust; sobald genug vorhanden ist, wechselt die Bewertung auf deine eigene typische Anstrengung.",
-          "caveat": "Ein beschreibender Aktivitätslast-Proxy, kein klinisches oder trainingsgerechtes Lastmaß.",
           "description": "Ein nächtlicher Aktivitätslast-Proxy aus deiner herzfrequenzgewichteten Anstrengung, relativ zu deiner typischen Anstrengung."
         },
         "WRIST_TEMPERATURE_BASELINE": {
@@ -4381,7 +4375,9 @@
         "recovery": "Erholungs-Score",
         "recoveryCrossLink": "Erholungs- und Belastungsdaten deines Wearables ansehen",
         "stress": "Stress",
-        "strain": "Belastung"
+        "strain": "Belastung",
+        "historyTitle": "Verlauf",
+        "historyWindow": "Letzte {days} Tage"
       },
       "coincident": {
         "label": "Mehrere Vitalwerte außerhalb der Baseline",
@@ -5357,6 +5353,10 @@
         "mood": {
           "title": "Stimmungs-Tags",
           "description": "Gruppen, Tags und archivierte Tags der Stimmungs-Auswahl."
+        },
+        "documents": {
+          "title": "Dokumente",
+          "description": "Ansicht und Anordnung der Monate."
         }
       },
       "dashboard": {
@@ -11072,6 +11072,21 @@
       "finishedHint": "Suche erneut oder ändere einen Filter, um weitere Dokumente auszuwählen.",
       "maxReached": "Du kannst höchstens {max} Dokumente auf einmal importieren.",
       "noMatchHint": "Versuche einen Teil des Namens oder setze Tag und Datum zurück."
+    },
+    "customize": "Darstellung anpassen",
+    "layout": {
+      "viewDescription": "Vorschaukarten mit Miniaturansicht oder eine kompakte Liste.",
+      "arrangementHeading": "Anordnung",
+      "arrangementDescription": "Jeder Monat als eigener Block oder alles fortlaufend über die ganze Breite.",
+      "stacked": "Monate untereinander",
+      "flow": "Fortlaufend",
+      "saveFailed": "Die Darstellung konnte nicht gespeichert werden."
+    },
+    "deleteConfirm": {
+      "titleOne": "Dieses Dokument löschen?",
+      "titleMany": "{count} Dokumente löschen?",
+      "body": "Direkt danach lässt sich das noch rückgängig machen. Nach 30 Tagen wird es endgültig entfernt.",
+      "action": "Löschen"
     }
   },
   "selfDescription": {

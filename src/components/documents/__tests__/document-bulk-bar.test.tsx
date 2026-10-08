@@ -29,7 +29,7 @@ function render(
         onLinkEpisode={() => {}}
         onLinkEncounter={() => {}}
         onShare={() => {}}
-        onDelete={() => {}}
+        onRequestDelete={() => {}}
         onClear={() => {}}
       />
     </I18nProvider>,
@@ -49,6 +49,51 @@ describe("<DocumentBulkBar>", () => {
     expect(html).toContain("Share");
     expect(html).toContain("Delete");
     expect(html).toContain("Clear selection");
+  });
+
+  it("clears with an X icon at the right of the count line, not a text button", () => {
+    const html = render([{ id: "ep1", label: "Knee" }]);
+    const countLine = html.slice(
+      html.indexOf('data-slot="document-bulk-count"'),
+      html.indexOf('data-slot="document-bulk-actions"'),
+    );
+    // The clear control lives on the count line, before the action row…
+    expect(countLine).toContain('data-slot="document-bulk-clear"');
+    expect(countLine).toContain('aria-label="Clear selection"');
+    // …and carries no visible label: the name rides on aria-label and title.
+    expect(countLine).not.toContain(">Clear selection<");
+  });
+
+  it("keeps every verb in ONE action row with Delete alone at its right edge", () => {
+    const html = render([{ id: "ep1", label: "Knee" }]);
+    const actions = html.slice(
+      html.indexOf('data-slot="document-bulk-actions"'),
+    );
+    const order = [
+      "document-bulk-set-kind",
+      "document-bulk-link-condition",
+      "document-bulk-link-visit",
+      "document-bulk-share",
+      "document-bulk-delete",
+    ].map((slot) => actions.indexOf(`data-slot="${slot}"`));
+    expect(order.every((index) => index >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    // The row never wraps into a second line, and Delete is pushed right.
+    const rowTag = /<div[^>]*data-slot="document-bulk-actions"[^>]*>/.exec(
+      html,
+    );
+    expect(rowTag?.[0]).not.toContain("flex-wrap");
+    const deleteTag = /<button[^>]*data-slot="document-bulk-delete"[^>]*>/.exec(
+      html,
+    );
+    expect(deleteTag?.[0]).toContain("ml-auto");
+  });
+
+  it("carries the selection-bar slot the Coach launcher steps aside for", () => {
+    const html = render([{ id: "ep1", label: "Knee" }]);
+    expect(html).toMatch(
+      /^<div data-slot="selection-action-bar" class="contents">/,
+    );
   });
 
   it("omits the link-condition verb when the account has no episodes", () => {

@@ -54,6 +54,11 @@ interface ConfirmCopy {
   slot?: string;
   /** A control that belongs with the question, such as an opt-out checkbox. */
   extra?: ReactNode;
+  /**
+   * The action deletes something: it wears the destructive style, as the
+   * data-list selection bar's confirm already does.
+   */
+  destructive?: boolean;
 }
 
 function ConfirmBody({
@@ -64,6 +69,7 @@ function ConfirmBody({
   pending = false,
   slot,
   extra,
+  destructive = false,
 }: ConfirmCopy) {
   const { t } = useTranslations();
 
@@ -77,6 +83,7 @@ function ConfirmBody({
       <AlertDialogFooter>
         <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
         <AlertDialogAction
+          variant={destructive ? "destructive" : "default"}
           data-slot={slot ? `${slot}-confirm` : undefined}
           disabled={pending}
           aria-busy={pending || undefined}

@@ -135,4 +135,37 @@ describe("<WellnessScores>", () => {
     expect(hidden).not.toContain('data-metric="STRAIN_SCORE"');
     expect(hidden).toContain('data-metric="READINESS"');
   });
+
+  it("draws each tile's course under its band word, naming the window", () => {
+    const html = render(
+      <WellnessScores
+        read={readFrom({
+          RECOVERY_SCORE: ok({
+            score: 70,
+            band: "yellow",
+            series: [60, 64, 70],
+          }),
+          STRESS_SCORE: ok({ score: 30, band: "green", series: [] }),
+        })}
+        isLoading={false}
+      />,
+    );
+    const recovery = html.slice(
+      html.indexOf('data-metric="RECOVERY_SCORE"'),
+      html.indexOf('data-metric="STRESS_SCORE"'),
+    );
+    expect(recovery).toContain('data-slot="wellness-score-history"');
+    expect(recovery).toContain("Last 30 days");
+    // A score without a course draws no empty line.
+    const stress = html.slice(html.indexOf('data-metric="STRESS_SCORE"'));
+    expect(stress).not.toContain('data-slot="wellness-score-history"');
+  });
+
+  it("reserves the history band in the loading skeleton", () => {
+    const html = render(<WellnessScores read={readFrom({})} isLoading />);
+    const tile = html.slice(
+      html.indexOf('data-slot="wellness-score-tile-skeleton"'),
+    );
+    expect(tile).toContain("h-10 w-full");
+  });
 });

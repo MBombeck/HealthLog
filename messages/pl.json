@@ -4042,7 +4042,6 @@
     "navWalkingSpeed": "Prędkość chodu",
     "mood": {
       "logLink": "Zapisz nastrój",
-      "mentalWellbeingLink": "Wykonaj sprawdzian dobrostanu psychicznego",
       "heatmapTitle": "Kalendarz nastroju",
       "heatmapNoEntry": "Brak wpisu",
       "legendGreat": "Świetnie",
@@ -4281,7 +4280,6 @@
         "contributorsLabel": "Czynniki",
         "contributorValue": "{value} · {weight}% wagi",
         "contributorMissing": "brak danych",
-        "disclaimer": "Orientacyjne — to nie ocena kliniczna.",
         "insufficient": "Za mało danych, by to ocenić. Rejestruj dalej, a wynik pojawi się tutaj."
       },
       "composite": {
@@ -4307,8 +4305,7 @@
             "sleep": "Sen",
             "respiratory": "Częstość oddechu",
             "mood": "Stabilność nastroju"
-          },
-          "caveat": "Wskaźnik dobrostanu, nie ocena regeneracji ani wynik kliniczny."
+          }
         },
         "VITALS_BASELINE": {
           "method": "Twój osobisty typowy zakres to mediana Twoich dziennych wartości w danym okresie ± odporne rozproszenie (skalowane medianowe odchylenie bezwzględne). Śledzi TWOJE odczyty, a nie normę populacyjną — wartość w obrębie pasma jest więc typowa dla Ciebie."
@@ -4333,19 +4330,16 @@
         },
         "RECOVERY_SCORE": {
           "method": "Nocny wskaźnik regeneracji 0–100 łączący Twoje HRV, tętno spoczynkowe i sen względem Twojej linii bazowej. Wyższy oznacza lepszą regenerację. Liczony raz na noc i tu tylko odczytywany — nigdy nieprzeliczany na bieżąco.",
-          "caveat": "Opisowy wskaźnik dobrostanu, nie kliniczna ani treningowa miara regeneracji.",
           "description": "Nocny wskaźnik regeneracji z Twojego HRV, tętna spoczynkowego i snu."
         },
         "STRESS_SCORE": {
           "method": "Nocny wskaźnik stresu 0–100 na podstawie kształtu Twojego HRV w ciągu dnia względem linii bazowej. Wyższy oznacza większe obciążenie fizjologiczne.",
-          "caveat": "Wskaźnik pochodzący z HRV, a NIE pomiar stresu metodą EDA / reakcji skórno-galwanicznej — Twój zegarek nie ma czujnika EDA. Opisowy, nie kliniczny.",
           "description": "Nocny wskaźnik stresu na podstawie kształtu Twojego HRV w ciągu dnia."
         },
         "STRAIN_SCORE": {
           "method": "Nocny wskaźnik obciążenia 0–100 na podstawie Twojego obciążenia aktywnością ważonego tętnem (model impulsu treningowego typu TRIMP). Wyższy oznacza cięższy dzień.",
           "anchorPersonal": "Zakotwiczony w Twoim własnym niedawnym obciążeniu z dni treningowych — oceniany względem Twojego typowego wysiłku, więc naprawdę ciężki dzień dla Ciebie wypada wysoko.",
           "anchorPopulation": "Oceniany względem ogólnego punktu odniesienia, gdy dopiero budujesz historię treningów; gdy zbierzesz jej wystarczająco, przełącza się na Twój własny typowy wysiłek.",
-          "caveat": "Opisowy wskaźnik obciążenia aktywnością, nie kliniczna ani treningowa miara obciążenia.",
           "description": "Nocny wskaźnik obciążenia aktywnością z Twojego wysiłku ważonego tętnem, względem Twojego typowego wysiłku."
         },
         "WRIST_TEMPERATURE_BASELINE": {
@@ -4381,7 +4375,9 @@
         "recovery": "Wynik regeneracji",
         "recoveryCrossLink": "Zobacz dane regeneracji i obciążenia z Twojego urządzenia",
         "stress": "Stres",
-        "strain": "Obciążenie"
+        "strain": "Obciążenie",
+        "historyTitle": "Przebieg",
+        "historyWindow": "Ostatnie {days} dni"
       },
       "coincident": {
         "label": "Kilka parametrów poza bazą",
@@ -5357,6 +5353,10 @@
         "mood": {
           "title": "Tagi nastroju",
           "description": "Grupy, tagi i zarchiwizowane tagi w wyborze nastroju."
+        },
+        "documents": {
+          "title": "Dokumenty",
+          "description": "Widok i układ miesięcy."
         }
       },
       "dashboard": {
@@ -11072,6 +11072,21 @@
       "finishedHint": "Wyszukaj ponownie lub zmień filtr, aby wybrać więcej dokumentów.",
       "maxReached": "Możesz zaimportować naraz najwyżej {max} dokumentów.",
       "noMatchHint": "Spróbuj części nazwy albo wyczyść tag i daty."
+    },
+    "customize": "Dostosuj widok",
+    "layout": {
+      "viewDescription": "Karty z miniaturą albo zwarta lista.",
+      "arrangementHeading": "Układ",
+      "arrangementDescription": "Każdy miesiąc osobno albo wszystko po kolei na całą szerokość.",
+      "stacked": "Miesiące jeden pod drugim",
+      "flow": "Ciągły",
+      "saveFailed": "Nie udało się zapisać widoku."
+    },
+    "deleteConfirm": {
+      "titleOne": "Usunąć ten dokument?",
+      "titleMany": "Usunąć dokumenty ({count})?",
+      "body": "Zaraz potem możesz to cofnąć. Po 30 dniach zostanie usunięte na stałe.",
+      "action": "Usuń"
     }
   },
   "selfDescription": {
