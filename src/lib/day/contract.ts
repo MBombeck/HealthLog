@@ -13,6 +13,7 @@
  *
  *   GET    /api/day/{date}         one local day across the record
  *   GET    /api/day/index          which days hold anything, for a window
+ *   GET    /api/day/notable        what changed since the last visit
  *   GET    /api/timeline           lanes, standing items and value series
  *   GET    /api/timeline/readiness what the timeline can already show
  *   GET    /api/life-events        the record's life events
@@ -39,6 +40,7 @@ import type { z } from "zod/v4";
 
 import type {
   dayIndexResponseSchema,
+  dayNotableResponseSchema,
   dayResponseSchema,
   lifeEventCreateSchema,
   lifeEventListResponseSchema,
@@ -341,6 +343,16 @@ export type DayNotable = DayResponse["notable"][number];
 
 /** `GET /api/day/index` → `data`. */
 export type DayIndexResponse = z.infer<typeof dayIndexResponseSchema>;
+
+/**
+ * `GET /api/day/notable` → `data`: the observations and context changes
+ * since the last visit, for the visit preparation.
+ */
+export type DayNotableWindowResponse = z.infer<typeof dayNotableResponseSchema>;
+export type DayChange = DayNotableWindowResponse["changes"][number];
+
+/** Widest window `GET /api/day/notable` answers, in days. */
+export const DAY_NOTABLE_MAX_SPAN_DAYS = 1096;
 
 /** `GET /api/timeline` query and `data`. */
 export type TimelineQuery = z.infer<typeof timelineQuerySchema>;

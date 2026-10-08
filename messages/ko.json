@@ -10069,7 +10069,8 @@
         "cycle": "생리 주기",
         "correlations": "지표 간 연관성",
         "snapshot": "기록 요약",
-        "environment": "날씨와 대기"
+        "environment": "날씨와 대기",
+        "day": "하루"
       },
       "window": {
         "last7days": "최근 7일",
@@ -11833,7 +11834,10 @@
       "symptomDefinitionDelete": "{name}님이 증상을 제거했습니다",
       "customVaccineCreate": "{name} 님이 백신을 직접 추가했어요",
       "customVaccineUpdate": "{name} 님이 직접 추가한 백신을 수정했어요",
-      "customVaccineDelete": "{name} 님이 직접 추가한 백신을 삭제했어요"
+      "customVaccineDelete": "{name} 님이 직접 추가한 백신을 삭제했어요",
+      "lifeEventCreate": "{name} 님이 삶의 사건을 추가했어요",
+      "lifeEventUpdate": "{name} 님이 삶의 사건을 수정했어요",
+      "lifeEventDelete": "{name} 님이 삶의 사건을 삭제했어요"
     },
     "section": {
       "measurements": {

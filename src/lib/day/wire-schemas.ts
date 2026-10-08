@@ -198,6 +198,65 @@ export const dayIndexResponseSchema = z
   })
   .meta({ id: "DayIndex" });
 
+/* ─── GET /api/day/notable ────────────────────────────────────────────────── */
+
+/**
+ * The window before the next visit: "what happened since the last one". Both
+ * ends are optional; the server fills `from` with the last completed visit
+ * and `to` with today, and says which it used.
+ */
+export const dayNotableQuerySchema = z
+  .object({ from: dateKeySchema.optional(), to: dateKeySchema.optional() })
+  .refine((q) => q.from === undefined || q.to === undefined || q.from <= q.to, {
+    message: "`from` must not be after `to`",
+    path: ["to"],
+  });
+
+const dayChange = z
+  .object({
+    date: dateKeySchema,
+    kind: z.enum(DAY_EVENT_KINDS),
+    section: daySectionKey,
+    id: z.string(),
+    title: z
+      .string()
+      .describe("The record's own name for it, decrypted for the caller."),
+    count: z
+      .number()
+      .int()
+      .positive()
+      .describe("Entries folded into this one (lab results of one day)."),
+    href: z.string().nullable(),
+  })
+  .meta({ id: "DayChange" });
+
+export const dayNotableResponseSchema = z
+  .object({
+    from: dateKeySchema,
+    to: dateKeySchema,
+    anchor: z
+      .enum(["lastVisit", "requested", "fallback"])
+      .describe(
+        "Where `from` came from: the last completed visit, the request, or the fallback of 90 days when the record holds no visit the caller may see.",
+      ),
+    observations: z.array(
+      z
+        .object({
+          date: dateKeySchema,
+          kind: z.enum(DAY_NOTABLE_KINDS),
+          type: z.string().nullable(),
+          params: messageParams,
+        })
+        .meta({ id: "DatedDayNotable" }),
+    ),
+    changes: z
+      .array(dayChange)
+      .describe(
+        "Context changes in the window, oldest first: dose changes, medication and course starts and ends, pauses, illness onsets and recoveries, vaccinations, procedures and lab days.",
+      ),
+  })
+  .meta({ id: "DayNotableWindow" });
+
 /* ─── GET /api/timeline ───────────────────────────────────────────────────── */
 
 export const timelineQuerySchema = z.object({

@@ -246,6 +246,8 @@ const CASES: Record<string, Array<Record<string, unknown>>> = {
   get_cycle: [{}],
   get_correlations: [{}],
   get_environment: [{ window: "allTime" }, {}],
+  // A day before the 30-day limit is refused before anything is read.
+  get_day: [{ date: "2000-01-03" }],
   get_metric_table: [
     { metric: "bp", window: "allTime" },
     { metric: "weight", window: "last30days", period: "yearAgo" },

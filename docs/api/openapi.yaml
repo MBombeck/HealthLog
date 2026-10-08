@@ -23324,13 +23324,40 @@ paths:
         "403": *a11
         "422": *a4
         "429": *a5
-        "501": &a67
-          description: "Not implemented yet: the contract is published ahead of the implementation on a release branch.
-            `meta.errorCode: not_implemented`."
+  /api/day/notable:
+    get:
+      tags:
+        - Records
+      summary: Since the last visit
+      description: "What stood out and what changed in a window, for the preparation of the next visit: deterministic
+        observations (a value highest or lowest for at least three months, a first reading, a regular reading that
+        stopped for two weeks or more) and context changes (dose changes, medication and course starts and ends, pauses,
+        illness onsets and recoveries, vaccinations, procedures, lab days). Without `from` the window starts at the last
+        completed visit the caller may see (else 90 days back); without `to` it ends today; at most 1096 days. Keys and
+        the record's own names only, no judgement. Days are cut in the record's own time zone. Sections the caller's
+        grant does not cover are left out."
+      parameters:
+        - in: query
+          name: from
+          schema:
+            type: string
+            description: A local calendar date, `YYYY-MM-DD`.
+        - in: query
+          name: to
+          schema:
+            type: string
+            description: A local calendar date, `YYYY-MM-DD`.
+      responses:
+        "200":
+          description: The window, its observations and its changes.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
+                $ref: "#/components/schemas/DayNotableWindowEnvelope"
+        "401": *a1
+        "403": *a11
+        "422": *a4
+        "429": *a5
   /api/day/{date}:
     get:
       tags:
@@ -23360,7 +23387,6 @@ paths:
         "403": *a11
         "422": *a4
         "429": *a5
-        "501": *a67
   /api/timeline:
     get:
       tags:
@@ -23403,7 +23429,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/TimelineEnvelope"
         "401": *a1
-        "403": &a68
+        "403": &a67
           description: >-
             `module.disabled` with `meta.module = timeline`: the record has the timeline switched off (it is opt-in), or
             the operator turned it off server-wide.
@@ -23424,7 +23450,6 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "501": *a67
   /api/timeline/readiness:
     get:
       tags:
@@ -23441,10 +23466,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/TimelineReadinessEnvelope"
         "401": *a1
-        "403": *a68
+        "403": *a67
         "422": *a4
         "429": *a5
-        "501": *a67
   /api/life-events:
     get:
       tags:
@@ -23463,7 +23487,6 @@ paths:
         "403": *a11
         "422": *a4
         "429": *a5
-        "501": *a67
     post:
       tags:
         - Records
@@ -23471,6 +23494,8 @@ paths:
       description: "A dated anchor in the person's life. `precision` says how much of the date is known and applies to both
         ends: at MONTH a date is the first of its month, at YEAR the first of its year. `endDate`, when given, is not
         before `startDate`. Title (1-120 characters) and note (up to 2000) are encrypted at rest."
+      parameters:
+        - *a6
       requestBody:
         required: true
         content:
@@ -23485,9 +23510,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateLifeEventEnvelope"
         "401": *a1
+        "403": *a11
+        "409": *a7
         "422": *a4
         "429": *a12
-        "501": *a67
   /api/life-events/{id}:
     patch:
       tags:
@@ -23515,7 +23541,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateLifeEventEnvelope"
         "401": *a1
-        "404": &a69
+        "403": *a11
+        "404": &a68
           description: No such life event on this record.
           content:
             application/json:
@@ -23523,7 +23550,6 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "501": *a67
     delete:
       tags:
         - Records
@@ -23543,10 +23569,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteLifeEventEnvelope"
         "401": *a1
-        "404": *a69
+        "403": *a11
+        "404": *a68
         "422": *a4
         "429": *a5
-        "501": *a67
   /api/bugreport:
     post:
       security: []
@@ -34150,21 +34176,21 @@ components:
                 cycle.bulk.too_large, cycle.calendar.invalid, cycle.calendar.range, cycle.cycles.invalid,
                 cycle.day-log.conflict, cycle.day-log.invalid, cycle.disabled, cycle.period.invalid,
                 cycle.symptom.custom.invalid, cycle.symptom.custom.limit; cycle-prefs — cycle-prefs.body.invalid_json,
-                cycle-prefs.invalid; disable-coach — disable-coach.body.invalid_json; demo — demo.readOnly; documents —
-                documents.chat.conversationNotFound, documents.chat.invalid, documents.inbound.alreadyConfirmed,
-                documents.inbound.alreadyPartlyConfirmed, documents.inbound.budgetExceeded,
-                documents.inbound.decryptFailed, documents.inbound.encounterNotFound, documents.inbound.episodeNotFound,
-                documents.inbound.extractFailed, documents.inbound.factNotFound, documents.inbound.factNotPending,
-                documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge, documents.inbound.fileType,
-                documents.inbound.invalidMetadata, documents.inbound.invalidQuery, documents.inbound.invalidUpdate,
-                documents.inbound.localOcrDisabled, documents.inbound.notFound, documents.inbound.notIndexed,
-                documents.inbound.pdfNeedsAnthropic, documents.inbound.providerUnsupported,
-                documents.inbound.quotaExceeded, documents.inbound.rateLimited, documents.inbound.restoreDuplicate,
-                documents.inbound.restoreGone, documents.inbound.sourceAliasLimit, documents.inbound.uploadBusy,
-                documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound, documents.sources.authRefused,
-                documents.sources.badResponse, documents.sources.browserOnly, documents.sources.invalidAddress,
-                documents.sources.linkTargetNotFound, documents.sources.notConnected, documents.sources.notFound,
-                documents.sources.organizationRequired, documents.sources.originNotAllowed,
+                cycle-prefs.invalid; disable-coach — disable-coach.body.invalid_json; day — day.invalid; demo —
+                demo.readOnly; documents — documents.chat.conversationNotFound, documents.chat.invalid,
+                documents.inbound.alreadyConfirmed, documents.inbound.alreadyPartlyConfirmed,
+                documents.inbound.budgetExceeded, documents.inbound.decryptFailed, documents.inbound.encounterNotFound,
+                documents.inbound.episodeNotFound, documents.inbound.extractFailed, documents.inbound.factNotFound,
+                documents.inbound.factNotPending, documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge,
+                documents.inbound.fileType, documents.inbound.invalidMetadata, documents.inbound.invalidQuery,
+                documents.inbound.invalidUpdate, documents.inbound.localOcrDisabled, documents.inbound.notFound,
+                documents.inbound.notIndexed, documents.inbound.pdfNeedsAnthropic,
+                documents.inbound.providerUnsupported, documents.inbound.quotaExceeded, documents.inbound.rateLimited,
+                documents.inbound.restoreDuplicate, documents.inbound.restoreGone, documents.inbound.sourceAliasLimit,
+                documents.inbound.uploadBusy, documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound,
+                documents.sources.authRefused, documents.sources.badResponse, documents.sources.browserOnly,
+                documents.sources.invalidAddress, documents.sources.linkTargetNotFound, documents.sources.notConnected,
+                documents.sources.notFound, documents.sources.organizationRequired, documents.sources.originNotAllowed,
                 documents.sources.permissionMissing, documents.sources.rateLimited, documents.sources.redirected,
                 documents.sources.tokenRequired, documents.sources.unavailable, documents.sources.unreachable,
                 documents.sources.versionTooOld; encounter — encounter.invalid, encounter.link.invalid,
@@ -34185,29 +34211,30 @@ components:
                 labs.ocr.rateLimited, labs.restore.invalid, labs.result.notFound, labs.unit.mismatch,
                 labs.update.invalid, labs.update.linkedFieldsImmutable, labs.update.numericExpected,
                 labs.update.qualitativeExpected, labs.update.referenceRangeInvalid,
-                labs.update.sourceReferenceRangeInvalid; managed_profile — managed_profile.guardian.duplicate,
-                managed_profile.guardian.managed_invitee, managed_profile.guardian.required,
-                managed_profile.handover.no_pending, managed_profile.handover.unknown_guardian,
-                managed_profile.not_found; measurement — measurement.batch.invalid,
-                measurement.batch.source_not_permitted, measurement.batch.too_large, measurement.bulk-delete.invalid,
-                measurement.create.invalid, measurement.create.source_not_permitted, measurement.delete.too_large,
-                measurement.duplicate_timestamp, measurement.restore.invalid, measurement.update.server_owned_source;
-                medication — medication.intake.import.invalid_format, medication.intake.notTracked; medications —
-                medications.category.invalid, medications.category.limitReached, medications.category.unknown,
-                medications.course.currentOpen, medications.course.invalid, medications.course.invalidRange,
-                medications.course.notFound, medications.course.oneShot, medications.course.overlap,
-                medications.course.windowRequired, medications.intake.bulk.apple_health_not_mirrored,
-                medications.intake.bulk.invalid, medications.intake.bulk.too_large,
-                medications.intake.force_slot.invalid, medications.intake.force_slot.occupied,
-                medications.intake.injection_site.disallowed, medications.intake.taken_at.before_start,
-                medications.mirror.limit_exceeded; mentalHealth — mentalHealth.rateLimited; module — module.disabled;
-                modules — modules.body.invalid_json, modules.invalid; mood — mood.bulk-delete.invalid,
-                mood.bulk.invalid, mood.bulk.too_large, mood.create.external_id_not_delegable, mood.create.invalid,
-                mood.duplicate_timestamp, mood.linkedContext.invalid, mood.list.invalid, mood.not_found,
-                mood.ratedFactor.out_of_range, mood.restore.invalid, mood.update.invalid; notification-prefs —
-                notification-prefs.body.invalid_json; nutrient — nutrient.batch.invalid, nutrient.batch.too_large,
-                nutrient.daily.invalid, nutrient.read.invalid, nutrient.water.invalid, nutrient.water.invalid_day;
-                onboarding — onboarding.answers.invalid, onboarding.answers.rateLimited, onboarding.complete.invalid,
+                labs.update.sourceReferenceRangeInvalid; life_event — life_event.invalid, life_event.not_found;
+                managed_profile — managed_profile.guardian.duplicate, managed_profile.guardian.managed_invitee,
+                managed_profile.guardian.required, managed_profile.handover.no_pending,
+                managed_profile.handover.unknown_guardian, managed_profile.not_found; measurement —
+                measurement.batch.invalid, measurement.batch.source_not_permitted, measurement.batch.too_large,
+                measurement.bulk-delete.invalid, measurement.create.invalid, measurement.create.source_not_permitted,
+                measurement.delete.too_large, measurement.duplicate_timestamp, measurement.restore.invalid,
+                measurement.update.server_owned_source; medication — medication.intake.import.invalid_format,
+                medication.intake.notTracked; medications — medications.category.invalid,
+                medications.category.limitReached, medications.category.unknown, medications.course.currentOpen,
+                medications.course.invalid, medications.course.invalidRange, medications.course.notFound,
+                medications.course.oneShot, medications.course.overlap, medications.course.windowRequired,
+                medications.intake.bulk.apple_health_not_mirrored, medications.intake.bulk.invalid,
+                medications.intake.bulk.too_large, medications.intake.force_slot.invalid,
+                medications.intake.force_slot.occupied, medications.intake.injection_site.disallowed,
+                medications.intake.taken_at.before_start, medications.mirror.limit_exceeded; mentalHealth —
+                mentalHealth.rateLimited; module — module.disabled; modules — modules.body.invalid_json,
+                modules.invalid; mood — mood.bulk-delete.invalid, mood.bulk.invalid, mood.bulk.too_large,
+                mood.create.external_id_not_delegable, mood.create.invalid, mood.duplicate_timestamp,
+                mood.linkedContext.invalid, mood.list.invalid, mood.not_found, mood.ratedFactor.out_of_range,
+                mood.restore.invalid, mood.update.invalid; notification-prefs — notification-prefs.body.invalid_json;
+                nutrient — nutrient.batch.invalid, nutrient.batch.too_large, nutrient.daily.invalid,
+                nutrient.read.invalid, nutrient.water.invalid, nutrient.water.invalid_day; onboarding —
+                onboarding.answers.invalid, onboarding.answers.rateLimited, onboarding.complete.invalid,
                 onboarding.complete.recordNotFound, onboarding.complete.recordTargetMismatch,
                 onboarding.disclaimer.invalid, onboarding.restart.invalid, onboarding.restart.rateLimited,
                 onboarding.tour.invalid; passkey — passkey.challenge.expired, passkey.response.invalid, passkey.unknown,
@@ -34228,20 +34255,20 @@ components:
                 sharing.switch.wrong_transport; source-priority — source-priority.body.invalid_json,
                 source-priority.body.invalid_shape; symptoms — symptoms.definition.limitReached,
                 symptoms.definition.notFound, symptoms.episode.notOpen, symptoms.event.notFound, symptoms.invalid;
-                tokens — tokens.documents.ceiling_reached, tokens.measurements.ceiling_reached,
-                tokens.workouts.ceiling_reached; vaccination — vaccination.booster-invalid,
-                vaccination.booster-no-antigen, vaccination.booster-out-of-scope, vaccination.custom-vaccine-not-found,
-                vaccination.custom.invalid, vaccination.custom.name-taken, vaccination.custom.not-found,
-                vaccination.encounter-not-found, vaccination.identity-required, vaccination.invalid,
-                vaccination.link.invalid, vaccination.not-found, vaccination.practitioner-not-found; workout —
-                workout.batch.invalid, workout.batch.payload_too_large, workout.batch.source_not_permitted,
-                workout.batch.too_large, workout.delete.synced_source; (unprefixed) — about_me_conflict,
-                ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
+                timeline — timeline.invalid; tokens — tokens.documents.ceiling_reached,
+                tokens.measurements.ceiling_reached, tokens.workouts.ceiling_reached; vaccination —
+                vaccination.booster-invalid, vaccination.booster-no-antigen, vaccination.booster-out-of-scope,
+                vaccination.custom-vaccine-not-found, vaccination.custom.invalid, vaccination.custom.name-taken,
+                vaccination.custom.not-found, vaccination.encounter-not-found, vaccination.identity-required,
+                vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
+                vaccination.practitioner-not-found; workout — workout.batch.invalid, workout.batch.payload_too_large,
+                workout.batch.source_not_permitted, workout.batch.too_large, workout.delete.synced_source; (unprefixed)
+                — about_me_conflict, ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
                 health_score_config_conflict, insights_layout_conflict, invalid_base_updated_at,
                 json_carries_no_intake_time, json_not_an_array, medication_layout_conflict, missing_required_columns,
-                modules_conflict, mood_tag_layout_conflict, not_configured, not_implemented,
-                notification_prefs_conflict, oidc_only, private_origin_not_approved, private_origin_not_grantable,
-                rate_limited_self, too_many_rows, unreadable_json, upstream_invalid_json, vapid_not_configured"
+                modules_conflict, mood_tag_layout_conflict, not_configured, notification_prefs_conflict, oidc_only,
+                private_origin_not_approved, private_origin_not_grantable, rate_limited_self, too_many_rows,
+                unreadable_json, upstream_invalid_json, vapid_not_configured"
               type: string
             capability:
               description: "On an AI refusal: the capability that is unavailable, one of the keys of `AiCapabilities` (`coach`,
@@ -54711,6 +54738,7 @@ components:
             - get_correlations
             - get_metric_table
             - get_environment
+            - get_day
             - show_result
             - snapshot
         labelKey:
@@ -54767,10 +54795,8 @@ components:
           type: string
           pattern: ^r[1-8]$
         day:
-          description: The calendar day a `get_day` step read, `YYYY-MM-DD`. A settled answer lists these days as links to each
-            day; set only on `get_day` steps.
+          description: The calendar date a `get_day` step read (`YYYY-MM-DD`), so a view can offer the days an answer looked at.
           type: string
-          pattern: ^\d{4}-\d{2}-\d{2}$
       required:
         - id
         - tool
@@ -54829,9 +54855,10 @@ components:
         - cycle
         - correlations
         - environment
+        - day
         - snapshot
       description: "The data domain a step, table or chip is about: a measurement-backed scope source, or a domain read as a
-        whole (labs, illness, cycle, correlations, the environment, the full snapshot)."
+        whole (labs, illness, cycle, correlations, the environment, one day of the record, the full snapshot)."
     CoachMethod:
       type: object
       properties:
@@ -54916,6 +54943,7 @@ components:
                 - get_correlations
                 - get_metric_table
                 - get_environment
+                - get_day
             domain:
               $ref: "#/components/schemas/CoachStepDomain"
             window:
@@ -55655,6 +55683,7 @@ components:
                 - get_correlations
                 - get_metric_table
                 - get_environment
+                - get_day
             domain:
               $ref: "#/components/schemas/CoachStepDomain"
             window:
@@ -81645,6 +81674,167 @@ components:
         - to
         - days
         - notable
+      additionalProperties: false
+    DayNotableWindowEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/DayNotableWindow"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DayNotableWindow:
+      type: object
+      properties:
+        from:
+          type: string
+          description: A local calendar date, `YYYY-MM-DD`.
+        to:
+          type: string
+          description: A local calendar date, `YYYY-MM-DD`.
+        anchor:
+          type: string
+          enum:
+            - lastVisit
+            - requested
+            - fallback
+          description: "Where `from` came from: the last completed visit, the request, or the fallback of 90 days when the record
+            holds no visit the caller may see."
+        observations:
+          type: array
+          items:
+            $ref: "#/components/schemas/DatedDayNotable"
+        changes:
+          type: array
+          items:
+            $ref: "#/components/schemas/DayChange"
+          description: "Context changes in the window, oldest first: dose changes, medication and course starts and ends, pauses,
+            illness onsets and recoveries, vaccinations, procedures and lab days."
+      required:
+        - from
+        - to
+        - anchor
+        - observations
+        - changes
+      additionalProperties: false
+    DatedDayNotable:
+      type: object
+      properties:
+        date:
+          type: string
+          description: A local calendar date, `YYYY-MM-DD`.
+        kind:
+          type: string
+          enum:
+            - extremeHigh
+            - extremeLow
+            - firstValue
+            - gap
+        type:
+          anyOf:
+            - type: string
+            - type: "null"
+        params:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties:
+            anyOf:
+              - type: string
+              - type: number
+          description: Parameters for the message the client words from its own bundle. Dates are `YYYY-MM-DD`, values are numbers
+            in the unit the entry names.
+      required:
+        - date
+        - kind
+        - type
+        - params
+      additionalProperties: false
+    DayChange:
+      type: object
+      properties:
+        date:
+          type: string
+          description: A local calendar date, `YYYY-MM-DD`.
+        kind:
+          type: string
+          enum:
+            - intake
+            - doseChange
+            - medicationStart
+            - medicationEnd
+            - pauseStart
+            - pauseEnd
+            - courseStart
+            - courseEnd
+            - illnessOnset
+            - illnessResolved
+            - illnessDayLog
+            - symptom
+            - allergyOnset
+            - labResult
+            - visit
+            - procedure
+            - vaccination
+            - checkup
+            - document
+            - mood
+            - assessment
+            - workout
+            - cycleDayLog
+            - lifeEvent
+        section:
+          type: string
+          enum:
+            - values
+            - sleep
+            - mood
+            - assessments
+            - medications
+            - illness
+            - symptoms
+            - allergies
+            - labs
+            - visits
+            - vaccinations
+            - checkups
+            - documents
+            - workouts
+            - cycle
+            - environment
+            - lifestyle
+            - lifeEvents
+        id:
+          type: string
+        title:
+          type: string
+          description: The record's own name for it, decrypted for the caller.
+        count:
+          type: integer
+          exclusiveMinimum: 0
+          maximum: 9007199254740991
+          description: Entries folded into this one (lab results of one day).
+        href:
+          anyOf:
+            - type: string
+            - type: "null"
+      required:
+        - date
+        - kind
+        - section
+        - id
+        - title
+        - count
+        - href
       additionalProperties: false
     DayEnvelope:
       type: object

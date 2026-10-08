@@ -80,6 +80,8 @@ export function recordActivityVerbLine(
       return t("recordSharing.activityVerb.vaccinationRecordCreate", { name });
     case "vaccination.custom.create":
       return t("recordSharing.activityVerb.customVaccineCreate", { name });
+    case "life_event.create":
+      return t("recordSharing.activityVerb.lifeEventCreate", { name });
     case "practitioner.contact.create":
       return t("recordSharing.activityVerb.practitionerContactCreate", {
         name,
@@ -224,6 +226,10 @@ export function recordActivityVerbLine(
       return t("recordSharing.activityVerb.customVaccineUpdate", { name });
     case "vaccination.custom.delete":
       return t("recordSharing.activityVerb.customVaccineDelete", { name });
+    case "life_event.update":
+      return t("recordSharing.activityVerb.lifeEventUpdate", { name });
+    case "life_event.delete":
+      return t("recordSharing.activityVerb.lifeEventDelete", { name });
     case "vaccination.booster.planned":
       return t("recordSharing.activityVerb.vaccinationBoosterPlanned", {
         name,

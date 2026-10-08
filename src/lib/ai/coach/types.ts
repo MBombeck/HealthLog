@@ -493,6 +493,7 @@ export type CoachStepDomain =
   | "cycle"
   | "correlations"
   | "environment"
+  | "day"
   | "snapshot";
 
 /** Why a step or a method entry found nothing. */
