@@ -6,6 +6,7 @@ import { HeartPulse, Loader2, Map as MapIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { getNumberFormat, getDateTimeFormat } from "@/lib/intl/formatter-cache";
+import { formatDurationMinutes } from "@/lib/i18n/duration";
 import { useTranslations, useTimeFormatPreference } from "@/lib/i18n/context";
 import {
   hourCycleOptions,
@@ -28,13 +29,6 @@ import { formatDistance } from "@/components/insights/workout-detail/format";
  * runs server-side, so the list is already deduped by the time it
  * lands here.
  */
-
-function formatDuration(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  if (h > 0) return `${h}h ${m.toString().padStart(2, "0")}m`;
-  return `${m}m`;
-}
 
 function formatEnergy(kcal: number, locale: string): string {
   return getNumberFormat(locale, {
@@ -151,7 +145,10 @@ export function WorkoutList({
               </div>
               <div className="flex flex-col items-end gap-0.5 text-xs">
                 <span className="font-medium tabular-nums">
-                  {formatDuration(workout.durationSec)}
+                  {formatDurationMinutes(
+                    Math.round(workout.durationSec / 60),
+                    t,
+                  )}
                 </span>
                 <span className="text-muted-foreground flex flex-wrap justify-end gap-x-2 tabular-nums">
                   {workout.distanceM != null ? (

@@ -49,7 +49,9 @@
     "dismiss": "닫기",
     "moreInfo": "추가 정보",
     "durationHoursMinutes": "{hours}시간 {minutes}분",
-    "durationMinutes": "{minutes}분"
+    "durationMinutes": "{minutes}분",
+    "durationClockMinutes": "{time}분",
+    "durationClockHours": "{time}시간"
   },
   "apiErrors": {
     "measurement": {

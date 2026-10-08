@@ -49,7 +49,9 @@
     "dismiss": "Schließen",
     "moreInfo": "Mehr Informationen",
     "durationHoursMinutes": "{hours} Std. {minutes} Min.",
-    "durationMinutes": "{minutes} Min."
+    "durationMinutes": "{minutes} Min.",
+    "durationClockMinutes": "{time} Min.",
+    "durationClockHours": "{time} Std."
   },
   "apiErrors": {
     "measurement": {
