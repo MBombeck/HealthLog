@@ -92,6 +92,37 @@ describe("the shell owns the safe area", () => {
     for (const cls of padded) expect(cls).toMatch(/\bkeyboard-open:pb-4\b/);
   });
 
+  it("those rules sit under the utilities, and the bottom sheet sets no bottom utility", () => {
+    // Unlayered, the rules outranked every utility on the same element: a
+    // `bg-*` on the shell or a `bottom-*` on a sheet would have been ignored
+    // without a trace. In the components layer a utility wins, so the bottom
+    // sheet must not carry one that would pin it under the keyboard.
+    const css = code(read("src/app/globals.css"));
+    const start = css.indexOf("@layer components {");
+    expect(start).toBeGreaterThan(-1);
+    let depth = 0;
+    let end = start;
+    for (let i = css.indexOf("{", start); i < css.length; i += 1) {
+      if (css[i] === "{") depth += 1;
+      else if (css[i] === "}" && --depth === 0) {
+        end = i;
+        break;
+      }
+    }
+    const layer = css.slice(start, end);
+    expect(layer).toMatch(/\.shell-safe-area\s*\{/);
+    expect(layer).toMatch(/\[data-sheet-side="bottom"\]\s*\{\s*bottom:/);
+    expect(layer).toMatch(/\[data-keyboard-hide\]\s*\{\s*display:\s*none/);
+    expect(layer).toMatch(/\[data-sheet-side="left"\]\s*\{\s*border-left:/);
+    // Sonner's own rules are unlayered; the toast lift must stay so.
+    expect(layer).not.toMatch(/data-sonner-toaster/);
+
+    const sheet = code(read("src/components/ui/sheet.tsx"));
+    const bottomBranch = sheet.match(/side === "bottom" &&\s*"([^"]*)"/)?.[1];
+    expect(bottomBranch).toBeDefined();
+    expect(bottomBranch).not.toMatch(/(?<![\w-])bottom-/);
+  });
+
   it("the sheet primitive names its side for those rules", () => {
     expect(read("src/components/ui/sheet.tsx")).toMatch(
       /data-sheet-side=\{side\}/,
