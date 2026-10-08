@@ -30,6 +30,7 @@ import type {
   TimelineReadinessResponse,
 } from "@/lib/day/contract";
 import { readLocalDaysWithReadings } from "@/lib/day/daily-stats";
+import { listLiveMeasurementTypes } from "@/lib/measurements/live-types";
 import { prisma } from "@/lib/db";
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 import { measurementTypeVisible } from "@/lib/day/sections";
@@ -75,18 +76,35 @@ export function coveredWeeks(days: Iterable<string>, today: string): number {
   return weeks.size;
 }
 
+/** Nothing yet: the one detail an empty lane carries. */
+const EMPTY_DETAIL = { key: "empty", params: {} } as const;
+
+/** A gap with its one in-app link. */
+function gap(key: string, count: number, href: string) {
+  return { key, count, href };
+}
+
+/**
+ * A lane judged by how regularly it is filled: `carries` with entries on at
+ * least half of the last {@link READINESS_WEEKS} weeks, `thin` with fewer,
+ * `empty` with none.
+ */
 function regular(
   weeks: number,
   total: number,
   since: string | null,
-  gap: { key: string; href: string } | null,
+  detail: LaneResult["detail"],
+  emptyGap: ReturnType<typeof gap> | null,
 ): LaneResult {
   const status =
     weeks * 2 >= READINESS_WEEKS ? "carries" : total > 0 ? "thin" : "empty";
-  return lane(status, total, status === "carries" ? since : null, {
-    detail: { key: "weeks", params: { weeks, of: READINESS_WEEKS } },
-    gaps: status === "carries" || gap === null ? [] : [{ ...gap, count: 0 }],
-  });
+  if (status === "empty") {
+    return lane("empty", 0, null, {
+      detail: EMPTY_DETAIL,
+      gaps: emptyGap ? [emptyGap] : [],
+    });
+  }
+  return lane(status, total, status === "carries" ? since : null, { detail });
 }
 
 interface Frame {
@@ -99,8 +117,11 @@ interface Frame {
 }
 
 async function valuesLane(frame: Frame, types: MeasurementType[]) {
-  if (types.length === 0) return lane("empty", 0, null);
-  const [days, first] = await Promise.all([
+  const emptyGap = gap("valuesEmpty", 0, "/settings/sources");
+  if (types.length === 0) {
+    return lane("empty", 0, null, { detail: EMPTY_DETAIL, gaps: [emptyGap] });
+  }
+  const [days, first, present] = await Promise.all([
     readLocalDaysWithReadings({
       userId: frame.userId,
       types,
@@ -113,18 +134,24 @@ async function valuesLane(frame: Frame, types: MeasurementType[]) {
       orderBy: { measuredAt: "asc" },
       select: { measuredAt: true },
     }),
+    listLiveMeasurementTypes(frame.userId, { types }),
   ]);
+  const since = first ? userDayKey(first.measuredAt, frame.tz) : null;
   return regular(
     coveredWeeks(days, frame.today),
     days.size,
-    first ? userDayKey(first.measuredAt, frame.tz) : null,
-    { key: "connectSources", href: "/settings/sources" },
+    since,
+    {
+      key: "values",
+      params: { count: present.length, ...(since ? { since } : {}) },
+    },
+    emptyGap,
   );
 }
 
 async function moodLane(frame: Frame) {
   const first = shiftDateKey(frame.today, -7 * READINESS_WEEKS + 1);
-  const [rows, earliest] = await Promise.all([
+  const [rows, earliest, total] = await Promise.all([
     prisma.moodEntry.findMany({
       where: { userId: frame.userId, deletedAt: null, date: { gte: first } },
       select: { date: true },
@@ -135,21 +162,26 @@ async function moodLane(frame: Frame) {
       orderBy: { date: "asc" },
       select: { date: true },
     }),
+    prisma.moodEntry.count({
+      where: { userId: frame.userId, deletedAt: null },
+    }),
   ]);
+  const since = earliest?.date ?? null;
   return regular(
     coveredWeeks(
       rows.map((r) => r.date),
       frame.today,
     ),
-    rows.length,
-    earliest?.date ?? null,
-    { key: "logMood", href: "/mood" },
+    total,
+    since,
+    { key: "mood", params: { count: total, ...(since ? { since } : {}) } },
+    null,
   );
 }
 
 async function cycleLane(frame: Frame) {
   const first = shiftDateKey(frame.today, -7 * READINESS_WEEKS + 1);
-  const [rows, earliest] = await Promise.all([
+  const [rows, earliest, cycles] = await Promise.all([
     prisma.cycleDayLog.findMany({
       where: { userId: frame.userId, deletedAt: null, date: { gte: first } },
       select: { date: true },
@@ -159,21 +191,25 @@ async function cycleLane(frame: Frame) {
       orderBy: { startDate: "asc" },
       select: { startDate: true },
     }),
+    prisma.menstrualCycle.count({
+      where: { userId: frame.userId, deletedAt: null, isPredicted: false },
+    }),
   ]);
   return regular(
     coveredWeeks(
       rows.map((r) => r.date),
       frame.today,
     ),
-    rows.length,
+    cycles,
     earliest?.startDate ?? null,
-    { key: "logCycle", href: "/cycle" },
+    { key: "cycle", params: { count: cycles } },
+    null,
   );
 }
 
 async function environmentLane(frame: Frame) {
   const first = shiftDateKey(frame.today, -7 * READINESS_WEEKS + 1);
-  const [rows, earliest] = await Promise.all([
+  const [rows, earliest, total] = await Promise.all([
     prisma.environmentContext.findMany({
       where: { userId: frame.userId, date: { gte: first } },
       select: { date: true },
@@ -183,33 +219,43 @@ async function environmentLane(frame: Frame) {
       orderBy: { date: "asc" },
       select: { date: true },
     }),
+    prisma.environmentContext.count({ where: { userId: frame.userId } }),
   ]);
   return regular(
     coveredWeeks(
       rows.map((r) => r.date),
       frame.today,
     ),
-    rows.length,
+    total,
     earliest?.date ?? null,
-    { key: "setHome", href: "/settings/environment" },
+    { key: "environment", params: { count: total } },
+    null,
   );
 }
 
 async function illnessLane(frame: Frame) {
-  const [count, first] = await Promise.all([
+  const where = { userId: frame.userId, deletedAt: null };
+  const [count, chronic, first] = await Promise.all([
+    prisma.illnessEpisode.count({ where }),
     prisma.illnessEpisode.count({
-      where: { userId: frame.userId, deletedAt: null },
+      where: { ...where, lifecycle: "CHRONIC_ONGOING" },
     }),
     prisma.illnessEpisode.findFirst({
-      where: { userId: frame.userId, deletedAt: null },
+      where,
       orderBy: { onsetAt: "asc" },
       select: { onsetAt: true },
     }),
   ]);
   return count > 0
-    ? lane("carries", count, first ? userDayKey(first.onsetAt, frame.tz) : null)
+    ? lane(
+        "carries",
+        count,
+        first ? userDayKey(first.onsetAt, frame.tz) : null,
+        { detail: { key: "illness", params: { count, chronic } } },
+      )
     : lane("empty", 0, null, {
-        gaps: [{ key: "addEpisode", count: 0, href: "/illness" }],
+        detail: EMPTY_DETAIL,
+        gaps: [gap("illnessEmpty", 0, "/illness")],
       });
 }
 
@@ -218,15 +264,19 @@ async function allergiesLane(frame: Frame) {
     where: { userId: frame.userId, deletedAt: null },
     select: { onsetAt: true },
   });
+  if (rows.length === 0) {
+    return lane("empty", 0, null, { detail: EMPTY_DETAIL });
+  }
+  const detail = { key: "allergies", params: { count: rows.length } };
   const dated = rows.filter((r) => r.onsetAt !== null);
   if (dated.length > 0) {
     const since = dated
       .map((r) => userDayKey(r.onsetAt as Date, frame.tz))
       .sort()[0];
-    return lane("carries", rows.length, since);
+    return lane("carries", rows.length, since, { detail });
   }
   // Undated allergies are standing items, not a shortcoming: no gap.
-  return lane(rows.length > 0 ? "thin" : "empty", rows.length, null);
+  return lane("thin", rows.length, null, { detail });
 }
 
 async function medicationsLane(frame: Frame) {
@@ -249,9 +299,7 @@ async function medicationsLane(frame: Frame) {
     }),
   ]);
   if (meds.length === 0) {
-    return lane("empty", 0, null, {
-      gaps: [{ key: "addMedication", count: 0, href: "/medications/new" }],
-    });
+    return lane("empty", 0, null, { detail: EMPTY_DETAIL });
   }
   const firstIntake = new Map(
     intakes.map((r) => [r.medicationId, r._min.takenAt]),
@@ -266,49 +314,57 @@ async function medicationsLane(frame: Frame) {
     else missing.push(med.id);
   }
   const since = starts.sort()[0] ?? null;
-  if (missing.length === 0) return lane("carries", meds.length, since);
+  if (missing.length === 0) {
+    return lane("carries", meds.length, since, {
+      detail: { key: "medicationsDated", params: { count: meds.length } },
+    });
+  }
   return lane("thin", meds.length, null, {
     detail: {
-      key: "startMissing",
-      params: { missing: missing.length, total: meds.length },
+      key: "medications",
+      params: { count: meds.length, missingStart: missing.length },
     },
     gaps: [
-      {
-        key: "medicationStartMissing",
-        count: missing.length,
-        href: `/medications/${missing[0]}?edit=1`,
-      },
+      gap(
+        "medicationsWithoutStart",
+        missing.length,
+        `/medications/${missing[0]}?edit=1`,
+      ),
     ],
   });
 }
 
 async function vaccinationsLane(frame: Frame) {
-  const first = await prisma.vaccinationRecord.findFirst({
-    where: { userId: frame.userId, deletedAt: null },
-    orderBy: { occurredAt: "asc" },
-    select: { occurredAt: true },
-  });
+  const where = { userId: frame.userId, deletedAt: null };
+  const [count, first] = await Promise.all([
+    prisma.vaccinationRecord.count({ where }),
+    prisma.vaccinationRecord.findFirst({
+      where,
+      orderBy: { occurredAt: "asc" },
+      select: { occurredAt: true },
+    }),
+  ]);
   if (!first) {
     return lane("empty", 0, null, {
-      gaps: [{ key: "addVaccination", count: 0, href: "/vaccinations" }],
+      detail: EMPTY_DETAIL,
+      gaps: [gap("vaccinationsEmpty", 0, "/vaccinations")],
     });
   }
-  const count = await prisma.vaccinationRecord.count({
-    where: { userId: frame.userId, deletedAt: null },
+  return lane("carries", count, userDayKey(first.occurredAt, frame.tz), {
+    detail: { key: "vaccinations", params: { count } },
   });
-  return lane("carries", count, userDayKey(first.occurredAt, frame.tz));
 }
 
 async function visitsLane(frame: Frame) {
-  const [done, planned, first] = await Promise.all([
+  const where = { userId: frame.userId, deletedAt: null };
+  const [done, procedures, planned, first] = await Promise.all([
+    prisma.encounter.count({ where: { ...where, status: "DONE" } }),
     prisma.encounter.count({
-      where: { userId: frame.userId, deletedAt: null, status: "DONE" },
+      where: { ...where, status: "DONE", kind: "PROCEDURE" },
     }),
-    prisma.encounter.count({
-      where: { userId: frame.userId, deletedAt: null, status: "PLANNED" },
-    }),
+    prisma.encounter.count({ where: { ...where, status: "PLANNED" } }),
     prisma.encounter.findFirst({
-      where: { userId: frame.userId, deletedAt: null, status: "DONE" },
+      where: { ...where, status: "DONE" },
       orderBy: { occurredAt: "asc" },
       select: { occurredAt: true },
     }),
@@ -318,31 +374,34 @@ async function visitsLane(frame: Frame) {
       "carries",
       done,
       first ? userDayKey(first.occurredAt, frame.tz) : null,
+      { detail: { key: "visits", params: { count: done, procedures } } },
     );
   }
-  return lane(planned > 0 ? "thin" : "empty", planned, null, {
-    ...(planned > 0
-      ? { detail: { key: "plannedOnly", params: { planned } } }
-      : {}),
-    gaps: [{ key: "addVisit", count: 0, href: "/checkups" }],
-  });
+  const visitGap = gap("visitsEmpty", 0, "/checkups");
+  return planned > 0
+    ? lane("thin", planned, null, {
+        detail: { key: "visitsPlanned", params: { count: planned } },
+        gaps: [visitGap],
+      })
+    : lane("empty", 0, null, { detail: EMPTY_DETAIL, gaps: [visitGap] });
 }
 
 async function labsLane(frame: Frame) {
-  const first = await prisma.labResult.findFirst({
+  const rows = await prisma.labResult.findMany({
     where: { userId: frame.userId, deletedAt: null },
-    orderBy: { takenAt: "asc" },
     select: { takenAt: true },
+    orderBy: { takenAt: "asc" },
   });
-  if (!first) {
+  if (rows.length === 0) {
     return lane("empty", 0, null, {
-      gaps: [{ key: "addLabs", count: 0, href: "/labs" }],
+      detail: EMPTY_DETAIL,
+      gaps: [gap("labsEmpty", 0, "/labs")],
     });
   }
-  const count = await prisma.labResult.count({
-    where: { userId: frame.userId, deletedAt: null },
+  const days = new Set(rows.map((r) => userDayKey(r.takenAt, frame.tz)));
+  return lane("carries", days.size, userDayKey(rows[0].takenAt, frame.tz), {
+    detail: { key: "labs", params: { count: days.size } },
   });
-  return lane("carries", count, userDayKey(first.takenAt, frame.tz));
 }
 
 async function documentsLane(frame: Frame) {
@@ -365,40 +424,38 @@ async function documentsLane(frame: Frame) {
     }),
   ]);
   const gaps =
-    undated > 0
-      ? [{ key: "undatedDocuments", count: undated, href: "/documents" }]
-      : [];
+    undated > 0 ? [gap("documentsUndated", undated, "/documents")] : [];
   if (dated.length > 0) {
     const since = dated
       .map((d) => dateOnlyKey((d.reportDate ?? d.documentDate) as Date))
       .sort()[0];
-    return lane("carries", dated.length, since, { gaps });
+    return lane("carries", dated.length, since, {
+      detail: { key: "documents", params: { count: dated.length } },
+      gaps,
+    });
   }
   return lane(undated > 0 ? "thin" : "empty", undated, null, {
-    gaps:
-      undated > 0
-        ? gaps
-        : [{ key: "addDocument", count: 0, href: "/documents" }],
+    detail: EMPTY_DETAIL,
+    gaps,
   });
 }
 
 async function lifeLane(frame: Frame) {
+  const where = { userId: frame.userId, deletedAt: null };
   const [count, first] = await Promise.all([
-    prisma.lifeEvent.count({
-      where: { userId: frame.userId, deletedAt: null },
-    }),
+    prisma.lifeEvent.count({ where }),
     prisma.lifeEvent.findFirst({
-      where: { userId: frame.userId, deletedAt: null },
+      where,
       orderBy: { startDate: "asc" },
       select: { startDate: true },
     }),
   ]);
   return count > 0
-    ? lane("carries", count, first?.startDate ?? null)
+    ? lane("carries", count, first?.startDate ?? null, {
+        detail: { key: "life", params: { count } },
+      })
     : lane("empty", 0, null, {
-        gaps: [
-          { key: "addLifeEvent", count: 0, href: "/timeline?add=lifeEvent" },
-        ],
+        gaps: [gap("lifeEventsEmpty", 0, "/timeline?add=lifeEvent")],
       });
 }
 

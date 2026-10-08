@@ -439,6 +439,15 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["AlertDialog"],
   },
 
+  {
+    file: "components/timeline/use-timeline.ts",
+    destroys: "one life event with its encrypted title and note",
+    triggers: ["components/timeline/life-event-form.tsx"],
+    // The route soft-deletes; there is no restore route or surface yet.
+    recovery: "tombstoned-no-restore",
+    confirm: ["ConfirmButton"],
+  },
+
   // ── Cycle ───────────────────────────────────────────────────────────────
   {
     file: "components/cycle/use-cycle.ts",

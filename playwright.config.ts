@@ -185,6 +185,11 @@ export default defineConfig({
         // through stable data-slots, not a mobile layout, so it runs in one
         // project.
         "vaccinations.spec.ts",
+        // The timeline journey moves its account's timeline module on and
+        // off; two projects on that one account would flip it under each
+        // other. It checks the phone chronicle itself by resizing inside the
+        // desktop project.
+        "timeline.spec.ts",
         // The blood-glucose journey writes readings to the one shared account
         // and then reads GLOBAL verdicts off it — three rows in the list, one
         // tile per meal-time context — while also moving that account's

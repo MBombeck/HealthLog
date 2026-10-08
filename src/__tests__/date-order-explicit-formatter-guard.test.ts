@@ -236,6 +236,10 @@ function scan(): Scan {
  */
 const RAW_ALLOWLIST: ReadonlyArray<{ file: string; why: string }> = [
   {
+    file: "src/components/timeline/timeline-dates.ts",
+    why: "`todayKeyIn` asks `en-CA` for today's `YYYY-MM-DD` key in the record's zone, to compare with the timeline's calendar keys. Never rendered; every label there is a month name.",
+  },
+  {
     file: "src/app/api/measurement-reminders/[id]/snooze/route.ts",
     why: "An ISO day probe split back into numbers to do day arithmetic on the postpone target. Never rendered.",
   },
