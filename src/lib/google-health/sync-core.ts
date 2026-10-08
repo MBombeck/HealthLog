@@ -20,6 +20,7 @@ import { prisma } from "@/lib/db";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { encrypt, decrypt } from "@/lib/crypto";
 import { getEvent } from "@/lib/logging/context";
+import { userDayKey } from "@/lib/tz/format";
 import { dropImplausibleMeasurements } from "@/lib/measurements/plausibility-gate";
 import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit";
 import { recordSyncFailure, type FailureKind } from "@/lib/integrations/status";
@@ -68,6 +69,33 @@ export const GOOGLE_HEALTH_DEFAULT_OVERLAP_MS = 24 * 60 * 60 * 1000;
  * covers a watch that syncs to the phone late.
  */
 export const GOOGLE_HEALTH_INTRADAY_OVERLAP_MS = 2 * 60 * 60 * 1000;
+
+/**
+ * The intraday overlap for one cycle. Two hours covers a watch that reaches
+ * the phone a little late, but a watch worn without its phone uploads to
+ * Google's cloud only when it next meets the phone, which can be many hours
+ * after the samples were taken. Those samples carry their original sample
+ * time, so once `lastSyncedAt` has moved past them a two-hour window never
+ * sees them again.
+ *
+ * So the first successful cycle of each local day reads intraday samples
+ * with the full day of overlap, and every later cycle that day keeps the
+ * short window. "First of the day" is derived from the watermark itself
+ * (`lastSyncedAt` falls on an earlier local day than now), so no extra state
+ * is needed, and a failed wide cycle does not stamp `markSynced`, which makes
+ * the next cycle wide again. Cost stays bounded: one day-wide read per day
+ * instead of one per hour, still under the dense page cap (#1023).
+ */
+export function intradayOverlapMs(
+  lastSyncedAt: Date | null,
+  tz: string,
+  now: Date = new Date(),
+): number {
+  if (!lastSyncedAt) return GOOGLE_HEALTH_INTRADAY_OVERLAP_MS;
+  return userDayKey(lastSyncedAt, tz) === userDayKey(now, tz)
+    ? GOOGLE_HEALTH_INTRADAY_OVERLAP_MS
+    : GOOGLE_HEALTH_DEFAULT_OVERLAP_MS;
+}
 
 export interface GoogleHealthTokenInfo {
   accessToken: string;
