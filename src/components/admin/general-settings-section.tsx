@@ -1,5 +1,6 @@
 "use client";
 
+import { localeLabels, locales } from "@/lib/i18n/config";
 import { useMemo, useState } from "react";
 import { Settings } from "lucide-react";
 import { SettingsCard } from "@/components/settings/settings-card";
@@ -142,8 +143,13 @@ export function GeneralSettingsSection() {
             disabled={updateSettings.isPending}
             className="self-end sm:w-auto sm:self-auto"
           >
-            <option value="de">Deutsch</option>
-            <option value="en">English</option>
+            {/* Every shipped locale, not a hand-kept pair: a new language
+                that ships without being offered here was the drift. */}
+            {locales.map((loc) => (
+              <option key={loc} value={loc}>
+                {localeLabels[loc]}
+              </option>
+            ))}
           </NativeSelect>
         </div>
 

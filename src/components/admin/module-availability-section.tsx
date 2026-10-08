@@ -95,11 +95,7 @@ export function ModuleAvailabilitySection() {
 
   return (
     <SettingsCard>
-      <SettingsCardHeader
-        icon={ToggleLeft}
-        title={t("admin.modules.title")}
-        description={t("admin.modules.description")}
-      />
+      <SettingsCardHeader icon={ToggleLeft} title={t("admin.modules.title")} />
       <p className="text-sm">{t("admin.modules.detail")}</p>
 
       <div className="space-y-4">
@@ -133,7 +129,7 @@ export function ModuleAvailabilitySection() {
                     href="/admin/coach"
                     className="text-primary text-xs underline-offset-4 hover:underline"
                   >
-                    {t("admin.assistant.title")}
+                    {t("admin.section.coach.title")}
                   </Link>
                 </div>
               );

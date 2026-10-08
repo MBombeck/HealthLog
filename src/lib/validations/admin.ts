@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { locales } from "@/lib/i18n/config";
 import { isPublicUrl } from "@/lib/validations/notifications";
 
 /**
@@ -10,7 +11,9 @@ export const adminSettingsSchema = z
     registrationEnabled: z.boolean().optional(),
     // v1.23 — instance-wide "require a second factor" policy.
     mfaRequired: z.boolean().optional(),
-    defaultLocale: z.enum(["de", "en"]).optional(),
+    // Every shipped locale. It was the pair de/en long after the app shipped
+    // seven, so the admin picker could offer only two of them.
+    defaultLocale: z.enum(locales).optional(),
     telegramGlobal: z.boolean().optional(),
     ntfyGlobal: z.boolean().optional(),
     webPushGlobal: z.boolean().optional(),

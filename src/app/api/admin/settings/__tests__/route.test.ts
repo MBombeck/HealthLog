@@ -434,6 +434,41 @@ describe("PUT /api/admin/settings", () => {
     expect(args?.update).toEqual({ defaultUserTimezone: null });
   });
 
+  // Every shipped locale is a valid server default, not only de/en.
+  it("persists any shipped locale as the default language", async () => {
+    vi.mocked(prisma.appSettings.upsert).mockResolvedValue({
+      id: "singleton",
+      registrationEnabled: true,
+      defaultLocale: "fr",
+      telegramGlobal: true,
+      ntfyGlobal: true,
+      webPushGlobal: true,
+      webPushVapidPublicKey: null,
+      webPushVapidSubject: null,
+      webPushVapidPrivateKeyEncrypted: null,
+      apiGlobal: true,
+      umamiEnabled: false,
+      umamiScriptUrl: null,
+      umamiWebsiteId: null,
+      glitchtipEnabled: false,
+      glitchtipDsn: null,
+      glitchtipEnvironment: null,
+      reminderLateMinutes: 120,
+      reminderMissedMinutes: 240,
+      defaultUserTimezone: null,
+    } as never);
+    const res = await PUT(jsonReq({ defaultLocale: "fr" }));
+    expect(res.status).toBe(200);
+    const args = vi.mocked(prisma.appSettings.upsert).mock.calls[0]?.[0];
+    expect(args?.update).toEqual({ defaultLocale: "fr" });
+  });
+
+  it("returns 422 for a locale the app does not ship", async () => {
+    const res = await PUT(jsonReq({ defaultLocale: "xx" }));
+    expect(res.status).toBe(422);
+    expect(prisma.appSettings.upsert).not.toHaveBeenCalled();
+  });
+
   it("returns 422 for an invalid IANA zone in defaultUserTimezone", async () => {
     const res = await PUT(jsonReq({ defaultUserTimezone: "Mars/Olympus" }));
     expect(res.status).toBe(422);
