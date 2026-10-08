@@ -1,6 +1,7 @@
 "use client";
 
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import type { Formatters } from "@/lib/format-locale";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import { moodTagIcon } from "@/components/mood/mood-tag-icons";
 import { cn } from "@/lib/utils";
@@ -84,8 +85,12 @@ const CONFIDENCE_CLASS: Record<MoodInfluenceConfidence, string> = {
 };
 
 /** Whole numbers for steps; one decimal otherwise. */
-function fmt(value: number, display: MoodFactorCrosstabDisplay): string {
-  return display === "steps" ? Math.round(value).toString() : value.toFixed(1);
+function formatValue(
+  value: number,
+  display: MoodFactorCrosstabDisplay,
+  nf: Formatters,
+): string {
+  return display === "steps" ? nf.integer(value) : nf.number(value, 1);
 }
 
 export function MoodFactorMetricCrosstab({
@@ -94,6 +99,7 @@ export function MoodFactorMetricCrosstab({
   rows: MoodFactorMetricCrosstabRow[];
 }) {
   const { t } = useTranslations();
+  const nf = useFormatters();
   const unitDisplay = useUnitDisplay();
   const dismissal = usePatternDismissalOverrides();
   if (rows.length === 0) return null;
@@ -143,7 +149,7 @@ export function MoodFactorMetricCrosstab({
           // green/red would imply a health verdict the data doesn't support.
           // The sign prefix + `data-direction` carry the direction.
           const up = row.delta >= 0;
-          const deltaText = `${up ? "+" : ""}${fmt(conv(row.delta), row.display)} ${unit}`;
+          const deltaText = `${up ? "+" : ""}${formatValue(conv(row.delta), row.display, nf)} ${unit}`;
           return (
             <li
               key={`${row.metricKey}:${row.factor}`}
@@ -197,8 +203,8 @@ export function MoodFactorMetricCrosstab({
                   {
                     factor: factorLabel,
                     metric: metricLabel,
-                    lowAvg: fmt(conv(row.lowAvg), row.display),
-                    highAvg: fmt(conv(row.highAvg), row.display),
+                    lowAvg: formatValue(conv(row.lowAvg), row.display, nf),
+                    highAvg: formatValue(conv(row.highAvg), row.display, nf),
                     unit,
                     lowDays: row.lowDays,
                   },

@@ -11,7 +11,7 @@ import {
   YAxis,
 } from "recharts";
 
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 
 /**
  * v1.9.0 — average mood per part of day.
@@ -62,6 +62,7 @@ export function MoodTimeOfDayChart({
   pattern: MoodTimeOfDayPattern;
 }) {
   const { t } = useTranslations();
+  const nf = useFormatters();
 
   const data = pattern.buckets.map((row) => ({
     bucket: row.bucket,
@@ -125,7 +126,7 @@ export function MoodTimeOfDayChart({
                   return [t("insights.mood.weekdayNoData"), ""];
                 }
                 return [
-                  `${payload.avgScore.toFixed(1)} (${payload.count})`,
+                  `${nf.number(payload.avgScore, 1)} (${payload.count})`,
                   t("insights.mood.timeOfDay.title"),
                 ];
               }}
