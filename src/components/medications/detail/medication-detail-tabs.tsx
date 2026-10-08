@@ -193,7 +193,6 @@ const TAB_SLUGS = [
   "bestand",
   "verlauf",
   "injektion",
-  "api",
   "erweitert",
 ] as const;
 type TabSlug = (typeof TAB_SLUGS)[number];
@@ -208,9 +207,8 @@ const OWNER_ONLY_TABS: ReadonlySet<TabSlug> = new Set([
   // Schedule times are a MANAGE route, but the tab also carries the reminder
   // and notification settings, which resolve the caller.
   "zeitplan",
-  // Per-medication tokens: a credential surface, never delegated.
-  "api",
-  // Phase config, export and the token-adjacent rows resolve the caller.
+  // Phase config, export and the per-medication tokens (a credential
+  // surface, never delegated) resolve the caller.
   "erweitert",
 ]);
 
@@ -230,6 +228,9 @@ const MANAGE_TABS: ReadonlySet<TabSlug> = new Set(["bestand"]);
  */
 const LEGACY_TAB_SLUGS: Record<string, TabSlug> = {
   erinnerung: "zeitplan",
+  // The API tab folded back into Erweitert in v1.42: two tabs for the
+  // rarely-opened owner settings made a strip that could not fit a phone.
+  api: "erweitert",
 };
 
 function snapshotToWizardPayload(
@@ -524,7 +525,9 @@ export function MedicationDetailTabs({
         data-slot="medication-detail-tabs"
       >
         <TabsList
-          className="w-full justify-start"
+          // Six tabs do not fit a phone in one row; they wrap into two
+          // there instead of scrolling a label off the edge.
+          className="w-full justify-start max-sm:h-auto! max-sm:flex-wrap"
           aria-label={t("medications.detail.shell.tablistLabel")}
         >
           {availableTabs.map((slug) => (
@@ -871,33 +874,9 @@ export function MedicationDetailTabs({
           </TabsContent>
         )}
 
-        {/* API — the external-ingest surface in its own tab: per-medication
-            tokens + the drug-coding identifiers external systems key on.
-            Pulled out of Erweitert so the destructive zone and the token
-            management stop sharing one surface. */}
-        <TabsContent value="api" className="space-y-4 pt-2">
-          <SettingsGroup
-            label={t("medications.detail.erweitert.group.externalApi")}
-            dataSlot="api-group-external-api"
-          >
-            <div className="py-3">
-              <ApiTokensRow
-                medicationId={id}
-                medicationName={medication.name}
-              />
-            </div>
-            <div className="py-3">
-              <DrugCodingRow
-                medicationId={id}
-                atcCode={medication.atcCode}
-                rxNormCode={medication.rxNormCode}
-              />
-            </div>
-          </SettingsGroup>
-        </TabsContent>
-
-        {/* ERWEITERT — Lifecycle → Daten → Gefahrenzone. The external-API
-            group moved to its own API tab. */}
+        {/* ERWEITERT — Lifecycle → Daten → external API → Gefahrenzone.
+            The API tab folded back in here (v1.42); its group stays
+            collapsed like the other two, and the danger zone stays last. */}
         <TabsContent value="erweitert" className="space-y-4 pt-2">
           <SettingsGroup
             label={t("medications.detail.erweitert.group.lifecycle")}
@@ -972,6 +951,27 @@ export function MedicationDetailTabs({
               <DataPortabilityRow
                 medicationId={id}
                 onOpenImport={() => setImportOpen(true)}
+              />
+            </div>
+          </SettingsGroup>
+
+          <SettingsGroup
+            label={t("medications.detail.erweitert.group.externalApi")}
+            dataSlot="api-group-external-api"
+            collapsible
+            defaultOpen={false}
+          >
+            <div className="py-3">
+              <ApiTokensRow
+                medicationId={id}
+                medicationName={medication.name}
+              />
+            </div>
+            <div className="py-3">
+              <DrugCodingRow
+                medicationId={id}
+                atcCode={medication.atcCode}
+                rxNormCode={medication.rxNormCode}
               />
             </div>
           </SettingsGroup>
