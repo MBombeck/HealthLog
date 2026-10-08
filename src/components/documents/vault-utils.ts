@@ -185,7 +185,17 @@ export function hasProcessingDocument(
  */
 export type TimelineItem =
   | { type: "month"; key: string }
-  | { type: "row"; key: string; documents: InboundDocumentDto[] };
+  | {
+      type: "row";
+      key: string;
+      documents: InboundDocumentDto[];
+      /**
+       * Flowing arrangement only: the documents in this row that open a
+       * month, mapped to that month's YYYY-MM key. The month name rides
+       * inline above the document instead of taking a row of its own.
+       */
+      monthStarts?: Record<string, string>;
+    };
 
 /**
  * Bucket an already-sorted document list into consecutive YYYY-MM sections
@@ -221,6 +231,40 @@ export function buildTimelineItems(
     if (row.length === cols) flushRow();
   }
   flushRow();
+  return items;
+}
+
+/**
+ * The flowing arrangement: documents run left to right across every row and
+ * wrap, with no row reserved for a month. The first document of each month
+ * carries that month in `monthStarts`, so its name can sit inline above it.
+ * Order is preserved exactly as received, like `buildTimelineItems`.
+ */
+export function buildFlowTimelineItems(
+  documents: InboundDocumentDto[],
+  columns: number,
+  timezone: string,
+): TimelineItem[] {
+  const cols = Math.max(1, columns);
+  const items: TimelineItem[] = [];
+  let month: string | null = null;
+  for (let i = 0; i < documents.length; i += cols) {
+    const row = documents.slice(i, i + cols);
+    const monthStarts: Record<string, string> = {};
+    for (const doc of row) {
+      const key = documentMonthKey(doc, timezone);
+      if (key !== month) {
+        monthStarts[doc.id] = key;
+        month = key;
+      }
+    }
+    items.push({
+      type: "row",
+      key: `flow:${row[0].id}`,
+      documents: row,
+      monthStarts,
+    });
+  }
   return items;
 }
 

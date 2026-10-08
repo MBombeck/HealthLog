@@ -326,6 +326,38 @@ describe("computeSleepScore", () => {
     }
   });
 
+  it("carries the score of every night in the window, ending on the headline", async () => {
+    const rows = [
+      ...night("2026-05-31", [
+        ["IN_BED", 480, "06:00"],
+        ["REM", 90, "02:00"],
+        ["CORE", 240, "03:00"],
+        ["DEEP", 60, "04:00"],
+      ]),
+      // A short night, so the course is not flat.
+      ...night("2026-06-01", [
+        ["IN_BED", 300, "06:10"],
+        ["REM", 40, "02:10"],
+        ["CORE", 200, "03:10"],
+        ["DEEP", 20, "04:10"],
+      ]),
+      ...night("2026-06-02", [
+        ["IN_BED", 480, "06:05"],
+        ["REM", 95, "02:05"],
+        ["CORE", 235, "03:05"],
+        ["DEEP", 65, "04:05"],
+      ]),
+    ];
+    findMany.mockResolvedValue(rows);
+    const result = await computeSleepScore("u1", PROFILE, { now: NOW });
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") {
+      expect(result.value.series).toHaveLength(3);
+      expect(result.value.series.at(-1)).toBe(result.value.score);
+      expect(result.value.series[1]).toBeLessThan(result.value.series[0]);
+    }
+  });
+
   it("reweights around composition on a legacy ASLEEP-only night", async () => {
     const rows = [
       ...night("2026-05-31", [["ASLEEP", 420, "06:00"]]),

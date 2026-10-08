@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
@@ -61,7 +61,13 @@ const BESPOKE_PAGES: ReadonlyArray<{
 describe("bespoke metric-detail spine — assessment is the last block", () => {
   for (const { slug, assessmentTag, assessmentMayTrail } of BESPOKE_PAGES) {
     it(`renders the assessment card as the last SubPageShell child on /insights/${slug}`, () => {
-      const source = readFileSync(join(PAGES_DIR, slug, "page.tsx"), "utf8");
+      // A page split into an RSC prefetch wrapper and its client body keeps
+      // the spine in the client file.
+      const client = join(PAGES_DIR, slug, "page-client.tsx");
+      const source = readFileSync(
+        existsSync(client) ? client : join(PAGES_DIR, slug, "page.tsx"),
+        "utf8",
+      );
 
       // The render branch that carries the assessment is the final
       // `<SubPageShell>…</SubPageShell>` in the module (the empty-state

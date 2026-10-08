@@ -19,12 +19,13 @@ import {
 import type { RingHue } from "./ring-hues";
 import type { CoachLaunchScope } from "@/lib/insights/coach-launch-context";
 import { METRIC_PROVENANCE } from "./standards";
+import { ScoreHistoryCard, ScoreHistoryChart } from "./score-history";
 
 /**
  * v1.10.0 — the data-bound wrapper that fetches a composite/persisted derived
  * score and renders the reusable `ScoreAnatomyView`. It owns the per-metric
  * presentation map (title, contributor labels, the cited standard, the
- * plain-language method + honesty caveat) so the anatomy view itself stays
+ * plain-language method) so the anatomy view itself stays
  * metric-agnostic.
  *
  * Supports the two decomposable W3 composites (`SLEEP_SCORE`, `READINESS` —
@@ -32,12 +33,10 @@ import { METRIC_PROVENANCE } from "./standards";
  * three persisted nightly scores (`RECOVERY_SCORE`, `STRESS_SCORE`,
  * `STRAIN_SCORE`). The persisted scores carry no sub-decomposition, so they
  * render the ring + coverage + the provenance surface (method + cited
- * standard + caveat) with no contributor rows — the acceptance-criterion fix
- * that gives every wellness ring a provenance surface instead of a read-only
- * dead-end. STRESS surfaces its "HRV-derived proxy, not an EDA/galvanic
- * measurement" caveat via the standards map.
+ * standard) with no contributor rows — the acceptance-criterion fix that gives
+ * every wellness ring a provenance surface instead of a read-only dead-end.
  *
- * The standard + method/caveat keys come from the single `METRIC_PROVENANCE`
+ * The standard + method keys come from the single `METRIC_PROVENANCE`
  * source map so the citation a metric exposes never drifts across surfaces.
  *
  * Client-only: `import type` for the value shapes (no server graph leaks);
@@ -147,16 +146,12 @@ export function CompositeScoreAnatomy({
     }
   }
 
-  // Method copy carries an optional honesty caveat above it (STRESS proxy,
-  // descriptive-not-clinical, …) so the caveat reaches the user, not just
-  // the engine header.
+  // v1.42 — the per-score "descriptive proxy, not clinical" line that sat
+  // above the method in warning colour is gone: it repeated on every score
+  // page what the method and the page explainer already say, and read as an
+  // alarm. The method copy closes the card on its own.
   const method = (
     <>
-      {meta.caveatKey ? (
-        <span className="text-warning block font-medium">
-          {t(meta.caveatKey)}
-        </span>
-      ) : null}
       {t(meta.methodKey)}
       {anchorLine ? <span className="mt-1 block">{anchorLine}</span> : null}
     </>
@@ -268,6 +263,27 @@ export function CompositeScoreAnatomy({
   // the card always renders its prose rather than the no-provider fallback.
   const assessment = data.assessment;
 
+  // v1.42 — the score's course, right under its card. A stored nightly score
+  // gets the full chart; a composite draws the course its value carries.
+  const series =
+    data.status === "ok" && data.value
+      ? (data.value as { series?: number[] }).series
+      : undefined;
+  // Only beside a score: an account without one gets the honest
+  // insufficient card, not an empty chart under it.
+  const history =
+    data.status !== "ok" ? null : metric === "RECOVERY_SCORE" ||
+      metric === "STRESS_SCORE" ||
+      metric === "STRAIN_SCORE" ? (
+      <ScoreHistoryChart type={metric} hue={METRIC_HUE[metric]} />
+    ) : series && series.length >= 2 ? (
+      <ScoreHistoryCard
+        series={series}
+        windowDays={data.provenance.windowDays}
+        hue={METRIC_HUE[metric]}
+      />
+    ) : null;
+
   return (
     <div className="space-y-3">
       <ScoreAnatomyView
@@ -284,6 +300,7 @@ export function CompositeScoreAnatomy({
         insufficient={insufficient}
         className={className}
       />
+      {history}
       {assessment ? (
         <InsightStatusCard
           title={t("insights.assessmentTitle")}

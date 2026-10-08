@@ -42,6 +42,13 @@ vi.mock("../score-anatomy-view", () => ({
   ScoreAnatomyView: () => <div data-slot="score-anatomy-view-probe" />,
 }));
 
+// The score's course renders a live chart for the stored scores; this deck is
+// about the assessment's hand-off, so the course is a probe here.
+vi.mock("../score-history", () => ({
+  ScoreHistoryChart: () => <div data-slot="score-history-probe" />,
+  ScoreHistoryCard: () => <div data-slot="score-history-probe" />,
+}));
+
 import { CompositeScoreAnatomy } from "../composite-score-anatomy";
 import type { AnatomyMetricId } from "../composite-score-anatomy";
 

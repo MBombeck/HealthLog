@@ -8,6 +8,7 @@ import { MedicationsSection } from "./medications-section";
 import { MoodSection } from "./mood-section";
 import { LabsSection } from "./labs-section";
 import { IllnessSection } from "./illness-section";
+import { DocumentsSection } from "./documents-section";
 import { VorsorgeSection } from "./vorsorge-section";
 
 /**
@@ -92,6 +93,12 @@ export const LAYOUT_GROUPS: ReadonlyArray<LayoutGroup> = [
     titleKey: "settings.sections.layout.illness.title",
     descriptionKey: "settings.sections.layout.illness.description",
     Body: IllnessSection,
+  },
+  {
+    id: "documents",
+    titleKey: "settings.sections.layout.documents.title",
+    descriptionKey: "settings.sections.layout.documents.description",
+    Body: DocumentsSection,
   },
   {
     id: "vorsorge",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ComponentType } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   Activity,
@@ -16,7 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslations } from "@/lib/i18n/context";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { ScoreRing } from "./score-ring";
-import { TILE_HUE, type RingHue } from "./ring-hues";
+import { RING_GRADIENT, TILE_HUE, type RingHue } from "./ring-hues";
 import type { DerivedBatchRead } from "./use-derived-metric";
 import type { ScoreBand } from "./band-tokens";
 // Type-only — the compute payloads never drag the server graph into the bundle.
@@ -41,6 +42,17 @@ import type { WellnessScoreValue } from "@/lib/insights/derived/wellness-scores"
  * request, no cold-mount fan-out. The reads are already-computed
  * rollup/persisted values; nothing warms on visit.
  */
+
+// The tile's history line loads through the shared chart-runtime boundary, so
+// the strip carries no recharts in its own chunk. The tile owns the fixed
+// 40 px band, so the async gap paints an empty band of the same size.
+const DeltaSparkline = dynamic(
+  () =>
+    import("@/components/charts/chart-runtime").then((mod) => ({
+      default: mod.DeltaSparkline,
+    })),
+  { ssr: false, loading: () => null },
+);
 
 interface ScoreStripProps {
   /** The batched-read selector from the parent dashboard's one query. */
@@ -97,7 +109,14 @@ function RingTile({
   index,
   animate,
   baseline,
+  history,
 }: {
+  /**
+   * v1.42 — the score's course (oldest → newest) and the window it covers,
+   * drawn under the band word so each tile shows where the number came from.
+   * Fewer than two points draws nothing.
+   */
+  history?: { series: number[]; windowDays: number } | null;
   score: number;
   band: ScoreBand;
   label: string;
@@ -165,8 +184,58 @@ function RingTile({
           {bandWord}
         </span>
       </div>
+      {history && history.series.length >= 2 ? (
+        <ScoreHistoryLine
+          series={history.series}
+          windowDays={history.windowDays}
+          strokeVar={RING_GRADIENT[hue][1]}
+        />
+      ) : null}
     </Link>
   );
+}
+
+/**
+ * The tile's history: a fixed 40 px line of the score over its window, with
+ * the window named beneath it. Decorative to assistive tech — the tile's link
+ * leads to the detail page, where the full course is readable.
+ */
+function ScoreHistoryLine({
+  series,
+  windowDays,
+  strokeVar,
+}: {
+  series: number[];
+  windowDays: number;
+  strokeVar: string;
+}) {
+  const { t } = useTranslations();
+  return (
+    <div data-slot="wellness-score-history" className="space-y-1">
+      <div className="h-10 w-full" aria-hidden="true">
+        <DeltaSparkline
+          data={series.map((v, i) => ({ i, v }))}
+          strokeVar={strokeVar}
+          domain={[0, 100]}
+        />
+      </div>
+      <p className="text-muted-foreground text-center text-xs">
+        {t("insights.derived.scores.historyWindow", { days: windowDays })}
+      </p>
+    </div>
+  );
+}
+
+/** The course a score value carries, if any, paired with its window. */
+function historyOf(
+  read: {
+    value: { series?: number[] } | null;
+    provenance: { windowDays: number };
+  } | null,
+): { series: number[]; windowDays: number } | null {
+  const series = read?.value?.series;
+  if (!read || !series || series.length < 2) return null;
+  return { series, windowDays: read.provenance.windowDays };
 }
 
 /**
@@ -190,6 +259,11 @@ function WellnessScoreTileSkeleton() {
       <div className="flex flex-col items-center gap-1.5">
         <Skeleton className="size-[120px] rounded-full" />
         <Skeleton className="h-3 w-12" />
+      </div>
+      {/* The history line's band, so a tile that gains one does not grow. */}
+      <div className="space-y-1">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="mx-auto h-3 w-20" />
       </div>
     </div>
   );
@@ -322,6 +396,7 @@ export function WellnessScores({
         metricSlot="READINESS"
         hue="readiness"
         icon={Gauge}
+        history={historyOf(readiness)}
         index={tiles.length}
         animate={play}
         baseline={null}
@@ -340,6 +415,7 @@ export function WellnessScores({
         metricSlot="RECOVERY_SCORE"
         hue="recovery"
         icon={HeartPulse}
+        history={historyOf(recovery)}
         index={tiles.length}
         animate={play}
         baseline={baselineOf(recovery.value.series)}
@@ -358,6 +434,7 @@ export function WellnessScores({
         metricSlot="SLEEP_SCORE"
         hue="sleep"
         icon={Moon}
+        history={historyOf(sleep)}
         index={tiles.length}
         animate={play}
         baseline={null}
@@ -376,6 +453,7 @@ export function WellnessScores({
         metricSlot="STRESS_SCORE"
         hue="stress"
         icon={Activity}
+        history={historyOf(stress)}
         index={tiles.length}
         animate={play}
         baseline={baselineOf(stress.value.series)}
@@ -397,6 +475,7 @@ export function WellnessScores({
         metricSlot="STRAIN_SCORE"
         hue="strain"
         icon={Flame}
+        history={historyOf(strain)}
         index={tiles.length}
         animate={play}
         baseline={baselineOf(strain.value.series)}

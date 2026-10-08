@@ -524,6 +524,7 @@ const ACCOUNT_SETTING_CODECS: Readonly<
   insightsLayoutJson: json("insightsLayoutJson"),
   medicationListLayoutJson: json("medicationListLayoutJson"),
   moodTagLayoutJson: json("moodTagLayoutJson"),
+  documentsLayoutJson: json("documentsLayoutJson"),
   reportSelectionJson: json("reportSelectionJson"),
   globalExcludedInjectionSites: excludedSites,
   healthKitConfigJson: json("healthKitConfigJson"),

@@ -1190,6 +1190,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "documents",
     why: "The record's vault state: quota, the filter bar's condition chips, and index coverage. Without it the admitted list loses its filters. The `assistAvailable` boolean is the same integration-adjacent availability flag `nutrients` already returns — no credential, endpoint or token — and every AI action it would gate stays refused. No write arm exists.",
   },
+  "app/api/documents/inbound/layout/route.ts": {
+    domain: "documents",
+    why: "The record's vault presentation, read only: two closed enums (card or list view, stacked or flowing months) and nothing else. The admitted list renders through it, so a refused read would leave a delegate's vault waiting on a shape it can never learn. The PUT stays bare — how the owner's vault is laid out is the owner's choice, the same split `/api/medications/layout` keeps.",
+  },
 
   /* ------------------------------------------------------------------ */
   /* v1.37.0 — the fifty-one modules that became delegable at MANAGE.    */
@@ -2086,8 +2090,11 @@ const ACTOR_ROUTES: Record<string, string> = {
  * the life-event writes join it with their audit rows: the edit/delete module
  * on the record list, the create and the edit/delete on the manage literal.
  * 251 -> 255.
+ *
+ * v1.42 -- the document vault's presentation read joins the record list
+ * beside the rest of the vault; its PUT stays bare. 255 -> 256.
  */
-const FROZEN_ENTRY_COUNT = 255;
+const FROZEN_ENTRY_COUNT = 256;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

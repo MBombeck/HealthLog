@@ -310,6 +310,12 @@ model User {
   // once the user has explicitly toggled the view or saved an order.
   // Shape: { "version": 1, "view": "table", "order": ["<medicationId>", ...] }
   medicationListLayoutJson Json?                @map("medication_list_layout_json")
+  // v1.42 — per-user document vault presentation: the card/list view and
+  // the stacked/flowing month arrangement. Display-only, preserve-when-absent
+  // PUT on `/api/documents/inbound/layout`, resolved field by field on read
+  // (`src/lib/documents/documents-layout.ts`). Null = defaults (cards, stacked).
+  // Shape: { "version": 1, "view": "list", "arrangement": "flow" }
+  documentsLayoutJson      Json?                @map("documents_layout_json")
   // v1.17.0 — per-user mood-tag presentation: group order + per-group tag
   // placement (catalogue tags "moved" into a group live here only — their
   // `categoryId` never changes). Display-only, preserve-when-absent PUT,

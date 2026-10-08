@@ -2008,6 +2008,7 @@ const accountSettingsBackupSchema = z
     insightsLayoutJson: z.unknown().optional(),
     medicationListLayoutJson: z.unknown().optional(),
     moodTagLayoutJson: z.unknown().optional(),
+    documentsLayoutJson: z.unknown().optional(),
     reportSelectionJson: z.unknown().optional(),
     globalExcludedInjectionSites: z.array(z.string()).optional(),
     healthKitConfigJson: z.unknown().optional(),

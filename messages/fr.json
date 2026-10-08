@@ -4043,7 +4043,6 @@
     "navWalkingSpeed": "Vitesse de marche",
     "mood": {
       "logLink": "Enregistrer une humeur",
-      "mentalWellbeingLink": "Faire un bilan de bien-être mental",
       "heatmapTitle": "Calendrier d'humeur",
       "heatmapNoEntry": "Aucune entrée",
       "legendGreat": "Excellent",
@@ -4282,7 +4281,6 @@
         "contributorsLabel": "Facteurs",
         "contributorValue": "{value} · {weight}% du poids",
         "contributorMissing": "aucune donnée",
-        "disclaimer": "Indicatif — pas une évaluation clinique.",
         "insufficient": "Pas encore assez de données pour l’évaluer. Continuez à enregistrer et cela apparaîtra ici."
       },
       "composite": {
@@ -4308,8 +4306,7 @@
             "sleep": "Sommeil",
             "respiratory": "Fréquence respiratoire",
             "mood": "Stabilité de l’humeur"
-          },
-          "caveat": "Un indicateur de bien-être, pas un score de récupération ni clinique."
+          }
         },
         "VITALS_BASELINE": {
           "method": "Votre plage typique personnelle est la médiane de vos valeurs quotidiennes sur la période, ± une dispersion robuste (écart absolu médian, mis à l’échelle). Elle suit VOS mesures, pas une norme de population : une valeur dans la bande est donc typique pour vous."
@@ -4334,19 +4331,16 @@
         },
         "RECOVERY_SCORE": {
           "method": "Un indice de récupération nocturne de 0 à 100 combinant votre VFC, votre fréquence cardiaque au repos et votre sommeil par rapport à votre référence. Plus élevé signifie mieux récupéré. Calculé une fois par nuit et seulement relu ici, jamais recalculé à la volée.",
-          "caveat": "Un indicateur de bien-être descriptif, pas une mesure de récupération clinique ou de niveau d’entraînement.",
           "description": "Un indice de récupération nocturne à partir de votre VFC, fréquence au repos et sommeil."
         },
         "STRESS_SCORE": {
           "method": "Un indice de stress nocturne de 0 à 100 à partir de la forme de votre VFC au cours de la journée par rapport à votre référence. Plus élevé signifie une charge physiologique plus forte.",
-          "caveat": "Un indicateur dérivé de la VFC, PAS une mesure de stress par EDA / activité électrodermale : votre montre n’a pas de capteur EDA. Descriptif, non clinique.",
           "description": "Un indice de stress nocturne à partir de la forme de votre VFC sur la journée."
         },
         "STRAIN_SCORE": {
           "method": "Un indice d’effort nocturne de 0 à 100 à partir de votre charge d’activité pondérée par la fréquence cardiaque (un modèle d’impulsion d’entraînement de type TRIMP). Plus élevé signifie une journée plus exigeante.",
           "anchorPersonal": "Calé sur votre propre charge récente des jours d’entraînement — évalué par rapport à votre effort habituel, de sorte qu’une journée vraiment difficile pour vous ressort élevée.",
           "anchorPopulation": "Évalué par rapport à une référence générale pendant que vous constituez votre historique d’entraînement ; dès que vous en avez assez, le calcul passe à votre propre effort habituel.",
-          "caveat": "Un indicateur descriptif de charge d’activité, pas une mesure de charge clinique ou de niveau d’entraînement.",
           "description": "Un indice de charge d’activité nocturne à partir de votre effort pondéré par la fréquence cardiaque, relatif à votre effort habituel."
         },
         "WRIST_TEMPERATURE_BASELINE": {
@@ -4382,7 +4376,9 @@
         "recovery": "Score de récupération",
         "recoveryCrossLink": "Voir les données de récupération et d'effort de votre wearable",
         "stress": "Stress",
-        "strain": "Effort"
+        "strain": "Effort",
+        "historyTitle": "Évolution",
+        "historyWindow": "{days} derniers jours"
       },
       "coincident": {
         "label": "Plusieurs constantes hors référence",
@@ -5352,6 +5348,10 @@
         "mood": {
           "title": "Étiquettes d’humeur",
           "description": "Groupes, étiquettes et étiquettes archivées du sélecteur d’humeur."
+        },
+        "documents": {
+          "title": "Documents",
+          "description": "Affichage et disposition des mois."
         }
       },
       "dashboard": {
@@ -11061,6 +11061,21 @@
       "finishedHint": "Cherchez à nouveau ou changez un filtre pour choisir d'autres documents.",
       "maxReached": "Vous pouvez importer au plus {max} documents à la fois.",
       "noMatchHint": "Essayez une partie du nom, ou effacez l'étiquette et les dates."
+    },
+    "customize": "Personnaliser l'affichage",
+    "layout": {
+      "viewDescription": "Des cartes avec aperçu ou une liste compacte.",
+      "arrangementHeading": "Disposition",
+      "arrangementDescription": "Chaque mois dans son propre bloc, ou tout à la suite sur toute la largeur.",
+      "stacked": "Mois empilés",
+      "flow": "En continu",
+      "saveFailed": "Impossible d'enregistrer l'affichage."
+    },
+    "deleteConfirm": {
+      "titleOne": "Supprimer ce document ?",
+      "titleMany": "Supprimer {count} documents ?",
+      "body": "Vous pouvez annuler juste après. Au bout de 30 jours, la suppression est définitive.",
+      "action": "Supprimer"
     }
   },
   "selfDescription": {
