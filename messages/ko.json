@@ -9556,8 +9556,7 @@
     "sourceRange": {
       "fromReport": "결과지 범위 {range}",
       "catalogDiffers": "내 범위 {range}"
-    },
-    "convertedFrom": "{value} {unit}에서 변환됨"
+    }
   },
   "modules": {
     "cycle": {

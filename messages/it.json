@@ -9556,8 +9556,7 @@
     "sourceRange": {
       "fromReport": "Intervallo del referto {range}",
       "catalogDiffers": "il tuo intervallo {range}"
-    },
-    "convertedFrom": "Convertito da {value} {unit}"
+    }
   },
   "modules": {
     "cycle": {

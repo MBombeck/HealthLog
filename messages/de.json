@@ -9556,8 +9556,7 @@
     "sourceRange": {
       "fromReport": "Befundbereich {range}",
       "catalogDiffers": "dein Bereich {range}"
-    },
-    "convertedFrom": "Umgerechnet aus {value} {unit}"
+    }
   },
   "modules": {
     "cycle": {

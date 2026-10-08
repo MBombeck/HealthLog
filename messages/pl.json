@@ -9556,8 +9556,7 @@
     "sourceRange": {
       "fromReport": "Zakres z wyniku {range}",
       "catalogDiffers": "twój zakres {range}"
-    },
-    "convertedFrom": "Przeliczono z {value} {unit}"
+    }
   },
   "modules": {
     "cycle": {

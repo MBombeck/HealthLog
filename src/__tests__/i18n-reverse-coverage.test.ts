@@ -77,9 +77,7 @@ const DYNAMIC_ALLOWLIST_PREFIXES = [
  * all landed must be dropped in the same change, and the list is empty again
  * before the release is tagged. It is NOT a place for keys nobody will wire.
  */
-const RELEASE_PENDING_PREFIXES: Record<string, string> = {
-  "labs.convertedFrom": "v1.42 lab unit conversion note (#1095)",
-};
+const RELEASE_PENDING_PREFIXES: Record<string, string> = {};
 
 /**
  * Interpolating strings that LOOK like key templates and are not. Each entry

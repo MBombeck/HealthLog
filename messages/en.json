@@ -9556,8 +9556,7 @@
     "sourceRange": {
       "fromReport": "Report range {range}",
       "catalogDiffers": "your range {range}"
-    },
-    "convertedFrom": "Converted from {value} {unit}"
+    }
   },
   "modules": {
     "cycle": {

@@ -9556,8 +9556,7 @@
     "sourceRange": {
       "fromReport": "Rango del informe {range}",
       "catalogDiffers": "tu rango {range}"
-    },
-    "convertedFrom": "Convertido de {value} {unit}"
+    }
   },
   "modules": {
     "cycle": {

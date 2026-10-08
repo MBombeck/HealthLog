@@ -9556,8 +9556,7 @@
     "sourceRange": {
       "fromReport": "Plage du compte rendu {range}",
       "catalogDiffers": "votre plage {range}"
-    },
-    "convertedFrom": "Converti depuis {value} {unit}"
+    }
   },
   "modules": {
     "cycle": {

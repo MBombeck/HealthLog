@@ -3628,13 +3628,7 @@ const COLUMN_EXCLUSIONS: Readonly<Record<string, string>> = {
  * starts coming back, so the entry has to go in the change that carries it.
  * The list is empty again before the release is tagged.
  */
-const LABS_V142 =
-  "v1.42 (#1095): the lab section carries the conversion provenance";
-const RELEASE_PENDING_COLUMNS: Readonly<Record<string, string>> = {
-  "Biomarker.analyteKey": LABS_V142,
-  "LabResult.sourceValue": LABS_V142,
-  "LabResult.sourceUnit": LABS_V142,
-};
+const RELEASE_PENDING_COLUMNS: Readonly<Record<string, string>> = {};
 
 /**
  * Columns every reader parses through one function before using, compared
