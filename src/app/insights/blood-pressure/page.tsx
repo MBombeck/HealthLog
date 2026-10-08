@@ -174,6 +174,7 @@ export default function InsightsBlutdruckPage() {
         userTimezone={user?.timezone}
         onVisibleStats={onVisibleStats}
         showDataTable
+        dayLinks
       />
 
       {/* v1.12.4 — target card sits between the chart and the assessment on

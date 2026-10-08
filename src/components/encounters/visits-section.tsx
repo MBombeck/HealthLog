@@ -14,9 +14,11 @@
  */
 import { CalendarClock, ContactRound, History, Plus } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 
+import { SinceLastVisit } from "@/components/day/since-last-visit";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
@@ -60,6 +62,8 @@ export function VisitsSection({ enabled = true }: { enabled?: boolean }) {
     open: canManageVisits ? openSheet : undefined,
   });
   const empty = upcoming.length === 0 && past.length === 0;
+  // The last visit that took place: the start of the visit preparation.
+  const lastDone = past.find((encounter) => encounter.status === "DONE");
 
   const addButton = canAddVisit ? (
     <Button
@@ -119,12 +123,22 @@ export function VisitsSection({ enabled = true }: { enabled?: boolean }) {
                 icon={CalendarClock}
                 title={t("encounters.upcomingHeading")}
               />
-              {upcoming.map((encounter) => (
-                <VisitCard
-                  key={encounter.id}
-                  encounter={encounter}
-                  onOpen={canManageVisits ? openSheet : undefined}
-                />
+              {upcoming.map((encounter, i) => (
+                <Fragment key={encounter.id}>
+                  <VisitCard
+                    encounter={encounter}
+                    onOpen={canManageVisits ? openSheet : undefined}
+                  />
+                  {/* v1.42 — the next appointment carries what happened
+                      since the last one, each date opening its day. */}
+                  {i === 0 && lastDone ? (
+                    <Card className="gap-3 py-3 md:gap-3 md:py-4">
+                      <CardContent>
+                        <SinceLastVisit next={encounter} last={lastDone} />
+                      </CardContent>
+                    </Card>
+                  ) : null}
+                </Fragment>
               ))}
             </div>
           ) : null}

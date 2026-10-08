@@ -77,6 +77,16 @@ import {
 } from "@/lib/charts/window-stats";
 import { shouldFireDataReady } from "@/lib/charts/data-ready-latch";
 import { axisUnitSuffix } from "@/lib/charts/axis-unit";
+import {
+  ChartDayCaption,
+  DayRug,
+  TooltipDayAction,
+  chartPointDayKey,
+  openChartDay,
+  useCoarsePointer,
+} from "@/components/day/chart-day";
+import { useOpenDay } from "@/components/day/day-layer-controller";
+import { isWholeNumberType } from "@/components/day/use-day-value-format";
 
 // The range tabs select a CALENDAR-DAY window ending now — `days: 7` is
 // "the last 7 days", not "the last 7 readings". The labels said "points"
@@ -321,6 +331,15 @@ interface HealthChartProps {
    * bury the dashboard it is meant to summarise.
    */
   showDataTable?: boolean;
+  /**
+   * v1.42 — the chart is a door to its days. A click on a point opens that
+   * day over the page (on a touch screen the tooltip offers it), the open day
+   * is marked with a dashed line, and a row of dots under the axis marks the
+   * days that hold anything. Only while the chart is drawn in days, and never
+   * in `mini` mode: a tile's sparkline has its own destination and targets
+   * too small to hit. The metric sub-pages turn it on; the dashboard does not.
+   */
+  dayLinks?: boolean;
 }
 
 interface ChartDataPoint {
@@ -532,15 +551,22 @@ export interface ResolvedVerticalMarker {
 
 export function resolveVerticalMarkerPositions(
   markers: Array<{ date: string; label?: string; color?: string }> | undefined,
-  chartData: Array<{ date: string }> | undefined,
+  chartData: Array<{ date: string; timestamp?: number }> | undefined,
 ): ResolvedVerticalMarker[] {
   if (!markers || !chartData || chartData.length === 0) return [];
   const indexByDate = new Map<string, number>();
   for (const [i, point] of chartData.entries()) {
     // Last-write-wins — multiple bucket-aggregated points should never
     // share the same day key, but defensively keep the latest if they
-    // do.
-    indexByDate.set(point.date, i);
+    // do. A drawn point's `date` is its display label ("12.03."), so the
+    // day key comes from its timestamp, which a daily point holds at noon
+    // UTC of its day; a bare `{ date }` (the pure-helper tests) is the key.
+    indexByDate.set(
+      typeof point.timestamp === "number"
+        ? chartPointDayKey(point.timestamp)
+        : point.date,
+      i,
+    );
   }
   const out: ResolvedVerticalMarker[] = [];
   for (const marker of markers) {
@@ -656,6 +682,7 @@ export function HealthChart({
   preloadedSeries,
   preloadedCoverageDays,
   showDataTable = false,
+  dayLinks = false,
 }: HealthChartProps) {
   const { isAuthenticated, user } = useAuth();
   // A mount without the prop used to pin Europe/Berlin, so those charts
@@ -1702,6 +1729,46 @@ export function HealthChart({
     chartData,
   );
 
+  // v1.42 — the chart as a door to its days (`dayLinks`). Daily points only:
+  // a week or month point averages many days and has no one day to open.
+  const dayLinksActive = dayLinks && !mini && activeBucket === "day";
+  const openDayKey = useOpenDay();
+  const coarsePointer = useCoarsePointer();
+  const plotRef = useRef<HTMLDivElement>(null);
+  const openDayIndex =
+    dayLinksActive && openDayKey
+      ? resolveVerticalMarkerPositions([{ date: openDayKey }], chartData)[0]
+          ?.pointIndex
+      : undefined;
+  const openDayPoint =
+    openDayIndex !== undefined ? chartData?.[openDayIndex] : undefined;
+  // What the day shows at its top when it is opened from a point: the
+  // chart's own name and the point's value as the tooltip reads it.
+  const dayFocusFor = (point: ChartDataPoint) => {
+    const parts = types
+      .map((type) => ({ type, v: point[type] }))
+      .filter((p): p is { type: string; v: number } => typeof p.v === "number");
+    if (parts.length === 0) return null;
+    return {
+      label: title,
+      // A pressure or a pulse reads in whole numbers on the day, as in every
+      // list; the rest keep the tooltip's one decimal.
+      value: parts
+        .map(({ type, v }) =>
+          valueMode === "raw" && isWholeNumberType(type)
+            ? fmt.number(Math.round(v), 0)
+            : formatTooltipValue(v),
+        )
+        .join("/"),
+      unit,
+      types: valueMode === "raw" ? types : [],
+    };
+  };
+  const openPointDay = (point: ChartDataPoint | undefined) => {
+    if (!point) return;
+    openChartDay(point.timestamp, dayFocusFor(point), plotRef.current);
+  };
+
   const showContextDetails = showMA || showTrend || showBands;
   const animationsEnabled = !prefersReducedMotion();
 
@@ -1958,7 +2025,11 @@ export function HealthChart({
               // gate on; this slot is rendered by the data branch only, so it
               // says the same thing without depending on Recharts' markup.
               data-slot="chart-plot"
-              className="relative z-10 h-full touch-pan-y"
+              data-day-links={dayLinksActive ? "true" : undefined}
+              ref={plotRef}
+              className={`relative z-10 h-full touch-pan-y ${
+                dayLinksActive && !coarsePointer ? "cursor-pointer" : ""
+              }`}
               role="img"
               aria-label={chartAriaLabel}
             >
@@ -1967,6 +2038,17 @@ export function HealthChart({
                   data={chartDataWithCompare ?? chartData}
                   margin={{ top: 10, right: 8, bottom: 8, left: 8 }}
                   accessibilityLayer
+                  onClick={
+                    dayLinksActive && !coarsePointer
+                      ? (state) => {
+                          const index = Number(state?.activeTooltipIndex);
+                          if (!Number.isInteger(index)) return;
+                          openPointDay(
+                            (chartDataWithCompare ?? chartData)?.[index],
+                          );
+                        }
+                      : undefined
+                  }
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -2129,6 +2211,37 @@ export function HealthChart({
                         ifOverflow="discard"
                       />
                     ))}
+                  {/* v1.42 — the open day: a dashed line through it and a
+                    ring on each of its values, so the point the day panel
+                    describes stays in sight beside it. */}
+                  {openDayIndex !== undefined ? (
+                    <ReferenceLine
+                      key="open-day"
+                      x={openDayIndex}
+                      stroke="var(--muted-foreground)"
+                      strokeDasharray="3 3"
+                      strokeOpacity={0.7}
+                      ifOverflow="discard"
+                    />
+                  ) : null}
+                  {openDayIndex !== undefined && openDayPoint
+                    ? types.map((type, i) => {
+                        const v = openDayPoint[type];
+                        if (typeof v !== "number") return null;
+                        return (
+                          <ReferenceDot
+                            key={`open-day-${type}`}
+                            x={openDayIndex}
+                            y={v}
+                            r={6.5}
+                            fill="var(--card)"
+                            stroke={colors[i % colors.length]}
+                            strokeWidth={2.5}
+                            ifOverflow="discard"
+                          />
+                        );
+                      })
+                    : null}
                   {/* v1.4.18 — personal-baseline reference line is now
                     opt-in via the Trend toggle. the maintainer rejected the
                     always-on dashed mean line; it now only paints when
@@ -2166,6 +2279,16 @@ export function HealthChart({
                     })}
                   <Tooltip
                     filterNull={false}
+                    // v1.42 — on a touch screen the tooltip is the way to the
+                    // day: it stays where the tap put it and takes taps.
+                    trigger={
+                      dayLinksActive && coarsePointer ? "click" : "hover"
+                    }
+                    wrapperStyle={
+                      dayLinksActive && coarsePointer
+                        ? { pointerEvents: "auto", zIndex: 20 }
+                        : undefined
+                    }
                     cursor={{
                       stroke: "var(--muted-foreground)",
                       strokeOpacity: 0.3,
@@ -2309,6 +2432,13 @@ export function HealthChart({
                               : dateLabel
                           }
                           rows={rows}
+                          action={
+                            dayLinksActive && coarsePointer && hoverPoint ? (
+                              <TooltipDayAction
+                                onOpen={() => openPointDay(hoverPoint)}
+                              />
+                            ) : undefined
+                          }
                         />
                       );
                     }}
@@ -2444,6 +2574,18 @@ export function HealthChart({
               </p>
             ) : null}
           </div>
+          {dayLinksActive && chartData && chartData.length > 0 ? (
+            <>
+              <DayRug
+                points={chartData}
+                // The plot's margin (8) + the y axis + the x axis padding
+                // (10) on the left, margin + padding on the right.
+                insetLeft={8 + yAxisWidth + 10}
+                insetRight={8 + 10}
+              />
+              <ChartDayCaption coarse={coarsePointer} />
+            </>
+          ) : null}
           {/* The points the chart just drew, as a table. Reads the SAME
               expression `<ComposedChart data>` is handed above, so the two
               cannot disagree. Sits inside this branch on purpose: an empty
@@ -2459,6 +2601,7 @@ export function HealthChart({
               formatDate={tzFmt.date}
               bucket={visibleSlice?.bucketType ?? "day"}
               metricLabel={getTypeLabel(primaryType, valueMode, t)}
+              dayLinks={dayLinksActive}
             />
           ) : null}
         </>

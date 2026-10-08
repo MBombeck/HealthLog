@@ -1,0 +1,266 @@
+import type { Page, Route } from "@playwright/test";
+
+import { expect, test } from "./setup/test";
+import { MOBILE_ROUTES_STORAGE_STATE_PATH } from "./setup/global-setup";
+import { MOBILE_ROUTES_ANALYTE } from "./setup/mobile-routes-fixture";
+
+/**
+ * v1.42 — the day view and its doors.
+ *
+ * The record is the phone-sweep account `globalSetup` seeds: a week of blood
+ * pressure, two lab readings, mood and an episode. The day itself
+ * (`GET /api/day/{date}`, `GET /api/day/index`) is answered by a route mock in
+ * the contract's shape, so the journeys pin the client: which door opens which
+ * day, what the history does, and where no door is.
+ *
+ *   - a chart point opens the day beside the chart (desktop);
+ *   - on a touch screen the first tap shows the value and the tooltip offers
+ *     the day, the second opens it as a bottom sheet;
+ *   - a date in a list opens the day while the row keeps its own target;
+ *   - `?day=` opens the layer on any page, Back and Escape close it, a date in
+ *     the future is dropped;
+ *   - stepping to the neighbouring days never adds history entries;
+ *   - the dashboard's today area offers no door.
+ *
+ * Stable data attributes only: `day-panel` (+ `data-shell`), `day-link`,
+ * `chart-plot[data-day-links]`, `chart-tooltip-open-day`, `day-prev` /
+ * `day-next` / `day-close`.
+ */
+
+function dayFixture(date: string) {
+  return {
+    date,
+    tz: "Europe/Berlin",
+    counts: { values: 2, entries: 1 },
+    running: [
+      {
+        kind: "illness",
+        section: "illness",
+        id: "ep1",
+        title: "Common cold",
+        sub: null,
+        since: date,
+        until: null,
+        dayIndex: 1,
+        dayCount: null,
+        href: "/illness",
+      },
+    ],
+    values: [
+      {
+        type: "BLOOD_PRESSURE_SYS",
+        value: 124,
+        unit: "mmHg",
+        at: `${date}T07:00:00.000Z`,
+        source: "MANUAL",
+        band: { lo: 118, hi: 128, n: 20 },
+      },
+      {
+        type: "BLOOD_PRESSURE_DIA",
+        value: 79,
+        unit: "mmHg",
+        at: `${date}T07:00:00.000Z`,
+        source: "MANUAL",
+        band: { lo: 76, hi: 82, n: 20 },
+      },
+    ],
+    events: [
+      {
+        at: `${date}T07:00:00.000Z`,
+        kind: "mood",
+        section: "mood",
+        id: "m1",
+        title: "Mood: good",
+        meta: null,
+        note: null,
+        docs: [],
+        href: "/mood",
+      },
+    ],
+    notable: [],
+    sections: {},
+  };
+}
+
+async function mockDay(page: Page) {
+  await page.route("**/api/day/**", async (route: Route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname === "/api/day/index") {
+      const from = url.searchParams.get("from") ?? "";
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: {
+            from,
+            to: url.searchParams.get("to") ?? "",
+            days: {},
+            notable: [],
+          },
+          error: null,
+        }),
+      });
+      return;
+    }
+    const date = url.pathname.split("/").pop() ?? "";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: dayFixture(date), error: null }),
+    });
+  });
+}
+
+const panel = (page: Page) => page.locator('[data-slot="day-panel"]');
+
+function isoDaysAgo(days: number): string {
+  const d = new Date(Date.now() - days * 86_400_000);
+  return d.toISOString().slice(0, 10);
+}
+
+test.describe("the day view", () => {
+  test.use({ storageState: MOBILE_ROUTES_STORAGE_STATE_PATH });
+
+  test.beforeEach(async ({ page, context }, testInfo) => {
+    const baseURL = testInfo.project.use.baseURL ?? "http://localhost:3000";
+    await context.addCookies([
+      { name: "healthlog-locale", value: "en", url: baseURL },
+    ]);
+    await mockDay(page);
+  });
+
+  test("a chart point opens its day beside the chart; Back closes it", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "chromium-desktop", "desktop click");
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/insights/blood-pressure");
+    const plot = page.locator(
+      '[data-slot="chart-plot"][data-day-links="true"]',
+    );
+    await expect(plot).toBeVisible();
+    // The plot's right half holds the most recent points.
+    const box = (await plot.boundingBox())!;
+    await page.mouse.move(box.x + box.width * 0.8, box.y + box.height / 2);
+    await page.mouse.click(box.x + box.width * 0.8, box.y + box.height / 2);
+
+    await expect(panel(page)).toBeVisible();
+    await expect(panel(page)).toHaveAttribute("data-shell", "docked");
+    // A landmark beside the page, named by its date.
+    await expect(panel(page)).toHaveJSProperty("tagName", "ASIDE");
+    await expect(page).toHaveURL(/[?&]day=\d{4}-\d{2}-\d{2}/);
+    await expect(page.locator('[data-slot="day-focus"]')).toBeVisible();
+    // The chart beside it stays usable: the panel is not modal.
+    await expect(page.locator('[data-slot="sheet-overlay"]')).toHaveCount(0);
+
+    await page.goBack();
+    await expect(panel(page)).toHaveCount(0);
+    await expect(page).not.toHaveURL(/[?&]day=/);
+  });
+
+  test("a date in a list opens the day; the row keeps its own target", async ({
+    page,
+  }) => {
+    await page.goto("/labs");
+    await page
+      .locator('[data-slot="lab-list-analyte"]')
+      .filter({ hasText: MOBILE_ROUTES_ANALYTE })
+      .first()
+      .click();
+    // The marker's readings, each dated.
+    await page.locator('a[href$="/values"]').first().click();
+    const link = page.locator('[data-slot="day-link"]:visible').first();
+    await expect(link).toBeVisible();
+    const day = await link.getAttribute("data-day");
+    const before = page.url();
+    await link.click();
+    await expect(panel(page)).toBeVisible();
+    await expect(page.locator('[data-slot="day-view"]')).toHaveAttribute(
+      "data-day",
+      day!,
+    );
+    // Same page underneath: the click opened the day, not the reading.
+    expect(new URL(page.url()).pathname).toBe(new URL(before).pathname);
+    // The reading the person came from sits on top, with the one before it.
+    await expect(page.locator('[data-slot="day-focus"]')).toBeVisible();
+  });
+
+  test("?day= opens the layer on any page; Escape closes it", async ({
+    page,
+  }) => {
+    const day = isoDaysAgo(3);
+    await page.goto(`/mood?day=${day}`);
+    await expect(panel(page)).toBeVisible();
+    await expect(page.locator('[data-slot="day-view"]')).toHaveAttribute(
+      "data-day",
+      day,
+    );
+    await page.keyboard.press("Escape");
+    await expect(panel(page)).toHaveCount(0);
+    await expect(page).toHaveURL(/\/mood$/);
+  });
+
+  test("a future or malformed ?day= is dropped without a word", async ({
+    page,
+  }) => {
+    await page.goto("/mood?day=2999-01-01");
+    await expect(page).toHaveURL(/\/mood$/);
+    await expect(panel(page)).toHaveCount(0);
+    await page.goto("/mood?day=2026-02-30");
+    await expect(page).toHaveURL(/\/mood$/);
+    await expect(panel(page)).toHaveCount(0);
+  });
+
+  test("stepping between days never adds a history entry", async ({ page }) => {
+    await page.goto("/mood");
+    await page.locator('[data-slot="day-link"]:visible').first().click();
+    await expect(panel(page)).toBeVisible();
+    const start = await page.evaluate(() => window.history.length);
+    const first = await page
+      .locator('[data-slot="day-view"]')
+      .getAttribute("data-day");
+    for (let i = 0; i < 3; i += 1) {
+      await page.locator('[data-slot="day-prev"]').click();
+    }
+    await expect(page.locator('[data-slot="day-view"]')).not.toHaveAttribute(
+      "data-day",
+      first!,
+    );
+    expect(await page.evaluate(() => window.history.length)).toBe(start);
+    // One Back leaves the layer, however far it stepped.
+    await page.goBack();
+    await expect(panel(page)).toHaveCount(0);
+    await expect(page).toHaveURL(/\/mood$/);
+  });
+
+  test("on a phone the first tap shows the value, the second opens the day", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "chromium-mobile", "touch only");
+    await page.goto("/insights/blood-pressure");
+    const plot = page.locator(
+      '[data-slot="chart-plot"][data-day-links="true"]',
+    );
+    await plot.scrollIntoViewIfNeeded();
+    await expect(plot).toBeVisible();
+    const box = (await plot.boundingBox())!;
+    await page.touchscreen.tap(box.x + box.width * 0.8, box.y + box.height / 2);
+    const open = page.locator('[data-slot="chart-tooltip-open-day"]');
+    await expect(open).toBeVisible();
+    // A tap alone never opens a sheet.
+    await expect(panel(page)).toHaveCount(0);
+    await open.tap();
+    await expect(panel(page)).toBeVisible();
+    await expect(panel(page)).toHaveAttribute("data-shell", "bottom");
+  });
+
+  test("the dashboard's today area offers no day door", async ({ page }) => {
+    await page.goto("/");
+    await expect(
+      page.locator('[data-slot="main-content-wrapper"]'),
+    ).toBeVisible();
+    await expect(
+      page.locator('[data-slot="chart-plot"][data-day-links="true"]'),
+    ).toHaveCount(0);
+  });
+});
