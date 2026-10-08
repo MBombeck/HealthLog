@@ -175,7 +175,7 @@ function AchievementCard({ achievement, t }: AchievementCardProps) {
       className={
         unlocked
           ? "border-primary/30 from-primary/8 to-primary/0 rounded-xl border bg-gradient-to-br p-3"
-          : "border-border bg-card/50 rounded-xl border p-3 opacity-70"
+          : "border-border bg-card/50 rounded-xl border p-3"
       }
     >
       <div className="mb-2 flex items-start justify-between gap-2">

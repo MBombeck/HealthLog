@@ -71,7 +71,7 @@ function Section({
         {`${numberLabel}. ${titleEn}`}
       </h2>
       <div
-        className="text-muted-foreground space-y-3 text-sm leading-relaxed md:text-base"
+        className="text-foreground space-y-3 text-sm leading-relaxed md:text-base"
         data-slot="privacy-section-de"
         lang="de"
       >
@@ -94,7 +94,7 @@ function Section({
           </span>
         </summary>
         <div
-          className="text-muted-foreground space-y-3 px-3 pb-3 text-sm leading-relaxed md:text-base"
+          className="text-foreground space-y-3 px-3 pb-3 text-sm leading-relaxed md:text-base"
           lang="en"
         >
           {bodyEn}
@@ -164,7 +164,7 @@ function SubProcessor({
           href={policyUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-primary hover:underline"
+          className="text-primary underline underline-offset-2"
         >
           Privacy policy / Datenschutzerklärung
         </a>
@@ -358,7 +358,7 @@ export default function PrivacyPage() {
                   href="https://github.com/MBombeck/HealthLog"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary hover:underline"
+                  className="text-primary underline underline-offset-2"
                 >
                   github.com/MBombeck/HealthLog
                 </a>{" "}
@@ -392,7 +392,7 @@ export default function PrivacyPage() {
                   href="https://github.com/MBombeck/HealthLog"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary hover:underline"
+                  className="text-primary underline underline-offset-2"
                 >
                   github.com/MBombeck/HealthLog
                 </a>{" "}
@@ -1959,7 +1959,7 @@ export default function PrivacyPage() {
                 </span>{" "}
                 <a
                   href="mailto:mbombeck@gmail.com"
-                  className="text-primary hover:underline"
+                  className="text-primary underline underline-offset-2"
                 >
                   mbombeck@gmail.com
                 </a>
@@ -1980,7 +1980,7 @@ export default function PrivacyPage() {
                   href="https://github.com/MBombeck/HealthLog/issues"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary hover:underline"
+                  className="text-primary underline underline-offset-2"
                 >
                   github.com/MBombeck/HealthLog/issues
                 </a>{" "}
@@ -2008,7 +2008,7 @@ export default function PrivacyPage() {
                 </span>{" "}
                 <a
                   href="mailto:mbombeck@gmail.com"
-                  className="text-primary hover:underline"
+                  className="text-primary underline underline-offset-2"
                 >
                   mbombeck@gmail.com
                 </a>
@@ -2028,7 +2028,7 @@ export default function PrivacyPage() {
                   href="https://github.com/MBombeck/HealthLog/issues"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary hover:underline"
+                  className="text-primary underline underline-offset-2"
                 >
                   github.com/MBombeck/HealthLog/issues
                 </a>{" "}

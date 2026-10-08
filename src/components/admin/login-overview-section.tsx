@@ -328,7 +328,10 @@ export function LoginOverviewSection() {
         {/* Toolbar row: per-page + export */}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">
+            <span
+              id="login-overview-per-page"
+              className="text-muted-foreground"
+            >
               {t("admin.section.auditLog.perPage")}
             </span>
             <Select
@@ -338,7 +341,10 @@ export function LoginOverviewSection() {
                 setPerPage(Number(v) as PerPageValue);
               }}
             >
-              <SelectTrigger className="h-8 w-20">
+              <SelectTrigger
+                className="h-8 w-20"
+                aria-labelledby="login-overview-per-page"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
