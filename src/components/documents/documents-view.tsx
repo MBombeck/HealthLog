@@ -984,13 +984,16 @@ export function DocumentsView() {
                 <>
                   {/* Renders only with a connected Paperless-ngx or Papra. */}
                   <ImportFromSourceButton className="min-h-11 sm:min-h-9" />
-                  <Button
-                    className="min-h-11 sm:min-h-9"
-                    onClick={() => uploadInputRef.current?.click()}
-                  >
-                    <Upload className="size-4" aria-hidden />
-                    {t("documents.pageUpload")}
-                  </Button>
+                  {/* An empty vault's empty state carries the upload. */}
+                  {showEmpty && !isFiltered ? null : (
+                    <Button
+                      className="min-h-11 sm:min-h-9"
+                      onClick={() => uploadInputRef.current?.click()}
+                    >
+                      <Upload className="size-4" aria-hidden />
+                      {t("documents.pageUpload")}
+                    </Button>
+                  )}
                 </>
               ) : null}
             </div>
@@ -1072,7 +1075,6 @@ export function DocumentsView() {
           icon={<FolderOpen className="size-6" aria-hidden />}
           title={t("documents.empty.title")}
           description={t("documents.empty.description")}
-          ctaSize="lg"
           action={
             canManageDocuments ? (
               <Button

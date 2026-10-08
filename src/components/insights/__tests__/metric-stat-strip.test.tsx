@@ -198,3 +198,30 @@ describe("<MetricStatStrip>", () => {
     });
   });
 });
+
+describe("<MetricStatStrip> waits for the chart's window", () => {
+  // The chart opens on a 30-day window. Painting the all-time summary until
+  // the chart reports, then swapping to the window, made every number jump
+  // a beat after the page loaded.
+  it("holds the cells while the chart's window is still pending", () => {
+    const html = render(
+      <MetricStatStrip summary={populated} unit="bpm" windowPending />,
+    );
+    expect(html).toContain('data-stat="min"');
+    expect(html).toContain('data-window-pending="true"');
+    expect(html).not.toContain("58.0 bpm");
+    expect(html).not.toContain("88.0 bpm");
+  });
+
+  it("paints the window's numbers once the chart reported", () => {
+    const html = render(
+      <MetricStatStrip
+        summary={populated}
+        unit="bpm"
+        windowStats={{ count: 5, min: 60, max: 80, median: 70, mean: 70 }}
+      />,
+    );
+    expect(html).toContain("60.0 bpm");
+    expect(html).not.toContain("58.0 bpm");
+  });
+});

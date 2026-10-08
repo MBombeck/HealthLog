@@ -49,7 +49,9 @@
     "dismiss": "Descartar",
     "moreInfo": "Más información",
     "durationHoursMinutes": "{hours} h {minutes} min",
-    "durationMinutes": "{minutes} min"
+    "durationMinutes": "{minutes} min",
+    "durationClockMinutes": "{time} min",
+    "durationClockHours": "{time} h"
   },
   "apiErrors": {
     "measurement": {
@@ -540,6 +542,11 @@
       "errorRateLimit": "Demasiados intentos. Espera unos minutos y vuelve a intentarlo.",
       "errorFailed": "No ha funcionado. Vuelve a intentarlo en un momento.",
       "errorOffline": "No se llegó al servidor. Comprueba tu conexión y vuelve a intentarlo."
+    },
+    "inviteInvalid": {
+      "title": "Invitación no válida",
+      "description": "Este enlace de invitación está incompleto o se copió mal. Pide un enlace nuevo a la persona que te invitó.",
+      "toLogin": "Ir a iniciar sesión"
     }
   },
   "dashboard": {
@@ -2031,7 +2038,6 @@
         "bestand": "Existencias",
         "verlauf": "Historial",
         "injektion": "Inyección",
-        "api": "API",
         "erweitert": "Avanzado",
         "wirkung": "Efecto"
       },
@@ -2503,7 +2509,8 @@
       "moodHeatmapEmpty": "Mapa de calor de estado de ánimo, aún no hay días registrados.",
       "complianceHeatmap": "Mapa de calor de cumplimiento de medicación de {start} a {end}, {days} días activos.",
       "complianceHeatmapEmpty": "Mapa de calor de cumplimiento de medicación, aún no hay días activos."
-    }
+    },
+    "medicationsEmptyAction": "Añadir un medicamento"
   },
   "chart": {
     "overlay": {
@@ -4340,7 +4347,9 @@
           "method": "Un indicador nocturno de esfuerzo de 0 a 100 a partir de tu carga de actividad ponderada por frecuencia cardíaca (un modelo de impulso de entrenamiento tipo TRIMP). Más alto significa un día más exigente.",
           "anchorPersonal": "Anclado a tu propia carga reciente de días de entrenamiento: se evalúa en relación con tu esfuerzo habitual, de modo que un día realmente duro para ti aparece alto.",
           "anchorPopulation": "Se evalúa frente a una referencia general mientras acumulas historial de entrenamiento; cuando tengas suficiente, pasa a tu propio esfuerzo habitual.",
-          "description": "Un indicador nocturno de carga de actividad a partir de tu esfuerzo ponderado por frecuencia cardíaca, relativo a tu esfuerzo habitual."
+          "description": "Un indicador nocturno de carga de actividad a partir de tu esfuerzo ponderado por frecuencia cardíaca, relativo a tu esfuerzo habitual.",
+          "deviceCaption": "Esfuerzo diario de tu dispositivo: {value} de {max}",
+          "deviceSource": "Hasta que HealthLog calcule su propio valor durante la noche, la tarjeta muestra el esfuerzo diario de tu dispositivo, convertido a 0–100."
         },
         "WRIST_TEMPERATURE_BASELINE": {
           "method": "Tu temperatura típica de muñeca durante la noche es la mediana de tus lecturas nocturnas en el periodo, ± una dispersión robusta (desviación absoluta de la mediana, escalada). Sigue TUS lecturas: la noche pasada se muestra como una desviación respecto a tu propia base, no a una norma poblacional.",
@@ -4717,8 +4726,8 @@
       "emptyCta": "Conectar un dispositivo"
     },
     "intradayPulse": {
-      "title": "La forma de tu día",
-      "caption": "Tu frecuencia cardíaca a lo largo del día, promediada en tramos de 10 minutos.",
+      "title": "Pulso a lo largo del día",
+      "caption": "Promediado en intervalos de 10 minutos.",
       "hourlyNote": "Mostrando el promedio por hora de este día — los días recientes muestran el detalle completo de 10 minutos.",
       "empty": "Aún no hay suficientes lecturas para este día para mostrar su forma.",
       "coverageOne": "Basado en 1 lectura a lo largo de {hours}h.",
@@ -6007,9 +6016,9 @@
     "botToken": "Token del bot",
     "chatId": "ID del chat",
     "enableNotifications": "Activar notificaciones",
-    "telegramStep1": "1. Crea un bot con @BotFather en Telegram y copia el token.",
-    "telegramStep2": "2. Envía /start a tu bot para activar el chat.",
-    "telegramStep3": "3. Obtén tu ID del chat con @userinfobot o la API del bot.",
+    "telegramStep1": "Crea un bot con @BotFather en Telegram y copia el token.",
+    "telegramStep2": "Envía /start a tu bot para activar el chat.",
+    "telegramStep3": "Obtén tu ID del chat con @userinfobot o la API del bot.",
     "ntfy": "ntfy",
     "ntfyDescription": "Notificaciones a través de ntfy (autoalojado o ntfy.sh).",
     "ntfyEnable": "Activar ntfy",
@@ -8047,14 +8056,6 @@
         "title": "Leyenda de las tomas",
         "description": "Registra 300 tomas de medicación."
       },
-      "overIntake1": {
-        "title": "Dosis doble",
-        "description": "Toma la medicación al menos una vez más de lo previsto."
-      },
-      "skippedIntake1": {
-        "title": "Un paso atrás",
-        "description": "Omite al menos una toma planificada."
-      },
       "passkeyCreated1": {
         "title": "Clave de acceso creada",
         "description": "Crea tu primera clave de acceso."
@@ -8719,7 +8720,11 @@
     },
     "course": "Tratamiento {n}",
     "courseRange": "del {start} al {end}",
-    "courseSince": "desde el {start}"
+    "courseSince": "desde el {start}",
+    "unavailable": {
+      "title": "Enlace caducado o no válido",
+      "description": "Este enlace para compartir ha caducado, se ha revocado o está incompleto. Pide un enlace nuevo a la persona que lo compartió."
+    }
   },
   "cycle": {
     "symptomCategory": {
@@ -9803,7 +9808,7 @@
     }
   },
   "illness": {
-    "title": "Diario de enfermedad",
+    "title": "Enfermedad",
     "subtitle": "Un registro retrospectivo de tus episodios de enfermedad y dolencias.",
     "settings": {
       "viewDescription": "Elige si los episodios se muestran como tarjetas o como lista compacta.",
@@ -12260,7 +12265,8 @@
       "fewer": "Mostrar menos",
       "note": "Reunido a partir de tus entradas, sin valoración. Cada fecha abre el día completo.",
       "report": "Informe médico del {date} hasta hoy"
-    }
+    },
+    "travel": "De viaje"
   },
   "timeline": {
     "title": "Cronología",
@@ -12494,5 +12500,12 @@
       "title": "¿Eliminar este acontecimiento vital?",
       "body": "Su título y su nota desaparecerán."
     }
+  },
+  "aboutPage": {
+    "eyebrow": "Información",
+    "title": "Acerca de HealthLog",
+    "lastUpdated": "Última actualización: {date}",
+    "project": "Proyecto",
+    "credits": "Créditos"
   }
 }

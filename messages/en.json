@@ -49,7 +49,9 @@
     "dismiss": "Dismiss",
     "moreInfo": "More information",
     "durationHoursMinutes": "{hours}h {minutes}m",
-    "durationMinutes": "{minutes}m"
+    "durationMinutes": "{minutes}m",
+    "durationClockMinutes": "{time} min",
+    "durationClockHours": "{time} h"
   },
   "apiErrors": {
     "measurement": {
@@ -540,6 +542,11 @@
       "errorRateLimit": "Too many attempts. Wait a few minutes and try again.",
       "errorFailed": "That did not work. Try again in a moment.",
       "errorOffline": "That did not reach the server. Check your connection and try again."
+    },
+    "inviteInvalid": {
+      "title": "Invitation invalid",
+      "description": "This invitation link is incomplete or was copied wrongly. Ask the person who invited you for a new link.",
+      "toLogin": "Go to sign in"
     }
   },
   "dashboard": {
@@ -2031,7 +2038,6 @@
         "bestand": "Supply",
         "verlauf": "History",
         "injektion": "Injection",
-        "api": "API",
         "erweitert": "Advanced",
         "wirkung": "Effect"
       },
@@ -2503,7 +2509,8 @@
       "moodHeatmapEmpty": "Mood heatmap, no days logged yet.",
       "complianceHeatmap": "Medication compliance heatmap from {start} to {end}, {days} active days.",
       "complianceHeatmapEmpty": "Medication compliance heatmap, no active days yet."
-    }
+    },
+    "medicationsEmptyAction": "Add a medication"
   },
   "chart": {
     "overlay": {
@@ -4340,7 +4347,9 @@
           "method": "A nightly 0–100 strain proxy from your heart-rate-weighted activity load (a TRIMP-style training-impulse model). Higher means a harder day.",
           "anchorPersonal": "Anchored to your own recent training-day load — scored relative to your typical effort, so a genuinely hard day for you reads high.",
           "anchorPopulation": "Scored against a general reference while you build training history; once you have enough it switches to your own typical effort.",
-          "description": "A nightly activity-load proxy from your heart-rate-weighted effort, relative to your typical effort."
+          "description": "A nightly activity-load proxy from your heart-rate-weighted effort, relative to your typical effort.",
+          "deviceCaption": "Your device's day strain: {value} of {max}",
+          "deviceSource": "Until HealthLog has computed its own value overnight, the card shows your device's day strain, rescaled to 0–100."
         },
         "WRIST_TEMPERATURE_BASELINE": {
           "method": "Your typical overnight wrist temperature is the median of your nightly readings over the window, ± a robust spread (median absolute deviation, scaled). It tracks YOUR readings — last night is shown as a deviation from your own baseline, not a population norm.",
@@ -4717,8 +4726,8 @@
       "emptyCta": "Connect a device"
     },
     "intradayPulse": {
-      "title": "Your day's shape",
-      "caption": "Your heart rate through the day, averaged in 10-minute steps.",
+      "title": "Pulse through the day",
+      "caption": "Averaged in 10-minute steps.",
       "hourlyNote": "Showing this day's hourly average — recent days show the full 10-minute detail.",
       "empty": "Not enough heart-rate readings for this day to show its shape yet.",
       "coverageOne": "Based on 1 reading across {hours}h.",
@@ -6007,9 +6016,9 @@
     "botToken": "Bot Token",
     "chatId": "Chat ID",
     "enableNotifications": "Enable notifications",
-    "telegramStep1": "1. Create a bot via @BotFather in Telegram and copy the token.",
-    "telegramStep2": "2. Send /start to your bot to activate the chat.",
-    "telegramStep3": "3. Find your Chat ID via @userinfobot or the Bot API.",
+    "telegramStep1": "Create a bot via @BotFather in Telegram and copy the token.",
+    "telegramStep2": "Send /start to your bot to activate the chat.",
+    "telegramStep3": "Find your Chat ID via @userinfobot or the Bot API.",
     "ntfy": "ntfy",
     "ntfyDescription": "Notifications via ntfy (self-hosted or ntfy.sh).",
     "ntfyEnable": "Enable ntfy",
@@ -8047,14 +8056,6 @@
         "title": "Intake legend",
         "description": "Record 300 taken medication events."
       },
-      "overIntake1": {
-        "title": "Double take",
-        "description": "Take medication at least once more than planned."
-      },
-      "skippedIntake1": {
-        "title": "Stepped back",
-        "description": "Skip at least one planned intake."
-      },
       "passkeyCreated1": {
         "title": "Passkey set up",
         "description": "Create your first passkey."
@@ -8719,7 +8720,11 @@
     },
     "course": "Course {n}",
     "courseRange": "{start} to {end}",
-    "courseSince": "since {start}"
+    "courseSince": "since {start}",
+    "unavailable": {
+      "title": "Link expired or invalid",
+      "description": "This share link has expired, was revoked, or is incomplete. Ask the person who shared it for a new link."
+    }
   },
   "cycle": {
     "symptomCategory": {
@@ -9803,7 +9808,7 @@
     }
   },
   "illness": {
-    "title": "Illness journal",
+    "title": "Illness",
     "subtitle": "A retrospective log of your illness and condition episodes.",
     "settings": {
       "viewDescription": "Choose whether episodes show as cards or as a compact list.",
@@ -12260,7 +12265,8 @@
       "fewer": "Show fewer",
       "note": "Compiled from your entries, without judgement. Every date opens the whole day.",
       "report": "Doctor report from {date} to today"
-    }
+    },
+    "travel": "Away"
   },
   "timeline": {
     "title": "Timeline",
@@ -12494,5 +12500,12 @@
       "title": "Delete this life event?",
       "body": "Its title and note will be gone."
     }
+  },
+  "aboutPage": {
+    "eyebrow": "About",
+    "title": "About HealthLog",
+    "lastUpdated": "Last updated: {date}",
+    "project": "Project",
+    "credits": "Credits"
   }
 }

@@ -93,7 +93,7 @@ export function WorkoutDetailStats({ workout }: WorkoutDetailStatsProps) {
   tiles.push({
     icon: <Timer className="size-4" />,
     label: t("insights.workouts.detail.statsDuration"),
-    value: formatDuration(workout.durationSec),
+    value: formatDuration(workout.durationSec, t),
   });
 
   if (workout.distanceM != null && workout.distanceM > 0) {

@@ -340,7 +340,6 @@ function HistoryRow({
               {t("insights.coach.frame.rename")}
             </DropdownMenuItem>
             <DropdownMenuItem
-              variant="destructive"
               data-slot="coach-history-delete"
               onSelect={() => onDelete(c.id)}
             >

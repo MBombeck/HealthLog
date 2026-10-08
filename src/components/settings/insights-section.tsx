@@ -2,6 +2,8 @@
 
 import { InsightsOverviewArrangeSection } from "@/components/settings/insights-overview-arrange-section";
 import { InsightsPillOrderSection } from "@/components/settings/insights-pill-order-section";
+import { RevealWhenSettled } from "@/components/ui/reveal-when-settled";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * v1.15.18 — the "Insights" settings section (analogous to the Dashboard
@@ -20,9 +22,14 @@ import { InsightsPillOrderSection } from "@/components/settings/insights-pill-or
  */
 export function InsightsSection() {
   return (
-    <div className="space-y-6">
+    // The arrange list grows from its loading card to the full set of
+    // sections, which pushed the pill-order card below it down the page.
+    // Both reveal together once their reads settle.
+    <RevealWhenSettled
+      fallback={<Skeleton className="h-[28rem] w-full rounded-xl" />}
+    >
       <InsightsOverviewArrangeSection id="insights-overview-arrange" />
       <InsightsPillOrderSection id="insights-pill-order" />
-    </div>
+    </RevealWhenSettled>
   );
 }

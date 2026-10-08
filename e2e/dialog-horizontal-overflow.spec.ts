@@ -70,13 +70,15 @@ const DIALOGS: DialogCase[] = [
   {
     name: "measurements add",
     path: "/measurements",
-    trigger: /^add$/i,
+    // While a list is empty the header drops its add button and the empty
+    // state carries the action, so either one opens the dialog.
+    trigger: /^(add|add your first measurement)$/i,
     ready: '[data-slot="date-time-field"]',
   },
   {
     name: "mood add",
     path: "/mood",
-    trigger: /^add$/i,
+    trigger: /^(add|log your first mood)$/i,
     // The mood sheet opens on the five-face quick check; the timestamp row
     // (and everything else) appears once a face is picked. Measuring the
     // quick check alone would measure a sheet that has almost nothing in it.
@@ -92,7 +94,7 @@ const DIALOGS: DialogCase[] = [
   {
     name: "labs add",
     path: "/labs",
-    trigger: /^add$/i,
+    trigger: /^(add|add your first result)$/i,
     ready: '[data-slot="date-time-field"]',
   },
   // The labs sheet's footer holds three buttons (Cancel, Save & add another,
@@ -101,7 +103,7 @@ const DIALOGS: DialogCase[] = [
   {
     name: "labs add (German)",
     path: "/labs",
-    trigger: /^hinzufügen$/i,
+    trigger: /^(hinzufügen|ersten wert erfassen)$/i,
     ready: '[data-slot="date-time-field"]',
     locale: "de",
   },

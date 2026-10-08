@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { MoodExplainerIcon } from "./mood-explainer-icon";
 import {
   PatternDismissButton,
@@ -94,6 +94,7 @@ export function MoodDiscoveredRelations({
   pairsTested: number;
 }) {
   const { t } = useTranslations();
+  const nf = useFormatters();
   const dismissal = usePatternDismissalOverrides();
 
   if (pairs.length === 0) return null;
@@ -169,8 +170,8 @@ export function MoodDiscoveredRelations({
                   label={t("insights.mood.discovery.statLabel")}
                   detail={t("insights.mood.discovery.stat", {
                     n: pair.n,
-                    r: pair.r.toFixed(2),
-                    q: pair.qValue.toFixed(3),
+                    r: nf.number(pair.r, 2),
+                    q: nf.number(pair.qValue, 3),
                   })}
                 />
               </span>

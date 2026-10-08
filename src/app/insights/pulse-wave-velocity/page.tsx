@@ -21,7 +21,7 @@ export default function InsightsPulswellengeschwindigkeitPage() {
       chartKey="pulseWaveVelocity"
       i18nPrefix="insights.pulseWaveVelocity"
       explainerMetric="pulseWaveVelocity"
-      color="var(--destructive)"
+      color="var(--chart-3)"
       unit="m/s"
       yAxisUnit="m/s"
       emptyStateIcon={<Activity className="size-6" />}

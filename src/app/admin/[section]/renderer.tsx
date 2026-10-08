@@ -36,6 +36,8 @@ import { ModuleAvailabilitySection } from "@/components/admin/module-availabilit
 import { RemindersSection } from "@/components/admin/reminders-section";
 import { ServicesSection } from "@/components/admin/services-section";
 import { SystemStatusSection } from "@/components/admin/system-status-section";
+import { RevealWhenSettled } from "@/components/ui/reveal-when-settled";
+import { Skeleton } from "@/components/ui/skeleton";
 import { MeasurementMaintenanceCard } from "@/components/admin/measurement-maintenance-card";
 import { InviteTokensSection } from "@/components/admin/invite-tokens-section";
 import { UserManagementSection } from "@/components/admin/user-management-section";
@@ -59,11 +61,18 @@ export function AdminSectionRenderer({
   switch (slug) {
     case "system-status":
       return (
-        <SectionFrame>
-          <SystemStatusSection />
-          {/* v1.42 — the table maintenance after the tombstone purge. */}
-          <MeasurementMaintenanceCard />
-        </SectionFrame>
+        // The status cards grow as their reads land (host metrics, workers,
+        // queues); revealed together so the maintenance card below is not
+        // pushed down the page three times while they load.
+        <RevealWhenSettled
+          fallback={<Skeleton className="h-[40rem] w-full rounded-xl" />}
+        >
+          <SectionFrame>
+            <SystemStatusSection />
+            {/* v1.42 — the table maintenance after the tombstone purge. */}
+            <MeasurementMaintenanceCard />
+          </SectionFrame>
+        </RevealWhenSettled>
       );
     case "general":
       return (

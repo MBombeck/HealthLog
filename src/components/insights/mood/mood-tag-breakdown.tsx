@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 
 /**
  * v1.8.5 — tag / trigger breakdown.
@@ -30,6 +30,7 @@ function colorForScore(score: number): string {
 
 export function MoodTagBreakdown({ tags }: { tags: MoodTagRow[] }) {
   const { t } = useTranslations();
+  const nf = useFormatters();
   const maxCount = tags.reduce((m, row) => Math.max(m, row.count), 0) || 1;
 
   return (
@@ -61,7 +62,7 @@ export function MoodTagBreakdown({ tags }: { tags: MoodTagRow[] }) {
             style={{ color: colorForScore(row.avgScore) }}
             title={t("insights.mood.tagAvgMood")}
           >
-            {row.avgScore.toFixed(1)}
+            {nf.number(row.avgScore, 1)}
           </span>
         </li>
       ))}

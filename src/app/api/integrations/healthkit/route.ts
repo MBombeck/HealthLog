@@ -23,6 +23,7 @@ import { auditLog } from "@/lib/auth/audit";
 import { getAppleHealthSyncProgress } from "@/lib/integrations/apple-health-progress";
 import {
   getHealthKitTypeArrivals,
+  newestAppleHealthDataAt,
   withHealthKitArrivals,
 } from "@/lib/integrations/healthkit-type-sync";
 import { getSourceFreshness } from "@/lib/integrations/metric-freshness";
@@ -162,21 +163,9 @@ export const GET = apiHandler(async () => {
   // three-week-dead pipe rendered the same green as one that delivered an hour
   // ago. Fail-soft on the per-metric read — an honesty signal is never worth
   // 500-ing the config the iOS client needs.
-  // No `connected` hint: Apple Health has nothing to connect or disconnect, so
-  // "never delivered" resolves to `pending_first_sync`, not `disconnected`.
-  const syncHealth = resolveSyncVerdict({
-    configured: true,
-    lastDataAt: lastSyncedAt,
-    legacyLastSyncedAt: lastSyncedAt,
-    cadence: PUSH_CADENCE,
-  });
   // #1173 — when each type last ARRIVED and under which trigger, beside when
   // its newest sample was taken. Fail-soft to null, which leaves the entries
   // without arrival fields rather than reporting every type as never received.
-  const [samples, arrivals] = await Promise.all([
-    getSourceFreshness(user.id, "APPLE_HEALTH").catch(() => []),
-    getHealthKitTypeArrivals(user.id).catch(() => null),
-  ]);
   // Issue #778 — a first-run backfill used to be invisible from the web: the
   // card said "last sync 2 minutes ago" while giving no sense of how much had
   // arrived or how far back it reached. These two figures (row count + oldest
@@ -184,9 +173,23 @@ export const GET = apiHandler(async () => {
   // progress; the phone's queue and throttle state stay on the phone and are
   // not guessed at. Fail-soft for the same reason the freshness read is —
   // a progress line is never worth 500-ing the config the iOS client needs.
-  const syncProgress = await getAppleHealthSyncProgress(user.id).catch(
-    () => null,
-  );
+  const [samples, arrivals, syncProgress] = await Promise.all([
+    getSourceFreshness(user.id, "APPLE_HEALTH").catch(() => []),
+    getHealthKitTypeArrivals(user.id).catch(() => null),
+    getAppleHealthSyncProgress(user.id).catch(() => null),
+  ]);
+  // No `connected` hint: Apple Health has nothing to connect or disconnect, so
+  // "never delivered" resolves to `pending_first_sync`, not `disconnected`.
+  // "Delivered" is read off the data, not only off the user column: that
+  // column moves on a live batch alone, so rows from the export.zip import
+  // left it null and the card said "waiting for first data" beside a
+  // four-digit record count.
+  const syncHealth = resolveSyncVerdict({
+    configured: true,
+    lastDataAt: newestAppleHealthDataAt(lastSyncedAt, arrivals, samples),
+    legacyLastSyncedAt: lastSyncedAt,
+    cadence: PUSH_CADENCE,
+  });
 
   return apiSuccess({
     entries,

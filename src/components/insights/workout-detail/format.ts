@@ -17,14 +17,25 @@ import {
  * durations and distances identically.
  */
 
-export function formatDuration(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  if (h > 0) {
-    return `${h}h ${m.toString().padStart(2, "0")}m ${s.toString().padStart(2, "0")}s`;
-  }
-  return `${m}m ${s.toString().padStart(2, "0")}s`;
+/**
+ * A workout's length as a clock reading with its unit, the way a sports
+ * watch shows it: "38:00 Min." / "1:02:05 Std." in German, "38:00 min" /
+ * "1:02:05 h" in English. The old "38m 00s" was English in every locale.
+ */
+export function formatDuration(
+  seconds: number,
+  t: (key: string, params?: Record<string, string | number>) => string,
+): string {
+  const total = Math.max(0, Math.round(seconds));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const ss = s.toString().padStart(2, "0");
+  return h > 0
+    ? t("common.durationClockHours", {
+        time: `${h}:${m.toString().padStart(2, "0")}:${ss}`,
+      })
+    : t("common.durationClockMinutes", { time: `${m}:${ss}` });
 }
 
 /** Compact "34 min" style duration for the sport-average comparison line. */
@@ -95,7 +106,7 @@ export function formatPace(
 }
 
 /**
- * "m:ss /km" from a seconds-per-unit value. The splits table passes "km"
+ * "m:ss min/km" from a seconds-per-unit value. The splits table passes "km"
  * explicitly: its rows are kilometre segments cut server-side, so their
  * pace is per kilometre whatever the preference.
  */
@@ -107,7 +118,7 @@ export function formatPaceSeconds(secPerUnit: number, unit: string): string {
     m += 1;
     s = 0;
   }
-  return `${m}:${s.toString().padStart(2, "0")} /${unit}`;
+  return `${m}:${s.toString().padStart(2, "0")} min/${unit}`;
 }
 
 export function formatDateRange(

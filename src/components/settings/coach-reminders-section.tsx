@@ -149,7 +149,7 @@ export function CoachRemindersSection({
             slot="coach-reminder-delete"
             variant="ghost"
             size="sm"
-            className="text-muted-foreground hover:text-destructive min-h-9"
+            className="text-muted-foreground hover:text-foreground min-h-9"
             disabled={!isAuthenticated}
             pending={busy}
             ariaLabel={t("settings.ai.coachReminders.deleteAria")}

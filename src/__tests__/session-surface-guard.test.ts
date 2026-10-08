@@ -236,6 +236,9 @@ describe("S2 — the URL-token authentication set is frozen", () => {
     "app/c/[token]/d/[id]/route.ts": "serves a shared document's bytes",
     "app/c/[token]/fhir/route.ts": "serves the shared record as a FHIR bundle",
     "app/c/[token]/report.pdf/route.ts": "serves the shared record as a PDF",
+    // The segment's not-found page: the copy a dead link shows. It reads no
+    // token and resolves nothing; the page above decides, and answers 404.
+    "app/c/[token]/not-found.tsx": "renders the dead-link copy; reads no token",
     // The passphrase gate for the same token. Anonymous by design; mints the
     // token-scoped unlock cookie the view above checks.
     "app/api/c/[token]/unlock/route.ts": "verifies the share-link passphrase",
@@ -256,7 +259,7 @@ describe("S2 — the URL-token authentication set is frozen", () => {
     // Listed because it is a URL-token surface, with the reason being that
     // it authenticates nothing.
     "app/invite/[token]/page.tsx":
-      "validates the invite token's shape and redirects; no lookup",
+      "validates the invite token's shape and redirects, or says the link is invalid; no lookup",
     // v1.42 (#959) — the managed-profile handover link. The landing is the
     // invite landing's twin: a shape check on the `hlp_` segment and a
     // redirect, no lookup (the proxy normally answers it at the edge).
@@ -305,6 +308,7 @@ describe("S2 — the URL-token authentication set is frozen", () => {
       "app/api/withings/webhook/[token]/route.ts",
       "app/c/[token]/d/[id]/route.ts",
       "app/c/[token]/fhir/route.ts",
+      "app/c/[token]/not-found.tsx",
       "app/c/[token]/page.tsx",
       "app/c/[token]/report.pdf/route.ts",
       "app/claim/[token]/page.tsx",

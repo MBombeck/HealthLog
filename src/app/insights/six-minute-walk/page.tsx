@@ -20,7 +20,7 @@ export default function InsightsSixMinuteWalkPage() {
       chartKey="sixMinuteWalkDistance"
       i18nPrefix="insights.sixMinuteWalk"
       explainerMetric="sixMinuteWalk"
-      color="var(--success)"
+      color="var(--chart-2)"
       unit="m"
       yAxisUnit="m"
       emptyStateIcon={<Footprints className="size-6" />}

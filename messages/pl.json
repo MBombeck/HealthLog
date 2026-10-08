@@ -49,7 +49,9 @@
     "dismiss": "Odrzuć",
     "moreInfo": "Więcej informacji",
     "durationHoursMinutes": "{hours} godz. {minutes} min",
-    "durationMinutes": "{minutes} min"
+    "durationMinutes": "{minutes} min",
+    "durationClockMinutes": "{time} min",
+    "durationClockHours": "{time} godz."
   },
   "apiErrors": {
     "measurement": {
@@ -540,6 +542,11 @@
       "errorRateLimit": "Zbyt wiele prób. Odczekaj kilka minut i spróbuj ponownie.",
       "errorFailed": "Nie udało się. Spróbuj ponownie za chwilę.",
       "errorOffline": "Nie udało się połączyć z serwerem. Sprawdź połączenie i spróbuj ponownie."
+    },
+    "inviteInvalid": {
+      "title": "Nieprawidłowe zaproszenie",
+      "description": "Ten link z zaproszeniem jest niekompletny lub został źle skopiowany. Poproś osobę, która cię zaprosiła, o nowy link.",
+      "toLogin": "Przejdź do logowania"
     }
   },
   "dashboard": {
@@ -2031,7 +2038,6 @@
         "bestand": "Zapas",
         "verlauf": "Historia",
         "injektion": "Iniekcja",
-        "api": "API",
         "erweitert": "Zaawansowane",
         "wirkung": "Działanie"
       },
@@ -2503,7 +2509,8 @@
       "moodHeatmapEmpty": "Mapa cieplna nastroju, brak zarejestrowanych dni.",
       "complianceHeatmap": "Mapa cieplna przyjmowania leków od {start} do {end}, {days} aktywnych dni.",
       "complianceHeatmapEmpty": "Mapa cieplna przyjmowania leków, brak aktywnych dni."
-    }
+    },
+    "medicationsEmptyAction": "Dodaj lek"
   },
   "chart": {
     "overlay": {
@@ -4340,7 +4347,9 @@
           "method": "Nocny wskaźnik obciążenia 0–100 na podstawie Twojego obciążenia aktywnością ważonego tętnem (model impulsu treningowego typu TRIMP). Wyższy oznacza cięższy dzień.",
           "anchorPersonal": "Zakotwiczony w Twoim własnym niedawnym obciążeniu z dni treningowych — oceniany względem Twojego typowego wysiłku, więc naprawdę ciężki dzień dla Ciebie wypada wysoko.",
           "anchorPopulation": "Oceniany względem ogólnego punktu odniesienia, gdy dopiero budujesz historię treningów; gdy zbierzesz jej wystarczająco, przełącza się na Twój własny typowy wysiłek.",
-          "description": "Nocny wskaźnik obciążenia aktywnością z Twojego wysiłku ważonego tętnem, względem Twojego typowego wysiłku."
+          "description": "Nocny wskaźnik obciążenia aktywnością z Twojego wysiłku ważonego tętnem, względem Twojego typowego wysiłku.",
+          "deviceCaption": "Dzienne obciążenie z Twojego urządzenia: {value} z {max}",
+          "deviceSource": "Dopóki HealthLog nie obliczy w nocy własnej wartości, karta pokazuje dzienne obciążenie z Twojego urządzenia, przeliczone na 0–100."
         },
         "WRIST_TEMPERATURE_BASELINE": {
           "method": "Twoja typowa nocna temperatura nadgarstka to mediana Twoich nocnych odczytów w danym okresie, ± solidny rozrzut (przeskalowane medianowe odchylenie bezwzględne). Śledzi TWOJE odczyty — ostatnia noc jest pokazana jako odchylenie od Twojej własnej bazy, a nie od normy populacyjnej.",
@@ -4717,8 +4726,8 @@
       "emptyCta": "Połącz urządzenie"
     },
     "intradayPulse": {
-      "title": "Przebieg Twojego dnia",
-      "caption": "Twoje tętno w ciągu dnia, uśrednione w 10-minutowych odcinkach.",
+      "title": "Tętno w ciągu dnia",
+      "caption": "Uśrednione w krokach co 10 minut.",
       "hourlyNote": "Pokazano średnią godzinową dla tego dnia — ostatnie dni pokazują pełny, 10-minutowy szczegół.",
       "empty": "Za mało pomiarów z tego dnia, aby pokazać jego przebieg.",
       "coverageOne": "Na podstawie 1 pomiaru w ciągu {hours}h.",
@@ -6007,9 +6016,9 @@
     "botToken": "Token bota",
     "chatId": "ID czatu",
     "enableNotifications": "Włącz powiadomienia",
-    "telegramStep1": "1. Utwórz bota przez @BotFather w Telegramie i skopiuj token.",
-    "telegramStep2": "2. Wyślij /start do swojego bota, aby aktywować czat.",
-    "telegramStep3": "3. Znajdź swoje ID czatu przez @userinfobot lub API bota.",
+    "telegramStep1": "Utwórz bota przez @BotFather w Telegramie i skopiuj token.",
+    "telegramStep2": "Wyślij /start do swojego bota, aby aktywować czat.",
+    "telegramStep3": "Znajdź swoje ID czatu przez @userinfobot lub API bota.",
     "ntfy": "ntfy",
     "ntfyDescription": "Powiadomienia przez ntfy (własny serwer lub ntfy.sh).",
     "ntfyEnable": "Włącz ntfy",
@@ -8047,14 +8056,6 @@
         "title": "Legenda przyjęć",
         "description": "Zarejestruj 300 przyjęć leków."
       },
-      "overIntake1": {
-        "title": "Podwójna dawka",
-        "description": "Przyjmij lek co najmniej raz więcej niż zaplanowano."
-      },
-      "skippedIntake1": {
-        "title": "Krok wstecz",
-        "description": "Pomiń co najmniej jedno zaplanowane przyjęcie."
-      },
       "passkeyCreated1": {
         "title": "Klucz dostępu ustawiony",
         "description": "Utwórz swój pierwszy klucz dostępu."
@@ -8719,7 +8720,11 @@
     },
     "course": "Kuracja {n}",
     "courseRange": "od {start} do {end}",
-    "courseSince": "od {start}"
+    "courseSince": "od {start}",
+    "unavailable": {
+      "title": "Link wygasł lub jest nieprawidłowy",
+      "description": "Ten link udostępniania wygasł, został cofnięty lub jest niekompletny. Poproś osobę, która go udostępniła, o nowy link."
+    }
   },
   "cycle": {
     "symptomCategory": {
@@ -9803,7 +9808,7 @@
     }
   },
   "illness": {
-    "title": "Dziennik chorób",
+    "title": "Choroba",
     "subtitle": "Retrospektywny zapis Twoich epizodów chorób i dolegliwości.",
     "settings": {
       "viewDescription": "Wybierz, czy epizody mają być wyświetlane jako karty czy zwarta lista.",
@@ -12260,7 +12265,8 @@
       "fewer": "Pokaż mniej",
       "note": "Zestawione z Twoich wpisów, bez oceny. Każda data otwiera cały dzień.",
       "report": "Raport lekarski od {date} do dziś"
-    }
+    },
+    "travel": "W podróży"
   },
   "timeline": {
     "title": "Oś czasu",
@@ -12494,5 +12500,12 @@
       "title": "Usunąć to wydarzenie życiowe?",
       "body": "Tytuł i notatka znikną."
     }
+  },
+  "aboutPage": {
+    "eyebrow": "Informacje",
+    "title": "O HealthLog",
+    "lastUpdated": "Ostatnia aktualizacja: {date}",
+    "project": "Projekt",
+    "credits": "Podziękowania"
   }
 }

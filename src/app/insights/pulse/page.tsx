@@ -88,7 +88,7 @@ export default function InsightsPulsPage() {
 
   // v1.12.8 — visible-range stats shared between the pulse chart and the
   // strip (the VO2 chart-row below keeps its own full-range read).
-  const { statsByType, onVisibleStats } = useChartDomainStats();
+  const { statsByType, statsSettled, onVisibleStats } = useChartDomainStats();
 
   // v1.4.27 F17 — gate the sub-page on at least one pulse observation.
   // Brand-new accounts (no manual logs, no Apple-Health upload yet)
@@ -133,6 +133,7 @@ export default function InsightsPulsPage() {
           seriesLabel={t("insights.pulseSectionTitle")}
           icon={Heart}
           windowStats={statsByType?.PULSE ?? null}
+          windowPending={!statsSettled}
         />
       }
       coachReadStrip={
@@ -156,8 +157,8 @@ export default function InsightsPulsPage() {
         titleIcon={Heart}
         colors={
           hasRestingHr
-            ? ["var(--success)", "var(--destructive)"]
-            : ["var(--success)"]
+            ? ["var(--chart-2)", "var(--chart-3)"]
+            : ["var(--chart-2)"]
         }
         unit="bpm"
         compareBaseline={compareBaseline}

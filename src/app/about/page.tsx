@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { resolveIntlLocale } from "@/lib/format-locale";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+
 /**
  * v1.4.27 B3 — Public about / credits page.
  *
@@ -67,7 +71,17 @@ function Section({
   );
 }
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  // The headings, the date and the sign-in link follow the reader's locale;
+  // the body is the attribution text the licences ask for and stays as
+  // written.
+  const locale = await resolveServerLocale();
+  const { t } = getServerTranslator(locale);
+  const lastUpdated = new Intl.DateTimeFormat(resolveIntlLocale(locale), {
+    dateStyle: "medium",
+    timeZone: "UTC",
+  }).format(new Date(`${LAST_UPDATED}T12:00:00Z`));
+
   return (
     <div className="bg-background text-foreground min-h-dvh">
       <header className="border-border/60 bg-background/80 sticky top-0 z-10 border-b pt-[env(safe-area-inset-top)] backdrop-blur">
@@ -82,7 +96,7 @@ export default function AboutPage() {
             href="/auth/login"
             className="text-muted-foreground hover:text-foreground inline-flex min-h-11 items-center text-sm"
           >
-            Sign in
+            {t("auth.login")}
           </Link>
         </div>
       </header>
@@ -99,17 +113,19 @@ export default function AboutPage() {
       >
         <div className="space-y-3">
           <p className="text-muted-foreground text-xs tracking-wider uppercase">
-            About
+            {t("aboutPage.eyebrow")}
           </p>
           <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
-            About HealthLog
+            {t("aboutPage.title")}
           </h1>
           <p className="text-muted-foreground text-sm">
-            Last updated: {LAST_UPDATED}
+            <time dateTime={LAST_UPDATED}>
+              {t("aboutPage.lastUpdated", { date: lastUpdated })}
+            </time>
           </p>
         </div>
 
-        <Section id="project" title="Project">
+        <Section id="project" title={t("aboutPage.project")}>
           <p>
             HealthLog is an open-source, self-hostable personal-health-tracking
             application. The source code lives at{" "}
@@ -127,7 +143,7 @@ export default function AboutPage() {
           </p>
         </Section>
 
-        <Section id="credits" title="Credits">
+        <Section id="credits" title={t("aboutPage.credits")}>
           <p>
             HealthLog stands on a number of open-source libraries and public
             data sources. The list below covers the third-party assets that ship

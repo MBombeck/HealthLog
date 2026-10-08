@@ -21,7 +21,7 @@ export default function InsightsGangstabilitaetPage() {
       chartKey="walkingSteadiness"
       i18nPrefix="insights.walkingSteadiness"
       explainerMetric="walkingSteadiness"
-      color="var(--success)"
+      color="var(--chart-2)"
       unit="%"
       yAxisUnit="%"
       emptyStateIcon={<Gauge className="size-6" />}

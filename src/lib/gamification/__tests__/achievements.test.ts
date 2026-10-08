@@ -13,8 +13,6 @@ import {
 
 const FULL_METRICS: AchievementMetrics = {
   totalTakenIntakes: 1000,
-  overIntakeCount: 1000,
-  skippedIntakeCount: 1000,
   bmiGreenStreak: 1000,
   bpGreenStreak: 1000,
   pulseGreenStreak: 1000,
@@ -79,8 +77,8 @@ describe("gamification achievements", () => {
     ).toBe(3);
   });
 
-  it("ships the expanded definition list (63 total — v1.4.18 + v1.16.1 care routine)", () => {
-    expect(ACHIEVEMENT_DEFINITIONS).toHaveLength(63);
+  it("ships the expanded definition list (61 total — v1.4.18 + v1.16.1 care routine, minus the two dosing badges)", () => {
+    expect(ACHIEVEMENT_DEFINITIONS).toHaveLength(61);
   });
 
   it("includes mood and hidden categories in the render order", () => {
@@ -91,8 +89,8 @@ describe("gamification achievements", () => {
   it("evaluates unlocked achievements and points when all metrics maxed", () => {
     const result = evaluateAchievementsWithCompletionDates(FULL_METRICS, {});
 
-    expect(result.summary.unlockedCount).toBe(63);
-    expect(result.summary.totalCount).toBe(63);
+    expect(result.summary.unlockedCount).toBe(61);
+    expect(result.summary.totalCount).toBe(61);
     expect(result.summary.nextAchievement).toBeNull();
     expect(result.summary.earnedPoints).toBe(result.summary.totalPoints);
   });
@@ -225,5 +223,29 @@ describe("bridgeFrozenStreakGaps (Rest Mode streak-freeze)", () => {
     // A single tracked day, untouched — the frozen days bridge nothing.
     expect(bridged).toEqual(["2026-06-10"]);
     expect(calculateLongestStreak(bridged)).toBe(1);
+  });
+});
+
+describe("dosing is never rewarded", () => {
+  // A badge for a dose taken twice or a dose skipped rewards over- or
+  // under-dosing. Neither behaviour is an achievement.
+  it("ships no badge for a doubled or a skipped dose", () => {
+    const ids = ACHIEVEMENT_DEFINITIONS.map((d) => d.id);
+    expect(ids).not.toContain("over-intake-1");
+    expect(ids).not.toContain("skipped-intake-1");
+    const metrics = ACHIEVEMENT_DEFINITIONS.map((d) => String(d.metric));
+    expect(metrics).not.toContain("overIntakeCount");
+    expect(metrics).not.toContain("skippedIntakeCount");
+  });
+
+  it("ignores an unlock row persisted for a retired badge", () => {
+    const result = evaluateAchievementsWithCompletionDates(ZERO_METRICS, {
+      "over-intake-1": new Date("2026-03-01T08:00:00Z"),
+      "skipped-intake-1": new Date("2026-03-02T08:00:00Z"),
+    });
+    const ids = result.achievements.map((a) => a.id);
+    expect(ids).not.toContain("over-intake-1");
+    expect(ids).not.toContain("skipped-intake-1");
+    expect(result.summary.unlockedCount).toBe(0);
   });
 });

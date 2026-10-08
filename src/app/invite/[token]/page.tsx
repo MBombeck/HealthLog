@@ -1,6 +1,10 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { MailX } from "lucide-react";
 
 import { looksLikeInviteToken } from "@/lib/auth/invite-token";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
 
 /**
  * v1.17.0 — invite universal-link landing (iOS #16).
@@ -41,7 +45,40 @@ export default async function InviteLandingPage({
     redirect(`/auth/register?invite=${encodeURIComponent(token)}`);
   }
 
-  // Malformed token: behave exactly like a visitor with no invite. No DB
-  // hit, no leak of whether any token exists.
-  redirect("/auth/register");
+  // Malformed token: say so. This used to fall through to the plain
+  // registration form, which on an open instance invited a stranger to sign
+  // up and on a closed one refused them without saying why. The shape check
+  // is public knowledge and needs no database, so naming a malformed link as
+  // invalid leaks nothing about which tokens exist: a well-formed unknown
+  // token still goes on to register, where the signup decides.
+  const locale = await resolveServerLocale();
+  const { t } = getServerTranslator(locale);
+  return (
+    <main
+      id="main-content"
+      data-slot="invite-invalid"
+      className="bg-background text-foreground flex min-h-dvh flex-col items-center justify-center gap-6 px-4 py-12 pt-[calc(env(safe-area-inset-top)+3rem)]"
+    >
+      <div
+        aria-hidden="true"
+        className="bg-muted text-muted-foreground flex size-14 items-center justify-center rounded-xl"
+      >
+        <MailX className="size-6" />
+      </div>
+      <div className="max-w-md space-y-2 text-center">
+        <h1 className="text-2xl font-bold tracking-tight">
+          {t("auth.inviteInvalid.title")}
+        </h1>
+        <p className="text-foreground text-sm">
+          {t("auth.inviteInvalid.description")}
+        </p>
+      </div>
+      <Link
+        href="/auth/login"
+        className="border-border hover:bg-accent inline-flex min-h-11 items-center justify-center rounded-md border px-4 text-sm font-medium transition-colors"
+      >
+        {t("auth.inviteInvalid.toLogin")}
+      </Link>
+    </main>
+  );
 }

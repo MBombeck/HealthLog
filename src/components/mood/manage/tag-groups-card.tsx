@@ -494,7 +494,7 @@ function SortableGroupRow({
               <Pencil className="mr-2 h-4 w-4" />
               {t("common.edit")}
             </DropdownMenuItem>
-            <DropdownMenuItem variant="destructive" onClick={onDelete}>
+            <DropdownMenuItem onClick={onDelete}>
               <Trash2 className="mr-2 h-4 w-4" />
               {t("common.delete")}
             </DropdownMenuItem>

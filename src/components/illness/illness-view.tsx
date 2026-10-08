@@ -432,7 +432,9 @@ export function IllnessView() {
             )}
             {/* v1.18.6 (MOD-02) — the add button reads "hinzufügen" like every
                 other module, not the bespoke "neue Episode". */}
-            {canAddEpisode && (
+            {/* Hidden while there is no episode: the empty state below
+                carries the add action then. */}
+            {canAddEpisode && (isLoading || isError || hasEpisodes) && (
               <Button
                 onClick={() => setNewOpen(true)}
                 className="min-h-11 sm:min-h-9"
@@ -500,7 +502,6 @@ export function IllnessView() {
             icon={<Stethoscope className="size-6" />}
             title={t("illness.empty.title")}
             description={t("illness.empty.body")}
-            ctaSize="lg"
             action={
               canAddEpisode ? (
                 <Button onClick={() => setNewOpen(true)}>

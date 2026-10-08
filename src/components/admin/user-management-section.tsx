@@ -254,7 +254,7 @@ export function UserManagementSection() {
       <Button
         variant="ghost"
         size="sm"
-        className="text-destructive hover:text-destructive min-h-11 min-w-11 px-2 text-xs"
+        className="text-muted-foreground hover:text-foreground min-h-11 min-w-11 px-2 text-xs"
         onClick={() => setLogoutTarget(u)}
         disabled={u.id === currentUserId}
         title={

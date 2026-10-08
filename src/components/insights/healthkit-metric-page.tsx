@@ -266,7 +266,7 @@ export function HealthKitMetricPage({
   // v1.12.8 — shared visible-range state. The chart reports the per-type
   // Min / Max / Median / Mean for the data under its active range tab; the
   // stat strip reads it back for this page's single series.
-  const { statsByType, onVisibleStats } = useChartDomainStats();
+  const { statsByType, statsSettled, onVisibleStats } = useChartDomainStats();
 
   // v1.17.0 — fallback-type swap. When the primary type has no rows but the
   // declared fallback does (HRV: SDNN empty, RMSSD present), key the chart,
@@ -446,6 +446,7 @@ export function HealthKitMetricPage({
           }
           icon={statIcon}
           windowStats={statsByType?.[effectiveType] ?? null}
+          windowPending={!statsSettled}
           medianLabel={statMedianLabel}
         />
       }

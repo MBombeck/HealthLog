@@ -31,6 +31,12 @@ export interface ChartDomainStats {
    * falls back to the full-range summary for that series.
    */
   statsByType: Record<string, MetricWindowStats> | null;
+  /**
+   * False until the chart has settled and reported once (even an empty
+   * window). The strip holds its cells until then rather than painting the
+   * full-range summary and swapping to the chart's window a beat later.
+   */
+  statsSettled: boolean;
   /** Stable callback handed to `<HealthChart onVisibleStats>`. */
   onVisibleStats: (stats: Record<string, MetricWindowStats> | null) => void;
 }
@@ -40,10 +46,12 @@ export function useChartDomainStats(): ChartDomainStats {
     string,
     MetricWindowStats
   > | null>(null);
+  const [statsSettled, setStatsSettled] = useState(false);
   const lastRef = useRef<string>("null");
 
   const onVisibleStats = useCallback(
     (stats: Record<string, MetricWindowStats> | null) => {
+      setStatsSettled(true);
       // Cheap shallow signature so an identical window (a re-render that
       // recomputes the same slice) doesn't re-set state and re-render the
       // strip.
@@ -57,6 +65,7 @@ export function useChartDomainStats(): ChartDomainStats {
 
   return {
     statsByType,
+    statsSettled,
     onVisibleStats,
   };
 }

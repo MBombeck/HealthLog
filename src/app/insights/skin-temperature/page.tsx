@@ -29,7 +29,7 @@ export default function InsightsHauttemperaturPage() {
       chartKey="skinTemperature"
       i18nPrefix="insights.skinTemperature"
       explainerMetric="skinTemperature"
-      color="var(--warning)"
+      color="var(--chart-5)"
       emptyStateIcon={<Thermometer className="size-6" />}
       emptyStateCtaType={null}
       coachPrefill="I haven't logged any skin temperature yet — what does this metric tell me about my health, and how do I improve it?"
@@ -38,7 +38,7 @@ export default function InsightsHauttemperaturPage() {
           type="BODY_TEMPERATURE_DEVIATION"
           title={t("measurements.typeBodyTemperatureDeviation")}
           icon={ThermometerSnowflake}
-          color="var(--info)"
+          color="var(--chart-4)"
           fractionDigits={2}
           sectionTitle={t("insights.bodyTempDeviation.title")}
           sectionIcon={ThermometerSnowflake}

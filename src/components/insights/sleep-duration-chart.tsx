@@ -42,7 +42,7 @@ export function SleepDurationChart({
       chartKey="sleep"
       types={["SLEEP_DURATION"]}
       title={t("charts.sleep")}
-      colors={["var(--info)"]}
+      colors={["var(--chart-4)"]}
       unit="h"
       yAxisUnit="h"
       compareBaseline={compareBaseline}

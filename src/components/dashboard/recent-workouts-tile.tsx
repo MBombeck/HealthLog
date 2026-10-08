@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Activity } from "lucide-react";
 
+import { formatDurationMinutes } from "@/lib/i18n/duration";
 import { useTranslations } from "@/lib/i18n/context";
 import { useWorkouts, type WorkoutListEntry } from "@/hooks/use-workouts";
 import { cn } from "@/lib/utils";
@@ -30,13 +31,6 @@ import { iconForSport } from "@/lib/workouts/sport-icons";
  * between the dashboard and `/insights/workouts` is a single
  * round-trip per session.
  */
-
-function formatDuration(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  if (h > 0) return `${h}h ${m.toString().padStart(2, "0")}m`;
-  return `${m}m`;
-}
 
 function formatDayLabel(iso: string, locale: string): string {
   const d = new Date(iso);
@@ -154,7 +148,10 @@ export function RecentWorkoutsTile() {
                       {formatDayLabel(workout.startedAt, locale)}
                     </span>
                     <span className="ml-1 shrink-0 text-xs font-medium tabular-nums">
-                      {formatDuration(workout.durationSec)}
+                      {formatDurationMinutes(
+                        Math.round(workout.durationSec / 60),
+                        t,
+                      )}
                     </span>
                   </Link>
                 </li>

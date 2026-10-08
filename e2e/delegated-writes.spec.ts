@@ -221,7 +221,14 @@ test.describe("delegated writes", () => {
     // reads "Add") and then for a `value` input (the form opens on blood
     // pressure, which has three). Both were wrong from the day they were
     // written and nobody found out, because the whole file was skipping.
-    await page.locator('[data-slot="measurement-add"]').click();
+    // The owner's list may be empty, in which case its empty state carries
+    // the add action and the header drops its own.
+    await page
+      .locator(
+        '[data-slot="measurement-add"], [data-slot="measurement-add-first"]',
+      )
+      .first()
+      .click();
     await page.locator("#sys").fill("124");
     await page.locator("#dia").fill("78");
     await page.getByRole("button", { name: /^save$/i }).click();

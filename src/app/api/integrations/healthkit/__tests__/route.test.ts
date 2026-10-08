@@ -287,6 +287,40 @@ describe("GET /api/integrations/healthkit — sync health", () => {
     expect((await read()).syncHealth.verdict).toBe("pending_first_sync");
   });
 
+  // The column only moves on a live batch. Rows that reached the account any
+  // other way (the export.zip import, a batch before the column existed) left
+  // it null, and the card said "waiting for first data" beside a four-digit
+  // record count. Arrival is a data question: any Apple Health row settles it.
+  it("is not pending when the per-type ledger records an arrival", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      healthKitConfigJson: null,
+      healthKitLastSyncedAt: null,
+    } as never);
+    vi.mocked(prisma.healthKitTypeSync.findMany).mockResolvedValue([
+      {
+        type: "PULSE",
+        lastReceivedAt: ago(2 * DAY),
+        lastTrigger: null,
+        lastNewSampleAt: null,
+      },
+    ] as never);
+    expect((await read()).syncHealth.verdict).toBe("fresh");
+  });
+
+  it("is not pending when Apple Health rows exist without any sync stamp", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      healthKitConfigJson: null,
+      healthKitLastSyncedAt: null,
+    } as never);
+    vi.mocked(listLiveMeasurementTypes).mockResolvedValue(["PULSE"]);
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([
+      { type: "PULSE", last_seen: ago(DAY) },
+    ] as never);
+    const body = await read();
+    expect(body.syncHealth.verdict).toBe("fresh");
+    expect(body.metricFreshness.map((e) => e.stale)).toEqual([false]);
+  });
+
   it("flags one quiet metric inside an otherwise healthy connection", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       healthKitConfigJson: null,

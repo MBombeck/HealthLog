@@ -21,7 +21,7 @@ export default function InsightsKoerperwasserPage() {
       chartKey="totalBodyWater"
       i18nPrefix="insights.totalBodyWater"
       explainerMetric="bodyWater"
-      color="var(--info)"
+      color="var(--chart-4)"
       emptyStateIcon={<Droplet className="size-6" />}
       emptyStateCtaType={null}
       captureType="TOTAL_BODY_WATER"

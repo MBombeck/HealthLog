@@ -370,115 +370,6 @@ function getOnTimePerfectDaySeries(
   return toDaySeries(perfectDays);
 }
 
-function parseDaysOfWeek(daysOfWeek: string | null): Set<number> | null {
-  if (!daysOfWeek) return null;
-
-  const values = daysOfWeek
-    .split(",")
-    .map((value) => Number(value.trim()))
-    .filter((value) => Number.isInteger(value) && value >= 0 && value <= 6);
-
-  return values.length > 0 ? new Set(values) : null;
-}
-
-function getExpectedIntakesForDay(
-  schedules: MedicationScheduleRecord[],
-  dayKey: string,
-): number {
-  if (schedules.length === 0) return 0;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dayKey)) return 0;
-
-  const day = dayKeyToDate(dayKey).getUTCDay();
-  let expected = 0;
-
-  for (const schedule of schedules) {
-    const allowedDays = parseDaysOfWeek(schedule.daysOfWeek);
-    if (!allowedDays || allowedDays.has(day)) {
-      expected += 1;
-    }
-  }
-
-  return expected;
-}
-
-function getIntakeIssueMetrics(
-  intakeEvents: IntakeEventRecord[],
-  schedulesByMedicationId: Map<string, MedicationScheduleRecord[]>,
-  tz: string,
-) {
-  const skippedIntakeDates = intakeEvents
-    .filter((event) => event.skipped)
-    .map((event) => event.scheduledFor)
-    .sort((a, b) => a.getTime() - b.getTime());
-
-  const eventsByMedicationDay = new Map<
-    string,
-    Map<string, IntakeEventRecord[]>
-  >();
-
-  for (const event of intakeEvents) {
-    if (!event.medicationId || Number.isNaN(event.scheduledFor.getTime())) {
-      continue;
-    }
-
-    const dayKey = userDayKey(event.scheduledFor, tz);
-    const byDay = eventsByMedicationDay.get(event.medicationId) ?? new Map();
-    const list = byDay.get(dayKey) ?? [];
-    list.push(event);
-    byDay.set(dayKey, list);
-    eventsByMedicationDay.set(event.medicationId, byDay);
-  }
-
-  let overIntakeCount = 0;
-  const overIntakeDates: Date[] = [];
-
-  for (const [medicationId, dayMap] of eventsByMedicationDay.entries()) {
-    const schedules = schedulesByMedicationId.get(medicationId) ?? [];
-
-    for (const [dayKey, events] of dayMap.entries()) {
-      const expectedCount = getExpectedIntakesForDay(schedules, dayKey);
-
-      if (expectedCount <= 0) {
-        continue;
-      }
-
-      const takenEvents = events
-        .filter((event) => !event.skipped && event.takenAt !== null)
-        .sort((a, b) => {
-          const aTime = (a.takenAt ?? a.scheduledFor).getTime();
-          const bTime = (b.takenAt ?? b.scheduledFor).getTime();
-          return aTime - bTime;
-        });
-
-      const excessCount = Math.max(0, takenEvents.length - expectedCount);
-      if (excessCount === 0) {
-        continue;
-      }
-
-      overIntakeCount += excessCount;
-
-      for (
-        let index = takenEvents.length - excessCount;
-        index < takenEvents.length;
-        index++
-      ) {
-        const event = takenEvents[index];
-        if (!event) continue;
-        overIntakeDates.push(event.takenAt ?? event.scheduledFor);
-      }
-    }
-  }
-
-  overIntakeDates.sort((a, b) => a.getTime() - b.getTime());
-
-  return {
-    skippedIntakeCount: skippedIntakeDates.length,
-    skippedIntakeDates,
-    overIntakeCount,
-    overIntakeDates,
-  };
-}
-
 function getCompliance80DaySeries(
   intakeEvents: IntakeEventRecord[],
   startDate: Date,
@@ -748,12 +639,6 @@ export async function buildAchievementsResult(
   const schedulesByMedicationId = new Map(
     medications.map((med) => [med.id, med.schedules]),
   );
-  const intakeIssueMetrics = getIntakeIssueMetrics(
-    intakeEvents,
-    schedulesByMedicationId,
-    tz,
-  );
-
   const takenIntakeDates = intakeEvents
     .filter((event) => !event.skipped && event.takenAt !== null)
     .map((event) => event.takenAt as Date);
@@ -850,8 +735,6 @@ export async function buildAchievementsResult(
 
   const metrics = {
     totalTakenIntakes: takenIntakeDates.length,
-    overIntakeCount: intakeIssueMetrics.overIntakeCount,
-    skippedIntakeCount: intakeIssueMetrics.skippedIntakeCount,
     // v1.18.1 P4 — every day-streak runs through `freeze(...)` so an active
     // or past illness episode bridges (does not break) the run across the
     // days the user was unwell.
@@ -911,24 +794,6 @@ export async function buildAchievementsResult(
     if (definition.metric === "passwordLoginCount") {
       const completedAt = findCountCompletionDate(
         passwordLoginDates,
-        definition.target,
-      );
-      if (completedAt) completionDates[definition.id] = completedAt;
-      continue;
-    }
-
-    if (definition.metric === "overIntakeCount") {
-      const completedAt = findCountCompletionDate(
-        intakeIssueMetrics.overIntakeDates,
-        definition.target,
-      );
-      if (completedAt) completionDates[definition.id] = completedAt;
-      continue;
-    }
-
-    if (definition.metric === "skippedIntakeCount") {
-      const completedAt = findCountCompletionDate(
-        intakeIssueMetrics.skippedIntakeDates,
         definition.target,
       );
       if (completedAt) completionDates[definition.id] = completedAt;

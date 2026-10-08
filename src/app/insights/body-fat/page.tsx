@@ -21,7 +21,7 @@ export default function InsightsBodyFatPage() {
       chartKey="bodyFat"
       i18nPrefix="insights.bodyFat"
       explainerMetric="bodyFat"
-      color="var(--warning)"
+      color="var(--chart-5)"
       unit="%"
       statIcon={Percent}
       emptyStateIcon={<Percent className="size-6" />}

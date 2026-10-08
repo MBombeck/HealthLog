@@ -86,7 +86,6 @@ export default function InsightsBmiPage() {
           icon={<Ruler className="size-6" />}
           title={t("insights.bmiEmptyTitle")}
           description={t("insights.bmiEmptyDescription")}
-          ctaSize="lg"
           action={
             <Button size="sm" asChild>
               <Link href="/settings/account">
@@ -117,7 +116,7 @@ export default function InsightsBmiPage() {
         chartKey="bmi"
         types={["WEIGHT"]}
         title={t("targets.bmi")}
-        colors={["var(--dracula-yellow)"]}
+        colors={["var(--chart-5)"]}
         unit="kg/m²"
         valueMode="bmi"
         valueBands={BMI_BANDS}

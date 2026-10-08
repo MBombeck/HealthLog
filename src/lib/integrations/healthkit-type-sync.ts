@@ -131,6 +131,32 @@ export async function getHealthKitTypeArrivals(
   return out;
 }
 
+/**
+ * The newest instant Apple Health data is known to have reached the account:
+ * the live-batch stamp, the per-type arrival ledger, or — for rows that came
+ * any other way, such as the export.zip import — the newest stored sample.
+ * Null only when none of the three holds anything, which is the one case the
+ * status may honestly call "waiting for first data".
+ */
+export function newestAppleHealthDataAt(
+  lastSyncedAt: string | null,
+  arrivals: Map<string, HealthKitTypeArrivalRecord> | null,
+  samples: readonly { lastSeenAt: string }[],
+): string | null {
+  let newest: number | null = null;
+  const consider = (value: string | null | undefined) => {
+    if (!value) return;
+    const ms = Date.parse(value);
+    if (Number.isFinite(ms) && (newest === null || ms > newest)) newest = ms;
+  };
+  consider(lastSyncedAt);
+  for (const arrival of arrivals?.values() ?? []) {
+    consider(arrival.lastReceivedAt);
+  }
+  for (const sample of samples) consider(sample.lastSeenAt);
+  return newest === null ? null : new Date(newest).toISOString();
+}
+
 /** A freshness entry with the arrival facts beside the newest sample. */
 export interface HealthKitFreshnessEntry extends MetricFreshnessEntry {
   /** When a live sync last carried this type; null when none has. */

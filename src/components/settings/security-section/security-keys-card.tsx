@@ -293,7 +293,7 @@ export function SecurityKeysCard({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="text-destructive min-h-11 min-w-11 sm:h-8 sm:min-h-0 sm:w-8 sm:min-w-0"
+                            className="text-muted-foreground hover:text-foreground min-h-11 min-w-11 sm:h-8 sm:min-h-0 sm:w-8 sm:min-w-0"
                             disabled={remove.isPending}
                             aria-label={t("settings.security.keys.remove")}
                           >

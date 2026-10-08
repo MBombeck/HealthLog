@@ -161,6 +161,31 @@ const RUNNING_COLOR: Record<DayRunningKind, string> = {
   lifeEvent: "var(--chart-2)",
 };
 
+/**
+ * The server names a few records by a sentinel rather than by text it would
+ * have to translate: a cycle is titled "cycle", a trip "travel", a cycle
+ * day carries its flow level. They are worded here, in the reader's
+ * language; every other title is the record's own text.
+ */
+function dayTitle(title: string, t: (key: string) => string): string {
+  if (title === "cycle") return t("nav.cycle");
+  if (title === "travel") return t("day.travel");
+  return title;
+}
+
+const FLOW_LEVELS = new Set(["NONE", "SPOTTING", "LIGHT", "MEDIUM", "HEAVY"]);
+
+function dayMeta(
+  kind: string,
+  meta: string,
+  t: (key: string) => string,
+): string {
+  if (kind === "cycleDayLog" && FLOW_LEVELS.has(meta)) {
+    return `${t("cycle.flow.label")}: ${t(`cycle.flow.${meta}`)}`;
+  }
+  return meta;
+}
+
 export function DayRunning({ items }: { items: readonly DayRunningItem[] }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
@@ -192,7 +217,7 @@ export function DayRunning({ items }: { items: readonly DayRunningItem[] }) {
               />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium">
-                  {item.title}
+                  {dayTitle(item.title, t)}
                 </span>
                 <span className="text-muted-foreground block truncate text-xs">
                   {parts.join(" · ")}
@@ -431,14 +456,16 @@ export function DayEvents({ events }: { events: readonly DayEvent[] }) {
                     data-slot="day-event-link"
                     className="focus-visible:ring-ring/50 block text-sm leading-5 font-medium after:absolute after:inset-0 after:rounded-md after:content-[''] focus-visible:outline-none focus-visible:after:ring-[3px] focus-visible:after:ring-inherit"
                   >
-                    {event.title}
+                    {dayTitle(event.title, t)}
                   </Link>
                 ) : (
-                  <p className="text-sm leading-5 font-medium">{event.title}</p>
+                  <p className="text-sm leading-5 font-medium">
+                    {dayTitle(event.title, t)}
+                  </p>
                 )}
                 {event.meta ? (
                   <p className="text-muted-foreground mt-0.5 text-xs">
-                    {event.meta}
+                    {dayMeta(event.kind, event.meta, t)}
                   </p>
                 ) : null}
                 {event.note ? (

@@ -1,6 +1,7 @@
 "use client";
 
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import type { Formatters } from "@/lib/format-locale";
 import { moodTagIcon } from "@/components/mood/mood-tag-icons";
 import { cn } from "@/lib/utils";
 import type { MoodInfluenceConfidence } from "./mood-tag-influence";
@@ -92,8 +93,12 @@ const CONFIDENCE_CLASS: Record<MoodInfluenceConfidence, string> = {
 };
 
 /** One decimal for hours/score, whole numbers for kcal. */
-function fmt(value: number, display: MoodCrosstabDisplay): string {
-  return display === "kcal" ? Math.round(value).toString() : value.toFixed(1);
+function formatValue(
+  value: number,
+  display: MoodCrosstabDisplay,
+  nf: Formatters,
+): string {
+  return display === "kcal" ? nf.integer(value) : nf.number(value, 1);
 }
 
 export function MoodTagMetricCrosstab({
@@ -102,6 +107,7 @@ export function MoodTagMetricCrosstab({
   rows: MoodTagMetricCrosstabRow[];
 }) {
   const { t } = useTranslations();
+  const nf = useFormatters();
   const dismissal = usePatternDismissalOverrides();
   if (rows.length === 0) return null;
 
@@ -135,7 +141,7 @@ export function MoodTagMetricCrosstab({
           );
           const unit = t(UNIT_KEY[row.display]);
           const up = row.delta >= 0;
-          const deltaText = `${up ? "+" : ""}${fmt(row.delta, row.display)} ${unit}`;
+          const deltaText = `${up ? "+" : ""}${formatValue(row.delta, row.display, nf)} ${unit}`;
           return (
             <li
               key={`${row.metricKey}:${row.tag}`}
@@ -187,8 +193,8 @@ export function MoodTagMetricCrosstab({
                     ? "insights.mood.crosstab.detailNextDay"
                     : "insights.mood.crosstab.detailSameDay",
                   {
-                    withAvg: fmt(row.withAvg, row.display),
-                    withoutAvg: fmt(row.withoutAvg, row.display),
+                    withAvg: formatValue(row.withAvg, row.display, nf),
+                    withoutAvg: formatValue(row.withoutAvg, row.display, nf),
                     unit,
                     withDays: row.withDays,
                   },

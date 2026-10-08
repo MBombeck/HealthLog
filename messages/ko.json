@@ -49,7 +49,9 @@
     "dismiss": "닫기",
     "moreInfo": "추가 정보",
     "durationHoursMinutes": "{hours}시간 {minutes}분",
-    "durationMinutes": "{minutes}분"
+    "durationMinutes": "{minutes}분",
+    "durationClockMinutes": "{time}분",
+    "durationClockHours": "{time}시간"
   },
   "apiErrors": {
     "measurement": {
@@ -540,6 +542,11 @@
       "errorRateLimit": "시도 횟수가 너무 많습니다. 몇 분 후 다시 시도하세요.",
       "errorFailed": "처리하지 못했습니다. 잠시 후 다시 시도하세요.",
       "errorOffline": "서버에 연결하지 못했습니다. 연결을 확인하고 다시 시도하세요."
+    },
+    "inviteInvalid": {
+      "title": "유효하지 않은 초대예요",
+      "description": "이 초대 링크가 불완전하거나 잘못 복사되었어요. 초대한 분께 새 링크를 요청해 주세요.",
+      "toLogin": "로그인으로 이동"
     }
   },
   "dashboard": {
@@ -2031,7 +2038,6 @@
         "bestand": "재고",
         "verlauf": "기록",
         "injektion": "주사",
-        "api": "API",
         "erweitert": "고급",
         "wirkung": "효과"
       },
@@ -2503,7 +2509,8 @@
     "days90Label": "90일",
     "days90Title": "최근 90일",
     "daysAllLabel": "전체",
-    "daysAllTitle": "전체 기간"
+    "daysAllTitle": "전체 기간",
+    "medicationsEmptyAction": "약 추가하기"
   },
   "chart": {
     "overlay": {
@@ -4340,7 +4347,9 @@
           "method": "심박수로 가중한 활동 부하(TRIMP 방식 훈련 자극 모델)로 매일 밤 내는 0–100 부하 지표예요. 높을수록 힘든 하루였다는 뜻이에요.",
           "anchorPersonal": "최근 운동한 날의 부하를 기준으로 삼아요 — 평소 강도와 비교해 점수를 매기니 나에게 정말 힘든 날이 높게 나와요.",
           "anchorPopulation": "운동 기록이 쌓이는 동안에는 일반 기준으로 점수를 매기고, 충분히 모이면 내 평소 강도 기준으로 바뀌어요.",
-          "description": "심박수로 가중한 운동 강도를 평소 강도와 비교해 매일 밤 계산하는 활동 부하 지표예요."
+          "description": "심박수로 가중한 운동 강도를 평소 강도와 비교해 매일 밤 계산하는 활동 부하 지표예요.",
+          "deviceCaption": "기기의 일일 부하: {max} 중 {value}",
+          "deviceSource": "HealthLog가 밤사이 자체 값을 계산하기 전까지는 기기의 일일 부하를 0–100으로 환산해 보여 줘요."
         },
         "WRIST_TEMPERATURE_BASELINE": {
           "method": "밤사이 손목 온도의 일반 범위는 해당 기간 야간 측정값의 중앙값에 견고한 산포(중앙절대편차를 보정한 값)를 더하고 뺀 구간이에요. 내 측정값을 따라가기 때문에, 지난밤은 인구 평균이 아니라 내 기준값에서 얼마나 벗어났는지로 보여줘요.",
@@ -4717,8 +4726,8 @@
       "emptyCta": "기기 연결"
     },
     "intradayPulse": {
-      "title": "하루의 흐름",
-      "caption": "10분 단위로 평균 낸 하루 동안의 심박수예요.",
+      "title": "하루 동안의 맥박",
+      "caption": "10분 단위로 평균했어요.",
       "hourlyNote": "이 날짜는 시간별 평균으로 보여줘요 — 최근 며칠은 10분 단위까지 자세히 볼 수 있어요.",
       "empty": "이 날짜는 심박수 측정값이 적어서 아직 흐름을 보여줄 수 없어요.",
       "coverageOne": "{hours}h 동안 모은 측정값 1개를 기준으로 했어요.",
@@ -6007,9 +6016,9 @@
     "botToken": "봇 토큰",
     "chatId": "채팅 ID",
     "enableNotifications": "알림 켜기",
-    "telegramStep1": "1. Telegram에서 @BotFather로 봇을 만들고 토큰을 복사하세요.",
-    "telegramStep2": "2. 봇에게 /start를 보내 채팅을 활성화하세요.",
-    "telegramStep3": "3. @userinfobot이나 Bot API로 채팅 ID를 확인하세요.",
+    "telegramStep1": "Telegram에서 @BotFather로 봇을 만들고 토큰을 복사하세요.",
+    "telegramStep2": "봇에게 /start를 보내 채팅을 활성화하세요.",
+    "telegramStep3": "@userinfobot이나 Bot API로 채팅 ID를 확인하세요.",
     "ntfy": "ntfy",
     "ntfyDescription": "ntfy(셀프 호스팅 또는 ntfy.sh)로 보내는 알림이에요.",
     "ntfyEnable": "ntfy 켜기",
@@ -8047,14 +8056,6 @@
         "title": "복용 전설",
         "description": "복용 기록 300회를 남겨요."
       },
-      "overIntake1": {
-        "title": "한 번 더",
-        "description": "계획보다 한 번 이상 더 복용해요."
-      },
-      "skippedIntake1": {
-        "title": "한 걸음 물러서기",
-        "description": "계획된 복용을 한 번 이상 건너뛰어요."
-      },
       "passkeyCreated1": {
         "title": "패스키 등록",
         "description": "첫 패스키를 만들어요."
@@ -8719,7 +8720,11 @@
     },
     "course": "복용 기간 {n}",
     "courseRange": "{start}부터 {end}까지",
-    "courseSince": "{start}부터"
+    "courseSince": "{start}부터",
+    "unavailable": {
+      "title": "링크가 만료되었거나 유효하지 않아요",
+      "description": "이 공유 링크는 만료되었거나 취소되었거나 불완전해요. 공유한 분께 새 링크를 요청해 주세요."
+    }
   },
   "cycle": {
     "symptomCategory": {
@@ -9803,7 +9808,7 @@
     }
   },
   "illness": {
-    "title": "아픈 날 일지",
+    "title": "아픈 날",
     "subtitle": "아픈 날과 컨디션 에피소드를 돌아보는 기록이에요.",
     "settings": {
       "viewDescription": "에피소드를 카드로 볼지 간단한 목록으로 볼지 선택하세요.",
@@ -12260,7 +12265,8 @@
       "fewer": "줄여 보기",
       "note": "평가 없이 기록에서 모았어요. 날짜를 누르면 그날 전체가 열려요.",
       "report": "{date}부터 오늘까지 진료 보고서"
-    }
+    },
+    "travel": "여행 중"
   },
   "timeline": {
     "title": "타임라인",
@@ -12494,5 +12500,12 @@
       "title": "이 삶의 사건을 삭제할까요?",
       "body": "제목과 메모가 사라져요."
     }
+  },
+  "aboutPage": {
+    "eyebrow": "정보",
+    "title": "HealthLog 정보",
+    "lastUpdated": "마지막 업데이트: {date}",
+    "project": "프로젝트",
+    "credits": "크레딧"
   }
 }

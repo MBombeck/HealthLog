@@ -33,8 +33,9 @@ export function ScoreHistoryChart({
   type,
   hue,
 }: {
-  /** The stored measurement type the score is written as. */
-  type: "RECOVERY_SCORE" | "STRESS_SCORE" | "STRAIN_SCORE";
+  /** The stored measurement type the score is written as — or, for a strain
+   *  score served from the device, the device's own `DAY_STRAIN`. */
+  type: "RECOVERY_SCORE" | "STRESS_SCORE" | "STRAIN_SCORE" | "DAY_STRAIN";
   hue: RingHue;
 }) {
   const { t } = useTranslations();

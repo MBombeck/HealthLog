@@ -11,7 +11,7 @@ import { EmptyState } from "@/components/ui/empty-state";
  *
  * Pre-fix, every sub-page repeated the same five-line incantation:
  *
- *   <EmptyState icon={…} title={…} description={…} ctaSize="lg" action={…} />
+ *   <EmptyState icon={…} title={…} description={…} action={…} />
  *   <CoachLaunchButton prefill={…} />
  *
  * The action slot was always a `<Button asChild><Link href="…">…</Link></Button>`
@@ -64,7 +64,6 @@ export function MetricEmptyState({
         icon={icon}
         title={title}
         description={description}
-        ctaSize="lg"
         action={cta}
       />
       <CoachLaunchButton prefill={coachPrefill ?? undefined} />

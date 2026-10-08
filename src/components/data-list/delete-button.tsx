@@ -73,7 +73,7 @@ export function DeleteButton({
         <Button
           variant="ghost"
           size="icon-lg"
-          className={`text-destructive ${className}`}
+          className={`text-muted-foreground hover:text-foreground ${className}`}
           aria-label={confirmLabel ?? t("common.delete")}
           title={triggerTitle ?? confirmLabel ?? t("common.delete")}
         >

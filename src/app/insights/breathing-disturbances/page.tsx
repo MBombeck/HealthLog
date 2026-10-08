@@ -20,7 +20,7 @@ export default function InsightsBreathingDisturbancesPage() {
       chartKey="breathingDisturbances"
       i18nPrefix="insights.breathingDisturbances"
       explainerMetric="breathingDisturbances"
-      color="var(--info)"
+      color="var(--chart-4)"
       unitKey="insights.units.breathingEvents"
       emptyStateIcon={<Wind className="size-6" />}
       emptyStateCtaType={null}

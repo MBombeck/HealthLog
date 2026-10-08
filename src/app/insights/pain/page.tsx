@@ -21,7 +21,7 @@ export default function InsightsPainPage() {
       insightMetric="PAIN_NRS"
       chartKey="painNrs"
       i18nPrefix="insights.pain"
-      color="var(--warning)"
+      color="var(--chart-5)"
       unit=""
       yAxisUnit="/10"
       statIcon={Activity}

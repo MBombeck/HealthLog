@@ -313,7 +313,7 @@ export function CoursesRow({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="text-destructive hover:text-destructive size-11 sm:size-9"
+                    className="text-muted-foreground hover:text-foreground size-11 sm:size-9"
                     onClick={() => setDeleting(course)}
                     aria-label={t("medications.course.delete")}
                     title={t("medications.course.delete")}

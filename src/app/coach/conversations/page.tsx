@@ -331,7 +331,7 @@ export default function CoachConversationsPage() {
       // ~50px on notched devices; restored to match exactly. v1.42 — the
       // shell now takes that inset above the top bar at every width, so
       // the desktop height subtracts it too, and `/coach/plans` matches.
-      className="bg-background -mx-4 -mt-6 -mb-20 flex h-[calc(100dvh-8rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] min-h-[32rem] flex-col overflow-hidden md:-mx-6 md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px))]"
+      className="bg-background shell-desktop:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px))] -mx-4 -mt-6 -mb-20 flex h-[calc(100dvh-8rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] min-h-[32rem] flex-col overflow-hidden md:-mx-6"
     >
       <CoachConversationsBody readOnly={!coach.available} />
     </div>

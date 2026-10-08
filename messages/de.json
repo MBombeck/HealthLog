@@ -49,7 +49,9 @@
     "dismiss": "Schließen",
     "moreInfo": "Mehr Informationen",
     "durationHoursMinutes": "{hours} Std. {minutes} Min.",
-    "durationMinutes": "{minutes} Min."
+    "durationMinutes": "{minutes} Min.",
+    "durationClockMinutes": "{time} Min.",
+    "durationClockHours": "{time} Std."
   },
   "apiErrors": {
     "measurement": {
@@ -540,6 +542,11 @@
       "errorRateLimit": "Zu viele Versuche. Warte ein paar Minuten und versuche es erneut.",
       "errorFailed": "Das hat nicht geklappt. Versuche es gleich noch einmal.",
       "errorOffline": "Das hat den Server nicht erreicht. Prüfe deine Verbindung und versuche es erneut."
+    },
+    "inviteInvalid": {
+      "title": "Einladung ungültig",
+      "description": "Dieser Einladungslink ist unvollständig oder falsch kopiert. Bitte die Person, die dich eingeladen hat, um einen neuen Link.",
+      "toLogin": "Zur Anmeldung"
     }
   },
   "dashboard": {
@@ -2031,7 +2038,6 @@
         "bestand": "Bestand",
         "verlauf": "Verlauf",
         "injektion": "Injektion",
-        "api": "API",
         "erweitert": "Erweitert",
         "wirkung": "Wirkung"
       },
@@ -2503,7 +2509,8 @@
       "moodHeatmapEmpty": "Stimmungs-Heatmap, noch keine Tage erfasst.",
       "complianceHeatmap": "Heatmap zur Medikamenteneinnahme von {start} bis {end}, {days} aktive Tage.",
       "complianceHeatmapEmpty": "Heatmap zur Medikamenteneinnahme, noch keine aktiven Tage."
-    }
+    },
+    "medicationsEmptyAction": "Medikament anlegen"
   },
   "chart": {
     "overlay": {
@@ -4340,7 +4347,9 @@
           "method": "Ein nächtlicher 0–100-Belastungs-Proxy aus deiner herzfrequenzgewichteten Aktivitätslast (ein TRIMP-ähnliches Trainingsimpuls-Modell). Höher heißt ein anstrengenderer Tag.",
           "anchorPersonal": "An deine eigene jüngste Trainingstagslast angelehnt — bewertet relativ zu deiner typischen Anstrengung, sodass ein für dich wirklich harter Tag hoch ausfällt.",
           "anchorPopulation": "Gegen einen allgemeinen Referenzwert bewertet, während du noch Trainingsverlauf aufbaust; sobald genug vorhanden ist, wechselt die Bewertung auf deine eigene typische Anstrengung.",
-          "description": "Ein nächtlicher Aktivitätslast-Proxy aus deiner herzfrequenzgewichteten Anstrengung, relativ zu deiner typischen Anstrengung."
+          "description": "Ein nächtlicher Aktivitätslast-Proxy aus deiner herzfrequenzgewichteten Anstrengung, relativ zu deiner typischen Anstrengung.",
+          "deviceCaption": "Tagesbelastung deines Geräts: {value} von {max}",
+          "deviceSource": "Bis HealthLog nachts einen eigenen Wert berechnet hat, zeigt die Karte die Tagesbelastung deines Geräts, umgerechnet auf 0–100."
         },
         "WRIST_TEMPERATURE_BASELINE": {
           "method": "Deine typische nächtliche Handgelenkstemperatur ist der Median deiner nächtlichen Messwerte im Zeitraum, ± einer robusten Streuung (skalierte mittlere absolute Abweichung). Sie folgt DEINEN Werten — letzte Nacht wird als Abweichung von deiner eigenen Baseline gezeigt, nicht von einer Bevölkerungsnorm.",
@@ -4717,8 +4726,8 @@
       "emptyCta": "Gerät verbinden"
     },
     "intradayPulse": {
-      "title": "Der Verlauf deines Tages",
-      "caption": "Dein Puls über den Tag, gemittelt in 10-Minuten-Schritten.",
+      "title": "Puls über den Tag",
+      "caption": "Gemittelt in 10-Minuten-Schritten.",
       "hourlyNote": "Stündlicher Durchschnitt für diesen Tag — aktuelle Tage zeigen das volle 10-Minuten-Detail.",
       "empty": "Für diesen Tag noch nicht genug Pulswerte, um den Tagesverlauf zu zeigen.",
       "coverageOne": "Basierend auf 1 Messung über {hours}h.",
@@ -6007,9 +6016,9 @@
     "botToken": "Bot-Token",
     "chatId": "Chat-ID",
     "enableNotifications": "Benachrichtigungen aktivieren",
-    "telegramStep1": "1. Erstelle einen Bot über @BotFather in Telegram und kopiere den Token.",
-    "telegramStep2": "2. Sende /start an deinen Bot, um den Chat zu aktivieren.",
-    "telegramStep3": "3. Finde deine Chat-ID über @userinfobot oder die Bot-API.",
+    "telegramStep1": "Erstelle einen Bot über @BotFather in Telegram und kopiere den Token.",
+    "telegramStep2": "Sende /start an deinen Bot, um den Chat zu aktivieren.",
+    "telegramStep3": "Finde deine Chat-ID über @userinfobot oder die Bot-API.",
     "ntfy": "ntfy",
     "ntfyDescription": "Benachrichtigungen über ntfy (self-hosted oder ntfy.sh).",
     "ntfyEnable": "ntfy aktivieren",
@@ -6367,8 +6376,8 @@
     "whoop": "WHOOP",
     "whoopDescription": "Verbinde dein WHOOP-Band, um Erholung, Schlaf, Belastung und Workouts direkt in HealthLog zu synchronisieren.",
     "whoopCredentials": "API-Zugangsdaten",
-    "whoopClientId": "Client ID",
-    "whoopClientSecret": "Client Secret",
+    "whoopClientId": "Client-ID",
+    "whoopClientSecret": "Client-Secret",
     "whoopCredentialsSaved": "Zugangsdaten gespeichert",
     "whoopCredentialsSavedPlaceholder": "Gespeichert — neu eingeben zum Ersetzen",
     "whoopCredentialsSavedPlaceholderSecret": "Gespeichert — neu eingeben zum Ersetzen",
@@ -6780,8 +6789,8 @@
     "polarDescription": "Verbinde dein Polar-Konto, um Nightly-Recharge-Erholung, Schlafphasen, tägliche Aktivität und Trainingseinheiten zu synchronisieren.",
     "polarViewData": "Schlaf & Erholung ansehen",
     "polarCredentials": "API-Zugangsdaten",
-    "polarClientId": "Client ID",
-    "polarClientSecret": "Client Secret",
+    "polarClientId": "Client-ID",
+    "polarClientSecret": "Client-Secret",
     "polarCredentialsSaved": "Zugangsdaten gespeichert",
     "polarCredentialsSavedPlaceholder": "Gespeichert — neu eingeben zum Ersetzen",
     "polarSaveCredentials": "Speichern",
@@ -6809,8 +6818,8 @@
     "ouraDescription": "Verbinde dein Oura-Konto, um Readiness, Schlafphasen, Herzfrequenzvariabilität und tägliche Aktivität zu synchronisieren.",
     "ouraViewData": "Schlaf & Erholung ansehen",
     "ouraCredentials": "API-Zugangsdaten",
-    "ouraClientId": "Client ID",
-    "ouraClientSecret": "Client Secret",
+    "ouraClientId": "Client-ID",
+    "ouraClientSecret": "Client-Secret",
     "ouraCredentialsSaved": "Zugangsdaten gespeichert",
     "ouraCredentialsSavedPlaceholder": "Gespeichert — neu eingeben zum Ersetzen",
     "ouraSaveCredentials": "Speichern",
@@ -8047,14 +8056,6 @@
         "title": "Einnahme-Legende",
         "description": "Dokumentiere 300 eingenommene Medikamente."
       },
-      "overIntake1": {
-        "title": "Doppelt genommen",
-        "description": "Nimm mindestens einmal mehr ein als vorgesehen."
-      },
-      "skippedIntake1": {
-        "title": "Pause eingelegt",
-        "description": "Überspringe mindestens eine geplante Einnahme."
-      },
       "passkeyCreated1": {
         "title": "Passkey gesetzt",
         "description": "Erstelle deinen ersten Passkey."
@@ -8719,7 +8720,11 @@
     },
     "course": "Phase {n}",
     "courseRange": "{start} bis {end}",
-    "courseSince": "seit {start}"
+    "courseSince": "seit {start}",
+    "unavailable": {
+      "title": "Link abgelaufen oder ungültig",
+      "description": "Dieser Freigabelink ist abgelaufen, wurde zurückgezogen oder ist unvollständig. Bitte die Person, die ihn geteilt hat, um einen neuen Link."
+    }
   },
   "cycle": {
     "symptomCategory": {
@@ -9803,7 +9808,7 @@
     }
   },
   "illness": {
-    "title": "Krankheitstagebuch",
+    "title": "Krankheit",
     "subtitle": "Ein rückblickendes Protokoll deiner Krankheits- und Beschwerde-Episoden.",
     "settings": {
       "viewDescription": "Wähle, ob Episoden als Karten oder als kompakte Liste erscheinen.",
@@ -12260,7 +12265,8 @@
       "fewer": "Weniger anzeigen",
       "note": "Zusammengestellt aus deinen Einträgen, ohne Bewertung. Jedes Datum öffnet den ganzen Tag.",
       "report": "Arztbericht {date} bis heute"
-    }
+    },
+    "travel": "Unterwegs"
   },
   "timeline": {
     "title": "Zeitleiste",
@@ -12494,5 +12500,12 @@
       "title": "Lebensereignis löschen?",
       "body": "Titel und Notiz sind danach nicht mehr da."
     }
+  },
+  "aboutPage": {
+    "eyebrow": "Info",
+    "title": "Über HealthLog",
+    "lastUpdated": "Zuletzt aktualisiert: {date}",
+    "project": "Projekt",
+    "credits": "Danksagungen"
   }
 }

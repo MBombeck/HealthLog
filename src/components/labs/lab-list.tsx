@@ -1,7 +1,7 @@
 "use client";
 
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, FlaskConical } from "lucide-react";
@@ -136,7 +136,14 @@ const MOBILE_CELL = {
   notLinked: "max-lg:col-span-full max-lg:row-start-3",
 } as const;
 
-export function LabList({ onAddFirst }: { onAddFirst?: () => void } = {}) {
+export function LabList({
+  onAddFirst,
+  onEmptyChange,
+}: {
+  onAddFirst?: () => void;
+  /** Told whether the list is empty, so the page can drop its header add. */
+  onEmptyChange?: (empty: boolean) => void;
+} = {}) {
   const { t } = useTranslations();
   const labNumber = useLabNumber();
   const labDate = useLabDate();
@@ -195,6 +202,11 @@ export function LabList({ onAddFirst }: { onAddFirst?: () => void } = {}) {
   const total = data?.meta?.total ?? 0;
   const shown = data?.results?.length ?? 0;
   const truncated = total > shown;
+
+  const listEmpty = !isLoading && !isError && groups.length === 0;
+  useEffect(() => {
+    onEmptyChange?.(listEmpty);
+  }, [listEmpty, onEmptyChange]);
 
   if (isLoading) {
     return (

@@ -411,7 +411,7 @@ export function InviteTokensSection() {
                             type="button"
                             variant="ghost"
                             size="sm"
-                            className="text-destructive hover:text-destructive"
+                            className="text-muted-foreground hover:text-foreground"
                             aria-label={t("admin.invites.revokeAria")}
                             disabled={revoke.isPending}
                             onClick={() => setRevokeTarget(invite)}
@@ -479,7 +479,7 @@ export function InviteTokensSection() {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="text-destructive hover:text-destructive"
+                        className="text-muted-foreground hover:text-foreground"
                         disabled={revoke.isPending}
                         onClick={() => setRevokeTarget(invite)}
                       >

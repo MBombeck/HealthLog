@@ -254,6 +254,20 @@ export const wellnessScoreValue = z
       .describe(
         "RECOVERY only, and only when the canonical value is the server's computed proxy — a device-native recovery percentage is not our blend and carries no decomposition.",
       ),
+    device: z
+      .object({
+        value: z
+          .number()
+          .describe("The device's latest day strain on its own scale."),
+        scaleMax: z
+          .number()
+          .describe("Top of the device scale (21 for WHOOP day strain)."),
+      })
+      .nullable()
+      .optional()
+      .describe(
+        "STRAIN only — present when no computed strain score exists in the window and the score is served from the device's own DAY_STRAIN instead. `score` is then `value` as a 0–100 share of `scaleMax`. Absent when the computed proxy is the source.",
+      ),
   })
   .meta({ id: "WellnessScoreValue" });
 

@@ -21,7 +21,7 @@ export default function InsightsKnochenmassePage() {
       chartKey="boneMass"
       i18nPrefix="insights.boneMass"
       explainerMetric="boneMass"
-      color="var(--warning)"
+      color="var(--chart-5)"
       emptyStateIcon={<Bone className="size-6" />}
       emptyStateCtaType={null}
       captureType="BONE_MASS"

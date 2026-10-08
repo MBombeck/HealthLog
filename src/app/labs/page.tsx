@@ -58,6 +58,7 @@ export default function LabsPage() {
   const queryClient = useQueryClient();
   const { t } = useTranslations();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [listEmpty, setListEmpty] = useState(false);
   // Sticky-footer slot element for the add-result sheet (filled by the
   // ResponsiveSheet `footer` ref so the form portals its action row there).
   const [addFooterEl, setAddFooterEl] = useState<HTMLDivElement | null>(null);
@@ -185,7 +186,9 @@ export default function LabsPage() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            ) : canAddLab ? (
+            ) : canAddLab && !listEmpty ? (
+              // Hidden while the list is empty: its empty state carries the
+              // manual add then. The scan choice above has no such twin.
               <Button
                 onClick={() => setDialogOpen(true)}
                 className="min-h-11 sm:min-h-9"
@@ -263,7 +266,10 @@ export default function LabsPage() {
         />
       ) : null}
 
-      <LabList onAddFirst={() => setDialogOpen(true)} />
+      <LabList
+        onAddFirst={() => setDialogOpen(true)}
+        onEmptyChange={setListEmpty}
+      />
     </div>
   );
 }

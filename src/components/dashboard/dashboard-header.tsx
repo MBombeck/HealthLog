@@ -10,7 +10,7 @@
  * Extracted from the dashboard page; the page owns the open-state the
  * dropdown items set via `onQuickEntry`.
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Activity,
@@ -37,6 +37,7 @@ import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { hourInTz } from "@/lib/tz/format";
 import {
   CAPTURE_KIND_ORDER,
+  CapturePicker,
   visibleCaptureKinds,
 } from "@/components/layout/capture-picker";
 import type { QuickEntryDialog } from "@/components/dashboard/quick-entry-sheets";
@@ -49,6 +50,7 @@ export function DashboardHeader({
   const { t } = useTranslations();
   const { user } = useAuth();
   const mounted = useMounted();
+  const [captureOpen, setCaptureOpen] = useState(false);
   // The quick-add offers four kinds, and each one is asked about its own
   // section: a reading under `measurements`, a dose under `medications`, a
   // mood entry under `mind`, a workout in one's own record only. The coarse `canAdd` this used to gate the whole
@@ -149,6 +151,26 @@ export function DashboardHeader({
               </Link>
             </Button>
           )}
+          {/* On the phone shell the add button opens the same capture
+              picker sheet the bottom nav's plus opens: one way to add a
+              thing, not a dropdown here and a sheet one thumb below. */}
+          {canAddAnything && (
+            <Button
+              size="default"
+              className="shell-desktop:hidden min-h-11"
+              onClick={() => setCaptureOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={captureOpen}
+              data-slot="dashboard-quick-add-capture"
+              data-tour-id="dashboard-quick-add"
+            >
+              <Plus className="h-4 w-4" />
+              {t("common.add")}
+            </Button>
+          )}
+          {canAddAnything && (
+            <CapturePicker open={captureOpen} onOpenChange={setCaptureOpen} />
+          )}
           {canAddAnything && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -166,7 +188,7 @@ export function DashboardHeader({
                   + label keep the same visual contract. */}
                 <Button
                   size="default"
-                  className="min-h-11 sm:min-h-9"
+                  className="shell-mobile:hidden min-h-11 sm:min-h-9"
                   data-tour-id="dashboard-quick-add"
                 >
                   <Plus className="h-4 w-4" />

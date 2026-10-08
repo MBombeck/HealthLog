@@ -86,7 +86,12 @@ export function ProceduresSection({ enabled = true }: { enabled?: boolean }) {
         titleId="procedures-section-title"
         title={t("encounters.procedures.title")}
         description={t("encounters.procedures.description")}
-        actions={addButton}
+        // The empty state carries the add action while there is none.
+        actions={
+          !list.isPending && !list.isError && total === 0 && !filtered
+            ? null
+            : addButton
+        }
       />
 
       {list.isError ? (
@@ -106,7 +111,6 @@ export function ProceduresSection({ enabled = true }: { enabled?: boolean }) {
           title={t("encounters.procedures.emptyTitle")}
           description={t("encounters.procedures.emptyDescription")}
           action={addButton ?? undefined}
-          ctaSize="lg"
         />
       ) : (
         <div className="space-y-4">

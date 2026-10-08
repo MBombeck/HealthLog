@@ -165,7 +165,7 @@ function McpConnectionsCard() {
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button
-                      variant="destructive"
+                      variant="outline"
                       size="sm"
                       className="min-h-11 w-full"
                     >
@@ -506,7 +506,7 @@ function McpTokensCard() {
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button
-                          variant="destructive"
+                          variant="outline"
                           size="sm"
                           className="min-h-11 w-full"
                         >
