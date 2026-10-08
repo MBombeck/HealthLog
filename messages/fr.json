@@ -2407,6 +2407,7 @@
     "days7Label": "7 j",
     "days7Title": "7 derniers jours",
     "days30Label": "30 j",
+    "daysNLabel": "{days} j",
     "days30Title": "30 derniers jours",
     "days90Label": "90 j",
     "days90Title": "90 derniers jours",
@@ -4745,6 +4746,12 @@
       "settingsBody": "HealthLog fonctionne entièrement sans IA. Connectez un fournisseur ci-dessous si vous voulez un briefing quotidien, de courtes notes sur vos mesures et le Coach.",
       "action": "Configurer l'IA",
       "dismiss": "Pas maintenant"
+    },
+    "bmiHeight": {
+      "coachPrefill": "Je n’ai pas encore indiqué ma taille — pourquoi l’IMC compte-t-il, et que dois-je savoir avant de la renseigner ?"
+    },
+    "medicationsEmpty": {
+      "coachPrefill": "Je n’ai encore ajouté aucun médicament — que dois-je savoir avant de suivre ici l’observance ?"
     }
   },
   "thresholds": {
@@ -8497,6 +8504,10 @@
     "currentValue": "Actuel : {value} {unit}",
     "targetRangeValue": "Plage cible : {min}–{max} {unit}",
     "sourceLabel": "Source : {source}",
+    "sourceNames": {
+      "moodEntries": "Entrées d’humeur",
+      "sevenDays": "7 jours"
+    },
     "inTarget": "Dans la plage cible",
     "aboveTarget": "{delta} {unit} au-dessus de la plage",
     "belowTarget": "{delta} {unit} en dessous de la plage",

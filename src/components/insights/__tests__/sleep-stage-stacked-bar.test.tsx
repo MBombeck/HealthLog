@@ -88,6 +88,9 @@ describe("<SleepStageStackedBar>", () => {
     const html = render(<SleepStageStackedBar breakdown={breakdown} />, "de");
     expect(html).toContain("Phasen-Verteilung");
     expect(html).toContain("Letzte 7 Nächte");
+    // The window toggle speaks the app's range vocabulary, not "7d".
+    expect(html).toContain(">7T<");
+    expect(html).not.toContain(">7d<");
   });
 
   it("does not crash when the breakdown carries unknown stage keys", () => {

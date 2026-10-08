@@ -2407,6 +2407,7 @@
     "days7Label": "7d",
     "days7Title": "Last 7 days",
     "days30Label": "30d",
+    "daysNLabel": "{days}d",
     "days30Title": "Last 30 days",
     "days90Label": "90d",
     "days90Title": "Last 90 days",
@@ -4745,6 +4746,12 @@
       "settingsBody": "HealthLog works fully without AI. Connect a provider below if you want a daily briefing, short notes on your readings and the Coach.",
       "action": "Set up AI",
       "dismiss": "Not now"
+    },
+    "bmiHeight": {
+      "coachPrefill": "I haven’t set my height yet — why does BMI matter, and what should I know before I configure it?"
+    },
+    "medicationsEmpty": {
+      "coachPrefill": "I haven’t added any medications yet — what should I know before I start tracking medication compliance here?"
     }
   },
   "thresholds": {
@@ -8497,6 +8504,10 @@
     "currentValue": "Current: {value} {unit}",
     "targetRangeValue": "Target: {min}–{max} {unit}",
     "sourceLabel": "Source: {source}",
+    "sourceNames": {
+      "moodEntries": "Mood entries",
+      "sevenDays": "7 days"
+    },
     "inTarget": "Within target range",
     "aboveTarget": "{delta} {unit} above target",
     "belowTarget": "{delta} {unit} below target",

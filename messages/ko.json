@@ -2498,6 +2498,7 @@
     "days7Label": "7일",
     "days7Title": "최근 7일",
     "days30Label": "30일",
+    "daysNLabel": "{days}일",
     "days30Title": "최근 30일",
     "days90Label": "90일",
     "days90Title": "최근 90일",
@@ -4745,6 +4746,12 @@
       "settingsBody": "HealthLog는 AI 없이도 모든 기능이 작동합니다. 일일 브리핑, 측정값에 대한 짧은 메모, 코치를 원하시면 아래에서 제공자를 연결하세요.",
       "action": "AI 설정",
       "dismiss": "나중에"
+    },
+    "bmiHeight": {
+      "coachPrefill": "아직 키를 입력하지 않았어요. BMI가 왜 중요하고, 입력하기 전에 무엇을 알아야 하나요?"
+    },
+    "medicationsEmpty": {
+      "coachPrefill": "아직 약을 추가하지 않았어요. 여기서 복약 순응도를 기록하기 전에 무엇을 알아야 하나요?"
     }
   },
   "thresholds": {
@@ -8497,6 +8504,10 @@
     "currentValue": "현재: {value} {unit}",
     "targetRangeValue": "목표: {min}–{max} {unit}",
     "sourceLabel": "출처: {source}",
+    "sourceNames": {
+      "moodEntries": "기분 기록",
+      "sevenDays": "7일"
+    },
     "inTarget": "목표 범위 안",
     "aboveTarget": "목표보다 {delta} {unit} 높음",
     "belowTarget": "목표보다 {delta} {unit} 낮음",

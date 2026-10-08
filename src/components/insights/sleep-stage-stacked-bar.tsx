@@ -396,7 +396,9 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
                 aria-pressed={windowDays === w}
                 data-slot={`sleep-stage-window-${w}`}
               >
-                {w}d
+                {/* The page's other range controls read "7T / 30T"; this
+                    one printed an English "7d" beside them. */}
+                {t("charts.daysNLabel", { days: w })}
               </Button>
             ))}
           </div>

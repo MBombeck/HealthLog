@@ -2407,6 +2407,7 @@
     "days7Label": "7 dni",
     "days7Title": "Ostatnie 7 dni",
     "days30Label": "30 dni",
+    "daysNLabel": "{days} dni",
     "days30Title": "Ostatnie 30 dni",
     "days90Label": "90 dni",
     "days90Title": "Ostatnie 90 dni",
@@ -4745,6 +4746,12 @@
       "settingsBody": "HealthLog działa w pełni bez AI. Podłącz dostawcę poniżej, jeśli chcesz codzienne podsumowanie, krótkie notatki o pomiarach i Coacha.",
       "action": "Skonfiguruj AI",
       "dismiss": "Nie teraz"
+    },
+    "bmiHeight": {
+      "coachPrefill": "Nie podałem jeszcze wzrostu — dlaczego BMI ma znaczenie i co powinienem wiedzieć, zanim go ustawię?"
+    },
+    "medicationsEmpty": {
+      "coachPrefill": "Nie dodałem jeszcze żadnych leków — co powinienem wiedzieć, zanim zacznę tu śledzić przestrzeganie zaleceń?"
     }
   },
   "thresholds": {
@@ -8497,6 +8504,10 @@
     "currentValue": "Aktualnie: {value} {unit}",
     "targetRangeValue": "Zakres docelowy: {min}–{max} {unit}",
     "sourceLabel": "Źródło: {source}",
+    "sourceNames": {
+      "moodEntries": "Wpisy nastroju",
+      "sevenDays": "7 dni"
+    },
     "inTarget": "W zakresie docelowym",
     "aboveTarget": "{delta} {unit} powyżej zakresu",
     "belowTarget": "{delta} {unit} poniżej zakresu",

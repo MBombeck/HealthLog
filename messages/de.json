@@ -2407,6 +2407,7 @@
     "days7Label": "7T",
     "days7Title": "Letzte 7 Tage",
     "days30Label": "30T",
+    "daysNLabel": "{days}T",
     "days30Title": "Letzte 30 Tage",
     "days90Label": "90T",
     "days90Title": "Letzte 90 Tage",
@@ -4745,6 +4746,12 @@
       "settingsBody": "HealthLog funktioniert vollständig ohne KI. Verbinde unten einen Anbieter, wenn du ein tägliches Briefing, kurze Notizen zu deinen Werten und den Coach möchtest.",
       "action": "KI einrichten",
       "dismiss": "Nicht jetzt"
+    },
+    "bmiHeight": {
+      "coachPrefill": "Ich habe meine Körpergröße noch nicht eingetragen — warum ist der BMI wichtig, und was sollte ich wissen, bevor ich sie eintrage?"
+    },
+    "medicationsEmpty": {
+      "coachPrefill": "Ich habe noch keine Medikamente angelegt — was sollte ich wissen, bevor ich hier anfange, meine Therapietreue zu verfolgen?"
     }
   },
   "thresholds": {
@@ -8497,6 +8504,10 @@
     "currentValue": "Aktuell: {value} {unit}",
     "targetRangeValue": "Zielbereich: {min}–{max} {unit}",
     "sourceLabel": "Quelle: {source}",
+    "sourceNames": {
+      "moodEntries": "Stimmungseinträge",
+      "sevenDays": "7 Tage"
+    },
     "inTarget": "Im Zielbereich",
     "aboveTarget": "{delta} {unit} über Zielbereich",
     "belowTarget": "{delta} {unit} unter Zielbereich",
