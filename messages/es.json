@@ -7889,7 +7889,12 @@
         "backupsNone": "Ninguna copia ha registrado todavía las claves que necesita.",
         "backupsStillNeed": "Todas las filas están rotadas, pero las copias aún necesitan {keys}",
         "backupsUnrecordedBadge": "Todas las filas están rotadas, pero copias antiguas pueden necesitar aún una clave retirada",
-        "backupsDetail": "La rotación vuelve a cifrar cada fila, pero una copia conserva la clave con la que se escribió su contenido, y restaurarla necesita esa clave. Mantén una clave retirada en ENCRYPTION_KEYS hasta que no aparezca abajo."
+        "backupsDetail": "La rotación vuelve a cifrar cada fila, pero una copia conserva la clave con la que se escribió su contenido, y restaurarla necesita esa clave. Mantén una clave retirada en ENCRYPTION_KEYS hasta que no aparezca abajo.",
+        "columnsShow": "Mostrar la tabla ({count} con filas)",
+        "columnsHide": "Ocultar la tabla",
+        "columnsShowAll": "Mostrar las {count} columnas",
+        "columnsShowWithRows": "Solo columnas con filas",
+        "columnsNoneWithRows": "Ninguna columna cifrada contiene filas todavía."
       },
       "maintenance": {
         "title": "Mantenimiento de la tabla de mediciones",

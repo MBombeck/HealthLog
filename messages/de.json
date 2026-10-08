@@ -7889,7 +7889,12 @@
         "backupsNone": "Noch keine Sicherung hat die Schlüssel festgehalten, die sie braucht.",
         "backupsStillNeed": "Alle Zeilen sind rotiert, aber Sicherungen brauchen noch {keys}",
         "backupsUnrecordedBadge": "Alle Zeilen sind rotiert, aber ältere Sicherungen können noch einen ausgemusterten Schlüssel brauchen",
-        "backupsDetail": "Die Rotation verschlüsselt jede Zeile neu, aber eine Sicherung behält den Schlüssel, unter dem ihr Inhalt geschrieben wurde, und ihre Wiederherstellung braucht ihn. Behalte einen ausgemusterten Schlüssel in ENCRYPTION_KEYS, bis er unten nicht mehr aufgeführt ist."
+        "backupsDetail": "Die Rotation verschlüsselt jede Zeile neu, aber eine Sicherung behält den Schlüssel, unter dem ihr Inhalt geschrieben wurde, und ihre Wiederherstellung braucht ihn. Behalte einen ausgemusterten Schlüssel in ENCRYPTION_KEYS, bis er unten nicht mehr aufgeführt ist.",
+        "columnsShow": "Tabelle anzeigen ({count} mit Zeilen)",
+        "columnsHide": "Tabelle ausblenden",
+        "columnsShowAll": "Alle {count} Spalten anzeigen",
+        "columnsShowWithRows": "Nur Spalten mit Zeilen",
+        "columnsNoneWithRows": "Noch keine verschlüsselte Spalte enthält Zeilen."
       },
       "maintenance": {
         "title": "Pflege der Messwert-Tabelle",

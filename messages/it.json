@@ -7889,7 +7889,12 @@
         "backupsNone": "Nessun backup ha ancora registrato le chiavi di cui ha bisogno.",
         "backupsStillNeed": "Tutte le righe sono ruotate, ma i backup hanno ancora bisogno di {keys}",
         "backupsUnrecordedBadge": "Tutte le righe sono ruotate, ma backup più vecchi potrebbero ancora richiedere una chiave ritirata",
-        "backupsDetail": "La rotazione cifra di nuovo ogni riga, ma un backup conserva la chiave con cui è stato scritto il suo contenuto, e ripristinarlo richiede quella chiave. Tieni una chiave ritirata in ENCRYPTION_KEYS finché compare qui sotto."
+        "backupsDetail": "La rotazione cifra di nuovo ogni riga, ma un backup conserva la chiave con cui è stato scritto il suo contenuto, e ripristinarlo richiede quella chiave. Tieni una chiave ritirata in ENCRYPTION_KEYS finché compare qui sotto.",
+        "columnsShow": "Mostra la tabella ({count} con righe)",
+        "columnsHide": "Nascondi la tabella",
+        "columnsShowAll": "Mostra tutte le {count} colonne",
+        "columnsShowWithRows": "Solo colonne con righe",
+        "columnsNoneWithRows": "Nessuna colonna cifrata contiene ancora righe."
       },
       "maintenance": {
         "title": "Manutenzione della tabella delle misurazioni",

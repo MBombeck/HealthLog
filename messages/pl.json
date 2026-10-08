@@ -7889,7 +7889,12 @@
         "backupsNone": "Żadna kopia nie zapisała jeszcze kluczy, których potrzebuje.",
         "backupsStillNeed": "Wszystkie wiersze są zrotowane, ale kopie nadal potrzebują {keys}",
         "backupsUnrecordedBadge": "Wszystkie wiersze są zrotowane, ale starsze kopie mogą nadal potrzebować wycofanego klucza",
-        "backupsDetail": "Rotacja ponownie szyfruje każdy wiersz, ale kopia zachowuje klucz, którym zapisano jej zawartość, a jej przywrócenie wymaga tego klucza. Trzymaj wycofany klucz w ENCRYPTION_KEYS, dopóki widnieje poniżej."
+        "backupsDetail": "Rotacja ponownie szyfruje każdy wiersz, ale kopia zachowuje klucz, którym zapisano jej zawartość, a jej przywrócenie wymaga tego klucza. Trzymaj wycofany klucz w ENCRYPTION_KEYS, dopóki widnieje poniżej.",
+        "columnsShow": "Pokaż tabelę (z wierszami: {count})",
+        "columnsHide": "Ukryj tabelę",
+        "columnsShowAll": "Pokaż wszystkie kolumny ({count})",
+        "columnsShowWithRows": "Tylko kolumny z wierszami",
+        "columnsNoneWithRows": "Żadna zaszyfrowana kolumna nie zawiera jeszcze wierszy."
       },
       "maintenance": {
         "title": "Konserwacja tabeli pomiarów",

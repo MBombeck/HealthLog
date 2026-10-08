@@ -7889,7 +7889,12 @@
         "backupsNone": "No backup has recorded the keys it needs yet.",
         "backupsStillNeed": "Every row is rotated, but backups still need {keys}",
         "backupsUnrecordedBadge": "Every row is rotated, but older backups may still need a retired key",
-        "backupsDetail": "Rotation re-encrypts every row, but a backup keeps the key its content was written under, and restoring it needs that key. Keep a retired key in ENCRYPTION_KEYS until nothing below lists it."
+        "backupsDetail": "Rotation re-encrypts every row, but a backup keeps the key its content was written under, and restoring it needs that key. Keep a retired key in ENCRYPTION_KEYS until nothing below lists it.",
+        "columnsShow": "Show the table ({count} with rows)",
+        "columnsHide": "Hide the table",
+        "columnsShowAll": "Show all {count} columns",
+        "columnsShowWithRows": "Only columns with rows",
+        "columnsNoneWithRows": "No encrypted column holds rows yet."
       },
       "maintenance": {
         "title": "Measurement table maintenance",

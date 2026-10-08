@@ -23,7 +23,7 @@ vi.mock("@tanstack/react-query", () => ({
 vi.mock("../key-backup-card", () => ({ KeyBackupCard: () => null }));
 
 import { I18nProvider } from "@/lib/i18n/context";
-import { EncryptionSection } from "../encryption-section";
+import { ColumnCoverage, EncryptionSection } from "../encryption-section";
 
 function statusWith(configuredKeyCount: number) {
   return {
@@ -77,9 +77,64 @@ describe("encryption coverage — the legacy-key badge", () => {
   });
 
   it("names the per-column table as a focusable scroll region", () => {
-    status.current = statusWith(1);
-    expect(render()).toMatch(
+    const html = renderToStaticMarkup(
+      <I18nProvider initialLocale="en">
+        <ColumnCoverage
+          columns={[column("User", "a", 3)]}
+          activeKeyId="v2"
+          initiallyOpen
+        />
+      </I18nProvider>,
+    );
+    expect(html).toMatch(
       /role="region"[^>]*tabindex="0"|tabindex="0"[^>]*role="region"/,
     );
+  });
+});
+
+function column(model: string, field: string, total: number) {
+  return {
+    model,
+    field,
+    kind: "string" as const,
+    total,
+    byKeyId: { v2: total },
+    legacy: 0,
+  };
+}
+
+describe("encryption coverage — the per-column table", () => {
+  const columns = [
+    column("User", "withRows", 4),
+    column("User", "empty", 0),
+    column("Note", "alsoEmpty", 0),
+  ];
+
+  function renderCoverage(initiallyOpen: boolean) {
+    return renderToStaticMarkup(
+      <I18nProvider initialLocale="en">
+        <ColumnCoverage
+          columns={columns}
+          activeKeyId="v2"
+          initiallyOpen={initiallyOpen}
+        />
+      </I18nProvider>,
+    );
+  }
+
+  it("starts collapsed on the page, naming how many columns hold rows", () => {
+    status.current = { ...statusWith(1), columns };
+    const html = render();
+    expect(html).toContain('data-testid="encryption-columns-toggle"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain("Show the table (1 with rows)");
+    expect(html).not.toContain('data-slot="encryption-column-rows"');
+  });
+
+  it("lists only columns with rows when opened, with a toggle for all", () => {
+    const html = renderCoverage(true);
+    expect(html).toContain("User.withRows");
+    expect(html).not.toContain("User.empty");
+    expect(html).toContain("Show all 3 columns");
   });
 });

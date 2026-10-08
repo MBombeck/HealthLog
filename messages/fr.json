@@ -7889,7 +7889,12 @@
         "backupsNone": "Aucune sauvegarde n'a encore enregistré les clés dont elle a besoin.",
         "backupsStillNeed": "Toutes les lignes sont renouvelées, mais des sauvegardes ont encore besoin de {keys}",
         "backupsUnrecordedBadge": "Toutes les lignes sont renouvelées, mais d'anciennes sauvegardes peuvent encore avoir besoin d'une clé retirée",
-        "backupsDetail": "La rotation rechiffre chaque ligne, mais une sauvegarde garde la clé sous laquelle son contenu a été écrit, et sa restauration en a besoin. Gardez une clé retirée dans ENCRYPTION_KEYS tant qu'elle figure ci-dessous."
+        "backupsDetail": "La rotation rechiffre chaque ligne, mais une sauvegarde garde la clé sous laquelle son contenu a été écrit, et sa restauration en a besoin. Gardez une clé retirée dans ENCRYPTION_KEYS tant qu'elle figure ci-dessous.",
+        "columnsShow": "Afficher le tableau ({count} avec des lignes)",
+        "columnsHide": "Masquer le tableau",
+        "columnsShowAll": "Afficher les {count} colonnes",
+        "columnsShowWithRows": "Seulement les colonnes avec des lignes",
+        "columnsNoneWithRows": "Aucune colonne chiffrée ne contient encore de lignes."
       },
       "maintenance": {
         "title": "Maintenance de la table des mesures",
