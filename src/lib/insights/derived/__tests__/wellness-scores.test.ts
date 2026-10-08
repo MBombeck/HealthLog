@@ -352,6 +352,42 @@ describe("computeWellnessScore — strain reads the device's day strain", () => 
     expect(r.provenance.inputs).toEqual(["DAY_STRAIN"]);
   });
 
+  it("counts days, not cycles, when two cycles start on one local day", async () => {
+    // Bed at 00:10 and again at 23:50 the same Berlin day: two cycle rows,
+    // one calendar day, which the recovery chart shows as one point (the
+    // day's mean).
+    byType({
+      STRAIN_SCORE: [],
+      DAY_STRAIN: [
+        {
+          value: 4,
+          measuredAt: new Date("2026-06-01T21:50:00Z"),
+          source: "WHOOP",
+        },
+        {
+          value: 12,
+          measuredAt: new Date("2026-05-31T22:10:00Z"),
+          source: "WHOOP",
+        },
+        {
+          value: 9,
+          measuredAt: new Date("2026-05-30T21:30:00Z"),
+          source: "WHOOP",
+        },
+      ],
+    });
+    const r = await computeWellnessScore("STRAIN_SCORE", "u1", PROFILE, {
+      now: NOW,
+    });
+    expect(r.status).toBe("ok");
+    if (r.status !== "ok") return;
+    const v = r.value as WellnessScoreValue;
+    expect(v.daysInWindow).toBe(2);
+    expect(v.series).toHaveLength(2);
+    expect(v.device).toEqual({ value: 8, scaleMax: 21 });
+    expect(r.coverage.historyDays).toBe(2);
+  });
+
   it("keeps the computed proxy when one exists", async () => {
     byType({
       STRAIN_SCORE: [
