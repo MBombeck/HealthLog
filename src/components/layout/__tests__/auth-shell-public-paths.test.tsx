@@ -136,6 +136,7 @@ describe("AuthShell public paths agree with proxy.ts", () => {
   it("has page prefixes to check at all", () => {
     expect(PAGE_PREFIXES.length).toBeGreaterThan(0);
     expect(PAGE_PREFIXES).toContain("/invite/");
+    expect(PAGE_PREFIXES).toContain("/claim/");
   });
 
   it.each(PAGE_PREFIXES)(
@@ -150,6 +151,14 @@ describe("AuthShell public paths agree with proxy.ts", () => {
     // The instance of the class: the operator's link, byte for byte.
     const markup = render(`/invite/hlv_${"a".repeat(64)}`);
     expect(markup).toContain('data-slot="sentinel-page"');
+  });
+
+  it("renders the handover landing and the claim page for a real token", () => {
+    // v1.42 (#959) — the managed-profile handover link and the page the edge
+    // redirects it onto.
+    const token = `hlp_${"b".repeat(64)}`;
+    expect(render(`/claim/${token}`)).toContain('data-slot="sentinel-page"');
+    expect(render("/auth/claim")).toContain('data-slot="sentinel-page"');
   });
 
   it("still gates a protected route", () => {

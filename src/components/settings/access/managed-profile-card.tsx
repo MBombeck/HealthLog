@@ -10,6 +10,7 @@ import {
 import { ManagedProfileCreateForm } from "@/components/settings/access/managed-profile-create-form";
 import { ManagedProfileEditForm } from "@/components/settings/access/managed-profile-edit-form";
 import { ManagedProfileGuardians } from "@/components/settings/access/managed-profile-guardians";
+import { ManagedProfileHandover } from "@/components/settings/access/managed-profile-handover";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { Button } from "@/components/ui/button";
@@ -134,6 +135,9 @@ function ManagedProfileRow({
   // opens, so one shared flag would put every row's form on the wire the
   // moment any of them was opened.
   const [editing, setEditing] = useState(false);
+  // v1.42 (#959) — the handover panel, per row for the same reason: it reads
+  // the row's own handover status when it opens, and only then.
+  const [handingOver, setHandingOver] = useState(false);
 
   return (
     <li
@@ -221,6 +225,48 @@ function ManagedProfileRow({
           profileName={name}
           roster={guardians.data}
         />
+      )}
+      {/* v1.42 (#959) — the handover, last in the row and on a line of its
+          own: it is the weightiest and rarest act on a profile, and the row's
+          action strip beside the name has no room for a third control at
+          390 px. Withheld until the roster answers, like the deletion: the
+          panel proposes an access level per Guardian and has nothing to
+          propose for before the roster is in hand. */}
+      {guardians.data && (
+        <div
+          data-slot="managed-profile-handover-entry"
+          className="space-y-3 border-t pt-3"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-medium">
+                {t("recordSharing.managed.handover.title", { name })}
+              </h3>
+              <p className="text-muted-foreground text-xs">
+                {t("recordSharing.managed.handover.entryHint", { name })}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="min-h-11 shrink-0 sm:min-h-9"
+              data-slot="managed-profile-handover-toggle"
+              aria-expanded={handingOver}
+              onClick={() => setHandingOver((open) => !open)}
+            >
+              {t("recordSharing.managed.handover.action")}
+            </Button>
+          </div>
+          {handingOver && (
+            <ManagedProfileHandover
+              profileId={profile.accountId}
+              profileName={name}
+              roster={guardians.data}
+              onClose={() => setHandingOver(false)}
+            />
+          )}
+        </div>
       )}
     </li>
   );

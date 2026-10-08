@@ -515,17 +515,29 @@
       "localhostNote": "Cette page est sur http://localhost alors que le serveur ne pose son cookie de connexion qu'en https://. La plupart des navigateurs l'acceptent sur localhost ; si tu reviens ici après la connexion, mets SESSION_COOKIE_SECURE=false."
     },
     "claim": {
-      "title": "Reprendre ton profil",
-      "description": "{guardian} a tenu un dossier de santé pour toi. Choisis ton accès pour en faire ton propre compte.",
-      "invalid": "Ce lien est invalide, expiré ou déjà utilisé.",
-      "signOutFirst": "Déconnecte-toi d’abord pour reprendre ce profil.",
-      "emailRequired": "Une adresse e-mail est requise.",
-      "guardiansTitle": "Qui garde l’accès",
-      "guardianProposal": "{name} propose : {proposal}",
-      "consentNote": "Après la reprise, tu confirmeras toi-même l’avertissement et tout consentement IA.",
-      "submit": "Reprendre le profil",
+      "title": "Reprenez votre dossier de santé",
+      "titleNamed": "Bienvenue, {name}",
+      "description": "Jusqu'ici, votre dossier de santé a été tenu pour vous. Choisissez comment vous connecter et il deviendra votre propre compte. Rien n'est copié ni déplacé.",
+      "loading": "Vérification de votre lien…",
+      "invalid": "Ce lien ne fonctionne plus",
+      "invalidHint": "Il est inconnu, expiré, retiré ou déjà utilisé. Demandez-en un nouveau à la personne qui vous l'a envoyé.",
+      "oidcOnly": "Ce serveur n'autorise que l'authentification unique, un profil ne peut donc pas encore être repris ici.",
+      "signedInTitle": "Déconnectez-vous d'abord",
+      "signedInBody": "Vous êtes connecté en tant que {username}. Ce lien crée une connexion pour quelqu'un d'autre, déconnectez-vous donc avant de l'utiliser.",
+      "signOut": "Se déconnecter et continuer",
+      "guardiansTitle": "Qui garde l'accès pour l'instant",
+      "guardiansHint": "Proposé par les personnes qui ont tenu votre dossier. Vous décidez juste après la connexion.",
+      "usernameHint": "3 à 30 lettres, chiffres, _ ou -.",
+      "usernameReserved": "Les noms d'utilisateur commençant par managed- sont réservés.",
+      "emailHint": "Obligatoire, pour pouvoir revenir si vous oubliez votre mot de passe.",
+      "consentNote": "Vous confirmez vous-même l'avertissement et toute utilisation de l'IA. D'ici là, rien de votre dossier n'est envoyé à un fournisseur d'IA.",
+      "expires": "Ce lien est valable jusqu'au {date}.",
+      "submit": "Reprendre",
       "submitting": "Reprise en cours…",
-      "success": "Le profil est maintenant ton compte."
+      "errorTaken": "Ce nom d'utilisateur ou cette adresse e-mail est déjà utilisé.",
+      "errorRateLimit": "Trop de tentatives. Attendez quelques minutes puis réessayez.",
+      "errorFailed": "Cela n'a pas fonctionné. Réessayez dans un instant.",
+      "errorOffline": "Le serveur n'a pas été atteint. Vérifiez votre connexion et réessayez."
     }
   },
   "dashboard": {
@@ -7462,6 +7474,7 @@
     "finalDelete": "Supprimer définitivement",
     "deletedResult": "{rows} lignes supprimées dans {tables} tables. Les comptes utilisateurs et les identifiants de connexion ont été conservés.",
     "authRegister": "Inscription",
+    "authClaim": "Profil repris",
     "authLogin": "Connexion",
     "authLoginPasskey": "Connexion par passkey",
     "authLoginPassword": "Connexion par mot de passe",
@@ -8385,7 +8398,17 @@
     "loginRequired": "Connecte-toi pour gérer les notifications.",
     "someChannelsGloballyDisabled": "Un ou plusieurs canaux sont désactivés dans les paramètres et ne recevront pas de notifications.",
     "reminderSettingsLink": "Réglages des rappels",
-    "channelsLink": "Canaux"
+    "channelsLink": "Canaux",
+    "handover": {
+      "claimedTitle": "{name} a maintenant son propre compte",
+      "claimedEnd": "{name} a repris son dossier de santé. Votre accès a pris fin.",
+      "claimedRead": "{name} a repris son dossier de santé. Vous pouvez encore le consulter, mais plus le modifier.",
+      "claimedManage": "{name} a repris son dossier de santé. Vous pouvez encore le gérer jusqu'à nouvelle décision.",
+      "changedTitle": "{name} a modifié votre accès",
+      "changedEnd": "Votre accès au dossier de santé de {name} a pris fin.",
+      "changedRead": "Vous pouvez désormais consulter le dossier de santé de {name}, sans le modifier.",
+      "changedManage": "Vous pouvez gérer le dossier de santé de {name}."
+    }
   },
   "i18n": {
     "maintainershipBanner": {
@@ -11590,29 +11613,44 @@
       "rosterLoadError": "Impossible de charger qui s'occupe de ce dossier.",
       "errorRateLimit": "Trop de profils créés dans la dernière heure. Patientez un peu et réessayez.",
       "handover": {
-        "title": "Transmettre ce profil",
-        "description": "Donne à {name} son propre accès. Les données restent où elles sont ; tu proposes l’accès que garde chaque personne aidante, et {name} décide.",
-        "create": "Créer le lien de transmission",
+        "action": "Transmettre",
+        "title": "Transmettre à {name}",
+        "description": "Donnez à {name} sa propre connexion. Rien n'est copié ni déplacé : le dossier devient son compte.",
+        "guardiansLabel": "Accès après la transmission",
+        "guardiansHint": "Votre proposition. {name} la voit et décide après la connexion.",
+        "access": {
+          "end": "Aucun accès",
+          "read": "Lecture seule",
+          "manage": "Gérer"
+        },
         "expiryLabel": "Lien valable pendant",
         "expiry1": "1 jour",
         "expiry7": "7 jours",
         "expiry14": "14 jours",
-        "proposalLabel": "Accès proposé ensuite",
-        "proposal": {
-          "end": "Mettre fin à l’accès",
-          "read": "Consultation seule",
-          "manage": "Continuer à gérer"
-        },
-        "linkTitle": "Lien de transmission",
-        "linkOnce": "Ce lien n’est affiché qu’une seule fois. Remets-le directement à {name} ou laisse-le scanner le code.",
-        "copy": "Copier le lien",
+        "minorHint": "{name} a moins de 16 ans. Garder l'accès en lecture et parler de cette étape ensemble vaut la peine.",
+        "irreversible": "Dès que {name} utilise le lien, la transmission ne peut plus être annulée. Le dossier lui appartient et c'est à elle ou lui de décider qui garde l'accès.",
+        "afterwards": "{name} confirme personnellement l'avertissement et tout consentement à l'IA. Les rappels de ce dossier ne vous parviennent plus.",
+        "replaceNote": "Créer un nouveau lien retire celui qui est ouvert.",
+        "create": "Créer le lien",
+        "creating": "Création…",
+        "linkOnce": "Ce lien n'est affiché que maintenant. Donnez-le à {name} en personne ou par un canal de confiance, ou laissez scanner le code.",
+        "qrAlt": "Code QR du lien de transmission pour {name}",
+        "urlLabel": "Lien de transmission",
+        "copy": "Copier",
         "copied": "Lien copié",
-        "pending": "Lien de transmission ouvert jusqu’au {date}",
+        "copyError": "Le lien n'a pas pu être copié. Sélectionnez-le et copiez-le à la main.",
+        "linkExpires": "Valable jusqu'au {date}.",
+        "done": "Terminé",
+        "pending": "Un lien de transmission est ouvert jusqu'au {date}.",
+        "replace": "Nouveau lien",
         "revoke": "Retirer le lien",
         "revoked": "Lien retiré",
-        "errorFailed": "Le lien de transmission n’a pas pu être créé.",
-        "oidcOnly": "La transmission de profil n’est pas disponible tant que ce serveur n’autorise que l’authentification unique.",
-        "minorHint": "{name} a moins de 16 ans. Garder l’accès en lecture mérite réflexion."
+        "revokeFailed": "Le lien n'a pas pu être retiré. Réessayez.",
+        "errorFailed": "Le lien de transmission n'a pas pu être créé.",
+        "errorRosterChanged": "Entre-temps, les personnes qui s'occupent du dossier ont changé. Fermez ceci et rouvrez-le.",
+        "oidcOnly": "Transmettre un profil n'est pas possible tant que ce serveur n'autorise que l'authentification unique.",
+        "loadError": "L'état de la transmission n'a pas pu être chargé.",
+        "entryHint": "Quand {name} souhaite tenir ce dossier de façon autonome."
       }
     },
     "toast": {
@@ -11788,6 +11826,22 @@
     },
     "anamnesis": {
       "relativeNote": "Un antécédent familial décrit les proches de cette personne. Ne l'ajoutez que si elle voudrait le voir consigné ici."
+    },
+    "handoverDecision": {
+      "title": "Qui garde l'accès à votre dossier",
+      "description": "Décidez ce que les personnes qui ont tenu votre dossier peuvent faire désormais.",
+      "proposed": "Proposé : {access}",
+      "settled": "Déjà modifié dans Accès partagé",
+      "empty": "Personne d'autre n'avait accès à votre dossier.",
+      "later": "Vous pouvez le modifier à tout moment dans Paramètres, Accès partagé.",
+      "save": "Confirmer",
+      "saving": "Enregistrement…",
+      "decideLater": "Plus tard",
+      "errorFailed": "Votre décision n'a pas pu être enregistrée. Réessayez.",
+      "loadError": "Les personnes qui tenaient votre dossier n'ont pas pu être chargées.",
+      "notificationsTitle": "Configurez vos propres rappels",
+      "notificationsBody": "Jusqu'ici, les rappels de ce dossier parvenaient aux personnes qui le tenaient. Désormais, ils vous parviennent dès que vous ajoutez un canal de notification.",
+      "notificationsAction": "Ouvrir les notifications"
     }
   },
   "encounters": {

@@ -515,17 +515,29 @@
       "localhostNote": "Esta página está en http://localhost y el servidor solo establece su cookie de sesión para https://. La mayoría de los navegadores lo aceptan en localhost; si vuelves aquí tras iniciar sesión, pon SESSION_COOKIE_SECURE=false."
     },
     "claim": {
-      "title": "Hazte cargo de tu perfil",
-      "description": "{guardian} ha llevado un registro de salud para ti. Elige tu acceso para convertirlo en tu propia cuenta.",
-      "invalid": "Este enlace no es válido, ha caducado o ya se ha usado.",
-      "signOutFirst": "Cierra sesión primero para hacerte cargo de este perfil.",
-      "emailRequired": "Se necesita una dirección de correo.",
-      "guardiansTitle": "Quién conserva el acceso",
-      "guardianProposal": "{name} propone: {proposal}",
-      "consentNote": "Después de hacerte cargo, confirmarás tú el aviso y cualquier consentimiento de IA.",
-      "submit": "Hacerme cargo del perfil",
-      "submitting": "Procesando…",
-      "success": "El perfil ya es tu cuenta."
+      "title": "Asume tu historial de salud",
+      "titleNamed": "Te damos la bienvenida, {name}",
+      "description": "Hasta ahora otras personas han llevado tu historial de salud por ti. Elige cómo iniciar sesión y pasará a ser tu propia cuenta. No se copia ni se mueve nada.",
+      "loading": "Comprobando tu enlace…",
+      "invalid": "Este enlace ya no funciona",
+      "invalidHint": "Es desconocido, ha caducado, se ha retirado o ya se ha usado. Pide uno nuevo a quien te lo envió.",
+      "oidcOnly": "Este servidor solo permite el inicio de sesión único, así que aquí todavía no se puede asumir un perfil.",
+      "signedInTitle": "Cierra la sesión primero",
+      "signedInBody": "Has iniciado sesión como {username}. Este enlace crea un acceso para otra persona, así que cierra la sesión antes de usarlo.",
+      "signOut": "Cerrar sesión y continuar",
+      "guardiansTitle": "Quién conserva el acceso por ahora",
+      "guardiansHint": "Lo proponen las personas que llevaron tu historial. Tú decides justo después de iniciar sesión.",
+      "usernameHint": "De 3 a 30 letras, números, _ o -.",
+      "usernameReserved": "Los nombres de usuario que empiezan por managed- están reservados.",
+      "emailHint": "Obligatorio, para que puedas volver a entrar si olvidas tu contraseña.",
+      "consentNote": "Confirmas tú mismo el aviso y cualquier uso de IA. Hasta entonces, nada de tu historial se envía a un proveedor de IA.",
+      "expires": "Este enlace es válido hasta el {date}.",
+      "submit": "Asumir",
+      "submitting": "Asumiendo…",
+      "errorTaken": "Ese nombre de usuario o correo electrónico ya está en uso.",
+      "errorRateLimit": "Demasiados intentos. Espera unos minutos y vuelve a intentarlo.",
+      "errorFailed": "No ha funcionado. Vuelve a intentarlo en un momento.",
+      "errorOffline": "No se llegó al servidor. Comprueba tu conexión y vuelve a intentarlo."
     }
   },
   "dashboard": {
@@ -7462,6 +7474,7 @@
     "finalDelete": "Eliminar permanentemente",
     "deletedResult": "Eliminadas {rows} filas en {tables} tablas. Se conservaron las cuentas de usuario y las credenciales de inicio de sesión.",
     "authRegister": "Registro",
+    "authClaim": "Perfil asumido",
     "authLogin": "Iniciar sesión",
     "authLoginPasskey": "Inicio de sesión con passkey",
     "authLoginPassword": "Inicio de sesión con contraseña",
@@ -8385,7 +8398,17 @@
     "loginRequired": "Inicia sesión para gestionar las notificaciones.",
     "someChannelsGloballyDisabled": "Uno o más canales están desactivados en los ajustes y no recibirán notificaciones.",
     "reminderSettingsLink": "Ajustes de recordatorios",
-    "channelsLink": "Canales"
+    "channelsLink": "Canales",
+    "handover": {
+      "claimedTitle": "{name} ya tiene su propia cuenta",
+      "claimedEnd": "{name} ha asumido su historial de salud. Tu acceso ha terminado.",
+      "claimedRead": "{name} ha asumido su historial de salud. Puedes seguir viéndolo, pero ya no cambiarlo.",
+      "claimedManage": "{name} ha asumido su historial de salud. Puedes seguir gestionándolo hasta que decida otra cosa.",
+      "changedTitle": "{name} ha cambiado tu acceso",
+      "changedEnd": "Tu acceso al historial de salud de {name} ha terminado.",
+      "changedRead": "Ahora puedes ver el historial de salud de {name}, pero no cambiarlo.",
+      "changedManage": "Puedes gestionar el historial de salud de {name}."
+    }
   },
   "i18n": {
     "maintainershipBanner": {
@@ -11590,29 +11613,44 @@
       "rosterLoadError": "No se pudo cargar quién se ocupa de este historial.",
       "errorRateLimit": "Demasiados perfiles creados en la última hora. Espera un poco y vuelve a intentarlo.",
       "handover": {
-        "title": "Entregar este perfil",
-        "description": "Dale a {name} su propio acceso. Los datos se quedan donde están; tú propones qué acceso conserva cada persona cuidadora y {name} decide.",
-        "create": "Crear enlace de entrega",
+        "action": "Entregar",
+        "title": "Entregar a {name}",
+        "description": "Da a {name} un acceso propio. No se copia ni se mueve nada: el historial pasa a ser su cuenta.",
+        "guardiansLabel": "Acceso después de la entrega",
+        "guardiansHint": "Tu propuesta. {name} la ve y decide después de iniciar sesión.",
+        "access": {
+          "end": "Sin acceso",
+          "read": "Solo ver",
+          "manage": "Gestionar"
+        },
         "expiryLabel": "Enlace válido durante",
         "expiry1": "1 día",
         "expiry7": "7 días",
         "expiry14": "14 días",
-        "proposalLabel": "Acceso propuesto después",
-        "proposal": {
-          "end": "Terminar el acceso",
-          "read": "Solo ver",
-          "manage": "Seguir gestionando"
-        },
-        "linkTitle": "Enlace de entrega",
-        "linkOnce": "Este enlace solo se muestra una vez. Dáselo a {name} directamente o deja que escanee el código.",
-        "copy": "Copiar enlace",
+        "minorHint": "{name} tiene menos de 16 años. Vale la pena conservar el acceso de lectura y hablar el paso juntos.",
+        "irreversible": "En cuanto {name} use el enlace, la entrega no se puede deshacer. El historial será suyo y decidirá quién conserva el acceso.",
+        "afterwards": "{name} confirma personalmente el aviso y cualquier consentimiento de IA. Los recordatorios de este historial dejarán de llegarte.",
+        "replaceNote": "Crear un enlace nuevo retira el que está abierto.",
+        "create": "Crear enlace",
+        "creating": "Creando…",
+        "linkOnce": "Este enlace solo se muestra ahora. Dáselo a {name} en persona o por un canal de confianza, o deja que escanee el código.",
+        "qrAlt": "Código QR del enlace de entrega para {name}",
+        "urlLabel": "Enlace de entrega",
+        "copy": "Copiar",
         "copied": "Enlace copiado",
-        "pending": "Enlace de entrega abierto hasta el {date}",
+        "copyError": "No se pudo copiar el enlace. Selecciónalo y cópialo a mano.",
+        "linkExpires": "Válido hasta el {date}.",
+        "done": "Listo",
+        "pending": "Hay un enlace de entrega abierto hasta el {date}.",
+        "replace": "Nuevo enlace",
         "revoke": "Retirar enlace",
         "revoked": "Enlace retirado",
+        "revokeFailed": "No se pudo retirar el enlace. Vuelve a intentarlo.",
         "errorFailed": "No se pudo crear el enlace de entrega.",
-        "oidcOnly": "La entrega de perfiles no está disponible mientras este servidor solo permita el inicio de sesión único.",
-        "minorHint": "{name} tiene menos de 16 años. Conviene plantearse mantener el acceso de lectura."
+        "errorRosterChanged": "Mientras tanto ha cambiado quién se ocupa del historial. Cierra esto y vuelve a abrirlo.",
+        "oidcOnly": "No se puede entregar un perfil mientras este servidor solo permita el inicio de sesión único.",
+        "loadError": "No se pudo cargar el estado de la entrega.",
+        "entryHint": "Cuando {name} quiera llevar este historial por su cuenta."
       }
     },
     "toast": {
@@ -11788,6 +11826,22 @@
     },
     "anamnesis": {
       "relativeNote": "Una entrada de antecedentes familiares describe a los familiares de esta persona. Añádela solo si querría que quedara registrada aquí."
+    },
+    "handoverDecision": {
+      "title": "Quién conserva el acceso a tu historial",
+      "description": "Decide qué pueden hacer a partir de ahora las personas que llevaron tu historial.",
+      "proposed": "Propuesto: {access}",
+      "settled": "Ya cambiado en Acceso compartido",
+      "empty": "Nadie más tenía acceso a tu historial.",
+      "later": "Puedes cambiarlo cuando quieras en Ajustes, Acceso compartido.",
+      "save": "Confirmar",
+      "saving": "Guardando…",
+      "decideLater": "Más tarde",
+      "errorFailed": "No se pudo guardar tu decisión. Vuelve a intentarlo.",
+      "loadError": "No se pudo cargar quién llevaba tu historial.",
+      "notificationsTitle": "Configura tus propios recordatorios",
+      "notificationsBody": "Hasta ahora, los recordatorios de este historial llegaban a las personas que lo llevaban. A partir de ahora te llegan a ti, en cuanto añadas un canal de notificaciones.",
+      "notificationsAction": "Abrir notificaciones"
     }
   },
   "encounters": {

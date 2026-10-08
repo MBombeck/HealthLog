@@ -515,17 +515,29 @@
       "localhostNote": "이 페이지는 http://localhost에 있지만 서버는 로그인 쿠키를 https://에만 설정합니다. 대부분의 브라우저는 localhost에서 이를 허용합니다. 로그인 후 계속 여기로 돌아온다면 SESSION_COOKIE_SECURE=false로 지정하세요."
     },
     "claim": {
-      "title": "내 프로필 넘겨받기",
-      "description": "{guardian}님이 당신의 건강 기록을 관리해 왔습니다. 로그인 방법을 정해 내 계정으로 만드세요.",
-      "invalid": "이 링크는 유효하지 않거나 만료되었거나 이미 사용되었습니다.",
-      "signOutFirst": "이 프로필을 넘겨받으려면 먼저 로그아웃하세요.",
-      "emailRequired": "이메일 주소가 필요합니다.",
-      "guardiansTitle": "접근 권한을 유지할 사람",
-      "guardianProposal": "{name}님의 제안: {proposal}",
-      "consentNote": "넘겨받은 뒤에는 고지 사항과 AI 동의를 직접 다시 확인하게 됩니다.",
-      "submit": "프로필 넘겨받기",
+      "title": "내 건강 기록 넘겨받기",
+      "titleNamed": "{name} 님, 환영합니다",
+      "description": "지금까지는 다른 사람이 건강 기록을 대신 관리했습니다. 로그인 방법을 정하면 이 기록이 내 계정이 됩니다. 아무것도 복사되거나 옮겨지지 않습니다.",
+      "loading": "링크를 확인하는 중…",
+      "invalid": "이 링크는 더 이상 작동하지 않습니다",
+      "invalidHint": "알 수 없거나, 만료되었거나, 철회되었거나, 이미 사용된 링크입니다. 보낸 사람에게 새 링크를 요청하세요.",
+      "oidcOnly": "이 서버는 통합 로그인(SSO)만 허용하므로 아직 여기서 프로필을 넘겨받을 수 없습니다.",
+      "signedInTitle": "먼저 로그아웃하세요",
+      "signedInBody": "{username} 계정으로 로그인되어 있습니다. 이 링크는 다른 사람의 로그인을 만드는 링크이므로 사용하기 전에 로그아웃하세요.",
+      "signOut": "로그아웃하고 계속",
+      "guardiansTitle": "당분간 접근 권한을 유지하는 사람",
+      "guardiansHint": "기록을 관리해 온 사람들이 제안한 내용입니다. 로그인한 직후에 직접 결정합니다.",
+      "usernameHint": "영문자, 숫자, _ 또는 - 로 3~30자.",
+      "usernameReserved": "managed- 로 시작하는 사용자 이름은 예약되어 있습니다.",
+      "emailHint": "비밀번호를 잊었을 때 다시 들어올 수 있도록 필요합니다.",
+      "consentNote": "안내 사항과 AI 사용은 직접 확인합니다. 그 전까지는 기록의 어떤 내용도 AI 제공자에게 전송되지 않습니다.",
+      "expires": "이 링크는 {date}까지 유효합니다.",
+      "submit": "넘겨받기",
       "submitting": "넘겨받는 중…",
-      "success": "이제 이 프로필이 내 계정입니다."
+      "errorTaken": "이미 사용 중인 사용자 이름 또는 이메일 주소입니다.",
+      "errorRateLimit": "시도 횟수가 너무 많습니다. 몇 분 후 다시 시도하세요.",
+      "errorFailed": "처리하지 못했습니다. 잠시 후 다시 시도하세요.",
+      "errorOffline": "서버에 연결하지 못했습니다. 연결을 확인하고 다시 시도하세요."
     }
   },
   "dashboard": {
@@ -7438,6 +7450,7 @@
     "finalDelete": "영구 삭제",
     "deletedResult": "테이블 {tables}개에서 행 {rows}개를 삭제했어요. 사용자 계정과 로그인 자격 증명은 남겼어요.",
     "authRegister": "회원가입",
+    "authClaim": "프로필 넘겨받음",
     "authLogin": "로그인",
     "authLoginPasskey": "패스키 로그인",
     "authLoginPassword": "비밀번호 로그인",
@@ -8385,7 +8398,17 @@
     "loginRequired": "알림을 관리하려면 로그인해 주세요.",
     "someChannelsGloballyDisabled": "설정에서 꺼둔 채널이 있어서 그 채널로는 알림을 받지 못해요.",
     "reminderSettingsLink": "알림 설정",
-    "channelsLink": "채널"
+    "channelsLink": "채널",
+    "handover": {
+      "claimedTitle": "{name} 님에게 이제 자신의 계정이 있습니다",
+      "claimedEnd": "{name} 님이 자신의 건강 기록을 넘겨받았습니다. 내 접근 권한은 종료되었습니다.",
+      "claimedRead": "{name} 님이 자신의 건강 기록을 넘겨받았습니다. 계속 볼 수는 있지만 더 이상 변경할 수 없습니다.",
+      "claimedManage": "{name} 님이 자신의 건강 기록을 넘겨받았습니다. 다르게 결정할 때까지 계속 관리할 수 있습니다.",
+      "changedTitle": "{name} 님이 내 접근 권한을 바꿨습니다",
+      "changedEnd": "{name} 님의 건강 기록에 대한 내 접근 권한이 종료되었습니다.",
+      "changedRead": "이제 {name} 님의 건강 기록을 볼 수는 있지만 변경할 수는 없습니다.",
+      "changedManage": "{name} 님의 건강 기록을 관리할 수 있습니다."
+    }
   },
   "i18n": {
     "maintainershipBanner": {
@@ -11590,29 +11613,44 @@
       "rosterLoadError": "이 기록을 돌보는 사람을 불러오지 못했어요.",
       "errorRateLimit": "최근 한 시간 동안 만든 프로필이 너무 많아요. 잠시 기다렸다 다시 시도해 주세요.",
       "handover": {
-        "title": "이 프로필 넘겨주기",
-        "description": "{name}에게 자신의 로그인을 만들어 주세요. 데이터는 그대로 있고, 각 보호자가 유지할 접근 권한은 당신이 제안하며 {name}이(가) 결정합니다.",
-        "create": "넘겨주기 링크 만들기",
+        "action": "넘겨주기",
+        "title": "{name} 님에게 넘겨주기",
+        "description": "{name} 님에게 자신의 로그인을 만들어 주세요. 아무것도 복사되거나 옮겨지지 않고, 기록이 그대로 그 사람의 계정이 됩니다.",
+        "guardiansLabel": "넘겨준 뒤의 접근 권한",
+        "guardiansHint": "내 제안입니다. {name} 님이 로그인한 뒤 보고 결정합니다.",
+        "access": {
+          "end": "접근 없음",
+          "read": "보기만",
+          "manage": "관리"
+        },
         "expiryLabel": "링크 유효 기간",
         "expiry1": "1일",
         "expiry7": "7일",
         "expiry14": "14일",
-        "proposalLabel": "이후 제안하는 접근 권한",
-        "proposal": {
-          "end": "접근 종료",
-          "read": "보기만",
-          "manage": "계속 관리"
-        },
-        "linkTitle": "넘겨주기 링크",
-        "linkOnce": "이 링크는 한 번만 표시됩니다. {name}에게 직접 전달하거나 코드를 스캔하게 하세요.",
-        "copy": "링크 복사",
+        "minorHint": "{name} 님은 16세 미만입니다. 보기 권한을 유지하고 이 단계를 함께 이야기해 보는 것이 좋습니다.",
+        "irreversible": "{name} 님이 링크를 사용하면 넘겨주기를 되돌릴 수 없습니다. 기록은 그 사람의 것이 되고, 누가 접근 권한을 유지할지 직접 결정합니다.",
+        "afterwards": "{name} 님이 안내 사항과 AI 동의를 직접 확인합니다. 이 기록의 알림은 더 이상 나에게 오지 않습니다.",
+        "replaceNote": "새 링크를 만들면 열려 있는 링크는 철회됩니다.",
+        "create": "링크 만들기",
+        "creating": "만드는 중…",
+        "linkOnce": "이 링크는 지금만 표시됩니다. {name} 님에게 직접 또는 믿을 수 있는 방법으로 전달하거나 코드를 스캔하게 하세요.",
+        "qrAlt": "{name} 님을 위한 넘겨주기 링크 QR 코드",
+        "urlLabel": "넘겨주기 링크",
+        "copy": "복사",
         "copied": "링크를 복사했습니다",
-        "pending": "넘겨주기 링크 유효: {date}까지",
+        "copyError": "링크를 복사하지 못했습니다. 선택해서 직접 복사하세요.",
+        "linkExpires": "{date}까지 유효합니다.",
+        "done": "완료",
+        "pending": "{date}까지 넘겨주기 링크가 열려 있습니다.",
+        "replace": "새 링크",
         "revoke": "링크 철회",
         "revoked": "링크를 철회했습니다",
+        "revokeFailed": "링크를 철회하지 못했습니다. 다시 시도하세요.",
         "errorFailed": "넘겨주기 링크를 만들지 못했습니다.",
-        "oidcOnly": "이 서버가 통합 로그인만 허용하는 동안에는 프로필을 넘겨줄 수 없습니다.",
-        "minorHint": "{name}은(는) 16세 미만입니다. 보기 권한을 유지하는 것을 고려해 보세요."
+        "errorRosterChanged": "그 사이 기록을 돌보는 사람이 바뀌었습니다. 닫았다가 다시 여세요.",
+        "oidcOnly": "이 서버가 통합 로그인(SSO)만 허용하는 동안에는 프로필을 넘겨줄 수 없습니다.",
+        "loadError": "넘겨주기 상태를 불러오지 못했습니다.",
+        "entryHint": "{name} 님이 이 기록을 직접 관리할 준비가 되었을 때."
       }
     },
     "toast": {
@@ -11788,6 +11826,22 @@
     },
     "anamnesis": {
       "relativeNote": "가족력 항목은 이 사람의 친척에 대한 내용이에요. 여기 기록되기를 상대가 원할 때만 추가하세요."
+    },
+    "handoverDecision": {
+      "title": "내 기록에 접근할 수 있는 사람",
+      "description": "기록을 관리해 온 사람들이 앞으로 무엇을 할 수 있을지 정하세요.",
+      "proposed": "제안: {access}",
+      "settled": "공유 접근에서 이미 변경됨",
+      "empty": "다른 사람은 내 기록에 접근할 수 없었습니다.",
+      "later": "설정, 공유 접근에서 언제든지 바꿀 수 있습니다.",
+      "save": "확인",
+      "saving": "저장하는 중…",
+      "decideLater": "나중에",
+      "errorFailed": "결정을 저장하지 못했습니다. 다시 시도하세요.",
+      "loadError": "기록을 관리해 온 사람들을 불러오지 못했습니다.",
+      "notificationsTitle": "내 알림 설정하기",
+      "notificationsBody": "지금까지 이 기록의 알림은 기록을 관리하던 사람들에게 갔습니다. 이제 알림 채널을 추가하면 바로 나에게 옵니다.",
+      "notificationsAction": "알림 설정 열기"
     }
   },
   "encounters": {

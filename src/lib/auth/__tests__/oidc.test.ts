@@ -470,6 +470,15 @@ describe("deriveUniqueUsername", () => {
     expect(username.length).toBeLessThanOrEqual(30);
   });
 
+  it("never derives a name with the managed-profile prefix", async () => {
+    const exists = vi.fn().mockResolvedValue(false);
+    const username = await deriveUniqueUsername(
+      "Managed-managed-alex@example.com",
+      exists,
+    );
+    expect(username).toBe("alex");
+  });
+
   it("appends a numeric suffix on collision", async () => {
     const exists = vi
       .fn()

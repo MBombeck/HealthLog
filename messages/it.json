@@ -515,17 +515,29 @@
       "localhostNote": "Questa pagina è su http://localhost mentre il server imposta il cookie di accesso solo per https://. La maggior parte dei browser lo accetta su localhost; se dopo l'accesso torni qui, imposta SESSION_COOKIE_SECURE=false."
     },
     "claim": {
-      "title": "Prendi in mano il tuo profilo",
-      "description": "{guardian} ha tenuto un registro sanitario per te. Scegli il tuo accesso per renderlo il tuo account.",
-      "invalid": "Questo link non è valido, è scaduto o è già stato usato.",
-      "signOutFirst": "Esci prima per prendere in mano questo profilo.",
-      "emailRequired": "È necessario un indirizzo email.",
-      "guardiansTitle": "Chi mantiene l’accesso",
-      "guardianProposal": "{name} propone: {proposal}",
-      "consentNote": "Dopo la presa in carico confermerai tu l’avvertenza e l’eventuale consenso all’IA.",
-      "submit": "Prendi il profilo",
+      "title": "Prendi in mano la tua cartella sanitaria",
+      "titleNamed": "Ti diamo il benvenuto, {name}",
+      "description": "Finora la tua cartella sanitaria è stata tenuta per te. Scegli come accedere e diventerà il tuo account. Nulla viene copiato o spostato.",
+      "loading": "Controllo del link…",
+      "invalid": "Questo link non funziona più",
+      "invalidHint": "È sconosciuto, scaduto, ritirato o già usato. Chiedine uno nuovo a chi te l'ha inviato.",
+      "oidcOnly": "Questo server consente solo il single sign-on, quindi qui non è ancora possibile prendere in carico un profilo.",
+      "signedInTitle": "Prima esci",
+      "signedInBody": "Hai effettuato l'accesso come {username}. Questo link crea un accesso per un'altra persona, quindi esci prima di usarlo.",
+      "signOut": "Esci e continua",
+      "guardiansTitle": "Chi mantiene l'accesso per ora",
+      "guardiansHint": "Proposto dalle persone che hanno tenuto la tua cartella. Decidi subito dopo l'accesso.",
+      "usernameHint": "Da 3 a 30 lettere, numeri, _ o -.",
+      "usernameReserved": "I nomi utente che iniziano con managed- sono riservati.",
+      "emailHint": "Obbligatorio, così puoi rientrare se dimentichi la password.",
+      "consentNote": "L'avviso e qualsiasi uso dell'IA li confermi tu. Fino ad allora nulla della tua cartella viene inviato a un fornitore di IA.",
+      "expires": "Questo link è valido fino al {date}.",
+      "submit": "Prendi in carico",
       "submitting": "Presa in carico…",
-      "success": "Il profilo ora è il tuo account."
+      "errorTaken": "Questo nome utente o indirizzo email è già in uso.",
+      "errorRateLimit": "Troppi tentativi. Attendi qualche minuto e riprova.",
+      "errorFailed": "Non ha funzionato. Riprova tra un momento.",
+      "errorOffline": "Il server non è stato raggiunto. Controlla la connessione e riprova."
     }
   },
   "dashboard": {
@@ -7462,6 +7474,7 @@
     "finalDelete": "Elimina definitivamente",
     "deletedResult": "Eliminate {rows} righe in {tables} tabelle. Account utente e credenziali di accesso conservati.",
     "authRegister": "Registrazione",
+    "authClaim": "Profilo preso in carico",
     "authLogin": "Accedi",
     "authLoginPasskey": "Accesso con passkey",
     "authLoginPassword": "Accesso con password",
@@ -8385,7 +8398,17 @@
     "loginRequired": "Accedi per gestire le notifiche.",
     "someChannelsGloballyDisabled": "Uno o più canali sono disattivati nelle impostazioni e non riceveranno notifiche.",
     "reminderSettingsLink": "Impostazioni promemoria",
-    "channelsLink": "Canali"
+    "channelsLink": "Canali",
+    "handover": {
+      "claimedTitle": "{name} ora ha un proprio account",
+      "claimedEnd": "{name} ha preso in carico la propria cartella sanitaria. Il tuo accesso è terminato.",
+      "claimedRead": "{name} ha preso in carico la propria cartella sanitaria. Puoi ancora vederla, ma non più modificarla.",
+      "claimedManage": "{name} ha preso in carico la propria cartella sanitaria. Puoi ancora gestirla finché non deciderà altrimenti.",
+      "changedTitle": "{name} ha cambiato il tuo accesso",
+      "changedEnd": "Il tuo accesso alla cartella sanitaria di {name} è terminato.",
+      "changedRead": "Ora puoi vedere la cartella sanitaria di {name}, ma non modificarla.",
+      "changedManage": "Puoi gestire la cartella sanitaria di {name}."
+    }
   },
   "i18n": {
     "maintainershipBanner": {
@@ -11590,29 +11613,44 @@
       "rosterLoadError": "Non è stato possibile caricare chi si occupa di questa cartella.",
       "errorRateLimit": "Troppi profili creati nell'ultima ora. Aspetta un po' e riprova.",
       "handover": {
-        "title": "Consegna questo profilo",
-        "description": "Dai a {name} un accesso tutto suo. I dati restano dove sono; tu proponi quale accesso mantiene ogni persona che se ne occupa e {name} decide.",
-        "create": "Crea link di consegna",
+        "action": "Consegna",
+        "title": "Consegna a {name}",
+        "description": "Dai a {name} un accesso proprio. Nulla viene copiato o spostato: la cartella diventa il suo account.",
+        "guardiansLabel": "Accesso dopo la consegna",
+        "guardiansHint": "La tua proposta. {name} la vede e decide dopo l'accesso.",
+        "access": {
+          "end": "Nessun accesso",
+          "read": "Solo lettura",
+          "manage": "Gestire"
+        },
         "expiryLabel": "Link valido per",
         "expiry1": "1 giorno",
         "expiry7": "7 giorni",
         "expiry14": "14 giorni",
-        "proposalLabel": "Accesso proposto dopo",
-        "proposal": {
-          "end": "Termina l’accesso",
-          "read": "Solo visualizzazione",
-          "manage": "Continua a gestire"
-        },
-        "linkTitle": "Link di consegna",
-        "linkOnce": "Questo link viene mostrato una sola volta. Consegnalo direttamente a {name} o fagli scansionare il codice.",
-        "copy": "Copia link",
+        "minorHint": "{name} ha meno di 16 anni. Vale la pena mantenere l'accesso in lettura e parlare insieme di questo passo.",
+        "irreversible": "Appena {name} usa il link, la consegna non si può annullare. La cartella sarà sua e deciderà chi mantiene l'accesso.",
+        "afterwards": "{name} conferma di persona l'avviso e ogni consenso all'IA. I promemoria di questa cartella non ti raggiungeranno più.",
+        "replaceNote": "Creare un nuovo link ritira quello aperto.",
+        "create": "Crea link",
+        "creating": "Creazione…",
+        "linkOnce": "Questo link viene mostrato solo ora. Consegnalo a {name} di persona o tramite un canale di fiducia, oppure fai scansionare il codice.",
+        "qrAlt": "Codice QR del link di consegna per {name}",
+        "urlLabel": "Link di consegna",
+        "copy": "Copia",
         "copied": "Link copiato",
-        "pending": "Link di consegna aperto fino al {date}",
+        "copyError": "Impossibile copiare il link. Selezionalo e copialo a mano.",
+        "linkExpires": "Valido fino al {date}.",
+        "done": "Fatto",
+        "pending": "Un link di consegna è aperto fino al {date}.",
+        "replace": "Nuovo link",
         "revoke": "Ritira link",
         "revoked": "Link ritirato",
+        "revokeFailed": "Impossibile ritirare il link. Riprova.",
         "errorFailed": "Impossibile creare il link di consegna.",
-        "oidcOnly": "La consegna del profilo non è disponibile finché questo server consente solo l’accesso unico.",
-        "minorHint": "{name} ha meno di 16 anni. Vale la pena considerare di mantenere l’accesso in lettura."
+        "errorRosterChanged": "Nel frattempo è cambiato chi si occupa della cartella. Chiudi e riapri.",
+        "oidcOnly": "Non è possibile consegnare un profilo finché questo server consente solo il single sign-on.",
+        "loadError": "Impossibile caricare lo stato della consegna.",
+        "entryHint": "Quando {name} vuole tenere questa cartella in autonomia."
       }
     },
     "toast": {
@@ -11788,6 +11826,22 @@
     },
     "anamnesis": {
       "relativeNote": "Una voce di anamnesi familiare descrive i parenti di questa persona. Aggiungila solo se vorrebbe vederla registrata qui."
+    },
+    "handoverDecision": {
+      "title": "Chi mantiene l'accesso alla tua cartella",
+      "description": "Decidi cosa possono fare d'ora in poi le persone che hanno tenuto la tua cartella.",
+      "proposed": "Proposto: {access}",
+      "settled": "Già modificato in Accesso condiviso",
+      "empty": "Nessun altro aveva accesso alla tua cartella.",
+      "later": "Puoi cambiarlo in qualsiasi momento in Impostazioni, Accesso condiviso.",
+      "save": "Conferma",
+      "saving": "Salvataggio…",
+      "decideLater": "Più tardi",
+      "errorFailed": "Impossibile salvare la tua decisione. Riprova.",
+      "loadError": "Impossibile caricare chi teneva la tua cartella.",
+      "notificationsTitle": "Imposta i tuoi promemoria",
+      "notificationsBody": "Finora i promemoria di questa cartella arrivavano alle persone che la tenevano. D'ora in poi arrivano a te, appena aggiungi un canale di notifica.",
+      "notificationsAction": "Apri le notifiche"
     }
   },
   "encounters": {

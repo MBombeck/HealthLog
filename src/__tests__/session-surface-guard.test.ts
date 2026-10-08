@@ -85,6 +85,17 @@ describe("S1 — the direct session-resolution set is frozen", () => {
     // here twice over: it would throw 401 at the anonymous caller the route
     // exists for, and this route wants the ABSENCE of a session.
     "app/api/auth/register/route.ts": "refuses to register over a live session",
+    // v1.42 (#959) — the anonymous managed-profile claim and its preview. Same
+    // argument as registration: claiming signs the new owner in, so a Guardian
+    // opening their own handover link must be refused rather than signed out
+    // of their account and into the person's. The probe only asks whether a
+    // session EXISTS; the credential these routes act on is the one-time
+    // `hlp_` token in the body, and the probe is resolved in the route file
+    // itself (not inside `claimGate`) so both stay visible on this list.
+    "app/api/auth/claim/route.ts":
+      "refuses to claim a profile over a live session",
+    "app/api/auth/claim/preview/route.ts":
+      "refuses to preview a handover link over a live session",
     // Anonymous IdP callback. Probes for an already-valid session so a
     // replayed callback redirects instead of minting a second identity.
     "app/api/auth/oidc/callback/route.ts":
@@ -244,6 +255,17 @@ describe("S2 — the URL-token authentication set is frozen", () => {
     // it authenticates nothing.
     "app/invite/[token]/page.tsx":
       "validates the invite token's shape and redirects; no lookup",
+    // v1.42 (#959) — the managed-profile handover link. The landing is the
+    // invite landing's twin: a shape check on the `hlp_` segment and a
+    // redirect, no lookup (the proxy normally answers it at the edge).
+    "app/claim/[token]/page.tsx":
+      "validates the handover token's shape and redirects; no lookup",
+    // The claim page reads the token off `?token=` and sends it in the BODY of
+    // the anonymous preview and claim requests, which are the only places a
+    // handover token is resolved. The page itself authenticates nothing and
+    // renders nothing about the profile before the preview answers.
+    "app/auth/claim/page.tsx":
+      "carries the handover token from the query string into the claim requests' body",
   };
 
   /**
@@ -283,6 +305,7 @@ describe("S2 — the URL-token authentication set is frozen", () => {
       "app/c/[token]/fhir/route.ts",
       "app/c/[token]/page.tsx",
       "app/c/[token]/report.pdf/route.ts",
+      "app/claim/[token]/page.tsx",
       "app/invite/[token]/page.tsx",
     ]);
   });
@@ -304,7 +327,10 @@ describe("S2 — the URL-token authentication set is frozen", () => {
     const byQuery = appFilesMatching(QUERY_CREDENTIAL);
 
     expect(byQuery.length).toBeGreaterThan(0);
-    expect(byQuery).toEqual(["app/api/withings/webhook/route.ts"]);
+    expect(byQuery).toEqual([
+      "app/api/withings/webhook/route.ts",
+      "app/auth/claim/page.tsx",
+    ]);
   });
 
   it("the three legs together equal the frozen allowlist", () => {

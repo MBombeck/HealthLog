@@ -515,17 +515,29 @@
       "localhostNote": "This page is on http://localhost while the server sets its sign-in cookie for https:// only. Most browsers accept that on localhost; if signing in keeps returning here, set SESSION_COOKIE_SECURE=false."
     },
     "claim": {
-      "title": "Take over your profile",
-      "description": "{guardian} has kept a health record for you. Choose your sign-in to make it your own account.",
-      "invalid": "This link is invalid, expired or already used.",
-      "signOutFirst": "Sign out first to take over this profile.",
-      "emailRequired": "An email address is required.",
-      "guardiansTitle": "Who keeps access",
-      "guardianProposal": "{name} proposes: {proposal}",
-      "consentNote": "You will confirm the disclaimer and any AI consent yourself after taking over.",
-      "submit": "Take over profile",
+      "title": "Take over your health record",
+      "titleNamed": "Welcome, {name}",
+      "description": "Your health record has been looked after for you until now. Choose how you sign in and it becomes your own account. Nothing is copied or moved.",
+      "loading": "Checking your link…",
+      "invalid": "This link no longer works",
+      "invalidHint": "It is unknown, expired, withdrawn or already used. Ask the person who sent it for a new one.",
+      "oidcOnly": "This server only allows single sign-on, so a profile cannot be taken over here yet.",
+      "signedInTitle": "Sign out first",
+      "signedInBody": "You are signed in as {username}. This link sets up a sign-in for someone else, so sign out before you use it.",
+      "signOut": "Sign out and continue",
+      "guardiansTitle": "Who keeps access for now",
+      "guardiansHint": "Proposed by the people who looked after your record. You decide right after signing in.",
+      "usernameHint": "3 to 30 letters, numbers, _ or -.",
+      "usernameReserved": "Usernames starting with managed- are reserved.",
+      "emailHint": "Required, so you can get back in if you forget your password.",
+      "consentNote": "You confirm the disclaimer and any use of AI yourself. Until you do, nothing from your record is sent to an AI provider.",
+      "expires": "This link is valid until {date}.",
+      "submit": "Take over",
       "submitting": "Taking over…",
-      "success": "The profile is now your account."
+      "errorTaken": "That username or email address is already in use.",
+      "errorRateLimit": "Too many attempts. Wait a few minutes and try again.",
+      "errorFailed": "That did not work. Try again in a moment.",
+      "errorOffline": "That did not reach the server. Check your connection and try again."
     }
   },
   "dashboard": {
@@ -7462,6 +7474,7 @@
     "finalDelete": "Delete permanently",
     "deletedResult": "Deleted {rows} rows across {tables} tables. User accounts and sign-in credentials were kept.",
     "authRegister": "Registration",
+    "authClaim": "Profile taken over",
     "authLogin": "Login",
     "authLoginPasskey": "Passkey login",
     "authLoginPassword": "Password login",
@@ -8385,7 +8398,17 @@
     "loginRequired": "Please sign in to manage notifications.",
     "someChannelsGloballyDisabled": "One or more channels are turned off in Settings and won’t receive notifications.",
     "reminderSettingsLink": "Reminder settings",
-    "channelsLink": "Channels"
+    "channelsLink": "Channels",
+    "handover": {
+      "claimedTitle": "{name} now has their own account",
+      "claimedEnd": "{name} took over their health record. Your access has ended.",
+      "claimedRead": "{name} took over their health record. You can still view it, but no longer change it.",
+      "claimedManage": "{name} took over their health record. You can still manage it until they decide otherwise.",
+      "changedTitle": "{name} changed your access",
+      "changedEnd": "Your access to the health record of {name} has ended.",
+      "changedRead": "You can now view the health record of {name}, but not change it.",
+      "changedManage": "You can manage the health record of {name}."
+    }
   },
   "i18n": {
     "maintainershipBanner": {
@@ -11590,29 +11613,44 @@
       "rosterLoadError": "Could not load who looks after this record.",
       "errorRateLimit": "Too many profiles created in the last hour. Wait a while and try again.",
       "handover": {
-        "title": "Hand over this profile",
-        "description": "Give {name} a sign-in of their own. The data stays where it is; you propose what access each guardian keeps, and {name} decides.",
-        "create": "Create handover link",
+        "action": "Hand over",
+        "title": "Hand over to {name}",
+        "description": "Give {name} a sign-in of their own. Nothing is copied or moved: the record becomes their account.",
+        "guardiansLabel": "Access after the handover",
+        "guardiansHint": "Your proposal. {name} sees it and decides after signing in.",
+        "access": {
+          "end": "No access",
+          "read": "View only",
+          "manage": "Manage"
+        },
         "expiryLabel": "Link valid for",
         "expiry1": "1 day",
         "expiry7": "7 days",
         "expiry14": "14 days",
-        "proposalLabel": "Proposed access afterwards",
-        "proposal": {
-          "end": "End access",
-          "read": "View only",
-          "manage": "Keep managing"
-        },
-        "linkTitle": "Handover link",
-        "linkOnce": "This link is shown only once. Hand it to {name} directly or let them scan the code.",
-        "copy": "Copy link",
+        "minorHint": "{name} is under 16. Keeping view access is worth considering, and so is talking the step through together.",
+        "irreversible": "Once {name} uses the link, the handover cannot be undone. The record is theirs, and they decide who keeps access.",
+        "afterwards": "{name} confirms the disclaimer and any AI consent personally. Reminders for this record stop reaching you.",
+        "replaceNote": "Creating a new link withdraws the open one.",
+        "create": "Create link",
+        "creating": "Creating…",
+        "linkOnce": "This link is shown only now. Give it to {name} in person or through a channel you trust, or let them scan the code.",
+        "qrAlt": "QR code of the handover link for {name}",
+        "urlLabel": "Handover link",
+        "copy": "Copy",
         "copied": "Link copied",
-        "pending": "Handover link open until {date}",
+        "copyError": "The link could not be copied. Select it and copy it by hand.",
+        "linkExpires": "Valid until {date}.",
+        "done": "Done",
+        "pending": "A handover link is open until {date}.",
+        "replace": "New link",
         "revoke": "Withdraw link",
         "revoked": "Link withdrawn",
+        "revokeFailed": "The link could not be withdrawn. Try again.",
         "errorFailed": "The handover link could not be created.",
+        "errorRosterChanged": "The list of guardians changed in the meantime. Close this and open it again.",
         "oidcOnly": "Handing over a profile is not available while this server allows single sign-on only.",
-        "minorHint": "{name} is under 16. Keeping view access is worth considering."
+        "loadError": "The handover status could not be loaded.",
+        "entryHint": "When {name} is ready to look after this record themselves."
       }
     },
     "toast": {
@@ -11788,6 +11826,22 @@
     },
     "anamnesis": {
       "relativeNote": "A family history entry describes this person's relatives. Add it only when they would want it recorded here."
+    },
+    "handoverDecision": {
+      "title": "Who keeps access to your record",
+      "description": "Decide what the people who looked after your record may do from now on.",
+      "proposed": "Proposed: {access}",
+      "settled": "Already changed under Shared access",
+      "empty": "Nobody else had access to your record.",
+      "later": "You can change this any time under Settings, Shared access.",
+      "save": "Confirm",
+      "saving": "Saving…",
+      "decideLater": "Later",
+      "errorFailed": "Your decision could not be saved. Try again.",
+      "loadError": "Your former guardians could not be loaded.",
+      "notificationsTitle": "Set up your own reminders",
+      "notificationsBody": "Reminders for this record used to reach the people looking after it. From now on they reach you, as soon as you add a notification channel.",
+      "notificationsAction": "Open notification settings"
     }
   },
   "encounters": {

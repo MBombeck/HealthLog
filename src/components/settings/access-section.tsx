@@ -1,6 +1,7 @@
 "use client";
 
 import { GrantInviteCard } from "@/components/settings/access/grant-invite-card";
+import { HandoverDecisionCard } from "@/components/settings/access/handover-decision";
 import { GrantsGivenCard } from "@/components/settings/access/grants-given-card";
 import { GrantsReceivedCard } from "@/components/settings/access/grants-received-card";
 import { ManagedProfileCard } from "@/components/settings/access/managed-profile-card";
@@ -44,6 +45,10 @@ import { RecordActivityCard } from "@/components/settings/access/record-activity
 export function AccessSection() {
   return (
     <div className="space-y-4">
+      {/* v1.42 (#959) — only for an account that claimed a managed profile
+          and has not decided its former Guardians' access yet; it comes first
+          because it is the one open question on this page. */}
+      <HandoverDecisionCard />
       <GrantInviteCard />
       <ManagedProfileCard />
       <GrantsGivenCard />

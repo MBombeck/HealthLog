@@ -393,6 +393,11 @@ export async function deriveUniqueUsername(
 ): Promise<string> {
   const localPart = email.split("@")[0] ?? "user";
   let base = localPart.replace(/[^a-zA-Z0-9_-]/g, "");
+  // v1.42 (#959) — `managed-` is the generated name of a profile nobody signs
+  // into, and no self-named account may carry it (`accountUsernameSchema`).
+  while (base.toLowerCase().startsWith("managed-")) {
+    base = base.slice("managed-".length);
+  }
   if (base.length < 3) base = `${base}user`.slice(0, 3).padEnd(3, "0");
   base = base.slice(0, 26); // leave room for a numeric suffix up to 30 chars
 

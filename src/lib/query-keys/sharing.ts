@@ -58,6 +58,28 @@ export const sharingKeys = {
   managedProfile: (profileId: string) =>
     ["managed-profiles", profileId, "profile"] as const,
 
+  /**
+   * v1.42 (#959) — whether a managed profile has an open handover link (`GET
+   * /api/managed-profiles/{id}/handover`). Under the family prefix so a grant
+   * transition refreshes it with the rest.
+   */
+  managedProfileHandover: (profileId: string) =>
+    ["managed-profiles", profileId, "handover"] as const,
+
+  /**
+   * v1.42 (#959) — the decision a new owner owes about their former
+   * Guardians (`GET /api/account/handover-decision`). Under `account` like
+   * the grant list it changes.
+   */
+  handoverDecision: () => ["account", "handover-decision"] as const,
+
+  /**
+   * v1.42 (#959) — the anonymous preview of a handover link. The token is
+   * deliberately NOT part of the key: a cache key is a place a credential
+   * should never be written to, and one claim page reads one link.
+   */
+  profileClaimPreview: () => ["profile-claim", "preview"] as const,
+
   /** Mutation keys — kept in the factory so no bare array reaches a call site. */
   accountGrantInvite: () => ["account", "grants", "invite"] as const,
   accountGrantAccept: () => ["account", "grants", "accept"] as const,
@@ -71,4 +93,10 @@ export const sharingKeys = {
     ["managed-profiles", "guardian", "invite"] as const,
   managedProfileGuardianRemove: () =>
     ["managed-profiles", "guardian", "remove"] as const,
+  managedProfileHandoverCreate: () =>
+    ["managed-profiles", "handover", "create"] as const,
+  managedProfileHandoverRevoke: () =>
+    ["managed-profiles", "handover", "revoke"] as const,
+  handoverDecide: () => ["account", "handover-decision", "decide"] as const,
+  profileClaim: () => ["profile-claim", "submit"] as const,
 };

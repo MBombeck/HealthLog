@@ -515,17 +515,29 @@
       "localhostNote": "Diese Seite läuft auf http://localhost, der Server setzt sein Anmelde-Cookie aber nur für https://. Die meisten Browser akzeptieren das auf localhost; wenn du nach der Anmeldung wieder hier landest, setze SESSION_COOKIE_SECURE=false."
     },
     "claim": {
-      "title": "Dein Profil übernehmen",
-      "description": "{guardian} hat ein Gesundheitsprofil für dich geführt. Wähle deine Anmeldung, um es zu deinem eigenen Konto zu machen.",
-      "invalid": "Dieser Link ist ungültig, abgelaufen oder schon benutzt.",
-      "signOutFirst": "Melde dich zuerst ab, um dieses Profil zu übernehmen.",
-      "emailRequired": "Eine E-Mail-Adresse ist erforderlich.",
-      "guardiansTitle": "Wer Zugang behält",
-      "guardianProposal": "{name} schlägt vor: {proposal}",
-      "consentNote": "Den Hinweis und eine etwaige KI-Einwilligung bestätigst du nach der Übernahme selbst.",
-      "submit": "Profil übernehmen",
-      "submitting": "Wird übernommen …",
-      "success": "Das Profil ist jetzt dein Konto."
+      "title": "Übernimm deine Gesundheitsakte",
+      "titleNamed": "Willkommen, {name}",
+      "description": "Deine Gesundheitsakte wurde bisher für dich geführt. Wähle, wie du dich anmeldest, und sie wird dein eigenes Konto. Nichts wird kopiert oder verschoben.",
+      "loading": "Dein Link wird geprüft…",
+      "invalid": "Dieser Link funktioniert nicht mehr",
+      "invalidHint": "Er ist unbekannt, abgelaufen, zurückgezogen oder schon benutzt. Bitte die Person, die ihn dir gegeben hat, um einen neuen.",
+      "oidcOnly": "Dieser Server erlaubt nur Single Sign-on, deshalb lässt sich ein Profil hier noch nicht übernehmen.",
+      "signedInTitle": "Melde dich zuerst ab",
+      "signedInBody": "Du bist als {username} angemeldet. Dieser Link richtet eine Anmeldung für jemand anderen ein, melde dich also ab, bevor du ihn benutzt.",
+      "signOut": "Abmelden und weiter",
+      "guardiansTitle": "Wer vorerst Zugriff behält",
+      "guardiansHint": "Vorgeschlagen von den Personen, die deine Akte geführt haben. Du entscheidest direkt nach der Anmeldung.",
+      "usernameHint": "3 bis 30 Buchstaben, Ziffern, _ oder -.",
+      "usernameReserved": "Benutzernamen, die mit managed- beginnen, sind reserviert.",
+      "emailHint": "Pflicht, damit du wieder hineinkommst, wenn du dein Passwort vergisst.",
+      "consentNote": "Den Hinweis und jede KI-Nutzung bestätigst du selbst. Bis dahin geht nichts aus deiner Akte an einen KI-Anbieter.",
+      "expires": "Dieser Link gilt bis {date}.",
+      "submit": "Übernehmen",
+      "submitting": "Wird übernommen…",
+      "errorTaken": "Dieser Benutzername oder diese E-Mail-Adresse ist schon vergeben.",
+      "errorRateLimit": "Zu viele Versuche. Warte ein paar Minuten und versuche es erneut.",
+      "errorFailed": "Das hat nicht geklappt. Versuche es gleich noch einmal.",
+      "errorOffline": "Das hat den Server nicht erreicht. Prüfe deine Verbindung und versuche es erneut."
     }
   },
   "dashboard": {
@@ -7462,6 +7474,7 @@
     "finalDelete": "Endgültig löschen",
     "deletedResult": "Gelöscht: {rows} Zeilen in {tables} Tabellen. Nutzerkonten und Anmelde-Zugangsdaten bleiben erhalten.",
     "authRegister": "Registrierung",
+    "authClaim": "Profil übernommen",
     "authLogin": "Anmeldung",
     "authLoginPasskey": "Passkey-Anmeldung",
     "authLoginPassword": "Passwort-Anmeldung",
@@ -8385,7 +8398,17 @@
     "loginRequired": "Bitte melde dich an, um Benachrichtigungen zu verwalten.",
     "someChannelsGloballyDisabled": "Ein oder mehrere Kanäle sind in den Einstellungen deaktiviert und erhalten keine Benachrichtigungen.",
     "reminderSettingsLink": "Erinnerungseinstellungen",
-    "channelsLink": "Kanäle"
+    "channelsLink": "Kanäle",
+    "handover": {
+      "claimedTitle": "{name} hat jetzt ein eigenes Konto",
+      "claimedEnd": "{name} hat die eigene Gesundheitsakte übernommen. Dein Zugriff ist beendet.",
+      "claimedRead": "{name} hat die eigene Gesundheitsakte übernommen. Du kannst sie weiter ansehen, aber nicht mehr ändern.",
+      "claimedManage": "{name} hat die eigene Gesundheitsakte übernommen. Du kannst sie weiter verwalten, bis {name} anders entscheidet.",
+      "changedTitle": "{name} hat deinen Zugriff geändert",
+      "changedEnd": "Dein Zugriff auf die Gesundheitsakte von {name} ist beendet.",
+      "changedRead": "Du kannst die Gesundheitsakte von {name} jetzt ansehen, aber nicht ändern.",
+      "changedManage": "Du kannst die Gesundheitsakte von {name} verwalten."
+    }
   },
   "i18n": {
     "maintainershipBanner": {
@@ -11590,29 +11613,44 @@
       "rosterLoadError": "Es ließ sich nicht laden, wer sich um diese Akte kümmert.",
       "errorRateLimit": "Zu viele Profile in der letzten Stunde angelegt. Warte etwas und versuche es erneut.",
       "handover": {
-        "title": "Profil übergeben",
-        "description": "Gib {name} eine eigene Anmeldung. Die Daten bleiben, wo sie sind; du schlägst vor, welchen Zugang jede betreuende Person behält, und {name} entscheidet.",
-        "create": "Übergabelink erstellen",
+        "action": "Übergeben",
+        "title": "An {name} übergeben",
+        "description": "Gib {name} eine eigene Anmeldung. Nichts wird kopiert oder verschoben: Die Akte wird zum eigenen Konto.",
+        "guardiansLabel": "Zugriff nach der Übergabe",
+        "guardiansHint": "Dein Vorschlag. {name} sieht ihn und entscheidet nach der Anmeldung.",
+        "access": {
+          "end": "Kein Zugriff",
+          "read": "Nur ansehen",
+          "manage": "Verwalten"
+        },
         "expiryLabel": "Link gültig für",
         "expiry1": "1 Tag",
         "expiry7": "7 Tage",
         "expiry14": "14 Tage",
-        "proposalLabel": "Vorgeschlagener Zugang danach",
-        "proposal": {
-          "end": "Zugang beenden",
-          "read": "Nur ansehen",
-          "manage": "Weiter verwalten"
-        },
-        "linkTitle": "Übergabelink",
-        "linkOnce": "Dieser Link wird nur einmal angezeigt. Gib ihn {name} direkt oder lass den Code scannen.",
-        "copy": "Link kopieren",
+        "minorHint": "{name} ist unter 16. Es lohnt sich, den Lesezugriff zu behalten und den Schritt gemeinsam zu besprechen.",
+        "irreversible": "Sobald {name} den Link benutzt, lässt sich die Übergabe nicht rückgängig machen. Die Akte gehört dann {name}, und {name} entscheidet, wer Zugriff behält.",
+        "afterwards": "{name} bestätigt den Hinweis und jede KI-Einwilligung selbst. Erinnerungen für diese Akte erreichen dich nicht mehr.",
+        "replaceNote": "Ein neuer Link zieht den offenen zurück.",
+        "create": "Link erstellen",
+        "creating": "Wird erstellt…",
+        "linkOnce": "Dieser Link wird nur jetzt angezeigt. Gib ihn {name} persönlich oder über einen Weg, dem du vertraust, oder lass den Code scannen.",
+        "qrAlt": "QR-Code des Übergabelinks für {name}",
+        "urlLabel": "Übergabelink",
+        "copy": "Kopieren",
         "copied": "Link kopiert",
-        "pending": "Übergabelink offen bis {date}",
+        "copyError": "Der Link ließ sich nicht kopieren. Markiere ihn und kopiere ihn von Hand.",
+        "linkExpires": "Gültig bis {date}.",
+        "done": "Fertig",
+        "pending": "Ein Übergabelink ist bis {date} offen.",
+        "replace": "Neuer Link",
         "revoke": "Link zurückziehen",
         "revoked": "Link zurückgezogen",
-        "errorFailed": "Der Übergabelink konnte nicht erstellt werden.",
-        "oidcOnly": "Die Profilübergabe ist nicht verfügbar, solange dieser Server nur Single Sign-on erlaubt.",
-        "minorHint": "{name} ist jünger als 16. Den Lesezugang zu behalten, ist eine Überlegung wert."
+        "revokeFailed": "Der Link ließ sich nicht zurückziehen. Versuche es erneut.",
+        "errorFailed": "Der Übergabelink ließ sich nicht erstellen.",
+        "errorRosterChanged": "Inzwischen hat sich geändert, wer die Akte betreut. Schließe das hier und öffne es erneut.",
+        "oidcOnly": "Ein Profil zu übergeben ist nicht möglich, solange dieser Server nur Single Sign-on erlaubt.",
+        "loadError": "Der Stand der Übergabe ließ sich nicht laden.",
+        "entryHint": "Wenn {name} die Akte selbst führen möchte."
       }
     },
     "toast": {
@@ -11788,6 +11826,22 @@
     },
     "anamnesis": {
       "relativeNote": "Ein Eintrag zur Familienanamnese beschreibt die Angehörigen dieser Person. Trage ihn nur ein, wenn sie das hier festgehalten haben möchte."
+    },
+    "handoverDecision": {
+      "title": "Wer Zugriff auf deine Akte behält",
+      "description": "Entscheide, was die Personen, die deine Akte geführt haben, ab jetzt dürfen.",
+      "proposed": "Vorgeschlagen: {access}",
+      "settled": "Bereits unter Geteilter Zugriff geändert",
+      "empty": "Niemand sonst hatte Zugriff auf deine Akte.",
+      "later": "Du kannst das jederzeit unter Einstellungen, Geteilter Zugriff ändern.",
+      "save": "Bestätigen",
+      "saving": "Wird gespeichert…",
+      "decideLater": "Später",
+      "errorFailed": "Deine Entscheidung ließ sich nicht speichern. Versuche es erneut.",
+      "loadError": "Wer deine Akte bisher betreut hat, ließ sich nicht laden.",
+      "notificationsTitle": "Richte deine eigenen Erinnerungen ein",
+      "notificationsBody": "Erinnerungen für diese Akte gingen bisher an die Personen, die sie geführt haben. Ab jetzt erreichen sie dich, sobald du einen Benachrichtigungskanal einrichtest.",
+      "notificationsAction": "Benachrichtigungen öffnen"
     }
   },
   "encounters": {

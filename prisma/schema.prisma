@@ -3918,17 +3918,22 @@ model ManagedProfileHandover {
   profileId     String    @map("profile_id")
   /// The guardian who minted the link.
   createdById   String    @map("created_by_id")
-  /// @pending-consumer(#959) HMAC-SHA256 of the token, unique.
+  /// HMAC-SHA256 of the token, unique; the claim and its preview look the
+  /// link up by it (`src/lib/managed-profiles/handover.ts`).
   tokenHash     String    @unique @map("token_hash")
-  /// @pending-consumer(#959) Per-guardian proposal (end / read / manage) the
-  /// new owner confirms or changes when claiming.
+  /// The handover's state, versioned and read fail-closed by
+  /// `parseHandoverState`: the issuing guardian's proposal per guardian
+  /// (end / read / manage), and after the claim what each guardian was given
+  /// and the new owner's final decision. The pending-decision read on the new
+  /// owner's account is answered from here.
   proposalsJson Json      @map("proposals_json")
   createdAt     DateTime  @default(now()) @map("created_at")
-  /// @pending-consumer(#959) Link expiry (1, 7 or 14 days after minting).
+  /// Link expiry (1, 7 or 14 days after minting).
   expiresAt     DateTime  @map("expires_at")
-  /// @pending-consumer(#959) Set when the profile was claimed through the link.
+  /// Set when the profile was claimed through the link; the token is spent.
   usedAt        DateTime? @map("used_at")
-  /// @pending-consumer(#959) Set when a guardian withdrew the link.
+  /// Set when a guardian withdrew the link, a newer link replaced it, or its
+  /// creator lost access.
   revokedAt     DateTime? @map("revoked_at")
 
   profile   User @relation("HandoverProfile", fields: [profileId], references: [id], onDelete: Cascade)

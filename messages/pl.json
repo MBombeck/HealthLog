@@ -515,17 +515,29 @@
       "localhostNote": "Ta strona działa na http://localhost, a serwer ustawia ciasteczko logowania tylko dla https://. Większość przeglądarek akceptuje to na localhost; jeśli po zalogowaniu wracasz tutaj, ustaw SESSION_COOKIE_SECURE=false."
     },
     "claim": {
-      "title": "Przejmij swój profil",
-      "description": "{guardian} prowadził(a) dla ciebie kartę zdrowia. Wybierz sposób logowania, aby stała się twoim własnym kontem.",
-      "invalid": "Ten link jest nieprawidłowy, wygasł lub został już użyty.",
-      "signOutFirst": "Najpierw się wyloguj, aby przejąć ten profil.",
-      "emailRequired": "Adres e-mail jest wymagany.",
-      "guardiansTitle": "Kto zachowa dostęp",
-      "guardianProposal": "{name} proponuje: {proposal}",
-      "consentNote": "Po przejęciu sam(a) potwierdzisz zastrzeżenie i ewentualną zgodę na AI.",
-      "submit": "Przejmij profil",
+      "title": "Przejmij swoją kartę zdrowia",
+      "titleNamed": "Witaj, {name}",
+      "description": "Do tej pory ktoś prowadził Twoją kartę zdrowia za Ciebie. Wybierz sposób logowania, a stanie się ona Twoim własnym kontem. Nic nie jest kopiowane ani przenoszone.",
+      "loading": "Sprawdzanie linku…",
+      "invalid": "Ten link już nie działa",
+      "invalidHint": "Jest nieznany, wygasł, został wycofany albo już użyty. Poproś osobę, która go wysłała, o nowy.",
+      "oidcOnly": "Ten serwer pozwala tylko na logowanie jednokrotne (SSO), więc profilu nie można tu jeszcze przejąć.",
+      "signedInTitle": "Najpierw się wyloguj",
+      "signedInBody": "Masz zalogowaną sesję jako {username}. Ten link tworzy logowanie dla kogoś innego, więc wyloguj się, zanim go użyjesz.",
+      "signOut": "Wyloguj i kontynuuj",
+      "guardiansTitle": "Kto na razie zachowuje dostęp",
+      "guardiansHint": "Zaproponowane przez osoby, które prowadziły Twoją kartę. Zdecydujesz zaraz po zalogowaniu.",
+      "usernameHint": "Od 3 do 30 liter, cyfr, _ lub -.",
+      "usernameReserved": "Nazwy użytkownika zaczynające się od managed- są zarezerwowane.",
+      "emailHint": "Wymagany, żebyś mógł wrócić, jeśli zapomnisz hasła.",
+      "consentNote": "Zastrzeżenie i każde użycie AI potwierdzasz sam. Do tego czasu nic z Twojej karty nie trafia do dostawcy AI.",
+      "expires": "Ten link jest ważny do {date}.",
+      "submit": "Przejmij",
       "submitting": "Przejmowanie…",
-      "success": "Profil jest teraz twoim kontem."
+      "errorTaken": "Ta nazwa użytkownika lub adres e-mail jest już zajęty.",
+      "errorRateLimit": "Zbyt wiele prób. Odczekaj kilka minut i spróbuj ponownie.",
+      "errorFailed": "Nie udało się. Spróbuj ponownie za chwilę.",
+      "errorOffline": "Nie udało się połączyć z serwerem. Sprawdź połączenie i spróbuj ponownie."
     }
   },
   "dashboard": {
@@ -7462,6 +7474,7 @@
     "finalDelete": "Usuń trwale",
     "deletedResult": "Usunięto {rows} wierszy w {tables} tabelach. Konta użytkowników i dane logowania zostały zachowane.",
     "authRegister": "Rejestracja",
+    "authClaim": "Profil przejęty",
     "authLogin": "Zaloguj",
     "authLoginPasskey": "Logowanie kluczem passkey",
     "authLoginPassword": "Logowanie hasłem",
@@ -8385,7 +8398,17 @@
     "loginRequired": "Zaloguj się, aby zarządzać powiadomieniami.",
     "someChannelsGloballyDisabled": "Co najmniej jeden kanał jest wyłączony w ustawieniach i nie będzie otrzymywać powiadomień.",
     "reminderSettingsLink": "Ustawienia przypomnień",
-    "channelsLink": "Kanały"
+    "channelsLink": "Kanały",
+    "handover": {
+      "claimedTitle": "{name} ma teraz własne konto",
+      "claimedEnd": "{name} przejmuje swoją kartę zdrowia. Twój dostęp się zakończył.",
+      "claimedRead": "{name} przejmuje swoją kartę zdrowia. Nadal możesz ją oglądać, ale już nie zmieniać.",
+      "claimedManage": "{name} przejmuje swoją kartę zdrowia. Nadal możesz nią zarządzać, dopóki nie zapadnie inna decyzja.",
+      "changedTitle": "{name} zmienia Twój dostęp",
+      "changedEnd": "Twój dostęp do karty zdrowia osoby {name} się zakończył.",
+      "changedRead": "Możesz teraz oglądać kartę zdrowia osoby {name}, ale nie zmieniać jej.",
+      "changedManage": "Możesz zarządzać kartą zdrowia osoby {name}."
+    }
   },
   "i18n": {
     "maintainershipBanner": {
@@ -11590,29 +11613,44 @@
       "rosterLoadError": "Nie udało się wczytać, kto opiekuje się tą kartą.",
       "errorRateLimit": "Zbyt wiele profili utworzonych w ostatniej godzinie. Odczekaj chwilę i spróbuj ponownie.",
       "handover": {
-        "title": "Przekaż ten profil",
-        "description": "Daj osobie {name} własne logowanie. Dane zostają tam, gdzie są; ty proponujesz, jaki dostęp zachowa każdy opiekun, a {name} decyduje.",
-        "create": "Utwórz link przekazania",
+        "action": "Przekaż",
+        "title": "Przekaż osobie {name}",
+        "description": "Daj osobie {name} własne logowanie. Nic nie jest kopiowane ani przenoszone: karta staje się jej kontem.",
+        "guardiansLabel": "Dostęp po przekazaniu",
+        "guardiansHint": "Twoja propozycja. {name} zobaczy ją i zdecyduje po zalogowaniu.",
+        "access": {
+          "end": "Brak dostępu",
+          "read": "Tylko podgląd",
+          "manage": "Zarządzanie"
+        },
         "expiryLabel": "Link ważny przez",
         "expiry1": "1 dzień",
         "expiry7": "7 dni",
         "expiry14": "14 dni",
-        "proposalLabel": "Proponowany dostęp potem",
-        "proposal": {
-          "end": "Zakończ dostęp",
-          "read": "Tylko podgląd",
-          "manage": "Dalej zarządzaj"
-        },
-        "linkTitle": "Link przekazania",
-        "linkOnce": "Ten link jest pokazywany tylko raz. Przekaż go osobie {name} bezpośrednio albo pozwól zeskanować kod.",
-        "copy": "Kopiuj link",
+        "minorHint": "{name} ma mniej niż 16 lat. Warto zachować dostęp do podglądu i omówić ten krok wspólnie.",
+        "irreversible": "Gdy {name} użyje linku, przekazania nie da się cofnąć. Karta będzie należeć do tej osoby i to ona zdecyduje, kto zachowa dostęp.",
+        "afterwards": "{name} osobiście potwierdzi zastrzeżenie i każdą zgodę na AI. Przypomnienia dotyczące tej karty przestaną do Ciebie trafiać.",
+        "replaceNote": "Utworzenie nowego linku wycofuje otwarty.",
+        "create": "Utwórz link",
+        "creating": "Tworzenie…",
+        "linkOnce": "Ten link jest widoczny tylko teraz. Przekaż go osobie {name} osobiście lub zaufanym kanałem albo pozwól zeskanować kod.",
+        "qrAlt": "Kod QR linku przekazania dla {name}",
+        "urlLabel": "Link przekazania",
+        "copy": "Kopiuj",
         "copied": "Link skopiowany",
-        "pending": "Link przekazania otwarty do {date}",
+        "copyError": "Nie udało się skopiować linku. Zaznacz go i skopiuj ręcznie.",
+        "linkExpires": "Ważny do {date}.",
+        "done": "Gotowe",
+        "pending": "Link przekazania jest otwarty do {date}.",
+        "replace": "Nowy link",
         "revoke": "Wycofaj link",
         "revoked": "Link wycofany",
+        "revokeFailed": "Nie udało się wycofać linku. Spróbuj ponownie.",
         "errorFailed": "Nie udało się utworzyć linku przekazania.",
-        "oidcOnly": "Przekazanie profilu jest niedostępne, dopóki ten serwer pozwala tylko na logowanie jednokrotne.",
-        "minorHint": "{name} ma mniej niż 16 lat. Warto rozważyć zachowanie dostępu do podglądu."
+        "errorRosterChanged": "W międzyczasie zmieniło się, kto opiekuje się kartą. Zamknij to i otwórz ponownie.",
+        "oidcOnly": "Przekazanie profilu nie jest możliwe, dopóki ten serwer pozwala tylko na logowanie jednokrotne (SSO).",
+        "loadError": "Nie udało się wczytać stanu przekazania.",
+        "entryHint": "Gdy {name} chce samodzielnie prowadzić tę kartę."
       }
     },
     "toast": {
@@ -11788,6 +11826,22 @@
     },
     "anamnesis": {
       "relativeNote": "Wpis w wywiadzie rodzinnym opisuje bliskich tej osoby. Dodaj go tylko wtedy, gdy chciałaby, żeby został tu zapisany."
+    },
+    "handoverDecision": {
+      "title": "Kto zachowuje dostęp do Twojej karty",
+      "description": "Zdecyduj, co od teraz mogą osoby, które prowadziły Twoją kartę.",
+      "proposed": "Proponowane: {access}",
+      "settled": "Już zmienione w Udostępnionym dostępie",
+      "empty": "Nikt inny nie miał dostępu do Twojej karty.",
+      "later": "Możesz to zmienić w każdej chwili w Ustawieniach, Udostępniony dostęp.",
+      "save": "Potwierdź",
+      "saving": "Zapisywanie…",
+      "decideLater": "Później",
+      "errorFailed": "Nie udało się zapisać decyzji. Spróbuj ponownie.",
+      "loadError": "Nie udało się wczytać osób, które prowadziły Twoją kartę.",
+      "notificationsTitle": "Ustaw własne przypomnienia",
+      "notificationsBody": "Do tej pory przypomnienia dla tej karty trafiały do osób, które ją prowadziły. Od teraz trafiają do Ciebie, gdy tylko dodasz kanał powiadomień.",
+      "notificationsAction": "Otwórz powiadomienia"
     }
   },
   "encounters": {
