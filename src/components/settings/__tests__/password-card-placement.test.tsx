@@ -113,7 +113,7 @@ describe("change-password card placement", () => {
       "utf8",
     );
     for (const marker of [
-      "settings.passwordReset",
+      "settings.passwordTitle",
       "settings.changePassword",
       "/api/auth/password",
       // A change-password form is the pair current + new. The Account form

@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Label } from "@/components/ui/label";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Textarea } from "@/components/ui/textarea";
@@ -96,6 +97,13 @@ export function EmergencyProfileManager() {
   }
 
   const disabled = query.isLoading || save.isPending || current === null;
+  // Save stays off until a field differs from the stored profile, like every
+  // other Save on this page; a fresh draft that matches the record is not a
+  // change.
+  const dirty =
+    draft !== null &&
+    query.data != null &&
+    JSON.stringify(draft) !== JSON.stringify(draftFromDto(query.data));
   const set = (patch: Partial<Draft>) =>
     setDraft((prev) => ({ ...(prev ?? draftFromDto(query.data!)), ...patch }));
 
@@ -113,7 +121,7 @@ export function EmergencyProfileManager() {
         disabled={disabled}
         onValueChange={(next) => set({ [key]: next } as Partial<Draft>)}
       >
-        <SelectTrigger id={`emergency-${key}`}>
+        <SelectTrigger id={`emergency-${key}`} className="w-full">
           <SelectValue placeholder={t("records.emergency.notRecorded")} />
         </SelectTrigger>
         <SelectContent>
@@ -170,12 +178,12 @@ export function EmergencyProfileManager() {
         {t("records.emergency.reportHint")}
       </p>
 
-      <div className="flex items-center justify-end">
+      <SettingsCardActions>
         <Button
           type="button"
           size="sm"
           className="min-h-11 sm:min-h-9"
-          disabled={disabled || current === null}
+          disabled={disabled || !dirty}
           onClick={() => current && save.mutate(current)}
         >
           {save.isPending && (
@@ -186,7 +194,7 @@ export function EmergencyProfileManager() {
           )}
           {t("records.emergency.save")}
         </Button>
-      </div>
+      </SettingsCardActions>
     </div>
   );
 }

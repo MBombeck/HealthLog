@@ -119,27 +119,16 @@ export function AppLogPreviewSection() {
     <SettingsCard>
       <SettingsCardHeader
         icon={FileText}
-        title={t("admin.section.app-logs.title")}
+        title={t("admin.section.app-logs.cardTitle")}
         description={t("admin.section.app-logs.processNote")}
-        status={
-          <Button
-            variant="outline"
-            size="sm"
-            className="min-h-11 min-w-11 sm:min-h-9 sm:min-w-9"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            aria-label={t("admin.section.app-logs.refresh")}
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${isFetching ? "animate-spin" : ""} motion-reduce:animate-none`}
-            />
-          </Button>
-        }
       />
 
       <p className="text-sm">{t("admin.section.app-logs.processDetail")}</p>
 
-      <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
+      {/* Filters and the refresh share one toolbar row above the table; the
+          header status slot carries status, not actions (design standards
+          §12). */}
+      <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto]">
         <Input
           type="search"
           placeholder={t("admin.section.app-logs.filterTraceId")}
@@ -158,7 +147,10 @@ export function AppLogPreviewSection() {
           value={level}
           onValueChange={(v) => setLevel(v as LogLevel | "__all__")}
         >
-          <SelectTrigger aria-label={t("admin.section.app-logs.filterLevel")}>
+          <SelectTrigger
+            className="w-full"
+            aria-label={t("admin.section.app-logs.filterLevel")}
+          >
             <SelectValue
               placeholder={t("admin.section.app-logs.filterLevel")}
             />
@@ -174,7 +166,10 @@ export function AppLogPreviewSection() {
           </SelectContent>
         </Select>
         <Select value={range} onValueChange={(v) => setRange(v as RangePreset)}>
-          <SelectTrigger aria-label={t("admin.section.app-logs.filterRange")}>
+          <SelectTrigger
+            className="w-full"
+            aria-label={t("admin.section.app-logs.filterRange")}
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -192,6 +187,18 @@ export function AppLogPreviewSection() {
             </SelectItem>
           </SelectContent>
         </Select>
+        <Button
+          variant="outline"
+          size="sm"
+          className="min-h-11 min-w-11 justify-self-end sm:min-h-9 sm:min-w-9"
+          onClick={() => refetch()}
+          disabled={isFetching}
+          aria-label={t("admin.section.app-logs.refresh")}
+        >
+          <RefreshCw
+            className={`h-4 w-4 ${isFetching ? "animate-spin" : ""} motion-reduce:animate-none`}
+          />
+        </Button>
       </div>
 
       {isLoading ? (

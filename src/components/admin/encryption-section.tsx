@@ -43,6 +43,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
 import { getApiErrorMessage } from "./_shared";
 import { KeyBackupCard } from "./key-backup-card";
+import { useKeyBackupStatus } from "./use-key-backup-status";
 
 interface ColumnScan {
   model: string;
@@ -88,6 +89,9 @@ export function EncryptionSection() {
   const fmt = useFormatters();
   const queryClient = useQueryClient();
 
+  // Same query as the card's own (deduplicated by key): read here only to
+  // know when the page can paint the cards below it in one step.
+  const keyBackup = useKeyBackupStatus();
   const statusQuery = useQuery({
     queryKey: queryKeys.adminEncryptionStatus(),
     queryFn: async (): Promise<EncryptionStatus> => {
@@ -129,7 +133,19 @@ export function EncryptionSection() {
   // downward the moment the status resolved. Same shape as
   // `coach-feedback-section.tsx`, which fixed this for itself and never had
   // the fix carried across.
-  if (statusQuery.isLoading || statusQuery.isError || !statusQuery.data) {
+  // Until both reads land, only the key-backup card paints. It is the first
+  // card and grows into its loaded shape with nothing under it yet; painting
+  // the coverage card below it while the backup card was still a one-line
+  // loader moved that card down the page when the backup status arrived.
+  if (statusQuery.isLoading || keyBackup.isLoading) {
+    return (
+      <div className="space-y-6">
+        <KeyBackupCard />
+      </div>
+    );
+  }
+
+  if (statusQuery.isError || !statusQuery.data) {
     return (
       <div className="space-y-6">
         <KeyBackupCard />
@@ -143,16 +159,9 @@ export function EncryptionSection() {
             {t("admin.section.encryption.coverageDetail")}
           </p>
 
-          {statusQuery.isLoading ? (
-            <div className="text-muted-foreground flex items-center gap-2 text-sm">
-              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-              {t("admin.section.encryption.loading")}
-            </div>
-          ) : (
-            <p role="alert" className="text-destructive text-sm">
-              {t("admin.section.encryption.loadError")}
-            </p>
-          )}
+          <p role="alert" className="text-destructive text-sm">
+            {t("admin.section.encryption.loadError")}
+          </p>
         </SettingsCard>
       </div>
     );
@@ -160,6 +169,7 @@ export function EncryptionSection() {
 
   const s = statusQuery.data;
   const running = s.rotation.state === "running" || rotate.isPending;
+  const hasRetiredKey = s.configuredKeyCount > 1;
   // Only the rows that share a coverage view need the per-column table; sort
   // stale-first so an operator sees what still needs rotating.
   const columns = [...s.columns].sort((a, b) => b.legacy - a.legacy);
@@ -174,6 +184,9 @@ export function EncryptionSection() {
           title={t("admin.section.encryption.coverageTitle")}
           description={t("admin.section.encryption.coverageDescription")}
         />
+        <p className="text-sm">
+          {t("admin.section.encryption.coverageDetail")}
+        </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <Stat
             label={t("admin.section.encryption.activeKeyId")}
@@ -192,20 +205,26 @@ export function EncryptionSection() {
             value={s.staleRows.toLocaleString()}
           />
         </div>
-        {s.safeToDropRetiredKeys ? (
+        {/* "Safe to drop the legacy key" needs a legacy key to drop. With a
+            single configured key the server's flag is vacuously true, and
+            the badge named a key that does not exist. */}
+        {hasRetiredKey && s.safeToDropRetiredKeys ? (
           <Badge className="border-success/40 bg-success/15 text-success">
             {t("admin.section.encryption.safeToDropLegacy")}
           </Badge>
         ) : s.rotationComplete ? (
           // Every row is on the active key, and that is not the whole
           // answer: a backup keeps the key its content was written under.
-          <Badge variant="secondary" data-slot="encryption-backups-need-keys">
-            {s.backups.retiredKeysStillNeeded.length > 0
-              ? t("admin.section.encryption.backupsStillNeed", {
-                  keys: s.backups.retiredKeysStillNeeded.join(", "),
-                })
-              : t("admin.section.encryption.backupsUnrecordedBadge")}
-          </Badge>
+          !hasRetiredKey &&
+          s.backups.retiredKeysStillNeeded.length === 0 ? null : (
+            <Badge variant="secondary" data-slot="encryption-backups-need-keys">
+              {s.backups.retiredKeysStillNeeded.length > 0
+                ? t("admin.section.encryption.backupsStillNeed", {
+                    keys: s.backups.retiredKeysStillNeeded.join(", "),
+                  })
+                : t("admin.section.encryption.backupsUnrecordedBadge")}
+            </Badge>
+          )
         ) : (
           <Badge variant="secondary">
             {t("admin.section.encryption.rotationIncomplete", {
@@ -341,7 +360,15 @@ export function EncryptionSection() {
           title={t("admin.section.encryption.columnsTitle")}
           description={t("admin.section.encryption.columnsDescription")}
         />
-        <div className="overflow-x-auto">
+        {/* Focusable, named scroll region: on a phone the table scrolls
+            sideways, and a keyboard user has to be able to reach it
+            (axe scrollable-region-focusable). */}
+        <div
+          className="overflow-x-auto"
+          tabIndex={0}
+          role="region"
+          aria-label={t("admin.section.encryption.columnsTitle")}
+        >
           <table className="w-full text-sm">
             <thead>
               <tr className="text-muted-foreground border-b text-left">

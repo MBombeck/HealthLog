@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { DeleteButton } from "@/components/data-list";
 import { Button } from "@/components/ui/button";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
@@ -105,18 +106,6 @@ export function FamilyHistoryManager() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-muted-foreground text-sm">
-          {t("records.family.description")}
-        </p>
-        {rows.length > 0 ? (
-          <Button size="sm" onClick={openNew} className="shrink-0">
-            <Plus className="h-4 w-4" />
-            {t("records.family.add")}
-          </Button>
-        ) : null}
-      </div>
-
       {isLoading ? (
         <div className="space-y-2">
           {Array.from({ length: 2 }, (_, i) => (
@@ -140,6 +129,18 @@ export function FamilyHistoryManager() {
       ) : (
         <ul className="space-y-2">{rows.map(renderRow)}</ul>
       )}
+
+      {/* The add action closes the list as the card's action row (design
+          standards §12); an empty list leaves it to the empty state's own
+          button. */}
+      {!isLoading && !isError && rows.length > 0 ? (
+        <SettingsCardActions>
+          <Button size="sm" onClick={openNew} className="min-h-11 sm:min-h-9">
+            <Plus className="h-4 w-4" />
+            {t("records.family.add")}
+          </Button>
+        </SettingsCardActions>
+      ) : null}
 
       <ResponsiveSheet
         open={formOpen}

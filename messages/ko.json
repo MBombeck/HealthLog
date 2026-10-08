@@ -2246,7 +2246,6 @@
     "cardLowStockRunway": "재고: 약 {days}일",
     "takeActionFor": "복용 – {name}",
     "skipActionFor": "건너뛰기 – {name}",
-    "reorderTitle": "순서 조정",
     "reorderDescription": "약의 순서를 정하세요 – 카드 보기와 표 보기 모두에 적용돼요.",
     "reorderSaved": "순서를 저장했어요",
     "reorderSaveFailed": "순서를 저장하지 못했어요",
@@ -4793,7 +4792,8 @@
     "metricBodyWater": "체수분",
     "metricBoneMass": "골량",
     "metricOxygenSaturation": "산소포화도(SpO₂)",
-    "unsetExplanation": "사용자 설정 없음 — 계산된 기본값을 써요."
+    "unsetExplanation": "사용자 설정 없음 — 계산된 기본값을 써요.",
+    "cardTitle": "지표별 범위"
   },
   "onboarding": {
     "errorGeneric": "설정을 마치는 중 문제가 생겼어요. 다시 시도해 주세요.",
@@ -5381,7 +5381,7 @@
         "description": "같은 날 같은 지표를 여러 소스가 기록했을 때 어느 소스를 쓸지 골라요.",
         "integrationsHint": "데이터 소스 연결과 해제는 연동 페이지에서 해요.",
         "integrationsHintLink": "연동 열기",
-        "cardTitle": "지표별 소스 우선순위",
+        "cardTitle": "지표별 순위",
         "help": "같은 날 여러 소스가 같은 값을 보내면 맨 위 소스를 대표값으로 써요.",
         "resetDefaults": "기본값으로 되돌리기",
         "resetDefaultsTitle": "소스 순서를 되돌릴까요?",
@@ -5787,7 +5787,7 @@
       },
       "anamnesis": {
         "title": "병력",
-        "subtitle": "알레르기와 가족력을 관리해요.",
+        "subtitle": "병력, 생활 습관, 응급 정보와 AI가 읽을 수 있는 범위를 관리해요.",
         "description": "구조화된 알레르기·가족력 기록."
       },
       "environment": {
@@ -5971,7 +5971,6 @@
     },
     "changePassword": "비밀번호 변경",
     "changePasswordDescription": "지금 쓰는 비밀번호를 새 비밀번호로 바꿔요.",
-    "passwordReset": "비밀번호 재설정",
     "currentPassword": "현재 비밀번호",
     "newPassword": "새 비밀번호",
     "confirmNewPassword": "새 비밀번호 확인",
@@ -6051,7 +6050,6 @@
     "webPushSubscribed": "푸시 알림을 켰어요!",
     "webPushUnsubscribed": "푸시 알림을 껐어요.",
     "webPushSubscribeFailed": "켜지 못했어요",
-    "kiInsightsDescription": "선택 사항: OpenAI 키를 저장하면 인사이트에서 매일 자동으로 분석해요.",
     "codexConnected": "ChatGPT를 연결했어요! 이제 인사이트를 쓸 수 있어요.",
     "codexDisconnected": "ChatGPT 연결을 해제했어요.",
     "codexConnectionFailed": "ChatGPT 연결에 실패했어요. 다시 시도해 주세요.",
@@ -6099,7 +6097,7 @@
           "admin-openai": "관리자 OpenAI"
         },
         "title": "대체 순서",
-        "description": "기본 제공자가 실패하면 HealthLog가 순서대로 다음 제공자를 시도해요. 행을 끌어 순서를 바꾸고, 스위치를 끄면 제공자를 지우지 않고 비활성화할 수 있어요.",
+        "description": "활성 제공자가 실패하면 HealthLog가 이 순서대로 다음 활성 제공자를 시도해요.",
         "moveUp": "위로",
         "moveDown": "아래로",
         "removeFromChain": "순서에서 제거",
@@ -6112,11 +6110,8 @@
         "resetConfirmTitle": "순서를 기본값으로 되돌릴까요?",
         "resetConfirmBody": "순서가 Codex → OpenAI → Anthropic → 로컬 → 관리자 OpenAI로 돌아가요. 저장한 인증 정보는 그대로예요."
       },
-      "providerCardTitle": "AI 제공자",
       "activeProviderHeading": "사용 중인 제공자",
-      "activeProviderBody": "가장 먼저 쓸 제공자를 고르세요. 아래 양식은 선택한 제공자만 설정하고, 실패했을 때 어떻게 할지는 맨 아래 대체 순서가 정해요.",
       "activeProviderLabel": "기본 제공자",
-      "providerConfigTitle": "제공자 설정",
       "providerSelect": {
         "codex": "ChatGPT 계정 (Codex)",
         "openai": "OpenAI (내 API 키)",
@@ -6262,14 +6257,14 @@
       },
       "centralCodex": {
         "title": "서버의 공용 AI 연결 사용",
-        "subLabel": "운영자가 이 서버에 설정한 연결로 AI 요청을 보내고, 내 제공자는 대체 수단으로 함께 써요.",
+        "subLabel": "AI 요청을 서버의 공유 연결로 보내고, 내 제공자는 대체 수단으로 써요.",
         "honesty": "공용 연결은 운영자가 이 서버의 모든 사용자를 위해 연결해 둔 로그인 AI 계정 하나예요 — 내 키가 아니에요. 이 연결로 보낸 요청은 기본적으로 제공자의 학습에 쓰이고 이를 보호하는 데이터 처리 계약도 없으며, 계정의 시간당·주당 한도를 사용을 선택한 다른 모든 사용자와 나눠 써요. 내가 설정한 제공자는 여전히 먼저 시도돼요. 이 조건을 받아들일 때만 켜세요.",
         "confirm": "이해했어요 — 연결 사용",
         "cancel": "취소"
       },
       "consent": {
         "title": "AI 동의",
-        "activeSince": "{date}에 동의했어요. AI 기능을 위해 건강 데이터가 설정한 제공자에게 전송될 수 있어요.",
+        "activeSince": "{date}에 동의했어요: AI 기능을 위해 건강 데이터가 설정한 제공자에게 전송될 수 있어요.",
         "withdrawn": "동의를 철회했어요. 다른 동의가 적용되지 않는 한, 코치와 인사이트는 더 이상 이 서버가 제공하는 AI 연결을 사용하지 않고 온라인 모델도 문서를 읽지 않아요. 자신의 키나 로컬 모델을 사용하는 코치와 인사이트는 계속 작동해요.",
         "withdraw": "동의 철회",
         "confirmBody": "다른 동의가 여전히 적용되지 않는 한, 다음이 즉시 중지됩니다: 이 서버가 제공하는 AI 연결을 사용하는 코치와 인사이트, 그리고 온라인 모델을 통한 문서 읽기. 자신의 키나 로컬 모델을 사용하는 코치와 인사이트는 계속 작동합니다. 인사이트에 적용되는 다른 동의가 없으면 모델이 작성한 메모가 삭제됩니다: 상태 메모, 일일 브리핑, 모델이 작성한 기간 요약, 새 측정값 알림 문장, 운동 메모. 코치 대화, 코치가 기억한 내용, 계획, 문서 요약은 그대로 남으며 직접 읽거나 삭제할 수 있습니다.",
@@ -6280,7 +6275,7 @@
         "error": "철회를 저장하지 못했어요. 다시 시도해 주세요.",
         "documentReading": {
           "title": "문서 읽기 동의",
-          "activeSince": "{date}에 동의함. 문서, 스캔한 검사 결과지, 약 설명이 읽기용으로 AI 서비스에 전송될 수 있습니다.",
+          "activeSince": "{date}에 동의했어요: 문서, 스캔한 검사지, 약 설명이 읽기용으로 AI 서비스에 전송될 수 있어요.",
           "confirmBody": "문서, 스캔한 검사 결과지, 약 설명이 더 이상 읽기용으로 전송되지 않습니다. 이미 가지고 있는 것은 삭제되지 않습니다."
         }
       },
@@ -6314,7 +6309,9 @@
           "high": "높음"
         },
         "coachNote": "코치에서는 코치 설정의 사고 깊이가 적용됩니다."
-      }
+      },
+      "providerCardDescription": "HealthLog가 가장 먼저 쓰는 제공자와 그 키, 모델이에요.",
+      "runtimeTitle": "확인 및 새로고침"
     },
     "dashboard": {
       "units": {
@@ -7171,7 +7168,8 @@
       "description": "건강 데이터를 공유하거나 내보내는 작업입니다. 계속하려면 본인임을 확인하세요.",
       "signInAgain": "다시 로그인한 후 한 번 더 시도하세요. 이 계정에는 여기서 확인할 비밀번호나 패스키가 없습니다.",
       "failed": "확인하지 못했습니다. 입력한 내용을 확인하고 다시 시도하세요."
-    }
+    },
+    "passwordTitle": "비밀번호"
   },
   "admin": {
     "title": "관리자",
@@ -7267,9 +7265,9 @@
     "defaultLanguage": "기본 언어",
     "defaultLanguageDescription": "새 사용자와 대체값으로 쓰여요.",
     "defaultUserTimezone": "새 계정의 기본 시간대",
-    "defaultUserTimezoneDescription": "브라우저에서 시간대를 감지하지 못한 새 계정에 쓰여요. 기존 사용자에게는 영향이 없어요.",
+    "defaultUserTimezoneDescription": "브라우저에서 시간대를 감지하지 못한 새 계정에 쓰이고, 기존 계정은 그대로예요.",
     "defaultUserTimezoneFallback": "Europe/Berlin (기본값)",
-    "servicesGlobal": "서비스 (전역)",
+    "servicesGlobal": "채널과 API",
     "servicesGlobalDescription": "끈 서비스는 어떤 사용자도 쓸 수 없어요.",
     "telegramGlobal": "Telegram 알림을 허용해요.",
     "ntfyGlobal": "ntfy 알림을 허용해요.",
@@ -7280,16 +7278,16 @@
     "offlineGeoFallback": "온라인 ({host}) — GeoLite2 데이터베이스를 마운트하고 GEOLITE2_DIR을 설정하세요",
     "apiGlobal": "API 엔드포인트와 API 토큰을 허용해요.",
     "umamiTitle": "Umami",
-    "umamiDescription": "Umami 웹 분석",
+    "umamiDescription": "Umami 웹 분석이에요.",
     "glitchtipTitle": "GlitchTip",
-    "glitchtipDescription": "GlitchTip 오류 추적",
+    "glitchtipDescription": "GlitchTip 오류 추적이에요.",
     "webPushVapidTitle": "웹 푸시 VAPID",
-    "umamiEnabled": "Umami 추적을 켜요.",
+    "umamiEnabled": "Umami 추적 켜기",
     "umamiScriptUrl": "Umami 스크립트 URL",
     "umamiScriptUrlPlaceholder": "https://analytics.example.com/script.js",
     "umamiWebsiteId": "Umami 웹사이트 ID",
     "umamiWebsiteIdPlaceholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-    "glitchtipEnabled": "GlitchTip 오류 추적을 켜요.",
+    "glitchtipEnabled": "GlitchTip 오류 추적 켜기",
     "glitchtipDsn": "GlitchTip DSN",
     "glitchtipDsnPlaceholder": "https://<public-key>@glitchtip.example.com/<project-id>",
     "glitchtipEnvironment": "GlitchTip 환경",
@@ -7351,8 +7349,8 @@
       "title": "모듈 사용 여부",
       "description": "서버 전체에서 모듈을 끌 수 있어요.",
       "saveError": "모듈 사용 여부를 바꾸지 못했어요.",
-      "detail": "여기서 끈 모듈은 개인 설정과 관계없이 모든 계정에서 꺼져요. 핵심 영역(체중, 혈압, 맥박, 복약)은 항상 켜져 있고 끌 수 없어요.",
-      "coachFollowsSwitch": "어시스턴트의 코치 스위치를 따릅니다."
+      "detail": "체중, 혈압, 맥박은 핵심 측정값이라 항상 켜져 있어요.",
+      "coachFollowsSwitch": "코치 섹션의 코치 스위치를 따라요."
     },
     "invites": {
       "title": "초대",
@@ -7437,7 +7435,6 @@
     "tokenNeverUsed": "없음",
     "tokensEmptyTitle": "아직 API 토큰이 없어요",
     "tokensEmptyDescription": "네이티브 클라이언트가 로그인할 때나 설정 → 계정에서 토큰이 발급돼요.",
-    "loginOverview": "로그인 개요",
     "loginOverviewDescription": "모든 계정의 로그인·인증 이벤트예요. 필터링하고 CSV로 내보낼 수 있어요.",
     "allAuthEvents": "전체 인증 이벤트",
     "failedOnly": "실패만",
@@ -7545,7 +7542,7 @@
       },
       "services": {
         "title": "서비스",
-        "subtitle": "알림 채널과 연동을 시스템 전체에서 켜거나 꺼요."
+        "subtitle": "알림 채널과 API를 서버 전체에서 켜거나 꺼요."
       },
       "integrations": {
         "title": "연동",
@@ -7631,7 +7628,8 @@
         "refresh": "새로고침",
         "eventDetails": "이벤트 상세",
         "closeDetails": "상세 닫기",
-        "processDetail": "버퍼는 휘발성이고 최대 500개까지만 담아요."
+        "processDetail": "버퍼는 휘발성이고 최대 500개까지만 담아요.",
+        "cardTitle": "최근 이벤트"
       },
       "backups": {
         "title": "백업",
@@ -7815,7 +7813,6 @@
       "encryption": {
         "title": "암호화",
         "subtitle": "저장 데이터의 암호화 적용 범위와 키 교체 상태예요.",
-        "loading": "암호화 상태를 불러오는 중…",
         "loadError": "암호화 상태를 불러오지 못했어요.",
         "coverageTitle": "적용 범위",
         "coverageDescription": "키 id별로 암호화된 행이 얼마나 있는지 보여줘요.",
@@ -7893,7 +7890,7 @@
     },
     "carrier": "통신사",
     "mfaRequired": "2단계 인증 필수",
-    "mfaRequiredDescription": "2단계 인증이 없는 계정은 로그인 후 등록 화면으로 보내요. 웹 사용자에게 등록을 요구할 뿐, 아직 등록하지 않은 계정의 API나 네이티브(Bearer) 접근을 막지는 않아요.",
+    "mfaRequiredDescription": "2단계 인증이 없는 계정은 웹 로그인 후 등록 화면으로 보내고, API와 네이티브(Bearer) 접근은 그대로 열려 있어요.",
     "mfaEnforcedOn": "MFA 켬",
     "mfaEnforcedOff": "MFA 끔",
     "mfaEnforcedOnHint": "이 사용자에게 2단계 인증이 필수예요. 누르면 해제돼요.",
@@ -8015,7 +8012,9 @@
       "restartNote": "변경 후 HealthLog를 다시 시작하세요.",
       "lastResort": "최후의 수단: 키가 맞다고 확신하고 위 세 가지가 모두 해당하지 않을 때만 {setting}을 설정하고 다시 시작하세요. HealthLog는 그래도 서비스하며 결과를 로그에만 남깁니다. 이 설정은 안전 검사를 끕니다. 키가 틀리면 모든 암호화된 값이 실패하고 새 데이터가 그 키로 기록됩니다.",
       "codes": "운영자용: API 요청은 오류 코드 {code}와 함께 503으로 응답하고, /api/health는 원인 {reason}을 알려 줍니다."
-    }
+    },
+    "loginOverviewCardTitle": "로그인 이벤트",
+    "userColumn": "사용자"
   },
   "achievements": {
     "title": "업적",

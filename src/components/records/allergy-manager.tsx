@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { DeleteButton } from "@/components/data-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
@@ -120,18 +121,6 @@ export function AllergyManager() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-muted-foreground text-sm">
-          {t("records.allergies.description")}
-        </p>
-        {rows.length > 0 ? (
-          <Button size="sm" onClick={openNew} className="shrink-0">
-            <Plus className="h-4 w-4" />
-            {t("records.allergies.add")}
-          </Button>
-        ) : null}
-      </div>
-
       {isLoading ? (
         <div className="space-y-2">
           {Array.from({ length: 2 }, (_, i) => (
@@ -155,6 +144,23 @@ export function AllergyManager() {
       ) : (
         <ul className="space-y-2">{rows.map(renderRow)}</ul>
       )}
+
+      {/* The add action closes the list (design standards §12); an empty
+          list leaves it to the empty state's own button. Outline here,
+          because the card's primary is the free-text note's Save below. */}
+      {!isLoading && !isError && rows.length > 0 ? (
+        <SettingsCardActions>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={openNew}
+            className="min-h-11 sm:min-h-9"
+          >
+            <Plus className="h-4 w-4" />
+            {t("records.allergies.add")}
+          </Button>
+        </SettingsCardActions>
+      ) : null}
 
       <ResponsiveSheet
         open={formOpen}

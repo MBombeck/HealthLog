@@ -32,6 +32,7 @@ import { Loader2, MessageCircleQuestion, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { SettingsInfoTile } from "@/components/settings/_info-tile";
 import { Label } from "@/components/ui/label";
@@ -137,9 +138,6 @@ export function AboutMeNoteManager() {
           disabled={disabled}
           onChange={(e) => setDraft(e.target.value)}
         />
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
         <p
           data-testid="settings-about-me-count"
           className="text-muted-foreground text-xs tabular-nums"
@@ -149,39 +147,11 @@ export function AboutMeNoteManager() {
             max: maxChars,
           })}
         </p>
-        <div className="flex items-center gap-2">
-          {hasNote && (
-            <ConfirmButton
-              slot="settings-about-me-clear"
-              label={t("settings.ai.aboutMe.clear")}
-              icon={<Trash2 className="size-4" aria-hidden />}
-              variant="outline"
-              size="sm"
-              className="min-h-11 sm:min-h-9"
-              title={t("settings.ai.aboutMe.clearTitle")}
-              body={t("settings.ai.aboutMe.clearBody")}
-              confirmLabel={t("settings.ai.aboutMe.clearConfirm")}
-              pending={save.isPending}
-              onConfirm={() => save.mutate({ aboutMe: "" })}
-            />
-          )}
-          <Button
-            type="button"
-            size="sm"
-            className="min-h-11 sm:min-h-9"
-            data-testid="settings-about-me-save"
-            disabled={save.isPending || !dirty}
-            onClick={() => save.mutate({ aboutMe: value })}
-          >
-            {save.isPending && (
-              <Loader2
-                className="size-4 animate-spin motion-reduce:animate-none"
-                aria-hidden
-              />
-            )}
-            {t("settings.ai.aboutMe.save")}
-          </Button>
-        </div>
+        {/* What the note is for, under the field it describes; the action row
+          stays the last thing in the card (design standards §12). */}
+        <p className="text-muted-foreground text-xs">
+          {t("settings.ai.aboutMe.hint")} {t("settings.ai.aboutMe.profileHint")}
+        </p>
       </div>
 
       {pendingQuestions.length > 0 && (
@@ -218,9 +188,39 @@ export function AboutMeNoteManager() {
         />
       )}
 
-      <p className="text-muted-foreground border-border border-t pt-3 text-xs">
-        {t("settings.ai.aboutMe.hint")} {t("settings.ai.aboutMe.profileHint")}
-      </p>
+      <SettingsCardActions>
+        {hasNote && (
+          <ConfirmButton
+            slot="settings-about-me-clear"
+            label={t("settings.ai.aboutMe.clear")}
+            icon={<Trash2 className="size-4" aria-hidden />}
+            variant="outline"
+            size="sm"
+            className="min-h-11 sm:min-h-9"
+            title={t("settings.ai.aboutMe.clearTitle")}
+            body={t("settings.ai.aboutMe.clearBody")}
+            confirmLabel={t("settings.ai.aboutMe.clearConfirm")}
+            pending={save.isPending}
+            onConfirm={() => save.mutate({ aboutMe: "" })}
+          />
+        )}
+        <Button
+          type="button"
+          size="sm"
+          className="min-h-11 sm:min-h-9"
+          data-testid="settings-about-me-save"
+          disabled={save.isPending || !dirty}
+          onClick={() => save.mutate({ aboutMe: value })}
+        >
+          {save.isPending && (
+            <Loader2
+              className="size-4 animate-spin motion-reduce:animate-none"
+              aria-hidden
+            />
+          )}
+          {t("settings.ai.aboutMe.save")}
+        </Button>
+      </SettingsCardActions>
     </div>
   );
 }

@@ -4,13 +4,15 @@
  * Runtime actions — Test active provider, regenerate insights, raw-mode toggle.
  * ──────────────────────────────────────────────────────────────── */
 
-import { useState } from "react";
-import { Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { Activity, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
+import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { apiFetchRaw, apiPut } from "@/lib/api/api-fetch";
 import { formatDateTime } from "@/lib/format";
 import { useAiCapability } from "@/hooks/use-ai-capability";
@@ -30,6 +32,7 @@ export function RuntimeActionsRow({
   lastInsightAt,
   onRegenerated,
   onPrivacyChanged,
+  footnote,
 }: {
   provider: ProviderType;
   userProvider: UserAIProvider | null | undefined;
@@ -38,6 +41,8 @@ export function RuntimeActionsRow({
   lastInsightAt: string | null;
   onRegenerated: () => void;
   onPrivacyChanged: () => void;
+  /** A closing statement rendered above the action row (the data posture). */
+  footnote?: ReactNode;
 }) {
   const { t } = useTranslations();
   // "Regenerate" writes the daily briefing, so it is offered only while the
@@ -215,9 +220,14 @@ export function RuntimeActionsRow({
     // §12 — the action row is the LAST thing in the block. The raw-data
     // setting and every status line (last-generated, test / regenerate
     // result) sit ABOVE it, never under it.
-    <div className="space-y-3">
+    <SettingsCard data-slot="ai-runtime-card">
+      <SettingsCardHeader
+        icon={Activity}
+        title={t("settings.ai.runtimeTitle")}
+        description={lastInsightLine ?? undefined}
+      />
       {showRegenerate && (
-        <div className="bg-muted/50 rounded-lg p-3">
+        <div>
           <div className="flex items-center justify-between gap-4">
             <div className="pr-2">
               <p className="text-sm font-medium">{t("settings.rawData")}</p>
@@ -241,9 +251,6 @@ export function RuntimeActionsRow({
         </div>
       )}
 
-      {lastInsightLine && (
-        <p className="text-muted-foreground text-xs">{lastInsightLine}</p>
-      )}
       {testMsg && (
         <p
           className={`text-xs ${testOk ? "text-success" : "text-destructive"}`}
@@ -259,7 +266,9 @@ export function RuntimeActionsRow({
         </p>
       )}
 
-      <SettingsCardActions align="start">
+      {footnote}
+
+      <SettingsCardActions>
         <Button
           type="button"
           size="sm"
@@ -293,6 +302,6 @@ export function RuntimeActionsRow({
           </Button>
         )}
       </SettingsCardActions>
-    </div>
+    </SettingsCard>
   );
 }

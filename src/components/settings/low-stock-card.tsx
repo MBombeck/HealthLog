@@ -244,7 +244,7 @@ export function LowStockCard({
       />
       <p className="text-sm">{t("notifications.lowStock.detail")}</p>
       {enabled && (
-        <div className="flex min-h-11 items-center gap-3">
+        <div className="flex min-h-11 items-center justify-between gap-3">
           <label htmlFor="low-stock-days" className="text-sm font-medium">
             {t("notifications.lowStock.daysLabel")}
           </label>
@@ -254,7 +254,7 @@ export function LowStockCard({
             inputMode="numeric"
             min={MIN_DAYS}
             max={MAX_DAYS}
-            className="w-auto"
+            className="w-24 text-right tabular-nums"
             value={draft ?? String(days)}
             disabled={!isAuthenticated || saving}
             onChange={(e) => setDraft(e.target.value)}
@@ -275,7 +275,7 @@ export function LowStockCard({
           own supply tab. */}
       {enabled && (
         <div>
-          <div className="flex min-h-11 items-center gap-3">
+          <div className="flex min-h-11 items-center justify-between gap-3">
             <label htmlFor="low-stock-lead" className="text-sm font-medium">
               {t("notifications.lowStock.leadLabel")}
             </label>
@@ -285,7 +285,7 @@ export function LowStockCard({
               inputMode="numeric"
               min={MIN_LEAD}
               max={MAX_LEAD}
-              className="w-auto"
+              className="w-24 text-right tabular-nums"
               value={leadDraft ?? String(leadDays)}
               disabled={!isAuthenticated || saving}
               onChange={(e) => setLeadDraft(e.target.value)}

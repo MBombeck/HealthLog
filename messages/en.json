@@ -2246,7 +2246,6 @@
     "cardLowStockRunway": "Supply: ≈ {days} days",
     "takeActionFor": "Take – {name}",
     "skipActionFor": "Skip – {name}",
-    "reorderTitle": "Adjust order",
     "reorderDescription": "Set the order of your medications – it applies to both the card and the table view.",
     "reorderSaved": "Order saved",
     "reorderSaveFailed": "Order could not be saved",
@@ -4793,7 +4792,8 @@
     "metricBodyWater": "Body water",
     "metricBoneMass": "Bone mass",
     "metricOxygenSaturation": "Oxygen saturation (SpO₂)",
-    "unsetExplanation": "No override — using computed default."
+    "unsetExplanation": "No override — using computed default.",
+    "cardTitle": "Ranges per metric"
   },
   "onboarding": {
     "errorGeneric": "Something went wrong while finishing setup. Please try again.",
@@ -5365,7 +5365,7 @@
         },
         "documents": {
           "title": "Documents",
-          "description": "View and how the months are arranged."
+          "description": "View and month arrangement."
         }
       },
       "dashboard": {
@@ -5381,7 +5381,7 @@
         "description": "Pick which ingest source wins when more than one records the same metric for the same day.",
         "integrationsHint": "Connect or disconnect data sources on the Integrations page.",
         "integrationsHintLink": "Open integrations",
-        "cardTitle": "Source priority by metric",
+        "cardTitle": "Ranking per metric",
         "help": "When several sources deliver the same value on the same day, the top source counts as canonical.",
         "resetDefaults": "Reset to defaults",
         "resetDefaultsTitle": "Reset the source order?",
@@ -5787,7 +5787,7 @@
       },
       "anamnesis": {
         "title": "Medical history",
-        "subtitle": "Manage your allergies and family history.",
+        "subtitle": "Your medical background, lifestyle, emergency details and what the AI may read.",
         "description": "Structured allergies and family history records."
       },
       "environment": {
@@ -5971,7 +5971,6 @@
     },
     "changePassword": "Change password",
     "changePasswordDescription": "Replace your current password with a new one.",
-    "passwordReset": "Password reset",
     "currentPassword": "Current password",
     "newPassword": "New password",
     "confirmNewPassword": "Confirm new password",
@@ -6051,7 +6050,6 @@
     "webPushSubscribed": "Push notifications enabled!",
     "webPushUnsubscribed": "Push notifications disabled.",
     "webPushSubscribeFailed": "Activation failed",
-    "kiInsightsDescription": "Optional: Save your OpenAI key for daily, automatic evaluations in Insights.",
     "codexConnected": "ChatGPT connected successfully! Insights are now active.",
     "codexDisconnected": "ChatGPT connection removed.",
     "codexConnectionFailed": "ChatGPT connection failed. Please try again.",
@@ -6099,7 +6097,7 @@
           "admin-openai": "Admin OpenAI"
         },
         "title": "Fallback chain",
-        "description": "If the primary provider fails, HealthLog walks the chain in order. Drag the rows to reorder, toggle the switch to disable a provider without removing it.",
+        "description": "If the active provider fails, HealthLog tries the next enabled one in this order.",
         "moveUp": "Move up",
         "moveDown": "Move down",
         "removeFromChain": "Remove from chain",
@@ -6112,11 +6110,8 @@
         "resetConfirmTitle": "Reset chain to defaults?",
         "resetConfirmBody": "The chain reverts to Codex → OpenAI → Anthropic → Local → Admin OpenAI. Your saved credentials are not touched."
       },
-      "providerCardTitle": "AI provider",
       "activeProviderHeading": "Active provider",
-      "activeProviderBody": "Pick the provider you want to use first. The form below configures only the selected provider; the fallback chain at the bottom decides what happens if it fails.",
       "activeProviderLabel": "Primary provider",
-      "providerConfigTitle": "Provider configuration",
       "providerSelect": {
         "codex": "ChatGPT account (Codex)",
         "openai": "OpenAI (your API key)",
@@ -6255,21 +6250,21 @@
       "responseTimeoutInvalid": "Enter a number between 10 and 600 seconds.",
       "autoRead": {
         "title": "Read documents automatically with AI",
-        "subLabel": "Documents are read and indexed by your configured AI provider without a per-document tap.",
+        "subLabel": "Your AI provider reads and indexes each new document without a tap per document.",
         "honesty": "When on, each document you upload is sent to your configured AI provider to be read, described, and indexed for search — with no per-document confirmation. Turning it on also reaches backwards: documents you have already uploaded that carry no summary yet are sent too, up to 200 each time you switch it on. This happens on the server and the document's contents leave this machine to that provider. If your configured provider is a subscription connection (a signed-in AI account rather than an API key), that provider's own data settings apply — subscription providers may use the content to improve their models, and no data-processing agreement covers it. Documents read by a self-hosted local model never leave your server. Off by default; turn it on only if you accept this trade for your documents.",
         "confirm": "I understand — turn on",
         "cancel": "Cancel"
       },
       "centralCodex": {
         "title": "Use the server's shared AI access",
-        "subLabel": "Route AI requests through the connection the operator set up for this server, alongside your own providers as a fallback.",
+        "subLabel": "Send AI requests through the server's shared connection, with your own providers as the fallback.",
         "honesty": "The shared access is a single signed-in AI account the operator connected for everyone on this server — not your own key. Requests you make on it are trained on by the provider by default and no data-processing agreement covers them, the account's hourly and weekly limits are shared with every other user who opted in, and your own configured providers are still tried first. Turn it on only if you accept this trade.",
         "confirm": "I understand — use connection",
         "cancel": "Cancel"
       },
       "consent": {
         "title": "AI consent",
-        "activeSince": "Given on {date}. Your health data may be sent to the configured provider for the AI features.",
+        "activeSince": "Given on {date}: your health data may be sent to the configured provider for the AI features.",
         "withdrawn": "Withdrawn. Unless another consent covers them, the Coach and Insights no longer use the AI access this server provides, and no online model reads your documents. On your own key or a local model, the Coach and Insights keep working.",
         "withdraw": "Withdraw consent",
         "confirmBody": "Unless another consent you gave still covers them, these stop straight away: the Coach and Insights where they use the AI access this server provides, and reading documents with an online model. On your own key or a local model, the Coach and Insights keep working. Unless another consent still covers Insights, the notes a model wrote for you are deleted: status notes, the daily briefing, model-written period summaries, arrival lines and workout notes. Your Coach conversations, what the Coach remembered, your plans and your document summaries stay, and you can read or delete them yourself.",
@@ -6280,7 +6275,7 @@
         "error": "The withdrawal could not be saved. Please try again.",
         "documentReading": {
           "title": "Consent to reading documents",
-          "activeSince": "Given on {date}. Documents, lab report scans and medication descriptions may be sent to your AI service for reading.",
+          "activeSince": "Given on {date}: documents, lab scans and medication text may go to your AI service for reading.",
           "confirmBody": "Documents, lab report scans and medication descriptions are no longer sent for reading. Nothing you already have is deleted."
         }
       },
@@ -6314,7 +6309,9 @@
           "high": "High"
         },
         "coachNote": "In the Coach, the thinking depth from the Coach settings applies."
-      }
+      },
+      "providerCardDescription": "The provider HealthLog asks first, and its key and model.",
+      "runtimeTitle": "Check and refresh"
     },
     "dashboard": {
       "units": {
@@ -6596,7 +6593,7 @@
     "apiEndpointPath": "Path",
     "apiEndpointAuth": "Authentication",
     "apiEndpointExample": "Body example",
-    "dangerZone": "Delete All Data",
+    "dangerZone": "Delete all data",
     "dangerZoneDescription": "Erases your whole health record and every integration connection.",
     "dangerZoneConfirm": "Delete all data?",
     "dangerZoneConfirmDescription": "This permanently deletes everything in your record: measurements, medications, mood entries, lab results, cycle entries, documents, AI conversations and every integration connection, together with everything derived from them and anything you deleted earlier. Share links you gave to a doctor stop working immediately. Your account stays, along with the credentials you sign in with and display settings such as language, timezone and units. This cannot be undone.",
@@ -7171,7 +7168,8 @@
       "description": "This shares or exports your health data. Confirm it's you to continue.",
       "signInAgain": "Sign in again, then try once more. Your account has no password or passkey to confirm here.",
       "failed": "That did not work. Check what you entered and try again."
-    }
+    },
+    "passwordTitle": "Password"
   },
   "admin": {
     "title": "Administration",
@@ -7283,7 +7281,7 @@
     "workerRunning": "Running",
     "workerStopped": "Stopped",
     "lastReminderCheck": "Last Reminder Check",
-    "appSettings": "Application Settings",
+    "appSettings": "Application settings",
     "appSettingsDescription": "Global defaults for registration, language, and the timezone of new accounts.",
     "registrationEnabled": "Allow registration",
     "registrationEnabledDescription": "When disabled, new users cannot register.",
@@ -7291,9 +7289,9 @@
     "defaultLanguage": "Default language",
     "defaultLanguageDescription": "Used for new users and as fallback.",
     "defaultUserTimezone": "Default timezone for new accounts",
-    "defaultUserTimezoneDescription": "Used for new accounts that don't carry a browser-detected zone. Does not affect existing users.",
+    "defaultUserTimezoneDescription": "Used for new accounts without a browser-detected zone; existing accounts keep theirs.",
     "defaultUserTimezoneFallback": "Europe/Berlin (default)",
-    "servicesGlobal": "Services (global)",
+    "servicesGlobal": "Channels and API",
     "servicesGlobalDescription": "Disabled services are not available to any user.",
     "telegramGlobal": "Allow Telegram notifications.",
     "ntfyGlobal": "Allow ntfy notifications.",
@@ -7304,16 +7302,16 @@
     "offlineGeoFallback": "Online ({host}) — mount GeoLite2 databases and set GEOLITE2_DIR",
     "apiGlobal": "Allow API endpoints and API tokens.",
     "umamiTitle": "Umami",
-    "umamiDescription": "Web analytics with Umami",
+    "umamiDescription": "Web analytics with Umami.",
     "glitchtipTitle": "GlitchTip",
-    "glitchtipDescription": "Error tracking with GlitchTip",
+    "glitchtipDescription": "Error tracking with GlitchTip.",
     "webPushVapidTitle": "Web Push VAPID",
-    "umamiEnabled": "Enable Umami tracking.",
+    "umamiEnabled": "Enable Umami tracking",
     "umamiScriptUrl": "Umami script URL",
     "umamiScriptUrlPlaceholder": "https://analytics.example.com/script.js",
     "umamiWebsiteId": "Umami website ID",
     "umamiWebsiteIdPlaceholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-    "glitchtipEnabled": "Enable GlitchTip error tracking.",
+    "glitchtipEnabled": "Enable GlitchTip error tracking",
     "glitchtipDsn": "GlitchTip DSN",
     "glitchtipDsnPlaceholder": "https://<public-key>@glitchtip.example.com/<project-id>",
     "glitchtipEnvironment": "GlitchTip environment",
@@ -7375,8 +7373,8 @@
       "title": "Module availability",
       "description": "Turn a module off for the whole server.",
       "saveError": "Could not update module availability.",
-      "detail": "A module disabled here is off for every account regardless of personal preference. Core domains (weight, blood pressure, pulse, medications) are always on and cannot be disabled.",
-      "coachFollowsSwitch": "Follows the Coach switch under Assistant."
+      "detail": "Weight, blood pressure and pulse are core readings and always stay on.",
+      "coachFollowsSwitch": "Follows the Coach switch in the Coach section."
     },
     "invites": {
       "title": "Invites",
@@ -7461,7 +7459,6 @@
     "tokenNeverUsed": "Never",
     "tokensEmptyTitle": "No API tokens yet",
     "tokensEmptyDescription": "Tokens are issued when a native client signs in or via Settings → Account.",
-    "loginOverview": "Login Overview",
     "loginOverviewDescription": "Sign-in and auth events across all accounts, filterable and exportable as CSV.",
     "allAuthEvents": "All auth events",
     "failedOnly": "Failed only",
@@ -7505,7 +7502,7 @@
     "authTokenAutoissueNative": "Native client token issued",
     "authTokenRefresh": "Token refreshed",
     "authTokenRevoke": "Token revoked",
-    "medicationReminders": "Medication Reminders",
+    "medicationReminders": "Medication reminders",
     "medicationRemindersDescription": "Thresholds for reminder badge color transitions on medication cards.",
     "notificationHealth": {
       "title": "Notification health",
@@ -7569,7 +7566,7 @@
       },
       "services": {
         "title": "Services",
-        "subtitle": "Enable or disable notification channels and integrations system-wide."
+        "subtitle": "Turn notification channels and the API on or off for the whole server."
       },
       "integrations": {
         "title": "Integrations",
@@ -7610,7 +7607,7 @@
         "subtitle": "Active bearer tokens issued to native clients and integrations."
       },
       "login-overview": {
-        "title": "Login Overview",
+        "title": "Login overview",
         "subtitle": "Audit trail of authentication and admin events."
       },
       "auditLog": {
@@ -7631,7 +7628,7 @@
         "empty": "No audit entries match the current filters."
       },
       "app-logs": {
-        "title": "App Logs",
+        "title": "App logs",
         "subtitle": "Tail the most recent structured wide-events emitted by this process.",
         "processNote": "Showing app-process logs only — worker-process logs go to Loki when that integration is configured.",
         "filterTraceId": "Trace ID",
@@ -7655,7 +7652,8 @@
         "refresh": "Refresh",
         "eventDetails": "Event details",
         "closeDetails": "Close details",
-        "processDetail": "Buffer is volatile and capped at 500 entries."
+        "processDetail": "Buffer is volatile and capped at 500 entries.",
+        "cardTitle": "Recent events"
       },
       "backups": {
         "title": "Backups",
@@ -7839,7 +7837,6 @@
       "encryption": {
         "title": "Encryption",
         "subtitle": "Encryption coverage and key-rotation status for data at rest.",
-        "loading": "Loading encryption status…",
         "loadError": "Failed to load encryption status.",
         "coverageTitle": "Coverage",
         "coverageDescription": "How many encrypted rows sit under each key id.",
@@ -7917,7 +7914,7 @@
     },
     "carrier": "Carrier",
     "mfaRequired": "Require a second factor",
-    "mfaRequiredDescription": "Every account without an active second factor is sent to enrollment after sign-in. This prompts web users to enroll — it does not block direct API or native (Bearer) access for accounts not yet enrolled.",
+    "mfaRequiredDescription": "Accounts without a second factor are sent to set one up after a web sign-in; API and native (Bearer) access stays open.",
     "mfaEnforcedOn": "MFA on",
     "mfaEnforcedOff": "MFA off",
     "mfaEnforcedOnHint": "A second factor is required for this user. Click to stop requiring it.",
@@ -8015,7 +8012,9 @@
       "restartNote": "Restart HealthLog after the change.",
       "lastResort": "Last resort, only if you are certain the key is right and none of the three applies: set {setting} and restart. HealthLog then serves anyway and only logs the finding. This disables a safety check: with a wrong key every encrypted value fails and new data is written under that key.",
       "codes": "For the operator: API requests answer 503 with error code {code}, and /api/health reports reason {reason}."
-    }
+    },
+    "loginOverviewCardTitle": "Sign-in events",
+    "userColumn": "User"
   },
   "achievements": {
     "title": "Achievements",
@@ -10702,7 +10701,7 @@
         "UNKNOWN": "Not stated"
       },
       "contactsPlaceholder": "Name and phone number of who to call",
-      "implantsPlaceholder": "e.g. pacemaker, insulin pump, metal implant",
+      "implantsPlaceholder": "E.g. pacemaker, insulin pump, metal implant",
       "notePlaceholder": "Anything a clinician should know in an emergency",
       "reportHint": "This appears on the first page of your doctor report.",
       "save": "Save",

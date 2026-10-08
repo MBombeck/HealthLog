@@ -261,7 +261,7 @@ export function HealthRecordExportPanel() {
         {/* Format + range share a row on desktop; on mobile they stack. */}
         <div className="grid gap-4 sm:grid-cols-2">
           <fieldset className="space-y-1.5">
-            <legend className="mb-1 text-sm font-medium">
+            <legend className="pl-1 text-sm leading-none font-medium after:content-[':']">
               {t("settings.healthRecord.format")}
             </legend>
             <div className="flex flex-wrap gap-2" role="radiogroup">

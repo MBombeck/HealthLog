@@ -19,6 +19,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { MedicalDisclaimer } from "@/components/common/medical-disclaimer";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -26,7 +27,6 @@ import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
-import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
 import {
   aiInputDependentKeys,
@@ -72,6 +72,7 @@ export function AiInsightsCard({
   // card paints an honest error instead of a misleading form.
   const {
     data: insightsSettings,
+    isPending: settingsPending,
     isError: settingsError,
     refetch: refetchSettings,
   } = useQuery({
@@ -87,6 +88,7 @@ export function AiInsightsCard({
 
   const {
     data: userProvider,
+    isPending: providerPending,
     isError: providerError,
     refetch: refetchProvider,
   } = useQuery({
@@ -102,6 +104,7 @@ export function AiInsightsCard({
 
   const {
     data: chainData,
+    isPending: chainPending,
     isError: chainError,
     refetch: refetchChain,
   } = useQuery({
@@ -116,6 +119,12 @@ export function AiInsightsCard({
   });
 
   const hasReadError = settingsError || providerError || chainError;
+  // The cards below the provider card size themselves from these reads (the
+  // chain rows, the provider form). Painting them before the reads land
+  // moved every card under the cursor once they did, so the page holds one
+  // placeholder in the provider card until all three have settled.
+  const readsPending =
+    isAuthenticated && (settingsPending || providerPending || chainPending);
   function retryReads() {
     void refetchSettings();
     void refetchProvider();
@@ -177,94 +186,95 @@ export function AiInsightsCard({
     router.replace(`${pathname}?${params.toString()}`);
   }
 
+  // v1.42 — one card per concern. The page used to be a single "AI provider"
+  // card (repeating the page title) holding seven grey panels, three of them
+  // with their own primary Save, each left-aligned mid-card. Every concern is
+  // its own Settings card now, each with one action row at its foot
+  // (design standards §12/§13).
   return (
-    <SettingsCard>
-      {/* The card used to render an icon-only header row (Sparkles +
-          status badges, no title), which left the tile unanchored next
-          to its titled siblings. It now follows the shared
-          `SettingsCardHeader` contract: icon column, title + description
-          in the content column, status badges top-right — and the body
-          starts on the card edge like every other Settings card. */}
-      <SettingsCardHeader
-        icon={Sparkles}
-        title={t("settings.ai.providerCardTitle")}
-        description={t("settings.kiInsightsDescription")}
-        status={
-          <ProviderStatusBadges
-            settings={insightsSettings}
-            activeProvider={chainData?.activeProvider ?? null}
-          />
-        }
-      />
-
-      <div className="space-y-4">
+    <div className="space-y-6">
+      <SettingsCard data-slot="ai-provider-card">
+        <SettingsCardHeader
+          icon={Sparkles}
+          title={t("settings.ai.activeProviderHeading")}
+          description={t("settings.ai.providerCardDescription")}
+          status={
+            <ProviderStatusBadges
+              settings={insightsSettings}
+              activeProvider={chainData?.activeProvider ?? null}
+            />
+          }
+        />
         {hasReadError ? (
           <QueryErrorCard onRetry={retryReads} />
+        ) : readsPending ? (
+          <Skeleton className="h-40 w-full rounded-lg" />
         ) : (
           <>
             <ActiveProviderSelect
               value={selectedProvider}
               onChange={pickProvider}
             />
-
             <ProviderConfigCard
               provider={selectedProvider}
               insightsSettings={insightsSettings}
               userProvider={userProvider}
             />
-
-            <FallbackChainCard
-              chain={chainData?.configuredChain ?? []}
-              selected={selectedProvider}
-              onSelect={pickProvider}
-            />
-
-            {/* v1.22 (#89) — per-user response timeout (mainly for slow
-            local/self-hosted backends). */}
-            <ResponseTimeoutCard userProvider={userProvider} />
-
-            {/* Read uploaded vault documents automatically with AI (opt-in). */}
-            <AutoReadCard />
-
-            {/* Use the operator's shared central Codex connection (opt-in; only
-            renders when the operator has connected it). */}
-            <CentralCodexSwitch settings={insightsSettings} />
-
-            {/* The standing consent and the one control that withdraws it. It
-            sits last because it governs everything above rather than
-            configuring any single provider. */}
-            <AiConsentCard isAuthenticated={isAuthenticated} />
-
-            <RuntimeActionsRow
-              provider={selectedProvider}
-              userProvider={userProvider}
-              canRegenerate={
-                insightsSettings?.codexStatus === "connected" ||
-                insightsSettings?.hasAdminKey ||
-                Boolean(userProvider?.provider)
-              }
-              privacyMode={insightsSettings?.privacyMode ?? "aggregated"}
-              lastInsightAt={insightsSettings?.lastInsightAt ?? null}
-              onRegenerated={() =>
-                queryClient.invalidateQueries({
-                  queryKey: queryKeys.insightsRoot(),
-                })
-              }
-              onPrivacyChanged={() =>
-                queryClient.invalidateQueries({
-                  queryKey: queryKeys.insightsRoot(),
-                })
-              }
-            />
-
-            {/* v1.25 — the data-posture statement lives where the provider key is
-            configured: self-hosted, data stays on this instance, BYOK / local
-            model, no third-party analytics. One calm line, not a banner. */}
-            <MedicalDisclaimer variant="dataPosture" />
           </>
         )}
-      </div>
-    </SettingsCard>
+      </SettingsCard>
+
+      {hasReadError || readsPending ? null : (
+        <>
+          <FallbackChainCard
+            chain={chainData?.configuredChain ?? []}
+            selected={selectedProvider}
+            onSelect={pickProvider}
+          />
+
+          {/* v1.22 (#89) — per-user response timeout (mainly for slow
+              local/self-hosted backends). */}
+          <ResponseTimeoutCard userProvider={userProvider} />
+
+          {/* Read uploaded vault documents automatically with AI (opt-in). */}
+          <AutoReadCard />
+
+          {/* Use the operator's shared central Codex connection (opt-in; only
+              renders when the operator has connected it). */}
+          <CentralCodexSwitch settings={insightsSettings} />
+
+          {/* The standing consent and the one control that withdraws it. It
+              sits after the provider cards because it governs all of them. */}
+          <AiConsentCard isAuthenticated={isAuthenticated} />
+
+          <RuntimeActionsRow
+            provider={selectedProvider}
+            userProvider={userProvider}
+            canRegenerate={
+              insightsSettings?.codexStatus === "connected" ||
+              insightsSettings?.hasAdminKey ||
+              Boolean(userProvider?.provider)
+            }
+            privacyMode={insightsSettings?.privacyMode ?? "aggregated"}
+            lastInsightAt={insightsSettings?.lastInsightAt ?? null}
+            onRegenerated={() =>
+              queryClient.invalidateQueries({
+                queryKey: queryKeys.insightsRoot(),
+              })
+            }
+            onPrivacyChanged={() =>
+              queryClient.invalidateQueries({
+                queryKey: queryKeys.insightsRoot(),
+              })
+            }
+            // v1.25 — the data-posture statement lives where the provider
+            // key is configured: self-hosted, data stays on this instance,
+            // BYOK / local model, no third-party analytics.
+            footnote={<MedicalDisclaimer variant="dataPosture" />}
+          />
+        </>
+      )}
+    </div>
   );
 }
 
@@ -295,12 +305,6 @@ function ProviderStatusBadges({
           {t("settings.ai.connectionExpiredBadge")}
         </Badge>
       )}
-      {settings?.lastInsightAt && (
-        <Badge variant="outline" className="text-xs">
-          {t("settings.lastGeneratedAt")}:{" "}
-          {formatDateTime(settings.lastInsightAt)}
-        </Badge>
-      )}
     </div>
   );
 }
@@ -324,13 +328,7 @@ function ActiveProviderSelect({
 }) {
   const { t } = useTranslations();
   return (
-    <div className="bg-muted/50 rounded-lg p-4">
-      <p className="text-sm font-medium">
-        {t("settings.ai.activeProviderHeading")}
-      </p>
-      <p className="text-muted-foreground mb-3 text-xs">
-        {t("settings.ai.activeProviderBody")}
-      </p>
+    <div className="space-y-1.5">
       <Label htmlFor="ai-active-provider-select">
         {t("settings.ai.activeProviderLabel")}
       </Label>
@@ -342,7 +340,7 @@ function ActiveProviderSelect({
           const next = e.target.value;
           if (isProviderType(next)) onChange(next);
         }}
-        className="mt-1 sm:max-w-md"
+        className="sm:max-w-md"
       >
         {PROVIDER_TYPES.map((p) => (
           <option key={p} value={p}>
@@ -371,12 +369,8 @@ function ProviderConfigCard({
   insightsSettings: InsightsSettings | null | undefined;
   userProvider: UserAIProvider | null | undefined;
 }) {
-  const { t } = useTranslations();
   return (
-    <div className="bg-muted/50 space-y-4 rounded-lg p-4">
-      <p className="text-sm font-medium">
-        {t("settings.ai.providerConfigTitle")}
-      </p>
+    <div className="space-y-4" data-slot="ai-provider-config">
       {provider === "codex" && (
         <CodexProviderForm settings={insightsSettings} />
       )}

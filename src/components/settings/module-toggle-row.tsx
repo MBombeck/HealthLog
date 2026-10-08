@@ -98,7 +98,10 @@ export function ModuleToggleRow({
           aria-hidden="true"
         />
         <div className="min-w-0 space-y-0.5">
-          <Label htmlFor={inputId} className="text-sm font-medium">
+          {/* A row title beside a switch, not a field label: no colon, and
+              on the description's left edge (the primitive's `pl-1` would
+              inset it), matching the admin `SettingsToggle` rows. */}
+          <Label htmlFor={inputId} noColon className="pl-0 text-sm font-medium">
             {label}
           </Label>
           <p className="text-muted-foreground text-xs">{description}</p>

@@ -131,7 +131,7 @@ export function WebPushVapidSection() {
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="admin-web-push-public-key" className="text-xs">
+          <Label htmlFor="admin-web-push-public-key">
             {t("admin.webPushVapidPublicKey")}
           </Label>
           <Input
@@ -151,7 +151,7 @@ export function WebPushVapidSection() {
           />
         </div>
         <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="admin-web-push-private-key" className="text-xs">
+          <Label htmlFor="admin-web-push-private-key">
             {t("admin.webPushVapidPrivateKey")}
           </Label>
           <PasswordInput
@@ -171,7 +171,7 @@ export function WebPushVapidSection() {
           />
         </div>
         <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="admin-web-push-subject" className="text-xs">
+          <Label htmlFor="admin-web-push-subject">
             {t("admin.webPushVapidSubject")}
           </Label>
           <Input

@@ -215,16 +215,14 @@ export function RemindersSection() {
         />
 
         <div className="space-y-3">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="admin-reminder-late" className="text-xs">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="admin-reminder-late">
                 {t("admin.reminderLateMinutes")}
               </Label>
-              <p className="text-muted-foreground text-xs">
-                {t("admin.reminderLateMinutesDescription")}
-              </p>
               <Input
                 id="admin-reminder-late"
+                aria-describedby="admin-reminder-late-hint"
                 type="number"
                 inputMode="numeric"
                 enterKeyHint="next"
@@ -240,16 +238,20 @@ export function RemindersSection() {
                 disabled={updateSettings.isPending}
                 className="w-32"
               />
+              <p
+                id="admin-reminder-late-hint"
+                className="text-muted-foreground text-xs"
+              >
+                {t("admin.reminderLateMinutesDescription")}
+              </p>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="admin-reminder-missed" className="text-xs">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="admin-reminder-missed">
                 {t("admin.reminderMissedMinutes")}
               </Label>
-              <p className="text-muted-foreground text-xs">
-                {t("admin.reminderMissedMinutesDescription")}
-              </p>
               <Input
                 id="admin-reminder-missed"
+                aria-describedby="admin-reminder-missed-hint"
                 type="number"
                 inputMode="numeric"
                 enterKeyHint="done"
@@ -265,6 +267,12 @@ export function RemindersSection() {
                 disabled={updateSettings.isPending}
                 className="w-32"
               />
+              <p
+                id="admin-reminder-missed-hint"
+                className="text-muted-foreground text-xs"
+              >
+                {t("admin.reminderMissedMinutesDescription")}
+              </p>
             </div>
           </div>
         </div>

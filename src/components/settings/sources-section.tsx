@@ -297,21 +297,6 @@ export function SourcesSection() {
           icon={Layers}
           title={t("settings.sections.sources.cardTitle")}
           description={t("settings.sections.sources.help")}
-          status={
-            <ConfirmButton
-              slot="settings-sources-reset"
-              variant="ghost"
-              size="sm"
-              icon={<RotateCcw className="h-3.5 w-3.5" />}
-              label={t("settings.sections.sources.resetDefaults")}
-              title={t("settings.sections.sources.resetDefaultsTitle")}
-              body={t("settings.sections.sources.resetDefaultsBody")}
-              confirmLabel={t("settings.sections.sources.resetDefaultsConfirm")}
-              disabled={saveMutation.isPending}
-              pending={resetMutation.isPending}
-              onConfirm={() => resetMutation.mutate()}
-            />
-          }
         />
 
         <p className="text-sm">{t("settings.sections.sources.helpDetail")}</p>
@@ -346,12 +331,12 @@ export function SourcesSection() {
                         <span className="flex-1 text-sm">
                           {t(MEASUREMENT_SOURCE_SETTINGS_LABEL_KEYS[source])}
                         </span>
-                        {/* v1.4.27 R3d MB2 — stack up/down vertically on
-                            narrow viewports so each button keeps the
-                            44 px floor without crowding the row. From
-                            `sm:` up the two buttons sit side-by-side
-                            again to preserve the desktop layout. */}
-                        <div className="flex flex-col gap-1 sm:flex-row sm:gap-2">
+                        {/* Up/down sit side by side at every width: two
+                            44 px buttons leave a 390 px row ~170 px for the
+                            source name. Stacking them on phones (v1.4.27
+                            MB2) doubled every row and pushed this page past
+                            twelve thousand pixels. */}
+                        <div className="flex shrink-0 gap-1 sm:gap-2">
                           <Button
                             type="button"
                             variant="ghost"
@@ -564,32 +549,51 @@ export function SourcesSection() {
           </Link>
         </p>
 
-        {dirty && priority && (
-          <SettingsCardActions>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="min-h-11 sm:min-h-9"
-              onClick={() => setDraft(null)}
-              disabled={saveMutation.isPending}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              className="min-h-11 sm:min-h-9"
-              onClick={() => saveMutation.mutate(priority)}
-              disabled={saveMutation.isPending}
-            >
-              {saveMutation.isPending && (
-                <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-              )}
-              {t("common.save")}
-            </Button>
-          </SettingsCardActions>
-        )}
+        {/* One action row, last in the card (design standards §12). The
+            reset used to ride the header's status slot, which carries
+            status, not actions; Cancel + Save join it while a draft is open. */}
+        <SettingsCardActions>
+          <ConfirmButton
+            slot="settings-sources-reset"
+            variant="outline"
+            size="sm"
+            className="min-h-11 sm:min-h-9"
+            icon={<RotateCcw className="h-3.5 w-3.5" />}
+            label={t("settings.sections.sources.resetDefaults")}
+            title={t("settings.sections.sources.resetDefaultsTitle")}
+            body={t("settings.sections.sources.resetDefaultsBody")}
+            confirmLabel={t("settings.sections.sources.resetDefaultsConfirm")}
+            disabled={saveMutation.isPending}
+            pending={resetMutation.isPending}
+            onConfirm={() => resetMutation.mutate()}
+          />
+          {dirty && priority ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="min-h-11 sm:min-h-9"
+                onClick={() => setDraft(null)}
+                disabled={saveMutation.isPending}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="min-h-11 sm:min-h-9"
+                onClick={() => saveMutation.mutate(priority)}
+                disabled={saveMutation.isPending}
+              >
+                {saveMutation.isPending && (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+                )}
+                {t("common.save")}
+              </Button>
+            </>
+          ) : null}
+        </SettingsCardActions>
       </SettingsCard>
 
       {/* v1.28 shipped `<NutrientIntakeCard>` here; the 2026-07-17 UX/IA

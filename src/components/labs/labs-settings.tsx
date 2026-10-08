@@ -154,6 +154,7 @@ export function LabsSettings() {
         <SettingsCardHeader
           icon={FlaskConical}
           title={t("labs.biomarker.manageTitle")}
+          description={t("labs.biomarker.managerDescription")}
         />
         <BiomarkerManager />
       </SettingsCard>

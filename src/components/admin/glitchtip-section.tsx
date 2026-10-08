@@ -157,7 +157,6 @@ export function GlitchtipSection() {
       <div className="space-y-3">
         <SettingsToggle
           label={t("admin.glitchtipEnabled")}
-          icon={AlertTriangle}
           checked={settings?.glitchtipEnabled ?? false}
           onCheckedChange={(checked) =>
             updateSettings.mutate({ glitchtipEnabled: checked })
@@ -188,7 +187,7 @@ export function GlitchtipSection() {
         ) : null}
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="admin-glitchtip-dsn" className="text-xs">
+            <Label htmlFor="admin-glitchtip-dsn">
               {t("admin.glitchtipDsn")}
             </Label>
             <Input
@@ -206,7 +205,7 @@ export function GlitchtipSection() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="admin-glitchtip-environment" className="text-xs">
+            <Label htmlFor="admin-glitchtip-environment">
               {t("admin.glitchtipEnvironment")}
             </Label>
             <Input
