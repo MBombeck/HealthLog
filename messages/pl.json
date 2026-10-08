@@ -5469,7 +5469,7 @@
         "subtitle": "Wybierz dostawcę AI i użyj własnego klucza."
       },
       "api": {
-        "title": "API & Tokens",
+        "title": "API i tokeny",
         "description": "Tokeny Bearer dla własnych skryptów i aplikacji — zapisuj pomiary lub przyjęcia leków z dowolnego miejsca.",
         "subtitle": "Zarządzaj punktami końcowymi API i tokenami dostępu."
       },

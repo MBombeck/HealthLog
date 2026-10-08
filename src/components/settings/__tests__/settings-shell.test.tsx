@@ -451,7 +451,7 @@ describe("<SettingsShell>", () => {
     expect(html).not.toContain('href="/settings/sharing"');
     // The ampersand is HTML-escaped by React SSR — assert on the encoded
     // form so we don't accidentally match a parser that double-escapes.
-    expect(html).toContain("API &amp; Tokens");
+    expect(html).toContain("API &amp; tokens");
     // v1.18.0 (S5) — the health record is its own top-level entry.
     expect(html).toContain('href="/settings/gesundheitsakte"');
     expect(html).toContain("Health record");
@@ -494,7 +494,7 @@ describe("<SettingsShell>", () => {
     // v1.18.6 (W9) — the AI section is named "KI-Anbieter" in German: the
     // page is about the provider / BYOK, not an "Auswertung".
     expect(html).toContain("KI-Anbieter");
-    // API & Tokens is identical in both locales (proper noun + ampersand)
+    // German keeps the noun capitalised: "API & Tokens".
     expect(html).toContain("API &amp; Tokens");
     expect(html).toContain("Erweitert");
     // "Über diese App" (About) is back as the last in-shell nav entry

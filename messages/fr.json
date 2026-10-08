@@ -5469,7 +5469,7 @@
         "subtitle": "Choisissez votre fournisseur d'IA et utilisez votre propre clé."
       },
       "api": {
-        "title": "API & Tokens",
+        "title": "API et jetons",
         "description": "Jetons Bearer pour vos propres scripts et applis — enregistrez des mesures ou des prises de médicaments depuis n’importe où.",
         "subtitle": "Gérez les points d'accès API et les jetons d'accès."
       },

@@ -63,7 +63,7 @@ describe("<ExportSection> — SSR smoke", () => {
       </SettingsSectionFrame>,
     );
     // v1.15.7 — the section was relabelled "Export & Import" (issue #281).
-    expect(html).toContain("Export &amp; Import");
+    expect(html).toContain("Export &amp; import");
     // Raw key never leaks past i18n.
     expect(html).not.toContain("settings.sections.export.");
   });

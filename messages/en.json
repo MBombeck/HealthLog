@@ -392,7 +392,7 @@
     "insights": "Insights",
     "achievements": "Achievements",
     "settings": "Settings",
-    "admin": "Admin Console",
+    "admin": "Admin console",
     "logout": "Sign out",
     "login": "Sign in",
     "notifications": "Notifications",
@@ -3279,7 +3279,7 @@
     "relativeDaysAgoFew": "{count} days ago",
     "navOverview": "Overview",
     "navCatalog": "All metrics",
-    "navBloodPressure": "Blood Pressure",
+    "navBloodPressure": "Blood pressure",
     "navWeight": "Weight",
     "navPulse": "Pulse",
     "navMood": "Mood",
@@ -3814,7 +3814,7 @@
         "description": "Body-water readings appear here once a connected body-composition scale syncs."
       }
     },
-    "navTotalBodyWater": "Body Water",
+    "navTotalBodyWater": "Body water",
     "boneMass": {
       "title": "Bone Mass",
       "description": "Your bone mass over time, in kilograms.",
@@ -3824,7 +3824,7 @@
         "description": "Bone-mass readings appear here once a connected body-composition scale syncs."
       }
     },
-    "navBoneMass": "Bone Mass",
+    "navBoneMass": "Bone mass",
     "flightsClimbed": {
       "title": "Flights Climbed",
       "description": "Flights of stairs you climbed each day.",
@@ -3854,7 +3854,7 @@
         "description": "Fat-free-mass readings appear here once a connected body-composition scale syncs."
       }
     },
-    "navFatFreeMass": "Fat-Free Mass",
+    "navFatFreeMass": "Fat-free mass",
     "fatMass": {
       "title": "Fat Mass",
       "description": "Your fat mass over time, in kilograms.",
@@ -3874,8 +3874,8 @@
         "cta": "Log body fat"
       }
     },
-    "navFatMass": "Fat Mass",
-    "navBodyFat": "Body Fat",
+    "navFatMass": "Fat mass",
+    "navBodyFat": "Body fat",
     "muscleMass": {
       "title": "Muscle Mass",
       "description": "Your muscle mass over time, in kilograms.",
@@ -3885,7 +3885,7 @@
         "description": "Muscle-mass readings appear here once a connected body-composition scale syncs."
       }
     },
-    "navMuscleMass": "Muscle Mass",
+    "navMuscleMass": "Muscle mass",
     "skinTemperature": {
       "title": "Skin Temperature",
       "description": "Your wrist skin temperature over time, in degrees Celsius.",
@@ -3895,7 +3895,7 @@
         "description": "Skin-temperature readings appear here once a wearable syncs overnight wrist temperature."
       }
     },
-    "navSkinTemperature": "Skin Temp",
+    "navSkinTemperature": "Skin temp",
     "pulseWaveVelocity": {
       "title": "Pulse Wave Velocity",
       "description": "Your arterial pulse-wave velocity over time, in m/s — higher values suggest stiffer arteries.",
@@ -3905,7 +3905,7 @@
         "description": "Pulse-wave-velocity readings appear here once a compatible Withings device syncs."
       }
     },
-    "navPulseWaveVelocity": "Pulse Wave Velocity",
+    "navPulseWaveVelocity": "Pulse wave velocity",
     "vascularAge": {
       "title": "Vascular Age",
       "description": "Your estimated vascular age over time, in years.",
@@ -3915,7 +3915,7 @@
         "description": "Vascular-age estimates appear here once a compatible Withings device syncs."
       }
     },
-    "navVascularAge": "Vascular Age",
+    "navVascularAge": "Vascular age",
     "visceralFat": {
       "title": "Visceral Fat",
       "description": "Your visceral-fat rating over time.",
@@ -3925,7 +3925,7 @@
         "description": "Visceral-fat ratings appear here once a compatible body-composition scale syncs."
       }
     },
-    "navVisceralFat": "Visceral Fat",
+    "navVisceralFat": "Visceral fat",
     "audioExposureEnv": {
       "title": "Environmental Audio",
       "description": "Your daily average environmental sound exposure, in dBA.",
@@ -3935,7 +3935,7 @@
         "description": "Environmental sound-level readings appear here once Apple Health syncs."
       }
     },
-    "navAudioExposureEnv": "Environmental Audio",
+    "navAudioExposureEnv": "Environmental audio",
     "audioExposureHeadphone": {
       "title": "Headphone Audio",
       "description": "Your daily average headphone audio exposure, in dBA.",
@@ -3945,7 +3945,7 @@
         "description": "Headphone audio-level readings appear here once Apple Health syncs."
       }
     },
-    "navAudioExposureHeadphone": "Headphone Audio",
+    "navAudioExposureHeadphone": "Headphone audio",
     "timeInDaylight": {
       "title": "Time in Daylight",
       "description": "Minutes spent in daylight each day.",
@@ -3965,7 +3965,7 @@
         "description": "Walking-steadiness readings appear here once Apple Health syncs."
       }
     },
-    "navWalkingSteadiness": "Walking Steadiness",
+    "navWalkingSteadiness": "Walking steadiness",
     "audioExposureEvent": {
       "title": "Loud Audio Events",
       "description": "Days with a loud-environment exposure event.",
@@ -3975,7 +3975,7 @@
         "description": "Loud-environment events appear here once Apple Health syncs."
       }
     },
-    "navAudioExposureEvent": "Loud Events",
+    "navAudioExposureEvent": "Loud events",
     "respiratoryRate": {
       "title": "Respiratory Rate",
       "description": "Your respiratory rate over time, in breaths per minute.",
@@ -3985,7 +3985,7 @@
         "description": "Respiratory-rate readings appear here once Apple Health syncs sleep or workout breathing."
       }
     },
-    "navRespiratoryRate": "Respiratory Rate",
+    "navRespiratoryRate": "Respiratory rate",
     "leanBodyMass": {
       "title": "Lean Body Mass",
       "description": "Your lean body mass over time, in kilograms.",
@@ -3995,7 +3995,7 @@
         "description": "Lean-body-mass readings appear here once a connected body-composition scale syncs."
       }
     },
-    "navLeanBodyMass": "Lean Body Mass",
+    "navLeanBodyMass": "Lean body mass",
     "walkingHeartRateAverage": {
       "title": "Walking Heart Rate",
       "description": "Your average heart rate while walking, in bpm.",
@@ -4005,7 +4005,7 @@
         "description": "Walking-heart-rate readings appear here once Apple Health syncs."
       }
     },
-    "navWalkingHeartRateAverage": "Walking Heart Rate",
+    "navWalkingHeartRateAverage": "Walking heart rate",
     "walkingAsymmetry": {
       "title": "Walking Asymmetry",
       "description": "Your walking asymmetry over time, as a percentage.",
@@ -4015,7 +4015,7 @@
         "description": "Walking-asymmetry readings appear here once Apple Health syncs."
       }
     },
-    "navWalkingAsymmetry": "Walking Asymmetry",
+    "navWalkingAsymmetry": "Walking asymmetry",
     "walkingDoubleSupport": {
       "title": "Double Support Time",
       "description": "The percentage of each stride spent with both feet on the ground.",
@@ -4025,7 +4025,7 @@
         "description": "Double-support readings appear here once Apple Health syncs."
       }
     },
-    "navWalkingDoubleSupport": "Double Support",
+    "navWalkingDoubleSupport": "Double support",
     "walkingStepLength": {
       "title": "Walking Step Length",
       "description": "Your average walking step length over time, in metres.",
@@ -4035,7 +4035,7 @@
         "description": "Step-length readings appear here once Apple Health syncs."
       }
     },
-    "navWalkingStepLength": "Step Length",
+    "navWalkingStepLength": "Step length",
     "walkingSpeed": {
       "title": "Walking Speed",
       "description": "Your average walking speed over time, in km/h.",
@@ -4045,7 +4045,7 @@
         "description": "Walking-speed readings appear here once Apple Health syncs."
       }
     },
-    "navWalkingSpeed": "Walking Speed",
+    "navWalkingSpeed": "Walking speed",
     "mood": {
       "logLink": "Log a mood entry",
       "heatmapTitle": "Mood calendar",
@@ -4426,7 +4426,7 @@
         "description": "VO₂ max readings appear here once Apple Health syncs from your workouts."
       }
     },
-    "navCardioFitness": "Cardio Fitness",
+    "navCardioFitness": "Cardio fitness",
     "cardioRecovery": {
       "title": "Cardio Recovery",
       "description": "How far your heart rate drops one minute after peak exercise.",
@@ -4436,7 +4436,7 @@
         "description": "Cardio-recovery readings appear here once Apple Health syncs from a workout."
       }
     },
-    "navCardioRecovery": "Cardio Recovery",
+    "navCardioRecovery": "Cardio recovery",
     "wristTemperature": {
       "title": "Wrist Temperature",
       "description": "Your overnight wrist temperature, tracked against your own baseline.",
@@ -4446,7 +4446,7 @@
         "description": "Wrist-temperature readings appear here once Apple Health syncs overnight wear."
       }
     },
-    "navWristTemperature": "Wrist Temp",
+    "navWristTemperature": "Wrist temp",
     "falls": {
       "title": "Falls",
       "description": "Hard falls your Apple Watch detected, counted per day.",
@@ -4466,7 +4466,7 @@
         "description": "Six-minute-walk estimates appear here once Apple Health syncs."
       }
     },
-    "navSixMinuteWalk": "6-Min Walk",
+    "navSixMinuteWalk": "6-min walk",
     "stairAscentSpeed": {
       "title": "Stair Ascent Speed",
       "description": "How fast you climb stairs, measured by your iPhone or Watch.",
@@ -4476,7 +4476,7 @@
         "description": "Stair-ascent-speed readings appear here once Apple Health syncs."
       }
     },
-    "navStairAscentSpeed": "Stair Ascent",
+    "navStairAscentSpeed": "Stair ascent",
     "stairDescentSpeed": {
       "title": "Stair Descent Speed",
       "description": "How fast you go down stairs, measured by your iPhone or Watch.",
@@ -4486,7 +4486,7 @@
         "description": "Stair-descent-speed readings appear here once Apple Health syncs."
       }
     },
-    "navStairDescentSpeed": "Stair Descent",
+    "navStairDescentSpeed": "Stair descent",
     "breathingDisturbances": {
       "title": "Breathing Disturbances",
       "description": "How often your breathing was disturbed during sleep.",
@@ -5469,7 +5469,7 @@
         "subtitle": "Choose your AI provider and bring your own key."
       },
       "api": {
-        "title": "API & Tokens",
+        "title": "API & tokens",
         "description": "Bearer tokens for your own scripts and apps — log measurements or medication intake from anywhere.",
         "subtitle": "Manage API endpoints and access tokens."
       },
@@ -5479,7 +5479,7 @@
         "subtitle": "Data reset and account deletion."
       },
       "export": {
-        "title": "Export & Import",
+        "title": "Export & import",
         "description": "Download your data as CSV or a full JSON backup — or import from Apple Health, JSON, or CSV. The doctor report now lives under Health Record.",
         "otherOptionsHeading": "Other export options",
         "downloadFailed": "Couldn't download the export. Please try again.",
@@ -5778,12 +5778,12 @@
         "subtitle": "Two-factor authentication, recovery codes, and passkeys."
       },
       "privacy": {
-        "title": "Data & Privacy",
+        "title": "Data & privacy",
         "subtitle": "Your data, retention, encryption, and account security in one place.",
         "description": "Export, deletion, retention, encryption status, sessions, and security activity."
       },
       "mcp": {
-        "title": "MCP Connector",
+        "title": "MCP connector",
         "subtitle": "Connect an external assistant to your own health data."
       },
       "anamnesis": {
@@ -5848,7 +5848,7 @@
         }
       },
       "score": {
-        "title": "Health Score",
+        "title": "Health score",
         "subtitle": "Choose which pillars count toward your score.",
         "card": {
           "title": "What counts toward your score",
@@ -7564,7 +7564,7 @@
     },
     "section": {
       "system-status": {
-        "title": "System Status",
+        "title": "System status",
         "subtitle": "Worker, database, and integration health at a glance."
       },
       "general": {
@@ -7610,7 +7610,7 @@
         "subtitle": "Mint, track, and revoke registration invite links."
       },
       "api-tokens": {
-        "title": "API Tokens",
+        "title": "API tokens",
         "subtitle": "Active bearer tokens issued to native clients and integrations."
       },
       "login-overview": {
@@ -7830,7 +7830,7 @@
         "restoreSkippedVaccinationCiphertext": "Vaccination note sealed with a key this server does not hold (dose kept without it)"
       },
       "danger-zone": {
-        "title": "Danger Zone",
+        "title": "Danger zone",
         "subtitle": "Destructive system-wide operations."
       },
       "about": {

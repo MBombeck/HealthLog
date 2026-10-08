@@ -5469,7 +5469,7 @@
         "subtitle": "Elige tu proveedor de IA y usa tu propia clave."
       },
       "api": {
-        "title": "API & Tokens",
+        "title": "API y tokens",
         "description": "Tokens Bearer para tus propios scripts y apps — registra mediciones o tomas de medicación desde cualquier lugar.",
         "subtitle": "Gestiona los endpoints de la API y los tokens de acceso."
       },

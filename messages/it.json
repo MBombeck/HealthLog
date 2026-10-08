@@ -5469,7 +5469,7 @@
         "subtitle": "Scegli il tuo provider IA e usa la tua chiave."
       },
       "api": {
-        "title": "API & Tokens",
+        "title": "API e token",
         "description": "Token Bearer per i tuoi script e le tue app — registra misurazioni o assunzioni di farmaci da ovunque.",
         "subtitle": "Gestisci gli endpoint API e i token di accesso."
       },

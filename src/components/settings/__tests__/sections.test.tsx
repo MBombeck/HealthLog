@@ -258,7 +258,7 @@ describe("settings sections — SSR smoke", () => {
 
   it("<ApiSection> renders endpoints + tokens cards", () => {
     const html = renderFramed("api", <ApiSection />);
-    expect(html).toContain("API &amp; Tokens");
+    expect(html).toContain("API &amp; tokens");
   });
 
   it("<AdvancedSection> renders the danger-zone card only (export moved to /settings/export)", () => {
