@@ -564,7 +564,7 @@ export function MedicationComplianceChart({
           action={
             canWriteDomain("medications") ? (
               <Button asChild size="sm">
-                <Link href="/medications/new">
+                <Link href="/medications?new=1">
                   {t("charts.medicationsEmptyAction")}
                 </Link>
               </Button>

@@ -334,19 +334,14 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
 // Disjoint height ranges, not nested max-heights: two arbitrary media
 // variants on one property cascade in stylesheet order, not by how narrow
 // the query is, so a nested pair let the 36 px step win on a 720 px window.
-// The height steps apply to a mouse only. Under a finger (a touch tablet,
-// a phone held sideways past the md breakpoint) the rows keep the 44 px
-// touch floor and the list scrolls behind its fades instead.
+// The height steps apply to a mouse only. Under a finger (a touch tablet)
+// the rows keep the 44 px touch floor and the list scrolls behind its fades
+// instead. A phone held sideways never sees the rail: it keeps the phone
+// shell (`shell-mobile`).
 const RAIL_ROW_HEIGHT =
   "min-h-10 pointer-coarse:min-h-11 [@media(hover:hover)_and_(pointer:fine)_and_(740px<height<=820px)]:min-h-9 [@media(hover:hover)_and_(pointer:fine)_and_(height<=740px)]:min-h-8";
 const RAIL_LIST_GAP = "space-y-1 [@media(max-height:940px)]:space-y-0";
 const RAIL_SHORT_PY = "[@media(max-height:940px)]:py-1.5";
-
-// Literal class strings: Tailwind only generates what it can read whole.
-const RAIL_SHORT_TOUCH_COLUMN =
-  "[@media(pointer:coarse)_and_(height<=520px)]:overflow-y-auto [@media(pointer:coarse)_and_(height<=520px)]:[scrollbar-width:none] [@media(pointer:coarse)_and_(height<=520px)]:[&::-webkit-scrollbar]:hidden [@media(pointer:coarse)_and_(height<=520px)]:[&>*]:shrink-0";
-const RAIL_SHORT_TOUCH_NAV =
-  "[@media(pointer:coarse)_and_(height<=520px)]:flex-none [@media(pointer:coarse)_and_(height<=520px)]:overflow-visible";
 
 /** Rail row, collapsed (icon only) or expanded (icon + label). */
 function railRowClass(collapsed: boolean): string {
@@ -698,11 +693,6 @@ export function SidebarNav() {
           data-slot="sidebar-column"
           className={cn(
             "flex h-full w-full flex-col",
-            // A phone held sideways crosses the md breakpoint at ~390 px of
-            // height: the fixed footer and user rows left the list three
-            // rows. There the whole column scrolls as one (no native bar),
-            // so every entry stays reachable at the 44 px touch floor.
-            RAIL_SHORT_TOUCH_COLUMN,
             !collapsed && SIDEBAR_EXPANDED_CONTENT_WIDTH,
           )}
         >
@@ -743,7 +733,6 @@ export function SidebarNav() {
             // the focused row clear of them.
             className={cn(
               "flex-1 scroll-py-6 [scrollbar-width:none] overflow-y-auto [&::-webkit-scrollbar]:hidden",
-              RAIL_SHORT_TOUCH_NAV,
               collapsed ? "p-1.5" : "p-3",
               RAIL_SHORT_PY,
             )}
