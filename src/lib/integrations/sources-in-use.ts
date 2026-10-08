@@ -17,7 +17,8 @@ export const RANKABLE_SOURCES: readonly MeasurementSource[] = Array.from(
  * one measurement from, or an integration it has connected that has not
  * delivered yet.
  *
- * The Settings ladder lists only these. Ranking a source the person has never
+ * Deleted (tombstoned) readings do not count. The Settings ladder lists only
+ * these. Ranking a source the person has never
  * used decides nothing, and ten of them per metric buried the two that do.
  * The ladders themselves stay whole: hidden sources keep their slot, so a
  * source that starts delivering later lands where the ladder already put it.
@@ -33,7 +34,12 @@ export async function getSourcesInUse(
       Promise.all(
         RANKABLE_SOURCES.map((source) =>
           prisma.measurement
-            .findFirst({ where: { userId, source }, select: { id: true } })
+            .findFirst({
+              // A deleted reading is not data: a source whose readings were
+              // all deleted is no longer in use.
+              where: { userId, source, deletedAt: null },
+              select: { id: true },
+            })
             .then((row) => (row ? source : null)),
         ),
       ),

@@ -38,6 +38,21 @@ describe("getSourcesInUse", () => {
     expect(await getSourcesInUse("u1")).toEqual(["MANUAL"]);
   });
 
+  it("does not count a source whose readings were all deleted", async () => {
+    // The probe answers like the database: a MANUAL row exists, but it is a
+    // tombstone, so only a probe that admits deleted rows finds it.
+    vi.mocked(prisma.measurement.findFirst).mockImplementation(((args: {
+      where: { source: string; deletedAt?: null };
+    }) =>
+      Promise.resolve(
+        args.where.source === "MANUAL" && !("deletedAt" in args.where)
+          ? { id: "m-deleted" }
+          : null,
+      )) as never);
+
+    expect(await getSourcesInUse("u1")).toEqual([]);
+  });
+
   it("lists a connected integration that has not delivered yet", async () => {
     vi.mocked(prisma.measurement.findFirst).mockResolvedValue(null);
     vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue({
