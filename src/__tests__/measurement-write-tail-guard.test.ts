@@ -103,7 +103,9 @@ const WRITE_SITES: Record<string, string> = {
   "lib/jobs/compaction-tombstone-purge.ts":
     "hard-deletes compaction tombstones, rows already soft-deleted and read nowhere",
   "lib/jobs/measurement-fold-repair.ts":
-    "corrects the value of a folded stats: mean in place and refolds the DAY rollup of a corrected daily mean itself; no instant, type or live set changes",
+    "corrects the value of a folded stats: mean in place, takes the window's live samples into it, and refolds the DAY rollup of a touched daily mean itself; no instant or type changes",
+  "lib/measurements/fold-constituents.ts":
+    "soft-deletes the samples a fold or the fold repair has just taken into a recomputed stats: mean, which accounts for them from then on",
 };
 
 function sourceFiles(): string[] {

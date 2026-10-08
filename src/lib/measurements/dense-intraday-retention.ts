@@ -50,7 +50,10 @@
  * The one-shot history rebuild that converts ALREADY-folded daily rows to
  * the hourly grain lives in `dense-intraday-hourly-rebuild.ts`.
  */
-import { holdAccountAgainstRestore } from "@/lib/export/restore-lock";
+import {
+  holdAccountAgainstRestore,
+  holdAccountFoldLock,
+} from "@/lib/export/restore-lock";
 import type {
   MeasurementSource,
   MeasurementType,
@@ -75,7 +78,10 @@ import type { PerSampleRow } from "./drain-per-sample-cumulative";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { localDayWindow } from "@/lib/tz/local-day";
 import {
+  absorbIntoFold,
+  foldConstituentHorizon,
   loadFoldLeftovers,
+  loadLiveSamples,
   meanOf,
   type FoldConstituent,
 } from "./fold-constituents";
@@ -466,6 +472,12 @@ export interface DenseIntradayRetentionSummary {
      * resting signal the raw-PULSE proxy can no longer compute after fold.
      */
     derivedRestingRowsUpserted: number;
+    /**
+     * Hours that already had a live hourly row whose samples could not be
+     * shown to be complete (`fold-constituents.ts`): the stored mean and the
+     * hour's live rows were left as they are.
+     */
+    hoursLeftAsStored: number;
   };
 }
 
@@ -524,6 +536,7 @@ export async function runDenseIntradayRetention(
       hourlyRowsUpserted: 0,
       dailyRowsRetired: 0,
       derivedRestingRowsUpserted: 0,
+      hoursLeftAsStored: 0,
     },
   };
 
@@ -655,35 +668,20 @@ export async function runDenseIntradayRetention(
               deletedAt: null,
             },
           })) > 0;
-        // The samples an earlier fold soft-deleted from this day: together
-        // with the live rows in hand they are the whole day again
-        // (`fold-constituents.ts`). Read once; no fold writes tombstones any
-        // more, so nothing adds to them while the day is folded.
-        let leftovers: FoldConstituent[] = [];
-        if (dayAlreadyFolded) {
-          const { dayStart, dayEnd } = localDayWindow(dateKey, tz);
-          leftovers = await loadFoldLeftovers(pc, {
-            userId,
-            type,
-            source,
-            from: dayStart,
-            to: dayEnd,
-            foldedAfterMs: retentionDays * 24 * 3_600_000,
-          });
-        } else {
+        if (!dayAlreadyFolded) {
           await recomputeBucketsForMeasurement(
             userId,
             type,
             canonicalTimestamp,
           );
         }
-        const leftoversByHour = new Map<number, FoldConstituent[]>();
-        for (const row of leftovers) {
-          const hour = hourOfDayForUserTz(row.measuredAt, tz);
-          const slot = leftoversByHour.get(hour) ?? [];
-          slot.push(row);
-          leftoversByHour.set(hour, slot);
-        }
+        // Whether the fold leftovers of this day are provably all still in
+        // the table (`foldConstituentHorizon`). Only then is a stored hourly
+        // mean, or the derived resting figure, recomputed.
+        const { dayStart, dayEnd } = localDayWindow(dateKey, tz);
+        const foldedAfterMs = retentionDays * 24 * 3_600_000;
+        const withinHorizon =
+          dayStart >= foldConstituentHorizon(new Date(), foldedAfterMs);
 
         // Fold the day into per-LOCAL-HOUR mean rows, anchored at local
         // HH:30. Sorted for a deterministic write order across runs.
@@ -695,47 +693,97 @@ export async function runDenseIntradayRetention(
           removed: number;
           retiredDaily: boolean;
           slotsWritten: number;
+          hoursLeftAsStored: number;
+          /** Every raw sample of the day, when that is provably all of it. */
+          wholeDay: FoldConstituent[] | null;
         }> => {
           let removed = 0;
           let retiredDaily = false;
           let slotsWritten = 0;
+          let hoursLeftAsStored = 0;
+          let wholeDay: FoldConstituent[] | null = null;
           await pc.$transaction(async (tx) => {
             // First, before any reading is touched: see `restore-lock.ts`.
             await holdAccountAgainstRestore(tx, userId);
-            // An hour that already has a live hourly row gets the mean over
-            // every sample of the hour (live + fold leftovers), never the
-            // mean of this batch alone. With no leftovers the stored mean is
-            // the only account of the hour's earlier samples and stays.
+            // The fold repair rewrites the same rows; one of the two at a
+            // time.
+            await holdAccountFoldLock(tx, userId);
+            // An hour that already has a live hourly row is never re-minted
+            // from the samples in hand. Inside the horizon, with fold
+            // leftovers for the hour, it gets the mean over every sample of
+            // the hour (live + leftovers) and the live samples are kept as
+            // leftovers (`absorbIntoFold`), so the repair and any later pass
+            // compute the same mean. Otherwise the stored mean was taken from
+            // samples that are no longer all in the table, and the hour is
+            // left exactly as it is, its live samples included: a mean of
+            // part of the hour must not replace it (see `refoldStoredDay` in
+            // `consolidate-daily-mean.ts`).
             const hourIds = byHour.map(([hour]) =>
               hourlyStatsExternalId(hkIdentifier, dateKey, hour),
             );
-            const liveHourly = dayAlreadyFolded
-              ? new Set(
-                  (
-                    await tx.measurement.findMany({
-                      where: {
-                        userId,
-                        type,
-                        source,
-                        externalId: { in: hourIds },
-                        deletedAt: null,
-                      },
-                      select: { externalId: true },
-                    })
-                  ).map((row) => row.externalId),
-                )
-              : new Set<string | null>();
+            const liveHourly = new Set(
+              (
+                await tx.measurement.findMany({
+                  where: {
+                    userId,
+                    type,
+                    source,
+                    externalId: { in: hourIds },
+                    deletedAt: null,
+                  },
+                  select: { externalId: true },
+                })
+              ).map((row) => row.externalId),
+            );
+            // Read under the fold lock: the repair may have taken some of the
+            // samples meanwhile.
+            let leftovers: FoldConstituent[] = [];
+            let liveIds = new Set(sourceRowIds);
+            if (liveHourly.size > 0 && withinHorizon) {
+              const window = {
+                userId,
+                type,
+                source,
+                from: dayStart,
+                to: dayEnd,
+              };
+              liveIds = new Set(
+                (await loadLiveSamples(tx, window)).map((row) => row.id),
+              );
+              leftovers = await loadFoldLeftovers(tx, {
+                ...window,
+                foldedAfterMs,
+              });
+            }
+            const leftoversByHour = new Map<number, FoldConstituent[]>();
+            for (const row of leftovers) {
+              const hour = hourOfDayForUserTz(row.measuredAt, tz);
+              const slot = leftoversByHour.get(hour) ?? [];
+              slot.push(row);
+              leftoversByHour.set(hour, slot);
+            }
+
             const slots: HourlySlot[] = [];
+            const deleteIds: string[] = [];
+            const absorbIds: string[] = [];
             for (const [hour, hourRows] of byHour) {
               const slotId = hourlyStatsExternalId(hkIdentifier, dateKey, hour);
               let value = meanBucketValue(hourRows);
               if (liveHourly.has(slotId)) {
                 const earlier = leftoversByHour.get(hour) ?? [];
-                if (earlier.length === 0) continue;
+                if (!withinHorizon || earlier.length === 0) {
+                  hoursLeftAsStored += 1;
+                  continue;
+                }
+                const live = hourRows.filter((row) => liveIds.has(row.id));
+                if (live.length === 0) continue;
                 value = meanOf([
-                  ...hourRows.map((row) => row.value),
+                  ...live.map((row) => row.value),
                   ...earlier.map((row) => row.value),
                 ]);
+                absorbIds.push(...live.map((row) => row.id));
+              } else {
+                deleteIds.push(...hourRows.map((row) => row.id));
               }
               slots.push({
                 externalId: slotId,
@@ -776,10 +824,11 @@ export async function runDenseIntradayRetention(
               retiredDaily = true;
             }
 
-            // Delete the out-of-window per-sample rows in the same
-            // transaction. EXCLUDE the adopted canonical rows: a per-sample row
-            // that happened to fall on an hourly anchor is the row just adopted
-            // as that hour's mean, so removing it would erase the fold.
+            // Delete the out-of-window per-sample rows of the hours folded
+            // here in the same transaction. EXCLUDE the adopted canonical
+            // rows: a per-sample row that happened to fall on an hourly
+            // anchor is the row just adopted as that hour's mean, so removing
+            // it would erase the fold.
             //
             // v1.42 — deleted outright, like the cumulative drain's rows,
             // where they used to be tombstoned for the 75-day retention. No
@@ -790,20 +839,43 @@ export async function runDenseIntradayRetention(
             // of the table and its indexes.
             const del = await tx.measurement.deleteMany({
               where: {
-                id: { in: sourceRowIds, notIn: canonicalRowIds },
+                id: { in: deleteIds, notIn: canonicalRowIds },
                 deletedAt: null,
               },
             });
-            removed = del.count;
+            const absorbed = await absorbIntoFold(
+              tx,
+              absorbIds.filter((id) => !canonicalRowIds.includes(id)),
+            );
+            removed = del.count + absorbed;
+
+            // The day's raw samples, for the derived resting figure: the rows
+            // in hand for a day folded here for the first time; for a day
+            // folded before, the live rows plus the leftovers, but only when
+            // every hour of it could be recomputed.
+            if (!dayAlreadyFolded && liveHourly.size === 0) {
+              wholeDay = dayRows;
+            } else if (
+              withinHorizon &&
+              leftovers.length > 0 &&
+              hoursLeftAsStored === 0
+            ) {
+              wholeDay = [
+                ...dayRows.filter((row) => liveIds.has(row.id)),
+                ...leftovers,
+              ];
+            }
           });
-          return { removed, retiredDaily, slotsWritten };
+          return {
+            removed,
+            retiredDaily,
+            slotsWritten,
+            hoursLeftAsStored,
+            wholeDay,
+          };
         };
 
-        let foldResult: {
-          removed: number;
-          retiredDaily: boolean;
-          slotsWritten: number;
-        };
+        let foldResult: Awaited<ReturnType<typeof foldOnce>>;
         try {
           foldResult = await foldOnce();
         } catch (err) {
@@ -816,6 +888,7 @@ export async function runDenseIntradayRetention(
         // Counters mutate OUTSIDE the retryable transaction so a P2002 retry
         // cannot double-count.
         summary.totals.hourlyRowsUpserted += foldResult.slotsWritten;
+        summary.totals.hoursLeftAsStored += foldResult.hoursLeftAsStored;
         if (foldResult.retiredDaily) summary.totals.dailyRowsRetired += 1;
 
         // iOS#34 — preserve the resting signal for PROXY users. For a user
@@ -831,22 +904,18 @@ export async function runDenseIntradayRetention(
         // would only double-count).
         //
         // On a day an earlier run already folded, the figure comes from the
-        // whole day (live rows + fold leftovers); with no leftovers the rows
-        // in hand are only part of the day and the stored figure stays.
-        if (isPulse && (!dayAlreadyFolded || leftovers.length > 0)) {
+        // whole day (live rows + fold leftovers) and only when that is
+        // provably the whole day; otherwise the stored figure stays.
+        const wholeDay = foldResult.wholeDay;
+        if (isPulse && wholeDay !== null) {
           const restingValue = deriveDailyRestingFromPulse(
-            dayAlreadyFolded
-              ? [
-                  ...dayRows,
-                  ...leftovers.map((row) => ({
-                    id: row.id,
-                    type,
-                    value: row.value,
-                    measuredAt: row.measuredAt,
-                    externalId: null,
-                  })),
-                ]
-              : dayRows,
+            wholeDay.map((row) => ({
+              id: row.id,
+              type,
+              value: row.value,
+              measuredAt: row.measuredAt,
+              externalId: null,
+            })),
           );
           if (restingValue !== null && !(await userHasNativeResting(userId))) {
             const restingExternalId = dailyStatsExternalId(
@@ -950,7 +1019,7 @@ export async function runDenseIntradayRetention(
   }
 
   log(
-    `[dense-intraday-retention] done — usersScanned=${summary.totals.usersScanned} daysConsolidated=${summary.totals.daysConsolidated} perSampleRowsSoftDeleted=${summary.totals.perSampleRowsSoftDeleted} hourlyRowsUpserted=${summary.totals.hourlyRowsUpserted} dailyRowsRetired=${summary.totals.dailyRowsRetired} derivedRestingRowsUpserted=${summary.totals.derivedRestingRowsUpserted}${options.dryRun ? " (dry-run)" : ""}`,
+    `[dense-intraday-retention] done — usersScanned=${summary.totals.usersScanned} daysConsolidated=${summary.totals.daysConsolidated} perSampleRowsSoftDeleted=${summary.totals.perSampleRowsSoftDeleted} hourlyRowsUpserted=${summary.totals.hourlyRowsUpserted} dailyRowsRetired=${summary.totals.dailyRowsRetired} derivedRestingRowsUpserted=${summary.totals.derivedRestingRowsUpserted} hoursLeftAsStored=${summary.totals.hoursLeftAsStored}${options.dryRun ? " (dry-run)" : ""}`,
   );
 
   return summary;

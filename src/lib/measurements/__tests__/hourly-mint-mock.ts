@@ -29,14 +29,15 @@ export function createManyVia(create: CreateSpy) {
 /**
  * The day's candidate lookup. With `existingId`, one row already occupies the
  * first slot's anchor instant (the adopt-in-place case); otherwise nothing is
- * in the way.
+ * in the way. The fold's own lookup of live hourly rows (no `OR`) finds none:
+ * the row in the way is not one of them.
  */
 export function candidateLookup(existingId: string | null = null) {
   return vi.fn(
     async (args: {
-      where: { OR: [unknown, { measuredAt: { in: Date[] } }] };
+      where: { OR?: [unknown, { measuredAt: { in: Date[] } }] };
     }) =>
-      existingId === null
+      existingId === null || args.where.OR === undefined
         ? []
         : [
             {

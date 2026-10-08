@@ -30,8 +30,10 @@
  *   4. UPSERT the canonical daily row keyed by
  *      `stats:<HKIdentifier>:<dateKey>` at local-noon, `value = mean`. A day
  *      that already has a live daily row gets the mean over every sample of
- *      the day, its fold leftovers included (`fold-constituents.ts`), or
- *      keeps its stored mean when none are left.
+ *      the day, its fold leftovers included (`fold-constituents.ts`), but
+ *      only inside the tombstone horizon, where those are provably all of
+ *      them; any other such day keeps its stored mean and its live rows
+ *      (`refoldStoredDay`).
  *      Because mean types are NOT in `CUMULATIVE_HK_TYPES`, the daily
  *      read path averages over the single stats row (count = 1) and
  *      returns it unchanged — no reader change needed.
@@ -49,7 +51,10 @@
  * production standalone image strips `tsx`. Modelled on the
  * `step-consolidation` boot-time converging-backfill pattern.
  */
-import { holdAccountAgainstRestore } from "@/lib/export/restore-lock";
+import {
+  holdAccountAgainstRestore,
+  holdAccountFoldLock,
+} from "@/lib/export/restore-lock";
 import type {
   MeasurementType,
   Prisma,
@@ -70,7 +75,14 @@ import {
 import { type PerSampleRow } from "./drain-per-sample-cumulative";
 import { recomputeBucketsForMeasurement } from "@/lib/rollups/measurement-rollups";
 import { localDayWindow } from "@/lib/tz/local-day";
-import { loadFoldLeftovers, meanOf } from "./fold-constituents";
+import {
+  absorbIntoFold,
+  foldConstituentHorizon,
+  loadFoldLeftovers,
+  loadLiveSamples,
+  meanDiffers,
+  meanOf,
+} from "./fold-constituents";
 
 /**
  * Grace window — rows newer than `now() - cutoffHours` stay raw so
@@ -112,6 +124,12 @@ export interface MeanConsolidationSummary {
     daysConsolidated: number;
     perSampleRowsSoftDeleted: number;
     dailyRowsUpserted: number;
+    /**
+     * Days that already had a live daily row whose samples could not be shown
+     * to be complete (`fold-constituents.ts`): the stored mean and the day's
+     * live rows were left as they are.
+     */
+    daysLeftAsStored: number;
     /**
      * Day buckets whose write failed and was stepped over. A failed day
      * keeps its per-sample rows live, so the next nightly run retries it;
@@ -209,6 +227,73 @@ async function nextFreeInstant(
 }
 
 /**
+ * The fold of a day that already has a live daily row, and live samples the
+ * scan found for it. Before v1.42 the fold cut at `now - 36 h` and folded a
+ * day in two runs; since then a day is folded whole, and the `folded_window`
+ * ingest guard refuses a sample of a folded day, so this is a day an older
+ * release folded in part, or one whose samples reached the table before the
+ * guard existed.
+ *
+ * The stored mean is replaced only by the mean over every sample of the day,
+ * and only when the samples present are provably all of them: the day starts
+ * at or after the horizon of `fold-constituents.ts` (inside it no fold
+ * tombstone has been purged) and the fold left tombstones for it. The live
+ * samples it takes are then soft-deleted as fold leftovers, so the one-time
+ * repair and any later pass compute the same mean from the same samples.
+ *
+ * Otherwise the stored mean was taken from samples that are no longer all in
+ * the table, and the live rows may be a re-upload of some of them or a
+ * fragment of the day. Up to v1.41 the fold overwrote the stored mean with
+ * the mean of these rows alone; the v1.42 first cut replaced it with the mean
+ * of these rows plus whatever tombstones were left. Both compute a mean from
+ * part of a day and both can move a correct mean far off. So the day is left
+ * exactly as it is: the stored mean stays, and the live rows stay as they
+ * were synced, nothing lost. They are few (the guard refuses new ones) and
+ * the nightly pass passes over them again without writing.
+ */
+async function refoldStoredDay(
+  tx: Prisma.TransactionClient,
+  input: {
+    userId: string;
+    type: MeasurementType;
+    stored: { id: string; value: number };
+    tz: string;
+    dateKey: string;
+  },
+): Promise<DayWriteOutcome> {
+  const { userId, type, stored, tz, dateKey } = input;
+  const foldedAfterMs = MEAN_CONSOLIDATION_CUTOFF_HOURS * 3_600_000;
+  const { dayStart, dayEnd } = localDayWindow(dateKey, tz);
+  if (dayStart < foldConstituentHorizon(new Date(), foldedAfterMs)) {
+    return { kind: "left-as-stored" };
+  }
+  const window = {
+    userId,
+    type,
+    source: "APPLE_HEALTH" as const,
+    from: dayStart,
+    to: dayEnd,
+  };
+  // Read under the fold lock: the repair may have taken them meanwhile.
+  const live = await loadLiveSamples(tx, window);
+  if (live.length === 0) return { kind: "written", sourceRowsRemoved: 0 };
+  const leftovers = await loadFoldLeftovers(tx, { ...window, foldedAfterMs });
+  if (leftovers.length === 0) return { kind: "left-as-stored" };
+  const mean = meanOf([...live, ...leftovers].map((row) => row.value));
+  if (meanDiffers(stored.value, mean)) {
+    await tx.measurement.update({
+      where: { id: stored.id },
+      data: { value: mean, syncVersion: { increment: 1 } },
+    });
+  }
+  const absorbed = await absorbIntoFold(
+    tx,
+    live.map((row) => row.id),
+  );
+  return { kind: "written", sourceRowsRemoved: absorbed };
+}
+
+/**
  * Run the daily-mean consolidation. Idempotent — re-invocation after a
  * successful pass reports zero days because the per-sample rows are
  * soft-deleted (and so excluded from the live scan).
@@ -230,6 +315,7 @@ export async function consolidateDailyMean(
       daysConsolidated: 0,
       perSampleRowsSoftDeleted: 0,
       dailyRowsUpserted: 0,
+      daysLeftAsStored: 0,
       daysFailed: 0,
     },
   };
@@ -280,10 +366,42 @@ export async function consolidateDailyMean(
       // and never reads a soft-deleted row's unit — the scan already
       // filters `deletedAt: null`.
       const unit = dayRows[0]?.unit ?? "unknown";
-      let removed = 0;
+      // Assigned inside the transaction callback, so not narrowed here.
+      let outcome = {
+        kind: "written",
+        sourceRowsRemoved: 0,
+      } as DayWriteOutcome;
       await pc.$transaction(async (tx) => {
         // First, before any reading is touched: see `restore-lock.ts`.
         await holdAccountAgainstRestore(tx, userId);
+        // The fold repair rewrites the same rows; one of the two at a time.
+        await holdAccountFoldLock(tx, userId);
+
+        // A live daily row already holds this day: a day an earlier run
+        // folded (in part, before the boundary was aligned to the local
+        // day) that these rows reached afterwards. It is never re-minted
+        // from the rows in hand; see `refoldStoredDay`.
+        const existing = await tx.measurement.findFirst({
+          where: {
+            userId,
+            type,
+            source: "APPLE_HEALTH",
+            externalId,
+            deletedAt: null,
+          },
+          select: { id: true, value: true },
+        });
+        if (existing) {
+          outcome = await refoldStoredDay(tx, {
+            userId,
+            type,
+            stored: existing,
+            tz,
+            dateKey,
+          });
+          return;
+        }
+
         // The upsert below arbiters on (userId, type, source, externalId),
         // but the Measurement model carries a SECOND full unique —
         // (userId, type, measuredAt, source, sleepStage), NULLS NOT
@@ -348,77 +466,34 @@ export async function consolidateDailyMean(
           }
         }
 
-        // A live daily row already holds this day. The pass folds only
-        // complete local days now, so that is a day an earlier run folded
-        // (in part, before the boundary was aligned) and these rows reached
-        // it afterwards. Its stored mean is replaced only by the mean over
-        // EVERY sample of the day: the live rows in hand plus the ones an
-        // earlier fold soft-deleted (`fold-constituents.ts`). When none of
-        // those are left the stored mean is the only account of the earlier
-        // samples, so it stays as it is, and the live rows go the way of
-        // any folded sample.
-        const existing = await tx.measurement.findFirst({
-          where: {
-            userId,
-            type,
-            source: "APPLE_HEALTH",
-            externalId,
-            deletedAt: null,
-          },
-          select: { id: true },
-        });
-        let value = reducedValue;
-        let keepStored = false;
-        if (existing) {
-          const { dayStart, dayEnd } = localDayWindow(dateKey, tz);
-          const leftovers = await loadFoldLeftovers(tx, {
-            userId,
-            type,
-            source: "APPLE_HEALTH",
-            from: dayStart,
-            to: dayEnd,
-            foldedAfterMs: MEAN_CONSOLIDATION_CUTOFF_HOURS * 3_600_000,
-          });
-          if (leftovers.length > 0) {
-            value = meanOf([
-              ...dayRows.map((row) => row.value),
-              ...leftovers.map((row) => row.value),
-            ]);
-          } else {
-            keepStored = true;
-          }
-        }
-
         // Mint / refresh the canonical daily-mean row. The unique
         // index (userId, type, source, externalId) makes the upsert
         // idempotent across re-runs. Built field-by-field (no spread)
         // per the no-mass-assignment convention.
-        if (!keepStored) {
-          await tx.measurement.upsert({
-            where: {
-              userId_type_source_externalId: {
-                userId,
-                type,
-                source: "APPLE_HEALTH",
-                externalId,
-              },
-            },
-            create: {
+        await tx.measurement.upsert({
+          where: {
+            userId_type_source_externalId: {
               userId,
               type,
-              value,
-              unit,
               source: "APPLE_HEALTH",
-              measuredAt: mintAt,
               externalId,
             },
-            update: {
-              value,
-              measuredAt: mintAt,
-              deletedAt: null,
-            },
-          });
-        }
+          },
+          create: {
+            userId,
+            type,
+            value: reducedValue,
+            unit,
+            source: "APPLE_HEALTH",
+            measuredAt: mintAt,
+            externalId,
+          },
+          update: {
+            value: reducedValue,
+            measuredAt: mintAt,
+            deletedAt: null,
+          },
+        });
 
         // Delete the per-sample rows in the same transaction.
         //
@@ -429,8 +504,9 @@ export async function consolidateDailyMean(
         const del = await tx.measurement.deleteMany({
           where: { id: { in: sourceRowIds }, deletedAt: null },
         });
-        removed = del.count;
+        outcome = { kind: "written", sourceRowsRemoved: del.count };
       });
+      if (outcome.kind === "left-as-stored") return outcome;
 
       // T3 — recompute the affected (user, type, day) rollup buckets after
       // the consolidation commits, the same way the batch route does on
@@ -442,7 +518,7 @@ export async function consolidateDailyMean(
       // lands the recompute on the correct UTC day bucket.
       await recomputeBucketsForMeasurement(userId, type, canonicalTimestamp);
 
-      return { kind: "written", sourceRowsRemoved: removed };
+      return outcome;
     },
     recordBucket: ({
       userId,
@@ -463,6 +539,10 @@ export async function consolidateDailyMean(
         canonicalTimestamp: canonicalTimestamp.toISOString(),
         externalId,
       });
+      if (outcome?.kind === "left-as-stored") {
+        summary.totals.daysLeftAsStored += 1;
+        return;
+      }
       summary.totals.daysConsolidated += 1;
       summary.totals.dailyRowsUpserted += 1;
       summary.totals.perSampleRowsSoftDeleted +=
@@ -493,7 +573,7 @@ export async function consolidateDailyMean(
   summary.totals.daysFailed = walk.daysFailed;
 
   log(
-    `[mean-consolidation] done — usersScanned=${summary.totals.usersScanned} daysConsolidated=${summary.totals.daysConsolidated} perSampleRowsSoftDeleted=${summary.totals.perSampleRowsSoftDeleted} dailyRowsUpserted=${summary.totals.dailyRowsUpserted} daysFailed=${summary.totals.daysFailed}${options.dryRun ? " (dry-run)" : ""}`,
+    `[mean-consolidation] done — usersScanned=${summary.totals.usersScanned} daysConsolidated=${summary.totals.daysConsolidated} perSampleRowsSoftDeleted=${summary.totals.perSampleRowsSoftDeleted} dailyRowsUpserted=${summary.totals.dailyRowsUpserted} daysLeftAsStored=${summary.totals.daysLeftAsStored} daysFailed=${summary.totals.daysFailed}${options.dryRun ? " (dry-run)" : ""}`,
   );
 
   return summary;

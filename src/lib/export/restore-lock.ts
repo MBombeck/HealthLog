@@ -78,3 +78,25 @@ export async function holdAccountAgainstRestore(
   `;
   if (!row?.held) throw new AccountRestoreInProgressError(userId);
 }
+
+/**
+ * Serialise the passes that rewrite an account's `stats:` means from their
+ * samples: the daily-mean consolidation, the dense hourly fold and the
+ * one-time fold repair (`measurement-fold-repair.ts`). Each day transaction
+ * of those passes takes it right after {@link holdAccountAgainstRestore}, and
+ * reads the day's samples only after it has it, so two of them never compute
+ * the same window from two different views of its samples, and never write
+ * the same row at once. It waits rather than refusing: the other side holds
+ * it for one day's transaction.
+ *
+ * The two-key form keeps it apart from the restore lock's single-key space.
+ */
+export async function holdAccountFoldLock(
+  tx: LockClient,
+  userId: string,
+): Promise<void> {
+  await tx.$queryRaw`
+    SELECT 1 AS locked
+    FROM pg_advisory_xact_lock(hashtext('measurement-fold'), hashtext(${userId}))
+  `;
+}
