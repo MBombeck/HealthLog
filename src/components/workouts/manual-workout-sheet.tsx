@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import {
@@ -14,7 +14,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { sheetBodyHasUnsavedInput } from "@/components/dashboard/quick-entry-sheets";
-import { ManualWorkoutForm } from "@/components/workouts/manual-workout-form";
+import {
+  ManualWorkoutForm,
+  type ManualWorkoutEdit,
+} from "@/components/workouts/manual-workout-form";
 import { useTranslations } from "@/lib/i18n/context";
 
 /**
@@ -23,21 +26,31 @@ import { useTranslations } from "@/lib/i18n/context";
  * `ManualWorkoutForm` inside their own sheets, which already carry the same
  * confirm-before-discard guard; this one carries it too, so a half-filled
  * form is never dropped by a stray swipe.
+ *
+ * With `edit` it opens on a stored workout (#1162). Its fields start filled,
+ * so "has input" says nothing there; the guard asks the form whether anything
+ * differs from what it opened with.
  */
 export function ManualWorkoutSheet({
   open,
   onOpenChange,
+  edit,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  edit?: ManualWorkoutEdit;
 }) {
   const { t } = useTranslations();
   const [footerEl, setFooterEl] = useState<HTMLDivElement | null>(null);
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
+  const editDirty = useRef(false);
+  const handleDirtyChange = useCallback((dirty: boolean) => {
+    editDirty.current = dirty;
+  }, []);
 
   function handleOpenChange(next: boolean) {
     if (next) return onOpenChange(true);
-    if (sheetBodyHasUnsavedInput()) {
+    if (edit ? editDirty.current : sheetBodyHasUnsavedInput()) {
       setConfirmDiscardOpen(true);
       return;
     }
@@ -49,7 +62,11 @@ export function ManualWorkoutSheet({
       <ResponsiveSheet
         open={open}
         onOpenChange={handleOpenChange}
-        title={t("insights.workouts.manual.sheetTitle")}
+        title={t(
+          edit
+            ? "insights.workouts.manual.editTitle"
+            : "insights.workouts.manual.sheetTitle",
+        )}
         description={t("insights.workouts.manual.sheetDescription")}
         footer={<div ref={setFooterEl} className="flex w-full" />}
       >
@@ -58,6 +75,8 @@ export function ManualWorkoutSheet({
             onSuccess={() => onOpenChange(false)}
             onCancel={() => onOpenChange(false)}
             footerSlot={footerEl}
+            edit={edit}
+            onDirtyChange={edit ? handleDirtyChange : undefined}
           />
         )}
       </ResponsiveSheet>

@@ -45064,6 +45064,22 @@ components:
               minimum: -9007199254740991
               maximum: 9007199254740991
             - type: "null"
+        storedAvgHr:
+          description: The row's own average heart rate (v1.42). `avgHr` may be filled in from a same-session twin by the
+            canonical picker; this is the stored value, which an edit of a hand-entered workout sends back so the twin's
+            value is not written onto it.
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        storedMaxHr:
+          description: The row's own maximum heart rate (v1.42), as `storedAvgHr` is to `avgHr`.
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
         stepCount:
           anyOf:
             - type: integer

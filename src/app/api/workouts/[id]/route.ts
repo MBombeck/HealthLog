@@ -335,6 +335,12 @@ export const GET = apiHandler(
       avgHr: effectiveAvgHeartRate,
       maxHr: effectiveMaxHeartRate,
       minHr: row.minHeartRate,
+      // The row's own heart rate. `avgHr` / `maxHr` above may be filled in
+      // from a twin by the canonical picker, which is right for display and
+      // wrong for an edit: re-posting them would store the twin's values on
+      // the hand-entered row (#1162).
+      storedAvgHr: row.avgHeartRate,
+      storedMaxHr: row.maxHeartRate,
       stepCount: row.stepCount,
       elevationM: row.elevationM,
       pauseDurationSec: row.pauseDurationSec,

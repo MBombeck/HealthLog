@@ -91,9 +91,6 @@ const RELEASE_PENDING_PREFIXES: Record<string, string> = {
   "environment.fields.europeanAqi": "v1.42 air-quality field label (#615)",
   "environment.fields.uvIndexMax": "v1.42 air-quality field label (#615)",
   "environment.fields.dustMax": "v1.42 air-quality field label (#615)",
-  "insights.workouts.manual.editTitle": "v1.42 manual workout edit (#1162)",
-  "insights.workouts.manual.editAction": "v1.42 manual workout edit (#1162)",
-  "insights.workouts.manual.updated": "v1.42 manual workout edit (#1162)",
   "vaccinations.custom": "v1.42 user-defined vaccines (#1005)",
   "labs.convertedFrom": "v1.42 lab unit conversion note (#1095)",
 };
