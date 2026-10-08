@@ -159,7 +159,11 @@ export function CompositeScoreAnatomy({
   // above the method in warning colour is gone: it repeated on every score
   // page what the method and the page explainer already say, and read as an
   // alarm. The method copy closes the card on its own.
-  const method = (
+  // Served from the device, the proxy's method does not describe the number
+  // on the card; the device line does, on its own.
+  const method = deviceStrain ? (
+    anchorLine
+  ) : (
     <>
       {t(meta.methodKey)}
       {anchorLine ? <span className="mt-1 block">{anchorLine}</span> : null}
