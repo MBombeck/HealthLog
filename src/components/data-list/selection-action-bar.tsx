@@ -82,7 +82,7 @@ export function SelectionActionBar({
       // an `sm:` drop sat the bar behind the still-visible nav 640-767px.
       // z-30 keeps the bar above page content without needing to beat the
       // (now-cleared) nav's z-50.
-      className="bg-card border-border sticky bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)] z-30 mt-2 flex items-center justify-between gap-2 rounded-lg border p-2 shadow-lg shell-desktop:bottom-4"
+      className="bg-card border-border shell-desktop:bottom-4 sticky bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)] z-30 mt-2 flex items-center justify-between gap-2 rounded-lg border p-2 shadow-lg"
     >
       <div className="flex items-center gap-1">
         <Button
