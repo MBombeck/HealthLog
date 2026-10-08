@@ -164,14 +164,7 @@ export function GrantInviteCard() {
       <SettingsCardHeader
         icon={UserPlus}
         title={t("recordSharing.invite.title")}
-        // A sharing invitation carries no link and nothing is e-mailed: the
-        // person accepts it from inside their own session. Said here, at the
-        // top of the card, so an inviter never goes looking for a link to
-        // send — the invite-link surface is Admin → Invites, and it is a
-        // different thing entirely.
-        description={`${t("recordSharing.invite.description")} ${t(
-          "recordSharing.invite.needsAccount",
-        )}`}
+        description={t("recordSharing.invite.description")}
       />
       <form onSubmit={(event) => void submit(event)} className="space-y-3">
         <div className="space-y-1.5">
@@ -187,8 +180,14 @@ export function GrantInviteCard() {
             autoComplete="off"
             maxLength={255}
           />
+          {/* A sharing invitation carries no link and nothing is e-mailed:
+              the person accepts it from inside their own session. Said right
+              under the field that names them, so an inviter never goes
+              looking for a link to send (the invite-link surface is Admin →
+              Invites, a different thing entirely), and said once — the card
+              description stays one sentence. */}
           <p className="text-muted-foreground text-xs">
-            {t("recordSharing.invite.identifierHint")}
+            {t("recordSharing.invite.needsAccount")}
           </p>
         </div>
         <fieldset className="space-y-1.5" data-slot="grant-invite-access">
