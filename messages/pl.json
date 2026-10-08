@@ -7173,7 +7173,11 @@
       "failed": "To się nie udało. Sprawdź wprowadzone dane i spróbuj ponownie."
     },
     "passwordTitle": "Hasło",
-    "tokenNameLabel": "Nazwa tokena"
+    "tokenNameLabel": "Nazwa tokena",
+    "displayCard": {
+      "title": "Wyświetlanie",
+      "description": "Język, jednostki i formaty zapisywane od razu po zmianie."
+    }
   },
   "admin": {
     "title": "Administracja",

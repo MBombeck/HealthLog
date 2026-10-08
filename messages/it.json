@@ -7173,7 +7173,11 @@
       "failed": "Non ha funzionato. Controlla quanto inserito e riprova."
     },
     "passwordTitle": "Password",
-    "tokenNameLabel": "Nome del token"
+    "tokenNameLabel": "Nome del token",
+    "displayCard": {
+      "title": "Visualizzazione",
+      "description": "Lingua, unità e formati, salvati appena li modifichi."
+    }
   },
   "admin": {
     "title": "Administration",

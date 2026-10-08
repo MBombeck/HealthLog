@@ -7173,7 +7173,11 @@
       "failed": "Das hat nicht geklappt. Prüfe deine Eingabe und versuche es noch einmal."
     },
     "passwordTitle": "Passwort",
-    "tokenNameLabel": "Token-Name"
+    "tokenNameLabel": "Token-Name",
+    "displayCard": {
+      "title": "Darstellung",
+      "description": "Sprache, Einheiten und Formate, gespeichert, sobald du sie änderst."
+    }
   },
   "admin": {
     "title": "Administration",

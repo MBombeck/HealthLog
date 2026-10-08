@@ -7173,7 +7173,11 @@
       "failed": "Cela n'a pas fonctionné. Vérifiez votre saisie et réessayez."
     },
     "passwordTitle": "Mot de passe",
-    "tokenNameLabel": "Nom du jeton"
+    "tokenNameLabel": "Nom du jeton",
+    "displayCard": {
+      "title": "Affichage",
+      "description": "Langue, unités et formats, enregistrés dès que vous les modifiez."
+    }
   },
   "admin": {
     "title": "Administration",

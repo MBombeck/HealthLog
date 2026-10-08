@@ -7173,7 +7173,11 @@
       "failed": "확인하지 못했습니다. 입력한 내용을 확인하고 다시 시도하세요."
     },
     "passwordTitle": "비밀번호",
-    "tokenNameLabel": "토큰 이름"
+    "tokenNameLabel": "토큰 이름",
+    "displayCard": {
+      "title": "표시",
+      "description": "언어, 단위, 형식은 바꾸는 즉시 저장돼요."
+    }
   },
   "admin": {
     "title": "관리자",
