@@ -35,7 +35,13 @@ export function applyThemeColor(
  * tags to that theme, which until now waited for hydration: a phone in light
  * mode running the app in dark mode showed a light status bar until React
  * caught up. The tags may stream in after the script, so it repeats the
- * rewrite once the document is parsed. Built from constants only — the
- * layout's one `dangerouslySetInnerHTML` stays file-literal content.
+ * rewrite once the document is parsed.
+ *
+ * One string literal, with the two colours written into it rather than
+ * interpolated from `THEME_COLOR`: the layout's one `dangerouslySetInnerHTML`
+ * then carries file-literal content and nothing is built from a value at
+ * runtime. `theme-color.test.ts` runs the script and compares what it paints
+ * against `THEME_COLOR`, so the copies cannot drift apart unnoticed.
  */
-export const THEME_BOOT_SCRIPT = `(function(){var c="dark";try{var t=localStorage.getItem("healthlog-theme");c=(t==="light"||t==="dark")?t:(t==="system"?(window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"):"dark")}catch(e){}document.documentElement.classList.add(c);var k=c==="light"?${JSON.stringify(THEME_COLOR.light)}:${JSON.stringify(THEME_COLOR.dark)};function m(){var a=document.querySelectorAll('meta[name="theme-color"]');for(var i=0;i<a.length;i++)a[i].setAttribute("content",k)}m();document.addEventListener("DOMContentLoaded",m)})()`;
+export const THEME_BOOT_SCRIPT =
+  '(function(){var c="dark";try{var t=localStorage.getItem("healthlog-theme");c=(t==="light"||t==="dark")?t:(t==="system"?(window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"):"dark")}catch(e){}document.documentElement.classList.add(c);var k=c==="light"?"#f3f2f5":"#282a36";function m(){var a=document.querySelectorAll(\'meta[name="theme-color"]\');for(var i=0;i<a.length;i++)a[i].setAttribute("content",k)}m();document.addEventListener("DOMContentLoaded",m)})()';
