@@ -10069,7 +10069,8 @@
         "cycle": "Zyklus",
         "correlations": "Zusammenhänge zwischen Messgrößen",
         "snapshot": "Datenübersicht",
-        "environment": "Wetter und Luft"
+        "environment": "Wetter und Luft",
+        "day": "Ein Tag"
       },
       "window": {
         "last7days": "letzte 7 Tage",
@@ -11833,7 +11834,10 @@
       "symptomDefinitionDelete": "{name} hat ein Symptom entfernt",
       "customVaccineCreate": "{name} hat einen eigenen Impfstoff angelegt",
       "customVaccineUpdate": "{name} hat einen eigenen Impfstoff bearbeitet",
-      "customVaccineDelete": "{name} hat einen eigenen Impfstoff entfernt"
+      "customVaccineDelete": "{name} hat einen eigenen Impfstoff entfernt",
+      "lifeEventCreate": "{name} hat ein Lebensereignis hinzugefügt",
+      "lifeEventUpdate": "{name} hat ein Lebensereignis geändert",
+      "lifeEventDelete": "{name} hat ein Lebensereignis entfernt"
     },
     "section": {
       "measurements": {

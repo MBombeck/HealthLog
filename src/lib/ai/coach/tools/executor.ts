@@ -107,6 +107,7 @@ import {
   getCorrelationsArgsSchema,
   getMetricTableArgsSchema,
   getEnvironmentArgsSchema,
+  getDayArgsSchema,
   isCoachToolName,
   showResultArgsSchema,
   SHOW_RESULT_TOOL_NAME,
@@ -118,6 +119,7 @@ import {
 } from "./source-keys";
 import { readCoachCorrelations } from "./correlations-read";
 import { readEnvironmentForTool } from "./environment-read";
+import { readDayForTool } from "./day-read";
 import { resolveLocaleForUser } from "@/lib/i18n/user-locale";
 import {
   resolveEmptyRead,
@@ -493,6 +495,8 @@ async function dispatchRead(
       );
     case "get_environment":
       return getEnvironment(userId, rawArgs, fallbackWindow, reach);
+    case "get_day":
+      return getDay(userId, rawArgs, reach);
   }
 }
 
@@ -1011,6 +1015,27 @@ async function getCorrelations(
       windowDays: result.windowDays,
     },
   };
+}
+
+/**
+ * v1.42 (#613) — one local day across the record, projected for a model:
+ * never the person's life events or notes. A day older than the lookback
+ * limit is refused before anything is read.
+ */
+async function getDay(
+  userId: string,
+  rawArgs: unknown,
+  reach: CoachHistoryReach,
+): Promise<CoachToolResult> {
+  const parsed = getDayArgsSchema.safeParse(rawArgs);
+  if (!parsed.success) return badArgs("get_day", parsed.error);
+  const result = await readDayForTool({
+    userId,
+    date: parsed.data.date,
+    reach,
+  });
+  if (result.present) return { present: true, data: result.data };
+  return { present: false, reason: result.reason };
 }
 
 /**

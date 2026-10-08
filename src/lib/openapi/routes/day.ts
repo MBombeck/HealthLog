@@ -4,14 +4,15 @@
  *
  * Part of the OpenAPI route table; aggregated in `./index.ts`. The request
  * and response schemas are the runtime ones from `@/lib/day/wire-schemas`, so
- * the published contract is the parser's own. Published ahead of the
- * implementation: every operation answers 501 until its route lands.
+ * the published contract is the parser's own.
  */
 import type { ZodOpenApiObject } from "zod-openapi";
 
 import {
   dayIndexQuerySchema,
   dayIndexResponseSchema,
+  dayNotableQuerySchema,
+  dayNotableResponseSchema,
   dayPathSchema,
   dayResponseSchema,
   lifeEventCreateSchema,
@@ -27,7 +28,8 @@ import {
 import {
   dataEnvelope,
   errorEnvelope,
-  notImplementedResponse,
+  idempotencyKeyParameter,
+  idempotentWrite,
   recordRefusal,
   recordWriteRateLimitResponse,
   stdResponses,
@@ -62,7 +64,30 @@ export const dayPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...stdResponses,
         ...recordRefusal(),
-        ...notImplementedResponse,
+      },
+    },
+  },
+  "/api/day/notable": {
+    get: {
+      tags: ["Records"],
+      summary: "Since the last visit",
+      description:
+        "What stood out and what changed in a window, for the preparation of the next visit: deterministic observations (a value highest or lowest for at least three months, a first reading, a regular reading that stopped for two weeks or more) and context changes (dose changes, medication and course starts and ends, pauses, illness onsets and recoveries, vaccinations, procedures, lab days). Without `from` the window starts at the last completed visit the caller may see (else 90 days back); without `to` it ends today; at most 1096 days. Keys and the record's own names only, no judgement. Days are cut in the record's own time zone. Sections the caller's grant does not cover are left out.",
+      requestParams: { query: dayNotableQuerySchema },
+      responses: {
+        "200": {
+          description: "The window, its observations and its changes.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                dayNotableResponseSchema,
+                "DayNotableWindowEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+        ...recordRefusal(),
       },
     },
   },
@@ -84,7 +109,6 @@ export const dayPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...stdResponses,
         ...recordRefusal(),
-        ...notImplementedResponse,
       },
     },
   },
@@ -106,7 +130,6 @@ export const dayPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...stdResponses,
         ...recordRefusal(TIMELINE_OFF),
-        ...notImplementedResponse,
       },
     },
   },
@@ -130,7 +153,6 @@ export const dayPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...stdResponses,
         ...recordRefusal(TIMELINE_OFF),
-        ...notImplementedResponse,
       },
     },
   },
@@ -154,10 +176,10 @@ export const dayPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...stdResponses,
         ...recordRefusal(),
-        ...notImplementedResponse,
       },
     },
     post: {
+      parameters: [idempotencyKeyParameter],
       tags: ["Records"],
       summary: "Add a life event",
       description:
@@ -176,8 +198,9 @@ export const dayPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
+        ...recordRefusal(),
         ...recordWriteRateLimitResponse,
-        ...notImplementedResponse,
+        ...idempotentWrite(),
       },
     },
   },
@@ -203,7 +226,7 @@ export const dayPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...lifeEventNotFound,
         ...stdResponses,
-        ...notImplementedResponse,
+        ...recordRefusal(),
       },
     },
     delete: {
@@ -222,7 +245,7 @@ export const dayPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...lifeEventNotFound,
         ...stdResponses,
-        ...notImplementedResponse,
+        ...recordRefusal(),
       },
     },
   },

@@ -42,6 +42,7 @@ import {
 import type { McpAuthContext } from "@/lib/mcp/auth";
 
 import { sealLocation } from "@/lib/environment/location-cipher";
+import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
 const DAY = 86_400_000;
@@ -282,6 +283,23 @@ async function seedRecord(): Promise<string> {
       },
     });
   }
+  // v1.42 — a life event on a day the record also holds readings on, with
+  // the timeline module on, so get_day reads a day where one exists and has
+  // to leave it out under the strict validator.
+  await prisma.user.update({
+    where: { id },
+    data: { modulePreferencesJson: { timeline: true } },
+  });
+  await prisma.lifeEvent.create({
+    data: {
+      userId: id,
+      category: "LOSS",
+      startDate: isoDay(daysAgo(3)),
+      precision: "DAY",
+      titleEncrypted: encryptToBytes("Zqx-life-event"),
+      noteEncrypted: encryptToBytes("Zqx-life-note"),
+    },
+  });
   return id;
 }
 
@@ -339,6 +357,7 @@ const CASES: Record<string, Array<Record<string, unknown>>> = {
   get_illness_recovery: [{}],
   get_cycle: [{}],
   get_environment: [{}, { window: "last7days" }],
+  get_day: [{ date: isoDay(daysAgo(3)) }, { date: "2001-01-01" }],
   get_metrics: [
     { metrics: ["weight", "bp", "steps"], window: "last30days" },
     { metrics: ["hrv", "vo2_max"] },
@@ -476,6 +495,28 @@ describe("MCP tool outputs against their advertised schemas", () => {
       expect(failures).toEqual([]);
       expect(validated).toBeGreaterThan(Object.keys(CASES).length);
       expect(presentReads.size).toBeGreaterThanOrEqual(12);
+    } finally {
+      await close();
+    }
+  });
+
+  it("get_day answers with the day and never a life event", async () => {
+    const { client, close } = await connect(userId);
+    try {
+      const result = await client.callTool({
+        name: "get_day",
+        arguments: { date: isoDay(daysAgo(3)) },
+      });
+      const out = result.structuredContent as {
+        present: boolean;
+        url?: string;
+        data?: { values: unknown[] };
+      };
+      expect(out.present).toBe(true);
+      expect(out.data!.values.length).toBeGreaterThan(0);
+      expect(out.url).toMatch(/\/\?day=\d{4}-\d{2}-\d{2}$/);
+      const text = JSON.stringify(out);
+      expect(text).not.toMatch(/Zqx|lifeEvent/);
     } finally {
       await close();
     }

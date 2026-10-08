@@ -113,6 +113,7 @@ const READ_TOOLS = [
   "get_intraday_pulse",
   "get_ecg_recordings",
   "get_environment",
+  "get_day",
   // v1.38 — the bounded visit history.
   "get_visits",
 ].sort();

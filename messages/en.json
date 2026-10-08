@@ -10069,7 +10069,8 @@
         "cycle": "Cycle",
         "correlations": "Connections between metrics",
         "snapshot": "Record summary",
-        "environment": "Weather and air"
+        "environment": "Weather and air",
+        "day": "One day"
       },
       "window": {
         "last7days": "last 7 days",
@@ -11833,7 +11834,10 @@
       "symptomDefinitionDelete": "{name} removed a symptom",
       "customVaccineCreate": "{name} added an own vaccine",
       "customVaccineUpdate": "{name} edited an own vaccine",
-      "customVaccineDelete": "{name} removed an own vaccine"
+      "customVaccineDelete": "{name} removed an own vaccine",
+      "lifeEventCreate": "{name} added a life event",
+      "lifeEventUpdate": "{name} changed a life event",
+      "lifeEventDelete": "{name} removed a life event"
     },
     "section": {
       "measurements": {

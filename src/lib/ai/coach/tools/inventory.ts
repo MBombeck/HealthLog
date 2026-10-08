@@ -248,6 +248,14 @@ export async function buildCoachDataInventory(
     });
   }
 
+  // v1.42 (#613) — one day across the record, by date. Always offered: the
+  // tool answers no_data itself for a day that holds nothing.
+  entries.push({
+    tool: "get_day",
+    domain: "one day across the record, by date (YYYY-MM-DD)",
+    present: true,
+  });
+
   // Every row that came back absent gets checked against the record before the
   // manifest says "absent". A domain whose whole history predates the window —
   // an imported year of readings, a device that stopped syncing — is otherwise

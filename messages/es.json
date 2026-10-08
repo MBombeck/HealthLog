@@ -10069,7 +10069,8 @@
         "cycle": "Ciclo",
         "correlations": "Relaciones entre métricas",
         "snapshot": "Resumen de datos",
-        "environment": "Tiempo y aire"
+        "environment": "Tiempo y aire",
+        "day": "Un día"
       },
       "window": {
         "last7days": "últimos 7 días",
@@ -11833,7 +11834,10 @@
       "symptomDefinitionDelete": "{name} quitó un síntoma",
       "customVaccineCreate": "{name} añadió una vacuna propia",
       "customVaccineUpdate": "{name} editó una vacuna propia",
-      "customVaccineDelete": "{name} quitó una vacuna propia"
+      "customVaccineDelete": "{name} quitó una vacuna propia",
+      "lifeEventCreate": "{name} añadió un acontecimiento vital",
+      "lifeEventUpdate": "{name} cambió un acontecimiento vital",
+      "lifeEventDelete": "{name} eliminó un acontecimiento vital"
     },
     "section": {
       "measurements": {

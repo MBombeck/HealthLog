@@ -1015,22 +1015,31 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "illness",
     why: "One symptom occurrence of the record, fetch-then-guard against the resolved user. Reached only through this module's MANAGE arm.",
   },
-  // v1.42 (#613) — the day, the day index, the timeline and its readiness
-  // are reads across every section, so they declare the whole record, the
-  // posture of the dashboard summary: a full-record grant reads them, a
-  // scoped grant never does. Narrowing them to the grant's own sections is a
-  // change of admission, not of this line, and comes back here for review.
+  // v1.42 (#613) — the day, its index and the visit preparation are admitted
+  // on the readings and narrowed section by section after that: every other
+  // section is read only when the grant also covers that section's own
+  // domain (`actingDomainVisibility`), and a section it does not cover is
+  // named `not_shared` and never read. The section-to-domain map
+  // (`src/lib/day/sections.ts`) is the one the routes serving those rows
+  // declare here, so the day never shows more of a section than its own list
+  // would. The timeline and its readiness lay every section side by side and
+  // stay whole-record reads; their lanes are narrowed the same way all the
+  // same.
   "app/api/day/[date]/route.ts": {
-    domain: "record",
-    why: "One local day across the record: what ran through it, the readings in its window, what happened on it. Read-only, every row scoped to the resolved user, decrypted only for the session that resolved it. Life events ride along under `profile`, which a full-record grant covers.",
+    domain: "measurements",
+    why: "One local day of the record: the readings in its window, and the other sections only where the grant covers each one's own domain, the rest named not_shared and never read. Read-only, every row scoped to the resolved user, decrypted only for the session that resolved it.",
   },
   "app/api/day/index/route.ts": {
-    domain: "record",
-    why: "Which days of a bounded window hold anything, by section key. Dates and section names only, no values and no free text; every read scoped to the resolved user.",
+    domain: "measurements",
+    why: "Which days of a bounded window hold anything, by section key, narrowed per section like the day. Dates and section names only, no values and no free text; every read scoped to the resolved user.",
+  },
+  "app/api/day/notable/route.ts": {
+    domain: "measurements",
+    why: "The preparation of the next visit: notable days of the readings and the context changes of the sections the grant covers, as keys and the record's own names. Read-only, scoped to the resolved user, narrowed per section like the day.",
   },
   "app/api/timeline/route.ts": {
     domain: "record",
-    why: "The record over the years: spans and points from every section plus monthly means. Read-only, scoped to the resolved user, module-gated on the record's own `timeline` switch.",
+    why: "The record over the years: spans and points from every section plus value series. Read-only, scoped to the resolved user, module-gated on the record's own `timeline` switch.",
   },
   "app/api/timeline/readiness/route.ts": {
     domain: "record",
@@ -1038,7 +1047,11 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   },
   "app/api/life-events/route.ts": {
     domain: "profile",
-    why: "The record's life events, a section of health background beside allergies and visits; the consent copy for `profile` names them. The GET reads rows scoped `userId: user.id` and decrypts title and note for the resolved session. The create beside it keeps `requireAuth()` until it files an audit row and joins the write literal.",
+    why: "The record's life events, a section of health background beside allergies and visits; the consent copy for `profile` names them. The GET reads rows scoped `userId: user.id` and decrypts title and note for the resolved session; the create is a MANAGE verb (see the manage literal).",
+  },
+  "app/api/life-events/[id]/route.ts": {
+    domain: "profile",
+    why: "One life event of the record, fetch-then-guard against the resolved user. Reached only through its MANAGE arms; an event another record holds is a 404 like any foreign id.",
   },
   "app/api/workouts/route.ts": {
     domain: "measurements",
@@ -1643,6 +1656,16 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
     conditions: ["C4"],
     why: "Correcting and removing one vaccine definition. The removal soft-deletes it and lets go of the doses that named it, each keeping a name, so no dose leaves the record; the audit row names the definition and how many doses it let go. C4 on the edit: the antigens, the series length and the booster interval are filed before and after, and a rename is named, never quoted. Neither verb re-runs the booster satisfy matcher, so a delegate cannot move a booster's due date by correcting a definition.",
   },
+  "app/api/life-events/route.ts": {
+    domain: "profile",
+    conditions: [],
+    why: "Recording a life event. The person's own anchor, so a guardian's act on a managed profile rather than a helper's; additive, rate-limited on the actor, audited with the category and precision and never the title.",
+  },
+  "app/api/life-events/[id]/route.ts": {
+    domain: "profile",
+    conditions: ["C4"],
+    why: "Correcting and removing a life event. The removal soft-deletes and the audit row names the event's category and date; C4 on the edit: the dates, category and precision are filed before and after, and a changed title or note is named, never quoted.",
+  },
   "app/api/illness/episodes/[id]/resolve/route.ts": {
     domain: "illness",
     conditions: [],
@@ -2056,12 +2079,15 @@ const ACTOR_ROUTES: Record<string, string> = {
  * edit/delete on the manage literal. 242 -> 246.
  *
  * v1.42 -- the day view and the timeline add five reads on the record list:
- * the day, the day index, the timeline, its readiness inventory (all four
- * across the whole record) and the life-event list in `profile`. The life-event
- * create, edit and delete stay owner-only until they carry their audit rows.
- * 246 -> 251.
+ * the day, the day index, the timeline, its readiness inventory and the
+ * life-event list in `profile`. 246 -> 251.
+ *
+ * v1.42 -- the visit preparation joins the record list beside the day, and
+ * the life-event writes join it with their audit rows: the edit/delete module
+ * on the record list, the create and the edit/delete on the manage literal.
+ * 251 -> 255.
  */
-const FROZEN_ENTRY_COUNT = 251;
+const FROZEN_ENTRY_COUNT = 255;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
@@ -2822,7 +2848,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
   it("keeps the admitted mutation inventory complete and discoverable", () => {
     expect(ADMITTED_MUTATING_HANDLERS.length).toBeGreaterThan(0);
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(87);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(90);
 
     const expected = ADMITTED_MUTATING_HANDLERS.map(
       ({ handlerModule, action, level }) =>
