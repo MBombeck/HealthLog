@@ -79,7 +79,10 @@ vi.mock("@tanstack/react-query", () => ({
     setQueryData: vi.fn(),
     getQueryData: vi.fn(),
     invalidateQueries: vi.fn(),
+    isFetching: () => 0,
   }),
+  // The section reveals once its reads settle; nothing is in flight here.
+  useIsFetching: () => 0,
 }));
 
 vi.mock("sonner", () => ({
