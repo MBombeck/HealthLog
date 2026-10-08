@@ -992,6 +992,10 @@ model User {
   // over, and the guardian who minted the link.
   handoversOfProfile                        ManagedProfileHandover[]          @relation("HandoverProfile")
   handoversCreated                          ManagedProfileHandover[]          @relation("HandoverCreator")
+  // v1.42 — dated anchors in the person's life for the timeline (#613): a
+  // move, a birth, a new job. Shared under the `profile` domain; never sent to
+  // a model.
+  lifeEvents                                LifeEvent[]
 
   // v1.7.0 profile — optional patient-identity fields surfaced on the
   // health-record export cover (PDF) and the FHIR `Patient` resource.
@@ -9562,4 +9566,69 @@ model DocumentAiRun {
   @@index([documentId, kind, status])
   @@index([status, expiresAt])
   @@map("document_ai_runs")
+}
+
+/// A dated anchor in the person's life for the timeline (v1.42, #613): a move,
+/// a birth, a new job, a loss. Not a health reading and not a symptom; it gives
+/// the years around the readings something to hang on.
+///
+/// Shared under the `profile` domain, beside allergies, visits and the
+/// immunization history. Never sent to a model in any form: the Coach, the
+/// MCP endpoint and every AI job leave it out, and the day loader's model-facing
+/// projection drops it.
+///
+/// Dates are calendar dates without a time zone (`YYYY-MM-DD`), the
+/// `src/lib/tz/date-only.ts` convention, because "we moved in September 2023"
+/// names a day on a calendar, not an instant. `precision` says how much of the
+/// date the person actually knows; at MONTH or YEAR the stored date is the
+/// first day of that month or year, and only a DAY event appears in a day view.
+model LifeEvent {
+  id             String             @id @default(cuid())
+  userId         String             @map("user_id")
+  /// @pending-consumer(#613) The kind of event, from a deliberately short list.
+  category       LifeEventCategory
+  /// @pending-consumer(#613) First day of the event, `YYYY-MM-DD`. At MONTH or
+  /// YEAR precision the first day of that month or year.
+  startDate      String             @map("start_date")
+  /// @pending-consumer(#613) Last day, `YYYY-MM-DD`, for an event that spans a
+  /// period (parental leave, a year abroad). NULL = a single date.
+  endDate        String?            @map("end_date")
+  /// @pending-consumer(#613) How much of the date is known. Applies to both
+  /// ends.
+  precision      LifeEventPrecision
+  /// @pending-consumer(#613) What happened, in the person's own words,
+  /// AES-256-GCM encrypted at rest.
+  titleEncrypted Bytes              @map("title_encrypted")
+  /// @pending-consumer(#613) An optional note, AES-256-GCM encrypted at rest.
+  noteEncrypted  Bytes?             @map("note_encrypted")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+  /// Soft-delete tombstone. NULL = live.
+  deletedAt      DateTime?          @map("deleted_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, deletedAt, startDate])
+  @@map("life_events")
+}
+
+/// What kind of life event. Few on purpose: travel already comes from the
+/// environment module, and a long list turns an anchor into a diary.
+enum LifeEventCategory {
+  FAMILY
+  HOME
+  WORK
+  LOSS
+  OTHER
+
+  @@map("life_event_category")
+}
+
+/// How much of a life event's date the person knows.
+enum LifeEventPrecision {
+  DAY
+  MONTH
+  YEAR
+
+  @@map("life_event_precision")
 }

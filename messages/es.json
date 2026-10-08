@@ -436,7 +436,8 @@
     "illness": "Enfermedad",
     "documents": "Documentos",
     "vaccinations": "Vacunas",
-    "mentalWellbeing": "Bienestar mental"
+    "mentalWellbeing": "Bienestar mental",
+    "timeline": "Cronología"
   },
   "auth": {
     "login": "Iniciar sesión",
@@ -9608,6 +9609,10 @@
     "vaccinations": {
       "label": "Vacunas",
       "description": "La cartilla de vacunación estructurada: dosis, serie, próximo refuerzo."
+    },
+    "timeline": {
+      "label": "Cronología",
+      "description": "Años de un vistazo: enfermedades, medicamentos y visitas junto a tus valores, además de tus propios acontecimientos vitales."
     }
   },
   "moduleOff": {
@@ -11831,7 +11836,7 @@
       },
       "profile": {
         "label": "Antecedentes de salud",
-        "detail": "Alergias, antecedentes familiares, los datos de tu perfil de salud, tus visitas médicas y consultas, y tu cartilla de vacunación."
+        "detail": "Alergias, antecedentes familiares, los datos de tu perfil de salud, tus visitas médicas y consultas, tu cartilla de vacunación y tus acontecimientos vitales."
       },
       "illness": {
         "label": "Enfermedades",
@@ -12143,6 +12148,139 @@
     "episode": {
       "title": "Síntomas registrados",
       "filed": "registrado con esta enfermedad"
+    }
+  },
+  "day": {
+    "title": "Día",
+    "previousDay": "Día anterior",
+    "nextDay": "Día siguiente",
+    "close": "Cerrar día",
+    "openDay": "Abrir día",
+    "viewWholeDay": "Ver el día completo",
+    "captureForDay": "Registrar para este día",
+    "empty": "No hay entradas para este día.",
+    "notShared": "Algunas áreas no están compartidas contigo.",
+    "inTimeline": "En la cronología",
+    "askCoach": "Preguntar al Coach por este día",
+    "chartHint": "Haz clic en un punto para abrir su día.",
+    "daysWithEntries": "Días con entradas",
+    "loadFailed": "No se pudo cargar este día.",
+    "dayOf": "Día {n} de {m}",
+    "dayN": "Día {n}",
+    "since": "Desde {date}",
+    "usualRange": "Habitual de {lo} a {hi}",
+    "groups": {
+      "running": "En curso",
+      "values": "Valores",
+      "happened": "Sucedió"
+    },
+    "sections": {
+      "values": "Valores",
+      "sleep": "Sueño",
+      "mood": "Estado de ánimo",
+      "assessments": "Cuestionarios",
+      "medications": "Medicamentos",
+      "illness": "Enfermedad",
+      "symptoms": "Síntomas",
+      "allergies": "Alergias",
+      "labs": "Laboratorio",
+      "visits": "Médico e intervenciones",
+      "vaccinations": "Vacunas",
+      "checkups": "Chequeos",
+      "documents": "Documentos",
+      "workouts": "Entrenamientos",
+      "cycle": "Ciclo",
+      "environment": "Entorno",
+      "lifestyle": "Estilo de vida",
+      "lifeEvents": "Acontecimientos vitales"
+    },
+    "notable": {
+      "extremeHigh": "Valor diario más alto desde {since}",
+      "extremeLow": "Valor diario más bajo desde {since}",
+      "firstValue": "Primera medición de este tipo",
+      "gap": "{days} días sin medición"
+    }
+  },
+  "timeline": {
+    "title": "Cronología",
+    "subtitle": "Años de un vistazo.",
+    "legend": "Mostrado uno junto a otro, no como causa y efecto.",
+    "standing": "Permanente",
+    "startMissing": "Falta la fecha de inicio",
+    "openDay": "Abrir {date}",
+    "zoom": {
+      "all": "Todo",
+      "year": "12 meses",
+      "quarter": "3 meses"
+    },
+    "lanes": {
+      "life": "Vida",
+      "illness": "Enfermedades",
+      "allergies": "Alergias",
+      "medications": "Medicamentos",
+      "vaccinations": "Vacunas",
+      "visits": "Médico e intervenciones",
+      "labs": "Laboratorio",
+      "documents": "Documentos",
+      "cycle": "Ciclo"
+    },
+    "readiness": {
+      "title": "Lo que tu cronología ya muestra",
+      "subtitle": "Un inventario honesto antes de abrirla.",
+      "menuEntry": "Cobertura de datos",
+      "hint": "Las pistas vacías permanecen ocultas hasta que haya algo. Los módulos desactivados nunca aparecen. Encontrarás este resumen más adelante en Cobertura de datos, dentro de la cronología.",
+      "later": "Más tarde",
+      "open": "Abrir cronología",
+      "verdict": {
+        "carries": "Ya tiene contenido.",
+        "thin": "Aún escasa. Por ahora la cronología muestra sobre todo tus valores."
+      },
+      "status": {
+        "carries": "completa",
+        "thin": "escasa",
+        "empty": "vacía"
+      },
+      "lanes": {
+        "values": "Valores",
+        "mood": "Estado de ánimo",
+        "environment": "Entorno"
+      }
+    }
+  },
+  "lifeEvents": {
+    "title": "Acontecimiento vital",
+    "add": "Acontecimiento vital",
+    "subtitle": "Un ancla para la cronología, no una medición.",
+    "privacy": "El título y la nota se guardan cifrados. No se envían a ninguna IA.",
+    "empty": "Aún no hay acontecimientos vitales",
+    "emptyHint": "Una mudanza, un nacimiento o un nuevo trabajo dan un ancla a los años.",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar acontecimiento vital",
+    "saved": "Acontecimiento vital guardado",
+    "deleted": "Acontecimiento vital eliminado",
+    "fields": {
+      "title": "¿Qué pasó?",
+      "category": "Tipo",
+      "when": "Cuándo",
+      "precision": "Precisión",
+      "addEnd": "Fecha de fin, si fue un periodo",
+      "endDate": "Hasta",
+      "note": "Nota",
+      "optionalTag": "opcional",
+      "notePlaceholder": "Algo que quieras saber más adelante"
+    },
+    "category": {
+      "FAMILY": "Familia",
+      "HOME": "Vivienda",
+      "WORK": "Trabajo",
+      "LOSS": "Pérdida",
+      "OTHER": "Otro"
+    },
+    "precision": {
+      "DAY": "Día",
+      "MONTH": "Mes",
+      "YEAR": "Año"
     }
   }
 }

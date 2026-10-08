@@ -46,6 +46,7 @@ import {
   Dumbbell,
   FileScan,
   FileText,
+  History,
   MessageCircleHeart,
   Leaf,
   Moon,
@@ -117,6 +118,8 @@ const MODULE_ICONS: Record<ModuleKey, LucideIcon> = {
   nutrients: Leaf,
   // v1.38.0 — the immunization log.
   vaccinations: Syringe,
+  // v1.42 — the life timeline (opt-in).
+  timeline: History,
 };
 
 export function ModulesSection() {

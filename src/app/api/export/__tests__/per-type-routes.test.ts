@@ -75,6 +75,7 @@ vi.mock("@/lib/db", () => ({
     extractedFact: { findMany: vi.fn().mockResolvedValue([]) },
     ecgRecording: { findMany: vi.fn().mockResolvedValue([]) },
     symptomDefinition: { findMany: vi.fn().mockResolvedValue([]) },
+    lifeEvent: { findMany: vi.fn().mockResolvedValue([]) },
     // v1.15.0 — cycle tables read by the full-backup helper.
     cycleProfile: { findUnique: vi.fn() },
     menstrualCycle: { findMany: vi.fn() },
@@ -171,6 +172,7 @@ beforeEach(() => {
   vi.mocked(prisma.coachReminder.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.ecgRecording.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.symptomDefinition.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.lifeEvent.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.moodTagCategory.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.moodTagHidden.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.mentalHealthAssessment.findMany).mockResolvedValue(

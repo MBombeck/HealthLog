@@ -72,6 +72,8 @@ import {
   SecondarySymptom,
   SleepStage,
   VaccinationSite,
+  LifeEventCategory,
+  LifeEventPrecision,
 } from "@/generated/prisma/enums";
 import {
   DEFAULT_HEALTH_PROFILE_AI_SECTIONS,
@@ -1214,6 +1216,36 @@ const symptomDefinitionBackupSchema = z
   });
 
 /**
+ * A life event (v1.42, #613). `title` / `titleEncrypted` and `note` /
+ * `noteEncrypted` are the two ends of the free-text contract: a portable file
+ * carries the plaintext, a disaster-recovery file the ciphertext and the
+ * tombstone. Dates are calendar strings.
+ */
+const lifeEventBackupSchema = z
+  .object({
+    id: z.string().min(1).optional(),
+    category: z.enum(LifeEventCategory),
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    endDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable()
+      .optional(),
+    precision: z.enum(LifeEventPrecision),
+    title: z.string().min(1).optional(),
+    titleEncrypted: base64BytesSchema.optional(),
+    note: z.string().nullable().optional(),
+    noteEncrypted: base64BytesSchema.nullable().optional(),
+    createdAt: isoDateTime,
+    updatedAt: isoDateTime,
+    deletedAt: isoDateTime.nullable().optional(),
+  })
+  .passthrough()
+  .refine((e) => e.title !== undefined || e.titleEncrypted !== undefined, {
+    message: "A life event needs a title or its ciphertext",
+  });
+
+/**
  * A practitioner, an encounter, and the edges between an encounter and the
  * things it produced.
  *
@@ -2038,6 +2070,8 @@ export const backupPayloadSchema = z
     illnessEpisodes: z.array(illnessEpisodeBackupSchema).default([]),
     // Defaulted: a file written before v1.40 carries no key.
     symptomDefinitions: z.array(symptomDefinitionBackupSchema).default([]),
+    // Defaulted: a file written before v1.42 carries no key.
+    lifeEvents: z.array(lifeEventBackupSchema).default([]),
     allergies: z.array(allergyBackupSchema).default([]),
     familyHistory: z.array(familyHistoryBackupSchema).default([]),
     workouts: z.array(workoutBackupSchema).default([]),

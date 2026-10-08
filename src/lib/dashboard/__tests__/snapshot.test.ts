@@ -144,6 +144,7 @@ function moduleMap(
     mentalHealth: true,
     nutrients: true,
     vaccinations: true,
+    timeline: true,
   };
   return { ...base, ...overrides };
 }

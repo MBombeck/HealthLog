@@ -662,6 +662,14 @@ async function main() {
       prisma.symptomEvent,
     ),
   );
+  // v1.42 — a life event's title and note. The note is NULL on most rows,
+  // which the walk skips.
+  results.push(
+    await rotateBytesColumn("LifeEvent", "titleEncrypted", prisma.lifeEvent),
+  );
+  results.push(
+    await rotateBytesColumn("LifeEvent", "noteEncrypted", prisma.lifeEvent),
+  );
 
   // ───── v1.19.0 ECG waveform (Bytes column) ─────
   // "waveformEncrypted" holds the JSON-encoded micro-volt sample array in the

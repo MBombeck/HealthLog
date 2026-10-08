@@ -1007,6 +1007,31 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "illness",
     why: "One symptom occurrence of the record, fetch-then-guard against the resolved user. Reached only through this module's MANAGE arm.",
   },
+  // v1.42 (#613) — the day, the day index, the timeline and its readiness
+  // are reads across every section, so they declare the whole record, the
+  // posture of the dashboard summary: a full-record grant reads them, a
+  // scoped grant never does. Narrowing them to the grant's own sections is a
+  // change of admission, not of this line, and comes back here for review.
+  "app/api/day/[date]/route.ts": {
+    domain: "record",
+    why: "One local day across the record: what ran through it, the readings in its window, what happened on it. Read-only, every row scoped to the resolved user, decrypted only for the session that resolved it. Life events ride along under `profile`, which a full-record grant covers.",
+  },
+  "app/api/day/index/route.ts": {
+    domain: "record",
+    why: "Which days of a bounded window hold anything, by section key. Dates and section names only, no values and no free text; every read scoped to the resolved user.",
+  },
+  "app/api/timeline/route.ts": {
+    domain: "record",
+    why: "The record over the years: spans and points from every section plus monthly means. Read-only, scoped to the resolved user, module-gated on the record's own `timeline` switch.",
+  },
+  "app/api/timeline/readiness/route.ts": {
+    domain: "record",
+    why: "Counts per timeline lane with an in-app link per gap. Counts only, no record content; scoped to the resolved user and module-gated like the timeline.",
+  },
+  "app/api/life-events/route.ts": {
+    domain: "profile",
+    why: "The record's life events, a section of health background beside allergies and visits; the consent copy for `profile` names them. The GET reads rows scoped `userId: user.id` and decrypts title and note for the resolved session. The create beside it keeps `requireAuth()` until it files an audit row and joins the write literal.",
+  },
   "app/api/workouts/route.ts": {
     domain: "measurements",
     why: "The record's workout list. Verified to carry no AI-written paragraph: the single-workout route beside it does, and stays refused for exactly that reason.",
@@ -2010,8 +2035,14 @@ const ACTOR_ROUTES: Record<string, string> = {
  * list, the occurrence create on the write literal, and the definition create,
  * the definition edit/delete and the occurrence edit/delete on the manage
  * literal. 232 -> 242 with both.
+ *
+ * v1.42 -- the day view and the timeline add five reads on the record list:
+ * the day, the day index, the timeline, its readiness inventory (all four
+ * across the whole record) and the life-event list in `profile`. The life-event
+ * create, edit and delete stay owner-only until they carry their audit rows.
+ * 242 -> 247.
  */
-const FROZEN_ENTRY_COUNT = 242;
+const FROZEN_ENTRY_COUNT = 247;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

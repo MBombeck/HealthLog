@@ -252,6 +252,7 @@ const COUNT_BACK: Record<
   SymptomDefinition: (p, userId) =>
     p.symptomDefinition.count({ where: { userId } }),
   SymptomEvent: (p, userId) => p.symptomEvent.count({ where: { userId } }),
+  LifeEvent: (p, userId) => p.lifeEvent.count({ where: { userId } }),
   IllnessSymptomLink: (p, userId) =>
     p.illnessSymptomLink.count({ where: { dayLog: { userId } } }),
   UserHealthProfile: (p, userId) =>
@@ -846,6 +847,29 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
       definitionId: aura.id,
       occurredAt: AT("2026-07-10T18:30:00.000Z"),
       intensity: 2,
+    },
+  });
+
+  // v1.42 — two life events: a move known to the month, with a note, and a
+  // period known to the day.
+  await prisma.lifeEvent.create({
+    data: {
+      userId: OWNER_ID,
+      category: "HOME",
+      startDate: "2023-09-01",
+      precision: "MONTH",
+      titleEncrypted: encryptToBytes("Moved to the coast"),
+      noteEncrypted: encryptToBytes("the flat with the long hallway"),
+    },
+  });
+  await prisma.lifeEvent.create({
+    data: {
+      userId: OWNER_ID,
+      category: "WORK",
+      startDate: "2026-03-02",
+      endDate: "2026-05-29",
+      precision: "DAY",
+      titleEncrypted: encryptToBytes("Parental leave"),
     },
   });
 
@@ -2316,6 +2340,43 @@ describe("every model the plan claims two-ended survives a real restore", () => 
             episode: null,
           },
         ],
+      },
+    ]);
+
+    // v1.42 — the life events: the titles and the note decrypt to what was
+    // typed, and the dates keep their precision.
+    const restoredLifeEvents = await prisma.lifeEvent.findMany({
+      where: { userId: OWNER_ID },
+      orderBy: { startDate: "asc" },
+    });
+    expect(
+      restoredLifeEvents.map((event) => ({
+        category: event.category,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        precision: event.precision,
+        title: decryptFromBytes(event.titleEncrypted),
+        note: event.noteEncrypted
+          ? decryptFromBytes(event.noteEncrypted)
+          : null,
+      })),
+      "life events must survive the round trip",
+    ).toEqual([
+      {
+        category: "HOME",
+        startDate: "2023-09-01",
+        endDate: null,
+        precision: "MONTH",
+        title: "Moved to the coast",
+        note: "the flat with the long hallway",
+      },
+      {
+        category: "WORK",
+        startDate: "2026-03-02",
+        endDate: "2026-05-29",
+        precision: "DAY",
+        title: "Parental leave",
+        note: null,
       },
     ]);
 

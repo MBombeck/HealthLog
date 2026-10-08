@@ -436,7 +436,8 @@
     "illness": "아픈 날",
     "documents": "문서",
     "vaccinations": "예방접종",
-    "mentalWellbeing": "정신 건강"
+    "mentalWellbeing": "정신 건강",
+    "timeline": "타임라인"
   },
   "auth": {
     "login": "로그인",
@@ -9608,6 +9609,10 @@
     "vaccinations": {
       "label": "예방접종",
       "description": "예방접종 기록을 구조화해서: 용량, 차수, 다음 추가 접종."
+    },
+    "timeline": {
+      "label": "타임라인",
+      "description": "몇 년을 한눈에: 수치 옆에 질환, 약, 진료가 놓이고, 내 삶의 사건도 함께 보여요."
     }
   },
   "moduleOff": {
@@ -11831,7 +11836,7 @@
       },
       "profile": {
         "label": "건강 배경",
-        "detail": "알레르기, 가족력, 건강 프로필의 항목들, 진료와 병원, 예방접종 기록이에요."
+        "detail": "알레르기, 가족력, 건강 프로필의 항목들, 진료와 병원, 예방접종 기록, 삶의 사건이에요."
       },
       "illness": {
         "label": "아픈 날",
@@ -12143,6 +12148,139 @@
     "episode": {
       "title": "기록된 증상",
       "filed": "이 질병과 함께 기록됨"
+    }
+  },
+  "day": {
+    "title": "하루",
+    "previousDay": "전날",
+    "nextDay": "다음 날",
+    "close": "하루 닫기",
+    "openDay": "하루 열기",
+    "viewWholeDay": "하루 전체 보기",
+    "captureForDay": "이 날에 기록하기",
+    "empty": "이 날에는 기록이 없어요.",
+    "notShared": "일부 영역은 공유되지 않았어요.",
+    "inTimeline": "타임라인에서 보기",
+    "askCoach": "이 날에 대해 코치에게 묻기",
+    "chartHint": "점을 클릭하면 그날이 열려요.",
+    "daysWithEntries": "기록이 있는 날",
+    "loadFailed": "이 날을 불러오지 못했어요.",
+    "dayOf": "{m}일 중 {n}일째",
+    "dayN": "{n}일째",
+    "since": "{date}부터",
+    "usualRange": "평소 {lo}~{hi}",
+    "groups": {
+      "running": "진행 중",
+      "values": "수치",
+      "happened": "있었던 일"
+    },
+    "sections": {
+      "values": "수치",
+      "sleep": "수면",
+      "mood": "기분",
+      "assessments": "설문",
+      "medications": "약",
+      "illness": "질환",
+      "symptoms": "증상",
+      "allergies": "알레르기",
+      "labs": "검사",
+      "visits": "진료와 시술",
+      "vaccinations": "예방접종",
+      "checkups": "건강검진",
+      "documents": "문서",
+      "workouts": "운동",
+      "cycle": "생리 주기",
+      "environment": "환경",
+      "lifestyle": "생활 습관",
+      "lifeEvents": "삶의 사건"
+    },
+    "notable": {
+      "extremeHigh": "{since} 이후 가장 높은 하루 값",
+      "extremeLow": "{since} 이후 가장 낮은 하루 값",
+      "firstValue": "이 종류의 첫 측정",
+      "gap": "{days}일 동안 측정 없음"
+    }
+  },
+  "timeline": {
+    "title": "타임라인",
+    "subtitle": "몇 년을 한눈에.",
+    "legend": "나란히 보여줄 뿐, 원인과 결과를 뜻하지 않아요.",
+    "standing": "지속",
+    "startMissing": "시작일 없음",
+    "openDay": "{date} 열기",
+    "zoom": {
+      "all": "전체",
+      "year": "12개월",
+      "quarter": "3개월"
+    },
+    "lanes": {
+      "life": "삶",
+      "illness": "질환",
+      "allergies": "알레르기",
+      "medications": "약",
+      "vaccinations": "예방접종",
+      "visits": "진료와 시술",
+      "labs": "검사",
+      "documents": "문서",
+      "cycle": "생리 주기"
+    },
+    "readiness": {
+      "title": "타임라인에 이미 담긴 것",
+      "subtitle": "열기 전에 솔직하게 살펴보는 현황이에요.",
+      "menuEntry": "데이터 현황",
+      "hint": "빈 줄은 무언가 생길 때까지 숨겨져요. 꺼 둔 모듈은 나타나지 않아요. 이 현황은 나중에 타임라인의 데이터 현황에서 다시 볼 수 있어요.",
+      "later": "나중에",
+      "open": "타임라인 열기",
+      "verdict": {
+        "carries": "이미 충분히 채워졌어요.",
+        "thin": "아직 부족해요. 당분간 타임라인은 주로 수치를 보여줘요."
+      },
+      "status": {
+        "carries": "충분",
+        "thin": "부족",
+        "empty": "비어 있음"
+      },
+      "lanes": {
+        "values": "수치",
+        "mood": "기분",
+        "environment": "환경"
+      }
+    }
+  },
+  "lifeEvents": {
+    "title": "삶의 사건",
+    "add": "삶의 사건",
+    "subtitle": "측정값이 아니라 타임라인의 기준점이에요.",
+    "privacy": "제목과 메모는 암호화되어 저장돼요. 어떤 AI에도 보내지 않아요.",
+    "empty": "아직 삶의 사건이 없어요",
+    "emptyHint": "이사, 출산, 새 직장 같은 일이 몇 년에 기준점을 만들어 줘요.",
+    "save": "저장",
+    "cancel": "취소",
+    "delete": "삶의 사건 삭제",
+    "saved": "삶의 사건을 저장했어요",
+    "deleted": "삶의 사건을 삭제했어요",
+    "fields": {
+      "title": "무슨 일이 있었나요?",
+      "category": "종류",
+      "when": "언제",
+      "precision": "정확도",
+      "addEnd": "기간이었다면 종료일",
+      "endDate": "종료",
+      "note": "메모",
+      "optionalTag": "선택",
+      "notePlaceholder": "나중에 알고 싶은 내용"
+    },
+    "category": {
+      "FAMILY": "가족",
+      "HOME": "주거",
+      "WORK": "일",
+      "LOSS": "상실",
+      "OTHER": "기타"
+    },
+    "precision": {
+      "DAY": "일",
+      "MONTH": "월",
+      "YEAR": "연"
     }
   }
 }

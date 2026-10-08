@@ -23295,6 +23295,256 @@ paths:
         "404": *a65
         "422": *a4
         "429": *a5
+  /api/day/index:
+    get:
+      tags:
+        - Records
+      summary: Days with entries
+      description: Which local days in a window hold anything, by section, and which carry a notable observation. At most 366
+        days per call. Days are cut in the record's own time zone.
+      parameters:
+        - in: query
+          name: from
+          schema:
+            type: string
+            description: A local calendar date, `YYYY-MM-DD`.
+          required: true
+          description: A local calendar date, `YYYY-MM-DD`.
+        - in: query
+          name: to
+          schema:
+            type: string
+            description: A local calendar date, `YYYY-MM-DD`.
+          required: true
+          description: A local calendar date, `YYYY-MM-DD`.
+      responses:
+        "200":
+          description: The days in the window that hold entries.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DayIndexEnvelope"
+        "401": *a1
+        "403": *a11
+        "422": *a4
+        "429": *a5
+        "501": *a32
+  /api/day/{date}:
+    get:
+      tags:
+        - Records
+      summary: One day across the record
+      description: "Everything on one local calendar day: what ran through it (medications, an illness, a cycle phase, a
+        trip), the readings in its window with the person's usual range, what happened on it, and deterministic notable
+        observations as keys with parameters. Sections of a switched-off module are left out; sections the caller's
+        grant does not cover are named in `sections`. Read live from the record, never from the UTC rollups. A date that
+        is not a real calendar date answers 422."
+      parameters:
+        - in: path
+          name: date
+          schema:
+            type: string
+            description: A local calendar date, `YYYY-MM-DD`.
+          required: true
+          description: A local calendar date, `YYYY-MM-DD`.
+      responses:
+        "200":
+          description: The day.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DayEnvelope"
+        "401": *a1
+        "403": *a11
+        "422": *a4
+        "429": *a5
+        "501": *a32
+  /api/timeline:
+    get:
+      tags:
+        - Records
+      summary: The record over the years
+      description: Lanes of conditions, allergies, medications, vaccinations, visits, lab days, documents and life events, the
+        standing items without a start, and monthly (or finer, by zoom) value series. Empty lanes are not sent; lanes of
+        a switched-off module never are. Requires the opt-in `timeline` module.
+      parameters:
+        - in: query
+          name: zoom
+          schema:
+            default: all
+            type: string
+            enum:
+              - all
+              - year
+              - quarter
+        - in: query
+          name: from
+          schema:
+            type: string
+            description: A local calendar date, `YYYY-MM-DD`.
+        - in: query
+          name: to
+          schema:
+            type: string
+            description: A local calendar date, `YYYY-MM-DD`.
+        - in: query
+          name: values
+          schema:
+            description: Comma-separated value series to include, as `MeasurementType` names or `MOOD`.
+            type: string
+          description: Comma-separated value series to include, as `MeasurementType` names or `MOOD`.
+      responses:
+        "200":
+          description: The timeline for the requested zoom and window.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimelineEnvelope"
+        "401": *a1
+        "403": &a66
+          description: >-
+            `module.disabled` with `meta.module = timeline`: the record has the timeline switched off (it is opt-in), or
+            the operator turned it off server-wide.
+
+
+            Refused: this request named a record the caller may not act on (`meta.errorCode` = `sharing.access.denied`).
+            Byte-identical for an account that does not exist, an account that granted nothing, a grant whose sections
+            do not reach this surface, and a read grant on a request that writes — the response carries no reason, so it
+            is not an account-enumeration oracle. The reason reaches the record owner's activity feed and the operator's
+            audit trail instead. On the cookie transport the same code answers one further case: a session that has
+            entered a shared record and sends a request without its record-context assertion, which is a client older
+            than the fence — leave the record and reload. A request that names no record but the caller's own never
+            reaches this response, so a client that never switches and never sends the per-request account selector will
+            not see it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+        "501": *a32
+  /api/timeline/readiness:
+    get:
+      tags:
+        - Records
+      summary: What the timeline can show
+      description: "One row per lane: carries, thin or empty, a count, a detail as a message key with parameters, and the gaps
+        with one in-app link each. The verdict is one of two words, never a score. Requires the opt-in `timeline`
+        module."
+      responses:
+        "200":
+          description: The readiness inventory.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimelineReadinessEnvelope"
+        "401": *a1
+        "403": *a66
+        "422": *a4
+        "429": *a5
+        "501": *a32
+  /api/life-events:
+    get:
+      tags:
+        - Records
+      summary: List life events
+      description: The record's life events, oldest first; soft-deleted ones are excluded. Title and note are decrypted for
+        the caller. Part of the `profile` sharing domain. Life events are never sent to a model.
+      responses:
+        "200":
+          description: The life events.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LifeEventListEnvelope"
+        "401": *a1
+        "403": *a11
+        "422": *a4
+        "429": *a5
+        "501": *a32
+    post:
+      tags:
+        - Records
+      summary: Add a life event
+      description: "A dated anchor in the person's life. `precision` says how much of the date is known and applies to both
+        ends: at MONTH a date is the first of its month, at YEAR the first of its year. `endDate`, when given, is not
+        before `startDate`. Title (1-120 characters) and note (up to 2000) are encrypted at rest."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLifeEventRequest"
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateLifeEventEnvelope"
+        "401": *a1
+        "422": *a4
+        "429": *a12
+        "501": *a32
+  /api/life-events/{id}:
+    patch:
+      tags:
+        - Records
+      summary: Edit a life event
+      description: A partial edit; an omitted key leaves the column untouched. The merged event must still satisfy the create
+        rules (dates aligned to the precision, end not before start).
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLifeEventRequest"
+      responses:
+        "200":
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateLifeEventEnvelope"
+        "401": *a1
+        "404": &a67
+          description: No such life event on this record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+        "501": *a32
+    delete:
+      tags:
+        - Records
+      summary: Delete a life event
+      description: Soft-deletes one life event.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteLifeEventEnvelope"
+        "401": *a1
+        "404": *a67
+        "422": *a4
+        "429": *a5
+        "501": *a32
   /api/bugreport:
     post:
       security: []
@@ -26957,6 +27207,8 @@ components:
         nutrients:
           type: boolean
         vaccinations:
+          type: boolean
+        timeline:
           type: boolean
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
@@ -32841,6 +33093,8 @@ components:
               type: boolean
             vaccinations:
               type: boolean
+            timeline:
+              type: boolean
           additionalProperties: false
         cycleTrackingEnabled:
           type: boolean
@@ -33506,6 +33760,81 @@ components:
             - type: "null"
       description: "Partial edit of one occurrence. `note: null` clears the note, `episodeId: null` drops the link. A changed
         `episodeId` must name an open episode; an unchanged link to an episode that has since resolved is kept."
+    CreateLifeEventRequest:
+      type: object
+      properties:
+        category:
+          type: string
+          enum:
+            - FAMILY
+            - HOME
+            - WORK
+            - LOSS
+            - OTHER
+        startDate:
+          type: string
+          description: A local calendar date, `YYYY-MM-DD`.
+        endDate:
+          anyOf:
+            - type: string
+              description: A local calendar date, `YYYY-MM-DD`.
+            - type: "null"
+        precision:
+          type: string
+          enum:
+            - DAY
+            - MONTH
+            - YEAR
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        note:
+          anyOf:
+            - type: string
+              maxLength: 2000
+            - type: "null"
+      required:
+        - category
+        - startDate
+        - precision
+        - title
+      additionalProperties: false
+    UpdateLifeEventRequest:
+      type: object
+      properties:
+        category:
+          type: string
+          enum:
+            - FAMILY
+            - HOME
+            - WORK
+            - LOSS
+            - OTHER
+        startDate:
+          type: string
+          description: A local calendar date, `YYYY-MM-DD`.
+        endDate:
+          anyOf:
+            - type: string
+              description: A local calendar date, `YYYY-MM-DD`.
+            - type: "null"
+        precision:
+          type: string
+          enum:
+            - DAY
+            - MONTH
+            - YEAR
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        note:
+          anyOf:
+            - type: string
+              maxLength: 2000
+            - type: "null"
+      additionalProperties: false
     MedicationTreatmentClass:
       type: string
       enum:
@@ -38404,6 +38733,70 @@ components:
               - updatedAt
               - events
             additionalProperties: {}
+        lifeEvents:
+          default: []
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                minLength: 1
+              category:
+                type: string
+                enum:
+                  - FAMILY
+                  - HOME
+                  - WORK
+                  - LOSS
+                  - OTHER
+              startDate:
+                type: string
+                pattern: ^\d{4}-\d{2}-\d{2}$
+              endDate:
+                anyOf:
+                  - type: string
+                    pattern: ^\d{4}-\d{2}-\d{2}$
+                  - type: "null"
+              precision:
+                type: string
+                enum:
+                  - DAY
+                  - MONTH
+                  - YEAR
+              title:
+                type: string
+                minLength: 1
+              titleEncrypted:
+                type: string
+                minLength: 1
+              note:
+                anyOf:
+                  - type: string
+                  - type: "null"
+              noteEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              createdAt:
+                type: string
+                minLength: 1
+              updatedAt:
+                type: string
+                minLength: 1
+              deletedAt:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+            required:
+              - category
+              - startDate
+              - precision
+              - createdAt
+              - updatedAt
+            additionalProperties: {}
         allergies:
           default: []
           type: array
@@ -41083,6 +41476,7 @@ components:
         - biomarkers
         - illnessEpisodes
         - symptomDefinitions
+        - lifeEvents
         - allergies
         - familyHistory
         - workouts
@@ -50577,6 +50971,9 @@ components:
         vaccinations:
           type: boolean
           description: Whether the "vaccinations" module is enabled for this account.
+        timeline:
+          type: boolean
+          description: Whether the "timeline" module is enabled for this account.
       required:
         - cycle
         - mood
@@ -50597,6 +50994,7 @@ components:
         - mentalHealth
         - nutrients
         - vaccinations
+        - timeline
       additionalProperties: false
       description: Fully-resolved module enable/disable map. Every toggleable module key is present. `false` means the surface
         should disappear end-to-end (nav, dashboard, insights, …). `cycle` mirrors `cycleTrackingEnabled`; `coach`
@@ -77294,6 +77692,14 @@ components:
             - not_granted
             - unavailable
           description: Why the "vaccinations" module is or is not available here.
+        timeline:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "timeline" module is or is not available here.
       required:
         - cycle
         - mood
@@ -77314,6 +77720,7 @@ components:
         - mentalHealth
         - nutrients
         - vaccinations
+        - timeline
       additionalProperties: false
       description: "Why each toggleable module is or is not available for the record this session is inside. `enabled` — the
         module is on and the client may paint it. `disabled` — the record has it switched off. `not_granted` — the
@@ -81007,6 +81414,930 @@ components:
           required:
             - deleted
           additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DayIndexEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/DayIndex"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DayIndex:
+      type: object
+      properties:
+        from:
+          type: string
+          description: A local calendar date, `YYYY-MM-DD`.
+        to:
+          type: string
+          description: A local calendar date, `YYYY-MM-DD`.
+        days:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties:
+            type: array
+            items:
+              type: string
+              enum:
+                - values
+                - sleep
+                - mood
+                - assessments
+                - medications
+                - illness
+                - symptoms
+                - allergies
+                - labs
+                - visits
+                - vaccinations
+                - checkups
+                - documents
+                - workouts
+                - cycle
+                - environment
+                - lifestyle
+                - lifeEvents
+          description: Each day in the window that holds anything, keyed `YYYY-MM-DD`, with the sections it holds. Days without
+            entries are absent.
+        notable:
+          type: array
+          items:
+            type: string
+          description: Days in the window that carry a notable observation.
+      required:
+        - from
+        - to
+        - days
+        - notable
+      additionalProperties: false
+    DayEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/Day"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    Day:
+      type: object
+      properties:
+        date:
+          type: string
+          description: A local calendar date, `YYYY-MM-DD`.
+        tz:
+          type: string
+          description: The IANA zone the day was cut in.
+        counts:
+          type: object
+          properties:
+            values:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            entries:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+          required:
+            - values
+            - entries
+          additionalProperties: false
+        running:
+          type: array
+          items:
+            $ref: "#/components/schemas/DayRunningItem"
+        values:
+          type: array
+          items:
+            $ref: "#/components/schemas/DayValue"
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/DayEvent"
+        notable:
+          type: array
+          items:
+            $ref: "#/components/schemas/DayNotable"
+        sections:
+          type: object
+          propertyNames:
+            type: string
+            enum:
+              - values
+              - sleep
+              - mood
+              - assessments
+              - medications
+              - illness
+              - symptoms
+              - allergies
+              - labs
+              - visits
+              - vaccinations
+              - checkups
+              - documents
+              - workouts
+              - cycle
+              - environment
+              - lifestyle
+              - lifeEvents
+          additionalProperties:
+            type: object
+            properties:
+              available:
+                type: boolean
+                const: false
+              reason:
+                type: string
+                enum:
+                  - not_shared
+                  - module_disabled
+            required:
+              - available
+              - reason
+            additionalProperties: false
+          description: Sections the caller cannot see. A section of a switched-off module is left out entirely rather than listed.
+      required:
+        - date
+        - tz
+        - counts
+        - running
+        - values
+        - events
+        - notable
+        - sections
+      additionalProperties: false
+    DayRunningItem:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - medication
+            - medicationCourse
+            - medicationPause
+            - illness
+            - restMode
+            - cyclePhase
+            - travel
+            - lifestyle
+            - lifeEvent
+        section:
+          type: string
+          enum:
+            - values
+            - sleep
+            - mood
+            - assessments
+            - medications
+            - illness
+            - symptoms
+            - allergies
+            - labs
+            - visits
+            - vaccinations
+            - checkups
+            - documents
+            - workouts
+            - cycle
+            - environment
+            - lifestyle
+            - lifeEvents
+        id:
+          type: string
+        title:
+          type: string
+          description: Decrypted server-side for the caller's own session.
+        sub:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: A second line, already formatted (a dose, a destination).
+        since:
+          type: string
+          description: A local calendar date, `YYYY-MM-DD`.
+        until:
+          anyOf:
+            - type: string
+              description: A local calendar date, `YYYY-MM-DD`.
+            - type: "null"
+          description: Null while it is still open.
+        dayIndex:
+          anyOf:
+            - type: integer
+              exclusiveMinimum: 0
+              maximum: 9007199254740991
+            - type: "null"
+          description: Day n of the period, counting `since` as day 1.
+        dayCount:
+          anyOf:
+            - type: integer
+              exclusiveMinimum: 0
+              maximum: 9007199254740991
+            - type: "null"
+          description: Length of a closed period in days; null while open.
+        href:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: In-app path to the record this came from.
+      required:
+        - kind
+        - section
+        - id
+        - title
+        - sub
+        - since
+        - until
+        - dayIndex
+        - dayCount
+        - href
+      additionalProperties: false
+    DayValue:
+      type: object
+      properties:
+        type:
+          type: string
+          description: A `MeasurementType`.
+        value:
+          type: number
+        unit:
+          type: string
+        at:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        source:
+          type: string
+          description: The `MeasurementSource` of the canonical row.
+        band:
+          anyOf:
+            - type: object
+              properties:
+                lo:
+                  type: number
+                hi:
+                  type: number
+                n:
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+              required:
+                - lo
+                - hi
+                - n
+              additionalProperties: false
+            - type: "null"
+          description: The person's own usual range over the 30 days before this day, from their daily values. Null with too
+            little history.
+      required:
+        - type
+        - value
+        - unit
+        - at
+        - source
+        - band
+      additionalProperties: false
+    DayEvent:
+      type: object
+      properties:
+        at:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: The instant, or null for something that has a date only.
+        kind:
+          type: string
+          enum:
+            - intake
+            - doseChange
+            - medicationStart
+            - medicationEnd
+            - pauseStart
+            - pauseEnd
+            - courseStart
+            - courseEnd
+            - illnessOnset
+            - illnessResolved
+            - illnessDayLog
+            - symptom
+            - allergyOnset
+            - labResult
+            - visit
+            - procedure
+            - vaccination
+            - checkup
+            - document
+            - mood
+            - assessment
+            - workout
+            - cycleDayLog
+            - lifeEvent
+        section:
+          type: string
+          enum:
+            - values
+            - sleep
+            - mood
+            - assessments
+            - medications
+            - illness
+            - symptoms
+            - allergies
+            - labs
+            - visits
+            - vaccinations
+            - checkups
+            - documents
+            - workouts
+            - cycle
+            - environment
+            - lifestyle
+            - lifeEvents
+        id:
+          type: string
+        title:
+          type: string
+        meta:
+          anyOf:
+            - type: string
+            - type: "null"
+        note:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: The person's own note, decrypted for the caller's session.
+        docs:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+            required:
+              - id
+              - name
+            additionalProperties: false
+          description: Documents filed against the entry.
+        href:
+          anyOf:
+            - type: string
+            - type: "null"
+      required:
+        - at
+        - kind
+        - section
+        - id
+        - title
+        - meta
+        - note
+        - docs
+        - href
+      additionalProperties: false
+    DayNotable:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - extremeHigh
+            - extremeLow
+            - firstValue
+            - gap
+        type:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: The `MeasurementType` it is about.
+        params:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties:
+            anyOf:
+              - type: string
+              - type: number
+          description: Parameters for the message the client words from its own bundle. Dates are `YYYY-MM-DD`, values are numbers
+            in the unit the entry names.
+      required:
+        - kind
+        - type
+        - params
+      additionalProperties: false
+    TimelineEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/Timeline"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    Timeline:
+      type: object
+      properties:
+        zoom:
+          type: string
+          enum:
+            - all
+            - year
+            - quarter
+        range:
+          type: object
+          properties:
+            from:
+              type: string
+              description: A local calendar date, `YYYY-MM-DD`.
+            to:
+              type: string
+              description: A local calendar date, `YYYY-MM-DD`.
+            dataFrom:
+              anyOf:
+                - type: string
+                  description: A local calendar date, `YYYY-MM-DD`.
+                - type: "null"
+              description: The earliest date anything in the record carries.
+          required:
+            - from
+            - to
+            - dataFrom
+          additionalProperties: false
+        lanes:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                enum:
+                  - life
+                  - illness
+                  - allergies
+                  - medications
+                  - vaccinations
+                  - visits
+                  - labs
+                  - documents
+                  - cycle
+              items:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimelineItem"
+            required:
+              - key
+              - items
+            additionalProperties: false
+        standing:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimelineStandingItem"
+          description: "Things without a start: shown once as standing."
+        series:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimelineSeries"
+        notable:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                description: A local calendar date, `YYYY-MM-DD`.
+              kind:
+                type: string
+                enum:
+                  - extremeHigh
+                  - extremeLow
+                  - firstValue
+                  - gap
+            required:
+              - date
+              - kind
+            additionalProperties: false
+      required:
+        - zoom
+        - range
+        - lanes
+        - standing
+        - series
+        - notable
+      additionalProperties: false
+    TimelineItem:
+      type: object
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum:
+            - lifeEvent
+            - travel
+            - episode
+            - chronic
+            - allergy
+            - medication
+            - course
+            - doseChange
+            - pause
+            - vaccination
+            - visit
+            - procedure
+            - labDay
+            - document
+            - cycle
+        start:
+          type: string
+          description: A local calendar date, `YYYY-MM-DD`.
+        end:
+          anyOf:
+            - type: string
+              description: A local calendar date, `YYYY-MM-DD`.
+            - type: "null"
+          description: Null for a point or an open span.
+        open:
+          type: boolean
+          description: A span that has not ended.
+        precision:
+          type: string
+          enum:
+            - DAY
+            - MONTH
+            - YEAR
+        startKnown:
+          type: boolean
+          description: False when the start is a stand-in (a medication without a start date starts at its first intake).
+        label:
+          type: string
+        sub:
+          anyOf:
+            - type: string
+            - type: "null"
+        href:
+          anyOf:
+            - type: string
+            - type: "null"
+      required:
+        - id
+        - kind
+        - start
+        - end
+        - open
+        - precision
+        - startKnown
+        - label
+        - sub
+        - href
+      additionalProperties: false
+    TimelineStandingItem:
+      type: object
+      properties:
+        lane:
+          type: string
+          enum:
+            - life
+            - illness
+            - allergies
+            - medications
+            - vaccinations
+            - visits
+            - labs
+            - documents
+            - cycle
+        id:
+          type: string
+        label:
+          type: string
+        since:
+          anyOf:
+            - type: string
+              description: A local calendar date, `YYYY-MM-DD`.
+            - type: "null"
+        href:
+          anyOf:
+            - type: string
+            - type: "null"
+      required:
+        - lane
+        - id
+        - label
+        - since
+        - href
+      additionalProperties: false
+    TimelineSeries:
+      type: object
+      properties:
+        key:
+          type: string
+          description: A `MeasurementType` or `MOOD`.
+        unit:
+          anyOf:
+            - type: string
+            - type: "null"
+        granularity:
+          type: string
+          enum:
+            - month
+            - week
+            - day
+        points:
+          type: array
+          items:
+            type: object
+            properties:
+              t:
+                type: string
+                description: A local calendar date, `YYYY-MM-DD`.
+              mean:
+                type: number
+            required:
+              - t
+              - mean
+            additionalProperties: false
+      required:
+        - key
+        - unit
+        - granularity
+        - points
+      additionalProperties: false
+    TimelineReadinessEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/TimelineReadiness"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    TimelineReadiness:
+      type: object
+      properties:
+        verdict:
+          type: string
+          enum:
+            - carries
+            - thin
+        since:
+          anyOf:
+            - type: string
+              description: A local calendar date, `YYYY-MM-DD`.
+            - type: "null"
+          description: The earliest date the carrying lanes reach back to.
+        lanes:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                enum:
+                  - values
+                  - life
+                  - illness
+                  - allergies
+                  - medications
+                  - vaccinations
+                  - visits
+                  - labs
+                  - documents
+                  - cycle
+                  - mood
+                  - environment
+              status:
+                type: string
+                enum:
+                  - carries
+                  - thin
+                  - empty
+              count:
+                type: integer
+                minimum: 0
+                maximum: 9007199254740991
+              detail:
+                anyOf:
+                  - type: object
+                    properties:
+                      key:
+                        type: string
+                      params:
+                        type: object
+                        propertyNames:
+                          type: string
+                        additionalProperties:
+                          anyOf:
+                            - type: string
+                            - type: number
+                        description: Parameters for the message the client words from its own bundle. Dates are `YYYY-MM-DD`, values are numbers
+                          in the unit the entry names.
+                    required:
+                      - key
+                      - params
+                    additionalProperties: false
+                  - type: "null"
+                description: Worded by the client from `timeline.readiness.detail`.
+              gaps:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    key:
+                      type: string
+                    count:
+                      type: integer
+                      minimum: 0
+                      maximum: 9007199254740991
+                    href:
+                      type: string
+                  required:
+                    - key
+                    - count
+                    - href
+                  additionalProperties: false
+            required:
+              - key
+              - status
+              - count
+              - detail
+              - gaps
+            additionalProperties: false
+      required:
+        - verdict
+        - since
+        - lanes
+      additionalProperties: false
+    LifeEventListEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/LifeEventList"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    LifeEventList:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/LifeEvent"
+      required:
+        - events
+      additionalProperties: false
+    LifeEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        category:
+          type: string
+          enum:
+            - FAMILY
+            - HOME
+            - WORK
+            - LOSS
+            - OTHER
+        startDate:
+          type: string
+          description: A local calendar date, `YYYY-MM-DD`.
+        endDate:
+          anyOf:
+            - type: string
+              description: A local calendar date, `YYYY-MM-DD`.
+            - type: "null"
+        precision:
+          type: string
+          enum:
+            - DAY
+            - MONTH
+            - YEAR
+        title:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Decrypted; null only when the stored title cannot be read.
+        note:
+          anyOf:
+            - type: string
+            - type: "null"
+        createdAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        updatedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - id
+        - category
+        - startDate
+        - endDate
+        - precision
+        - title
+        - note
+        - createdAt
+        - updatedAt
+      additionalProperties: false
+      description: A dated anchor in the person's life. Shared under the `profile` domain; never sent to a model.
+    CreateLifeEventEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/LifeEvent"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    UpdateLifeEventEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/LifeEvent"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DeleteLifeEventEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/LifeEvent"
         error:
           type: "null"
         meta:

@@ -80,6 +80,9 @@ const DYNAMIC_ALLOWLIST_PREFIXES = [
 const RELEASE_PENDING_PREFIXES: Record<string, string> = {
   "vaccinations.custom": "v1.42 user-defined vaccines (#1005)",
   "labs.convertedFrom": "v1.42 lab unit conversion note (#1095)",
+  day: "v1.42 day view and its entry points (#613)",
+  timeline: "v1.42 timeline and its readiness inventory (#613)",
+  lifeEvents: "v1.42 life-event form and list (#613)",
 };
 
 /**

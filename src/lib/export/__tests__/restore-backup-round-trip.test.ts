@@ -315,6 +315,7 @@ function sourceClient() {
     extractedFact: { findMany: vi.fn().mockResolvedValue([]) },
     ecgRecording: { findMany: vi.fn().mockResolvedValue([]) },
     symptomDefinition: { findMany: vi.fn().mockResolvedValue([]) },
+    lifeEvent: { findMany: vi.fn().mockResolvedValue([]) },
     customMetric: {
       findMany: vi.fn().mockResolvedValue([
         {
