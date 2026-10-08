@@ -21,6 +21,9 @@
  *
  * Only core types are compared for extremes: the vitals the dashboard is
  * built around. A watch's background figures would mark a day every week.
+ * Pulse is left to the resting heart rate: its day value is a mean over
+ * thousands of background samples, which says little as an extreme and
+ * costs a scan of every one of them over two years.
  */
 import type { MeasurementType } from "@/generated/prisma/enums";
 
@@ -35,7 +38,6 @@ export const NOTABLE_EXTREME_TYPES: readonly MeasurementType[] = [
   "WEIGHT",
   "BLOOD_PRESSURE_SYS",
   "BLOOD_PRESSURE_DIA",
-  "PULSE",
   "RESTING_HEART_RATE",
   "BLOOD_GLUCOSE",
   "HEART_RATE_VARIABILITY",
