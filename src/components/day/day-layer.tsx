@@ -249,10 +249,9 @@ function DayLayer() {
             className="bg-card text-card-foreground border-border motion-safe:animate-in motion-safe:fade-in-0 flex h-full w-105 shrink-0 flex-col border-l motion-safe:duration-150"
           >
             {view(DockedTitle, {
-              headerClassName: cn(
-                SHELL_HEADER_BAND,
-                "border-border pt-[env(safe-area-inset-top,0px)]",
-              ),
+              // No status-bar inset here: the docked column sits inside
+              // the app shell, which takes it (`shell-safe-area`).
+              headerClassName: cn(SHELL_HEADER_BAND, "border-border"),
             })}
           </aside>
         </ShellSidePanel>
@@ -436,7 +435,13 @@ function DaySheet({
           bottom
             ? cn(
                 "rounded-t-2xl transition-[height] duration-200 motion-reduce:transition-none",
-                full ? "h-[calc(100dvh-2.5rem)]" : "h-[58dvh]",
+                // Full height leaves a strip of the page above the
+                // sheet, and never less than the status bar of an
+                // installed app plus a margin: a 2.5rem strip put the
+                // handle under a 59 px Dynamic Island.
+                full
+                  ? "h-[calc(100dvh-max(2.5rem,env(safe-area-inset-top,0px)+0.75rem))]"
+                  : "h-[58dvh]",
               )
             : "w-105 max-w-[90vw] sm:max-w-105",
         )}

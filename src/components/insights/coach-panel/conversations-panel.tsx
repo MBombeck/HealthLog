@@ -209,12 +209,9 @@ export function ConversationsPanel({
   const header = (inSheet: boolean) => (
     <div
       data-slot="coach-conversations-panel-header"
-      // Docked, the row reserves the safe-area inset the top bar reserves,
-      // so a standalone PWA on a tablet does not tuck it under the status
-      // bar; the band keeps its height (border-box), like the top bar.
-      style={
-        inSheet ? undefined : { paddingTop: "env(safe-area-inset-top, 0px)" }
-      }
+      // No inset of its own: docked, the panel is a column of the app
+      // shell, which already starts below the status bar of an installed
+      // app (`shell-safe-area` in `auth-shell.tsx`).
       // Docked, the row is the top bar's band (height and bottom border
       // from `SHELL_HEADER_BAND`), so the two borders draw one line.
       className={cn(

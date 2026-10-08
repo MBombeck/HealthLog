@@ -60,11 +60,13 @@ const FIELD_HEIGHT_CLASSES = "min-h-11 h-11 sm:min-h-10 sm:h-10";
 // `input-focus` tone, with no ring. The earlier `ring-2 ring-offset-2`
 // painted a hard 4 px ring OUTSIDE the box — wider than the field's div and
 // visibly mismatched next to the app's other inputs, and it shifted the
-// highlight box on focus. `text-base md:text-sm` mirrors `<Input>` too: a
-// sub-16 px input triggers iOS Safari's focus auto-zoom, which reads as a
-// layout jump; 16 px below `md:` suppresses it.
+// highlight box on focus. `text-base md:pointer-fine:text-sm` mirrors
+// `<Input>` too: a sub-16 px input triggers iOS Safari's focus auto-zoom,
+// which reads as a layout jump; 16 px on every touch screen suppresses it
+// (`pointer-fine`, globals.css — a width breakpoint alone missed a phone
+// held sideways and every iPad).
 const FIELD_BASE_CLASSES =
-  "border-input bg-background text-foreground placeholder:text-muted-foreground relative flex w-full min-w-0 items-center rounded-md border ps-3 pe-2 text-base md:text-sm shadow-xs transition-[color,box-shadow] focus-within:border-input-focus focus-within:outline-none";
+  "border-input bg-background text-foreground placeholder:text-muted-foreground relative flex w-full min-w-0 items-center rounded-md border ps-3 pe-2 text-base md:pointer-fine:text-sm shadow-xs transition-[color,box-shadow] focus-within:border-input-focus focus-within:outline-none";
 
 export interface DateFieldProps {
   id?: string;

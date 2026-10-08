@@ -52,3 +52,95 @@ describe("resolveVersionPollDecision", () => {
     ).toBe("reload");
   });
 });
+
+describe("evictAndReload", () => {
+  /**
+   * The Reload action used to unregister every service worker. Unregistering
+   * a registration ends its Web Push subscription, and nothing re-creates it,
+   * so each update silently switched push reminders off in the installed app.
+   * The action now updates the registration and deletes only HealthLog's
+   * caches.
+   */
+  function stubBrowser(cacheNames: string[]) {
+    const calls = { update: 0, unregister: 0, reload: 0 };
+    const deleted: string[] = [];
+    const registration = {
+      update: async () => {
+        calls.update += 1;
+      },
+      unregister: async () => {
+        calls.unregister += 1;
+        return true;
+      },
+    };
+    const g = globalThis as Record<string, unknown>;
+    const saved = {
+      navigator: Object.getOwnPropertyDescriptor(globalThis, "navigator"),
+      caches: g.caches,
+      window: g.window,
+      sessionStorage: g.sessionStorage,
+    };
+    Object.defineProperty(globalThis, "navigator", {
+      configurable: true,
+      value: {
+        serviceWorker: { getRegistrations: async () => [registration] },
+      },
+    });
+    g.caches = {
+      keys: async () => cacheNames,
+      delete: async (name: string) => {
+        deleted.push(name);
+        return true;
+      },
+    };
+    g.window = {
+      location: {
+        reload: () => {
+          calls.reload += 1;
+        },
+      },
+    };
+    g.sessionStorage = { setItem: () => {}, getItem: () => null };
+    const restore = () => {
+      if (saved.navigator)
+        Object.defineProperty(globalThis, "navigator", saved.navigator);
+      g.caches = saved.caches;
+      g.window = saved.window;
+      g.sessionStorage = saved.sessionStorage;
+    };
+    return { calls, deleted, restore };
+  }
+
+  it("updates the worker instead of unregistering it, so the push subscription survives", async () => {
+    const { evictAndReload } = await import("../version-poller");
+    const browser = stubBrowser([]);
+    try {
+      await evictAndReload("9.9.9");
+    } finally {
+      browser.restore();
+    }
+    expect(browser.calls.unregister).toBe(0);
+    expect(browser.calls.update).toBe(1);
+    expect(browser.calls.reload).toBe(1);
+  });
+
+  it("deletes HealthLog's caches and leaves another app's on the same origin", async () => {
+    const { evictAndReload } = await import("../version-poller");
+    const browser = stubBrowser([
+      "healthlog-static-v1.41.2",
+      "healthlog-pages-v1.41.2",
+      "healthlog-data-v1.41.2",
+      "other-app-runtime",
+    ]);
+    try {
+      await evictAndReload("9.9.9");
+    } finally {
+      browser.restore();
+    }
+    expect(browser.deleted.sort()).toEqual([
+      "healthlog-data-v1.41.2",
+      "healthlog-pages-v1.41.2",
+      "healthlog-static-v1.41.2",
+    ]);
+  });
+});

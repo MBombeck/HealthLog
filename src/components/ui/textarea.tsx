@@ -14,10 +14,13 @@ import { cn } from "@/lib/utils";
  *
  * What it bakes in:
  *
- *   - `text-base sm:text-sm` — iOS Safari zooms the viewport on
- *     focus when the font-size renders below 16 px, which yanks the
- *     keyboard up and leaves the user lost. 16 px on mobile holds
- *     the viewport; 14 px on `sm`+ keeps the compact desktop look.
+ *   - `text-base sm:pointer-fine:text-sm` — iOS Safari zooms the
+ *     viewport on focus when the font-size renders below 16 px, which
+ *     yanks the keyboard up and leaves the user lost. 16 px on a touch
+ *     screen holds the viewport at any width (a phone held sideways is
+ *     past `sm`, an iPad past `md`); 14 px only where a mouse or
+ *     trackpad drives (`pointer-fine`, globals.css) keeps the compact
+ *     desktop look.
  *
  *   - `min-h-11 sm:min-h-9` — WCAG 2.5.5 / Apple HIG floor of 44 px
  *     on touch screens, shrinking to 36 px once we know we have a
@@ -65,7 +68,7 @@ function Textarea({
       className={cn(
         // iOS zoom defence + WCAG 2.5.5 tap-target floor; see the
         // primitive's docblock for the full reasoning.
-        "border-input bg-background text-foreground placeholder:text-muted-foreground dark:bg-input/30 min-h-11 w-full rounded-md border px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-9 sm:text-sm",
+        "border-input bg-background text-foreground placeholder:text-muted-foreground dark:bg-input/30 min-h-11 w-full rounded-md border px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-9 sm:pointer-fine:text-sm",
         "focus-visible:border-input-focus aria-invalid:focus-visible:ring-[3px]",
         "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
         className,
