@@ -540,6 +540,17 @@ services:
     # (concrete pin, active watch) from being dropped.
     image: postgres:16.15-alpine
     container_name: healthlog-db
+    # Loads pg_stat_statements so slow queries can be found from measurements
+    # instead of guesses. Loading the library only collects statistics; the
+    # view appears after a one-time `CREATE EXTENSION pg_stat_statements;`
+    # (docs/ops/query-statistics.md). Changing this line restarts the
+    # database once on the next `compose up`.
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.track=top
     # cap_drop: [ALL] is deliberately NOT applied here (unlike `app`): the
     # official Postgres entrypoint starts as root, chowns the data
     # directory, and drops privileges to the `postgres` user itself, which
