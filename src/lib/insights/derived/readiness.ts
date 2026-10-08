@@ -50,7 +50,11 @@ import {
 } from "./coverage";
 import { computeVitalsBaseline, type BaselineProfile } from "./baseline";
 import { computeSleepScore } from "./sleep-score";
-import type { Derived, DerivedProvenanceSource } from "./types";
+import {
+  SPARKLINE_MAX_POINTS,
+  type Derived,
+  type DerivedProvenanceSource,
+} from "./types";
 
 const DEFAULT_WINDOW_DAYS = 30;
 /**
@@ -89,6 +93,45 @@ export interface ReadinessValue {
   score: number;
   band: "green" | "yellow" | "red";
   components: ReadinessComponent[];
+  /**
+   * v1.42 — the blend's own course over the window (oldest → newest, capped
+   * to `SPARKLINE_MAX_POINTS`), read from what the nightly job persisted; see
+   * `readReadinessHistory`. Attached by the derived dispatch for the surfaces
+   * that show it, absent on the job's own compute. Additive.
+   */
+  series?: number[];
+}
+
+/**
+ * The readiness blend's history, without recomputing a single day.
+ *
+ * The nightly recovery job persists exactly this blend — `computeRecoveryScore`
+ * delegates to `computeReadiness` verbatim — as the `COMPUTED`-source
+ * `RECOVERY_SCORE` row. Those rows ARE the readiness score of each past night.
+ * A device-native recovery row (WHOOP, Oura, Polar) shares the type but is the
+ * vendor's number, not this blend, so the read is held to `COMPUTED`.
+ */
+export async function readReadinessHistory(
+  userId: string,
+  now: Date,
+  windowDays: number,
+): Promise<number[]> {
+  const rows = await prisma.measurement.findMany({
+    where: {
+      userId,
+      type: "RECOVERY_SCORE" satisfies MeasurementType,
+      source: "COMPUTED",
+      deletedAt: null,
+      measuredAt: {
+        gte: new Date(now.getTime() - windowDays * MS_PER_DAY),
+        lte: now,
+      },
+    },
+    select: { value: true },
+    orderBy: { measuredAt: "desc" },
+    take: SPARKLINE_MAX_POINTS,
+  });
+  return rows.map((row) => Math.round(row.value)).reverse();
 }
 
 // ── pure deviation scorers (exported for tests) ────────────────────────

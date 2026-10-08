@@ -4282,7 +4282,6 @@
         "contributorsLabel": "Facteurs",
         "contributorValue": "{value} · {weight}% du poids",
         "contributorMissing": "aucune donnée",
-        "disclaimer": "Indicatif — pas une évaluation clinique.",
         "insufficient": "Pas encore assez de données pour l’évaluer. Continuez à enregistrer et cela apparaîtra ici."
       },
       "composite": {
@@ -4308,8 +4307,7 @@
             "sleep": "Sommeil",
             "respiratory": "Fréquence respiratoire",
             "mood": "Stabilité de l’humeur"
-          },
-          "caveat": "Un indicateur de bien-être, pas un score de récupération ni clinique."
+          }
         },
         "VITALS_BASELINE": {
           "method": "Votre plage typique personnelle est la médiane de vos valeurs quotidiennes sur la période, ± une dispersion robuste (écart absolu médian, mis à l’échelle). Elle suit VOS mesures, pas une norme de population : une valeur dans la bande est donc typique pour vous."
@@ -4334,19 +4332,16 @@
         },
         "RECOVERY_SCORE": {
           "method": "Un indice de récupération nocturne de 0 à 100 combinant votre VFC, votre fréquence cardiaque au repos et votre sommeil par rapport à votre référence. Plus élevé signifie mieux récupéré. Calculé une fois par nuit et seulement relu ici, jamais recalculé à la volée.",
-          "caveat": "Un indicateur de bien-être descriptif, pas une mesure de récupération clinique ou de niveau d’entraînement.",
           "description": "Un indice de récupération nocturne à partir de votre VFC, fréquence au repos et sommeil."
         },
         "STRESS_SCORE": {
           "method": "Un indice de stress nocturne de 0 à 100 à partir de la forme de votre VFC au cours de la journée par rapport à votre référence. Plus élevé signifie une charge physiologique plus forte.",
-          "caveat": "Un indicateur dérivé de la VFC, PAS une mesure de stress par EDA / activité électrodermale : votre montre n’a pas de capteur EDA. Descriptif, non clinique.",
           "description": "Un indice de stress nocturne à partir de la forme de votre VFC sur la journée."
         },
         "STRAIN_SCORE": {
           "method": "Un indice d’effort nocturne de 0 à 100 à partir de votre charge d’activité pondérée par la fréquence cardiaque (un modèle d’impulsion d’entraînement de type TRIMP). Plus élevé signifie une journée plus exigeante.",
           "anchorPersonal": "Calé sur votre propre charge récente des jours d’entraînement — évalué par rapport à votre effort habituel, de sorte qu’une journée vraiment difficile pour vous ressort élevée.",
           "anchorPopulation": "Évalué par rapport à une référence générale pendant que vous constituez votre historique d’entraînement ; dès que vous en avez assez, le calcul passe à votre propre effort habituel.",
-          "caveat": "Un indicateur descriptif de charge d’activité, pas une mesure de charge clinique ou de niveau d’entraînement.",
           "description": "Un indice de charge d’activité nocturne à partir de votre effort pondéré par la fréquence cardiaque, relatif à votre effort habituel."
         },
         "WRIST_TEMPERATURE_BASELINE": {
@@ -4382,7 +4377,9 @@
         "recovery": "Score de récupération",
         "recoveryCrossLink": "Voir les données de récupération et d'effort de votre wearable",
         "stress": "Stress",
-        "strain": "Effort"
+        "strain": "Effort",
+        "historyTitle": "Évolution",
+        "historyWindow": "{days} derniers jours"
       },
       "coincident": {
         "label": "Plusieurs constantes hors référence",

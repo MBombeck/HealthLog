@@ -32,7 +32,14 @@ export function DeltaSparkline({
   data,
   strokeVar,
   comparisonLabel,
+  domain,
 }: {
+  /**
+   * A fixed y-domain. Omitted, the line spans its own min..max, which suits a
+   * vital read against itself; a bounded score passes its scale (`[0, 100]`)
+   * so a night-to-night wobble of a few points is not drawn as a cliff.
+   */
+  domain?: [number, number];
   /**
    * `{ i, v }` points, already length-guarded (≥2) by the tile. An optional
    * `b` on a point is the comparison series' value at the same index —
@@ -62,7 +69,7 @@ export function DeltaSparkline({
             <stop offset="100%" stopColor={strokeVar} stopOpacity={0} />
           </linearGradient>
         </defs>
-        <YAxis hide domain={["dataMin", "dataMax"]} />
+        <YAxis hide domain={domain ?? ["dataMin", "dataMax"]} />
         {/* The comparison curve sits UNDER the live one so today's line is
             never occluded by the reference it is being judged against. */}
         {hasComparison ? (

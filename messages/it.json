@@ -4282,7 +4282,6 @@
         "contributorsLabel": "Fattori",
         "contributorValue": "{value} · {weight}% di peso",
         "contributorMissing": "nessun dato",
-        "disclaimer": "Indicativo — non è una valutazione clinica.",
         "insufficient": "Dati ancora insufficienti per assegnare un punteggio. Continua a registrare e comparirà qui."
       },
       "composite": {
@@ -4308,8 +4307,7 @@
             "sleep": "Sonno",
             "respiratory": "Frequenza respiratoria",
             "mood": "Stabilità dell’umore"
-          },
-          "caveat": "Un indicatore di benessere, non un punteggio di recupero né clinico."
+          }
         },
         "VITALS_BASELINE": {
           "method": "Il tuo intervallo tipico personale è la mediana dei tuoi valori giornalieri nel periodo, ± una dispersione robusta (deviazione assoluta mediana, scalata). Segue le TUE letture, non una norma di popolazione: un valore dentro la banda è quindi tipico per te."
@@ -4334,19 +4332,16 @@
         },
         "RECOVERY_SCORE": {
           "method": "Un indicatore notturno di recupero da 0 a 100 che combina VFC, frequenza cardiaca a riposo e sonno rispetto alla tua linea di base. Più alto significa più recuperato. Calcolato una volta a notte e qui solo riletto, mai ricalcolato al volo.",
-          "caveat": "Un indicatore di benessere descrittivo, non una misura di recupero clinica o da allenamento.",
           "description": "Un indicatore notturno di recupero da VFC, frequenza a riposo e sonno."
         },
         "STRESS_SCORE": {
           "method": "Un indicatore notturno di stress da 0 a 100 dalla forma della tua VFC nel corso della giornata rispetto alla tua linea di base. Più alto significa maggiore carico fisiologico.",
-          "caveat": "Un indicatore derivato dalla VFC, NON una misura di stress da EDA / attività elettrodermica: il tuo orologio non ha un sensore EDA. Descrittivo, non clinico.",
           "description": "Un indicatore notturno di stress dalla forma della tua VFC nel corso della giornata."
         },
         "STRAIN_SCORE": {
           "method": "Un indicatore notturno di sforzo da 0 a 100 dal tuo carico di attività pesato sulla frequenza cardiaca (un modello di impulso d’allenamento tipo TRIMP). Più alto significa una giornata più impegnativa.",
           "anchorPersonal": "Ancorato al tuo carico recente nei giorni di allenamento — valutato rispetto al tuo sforzo abituale, così che una giornata davvero dura per te risulti alta.",
           "anchorPopulation": "Valutato rispetto a un riferimento generale mentre costruisci lo storico di allenamento; quando ne hai abbastanza passa al tuo sforzo abituale.",
-          "caveat": "Un indicatore descrittivo di carico di attività, non una misura di carico clinica o da allenamento.",
           "description": "Un indicatore notturno di carico di attività dal tuo sforzo pesato sulla frequenza cardiaca, relativo al tuo sforzo abituale."
         },
         "WRIST_TEMPERATURE_BASELINE": {
@@ -4382,7 +4377,9 @@
         "recovery": "Punteggio di recupero",
         "recoveryCrossLink": "Vedi i dati di recupero e sforzo del tuo wearable",
         "stress": "Stress",
-        "strain": "Sforzo"
+        "strain": "Sforzo",
+        "historyTitle": "Andamento",
+        "historyWindow": "Ultimi {days} giorni"
       },
       "coincident": {
         "label": "Più parametri fuori dalla base",

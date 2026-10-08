@@ -4282,7 +4282,6 @@
         "contributorsLabel": "Faktoren",
         "contributorValue": "{value} · {weight}% Gewicht",
         "contributorMissing": "keine Daten",
-        "disclaimer": "Richtwert — keine klinische Bewertung.",
         "insufficient": "Noch nicht genug Daten für eine Bewertung. Tracke weiter, dann erscheint sie hier."
       },
       "composite": {
@@ -4308,8 +4307,7 @@
             "sleep": "Schlaf",
             "respiratory": "Atemfrequenz",
             "mood": "Stimmungsstabilität"
-          },
-          "caveat": "Ein Wellness-Proxy, kein Erholungs- oder klinischer Wert."
+          }
         },
         "VITALS_BASELINE": {
           "method": "Dein persönlicher Normalbereich ist der Median deiner Tageswerte über den Zeitraum, ± eine robuste Streuung (skalierte mittlere absolute Abweichung). Er folgt DEINEN Werten, keiner Bevölkerungsnorm — ein Wert im Band ist also typisch für dich."
@@ -4334,19 +4332,16 @@
         },
         "RECOVERY_SCORE": {
           "method": "Ein nächtlicher 0–100-Erholungs-Proxy aus HRV, Ruhepuls und Schlaf gegenüber deiner Baseline. Höher heißt besser erholt. Einmal pro Nacht berechnet und hier nur ausgelesen — nie spontan neu berechnet.",
-          "caveat": "Ein beschreibender Wellness-Proxy, kein trainings- oder klinikgerechtes Erholungsmaß.",
           "description": "Ein nächtlicher Erholungs-Proxy aus HRV, Ruhepuls und Schlaf."
         },
         "STRESS_SCORE": {
           "method": "Ein nächtlicher 0–100-Stress-Proxy aus dem Verlauf deiner HRV über den Tag gegenüber deiner Baseline. Höher heißt mehr physiologische Belastung.",
-          "caveat": "Ein aus der HRV abgeleiteter Proxy, KEINE EDA-/Hautleitwert-Stressmessung — deine Uhr hat keinen EDA-Sensor. Beschreibend, nicht klinisch.",
           "description": "Ein nächtlicher Stress-Proxy aus dem Tagesverlauf deiner HRV."
         },
         "STRAIN_SCORE": {
           "method": "Ein nächtlicher 0–100-Belastungs-Proxy aus deiner herzfrequenzgewichteten Aktivitätslast (ein TRIMP-ähnliches Trainingsimpuls-Modell). Höher heißt ein anstrengenderer Tag.",
           "anchorPersonal": "An deine eigene jüngste Trainingstagslast angelehnt — bewertet relativ zu deiner typischen Anstrengung, sodass ein für dich wirklich harter Tag hoch ausfällt.",
           "anchorPopulation": "Gegen einen allgemeinen Referenzwert bewertet, während du noch Trainingsverlauf aufbaust; sobald genug vorhanden ist, wechselt die Bewertung auf deine eigene typische Anstrengung.",
-          "caveat": "Ein beschreibender Aktivitätslast-Proxy, kein klinisches oder trainingsgerechtes Lastmaß.",
           "description": "Ein nächtlicher Aktivitätslast-Proxy aus deiner herzfrequenzgewichteten Anstrengung, relativ zu deiner typischen Anstrengung."
         },
         "WRIST_TEMPERATURE_BASELINE": {
@@ -4382,7 +4377,9 @@
         "recovery": "Erholungs-Score",
         "recoveryCrossLink": "Erholungs- und Belastungsdaten deines Wearables ansehen",
         "stress": "Stress",
-        "strain": "Belastung"
+        "strain": "Belastung",
+        "historyTitle": "Verlauf",
+        "historyWindow": "Letzte {days} Tage"
       },
       "coincident": {
         "label": "Mehrere Vitalwerte außerhalb der Baseline",
