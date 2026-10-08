@@ -46,6 +46,79 @@ const CELL_FLOOR_PX = 14;
 // neighbouring tiles. Capping the cell keeps the grid dense + left-aligned so
 // the calendar holds the tile-height rhythm. Mirrors `compliance-heatmap.tsx`.
 const CELL_CEIL_PX = 22;
+const HEADER_PX = 18;
+
+/**
+ * The grid's height in the stretch layout, as CSS, so it is known before the
+ * grid has measured anything — on the server, in the loading skeleton, and in
+ * the first client frame alike.
+ *
+ * The stretch cell is the container width shared out across the weeks,
+ * clamped to the floor and the ceiling; the grid is the month header plus
+ * seven cells and six gaps. The same rule `MoodHeatmap` applies in JavaScript
+ * once it has measured, written here in container-query units so the box is
+ * the right height from the first paint and nothing below it moves when the
+ * measurement lands. Read against the nearest `container-type: inline-size`
+ * ancestor, which `MoodHeatmapBody` provides.
+ */
+export function moodHeatmapStretchHeight(weeks: number): string {
+  const w = Math.max(1, weeks);
+  const cell = `clamp(${CELL_FLOOR_PX}px, calc((100cqw - ${(w - 1) * GAP}px) / ${w}), ${CELL_CEIL_PX}px)`;
+  return `calc(${HEADER_PX + 6 * GAP}px + 7 * ${cell})`;
+}
+
+/** Monday-aligned columns a window of `days` spans, as the grid lays it out. */
+export function moodHeatmapWeeks(days: number, timeZone: string): number {
+  const dates = heatmapDays(new Date(), timeZone, days);
+  const firstDow = dates[0]?.dow ?? 0;
+  return Math.floor((dates.length - 1 + firstDow) / 7) + 1;
+}
+
+/**
+ * The size container + the reserved box the grid paints into. Shared by the
+ * heatmap and its skeleton so the two can never disagree about the height.
+ */
+export function MoodHeatmapBody({
+  weeks,
+  children,
+}: {
+  weeks: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={{ containerType: "inline-size" }} className="w-full">
+      <div
+        data-slot="mood-heatmap-body"
+        style={{ height: moodHeatmapStretchHeight(weeks) }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The loading shape of the stretched heatmap: the reserved grid box and the
+ * legend line, at exactly the height the painted heatmap will take.
+ * `days` is the window when it is already known; without it the shape
+ * assumes a window short enough to reach the cell ceiling, which every
+ * window under a quarter year does on any width.
+ */
+export function MoodHeatmapSkeleton({ days = 84 }: { days?: number }) {
+  const timeZone = useDisplayTimezone();
+  return (
+    <div
+      data-slot="mood-heatmap-skeleton"
+      aria-hidden="true"
+      className="w-full"
+    >
+      <MoodHeatmapBody weeks={moodHeatmapWeeks(days, timeZone)}>
+        <div className="bg-muted/50 h-full w-full animate-pulse rounded-md motion-reduce:animate-none" />
+      </MoodHeatmapBody>
+      <div className="mt-2 h-4" />
+    </div>
+  );
+}
 
 /**
  * Mood score band → Dracula colour. Mirrors `mood-chart.tsx` VALUE_BANDS
@@ -209,7 +282,7 @@ export function MoodHeatmap({
         });
 
   const labelWidth = stretch ? 0 : 76;
-  const headerHeight = 18;
+  const headerHeight = HEADER_PX;
   const cellSize =
     stretch && containerWidth > 0
       ? Math.min(
@@ -243,116 +316,118 @@ export function MoodHeatmap({
 
   return (
     <div className={`relative ${stretch ? "w-full" : ""}`} ref={containerRef}>
-      <div
-        className={
-          stretch
-            ? "w-full overflow-x-auto sm:w-full sm:overflow-visible"
-            : "overflow-x-auto"
-        }
-      >
-        <svg
-          width={svgWidth}
-          height={svgHeight}
-          role="img"
-          aria-label={summaryLabel}
-          // v1.15.3 — `max-w-full` (not `w-full`) so a short window keeps its
-          // natural, square, left-aligned grid rather than CSS-stretching a few
-          // capped columns into wide rectangles. Mirrors `compliance-heatmap`.
-          className={stretch ? "block max-w-full" : "block"}
-          onMouseLeave={() =>
-            setTooltip((prev) => (prev?.pinned ? prev : null))
+      <StretchFrame stretch={stretch} weeks={weeks}>
+        <div
+          className={
+            stretch
+              ? "w-full overflow-x-auto sm:w-full sm:overflow-visible"
+              : "overflow-x-auto"
           }
         >
-          {monthMarkers.map((m, i) => (
-            <text
-              key={i}
-              x={labelWidth + m.col * step}
-              y={11}
-              className="fill-muted-foreground"
-              fontSize={10}
-            >
-              {m.label}
-            </text>
-          ))}
+          <svg
+            width={svgWidth}
+            height={svgHeight}
+            role="img"
+            aria-label={summaryLabel}
+            // v1.15.3 — `max-w-full` (not `w-full`) so a short window keeps its
+            // natural, square, left-aligned grid rather than CSS-stretching a few
+            // capped columns into wide rectangles. Mirrors `compliance-heatmap`.
+            className={stretch ? "block max-w-full" : "block"}
+            onMouseLeave={() =>
+              setTooltip((prev) => (prev?.pinned ? prev : null))
+            }
+          >
+            {monthMarkers.map((m, i) => (
+              <text
+                key={i}
+                x={labelWidth + m.col * step}
+                y={11}
+                className="fill-muted-foreground"
+                fontSize={10}
+              >
+                {m.label}
+              </text>
+            ))}
 
-          {!stretch &&
-            WEEKDAY_LABELS.map(
-              (label, i) =>
-                label && (
-                  <text
-                    key={i}
-                    x={labelWidth - 6}
-                    y={headerHeight + i * step + cellSize * 0.65}
-                    textAnchor="end"
-                    className="fill-muted-foreground"
-                    fontSize={10}
-                  >
-                    {label}
-                  </text>
-                ),
-            )}
+            {!stretch &&
+              WEEKDAY_LABELS.map(
+                (label, i) =>
+                  label && (
+                    <text
+                      key={i}
+                      x={labelWidth - 6}
+                      y={headerHeight + i * step + cellSize * 0.65}
+                      textAnchor="end"
+                      className="fill-muted-foreground"
+                      fontSize={10}
+                    >
+                      {label}
+                    </text>
+                  ),
+              )}
 
-          {cells.map((cell) => {
-            const buildText = (): string => describeCell(cell);
-            return (
-              <rect
-                key={cell.dateKey}
-                x={labelWidth + cell.col * step}
-                y={headerHeight + cell.row * step}
-                width={cellSize}
-                height={cellSize}
-                rx={2}
-                fill={cell.color}
-                // v1.19.1 — populated days render at full saturation so the
-                // mood band reads clearly; only the no-entry cells stay the
-                // quiet `--secondary` empty-state tint.
-                fillOpacity={1}
-                className="cursor-pointer"
-                data-day={cell.dateKey}
-                // 2026-07-17 a11y audit (M2) — the per-day values reach
-                // assistive tech through the visually-hidden day list below
-                // the grid, not through the rects: a cell subtree nested
-                // under the SVG's `role="img"` is pruned from the a11y tree,
-                // and per-cell tab stops would flood the keyboard order on a
-                // year-long grid. The rects stay a pure pointer affordance.
-                onPointerEnter={(e) => {
-                  if (e.pointerType === "touch") return;
-                  setTooltip({
-                    x: e.clientX,
-                    y: e.clientY,
-                    text: buildText(),
-                  });
-                }}
-                onPointerLeave={(e) => {
-                  if (e.pointerType === "touch") return;
-                  setTooltip((prev) => (prev?.pinned ? prev : null));
-                }}
-                onPointerDown={(e) => {
-                  lastPointer.current = e.pointerType;
-                  if (e.pointerType !== "touch") return;
-                  setTooltip({
-                    x: e.clientX,
-                    y: e.clientY,
-                    text: buildText(),
-                    pinned: true,
-                    day:
-                      cell.cell !== null && isOpenableDay(cell.dateKey, today)
-                        ? cell.dateKey
-                        : undefined,
-                  });
-                }}
-                onClick={() => {
-                  if (lastPointer.current === "touch") return;
-                  if (cell.cell === null) return;
-                  if (!isOpenableDay(cell.dateKey, today)) return;
-                  setTooltip(null);
-                  openDay(cell.dateKey, { trigger: containerRef.current });
-                }}
-              />
-            );
-          })}
-        </svg>
-      </div>
+            {cells.map((cell) => {
+              const buildText = (): string => describeCell(cell);
+              return (
+                <rect
+                  key={cell.dateKey}
+                  x={labelWidth + cell.col * step}
+                  y={headerHeight + cell.row * step}
+                  width={cellSize}
+                  height={cellSize}
+                  rx={2}
+                  fill={cell.color}
+                  // v1.19.1 — populated days render at full saturation so the
+                  // mood band reads clearly; only the no-entry cells stay the
+                  // quiet `--secondary` empty-state tint.
+                  fillOpacity={1}
+                  className="cursor-pointer"
+                  data-day={cell.dateKey}
+                  // 2026-07-17 a11y audit (M2) — the per-day values reach
+                  // assistive tech through the visually-hidden day list below
+                  // the grid, not through the rects: a cell subtree nested
+                  // under the SVG's `role="img"` is pruned from the a11y tree,
+                  // and per-cell tab stops would flood the keyboard order on a
+                  // year-long grid. The rects stay a pure pointer affordance.
+                  onPointerEnter={(e) => {
+                    if (e.pointerType === "touch") return;
+                    setTooltip({
+                      x: e.clientX,
+                      y: e.clientY,
+                      text: buildText(),
+                    });
+                  }}
+                  onPointerLeave={(e) => {
+                    if (e.pointerType === "touch") return;
+                    setTooltip((prev) => (prev?.pinned ? prev : null));
+                  }}
+                  onPointerDown={(e) => {
+                    lastPointer.current = e.pointerType;
+                    if (e.pointerType !== "touch") return;
+                    setTooltip({
+                      x: e.clientX,
+                      y: e.clientY,
+                      text: buildText(),
+                      pinned: true,
+                      day:
+                        cell.cell !== null && isOpenableDay(cell.dateKey, today)
+                          ? cell.dateKey
+                          : undefined,
+                    });
+                  }}
+                  onClick={() => {
+                    if (lastPointer.current === "touch") return;
+                    if (cell.cell === null) return;
+                    if (!isOpenableDay(cell.dateKey, today)) return;
+                    setTooltip(null);
+                    openDay(cell.dateKey, { trigger: containerRef.current });
+                  }}
+                />
+              );
+            })}
+          </svg>
+        </div>
+      </StretchFrame>
 
       {/* 2026-07-17 a11y audit (M2) — visually-hidden per-day list. The SVG
           carries an aggregate `role="img"` summary; this list is the
@@ -430,4 +505,18 @@ export function MoodHeatmap({
       </div>
     </div>
   );
+}
+
+/** The stretch layout paints into the reserved box; the fixed one sizes itself. */
+function StretchFrame({
+  stretch,
+  weeks,
+  children,
+}: {
+  stretch: boolean;
+  weeks: number;
+  children: React.ReactNode;
+}) {
+  if (!stretch) return <>{children}</>;
+  return <MoodHeatmapBody weeks={weeks}>{children}</MoodHeatmapBody>;
 }

@@ -4043,7 +4043,6 @@
     "navWalkingSpeed": "Walking Speed",
     "mood": {
       "logLink": "Log a mood entry",
-      "mentalWellbeingLink": "Take a mental-wellbeing check-in",
       "heatmapTitle": "Mood calendar",
       "heatmapNoEntry": "No entry",
       "legendGreat": "Great",

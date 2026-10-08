@@ -979,3 +979,30 @@ export async function fetchMoodAggregates(
     })),
   };
 }
+
+/**
+ * The `/api/mood/insights` wire for one stability window.
+ *
+ * The per-window map is the cache's, not the wire's: the chosen window is
+ * served as `stability`. An aggregate cached before the map existed has only
+ * the year, so a shorter window reads as not yet computed (`null`) until the
+ * next rebuild rather than as the year's score under a new name.
+ *
+ * Shared by the route and by the `/insights/mood` server prefetch, so the
+ * cell the prefetch seeds is byte-for-byte what the client's own fetch would
+ * have put there — the same key with a different shape is silent cache poison.
+ */
+export function moodInsightsWire(
+  result: MoodAggregates,
+  stabilityWindowDays: MoodStabilityWindow,
+) {
+  const { stabilityByWindow, ...wire } = result;
+  return {
+    ...wire,
+    stability:
+      stabilityWindowDays === 365
+        ? result.stability
+        : (stabilityByWindow?.[stabilityWindowDays] ?? null),
+    stabilityWindowDays,
+  };
+}

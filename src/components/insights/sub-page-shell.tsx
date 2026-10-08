@@ -161,6 +161,65 @@ export interface SubPageShellProps {
   children: ReactNode;
 }
 
+/**
+ * The header's add action — one plus, one shape, on every Insights page that
+ * offers one. A 40 px ghost icon with the extended hit area its cluster
+ * siblings carry; the accessible name rides on `aria-label` and `title`.
+ *
+ * Two forms: `href` links to a capture form elsewhere (the measurement pages'
+ * `captureType`), `onClick` opens something in place (the workouts and mood
+ * pages). A page never draws its own "log an entry" text link instead.
+ */
+export function SubPageAddButton({
+  label,
+  href,
+  onClick,
+  slot,
+}: {
+  label: string;
+  href?: string;
+  onClick?: () => void;
+  /** `data-slot` for tests; defaults to the shared one. */
+  slot?: string;
+}) {
+  const className = cn(
+    "text-muted-foreground hover:text-foreground relative size-10",
+    "before:absolute before:-inset-1.5 before:content-['']",
+  );
+  const icon = <Plus className="size-4" aria-hidden="true" />;
+  if (href) {
+    return (
+      <Button
+        asChild
+        variant="ghost"
+        size="icon"
+        data-slot={slot ?? "metric-add-reading"}
+        data-header-add=""
+        className={className}
+      >
+        <Link href={href} aria-label={label} title={label}>
+          {icon}
+        </Link>
+      </Button>
+    );
+  }
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      data-slot={slot ?? "metric-add-reading"}
+      data-header-add=""
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className={className}
+    >
+      {icon}
+    </Button>
+  );
+}
+
 export function SubPageShell({
   title,
   backLink,
@@ -319,24 +378,7 @@ export function SubPageShell({
             <div className="flex shrink-0 items-center gap-3">
               {headerAction}
               {captureHref ? (
-                <Button
-                  asChild
-                  variant="ghost"
-                  size="icon"
-                  data-slot="metric-add-reading"
-                  className={cn(
-                    "text-muted-foreground hover:text-foreground relative size-10",
-                    "before:absolute before:-inset-1.5 before:content-['']",
-                  )}
-                >
-                  <Link
-                    href={captureHref}
-                    aria-label={captureLabel}
-                    title={captureLabel}
-                  >
-                    <Plus className="size-4" aria-hidden="true" />
-                  </Link>
-                </Button>
+                <SubPageAddButton label={captureLabel} href={captureHref} />
               ) : null}
               {/* v1.16.8 — "show all readings" rides the header cluster
                 as an icon button, LEFT of the target-adjust gear (it

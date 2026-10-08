@@ -4043,7 +4043,6 @@
     "navWalkingSpeed": "Velocidad al andar",
     "mood": {
       "logLink": "Registrar un estado de ánimo",
-      "mentalWellbeingLink": "Hacer un chequeo de bienestar mental",
       "heatmapTitle": "Calendario de ánimo",
       "heatmapNoEntry": "Sin registro",
       "legendGreat": "Genial",

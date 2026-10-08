@@ -175,6 +175,7 @@ const PREFETCHING_ROUTES = [
   "/checkups",
   "/coach",
   "/insights",
+  "/insights/mood",
   "/insights/workouts",
   "/medications",
   "/mood",
