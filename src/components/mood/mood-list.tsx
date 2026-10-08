@@ -742,7 +742,11 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
                   {t("mood.emptyResetFilter")}
                 </Button>
               ) : onAddFirst && canManageMind ? (
-                <Button size="sm" onClick={onAddFirst}>
+                <Button
+                  size="sm"
+                  onClick={onAddFirst}
+                  data-slot="mood-add-first"
+                >
                   <Plus className="h-4 w-4" />
                   {t("mood.emptyAddFirst")}
                 </Button>
