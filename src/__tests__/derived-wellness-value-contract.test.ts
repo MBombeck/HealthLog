@@ -112,4 +112,29 @@ describe("published WellnessScoreValue", () => {
       Object.keys(derived.value as unknown as Record<string, unknown>).sort(),
     );
   });
+
+  it("accepts the strain value served from the device's day strain", async () => {
+    findMany.mockImplementation(async (args: { where: { type: string } }) =>
+      args.where.type === "DAY_STRAIN"
+        ? [
+            {
+              value: 12.6,
+              measuredAt: new Date("2026-06-01T04:00:00Z"),
+              source: "WHOOP",
+            },
+          ]
+        : [],
+    );
+    const derived = await computeWellnessScore("STRAIN_SCORE", "u1", PROFILE, {
+      now: NOW,
+    });
+    expect(derived.status).toBe("ok");
+    if (derived.status !== "ok") return;
+    const parsed = wellnessScoreValue.safeParse(derived.value);
+    expect(parsed.error?.issues ?? []).toEqual([]);
+    expect(Object.keys(wellnessScoreValue.shape).sort()).toEqual(
+      Object.keys(derived.value as unknown as Record<string, unknown>).sort(),
+    );
+    findMany.mockReset();
+  });
 });

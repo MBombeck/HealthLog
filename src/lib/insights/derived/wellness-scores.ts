@@ -287,6 +287,7 @@ export async function computeWellnessScore(
         .reverse(),
       anchor,
       components,
+      device: null,
     },
     coverage: {
       requiredInputs: 1,
