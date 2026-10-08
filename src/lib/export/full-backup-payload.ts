@@ -886,9 +886,11 @@ export async function buildFullBackupPayload(
     buildAwardsBackupSection(prisma, userId),
     // The per-day readings and the location periods that explain them, which
     // is why one section carries both. Both ends live in
-    // `src/lib/export/environment-backup.ts`, and the purpose is absent for
-    // the same reason as the awards above.
-    buildEnvironmentBackupSection(prisma, userId),
+    // `src/lib/export/environment-backup.ts`. Since v1.42 the locations are
+    // sealed, so the purpose decides whether they ride opened or sealed.
+    buildEnvironmentBackupSection(prisma, userId, {
+      purpose: disasterRecovery ? "disaster-recovery" : "portable-export",
+    }),
     // The needs-based setup answers. One small row, and the only copy of what
     // the person told the flow. Both ends live in
     // `src/lib/export/onboarding-backup.ts` beside each other.

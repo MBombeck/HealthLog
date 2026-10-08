@@ -103,12 +103,12 @@ model User {
   // from the current home). To fill the deep past the user adds an explicit
   // dated location period instead. Backfill defaults its start to this instant.
   homeSince                    DateTime? @map("home_since")
-  /// @pending-consumer(#615) v1.42 — sealed home location (lat, lon, label)
+  /// v1.42 — sealed home location (lat, lon, label)
   /// under AAD `healthlog/environment-location/v1`. Replaces the plaintext
   /// `homeLat` / `homeLon` / `homeLabel` once the free-text encryption backfill
   /// reports zero remaining rows; the plaintext columns drop in v1.43.
   homeLocationEncrypted        Bytes?    @map("home_location_encrypted")
-  /// @pending-consumer(#615) v1.42 — per-user switch for the air-quality and
+  /// v1.42 — per-user switch for the air-quality and
   /// pollen part of the environment module. On by default; off means the
   /// nightly fetch skips the air-quality feed and the surfaces leave the
   /// fields out. The operator switch `ENVIRONMENT_AIR_QUALITY_DISABLED` wins.
@@ -1106,7 +1106,7 @@ model EnvironmentContext {
   /// (`src/lib/export/environment-backup.ts`) with the rest of the row: a
   /// restored reading has to keep saying where it was read.
   locationLabel     String?                   @map("location_label")
-  /// @pending-consumer(#615) v1.42 — sealed (lat, lon, label) for the day,
+  /// v1.42 — sealed (lat, lon, label) for the day,
   /// AAD `healthlog/environment-location/v1`.
   locationEncrypted Bytes?                    @map("location_encrypted")
   source            EnvironmentLocationSource
@@ -1140,49 +1140,49 @@ model EnvironmentContext {
   // v1.42 (#615) — air quality, pollen and UV from the Open-Meteo
   // air-quality feed (CAMS). All nullable: a partial or absent feed stores
   // what it has, and a day the feed never covered stays NULL, never zero.
-  /// @pending-consumer(#615) Daily apparent ("feels-like") maximum (°C).
+  /// Daily apparent ("feels-like") maximum (°C).
   apparentMax      Float?    @map("apparent_max")
-  /// @pending-consumer(#615) PM2.5 daily mean (µg/m³).
+  /// PM2.5 daily mean (µg/m³).
   pm25Mean         Float?    @map("pm25_mean")
-  /// @pending-consumer(#615) PM2.5 hourly maximum over the local day (µg/m³).
+  /// PM2.5 hourly maximum over the local day (µg/m³).
   pm25Max          Float?    @map("pm25_max")
-  /// @pending-consumer(#615) PM10 daily mean (µg/m³).
+  /// PM10 daily mean (µg/m³).
   pm10Mean         Float?    @map("pm10_mean")
-  /// @pending-consumer(#615) Nitrogen dioxide daily mean (µg/m³).
+  /// Nitrogen dioxide daily mean (µg/m³).
   no2Mean          Float?    @map("no2_mean")
-  /// @pending-consumer(#615) Sulphur dioxide daily mean (µg/m³).
+  /// Sulphur dioxide daily mean (µg/m³).
   so2Mean          Float?    @map("so2_mean")
-  /// @pending-consumer(#615) Carbon monoxide daily mean (µg/m³).
+  /// Carbon monoxide daily mean (µg/m³).
   coMean           Float?    @map("co_mean")
-  /// @pending-consumer(#615) Ozone, maximum 8-hour running mean of the day (µg/m³).
+  /// Ozone, maximum 8-hour running mean of the day (µg/m³).
   o3Max8h          Float?    @map("o3_max_8h")
-  /// @pending-consumer(#615) European AQI, daily maximum.
+  /// European AQI, daily maximum.
   eaqiMax          Float?    @map("eaqi_max")
-  /// @pending-consumer(#615) US AQI, daily maximum.
+  /// US AQI, daily maximum.
   usaqiMax         Float?    @map("usaqi_max")
-  /// @pending-consumer(#615) UV index, daily maximum.
+  /// UV index, daily maximum.
   uvIndexMax       Float?    @map("uv_index_max")
-  /// @pending-consumer(#615) Saharan dust, daily maximum (µg/m³).
+  /// Saharan dust, daily maximum (µg/m³).
   dustMax          Float?    @map("dust_max")
-  /// @pending-consumer(#615) Aerosol optical depth, daily maximum.
+  /// Aerosol optical depth, daily maximum.
   aodMax           Float?    @map("aod_max")
-  /// @pending-consumer(#615) Alder pollen, daily maximum (grains/m³, Europe only).
+  /// Alder pollen, daily maximum (grains/m³, Europe only).
   pollenAlderMax   Float?    @map("pollen_alder_max")
-  /// @pending-consumer(#615) Birch pollen, daily maximum (grains/m³, Europe only).
+  /// Birch pollen, daily maximum (grains/m³, Europe only).
   pollenBirchMax   Float?    @map("pollen_birch_max")
-  /// @pending-consumer(#615) Grass pollen, daily maximum (grains/m³, Europe only).
+  /// Grass pollen, daily maximum (grains/m³, Europe only).
   pollenGrassMax   Float?    @map("pollen_grass_max")
-  /// @pending-consumer(#615) Mugwort pollen, daily maximum (grains/m³, Europe only).
+  /// Mugwort pollen, daily maximum (grains/m³, Europe only).
   pollenMugwortMax Float?    @map("pollen_mugwort_max")
-  /// @pending-consumer(#615) Olive pollen, daily maximum (grains/m³, Europe only).
+  /// Olive pollen, daily maximum (grains/m³, Europe only).
   pollenOliveMax   Float?    @map("pollen_olive_max")
-  /// @pending-consumer(#615) Ragweed pollen, daily maximum (grains/m³, Europe only).
+  /// Ragweed pollen, daily maximum (grains/m³, Europe only).
   pollenRagweedMax Float?    @map("pollen_ragweed_max")
-  /// @pending-consumer(#615) Which air-quality model domain served the day (`cams_europe` / `cams_global`).
+  /// Which air-quality model domain served the day (`cams_europe` / `cams_global`).
   aqDomain         String?   @map("aq_domain")
-  /// @pending-consumer(#615) Hourly air-quality samples the day was aggregated from (75 % rule).
+  /// Hourly air-quality samples the day was aggregated from (75 % rule).
   aqHours          Int?      @map("aq_hours")
-  /// @pending-consumer(#615) When the air-quality part was last fetched; NULL = not yet fetched (gap index).
+  /// When the air-quality part was last fetched; NULL = not yet fetched (gap index).
   aqFetchedAt      DateTime? @map("aq_fetched_at")
 
   /// When the row was last fetched/refreshed from the upstream feed.
@@ -1221,7 +1221,7 @@ model EnvironmentTravelLocation {
   lat               Float?
   lon               Float?
   label             String?
-  /// @pending-consumer(#615) v1.42 — sealed (lat, lon, label) for the
+  /// v1.42 — sealed (lat, lon, label) for the
   /// period, AAD `healthlog/environment-location/v1`.
   locationEncrypted Bytes?  @map("location_encrypted")
 

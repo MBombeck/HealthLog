@@ -5786,8 +5786,10 @@
           "operatorDisabled": "La qualità dell’aria è disattivata su questo server.",
           "coverage": "{count} giorni con dati sulla qualità dell’aria",
           "pollenEuropeOnly": "I dati sui pollini coprono solo l’Europa.",
-          "attribution": "Qualità dell’aria: servizio di monitoraggio atmosferico di Copernicus (CAMS), tramite Open-Meteo.",
-          "saveError": "Impossibile salvare l’impostazione."
+          "attribution": "Fonti dei dati e licenze",
+          "saveError": "Impossibile salvare l’impostazione.",
+          "latest": "Giorno più recente ({date})",
+          "modelNote": "Valori esterni modellati per la tua zona, non la tua esposizione personale."
         }
       },
       "score": {
@@ -9972,7 +9974,8 @@
         "illness": "Malattia e recupero",
         "cycle": "Ciclo",
         "correlations": "Relazioni tra parametri",
-        "snapshot": "Riepilogo dei dati"
+        "snapshot": "Riepilogo dei dati",
+        "environment": "Meteo e aria"
       },
       "window": {
         "last7days": "ultimi 7 giorni",
@@ -10606,7 +10609,6 @@
       "precip": "Precipitazioni",
       "pressureMean": "Pressione atmosferica",
       "pressureDelta": "Variazione di pressione",
-      "apparentMax": "Massima percepita",
       "pm25": "Particolato fine (PM2,5)",
       "pm10": "Particolato (PM10)",
       "no2": "Biossido di azoto",
@@ -10615,6 +10617,20 @@
       "uvIndexMax": "Indice UV (massimo)",
       "dustMax": "Polvere del Sahara",
       "pollenMax": "Pollini (valore più alto)"
+    },
+    "chip": {
+      "day": "Meteo del {date}",
+      "pollenHigh": "Molti pollini: {kinds}",
+      "hotNight": "Notte calda",
+      "veryPoorAir": "Aria molto scadente"
+    },
+    "pollen": {
+      "alder": "ontano",
+      "birch": "betulla",
+      "grass": "graminacee",
+      "mugwort": "artemisia",
+      "olive": "olivo",
+      "ragweed": "ambrosia"
     }
   },
   "documents": {

@@ -51,19 +51,73 @@
  * settles over a few days after the fact, so a restore that wrote "now" would
  * claim a provisional reading from two years ago had just been confirmed.
  *
- * ## One wire shape, both purposes
+ * ## Two purposes since v1.42
  *
- * Neither model has a tombstone column and neither holds ciphertext, so a
- * portable export and a disaster-recovery payload carry byte-identical
- * sections. This builder therefore takes no `purpose`: a parameter that
- * changes nothing would advertise a distinction the file does not have.
+ * The coarse locations are sealed at rest from v1.42 (`locationEncrypted`,
+ * see `src/lib/environment/location-cipher.ts`), so the two purposes differ
+ * the way every other section with a sealed column does:
+ *
+ *   - a portable export opens the sealed location and writes the readable
+ *     `lat` / `lon` / label, and no `locationEncrypted` at all, so the file
+ *     reads anywhere;
+ *   - a disaster-recovery file carries `locationEncrypted` verbatim (base64)
+ *     beside whatever readable columns the row still holds, for a host with
+ *     the same keys.
+ *
+ * The restore takes either: a sealed value is written as it came, a readable
+ * one is sealed under this host's key, and the readable columns are written
+ * empty in both cases. A row that holds neither restores without a location;
+ * it is never invented.
+ *
+ * The air-quality columns (v1.42) are plain values and ride both purposes
+ * alike. Every one is optional on the way in: a file written before them
+ * says nothing about air quality, and the restored day then reads as never
+ * fetched (`aqFetchedAt` absent), so the nightly gap fill asks for it.
  */
+import { Buffer } from "node:buffer";
+
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import type { EnvironmentLocationSource } from "@/generated/prisma/client";
-import { roundCoarse } from "@/lib/environment/open-meteo";
+import type { AirQualityDay } from "@/lib/environment/air-quality-contract";
+import { readLocation, sealLocation } from "@/lib/environment/location-cipher";
+
+export interface EnvironmentBackupOptions {
+  purpose?: "portable-export" | "disaster-recovery";
+}
+
+/** The air-quality columns of a stored day, as they ride the file. */
+type AirQualityBackupColumns = Omit<AirQualityDay, "aqFetchedAt"> & {
+  /** When the air-quality part was fetched; null = not yet. Verbatim. */
+  aqFetchedAt: string | null;
+};
+
+/** The air-quality column names, in file order. */
+const AIR_QUALITY_COLUMNS = [
+  "apparentMax",
+  "pm25Mean",
+  "pm25Max",
+  "pm10Mean",
+  "no2Mean",
+  "so2Mean",
+  "coMean",
+  "o3Max8h",
+  "eaqiMax",
+  "usaqiMax",
+  "uvIndexMax",
+  "dustMax",
+  "aodMax",
+  "pollenAlderMax",
+  "pollenBirchMax",
+  "pollenGrassMax",
+  "pollenMugwortMax",
+  "pollenOliveMax",
+  "pollenRagweedMax",
+  "aqDomain",
+  "aqHours",
+] as const satisfies ReadonlyArray<keyof AirQualityBackupColumns>;
 
 /** One day's environmental observation, at the location resolved for that day. */
-export interface EnvironmentContextBackupEntry {
+export interface EnvironmentContextBackupEntry extends AirQualityBackupColumns {
   /** `YYYY-MM-DD`, anchored to the resolved location's timezone. */
   date: string;
   /**
@@ -73,6 +127,11 @@ export interface EnvironmentContextBackupEntry {
   lat: number | null;
   lon: number | null;
   locationLabel: string | null;
+  /**
+   * The sealed location, base64. Disaster-recovery files only; a portable
+   * file carries the readable columns instead.
+   */
+  locationEncrypted?: string | null;
   /**
    * Which precedence rule chose the location. Carried because it is the only
    * record that this day was NOT the home city, and because a re-resolve
@@ -106,6 +165,8 @@ export interface EnvironmentTravelLocationBackupEntry {
   lat: number | null;
   lon: number | null;
   label: string | null;
+  /** The sealed location, base64; disaster-recovery files only. */
+  locationEncrypted?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -132,6 +193,7 @@ const ENVIRONMENT_CONTEXT_BACKUP_SELECT = {
   lat: true,
   lon: true,
   locationLabel: true,
+  locationEncrypted: true,
   source: true,
   tempMin: true,
   tempMax: true,
@@ -145,6 +207,28 @@ const ENVIRONMENT_CONTEXT_BACKUP_SELECT = {
   humidityMean: true,
   cloudMean: true,
   weatherCode: true,
+  apparentMax: true,
+  pm25Mean: true,
+  pm25Max: true,
+  pm10Mean: true,
+  no2Mean: true,
+  so2Mean: true,
+  coMean: true,
+  o3Max8h: true,
+  eaqiMax: true,
+  usaqiMax: true,
+  uvIndexMax: true,
+  dustMax: true,
+  aodMax: true,
+  pollenAlderMax: true,
+  pollenBirchMax: true,
+  pollenGrassMax: true,
+  pollenMugwortMax: true,
+  pollenOliveMax: true,
+  pollenRagweedMax: true,
+  aqDomain: true,
+  aqHours: true,
+  aqFetchedAt: true,
   fetchedAt: true,
   createdAt: true,
   updatedAt: true,
@@ -156,9 +240,52 @@ const ENVIRONMENT_TRAVEL_LOCATION_BACKUP_SELECT = {
   lat: true,
   lon: true,
   label: true,
+  locationEncrypted: true,
   createdAt: true,
   updatedAt: true,
 } as const satisfies Prisma.EnvironmentTravelLocationSelect;
+
+/** A sealed column as it rides a disaster-recovery file. */
+function toBase64(bytes: Uint8Array | null): string | null {
+  return bytes && bytes.byteLength > 0
+    ? Buffer.from(bytes).toString("base64")
+    : null;
+}
+
+/**
+ * The location columns of one entry: opened and readable for a portable
+ * file, as stored plus the sealed value for a disaster-recovery file.
+ */
+function locationFields(
+  row: {
+    lat: number | null;
+    lon: number | null;
+    label: string | null;
+    locationEncrypted: Uint8Array | null;
+  },
+  disasterRecovery: boolean,
+): {
+  lat: number | null;
+  lon: number | null;
+  label: string | null;
+  locationEncrypted?: string | null;
+} {
+  if (disasterRecovery) {
+    return {
+      lat: row.lat,
+      lon: row.lon,
+      label: row.label,
+      locationEncrypted: toBase64(row.locationEncrypted),
+    };
+  }
+  const location = readLocation({
+    sealed: row.locationEncrypted,
+    lat: row.lat,
+    lon: row.lon,
+    label: row.label,
+  });
+  return location ?? { lat: null, lon: null, label: null };
+}
 
 /**
  * Build the environment slice of a user's full backup.
@@ -172,7 +299,9 @@ export async function buildEnvironmentBackupSection(
     "environmentContext" | "environmentTravelLocation"
   >,
   userId: string,
+  options: EnvironmentBackupOptions = {},
 ): Promise<EnvironmentBackupSection> {
+  const disasterRecovery = options.purpose === "disaster-recovery";
   const [contextRows, travelRows] = await Promise.all([
     prisma.environmentContext.findMany({
       where: { userId },
@@ -187,34 +316,64 @@ export async function buildEnvironmentBackupSection(
   ]);
 
   return {
-    environmentContexts: contextRows.map((row) => ({
-      date: row.date,
-      lat: row.lat,
-      lon: row.lon,
-      locationLabel: row.locationLabel,
-      source: row.source,
-      tempMin: row.tempMin,
-      tempMax: row.tempMax,
-      tempMean: row.tempMean,
-      apparentMean: row.apparentMean,
-      sunshineSec: row.sunshineSec,
-      daylightSec: row.daylightSec,
-      precipSum: row.precipSum,
-      pressureMean: row.pressureMean,
-      pressureDelta: row.pressureDelta,
-      humidityMean: row.humidityMean,
-      cloudMean: row.cloudMean,
-      weatherCode: row.weatherCode,
-      fetchedAt: row.fetchedAt.toISOString(),
-      createdAt: row.createdAt.toISOString(),
-      updatedAt: row.updatedAt.toISOString(),
-    })),
+    environmentContexts: contextRows.map((row) => {
+      const { label, ...location } = locationFields(
+        {
+          lat: row.lat,
+          lon: row.lon,
+          label: row.locationLabel,
+          locationEncrypted: row.locationEncrypted,
+        },
+        disasterRecovery,
+      );
+      return {
+        date: row.date,
+        ...location,
+        locationLabel: label,
+        source: row.source,
+        tempMin: row.tempMin,
+        tempMax: row.tempMax,
+        tempMean: row.tempMean,
+        apparentMean: row.apparentMean,
+        sunshineSec: row.sunshineSec,
+        daylightSec: row.daylightSec,
+        precipSum: row.precipSum,
+        pressureMean: row.pressureMean,
+        pressureDelta: row.pressureDelta,
+        humidityMean: row.humidityMean,
+        cloudMean: row.cloudMean,
+        weatherCode: row.weatherCode,
+        apparentMax: row.apparentMax,
+        pm25Mean: row.pm25Mean,
+        pm25Max: row.pm25Max,
+        pm10Mean: row.pm10Mean,
+        no2Mean: row.no2Mean,
+        so2Mean: row.so2Mean,
+        coMean: row.coMean,
+        o3Max8h: row.o3Max8h,
+        eaqiMax: row.eaqiMax,
+        usaqiMax: row.usaqiMax,
+        uvIndexMax: row.uvIndexMax,
+        dustMax: row.dustMax,
+        aodMax: row.aodMax,
+        pollenAlderMax: row.pollenAlderMax,
+        pollenBirchMax: row.pollenBirchMax,
+        pollenGrassMax: row.pollenGrassMax,
+        pollenMugwortMax: row.pollenMugwortMax,
+        pollenOliveMax: row.pollenOliveMax,
+        pollenRagweedMax: row.pollenRagweedMax,
+        aqDomain: row.aqDomain,
+        aqHours: row.aqHours,
+        aqFetchedAt: row.aqFetchedAt?.toISOString() ?? null,
+        fetchedAt: row.fetchedAt.toISOString(),
+        createdAt: row.createdAt.toISOString(),
+        updatedAt: row.updatedAt.toISOString(),
+      };
+    }),
     environmentTravelLocations: travelRows.map((row) => ({
       startDate: row.startDate,
       endDate: row.endDate,
-      lat: row.lat,
-      lon: row.lon,
-      label: row.label,
+      ...locationFields(row, disasterRecovery),
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
     })),
@@ -254,6 +413,9 @@ export type RestoredEnvironmentContext = Pick<
   OptionalNullable<
     Pick<
       EnvironmentContextBackupEntry,
+      | "locationEncrypted"
+      | (typeof AIR_QUALITY_COLUMNS)[number]
+      | "aqFetchedAt"
       | "tempMin"
       | "tempMax"
       | "tempMean"
@@ -277,8 +439,37 @@ export type RestoredEnvironmentTravelLocation = Pick<
   "startDate" | "endDate" | "lat" | "lon" | "label"
 > &
   OptionalNullable<
-    Pick<EnvironmentTravelLocationBackupEntry, "createdAt" | "updatedAt">
+    Pick<
+      EnvironmentTravelLocationBackupEntry,
+      "locationEncrypted" | "createdAt" | "updatedAt"
+    >
   >;
+
+/**
+ * The sealed location a restored row is written with: the file's sealed
+ * value as it came, or the file's readable location sealed under this host's
+ * key (rounded to the privacy floor first, so a file written before v1.39.4
+ * with two decimals comes back coarse). Null when the file carries neither.
+ */
+function restoredLocation(entry: {
+  locationEncrypted?: string | null;
+  lat: number | null;
+  lon: number | null;
+  label: string | null;
+}): Uint8Array<ArrayBuffer> | null {
+  if (typeof entry.locationEncrypted === "string") {
+    const buffer = Buffer.from(entry.locationEncrypted, "base64");
+    if (buffer.byteLength > 0) {
+      const bytes = new Uint8Array(new ArrayBuffer(buffer.byteLength));
+      bytes.set(buffer);
+      return bytes;
+    }
+  }
+  if (entry.lat == null || entry.lon == null || entry.label == null) {
+    return null;
+  }
+  return sealLocation({ lat: entry.lat, lon: entry.lon, label: entry.label });
+}
 
 export interface EnvironmentRestoreInput {
   environmentContexts: RestoredEnvironmentContext[];
@@ -318,11 +509,11 @@ export async function restoreEnvironmentData(
         // neither bound goes near a `Date`.
         startDate: entry.startDate,
         endDate: entry.endDate,
-        // A file written before v1.39.4 carries 2-decimal coordinates; they
-        // come back at today's privacy floor.
-        lat: entry.lat == null ? null : roundCoarse(entry.lat),
-        lon: entry.lon == null ? null : roundCoarse(entry.lon),
-        label: entry.label,
+        // Sealed, never readable: see `restoredLocation`.
+        locationEncrypted: restoredLocation(entry),
+        lat: null,
+        lon: null,
+        label: null,
         ...(entry.createdAt ? { createdAt: new Date(entry.createdAt) } : {}),
         ...(entry.updatedAt ? { updatedAt: new Date(entry.updatedAt) } : {}),
       })),
@@ -334,9 +525,15 @@ export async function restoreEnvironmentData(
       data: payload.environmentContexts.map((entry) => ({
         userId: ownerId,
         date: entry.date,
-        lat: entry.lat == null ? null : roundCoarse(entry.lat),
-        lon: entry.lon == null ? null : roundCoarse(entry.lon),
-        locationLabel: entry.locationLabel,
+        locationEncrypted: restoredLocation({
+          locationEncrypted: entry.locationEncrypted,
+          lat: entry.lat,
+          lon: entry.lon,
+          label: entry.locationLabel,
+        }),
+        lat: null,
+        lon: null,
+        locationLabel: null,
         source: entry.source,
         tempMin: entry.tempMin ?? null,
         tempMax: entry.tempMax ?? null,
@@ -350,6 +547,12 @@ export async function restoreEnvironmentData(
         humidityMean: entry.humidityMean ?? null,
         cloudMean: entry.cloudMean ?? null,
         weatherCode: entry.weatherCode ?? null,
+        ...Object.fromEntries(
+          AIR_QUALITY_COLUMNS.map((column) => [column, entry[column] ?? null]),
+        ),
+        // Verbatim, like `fetchedAt`; absent means the air-quality part was
+        // never fetched, and the nightly gap fill will ask for it.
+        aqFetchedAt: entry.aqFetchedAt ? new Date(entry.aqFetchedAt) : null,
         // Verbatim, not stamped: this says when the feed was read, not when
         // the row was written back.
         ...(entry.fetchedAt ? { fetchedAt: new Date(entry.fetchedAt) } : {}),

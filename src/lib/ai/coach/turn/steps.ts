@@ -84,6 +84,7 @@ const TOOL_DOMAIN: Readonly<Record<CoachToolName, CoachStepDomain | null>> = {
   get_cycle: "cycle",
   get_correlations: "correlations",
   get_metric_table: null,
+  get_environment: "environment",
 };
 
 /**
@@ -105,6 +106,7 @@ const TOOL_WINDOW: Readonly<
   get_cycle: null,
   get_correlations: null,
   get_metric_table: "fallback",
+  get_environment: "fallback",
 };
 
 /**

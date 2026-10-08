@@ -5,6 +5,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  * 11 km), not 2 (about 1 km). The geocoder is where a picked city's
  * coordinates enter, so its results must already be coarse.
  */
+// The instance-wide request budget lives in Postgres; these tests are about
+// the request itself, so the budget admits every call.
+vi.mock("@/lib/environment/request-budget", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/lib/environment/request-budget")
+  >()),
+  reserveOpenMeteoCalls: vi.fn(async () => true),
+}));
+
 beforeEach(() => {
   vi.resetModules();
 });

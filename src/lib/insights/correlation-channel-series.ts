@@ -37,7 +37,11 @@ import {
 } from "@/lib/insights/correlation-discovery";
 import { resolveLabFields } from "@/lib/labs/serialise";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
-import { ENVIRONMENT_FIELDS } from "@/lib/environment/fields";
+import {
+  ENVIRONMENT_FIELDS,
+  environmentFieldValue,
+} from "@/lib/environment/fields";
+import { isAirQualityActive } from "@/lib/environment/open-meteo-air-quality";
 import {
   buildComplianceDailySeries,
   buildSymptomEventDailySeries,
@@ -237,37 +241,62 @@ export async function fetchEnvironmentSeries(
 ): Promise<NamedSeries[]> {
   // eslint-disable-next-line healthlog/no-utc-day-key -- baseline: lower bound on stored environment day keys; a day either way at the far edge does not change the series
   const sinceKey = since.toISOString().slice(0, 10);
-  const rows = await prisma.environmentContext.findMany({
-    where: { userId, date: { gte: sinceKey } },
-    orderBy: { date: "asc" },
-    take: 1000,
-    select: {
-      date: true,
-      tempMean: true,
-      tempMin: true,
-      tempMax: true,
-      apparentMean: true,
-      sunshineSec: true,
-      daylightSec: true,
-      precipSum: true,
-      pressureMean: true,
-      pressureDelta: true,
-      humidityMean: true,
-      cloudMean: true,
-    },
-  });
+  const [rows, account] = await Promise.all([
+    prisma.environmentContext.findMany({
+      where: { userId, date: { gte: sinceKey } },
+      orderBy: { date: "asc" },
+      take: 1000,
+      select: {
+        date: true,
+        tempMean: true,
+        tempMin: true,
+        tempMax: true,
+        apparentMean: true,
+        sunshineSec: true,
+        daylightSec: true,
+        precipSum: true,
+        pressureMean: true,
+        pressureDelta: true,
+        humidityMean: true,
+        cloudMean: true,
+        // v1.42 (#615) — the air-quality channels' columns. The read is an
+        // explicit select, so a channel whose column is missing here reads
+        // as never covered rather than failing.
+        pm25Mean: true,
+        o3Max8h: true,
+        pollenAlderMax: true,
+        pollenBirchMax: true,
+        pollenGrassMax: true,
+        pollenMugwortMax: true,
+        pollenOliveMax: true,
+        pollenRagweedMax: true,
+      },
+    }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { environmentAirQualityEnabled: true },
+    }),
+  ]);
+  // With the air-quality part off (by the account or the operator) its
+  // channels are empty: stored values from before the switch are kept, but
+  // not correlated against the person's wish.
+  const airQuality = isAirQualityActive(
+    account?.environmentAirQualityEnabled ?? true,
+  );
 
   return ENVIRONMENT_FIELDS.map((field) => {
     const daily: DailySeriesPoint[] = [];
-    for (const row of rows) {
-      const raw = row[field.column];
-      if (raw == null || !Number.isFinite(raw)) continue;
-      // Seconds → hours for the duration fields; pass through otherwise.
-      const value =
-        field.column === "sunshineSec" || field.column === "daylightSec"
-          ? raw / 3600
-          : raw;
-      daily.push({ day: row.date, value });
+    if (!field.airQuality || airQuality) {
+      for (const row of rows) {
+        const raw = environmentFieldValue(field, row);
+        if (raw == null) continue;
+        // Seconds → hours for the duration fields; pass through otherwise.
+        const value =
+          field.column === "sunshineSec" || field.column === "daylightSec"
+            ? raw / 3600
+            : raw;
+        daily.push({ day: row.date, value });
+      }
     }
     // v1.42 — one averaged-lag hypothesis per outcome: the exposure on day D
     // is the mean of D−1 and D, paired with the outcome on D (`lagDays: 0`).

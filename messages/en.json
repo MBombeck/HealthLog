@@ -5786,8 +5786,10 @@
           "operatorDisabled": "Air quality is turned off on this server.",
           "coverage": "{count} days with air-quality data",
           "pollenEuropeOnly": "Pollen data covers Europe only.",
-          "attribution": "Air quality: Copernicus Atmosphere Monitoring Service (CAMS), via Open-Meteo.",
-          "saveError": "The setting could not be saved."
+          "attribution": "Data sources and licences",
+          "saveError": "The setting could not be saved.",
+          "latest": "Newest day ({date})",
+          "modelNote": "Modelled outdoor values for your area, not your personal exposure."
         }
       },
       "score": {
@@ -9972,7 +9974,8 @@
         "illness": "Illness and recovery",
         "cycle": "Cycle",
         "correlations": "Connections between metrics",
-        "snapshot": "Record summary"
+        "snapshot": "Record summary",
+        "environment": "Weather and air"
       },
       "window": {
         "last7days": "last 7 days",
@@ -10606,7 +10609,6 @@
       "precip": "Precipitation",
       "pressureMean": "Barometric pressure",
       "pressureDelta": "Pressure swing",
-      "apparentMax": "Feels-like high",
       "pm25": "Fine particles (PM2.5)",
       "pm10": "Particles (PM10)",
       "no2": "Nitrogen dioxide",
@@ -10615,6 +10617,20 @@
       "uvIndexMax": "UV index (high)",
       "dustMax": "Saharan dust",
       "pollenMax": "Pollen (highest)"
+    },
+    "chip": {
+      "day": "Weather on {date}",
+      "pollenHigh": "High pollen: {kinds}",
+      "hotNight": "Warm night",
+      "veryPoorAir": "Very poor air"
+    },
+    "pollen": {
+      "alder": "alder",
+      "birch": "birch",
+      "grass": "grass",
+      "mugwort": "mugwort",
+      "olive": "olive",
+      "ragweed": "ragweed"
     }
   },
   "documents": {

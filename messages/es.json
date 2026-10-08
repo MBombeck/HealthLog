@@ -5786,8 +5786,10 @@
           "operatorDisabled": "La calidad del aire está desactivada en este servidor.",
           "coverage": "{count} días con datos de calidad del aire",
           "pollenEuropeOnly": "Los datos de polen solo cubren Europa.",
-          "attribution": "Calidad del aire: Servicio de Vigilancia Atmosférica de Copernicus (CAMS), a través de Open-Meteo.",
-          "saveError": "No se pudo guardar el ajuste."
+          "attribution": "Fuentes de datos y licencias",
+          "saveError": "No se pudo guardar el ajuste.",
+          "latest": "Día más reciente ({date})",
+          "modelNote": "Valores exteriores modelados para tu zona, no tu exposición personal."
         }
       },
       "score": {
@@ -9972,7 +9974,8 @@
         "illness": "Enfermedad y recuperación",
         "cycle": "Ciclo",
         "correlations": "Relaciones entre métricas",
-        "snapshot": "Resumen de datos"
+        "snapshot": "Resumen de datos",
+        "environment": "Tiempo y aire"
       },
       "window": {
         "last7days": "últimos 7 días",
@@ -10606,7 +10609,6 @@
       "precip": "Precipitación",
       "pressureMean": "Presión atmosférica",
       "pressureDelta": "Variación de presión",
-      "apparentMax": "Máxima de sensación térmica",
       "pm25": "Partículas finas (PM2,5)",
       "pm10": "Partículas (PM10)",
       "no2": "Dióxido de nitrógeno",
@@ -10615,6 +10617,20 @@
       "uvIndexMax": "Índice UV (máximo)",
       "dustMax": "Polvo del Sáhara",
       "pollenMax": "Polen (valor más alto)"
+    },
+    "chip": {
+      "day": "Tiempo del {date}",
+      "pollenHigh": "Mucho polen: {kinds}",
+      "hotNight": "Noche cálida",
+      "veryPoorAir": "Aire muy malo"
+    },
+    "pollen": {
+      "alder": "aliso",
+      "birch": "abedul",
+      "grass": "gramíneas",
+      "mugwort": "artemisa",
+      "olive": "olivo",
+      "ragweed": "ambrosía"
     }
   },
   "documents": {

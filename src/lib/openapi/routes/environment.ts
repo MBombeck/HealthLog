@@ -30,7 +30,6 @@ import {
   dataEnvelope,
   errorEnvelope,
   moduleDisabledResponse,
-  notImplementedResponse,
   stdResponses,
 } from "./shared";
 
@@ -136,6 +135,90 @@ const environmentOverview = z
       .describe(
         "Upstream attribution string. Display it wherever the observations are shown.",
       ),
+    airQuality: z
+      .object({
+        enabled: z
+          .boolean()
+          .describe(
+            "The account's switch (`PATCH /api/environment/preferences`).",
+          ),
+        operatorDisabled: z
+          .boolean()
+          .describe(
+            "True when the operator turned air quality off for the instance; the account switch then has no effect.",
+          ),
+        days: z
+          .number()
+          .int()
+          .describe(
+            "Stored days the air-quality feed returned hourly values for.",
+          ),
+        latestDate: z
+          .string()
+          .nullable()
+          .describe("Newest such day (YYYY-MM-DD)."),
+        domain: z
+          .string()
+          .nullable()
+          .describe(
+            "The model domain of that day: `cams_europe` (about 11 km, with pollen) or `cams_global` (about 45 km, no pollen).",
+          ),
+      })
+      .describe("v1.42 — the air-quality part of the module."),
+    latestDay: z
+      .object({
+        date: z.string().describe("YYYY-MM-DD of the newest stored day."),
+        tempMin: z.number().nullable(),
+        tempMax: z.number().nullable(),
+        apparentMax: z
+          .number()
+          .nullable()
+          .describe("Daily feels-like maximum, °C."),
+        airQuality: z
+          .object({
+            pm25Mean: z
+              .number()
+              .nullable()
+              .describe("PM2.5 daily mean, µg/m³."),
+            pm10Mean: z.number().nullable().describe("PM10 daily mean, µg/m³."),
+            no2Mean: z.number().nullable().describe("NO2 daily mean, µg/m³."),
+            o3Max8h: z
+              .number()
+              .nullable()
+              .describe("Ozone, highest 8-hour running mean, µg/m³."),
+            eaqiMax: z
+              .number()
+              .nullable()
+              .describe("European air-quality index, daily maximum."),
+            uvIndexMax: z.number().nullable(),
+            dustMax: z.number().nullable().describe("Dust, µg/m³."),
+            pollen: z
+              .object({
+                alder: z.number().nullable(),
+                birch: z.number().nullable(),
+                grass: z.number().nullable(),
+                mugwort: z.number().nullable(),
+                olive: z.number().nullable(),
+                ragweed: z.number().nullable(),
+              })
+              .describe(
+                "Daily maxima, grains/m³; null where not covered (outside Europe, before mid 2022).",
+              ),
+          })
+          .nullable()
+          .describe(
+            "Null while air quality is off for the account or the instance, and for a day whose air-quality part was not fetched yet. Null values inside mean not covered, never zero.",
+          ),
+      })
+      .nullable()
+      .describe(
+        "v1.42 — the newest stored day, usually yesterday or the day before (the archive settles late). No forecast. Null when nothing is stored.",
+      ),
+    attributions: z
+      .array(z.string())
+      .describe(
+        "v1.42 — every attribution line, weather first; the air-quality lines (Open-Meteo, Copernicus) while air quality is on. Display them wherever the values are shown.",
+      ),
   })
   .meta({
     id: "EnvironmentOverview",
@@ -187,7 +270,7 @@ export const environmentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Environment"],
       summary: "Change the environment switches",
       description:
-        "Turns the air-quality part of the module on or off for this account (on by default). Off means the nightly fetch skips the air-quality feed and the overview leaves the fields out; days already stored are kept. Module-gated. Strict body.",
+        "Turns the air-quality part of the module on or off for this account (on by default). Off means the nightly fetch skips the air-quality feed, and the overview, the Coach, MCP and the correlations leave the air-quality values out; days already stored keep theirs. Turning it on queues a refresh, and the nightly gap fill catches up on older days. Module-gated. Strict body: an unknown key is a 422.",
       requestBody: {
         required: true,
         content: {
@@ -208,7 +291,6 @@ export const environmentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...moduleDisabledResponse,
         ...stdResponses,
-        ...notImplementedResponse,
       },
     },
   },

@@ -5786,8 +5786,10 @@
           "operatorDisabled": "Jakość powietrza jest wyłączona na tym serwerze.",
           "coverage": "Dni z danymi o jakości powietrza: {count}",
           "pollenEuropeOnly": "Dane o pyłkach obejmują tylko Europę.",
-          "attribution": "Jakość powietrza: serwis monitorowania atmosfery Copernicus (CAMS), przez Open-Meteo.",
-          "saveError": "Nie udało się zapisać ustawienia."
+          "attribution": "Źródła danych i licencje",
+          "saveError": "Nie udało się zapisać ustawienia.",
+          "latest": "Najnowszy dzień ({date})",
+          "modelNote": "Modelowane wartości zewnętrzne dla twojej okolicy, nie twoja osobista ekspozycja."
         }
       },
       "score": {
@@ -9972,7 +9974,8 @@
         "illness": "Choroba i powrót do zdrowia",
         "cycle": "Cykl",
         "correlations": "Związki między wskaźnikami",
-        "snapshot": "Podsumowanie danych"
+        "snapshot": "Podsumowanie danych",
+        "environment": "Pogoda i powietrze"
       },
       "window": {
         "last7days": "ostatnie 7 dni",
@@ -10606,7 +10609,6 @@
       "precip": "Opady",
       "pressureMean": "Ciśnienie atmosferyczne",
       "pressureDelta": "Wahanie ciśnienia",
-      "apparentMax": "Odczuwalne maksimum",
       "pm25": "Pył drobny (PM2,5)",
       "pm10": "Pył (PM10)",
       "no2": "Dwutlenek azotu",
@@ -10615,6 +10617,20 @@
       "uvIndexMax": "Indeks UV (maksimum)",
       "dustMax": "Pył saharyjski",
       "pollenMax": "Pyłki (najwyższa wartość)"
+    },
+    "chip": {
+      "day": "Pogoda {date}",
+      "pollenHigh": "Dużo pyłków: {kinds}",
+      "hotNight": "Ciepła noc",
+      "veryPoorAir": "Bardzo złe powietrze"
+    },
+    "pollen": {
+      "alder": "olcha",
+      "birch": "brzoza",
+      "grass": "trawy",
+      "mugwort": "bylica",
+      "olive": "oliwka",
+      "ragweed": "ambrozja"
     }
   },
   "documents": {

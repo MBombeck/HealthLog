@@ -56,13 +56,39 @@ export type EnvironmentContextNumericColumn =
   | "pressureMean"
   | "pressureDelta"
   | "humidityMean"
-  | "cloudMean";
+  | "cloudMean"
+  // v1.42 (#615) — air quality.
+  | "pm25Mean"
+  | "o3Max8h";
+
+/**
+ * A channel value that is not one column: the day's highest pollen count over
+ * the six kinds (`pollenAlderMax` … `pollenRagweedMax`), null when no kind was
+ * covered. Read by {@link environmentFieldValue}.
+ */
+export type EnvironmentDerivedColumn = "pollenMax";
+
+/** The six pollen columns `pollenMax` folds. */
+export const POLLEN_COLUMNS = [
+  "pollenAlderMax",
+  "pollenBirchMax",
+  "pollenGrassMax",
+  "pollenMugwortMax",
+  "pollenOliveMax",
+  "pollenRagweedMax",
+] as const;
 
 export interface EnvironmentField {
   /** Stable key — the registry signal key AND the correlation channel key. */
   key: string;
   /** The `EnvironmentContext` column this field's daily value comes from. */
-  column: EnvironmentContextNumericColumn;
+  column: EnvironmentContextNumericColumn | EnvironmentDerivedColumn;
+  /**
+   * v1.42 — the field comes from the air-quality feed, so it is read only
+   * while the account's air-quality part is on (and the operator's is not
+   * off). The weather fields do not set it.
+   */
+  airQuality?: true;
   /** Canonical unit (English, for prose + registry metadata). */
   unit: string;
   /** Stable English display name (the UI localises via `i18nLabelKey`). */
@@ -136,4 +162,67 @@ export const ENVIRONMENT_FIELDS: readonly EnvironmentField[] = [
     narrationLabel: "intraday pressure swing",
     i18nLabelKey: "environment.fields.pressureDelta",
   },
+  // v1.42 (#615) — three air-quality channels, deliberately no more: every
+  // channel widens the false-discovery family for all the others. Fine
+  // particles and the ozone high carry the evidence for blood pressure, HRV
+  // and sleep; the pollen high is the one with a plausible personal signal,
+  // against symptoms. UV, NO2 and dust are shown and read by the Coach but
+  // not correlated (UV is almost pure season, NO2 moves with PM2.5). The
+  // night-time heat channel is the existing overnight low above.
+  {
+    key: "ENV_PM25",
+    column: "pm25Mean",
+    unit: "µg/m³",
+    displayName: "Fine particles (PM2.5)",
+    narrationLabel: "fine particles (PM2.5)",
+    i18nLabelKey: "environment.fields.pm25",
+    airQuality: true,
+  },
+  {
+    key: "ENV_OZONE_8H",
+    column: "o3Max8h",
+    unit: "µg/m³",
+    displayName: "Ozone (8-hour high)",
+    narrationLabel: "ozone",
+    i18nLabelKey: "environment.fields.ozone8h",
+    airQuality: true,
+  },
+  {
+    key: "ENV_POLLEN_MAX",
+    column: "pollenMax",
+    unit: "grains/m³",
+    displayName: "Pollen (highest)",
+    narrationLabel: "pollen",
+    i18nLabelKey: "environment.fields.pollenMax",
+    airQuality: true,
+  },
 ] as const;
+
+/** The columns a day row must carry for {@link environmentFieldValue}. */
+export type EnvironmentFieldRow = Readonly<
+  Record<EnvironmentContextNumericColumn, number | null> &
+    Record<(typeof POLLEN_COLUMNS)[number], number | null>
+>;
+
+/**
+ * One field's raw value on one stored day (before any unit conversion), or
+ * null when the day does not cover it. The pollen high is the maximum over
+ * the kinds that were covered, never a zero for the ones that were not.
+ */
+export function environmentFieldValue(
+  field: EnvironmentField,
+  row: EnvironmentFieldRow,
+): number | null {
+  if (field.column === "pollenMax") {
+    let best: number | null = null;
+    for (const column of POLLEN_COLUMNS) {
+      const value = row[column];
+      if (value != null && Number.isFinite(value)) {
+        best = best === null ? value : Math.max(best, value);
+      }
+    }
+    return best;
+  }
+  const value = row[field.column];
+  return value != null && Number.isFinite(value) ? value : null;
+}

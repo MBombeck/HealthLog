@@ -1,6 +1,6 @@
 /**
- * Every MCP read of medications, labs and conditions honours the module
- * switch (v1.39.3 review).
+ * Every MCP read of medications, labs, conditions and (v1.42) the
+ * environment honours the module switch (v1.39.3 review).
  *
  * `search` and `fetch` gained the rule with the clinical-record kinds; the
  * rest of the surface has to say the same thing, or the claim that a
@@ -143,11 +143,24 @@ describe("medications switched off", () => {
   });
 });
 
+describe("environment switched off (v1.42)", () => {
+  beforeEach(() => disabled.add("environment"));
+
+  it("get_environment refuses without reading", async () => {
+    expect(await tool("get_environment").run(CTX, {})).toEqual(OFF);
+    expect(
+      await tool("get_environment").run(CTX, { window: "lastYear" }),
+    ).toEqual(OFF);
+    expect(executeCoachTool).not.toHaveBeenCalled();
+  });
+});
+
 describe("modules on", () => {
   it("the same reads still answer", async () => {
     await tool("get_labs").run(CTX, {});
     await tool("get_medication_compliance").run(CTX, {});
-    expect(executeCoachTool).toHaveBeenCalledTimes(2);
+    await tool("get_environment").run(CTX, {});
+    expect(executeCoachTool).toHaveBeenCalledTimes(3);
     expect(await template("lab").list!(CTX)).toHaveLength(1);
     expect(await template("medication").list!(CTX)).toHaveLength(1);
   });

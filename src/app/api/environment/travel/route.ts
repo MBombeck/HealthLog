@@ -6,6 +6,10 @@
  * fallback). Coordinates are rounded to 1 decimal (about 11 km). Adding an override
  * enqueues a lookback refresh so its days re-resolve. Module-gated; `userId` is
  * narrowed from auth.
+ *
+ * v1.42 (#615) — the period's location is stored sealed
+ * (`locationEncrypted`); the readable columns are written empty and the
+ * answer carries the coarse location as before.
  */
 import { NextRequest } from "next/server";
 
@@ -16,6 +20,7 @@ import { requireModuleEnabled } from "@/lib/modules/gate";
 import { prisma } from "@/lib/db";
 import { travelLocationSchema } from "@/lib/validations/environment";
 import { roundCoarse } from "@/lib/environment/open-meteo";
+import { sealLocation } from "@/lib/environment/location-cipher";
 import { enqueueEnvironmentFetch } from "@/lib/jobs/environment-fetch";
 
 export const POST = apiHandler(async (request: NextRequest) => {
@@ -41,24 +46,24 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   const entry = parsed.data;
-  const created = await prisma.environmentTravelLocation.create({
+  const location = {
+    lat: roundCoarse(entry.lat),
+    lon: roundCoarse(entry.lon),
+    label: entry.label,
+  };
+  const row = await prisma.environmentTravelLocation.create({
     data: {
       userId: user.id,
       startDate: entry.startDate,
       endDate: entry.endDate,
-      lat: roundCoarse(entry.lat),
-      lon: roundCoarse(entry.lon),
-      label: entry.label,
+      locationEncrypted: sealLocation(location),
+      lat: null,
+      lon: null,
+      label: null,
     },
-    select: {
-      id: true,
-      startDate: true,
-      endDate: true,
-      lat: true,
-      lon: true,
-      label: true,
-    },
+    select: { id: true, startDate: true, endDate: true },
   });
+  const created = { ...row, ...location };
 
   // Re-resolve the affected window so the override's days pick up its weather.
   await enqueueEnvironmentFetch({

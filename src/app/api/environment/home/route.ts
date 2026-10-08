@@ -16,6 +16,7 @@ import { requireModuleEnabled } from "@/lib/modules/gate";
 import { prisma } from "@/lib/db";
 import { homeLocationSchema } from "@/lib/validations/environment";
 import { roundCoarse } from "@/lib/environment/open-meteo";
+import { sealLocation } from "@/lib/environment/location-cipher";
 import { enqueueEnvironmentFetch } from "@/lib/jobs/environment-fetch";
 
 export const PUT = apiHandler(async (request: NextRequest) => {
@@ -46,14 +47,22 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   // set/update re-stamps — the home is "effective from the moment it is set".
   const homeSince = new Date();
   const home = {
-    homeLat: roundCoarse(lat),
-    homeLon: roundCoarse(lon),
-    homeLabel: label,
-    homeTimezone: timezone,
-    homeSince,
+    lat: roundCoarse(lat),
+    lon: roundCoarse(lon),
+    label,
   };
 
-  await prisma.user.update({ where: { id: user.id }, data: home });
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      homeLocationEncrypted: sealLocation(home),
+      homeLat: null,
+      homeLon: null,
+      homeLabel: null,
+      homeTimezone: timezone,
+      homeSince,
+    },
+  });
 
   // Kick a lookback refresh so recent days populate promptly. No-ops cleanly
   // when no worker is bound; the nightly cron still covers it.
@@ -63,10 +72,10 @@ export const PUT = apiHandler(async (request: NextRequest) => {
 
   return apiSuccess({
     home: {
-      lat: home.homeLat,
-      lon: home.homeLon,
-      label: home.homeLabel,
-      timezone: home.homeTimezone,
+      lat: home.lat,
+      lon: home.lon,
+      label: home.label,
+      timezone,
       since: homeSince.toISOString(),
     },
   });

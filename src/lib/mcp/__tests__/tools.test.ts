@@ -207,6 +207,8 @@ describe("MCP tool registry — surface", () => {
         "get_intraday_pulse",
         // v1.30 coverage review (G3) — ECG recording metadata.
         "get_ecg_recordings",
+        // v1.42 — weather, air quality and pollen of the stored days.
+        "get_environment",
         // v1.38 — the bounded visit history.
         "get_visits",
       ].sort(),

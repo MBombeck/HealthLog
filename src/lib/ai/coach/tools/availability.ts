@@ -725,6 +725,9 @@ export function subjectForTool(
     case "get_illness_recovery":
     case "get_cycle":
     case "get_correlations":
+    // v1.42 — the environment read probes its own table and reports its own
+    // reason (module_disabled / no_data / outside_window).
+    case "get_environment":
       return null;
   }
 }

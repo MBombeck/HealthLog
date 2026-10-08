@@ -71,6 +71,10 @@ const CHANNEL_LABEL_KEY: Record<string, string> = {
   ENV_PRECIP: "environment.fields.precip",
   ENV_PRESSURE_MEAN: "environment.fields.pressureMean",
   ENV_PRESSURE_DELTA: "environment.fields.pressureDelta",
+  // v1.42 (#615) — the air-quality channels.
+  ENV_PM25: "environment.fields.pm25",
+  ENV_OZONE_8H: "environment.fields.ozone8h",
+  ENV_POLLEN_MAX: "environment.fields.pollenMax",
 };
 
 /** Keep only the discovered pairs that involve the mood channel. */

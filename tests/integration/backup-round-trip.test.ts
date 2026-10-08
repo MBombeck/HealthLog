@@ -53,6 +53,7 @@ process.env.ENCRYPTION_KEY ??=
 import type { PrismaClient } from "@/generated/prisma/client";
 import { decrypt, decryptBytes, encrypt, encryptBytes } from "@/lib/crypto";
 import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
+import { openLocation, sealLocation } from "@/lib/environment/location-cipher";
 import { readNote } from "@/lib/crypto/note-cipher";
 import {
   decryptFactData,
@@ -1386,14 +1387,18 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
   // it. The assertion after the restore reads the two back TOGETHER. The
   // coordinates are at 1 decimal, the precision the app stores since v1.39.4;
   // a restore rounds anything finer, so finer values would not round-trip.
+  // Since v1.42 the location is stored sealed (`locationEncrypted`), the way
+  // the writers store it; the readable columns stay empty.
   await prisma.environmentTravelLocation.create({
     data: {
       userId: OWNER_ID,
       startDate: "2026-06-10",
       endDate: "2026-06-20",
-      lat: 41.4,
-      lon: 2.2,
-      label: "Barcelona",
+      locationEncrypted: sealLocation({
+        lat: 41.4,
+        lon: 2.2,
+        label: "Barcelona",
+      }),
     },
   });
   await prisma.environmentContext.createMany({
@@ -1401,9 +1406,11 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
       {
         userId: OWNER_ID,
         date: "2026-06-15",
-        lat: 41.4,
-        lon: 2.2,
-        locationLabel: "Barcelona",
+        locationEncrypted: sealLocation({
+          lat: 41.4,
+          lon: 2.2,
+          label: "Barcelona",
+        }),
         source: "TRAVEL",
         tempMin: 19.4,
         tempMax: 28.1,
@@ -1422,9 +1429,11 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
       {
         userId: OWNER_ID,
         date: "2026-07-01",
-        lat: 52.5,
-        lon: 13.4,
-        locationLabel: "Berlin",
+        locationEncrypted: sealLocation({
+          lat: 52.5,
+          lon: 13.4,
+          label: "Berlin",
+        }),
         source: "HOME",
         tempMin: 13.1,
         tempMax: 22.7,
@@ -2659,9 +2668,10 @@ describe("every model the plan claims two-ended survives a real restore", () => 
     expect(
       readings.map((reading) => ({
         date: reading.date,
-        lat: reading.lat,
-        lon: reading.lon,
-        locationLabel: reading.locationLabel,
+        // The sealed location, opened (v1.42).
+        ...(({ lat, lon, label }) => ({ lat, lon, locationLabel: label }))(
+          openLocation(reading.locationEncrypted!),
+        ),
         source: reading.source,
         tempMean: reading.tempMean,
         pressureDelta: reading.pressureDelta,
@@ -2710,15 +2720,17 @@ describe("every model the plan claims two-ended survives a real restore", () => 
       where: { userId: OWNER_ID },
     });
     const travelDay = readings.find((reading) => reading.source === "TRAVEL")!;
+    const tripPlace = openLocation(trip.locationEncrypted!);
+    const dayPlace = openLocation(travelDay.locationEncrypted!);
     expect(
       {
         startDate: trip.startDate,
         endDate: trip.endDate,
-        label: trip.label,
+        label: tripPlace.label,
         covers:
           travelDay.date >= trip.startDate && travelDay.date <= trip.endDate,
-        sameLat: trip.lat === travelDay.lat,
-        sameLon: trip.lon === travelDay.lon,
+        sameLat: tripPlace.lat === dayPlace.lat,
+        sameLon: tripPlace.lon === dayPlace.lon,
       },
       "the period must still explain the reading it was exported beside",
     ).toEqual({
@@ -3500,6 +3512,22 @@ const COLUMN_EXCLUSIONS: Readonly<Record<string, string>> = {
     "insert stamp of a symptom link; no reader, the day log's own timestamps travel",
   "IllnessSymptomLink.createdAt":
     "insert stamp of a symptom link; no reader, the illness day log's own timestamps travel",
+  // v1.42 (#615) — the readable copies of the sealed environment locations.
+  // The restore seals whatever location a file carries into
+  // `locationEncrypted` and writes these empty; the location itself is
+  // compared through the sealed column. They drop in v1.43.
+  "EnvironmentContext.lat":
+    "readable copy of the sealed day location; the restore seals it and writes this empty",
+  "EnvironmentContext.lon":
+    "readable copy of the sealed day location; the restore seals it and writes this empty",
+  "EnvironmentContext.locationLabel":
+    "readable copy of the sealed day location; the restore seals it and writes this empty",
+  "EnvironmentTravelLocation.lat":
+    "readable copy of the sealed period location; the restore seals it and writes this empty",
+  "EnvironmentTravelLocation.lon":
+    "readable copy of the sealed period location; the restore seals it and writes this empty",
+  "EnvironmentTravelLocation.label":
+    "readable copy of the sealed period location; the restore seals it and writes this empty",
 };
 
 /**
@@ -3510,35 +3538,9 @@ const COLUMN_EXCLUSIONS: Readonly<Record<string, string>> = {
  * starts coming back, so the entry has to go in the change that carries it.
  * The list is empty again before the release is tagged.
  */
-const ENVIRONMENT_V142 =
-  "v1.42 (#615): the environment section carries the air-quality columns and the sealed location";
 const LABS_V142 =
   "v1.42 (#1095): the lab section carries the conversion provenance";
 const RELEASE_PENDING_COLUMNS: Readonly<Record<string, string>> = {
-  "EnvironmentContext.aodMax": ENVIRONMENT_V142,
-  "EnvironmentContext.apparentMax": ENVIRONMENT_V142,
-  "EnvironmentContext.aqDomain": ENVIRONMENT_V142,
-  "EnvironmentContext.aqFetchedAt": ENVIRONMENT_V142,
-  "EnvironmentContext.aqHours": ENVIRONMENT_V142,
-  "EnvironmentContext.coMean": ENVIRONMENT_V142,
-  "EnvironmentContext.dustMax": ENVIRONMENT_V142,
-  "EnvironmentContext.eaqiMax": ENVIRONMENT_V142,
-  "EnvironmentContext.no2Mean": ENVIRONMENT_V142,
-  "EnvironmentContext.o3Max8h": ENVIRONMENT_V142,
-  "EnvironmentContext.pm10Mean": ENVIRONMENT_V142,
-  "EnvironmentContext.pm25Max": ENVIRONMENT_V142,
-  "EnvironmentContext.pm25Mean": ENVIRONMENT_V142,
-  "EnvironmentContext.pollenAlderMax": ENVIRONMENT_V142,
-  "EnvironmentContext.pollenBirchMax": ENVIRONMENT_V142,
-  "EnvironmentContext.pollenGrassMax": ENVIRONMENT_V142,
-  "EnvironmentContext.pollenMugwortMax": ENVIRONMENT_V142,
-  "EnvironmentContext.pollenOliveMax": ENVIRONMENT_V142,
-  "EnvironmentContext.pollenRagweedMax": ENVIRONMENT_V142,
-  "EnvironmentContext.so2Mean": ENVIRONMENT_V142,
-  "EnvironmentContext.usaqiMax": ENVIRONMENT_V142,
-  "EnvironmentContext.uvIndexMax": ENVIRONMENT_V142,
-  "EnvironmentContext.locationEncrypted": ENVIRONMENT_V142,
-  "EnvironmentTravelLocation.locationEncrypted": ENVIRONMENT_V142,
   "Biomarker.analyteKey": LABS_V142,
   "LabResult.sourceValue": LABS_V142,
   "LabResult.sourceUnit": LABS_V142,
@@ -3704,6 +3706,8 @@ const BYTE_OPENERS: ReadonlyArray<(value: Uint8Array) => string> = [
   decryptFromBytes,
   decryptNoteFromBytes,
   decryptContextFromBytes,
+  // v1.42 — the sealed environment locations, under their own label.
+  (value) => JSON.stringify(openLocation(value)),
   (value) => decryptBytes(Buffer.from(value)).toString("base64"),
 ];
 
@@ -4045,6 +4049,20 @@ const USER_FILL_OVERRIDES: Readonly<Record<string, unknown>> = {
     return bytes;
   },
   "User.avatarContentType": "image/png",
+  // v1.42 — a sealed home the way the writers seal it, so it opens.
+  "User.homeLocationEncrypted": () =>
+    sealLocation({ lat: 2.5, lon: 2.5, label: "round-trip home" }),
+};
+
+/**
+ * v1.42 (#615) — readable setting columns the restore seals into another
+ * column and writes empty. The value they held is compared through the sealed
+ * column (`homeLocationEncrypted`).
+ */
+const SEALED_ON_RESTORE: Readonly<Record<string, string>> = {
+  homeLat: "sealed into homeLocationEncrypted",
+  homeLon: "sealed into homeLocationEncrypted",
+  homeLabel: "sealed into homeLocationEncrypted",
 };
 
 /**
@@ -4183,8 +4201,15 @@ describe("the account's own settings survive a real restore", () => {
     })) as unknown as Record<string, unknown>;
 
     const lost = [...settings].filter(
-      (name) => opened(after[name]) !== opened(source[name]),
+      (name) =>
+        !Object.hasOwn(SEALED_ON_RESTORE, name) &&
+        opened(after[name]) !== opened(source[name]),
     );
+    // The readable home columns come back empty by design; the home itself
+    // came back sealed, compared above through `homeLocationEncrypted`.
+    for (const name of Object.keys(SEALED_ON_RESTORE)) {
+      expect(after[name], name).toBeNull();
+    }
     expect(
       lost,
       "these settings left with a value and came back without it",

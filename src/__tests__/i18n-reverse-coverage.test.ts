@@ -83,14 +83,6 @@ const RELEASE_PENDING_PREFIXES: Record<string, string> = {
     "v1.42 managed-profile handover dialog (#959)",
   "settings.sections.export.import.healthConnect":
     "v1.42 Health Connect import card (#972)",
-  "settings.sections.environment.airQuality":
-    "v1.42 environment settings, air quality (#615)",
-  "environment.fields.apparentMax": "v1.42 air-quality field label (#615)",
-  "environment.fields.pm10": "v1.42 air-quality field label (#615)",
-  "environment.fields.no2": "v1.42 air-quality field label (#615)",
-  "environment.fields.europeanAqi": "v1.42 air-quality field label (#615)",
-  "environment.fields.uvIndexMax": "v1.42 air-quality field label (#615)",
-  "environment.fields.dustMax": "v1.42 air-quality field label (#615)",
   "settings.appleHealth.freshness":
     "v1.42 per-type HealthKit freshness list (#1173)",
   "insights.workouts.manual.editTitle": "v1.42 manual workout edit (#1162)",

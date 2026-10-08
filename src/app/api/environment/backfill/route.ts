@@ -55,9 +55,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const profile = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { homeLat: true, homeSince: true },
+    select: { homeLat: true, homeLocationEncrypted: true, homeSince: true },
   });
-  if (profile?.homeLat == null) {
+  // The sealed home (v1.42), or the readable one the encryption backfill has
+  // not cleared yet.
+  if (profile?.homeLocationEncrypted == null && profile?.homeLat == null) {
     return apiError("Set a home location before backfilling.", 409, {
       errorCode: "environment.no_home",
     });

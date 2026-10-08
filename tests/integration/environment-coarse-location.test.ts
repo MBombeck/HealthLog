@@ -8,6 +8,10 @@
  *     coarse;
  *   - the rounding block of migration 0361 coarsens rows written before it,
  *     and running it twice changes nothing more.
+ *
+ * v1.42 (#615): the locations are stored sealed, so the coarse value is
+ * asserted on the opened sealed copy, and the readable columns are empty. The
+ * rounding still happens before sealing; nothing finer is ever stored.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -19,6 +23,7 @@ process.env.ENCRYPTION_KEY ??=
 import { PUT as putHome } from "@/app/api/environment/home/route";
 import { POST as postTravel } from "@/app/api/environment/travel/route";
 import { restoreEnvironmentData } from "@/lib/export/environment-backup";
+import { openLocation } from "@/lib/environment/location-cipher";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
@@ -95,7 +100,16 @@ describe("environment coordinates at one decimal", () => {
     const user = await getPrismaClient().user.findUniqueOrThrow({
       where: { id: OWNER_ID },
     });
-    expect([user.homeLat, user.homeLon]).toEqual([52.5, 13.4]);
+    expect([user.homeLat, user.homeLon, user.homeLabel]).toEqual([
+      null,
+      null,
+      null,
+    ]);
+    expect(openLocation(user.homeLocationEncrypted!)).toEqual({
+      lat: 52.5,
+      lon: 13.4,
+      label: "Berlin, Germany",
+    });
 
     const travel = await postTravel(
       jsonRequest("http://localhost/api/environment/travel", "POST", {
@@ -107,10 +121,16 @@ describe("environment coordinates at one decimal", () => {
       }),
     );
     expect(travel.status).toBe(201);
+    expect((await travel.json()).data).toMatchObject({ lat: 48.1, lon: 11.6 });
     const stored = await getPrismaClient().environmentTravelLocation.findMany({
       where: { userId: OWNER_ID },
     });
-    expect(stored.map((t) => [t.lat, t.lon])).toEqual([[48.1, 11.6]]);
+    expect(stored.map((t) => [t.lat, t.lon, t.label])).toEqual([
+      [null, null, null],
+    ]);
+    expect(stored.map((t) => openLocation(t.locationEncrypted!))).toEqual([
+      { lat: 48.1, lon: 11.6, label: "Munich, Germany" },
+    ]);
   });
 
   it("restores a file written with two-decimal coordinates at one decimal", async () => {
@@ -143,8 +163,15 @@ describe("environment coordinates at one decimal", () => {
     const days = await prisma.environmentContext.findMany({
       where: { userId: OWNER_ID },
     });
-    expect(travel.map((t) => [t.lat, t.lon])).toEqual([[48.1, 11.6]]);
-    expect(days.map((d) => [d.lat, d.lon])).toEqual([[48.1, 11.6]]);
+    expect(travel.map((t) => openLocation(t.locationEncrypted!))).toEqual([
+      { lat: 48.1, lon: 11.6, label: "Munich, Germany" },
+    ]);
+    expect(days.map((d) => openLocation(d.locationEncrypted!))).toEqual([
+      { lat: 48.1, lon: 11.6, label: "Munich, Germany" },
+    ]);
+    expect(days.map((d) => [d.lat, d.lon, d.locationLabel])).toEqual([
+      [null, null, null],
+    ]);
   });
 
   it("coarsens rows written before migration 0361, idempotently", async () => {

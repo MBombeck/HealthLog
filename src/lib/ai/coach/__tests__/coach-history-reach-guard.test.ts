@@ -126,6 +126,15 @@ vi.mock("@/lib/ai/coach/tools/correlations-read", () => ({
   },
 }));
 
+vi.mock("@/lib/ai/coach/tools/environment-read", () => ({
+  readEnvironmentForTool: async (args: { reach?: CoachHistoryReach }) => {
+    // The reader clamps its window to the reach it is handed; the guard
+    // checks that the executor hands it on.
+    record("readEnvironmentForTool", reachOk(args.reach), args.reach);
+    return { present: false, reason: "no_data" };
+  },
+}));
+
 vi.mock("@/lib/ai/coach/illness-snapshot", () => ({
   buildIllnessScores: async (
     _userId: string,
@@ -236,6 +245,7 @@ const CASES: Record<string, Array<Record<string, unknown>>> = {
   get_workouts: [{ window: "allTime" }],
   get_cycle: [{}],
   get_correlations: [{}],
+  get_environment: [{ window: "allTime" }, {}],
   get_metric_table: [
     { metric: "bp", window: "allTime" },
     { metric: "weight", window: "last30days", period: "yearAgo" },
