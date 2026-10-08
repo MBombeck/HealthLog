@@ -521,6 +521,12 @@ export interface CoachStep {
   reason?: CoachStepReason;
   /** `r1` when the step produced a table. */
   resultRef?: string;
+  /**
+   * v1.42 — the calendar day (`YYYY-MM-DD`) a `get_day` step read. A settled
+   * answer lists the days its tools read as chips that open each day; the
+   * prose is never parsed for dates. Set only on `get_day` steps.
+   */
+  day?: string;
 }
 
 // ── Results (v1.39.4) ───────────────────────────────────────────────────

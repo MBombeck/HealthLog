@@ -70,6 +70,7 @@ import {
 const MOOD_DESC_COLUMNS: ReadonlySet<string> = new Set(["moodLoggedAt"]);
 import { toast } from "sonner";
 import { formatDateTime } from "@/lib/format";
+import { DayLink } from "@/components/day/day-link";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { MOOD_LABEL_KEYS, MOOD_SCORE_BY_ENUM } from "@/lib/mood/labels";
 import {
@@ -841,7 +842,11 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
                           )}
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
-                          {formatDateTime(entry.moodLoggedAt)}
+                          {/* v1.42 — the entry's own day (its `date`, cut
+                            in the zone it was logged in) opens the day. */}
+                          <DayLink date={entry.date.slice(0, 10)}>
+                            {formatDateTime(entry.moodLoggedAt)}
+                          </DayLink>
                         </TableCell>
                         <TableCell>
                           {entry.source !== "MANUAL" && (
@@ -932,7 +937,9 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
                             : entry.mood}
                         </span>
                         <p className="text-muted-foreground truncate text-xs">
-                          {formatDateTime(entry.moodLoggedAt)}
+                          <DayLink date={entry.date.slice(0, 10)}>
+                            {formatDateTime(entry.moodLoggedAt)}
+                          </DayLink>
                         </p>
                         {entry.tags.length > 0 && (
                           <p className="text-muted-foreground truncate text-xs">

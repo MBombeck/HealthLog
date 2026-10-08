@@ -11,6 +11,7 @@
  * kebab + Cancel + Save action row portalled into the sheet's footer slot so
  * it stays above the phone keyboard.
  */
+import { localDateTimeValue } from "@/components/day/prefill";
 import { useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { Loader2, MoreHorizontal, Plus, RotateCcw } from "lucide-react";
@@ -67,12 +68,18 @@ interface SymptomEntryFormProps {
   onCancel?: () => void;
   /** The sheet's footer slot; the action row portals into it. */
   footerSlot?: HTMLElement | null;
+  /**
+   * v1.42 — a calendar day (`YYYY-MM-DD`) to start the date on, when the
+   * form is opened from that day. Defaults to now.
+   */
+  defaultDate?: string;
 }
 
 export function SymptomEntryForm({
   onSuccess,
   onCancel,
   footerSlot,
+  defaultDate,
 }: SymptomEntryFormProps) {
   const { t } = useTranslations();
   const recordName = useActiveRecordName();
@@ -84,7 +91,9 @@ export function SymptomEntryForm({
 
   const [definitionId, setDefinitionId] = useState<string | null>(null);
   const [intensity, setIntensity] = useState<number | null>(null);
-  const [occurredAt, setOccurredAt] = useState(nowLocalValue);
+  const [occurredAt, setOccurredAt] = useState(() =>
+    localDateTimeValue(defaultDate),
+  );
   const [note, setNote] = useState("");
   const [episodeId, setEpisodeId] = useState<string>(NO_EPISODE);
   const [symptomError, setSymptomError] = useState<string | null>(null);
@@ -106,7 +115,7 @@ export function SymptomEntryForm({
   function resetForm() {
     setDefinitionId(null);
     setIntensity(null);
-    setOccurredAt(nowLocalValue());
+    setOccurredAt(localDateTimeValue(defaultDate));
     setNote("");
     setEpisodeId(NO_EPISODE);
     setSymptomError(null);

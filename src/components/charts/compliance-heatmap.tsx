@@ -1,5 +1,8 @@
 "use client";
 
+import { openDay } from "@/components/day/day-layer-controller";
+import { isOpenableDay } from "@/components/day/day-url";
+import { useTodayKey } from "@/components/day/use-today-key";
 import { useCalendarDate } from "@/hooks/use-calendar-date";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useDisplayTimezone, useTranslations } from "@/lib/i18n/context";
@@ -100,7 +103,13 @@ export function ComplianceHeatmap({
      * tooltip; a tap outside any cell clears it (wired below).
      */
     pinned?: boolean;
+    /** v1.42 — the day a pinned (touch) tooltip offers to open. */
+    day?: string;
   } | null>(null);
+  // v1.42 — a click opens the day on a fine pointer; a tap pins the tooltip,
+  // which then offers the day. The pointer type of the press decides.
+  const lastPointer = useRef<string>("mouse");
+  const today = useTodayKey();
 
   // v1.4.27 MB7 / CF-10 — outside-click dismisses a pinned tooltip so a
   // touch user can clear the per-cell detail without scrolling the
@@ -350,6 +359,7 @@ export function ComplianceHeatmap({
             return (
               <rect
                 key={cell.dateKey}
+                data-day={cell.dateKey}
                 x={labelWidth + cell.col * step}
                 y={headerHeight + cell.row * step}
                 width={cellSize}
@@ -379,13 +389,26 @@ export function ComplianceHeatmap({
                   setTooltip((prev) => (prev?.pinned ? prev : null));
                 }}
                 onPointerDown={(e) => {
+                  lastPointer.current = e.pointerType;
                   if (e.pointerType !== "touch") return;
                   setTooltip({
                     x: e.clientX,
                     y: e.clientY,
                     text: buildText(),
                     pinned: true,
+                    day:
+                      cell.data.expected > 0 &&
+                      isOpenableDay(cell.dateKey, today)
+                        ? cell.dateKey
+                        : undefined,
                   });
+                }}
+                onClick={() => {
+                  if (lastPointer.current === "touch") return;
+                  if (cell.data.expected === 0) return;
+                  if (!isOpenableDay(cell.dateKey, today)) return;
+                  setTooltip(null);
+                  openDay(cell.dateKey, { trigger: containerRef.current });
                 }}
               />
             );
@@ -408,7 +431,10 @@ export function ComplianceHeatmap({
       {/* Tooltip */}
       {tooltip && (
         <div
-          className="bg-popover text-popover-foreground border-border pointer-events-none fixed z-50 rounded-md border px-2 py-1 text-xs shadow-md"
+          data-slot="compliance-heatmap-tooltip"
+          className={`bg-popover text-popover-foreground border-border fixed z-50 rounded-md border px-2 py-1 text-xs shadow-md ${
+            tooltip.day ? "pointer-events-auto" : "pointer-events-none"
+          }`}
           // Clamp the left edge so a tap near the right border doesn't push
           // the pinned label off-screen on a narrow viewport.
           style={{
@@ -420,6 +446,20 @@ export function ComplianceHeatmap({
           }}
         >
           {tooltip.text}
+          {tooltip.day ? (
+            <button
+              type="button"
+              data-slot="heatmap-open-day"
+              onClick={() => {
+                const day = tooltip.day;
+                setTooltip(null);
+                if (day) openDay(day, { trigger: containerRef.current });
+              }}
+              className="bg-muted hover:bg-muted/80 focus-visible:ring-ring/50 mt-1.5 flex min-h-11 w-full items-center justify-center rounded-md px-3 text-sm font-medium focus-visible:ring-[3px] focus-visible:outline-none"
+            >
+              {t("day.openDay")}
+            </button>
+          ) : null}
         </div>
       )}
 

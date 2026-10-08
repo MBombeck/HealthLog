@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
+import { DayLayerMount } from "@/components/day/day-layer";
 import { AchievementUnlockNotifier } from "@/components/gamification/achievement-unlock-notifier";
 import { MaintainershipBanner } from "@/components/i18n/maintainership-banner";
 import { LayoutCoachFab } from "@/components/insights/layout-coach-fab";
@@ -541,6 +542,11 @@ export function AuthShell({
         part of what this person was given.
       */}
       {!inSharedRecord && <LayoutCoachMount />}
+      {/* v1.42 — the day layer: `?day=` opens one day over whichever page
+          is open (docked beside it from 1280 px, a sheet below that). It
+          reads the record the shell resolved, shared or one's own; the day
+          route decides per section what that grant may see. */}
+      <DayLayerMount />
       {/* v1.18.6 — the module-tour launcher lives at the shell level so its
           overlay survives the cross-page `router.push`es the tour makes. It
           self-gates: it only auto-opens on the dashboard for a user who has

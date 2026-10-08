@@ -159,6 +159,7 @@ export default function InsightsPulsPage() {
         userTimezone={user?.timezone}
         onVisibleStats={onVisibleStats}
         showDataTable
+        dayLinks
       />
 
       {/* S11 — the intraday "shape of the day" layer: 10-minute mean heart

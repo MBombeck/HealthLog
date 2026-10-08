@@ -6,6 +6,7 @@ import {
   ComposedChart,
   Line,
   ReferenceArea,
+  ReferenceDot,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -17,10 +18,17 @@ import { Button } from "@/components/ui/button";
 import { CHART_HEIGHT_PX } from "@/lib/charts/constants";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
 import { formatReferenceRange } from "@/lib/labs/reference-range";
-import { useTranslations, useFormatters } from "@/lib/i18n/context";
-import { isNoonUtcAnchor } from "@/lib/tz/date-only";
+import {
+  useDisplayTimezone,
+  useFormatters,
+  useTranslations,
+} from "@/lib/i18n/context";
+import { dateOnlyKey, isNoonUtcAnchor } from "@/lib/tz/date-only";
 
 import { RichChartTooltip, type RichTooltipRow } from "../charts/chart-tooltip";
+import { TooltipDayAction, useCoarsePointer } from "../day/chart-day";
+import { openDay, useOpenDay } from "../day/day-layer-controller";
+import { dateKeyOfInstant } from "../day/day-url";
 import type { LabResultDto } from "./types";
 import { useLabNumber } from "./use-lab-format";
 
@@ -55,6 +63,8 @@ const RANGE_DAYS = [
 type RangeKey = (typeof RANGE_DAYS)[number]["key"];
 
 interface ChartPoint {
+  /** The reading's id, to find the one before it for the day's focus. */
+  id: string;
   timestamp: number;
   value: number;
   /** The window this reading was judged against, for the tooltip. */
@@ -104,6 +114,45 @@ export function LabBiomarkerChart({
       : fmt.dateShortSmart(instant);
   };
   const [range, setRange] = useState<RangeKey>("365");
+  // v1.42 — a reading opens its day: a click on a fine pointer, the
+  // tooltip's button on a touch screen. The open day's reading is ringed.
+  const timeZone = useDisplayTimezone();
+  const coarse = useCoarsePointer();
+  const openDayKey = useOpenDay();
+  const dayOf = (timestamp: number) => {
+    const instant = new Date(timestamp);
+    return isNoonUtcAnchor(instant)
+      ? dateOnlyKey(instant)
+      : dateKeyOfInstant(instant, timeZone);
+  };
+  const openReadingDay = (point: ChartPoint | undefined) => {
+    if (!point) return;
+    const ordered = [...readings]
+      .filter((r) => r.value !== null)
+      .sort(
+        (a, b) => new Date(a.takenAt).getTime() - new Date(b.takenAt).getTime(),
+      );
+    const at = ordered.findIndex((r) => r.id === point.id);
+    const before = at > 0 ? ordered[at - 1] : undefined;
+    const date = dayOf(point.timestamp);
+    openDay(date, {
+      focus: {
+        date,
+        label: readings[0]?.analyte ?? "",
+        value: labNumber(point.value),
+        unit,
+        compare:
+          before && before.value !== null
+            ? {
+                label: t("day.previousReading", {
+                  date: labShortDate(before.takenAt),
+                }),
+                value: `${labNumber(before.value)} ${unit}`.trim(),
+              }
+            : undefined,
+      },
+    });
+  };
   // Capture "now" once at mount so the recency filter stays pure across
   // re-renders (an inline `Date.now()` in render is impure).
   const [nowMs] = useState(() => Date.now());
@@ -126,6 +175,7 @@ export function LabBiomarkerChart({
           })
         : sorted;
     return filtered.map((r) => ({
+      id: r.id,
       timestamp: new Date(r.takenAt).getTime(),
       value: r.value,
       referenceLow: r.referenceLow,
@@ -214,6 +264,16 @@ export function LabBiomarkerChart({
             <ComposedChart
               data={points}
               margin={{ top: 8, right: 12, bottom: 4, left: 0 }}
+              className={coarse ? undefined : "cursor-pointer"}
+              onClick={
+                coarse
+                  ? undefined
+                  : (state) => {
+                      const index = Number(state?.activeTooltipIndex);
+                      if (Number.isInteger(index))
+                        openReadingDay(points[index]);
+                    }
+              }
             >
               <CartesianGrid
                 strokeDasharray="3 3"
@@ -302,6 +362,10 @@ export function LabBiomarkerChart({
                 />
               ) : null}
               <Tooltip
+                trigger={coarse ? "click" : "hover"}
+                wrapperStyle={
+                  coarse ? { pointerEvents: "auto", zIndex: 20 } : undefined
+                }
                 content={(props) => {
                   const active = props.active ?? false;
                   const payload = props.payload as
@@ -338,10 +402,35 @@ export function LabBiomarkerChart({
                       active
                       label={labShortDate(point.timestamp)}
                       rows={rows}
+                      action={
+                        coarse ? (
+                          <TooltipDayAction
+                            onOpen={() => openReadingDay(point)}
+                          />
+                        ) : undefined
+                      }
                     />
                   );
                 }}
               />
+              {points
+                .filter(
+                  (point) =>
+                    openDayKey !== null &&
+                    dayOf(point.timestamp) === openDayKey,
+                )
+                .map((point) => (
+                  <ReferenceDot
+                    key={`open-day-${point.id}`}
+                    x={point.timestamp}
+                    y={point.value}
+                    r={6.5}
+                    fill="var(--card)"
+                    stroke={primary}
+                    strokeWidth={2.5}
+                    ifOverflow="discard"
+                  />
+                ))}
               <Line
                 type="monotone"
                 dataKey="value"

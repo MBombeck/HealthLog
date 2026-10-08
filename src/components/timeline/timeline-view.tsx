@@ -21,6 +21,8 @@ import { useMemo, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 
+import { openDay as openDayLayer } from "@/components/day/day-layer-controller";
+import { parseDayParam } from "@/components/day/day-url";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -53,7 +55,7 @@ import { Segmented } from "./segmented";
 import { SelectionBar } from "./selection-bar";
 import { TimelineChart } from "./timeline-chart";
 import { TimelineChronicle } from "./timeline-chronicle";
-import { acceptableDayParam, todayKeyIn } from "./timeline-dates";
+import { todayKeyIn } from "./timeline-dates";
 import { LANE_ORDER, windowFor } from "./timeline-geometry";
 import {
   LayersMenu,
@@ -104,17 +106,6 @@ export const DEFAULT_VALUES = [
 const VALUES_KEY = "healthlog.timeline.values";
 const HIDDEN_LANES_KEY = "healthlog.timeline.hiddenLanes";
 
-/** The `?day=` URL for the current page, other parameters kept. */
-export function dayHref(
-  pathname: string,
-  search: string,
-  date: string,
-): string {
-  const next = new URLSearchParams(search);
-  next.set(DAY_QUERY_PARAM, date);
-  return `${pathname}?${next.toString()}`;
-}
-
 /** The latest dated entry on or before today, to select on arrival. */
 function latestEntryDate(
   lanes: ReadonlyArray<{
@@ -140,7 +131,7 @@ export function TimelineView() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const today = todayKeyIn(user?.timezone);
-  const dayParam = acceptableDayParam(searchParams.get(DAY_QUERY_PARAM), today);
+  const dayParam = parseDayParam(searchParams.get(DAY_QUERY_PARAM), today);
   // Life events are written in one's own record only (owner-only routes).
   const canAddLifeEvent = !caps.inSharedRecord;
 
@@ -235,14 +226,12 @@ export function TimelineView() {
   const effectiveSelected =
     selected ?? (data ? latestEntryDate(data.lanes, today) : null) ?? today;
 
+  // The shell's day layer owns `?day=` and its history entries; this only
+  // asks it to open the day, and keeps the selection on it.
   function openDay(date: string) {
     if (date > today) return;
     setPicked({ date, param: date });
-    window.history.pushState(
-      { __healthlogTimelineDay: date },
-      "",
-      dayHref(pathname, searchParams.toString(), date),
-    );
+    openDayLayer(date);
   }
 
   function editLifeEvent(id: string) {

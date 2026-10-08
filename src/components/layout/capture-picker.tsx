@@ -164,9 +164,18 @@ interface CapturePickerProps {
   open: boolean;
   /** Open-state setter for the chooser sheet. */
   onOpenChange: (open: boolean) => void;
+  /**
+   * v1.42 — the day the picker was opened from ("Capture for this day" in the
+   * day view), `YYYY-MM-DD`. Every form starts on it. Omitted, they start now.
+   */
+  defaultDate?: string;
 }
 
-export function CapturePicker({ open, onOpenChange }: CapturePickerProps) {
+export function CapturePicker({
+  open,
+  onOpenChange,
+  defaultDate,
+}: CapturePickerProps) {
   const { t } = useTranslations();
   const capabilities = useRecordCapabilities();
   const { user } = useAuth();
@@ -314,6 +323,7 @@ export function CapturePicker({ open, onOpenChange }: CapturePickerProps) {
             onSuccess={closeForm}
             onCancel={closeForm}
             footerSlot={footerEl}
+            defaultDate={defaultDate}
           />
         )}
         {openKind === "medication" && (
@@ -321,6 +331,7 @@ export function CapturePicker({ open, onOpenChange }: CapturePickerProps) {
             onSuccess={closeForm}
             onCancel={closeForm}
             footerSlot={footerEl}
+            defaultDate={defaultDate}
           />
         )}
         {openKind === "workout" && (
@@ -328,6 +339,7 @@ export function CapturePicker({ open, onOpenChange }: CapturePickerProps) {
             onSuccess={closeForm}
             onCancel={closeForm}
             footerSlot={footerEl}
+            defaultDate={defaultDate}
           />
         )}
         {openKind === "symptom" && (
@@ -335,6 +347,7 @@ export function CapturePicker({ open, onOpenChange }: CapturePickerProps) {
             onSuccess={closeForm}
             onCancel={closeForm}
             footerSlot={footerEl}
+            defaultDate={defaultDate}
           />
         )}
         {openKind === "lifeEvent" && (
@@ -342,6 +355,7 @@ export function CapturePicker({ open, onOpenChange }: CapturePickerProps) {
             onSuccess={closeForm}
             onCancel={closeForm}
             footerSlot={footerEl}
+            defaultDate={defaultDate}
           />
         )}
         {openKind === "mood" && (
@@ -349,6 +363,7 @@ export function CapturePicker({ open, onOpenChange }: CapturePickerProps) {
             onSuccess={closeForm}
             onCancel={closeForm}
             footerSlot={footerEl}
+            defaultDate={defaultDate}
           />
         )}
       </ResponsiveSheet>

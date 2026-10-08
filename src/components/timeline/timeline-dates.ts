@@ -10,8 +10,6 @@
  * Formatting reads the same UTC instant back with `timeZone: "UTC"`, so a
  * date never moves by a day for a reader east or west of Greenwich.
  */
-import { isCalendarDateKey } from "@/lib/tz/date-only";
-
 const MS_PER_DAY = 86_400_000;
 
 /** Days since 1970-01-01 for a `YYYY-MM-DD` key. */
@@ -85,15 +83,6 @@ export function todayKeyIn(timeZone: string | undefined, now = new Date()) {
     const pad = (n: number) => String(n).padStart(2, "0");
     return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
   }
-}
-
-/** A `?day=` value the timeline accepts: a real date, not in the future. */
-export function acceptableDayParam(
-  raw: string | null | undefined,
-  today: string,
-): string | null {
-  if (!raw || !isCalendarDateKey(raw)) return null;
-  return raw <= today ? raw : null;
 }
 
 function utcDate(key: string): Date {

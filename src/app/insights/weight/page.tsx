@@ -203,6 +203,7 @@ export default function InsightsGewichtPage() {
         valueScale={weightScale}
         onVisibleStats={onVisibleStats}
         showDataTable
+        dayLinks
       />
 
       <MetricTargetSummary slug="weight" />

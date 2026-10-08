@@ -15,6 +15,11 @@
  * per-day timeline and correlation card live. Retrospective-only copy — a
  * journal, not a medical device, and it does not diagnose.
  */
+import {
+  DAY_LINK_SLOT,
+  DayLinkStated,
+  withDayLinkSlot,
+} from "@/components/day/day-link";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useId, useMemo, useState } from "react";
 import Link from "next/link";
@@ -107,7 +112,9 @@ function EpisodeCard({
                   : t("illness.status.recovered")}
               </Badge>
               <span className="text-muted-foreground">
-                {fmt.dateShortSmart(new Date(episode.onsetAt))}
+                <DayLinkStated at={episode.onsetAt}>
+                  {fmt.dateShortSmart(new Date(episode.onsetAt))}
+                </DayLinkStated>
               </span>
             </div>
           </div>
@@ -173,15 +180,26 @@ function EpisodeCard({
           </Badge>
         </div>
 
+        {/* v1.42 — onset and recovery are the interesting days of a
+            period: each opens its day. */}
         <p className="text-muted-foreground text-xs">
-          {t("illness.onsetOn", {
-            date: fmt.dateShortSmart(new Date(episode.onsetAt)),
-          })}
-          {episode.resolvedAt
-            ? ` · ${t("illness.recoveredOn", {
-                date: fmt.dateShortSmart(new Date(episode.resolvedAt)),
-              })}`
-            : ""}
+          {withDayLinkSlot(
+            t("illness.onsetOn", { date: DAY_LINK_SLOT }),
+            <DayLinkStated at={episode.onsetAt}>
+              {fmt.dateShortSmart(new Date(episode.onsetAt))}
+            </DayLinkStated>,
+          )}
+          {episode.resolvedAt ? (
+            <>
+              {" · "}
+              {withDayLinkSlot(
+                t("illness.recoveredOn", { date: DAY_LINK_SLOT }),
+                <DayLinkStated at={episode.resolvedAt}>
+                  {fmt.dateShortSmart(new Date(episode.resolvedAt))}
+                </DayLinkStated>,
+              )}
+            </>
+          ) : null}
         </p>
 
         {flareCount > 0 ? (
