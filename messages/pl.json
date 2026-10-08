@@ -6542,30 +6542,32 @@
     "fitbitViewData": "Zobacz swój sen",
     "googleHealthViewData": "Zobacz swoje kroki",
     "apiTokens": "Tokeny API",
-    "apiTokensDescription": "Przeglądaj i unieważniaj tokeny API do zewnętrznego rejestrowania przyjęć leków.",
+    "apiTokensDescription": "Przeglądaj i unieważniaj tokeny do pomiarów, treningów, dokumentów i przyjęć leków.",
     "measurementsToken": {
       "title": "Tokeny pomiarów",
       "description": "Utwórz token, aby waga, zegarek lub automatyka domowa mogły dodawać pomiary.",
       "detail": "Token pokazujemy tylko raz.",
       "scopeNote": "Może wyłącznie dodawać nowe pomiary do Twojej dokumentacji — nie odczyta danych, niczego nie zmieni ani nie usunie i nie utworzy kolejnego tokenu. Pomiary są oznaczane jako pochodzące z urządzenia zewnętrznego, dzięki czemu później je rozpoznasz, i nadal możesz je poprawić.",
-      "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie."
+      "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie.",
+      "namePlaceholder": "Nazwa, np. Home Assistant"
     },
     "workoutsToken": {
       "title": "Tokeny treningów",
       "description": "Utwórz token, aby mostek zegarka lub skrypt synchronizacji mogły dodawać Twoje treningi.",
       "detail": "Token pokazujemy tylko raz.",
       "scopeNote": "Może wyłącznie dodawać nowe treningi do Twojej dokumentacji. Nie odczyta danych, niczego nie zmieni ani nie usunie i nie utworzy kolejnego tokenu. Dodane przez niego treningi są oznaczane jako pochodzące z urządzenia zewnętrznego, a jeśli telefon zapisał tę samą sesję, widzisz zapis z telefonu.",
-      "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie."
+      "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie.",
+      "namePlaceholder": "Nazwa, np. Garmin"
     },
     "documentsToken": {
       "title": "Tokeny dokumentów",
       "description": "Utwórz token, aby Paperless-ngx, Papra lub skrypt importu mogły dodawać dokumenty do Twojego archiwum.",
       "detail": "Token pokazujemy tylko raz.",
       "scopeNote": "Może wyłącznie dodawać nowe dokumenty do Twojego archiwum. Niczego nie wyświetli, nie otworzy, nie pobierze, nie zmieni ani nie usunie i nie utworzy kolejnego tokenu. Dowiaduje się tylko, czy plik został zapisany, a nie to, jak został opisany.",
-      "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie."
+      "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie.",
+      "namePlaceholder": "Nazwa, np. Paperless-ngx"
     },
-    "tokenMintMovedDescription": "Tokeny wydajemy tam, gdzie działają: powyżej dla pomiarów i dokumentów albo w punkcie końcowym API danego leku dla tego jednego leku.",
-    "tokenNamePlaceholder": "Nazwa tokena (np. Skrót iPhone)",
+    "tokenMintMovedDescription": "Tokeny wydajemy tam, gdzie działają: powyżej dla pomiarów, treningów i dokumentów albo w punkcie końcowym API danego leku dla tego jednego leku.",
     "tokenCreated": "Token utworzony — skopiuj go teraz! Nie zostanie pokazany ponownie.",
     "tokenCopy": "Kopiuj token",
     "tokenCopied": "Token skopiowany do schowka",
@@ -6757,7 +6759,8 @@
       "statusNeedsReselect": "Wybierz zawartość ponownie",
       "reselectReason": "Ten link udostępniał zakres, którego nikt nie wybrał, więc został zamknięty. Utwórz nowy i wybierz jego zawartość.",
       "reselectAction": "Utwórz zamiennik",
-      "createDetail": "Token jest pokazywany tylko raz przy tworzeniu — zapisz go wtedy; nie można go odzyskać."
+      "createDetail": "Token jest pokazywany tylko raz przy tworzeniu — zapisz go wtedy; nie można go odzyskać.",
+      "activeDescription": "Udostępnione linki, termin ich wygaśnięcia i liczba otwarć."
     },
     "genderOther": "Inna",
     "nightscout": "Nightscout",
@@ -7019,8 +7022,6 @@
     "mcp": {
       "enableTitle": "Zdalny punkt końcowy MCP",
       "enableDescription": "Zezwól asystentowi obsługującemu MCP (Claude.ai, ChatGPT) na odczyt danych zdrowotnych za pomocą ograniczonego tokenu.",
-      "enabled": "Włączony",
-      "disabled": "Wyłączony",
       "enableToggleLabel": "Włącz punkt końcowy MCP",
       "endpointLabel": "Adres URL łącznika",
       "connectDescription": "Wklej ten adres URL w konfiguracji własnego łącznika asystenta, a następnie autoryzuj za pomocą poniższego tokenu lub zaloguj się po wyświetleniu monitu.",
@@ -7039,7 +7040,8 @@
       "connectionRevokeDescription": "To natychmiast kończy dostęp asystenta i uniemożliwia odnawianie. Ponowne połączenie będzie wymagać nowej autoryzacji.",
       "connectionRevokeFailed": "Nie udało się rozłączyć asystenta.",
       "tokensDetail": "Token jest wyświetlany tylko raz.",
-      "connectionsDetail": "Cofnięcie połączenia natychmiast kończy dostęp, w tym możliwość odnawiania."
+      "connectionsDetail": "Cofnięcie połączenia natychmiast kończy dostęp, w tym możliwość odnawiania.",
+      "tokenNamePlaceholder": "Nazwa, np. Claude Desktop"
     },
     "strava": "Strava",
     "stravaDescription": "Połącz konto Strava, aby synchronizować aktywności z historią treningów.",
@@ -7169,7 +7171,8 @@
       "signInAgain": "Zaloguj się ponownie, a potem spróbuj jeszcze raz. Twoje konto nie ma hasła ani klucza dostępu do potwierdzenia tutaj.",
       "failed": "To się nie udało. Sprawdź wprowadzone dane i spróbuj ponownie."
     },
-    "passwordTitle": "Hasło"
+    "passwordTitle": "Hasło",
+    "tokenNameLabel": "Nazwa tokena"
   },
   "admin": {
     "title": "Administracja",

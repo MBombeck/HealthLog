@@ -6542,30 +6542,32 @@
     "fitbitViewData": "수면 보기",
     "googleHealthViewData": "걸음 수 보기",
     "apiTokens": "API 토큰",
-    "apiTokensDescription": "외부에서 복용을 기록할 때 쓰는 API 토큰을 확인하고 폐기해요.",
+    "apiTokensDescription": "측정값, 운동, 문서, 복용 기록용 토큰을 확인하고 폐기해요.",
     "measurementsToken": {
       "title": "측정 토큰",
       "description": "체중계나 시계, 홈 오토메이션이 측정값을 기록할 수 있도록 토큰을 만들어요.",
       "detail": "토큰은 한 번만 표시돼요.",
       "scopeNote": "본인 기록에 새 측정값을 추가하는 것만 할 수 있어요. 데이터를 읽거나, 무언가를 고치거나 지우거나, 다른 토큰을 만들 수는 없어요. 측정값은 외부 기기에서 온 것으로 표시되니 나중에 구분할 수 있고, 언제든 고칠 수 있어요.",
-      "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요."
+      "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요.",
+      "namePlaceholder": "이름 (예: Home Assistant)"
     },
     "workoutsToken": {
       "title": "운동 토큰",
       "description": "시계 연동 브리지나 동기화 스크립트가 운동 기록을 추가할 수 있도록 토큰을 만들어요.",
       "detail": "토큰은 한 번만 표시돼요.",
       "scopeNote": "본인 기록에 새 운동을 추가하는 것만 할 수 있어요. 데이터를 읽거나, 무언가를 고치거나 지우거나, 다른 토큰을 만들 수는 없어요. 이 토큰으로 추가된 운동은 외부 기기에서 온 것으로 표시되고, 휴대폰이 같은 운동을 기록했다면 휴대폰의 기록이 보여요.",
-      "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요."
+      "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요.",
+      "namePlaceholder": "이름 (예: Garmin)"
     },
     "documentsToken": {
       "title": "문서 토큰",
       "description": "Paperless-ngx, Papra 또는 가져오기 스크립트가 문서함에 문서를 추가할 수 있도록 토큰을 만들어요.",
       "detail": "토큰은 한 번만 표시돼요.",
       "scopeNote": "본인 문서함에 새 문서를 추가하는 것만 할 수 있어요. 목록을 보거나, 열거나, 내려받거나, 고치거나 지울 수 없고, 다른 토큰을 만들 수도 없어요. 파일이 저장됐는지만 알 수 있고, 어떻게 정리했는지는 알 수 없어요.",
-      "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요."
+      "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요.",
+      "namePlaceholder": "이름 (예: Paperless-ngx)"
     },
-    "tokenMintMovedDescription": "토큰은 쓰이는 곳에서 발급돼요. 측정값과 문서는 위에서, 특정 약은 그 약의 API 엔드포인트에서 만들 수 있어요.",
-    "tokenNamePlaceholder": "토큰 이름 (예: iPhone 단축어)",
+    "tokenMintMovedDescription": "토큰은 쓰이는 곳에서 발급돼요. 측정값, 운동, 문서는 위에서, 특정 약은 그 약의 API 엔드포인트에서 만들 수 있어요.",
     "tokenCreated": "토큰을 만들었어요 — 지금 복사하세요! 다시 보여주지 않아요.",
     "tokenCopy": "토큰 복사",
     "tokenCopied": "토큰을 클립보드에 복사했어요",
@@ -6757,7 +6759,8 @@
       "statusNeedsReselect": "내용 다시 선택",
       "reselectReason": "이 링크는 선택한 적 없는 범위를 제공하고 있어서 닫았어요. 새로 만들고 담을 내용을 골라 주세요.",
       "reselectAction": "새 링크 만들기",
-      "createDetail": "토큰은 만들 때 한 번만 보여줘요 — 그때 저장해 두세요. 복구할 수 없어요."
+      "createDetail": "토큰은 만들 때 한 번만 보여줘요 — 그때 저장해 두세요. 복구할 수 없어요.",
+      "activeDescription": "공유한 링크와 만료 시점, 열람 횟수를 보여줘요."
     },
     "genderOther": "기타",
     "nightscout": "Nightscout",
@@ -7019,8 +7022,6 @@
     "mcp": {
       "enableTitle": "원격 MCP 엔드포인트",
       "enableDescription": "MCP를 지원하는 어시스턴트(Claude.ai, ChatGPT)가 범위가 제한된 토큰으로 건강 데이터를 읽게 해요.",
-      "enabled": "켜짐",
-      "disabled": "꺼짐",
       "enableToggleLabel": "MCP 엔드포인트 켜기",
       "endpointLabel": "커넥터 URL",
       "connectDescription": "어시스턴트의 커스텀 커넥터 설정에 이 URL을 붙여 넣고, 아래 토큰으로 인증하거나 안내가 나오면 로그인하세요.",
@@ -7039,7 +7040,8 @@
       "connectionRevokeDescription": "어시스턴트의 접근을 즉시 끊고 갱신도 막아요. 다시 연결하려면 승인을 새로 받아야 해요.",
       "connectionRevokeFailed": "어시스턴트 연결을 해제하지 못했어요.",
       "connectionsDetail": "연결을 해지하면 갱신 권한까지 포함해 접근이 즉시 끊겨요.",
-      "tokensDetail": "토큰은 한 번만 보여줘요."
+      "tokensDetail": "토큰은 한 번만 보여줘요.",
+      "tokenNamePlaceholder": "이름 (예: Claude Desktop)"
     },
     "strava": "Strava",
     "stravaDescription": "Strava 계정을 연결해 활동을 운동 기록으로 동기화해요.",
@@ -7169,7 +7171,8 @@
       "signInAgain": "다시 로그인한 후 한 번 더 시도하세요. 이 계정에는 여기서 확인할 비밀번호나 패스키가 없습니다.",
       "failed": "확인하지 못했습니다. 입력한 내용을 확인하고 다시 시도하세요."
     },
-    "passwordTitle": "비밀번호"
+    "passwordTitle": "비밀번호",
+    "tokenNameLabel": "토큰 이름"
   },
   "admin": {
     "title": "관리자",

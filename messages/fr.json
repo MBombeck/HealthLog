@@ -6542,30 +6542,32 @@
     "fitbitViewData": "Voir votre sommeil",
     "googleHealthViewData": "Voir vos pas",
     "apiTokens": "Jetons API",
-    "apiTokensDescription": "Consultez et révoquez les jetons API pour l’enregistrement externe des prises de médicaments.",
+    "apiTokensDescription": "Consultez et révoquez les jetons des mesures, entraînements, documents et prises de médicaments.",
     "measurementsToken": {
       "title": "Jetons de mesures",
       "description": "Créez un jeton pour qu'une balance, une montre ou votre domotique ajoutent des mesures.",
       "detail": "Le jeton n'est affiché qu'une fois.",
       "scopeNote": "Il peut uniquement ajouter de nouvelles mesures à votre propre dossier : il ne peut pas lire vos données, ni modifier ou supprimer quoi que ce soit, ni créer un autre jeton. Les mesures sont signalées comme provenant d'un appareil externe, ce qui vous permet de les reconnaître plus tard, et vous pouvez toujours les corriger.",
-      "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer."
+      "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer.",
+      "namePlaceholder": "Nom, p. ex. Home Assistant"
     },
     "workoutsToken": {
       "title": "Jetons d'entraînements",
       "description": "Créez un jeton pour qu'une passerelle de montre ou un script de synchronisation ajoutent vos entraînements.",
       "detail": "Le jeton n'est affiché qu'une fois.",
       "scopeNote": "Il peut uniquement ajouter de nouveaux entraînements à votre propre dossier. Il ne peut pas lire vos données, ni modifier ou supprimer quoi que ce soit, ni créer un autre jeton. Les entraînements qu'il ajoute sont signalés comme provenant d'un appareil externe, et si votre téléphone a enregistré la même séance, c'est la copie du téléphone que vous voyez.",
-      "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer."
+      "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer.",
+      "namePlaceholder": "Nom, p. ex. Garmin"
     },
     "documentsToken": {
       "title": "Jetons de documents",
       "description": "Créez un jeton pour que Paperless-ngx, Papra ou le script d'import ajoutent des documents à votre coffre.",
       "detail": "Le jeton n'est affiché qu'une fois.",
       "scopeNote": "Il peut uniquement ajouter de nouveaux documents à votre propre coffre. Il ne peut rien lister, ouvrir, télécharger, modifier ou supprimer, ni créer un autre jeton. Il apprend seulement si un fichier a été enregistré, pas comment vous l'avez classé.",
-      "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer."
+      "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer.",
+      "namePlaceholder": "Nom, p. ex. Paperless-ngx"
     },
-    "tokenMintMovedDescription": "Les jetons sont émis là où ils s'appliquent : ci-dessus pour les mesures et les documents, ou dans le point de terminaison API d'un médicament pour ce seul médicament.",
-    "tokenNamePlaceholder": "Nom du jeton (par exemple Raccourci iPhone)",
+    "tokenMintMovedDescription": "Les jetons sont émis là où ils s'appliquent : ci-dessus pour les mesures, les entraînements et les documents, ou dans le point de terminaison API d'un médicament pour ce seul médicament.",
     "tokenCreated": "Jeton créé — copiez-le maintenant ! Il ne sera plus affiché.",
     "tokenCopy": "Copier le jeton",
     "tokenCopied": "Jeton copié dans le presse-papiers",
@@ -6757,7 +6759,8 @@
       "statusNeedsReselect": "Choisir à nouveau le contenu",
       "reselectReason": "Ce lien diffusait un périmètre que personne n'avait choisi ; il a donc été fermé. Créez-en un nouveau et choisissez son contenu.",
       "reselectAction": "Créer un remplacement",
-      "createDetail": "Le jeton n'est affiché qu'une fois à la création — conservez-le alors ; il ne peut pas être récupéré."
+      "createDetail": "Le jeton n'est affiché qu'une fois à la création — conservez-le alors ; il ne peut pas être récupéré.",
+      "activeDescription": "Les liens que vous avez partagés, leur expiration et le nombre d'ouvertures."
     },
     "genderOther": "Autre",
     "nightscout": "Nightscout",
@@ -7019,8 +7022,6 @@
     "mcp": {
       "enableTitle": "Point de terminaison MCP distant",
       "enableDescription": "Autorisez un assistant compatible MCP (Claude.ai, ChatGPT) à lire vos données de santé via un jeton restreint.",
-      "enabled": "Activé",
-      "disabled": "Désactivé",
       "enableToggleLabel": "Activer le point de terminaison MCP",
       "endpointLabel": "URL du connecteur",
       "connectDescription": "Collez cette URL dans la configuration du connecteur personnalisé de votre assistant, puis autorisez avec le jeton ci-dessous ou connectez-vous lorsque vous y êtes invité.",
@@ -7039,7 +7040,8 @@
       "connectionRevokeDescription": "Cela met fin immédiatement à l'accès de l'assistant et l'empêche de se renouveler. Une nouvelle autorisation sera nécessaire pour le reconnecter.",
       "connectionRevokeFailed": "Impossible de déconnecter l'assistant.",
       "tokensDetail": "Le jeton n'est affiché qu'une seule fois.",
-      "connectionsDetail": "Révoquer une connexion met fin à son accès immédiatement, y compris sa capacité à se renouveler."
+      "connectionsDetail": "Révoquer une connexion met fin à son accès immédiatement, y compris sa capacité à se renouveler.",
+      "tokenNamePlaceholder": "Nom, p. ex. Claude Desktop"
     },
     "strava": "Strava",
     "stravaDescription": "Connecte ton compte Strava pour synchroniser tes activités avec ton historique d'entraînement.",
@@ -7169,7 +7171,8 @@
       "signInAgain": "Reconnectez-vous, puis réessayez. Votre compte n'a ni mot de passe ni clé d'accès à confirmer ici.",
       "failed": "Cela n'a pas fonctionné. Vérifiez votre saisie et réessayez."
     },
-    "passwordTitle": "Mot de passe"
+    "passwordTitle": "Mot de passe",
+    "tokenNameLabel": "Nom du jeton"
   },
   "admin": {
     "title": "Administration",

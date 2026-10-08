@@ -6541,31 +6541,33 @@
     "whoopViewData": "View your recovery",
     "fitbitViewData": "View your sleep",
     "googleHealthViewData": "View your steps",
-    "apiTokens": "API Tokens",
-    "apiTokensDescription": "Review and revoke API tokens for external medication intake.",
+    "apiTokens": "API tokens",
+    "apiTokensDescription": "Review and revoke tokens for measurements, workouts, documents and medication intake.",
     "measurementsToken": {
       "title": "Measurement tokens",
       "description": "Mint a token so a scale, a watch bridge or your home automation can add readings.",
       "detail": "The token is shown once.",
       "scopeNote": "It can only add new readings to your own record — it cannot read your data, change or delete anything, or create another token. Readings are marked as coming from an external device, so you can tell them apart later, and you can still correct them yourself.",
-      "createFailed": "The token could not be created. Please try again."
+      "createFailed": "The token could not be created. Please try again.",
+      "namePlaceholder": "Name, e.g. Home Assistant"
     },
     "workoutsToken": {
       "title": "Workout tokens",
       "description": "Mint a token so a watch bridge or a sync script can add your workouts.",
       "detail": "The token is shown once.",
       "scopeNote": "It can only add new workouts to your own record. It cannot read your data, change or delete anything, or create another token. Workouts it adds are marked as coming from an external device, and when your phone recorded the same session, you see the phone's copy.",
-      "createFailed": "The token could not be created. Please try again."
+      "createFailed": "The token could not be created. Please try again.",
+      "namePlaceholder": "Name, e.g. Garmin"
     },
     "documentsToken": {
       "title": "Document tokens",
       "description": "Mint a token so Paperless-ngx, Papra or the import script can add documents to your vault.",
       "detail": "The token is shown once.",
       "scopeNote": "It can only add new documents to your own vault. It cannot list, open, download, change or delete anything, and it cannot create another token. What it gets back is whether a file was stored, not how you filed it.",
-      "createFailed": "The token could not be created. Please try again."
+      "createFailed": "The token could not be created. Please try again.",
+      "namePlaceholder": "Name, e.g. Paperless-ngx"
     },
-    "tokenMintMovedDescription": "Tokens are issued where they apply: above for measurements and documents, or in a medication's own API endpoint for that one medication.",
-    "tokenNamePlaceholder": "Token name (e.g., iPhone Shortcut)",
+    "tokenMintMovedDescription": "Tokens are issued where they apply: above for measurements, workouts and documents, or in a medication's own API endpoint for that one medication.",
     "tokenCreated": "Token created — copy it now! It won't be shown again.",
     "tokenCopy": "Copy token",
     "tokenCopied": "Token copied to clipboard",
@@ -6757,7 +6759,8 @@
       "statusNeedsReselect": "Pick contents again",
       "reselectReason": "This link served a scope that was never chosen, so it was closed. Create a new one and pick what it should contain.",
       "reselectAction": "Create a replacement",
-      "createDetail": "The token is shown once on creation — store it then; it cannot be recovered."
+      "createDetail": "The token is shown once on creation — store it then; it cannot be recovered.",
+      "activeDescription": "Links you have shared, when they expire and how often they were opened."
     },
     "genderOther": "Other",
     "nightscout": "Nightscout",
@@ -7019,8 +7022,6 @@
     "mcp": {
       "enableTitle": "Remote MCP endpoint",
       "enableDescription": "Let an MCP-capable assistant (Claude.ai, ChatGPT) read your health data over a scoped token.",
-      "enabled": "Enabled",
-      "disabled": "Disabled",
       "enableToggleLabel": "Enable the MCP endpoint",
       "endpointLabel": "Connector URL",
       "connectDescription": "Paste this URL into your assistant's custom-connector setup, then authorize with the token below or sign in when prompted.",
@@ -7039,7 +7040,8 @@
       "connectionRevokeDescription": "This ends the assistant's access immediately and stops it from renewing. It will need to be re-authorized to reconnect.",
       "connectionRevokeFailed": "Could not disconnect the assistant.",
       "connectionsDetail": "Revoking a connection ends its access immediately, including its ability to refresh.",
-      "tokensDetail": "The token is shown once."
+      "tokensDetail": "The token is shown once.",
+      "tokenNamePlaceholder": "Name, e.g. Claude Desktop"
     },
     "strava": "Strava",
     "stravaDescription": "Connect your Strava account to sync your activities into your workout history.",
@@ -7169,7 +7171,8 @@
       "signInAgain": "Sign in again, then try once more. Your account has no password or passkey to confirm here.",
       "failed": "That did not work. Check what you entered and try again."
     },
-    "passwordTitle": "Password"
+    "passwordTitle": "Password",
+    "tokenNameLabel": "Token name"
   },
   "admin": {
     "title": "Administration",

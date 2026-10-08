@@ -6542,30 +6542,32 @@
     "fitbitViewData": "Ver tu sueño",
     "googleHealthViewData": "Ver tus pasos",
     "apiTokens": "Tokens de API",
-    "apiTokensDescription": "Revisa y revoca tokens de API para el registro externo de tomas de medicación.",
+    "apiTokensDescription": "Revisa y revoca los tokens de mediciones, entrenamientos, documentos y tomas de medicación.",
     "measurementsToken": {
       "title": "Tokens de mediciones",
       "description": "Crea un token para que una báscula, un reloj o tu domótica añadan mediciones.",
       "detail": "El token se muestra una sola vez.",
       "scopeNote": "Solo puede añadir mediciones nuevas a tu propio historial: no puede leer tus datos, ni modificar o borrar nada, ni crear otro token. Las mediciones se marcan como procedentes de un dispositivo externo, así las distingues más tarde, y puedes corregirlas igualmente.",
-      "createFailed": "No se pudo crear el token. Inténtalo de nuevo."
+      "createFailed": "No se pudo crear el token. Inténtalo de nuevo.",
+      "namePlaceholder": "Nombre, p. ej. Home Assistant"
     },
     "workoutsToken": {
       "title": "Tokens de entrenamientos",
       "description": "Crea un token para que un puente de tu reloj o un script de sincronización añadan tus entrenamientos.",
       "detail": "El token se muestra una sola vez.",
       "scopeNote": "Solo puede añadir entrenamientos nuevos a tu propio historial. No puede leer tus datos, ni modificar o borrar nada, ni crear otro token. Los entrenamientos que añade se marcan como procedentes de un dispositivo externo, y si tu teléfono registró la misma sesión, ves la copia del teléfono.",
-      "createFailed": "No se pudo crear el token. Inténtalo de nuevo."
+      "createFailed": "No se pudo crear el token. Inténtalo de nuevo.",
+      "namePlaceholder": "Nombre, p. ej. Garmin"
     },
     "documentsToken": {
       "title": "Tokens de documentos",
       "description": "Crea un token para que Paperless-ngx, Papra o el script de importación añadan documentos a tu archivo.",
       "detail": "El token se muestra una sola vez.",
       "scopeNote": "Solo puede añadir documentos nuevos a tu propio archivo. No puede listar, abrir, descargar, modificar ni borrar nada, ni crear otro token. Lo único que recibe es si un archivo se guardó, no cómo lo archivaste.",
-      "createFailed": "No se pudo crear el token. Inténtalo de nuevo."
+      "createFailed": "No se pudo crear el token. Inténtalo de nuevo.",
+      "namePlaceholder": "Nombre, p. ej. Paperless-ngx"
     },
-    "tokenMintMovedDescription": "Los tokens se emiten donde se aplican: arriba para las mediciones y los documentos, o en el endpoint de API de un medicamento para ese medicamento concreto.",
-    "tokenNamePlaceholder": "Nombre del token (p. ej., Atajo de iPhone)",
+    "tokenMintMovedDescription": "Los tokens se emiten donde se aplican: arriba para las mediciones, los entrenamientos y los documentos, o en el endpoint de API de un medicamento para ese medicamento concreto.",
     "tokenCreated": "Token creado — ¡cópialo ahora! No se mostrará de nuevo.",
     "tokenCopy": "Copiar token",
     "tokenCopied": "Token copiado al portapapeles",
@@ -6757,7 +6759,8 @@
       "statusNeedsReselect": "Elegir contenido de nuevo",
       "reselectReason": "Este enlace mostraba un alcance que nadie eligió, por eso se cerró. Crea uno nuevo y elige su contenido.",
       "reselectAction": "Crear un reemplazo",
-      "createDetail": "El token se muestra una sola vez al crearlo — guárdalo entonces; no se puede recuperar."
+      "createDetail": "El token se muestra una sola vez al crearlo — guárdalo entonces; no se puede recuperar.",
+      "activeDescription": "Los enlaces que has compartido, cuándo caducan y cuántas veces se abrieron."
     },
     "genderOther": "Otro",
     "nightscout": "Nightscout",
@@ -7019,8 +7022,6 @@
     "mcp": {
       "enableTitle": "Endpoint MCP remoto",
       "enableDescription": "Permite que un asistente compatible con MCP (Claude.ai, ChatGPT) lea tus datos de salud mediante un token limitado.",
-      "enabled": "Activado",
-      "disabled": "Desactivado",
       "enableToggleLabel": "Activar el endpoint MCP",
       "endpointLabel": "URL del conector",
       "connectDescription": "Pega esta URL en la configuración del conector personalizado de tu asistente y autoriza con el token de abajo o inicia sesión cuando se te solicite.",
@@ -7039,7 +7040,8 @@
       "connectionRevokeDescription": "Esto finaliza el acceso del asistente de inmediato e impide su renovación. Será necesario autorizarlo de nuevo para volver a conectarlo.",
       "connectionRevokeFailed": "No se pudo desconectar el asistente.",
       "tokensDetail": "El token se muestra una sola vez.",
-      "connectionsDetail": "Revocar una conexión finaliza su acceso de inmediato, incluida su capacidad de renovación."
+      "connectionsDetail": "Revocar una conexión finaliza su acceso de inmediato, incluida su capacidad de renovación.",
+      "tokenNamePlaceholder": "Nombre, p. ej. Claude Desktop"
     },
     "strava": "Strava",
     "stravaDescription": "Conecta tu cuenta de Strava para sincronizar tus actividades con tu historial de entrenamientos.",
@@ -7169,7 +7171,8 @@
       "signInAgain": "Vuelve a iniciar sesión y inténtalo de nuevo. Tu cuenta no tiene contraseña ni llave de acceso que confirmar aquí.",
       "failed": "No ha funcionado. Revisa lo que has introducido e inténtalo de nuevo."
     },
-    "passwordTitle": "Contraseña"
+    "passwordTitle": "Contraseña",
+    "tokenNameLabel": "Nombre del token"
   },
   "admin": {
     "title": "Administration",

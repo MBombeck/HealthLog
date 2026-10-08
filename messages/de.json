@@ -6542,30 +6542,32 @@
     "fitbitViewData": "Schlaf ansehen",
     "googleHealthViewData": "Schritte ansehen",
     "apiTokens": "API-Tokens",
-    "apiTokensDescription": "API-Tokens für die externe Medikamenten-Einnahme prüfen und widerrufen.",
+    "apiTokensDescription": "Tokens für Messwerte, Trainings, Dokumente und Medikamenten-Einnahme prüfen und widerrufen.",
     "measurementsToken": {
       "title": "Messwert-Tokens",
       "description": "Erzeuge ein Token, damit eine Waage, eine Uhr oder deine Hausautomatisierung Werte eintragen kann.",
       "detail": "Das Token wird nur einmal angezeigt.",
       "scopeNote": "Es kann ausschließlich neue Werte in deine eigene Akte eintragen — deine Daten nicht lesen, nichts ändern oder löschen und kein weiteres Token erstellen. Werte werden als von einem externen Gerät gekennzeichnet, damit du sie später erkennst, und lassen sich jederzeit korrigieren.",
-      "createFailed": "Das Token konnte nicht erstellt werden. Bitte versuche es erneut."
+      "createFailed": "Das Token konnte nicht erstellt werden. Bitte versuche es erneut.",
+      "namePlaceholder": "Name, z. B. Home Assistant"
     },
     "workoutsToken": {
       "title": "Training-Tokens",
       "description": "Erzeuge ein Token, damit eine Uhren-Brücke oder ein Sync-Skript deine Trainings eintragen kann.",
       "detail": "Das Token wird nur einmal angezeigt.",
       "scopeNote": "Es kann ausschließlich neue Trainings in deine eigene Akte eintragen. Es kann deine Daten nicht lesen, nichts ändern oder löschen und kein weiteres Token erstellen. Trainings, die darüber kommen, werden als von einem externen Gerät gekennzeichnet. Hat dein Telefon dieselbe Einheit aufgezeichnet, siehst du die Aufzeichnung des Telefons.",
-      "createFailed": "Das Token konnte nicht erstellt werden. Bitte versuche es erneut."
+      "createFailed": "Das Token konnte nicht erstellt werden. Bitte versuche es erneut.",
+      "namePlaceholder": "Name, z. B. Garmin"
     },
     "documentsToken": {
       "title": "Dokument-Tokens",
       "description": "Erzeuge ein Token, damit Paperless-ngx, Papra oder das Import-Skript Dokumente in deine Ablage legen können.",
       "detail": "Das Token wird nur einmal angezeigt.",
       "scopeNote": "Es kann ausschließlich neue Dokumente in deine eigene Ablage legen. Es kann nichts auflisten, öffnen, herunterladen, ändern oder löschen und kein weiteres Token erstellen. Zurück bekommt es nur, ob eine Datei gespeichert wurde, nicht wie du sie abgelegt hast.",
-      "createFailed": "Das Token konnte nicht erstellt werden. Bitte versuche es erneut."
+      "createFailed": "Das Token konnte nicht erstellt werden. Bitte versuche es erneut.",
+      "namePlaceholder": "Name, z. B. Paperless-ngx"
     },
-    "tokenMintMovedDescription": "Tokens werden dort ausgestellt, wo sie gelten: oben für Messwerte und Dokumente, oder im API-Endpoint eines Medikaments für genau dieses Medikament.",
-    "tokenNamePlaceholder": "Token-Name (z. B. iPhone Shortcut)",
+    "tokenMintMovedDescription": "Tokens werden dort ausgestellt, wo sie gelten: oben für Messwerte, Trainings und Dokumente, oder im API-Endpoint eines Medikaments für genau dieses Medikament.",
     "tokenCreated": "Token erstellt — kopiere ihn jetzt! Er wird nicht erneut angezeigt.",
     "tokenCopy": "Token kopieren",
     "tokenCopied": "Token in die Zwischenablage kopiert",
@@ -6757,7 +6759,8 @@
       "statusNeedsReselect": "Inhalt neu wählen",
       "reselectReason": "Dieser Link lieferte einen Umfang, den niemand gewählt hatte, und wurde deshalb geschlossen. Lege einen neuen an und wähle den Inhalt.",
       "reselectAction": "Ersatz anlegen",
-      "createDetail": "Der Token wird nur einmal bei der Erstellung angezeigt — sichere ihn dann; er lässt sich nicht wiederherstellen."
+      "createDetail": "Der Token wird nur einmal bei der Erstellung angezeigt — sichere ihn dann; er lässt sich nicht wiederherstellen.",
+      "activeDescription": "Deine geteilten Links, wann sie ablaufen und wie oft sie geöffnet wurden."
     },
     "genderOther": "Divers",
     "nightscout": "Nightscout",
@@ -7019,8 +7022,6 @@
     "mcp": {
       "enableTitle": "Remote-MCP-Endpunkt",
       "enableDescription": "Erlaube einem MCP-fähigen Assistenten (Claude.ai, ChatGPT), deine Gesundheitsdaten über ein begrenztes Token zu lesen.",
-      "enabled": "Aktiv",
-      "disabled": "Inaktiv",
       "enableToggleLabel": "MCP-Endpunkt aktivieren",
       "endpointLabel": "Connector-URL",
       "connectDescription": "Füge diese URL in die Einrichtung des eigenen Connectors deines Assistenten ein und autorisiere dich mit dem Token unten oder melde dich bei Aufforderung an.",
@@ -7039,7 +7040,8 @@
       "connectionRevokeDescription": "Dies beendet den Zugriff des Assistenten sofort und verhindert eine Erneuerung. Für eine erneute Verbindung ist eine neue Autorisierung nötig.",
       "connectionRevokeFailed": "Assistent konnte nicht getrennt werden.",
       "tokensDetail": "Das Token wird nur einmal angezeigt.",
-      "connectionsDetail": "Das Widerrufen einer Verbindung beendet den Zugriff sofort, einschließlich der Möglichkeit zur Erneuerung."
+      "connectionsDetail": "Das Widerrufen einer Verbindung beendet den Zugriff sofort, einschließlich der Möglichkeit zur Erneuerung.",
+      "tokenNamePlaceholder": "Name, z. B. Claude Desktop"
     },
     "strava": "Strava",
     "stravaDescription": "Verbinde dein Strava-Konto, um deine Aktivitäten in deinen Trainingsverlauf zu übernehmen.",
@@ -7169,7 +7171,8 @@
       "signInAgain": "Melde dich neu an und versuche es dann noch einmal. Dein Konto hat kein Passwort und keinen Passkey, den du hier bestätigen könntest.",
       "failed": "Das hat nicht geklappt. Prüfe deine Eingabe und versuche es noch einmal."
     },
-    "passwordTitle": "Passwort"
+    "passwordTitle": "Passwort",
+    "tokenNameLabel": "Token-Name"
   },
   "admin": {
     "title": "Administration",

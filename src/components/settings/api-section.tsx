@@ -91,6 +91,7 @@ function MeasurementTokensCard() {
         description: t("settings.measurementsToken.description"),
         detail: t("settings.measurementsToken.detail"),
         scopeNote: t("settings.measurementsToken.scopeNote"),
+        namePlaceholder: t("settings.measurementsToken.namePlaceholder"),
         createFailed: t("settings.measurementsToken.createFailed"),
       }}
     />
@@ -114,6 +115,7 @@ function WorkoutTokensCard() {
         description: t("settings.workoutsToken.description"),
         detail: t("settings.workoutsToken.detail"),
         scopeNote: t("settings.workoutsToken.scopeNote"),
+        namePlaceholder: t("settings.workoutsToken.namePlaceholder"),
         createFailed: t("settings.workoutsToken.createFailed"),
       }}
     />
@@ -137,6 +139,7 @@ function DocumentTokensCard() {
         description: t("settings.documentsToken.description"),
         detail: t("settings.documentsToken.detail"),
         scopeNote: t("settings.documentsToken.scopeNote"),
+        namePlaceholder: t("settings.documentsToken.namePlaceholder"),
         createFailed: t("settings.documentsToken.createFailed"),
       }}
     />
@@ -161,6 +164,7 @@ function IngestTokenCard({
     description: string;
     detail: string;
     scopeNote: string;
+    namePlaceholder: string;
     createFailed: string;
   };
 }) {
@@ -234,16 +238,18 @@ function IngestTokenCard({
       />
 
       <div className="space-y-3">
-        <p className="text-sm leading-relaxed">{copy.detail}</p>
-        <p className="text-muted-foreground text-sm leading-relaxed">
-          {copy.scopeNote}
+        {/* "Shown once" and what the token can do are one statement about
+            the credential, so they read as one paragraph. */}
+        <p className="text-sm leading-relaxed">
+          {copy.detail} {copy.scopeNote}
         </p>
 
         <form onSubmit={handleCreate} className="flex items-center gap-2">
           <Input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder={t("settings.tokenNamePlaceholder")}
+            placeholder={copy.namePlaceholder}
+            aria-label={t("settings.tokenNameLabel")}
             maxLength={100}
             className="flex-1"
           />
