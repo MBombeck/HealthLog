@@ -2660,6 +2660,7 @@ export async function restoreBackup(
           tx,
           ownerId,
           payload,
+          skips,
         );
 
         const cleared = {

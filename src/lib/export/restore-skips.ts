@@ -195,7 +195,8 @@ export type SkippedCatalogue =
   | "cycleCiphertext"
   | "moodLabelCiphertext"
   | "visitCiphertext"
-  | "vaccinationCiphertext";
+  | "vaccinationCiphertext"
+  | "environmentLocationCiphertext";
 
 /** One key this instance does not know, and the links it cost. */
 export interface SkippedCatalogueKey {

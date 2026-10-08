@@ -139,6 +139,41 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("fetchAndStoreEnvironment", () => {
+  it("skips the days of a travel period whose sealed location does not open, never resolving them to home", async () => {
+    air.mockResolvedValue({ days: [], stopped: null });
+    const damaged = new Uint8Array([2, 2, 118, 49, ...new Array(40).fill(7)]);
+    db.travel = [
+      {
+        startDate: "2026-05-02",
+        endDate: "2026-05-03",
+        lat: null,
+        lon: null,
+        label: null,
+        locationEncrypted: damaged,
+      },
+    ];
+    weather.mockImplementation(
+      async (args: { startDate: string; endDate: string }) => {
+        const out = [];
+        for (let d = 1; d <= 4; d++) {
+          const day = `2026-05-0${d}`;
+          if (day >= args.startDate && day <= args.endDate) out.push(obs(day));
+        }
+        return out;
+      },
+    );
+    const result = await fetchAndStoreEnvironment({
+      userId: "u1",
+      startDate: "2026-05-01",
+      endDate: "2026-05-04",
+    });
+    const writtenDays = db.upserts.map((u) => u.create.date);
+    expect(writtenDays).not.toContain("2026-05-02");
+    expect(writtenDays).not.toContain("2026-05-03");
+    expect(writtenDays.sort()).toEqual(["2026-05-01", "2026-05-04"]);
+    expect(result.skipped).toBe(2);
+  });
+
   it("asks both feeds with the coarse home only and writes the day sealed", async () => {
     air.mockResolvedValue({ days: [airDay("2026-05-01")], stopped: null });
     const result = await fetchAndStoreEnvironment({

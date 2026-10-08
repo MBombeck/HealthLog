@@ -7811,7 +7811,8 @@
         "restoreSkippedCycleCiphertext": "Nota o etichetta del ciclo cifrata con una chiave che questo server non possiede (giorno o sintomo mantenuto senza)",
         "restoreSkippedMoodLabelCiphertext": "Nome di tag o gruppo dell’umore cifrato con una chiave che questo server non possiede (mantenuto senza nome)",
         "restoreSkippedVisitCiphertext": "Testo di visita o professionista cifrato con una chiave che questo server non possiede (mantenuto senza)",
-        "restoreSkippedVaccinationCiphertext": "Nota di vaccinazione cifrata con una chiave che questo server non possiede (dose mantenuta senza)"
+        "restoreSkippedVaccinationCiphertext": "Nota di vaccinazione cifrata con una chiave che questo server non possiede (dose mantenuta senza)",
+        "restoreSkippedEnvironmentLocationCiphertext": "Luogo di un periodo o giorno ambientale cifrato con una chiave che questo server non possiede (mantenuto cifrato, quei giorni non vengono aggiornati)"
       },
       "danger-zone": {
         "title": "Zona pericolosa",

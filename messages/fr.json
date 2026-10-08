@@ -7811,7 +7811,8 @@
         "restoreSkippedCycleCiphertext": "Note ou libellé du cycle chiffré avec une clé que ce serveur ne possède pas (jour ou symptôme conservé sans)",
         "restoreSkippedMoodLabelCiphertext": "Nom d’étiquette ou de groupe d’humeur chiffré avec une clé que ce serveur ne possède pas (conservé sans son nom)",
         "restoreSkippedVisitCiphertext": "Texte de consultation ou de praticien chiffré avec une clé que ce serveur ne possède pas (conservé sans)",
-        "restoreSkippedVaccinationCiphertext": "Note de vaccination chiffrée avec une clé que ce serveur ne possède pas (dose conservée sans)"
+        "restoreSkippedVaccinationCiphertext": "Note de vaccination chiffrée avec une clé que ce serveur ne possède pas (dose conservée sans)",
+        "restoreSkippedEnvironmentLocationCiphertext": "Lieu d'une période ou d'un jour environnemental chiffré avec une clé que ce serveur ne possède pas (conservé chiffré, ces jours ne sont pas actualisés)"
       },
       "danger-zone": {
         "title": "Zone de danger",

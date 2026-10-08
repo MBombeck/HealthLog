@@ -7811,7 +7811,8 @@
         "restoreSkippedCycleCiphertext": "Zyklus-Notiz oder -Bezeichnung mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (Tag oder Symptom ohne sie behalten)",
         "restoreSkippedMoodLabelCiphertext": "Name eines Stimmungs-Tags oder einer Gruppe mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (ohne Namen behalten)",
         "restoreSkippedVisitCiphertext": "Text zu Arztbesuch oder Praxis mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (ohne ihn behalten)",
-        "restoreSkippedVaccinationCiphertext": "Impf-Notiz mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (Impfung ohne sie behalten)"
+        "restoreSkippedVaccinationCiphertext": "Impf-Notiz mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (Impfung ohne sie behalten)",
+        "restoreSkippedEnvironmentLocationCiphertext": "Ort eines Umweltzeitraums oder -tags mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (verschlüsselt behalten, diese Tage werden nicht neu abgerufen)"
       },
       "danger-zone": {
         "title": "Gefahrenzone",

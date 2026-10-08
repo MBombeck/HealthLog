@@ -7811,7 +7811,8 @@
         "restoreSkippedCycleCiphertext": "Cycle note or label sealed with a key this server does not hold (day or symptom kept without it)",
         "restoreSkippedMoodLabelCiphertext": "Mood tag or group name sealed with a key this server does not hold (kept without its name)",
         "restoreSkippedVisitCiphertext": "Visit or practitioner text sealed with a key this server does not hold (kept without it)",
-        "restoreSkippedVaccinationCiphertext": "Vaccination note sealed with a key this server does not hold (dose kept without it)"
+        "restoreSkippedVaccinationCiphertext": "Vaccination note sealed with a key this server does not hold (dose kept without it)",
+        "restoreSkippedEnvironmentLocationCiphertext": "Location of an environment period or day sealed with a key this server does not hold (kept sealed, those days are not refreshed)"
       },
       "danger-zone": {
         "title": "Danger zone",

@@ -38,6 +38,7 @@ function throughFile(section: unknown): EnvironmentRestoreInput {
   return JSON.parse(JSON.stringify(section)) as EnvironmentRestoreInput;
 }
 
+import type { RestoreSkipLog } from "@/lib/export/restore-skips";
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
@@ -424,6 +425,53 @@ describe("the environment backup with sealed locations", () => {
         Buffer.from(before.locationEncrypted!),
       ),
     ).toBe(true);
+  });
+
+  it("keeps a sealed location this host cannot open sealed, and reports it", async () => {
+    const prisma = getPrismaClient();
+    const damaged = Buffer.from([2, 2, 118, 49, ...new Array(40).fill(7)]);
+    const skips: RestoreSkipLog = [];
+    await prisma.$transaction((tx) =>
+      restoreEnvironmentData(
+        tx,
+        OWNER,
+        {
+          environmentTravelLocations: [
+            {
+              startDate: "2026-08-01",
+              endDate: "2026-08-10",
+              lat: null,
+              lon: null,
+              label: null,
+              locationEncrypted: damaged.toString("base64"),
+            },
+          ],
+          environmentContexts: [
+            {
+              date: "2026-08-02",
+              lat: null,
+              lon: null,
+              locationLabel: null,
+              source: "TRAVEL",
+              locationEncrypted: damaged.toString("base64"),
+              tempMin: 20,
+            },
+          ],
+        },
+        skips,
+      ),
+    );
+    expect(skips.map((s) => [s.catalogue, s.key]).sort()).toEqual([
+      ["environmentLocationCiphertext", "environmentContexts.2026-08-02"],
+      [
+        "environmentLocationCiphertext",
+        "environmentTravelLocations.2026-08-01..2026-08-10",
+      ],
+    ]);
+    const period = await prisma.environmentTravelLocation.findFirstOrThrow({
+      where: { userId: OWNER },
+    });
+    expect(Buffer.from(period.locationEncrypted!).equals(damaged)).toBe(true);
   });
 
   it("restores a file from before air quality as a day never fetched", async () => {

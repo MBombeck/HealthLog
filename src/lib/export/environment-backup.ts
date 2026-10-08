@@ -79,7 +79,15 @@ import { Buffer } from "node:buffer";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import type { EnvironmentLocationSource } from "@/generated/prisma/client";
 import type { AirQualityDay } from "@/lib/environment/air-quality-contract";
-import { readLocation, sealLocation } from "@/lib/environment/location-cipher";
+import {
+  openLocation,
+  readLocation,
+  sealLocation,
+} from "@/lib/environment/location-cipher";
+import {
+  recordUnknownKeys,
+  type RestoreSkipLog,
+} from "@/lib/export/restore-skips";
 
 export interface EnvironmentBackupOptions {
   purpose?: "portable-export" | "disaster-recovery";
@@ -450,18 +458,35 @@ export type RestoredEnvironmentTravelLocation = Pick<
  * value as it came, or the file's readable location sealed under this host's
  * key (rounded to the privacy floor first, so a file written before v1.39.4
  * with two decimals comes back coarse). Null when the file carries neither.
+ *
+ * A sealed value is opened once to check it. One this host cannot open is
+ * still written as it came, and its path is added to `unopened` so the
+ * restore report names it. Writing it without a location would be worse: a
+ * period without a location reads as no period at all, and the next refresh
+ * would rewrite those days with the weather at home. Kept sealed, the
+ * refresh skips them (`fetchAndStoreEnvironment` fails closed), and the
+ * location comes back once the missing key is added.
  */
-function restoredLocation(entry: {
-  locationEncrypted?: string | null;
-  lat: number | null;
-  lon: number | null;
-  label: string | null;
-}): Uint8Array<ArrayBuffer> | null {
+function restoredLocation(
+  entry: {
+    locationEncrypted?: string | null;
+    lat: number | null;
+    lon: number | null;
+    label: string | null;
+  },
+  path: string,
+  unopened: string[],
+): Uint8Array<ArrayBuffer> | null {
   if (typeof entry.locationEncrypted === "string") {
     const buffer = Buffer.from(entry.locationEncrypted, "base64");
     if (buffer.byteLength > 0) {
       const bytes = new Uint8Array(new ArrayBuffer(buffer.byteLength));
       bytes.set(buffer);
+      try {
+        openLocation(bytes);
+      } catch {
+        unopened.push(path);
+      }
       return bytes;
     }
   }
@@ -495,7 +520,10 @@ export async function restoreEnvironmentData(
   tx: Prisma.TransactionClient,
   ownerId: string,
   payload: EnvironmentRestoreInput,
+  skips?: RestoreSkipLog,
 ): Promise<EnvironmentRestoreCleared> {
+  // Sealed locations this host's keys do not open, by file path.
+  const unopened: string[] = [];
   const [clearedTravel, clearedContexts] = await Promise.all([
     tx.environmentTravelLocation.deleteMany({ where: { userId: ownerId } }),
     tx.environmentContext.deleteMany({ where: { userId: ownerId } }),
@@ -510,7 +538,11 @@ export async function restoreEnvironmentData(
         startDate: entry.startDate,
         endDate: entry.endDate,
         // Sealed, never readable: see `restoredLocation`.
-        locationEncrypted: restoredLocation(entry),
+        locationEncrypted: restoredLocation(
+          entry,
+          `environmentTravelLocations.${entry.startDate}..${entry.endDate}`,
+          unopened,
+        ),
         lat: null,
         lon: null,
         label: null,
@@ -525,12 +557,16 @@ export async function restoreEnvironmentData(
       data: payload.environmentContexts.map((entry) => ({
         userId: ownerId,
         date: entry.date,
-        locationEncrypted: restoredLocation({
-          locationEncrypted: entry.locationEncrypted,
-          lat: entry.lat,
-          lon: entry.lon,
-          label: entry.locationLabel,
-        }),
+        locationEncrypted: restoredLocation(
+          {
+            locationEncrypted: entry.locationEncrypted,
+            lat: entry.lat,
+            lon: entry.lon,
+            label: entry.locationLabel,
+          },
+          `environmentContexts.${entry.date}`,
+          unopened,
+        ),
         lat: null,
         lon: null,
         locationLabel: null,
@@ -560,6 +596,15 @@ export async function restoreEnvironmentData(
         ...(entry.updatedAt ? { updatedAt: new Date(entry.updatedAt) } : {}),
       })),
     });
+  }
+
+  if (skips) {
+    recordUnknownKeys(
+      skips,
+      "environmentLocationCiphertext",
+      unopened,
+      unopened,
+    );
   }
 
   return {

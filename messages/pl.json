@@ -7811,7 +7811,8 @@
         "restoreSkippedCycleCiphertext": "Notatka lub etykieta cyklu zaszyfrowana kluczem, którego ten serwer nie ma (dzień lub objaw zachowany bez niej)",
         "restoreSkippedMoodLabelCiphertext": "Nazwa tagu lub grupy nastroju zaszyfrowana kluczem, którego ten serwer nie ma (zachowana bez nazwy)",
         "restoreSkippedVisitCiphertext": "Tekst wizyty lub lekarza zaszyfrowany kluczem, którego ten serwer nie ma (zachowany bez niego)",
-        "restoreSkippedVaccinationCiphertext": "Notatka szczepienia zaszyfrowana kluczem, którego ten serwer nie ma (dawka zachowana bez niej)"
+        "restoreSkippedVaccinationCiphertext": "Notatka szczepienia zaszyfrowana kluczem, którego ten serwer nie ma (dawka zachowana bez niej)",
+        "restoreSkippedEnvironmentLocationCiphertext": "Lokalizacja okresu lub dnia środowiskowego zaszyfrowana kluczem, którego ten serwer nie ma (zachowana w postaci zaszyfrowanej, te dni nie są odświeżane)"
       },
       "danger-zone": {
         "title": "Strefa zagrożenia",

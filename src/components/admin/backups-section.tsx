@@ -471,6 +471,11 @@ function catalogueLabel(
   if (catalogue === "vaccinationCiphertext") {
     return t("admin.section.backups.restoreSkippedVaccinationCiphertext");
   }
+  if (catalogue === "environmentLocationCiphertext") {
+    return t(
+      "admin.section.backups.restoreSkippedEnvironmentLocationCiphertext",
+    );
+  }
   if (catalogue === "moodLabelCiphertext") {
     return t("admin.section.backups.restoreSkippedMoodLabelCiphertext");
   }

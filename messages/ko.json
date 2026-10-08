@@ -7787,7 +7787,8 @@
         "restoreSkippedCycleCiphertext": "이 서버에 없는 키로 암호화된 주기 메모 또는 이름(해당 날짜나 증상은 그 내용 없이 유지됨)",
         "restoreSkippedMoodLabelCiphertext": "이 서버에 없는 키로 암호화된 기분 태그 또는 그룹 이름(이름 없이 유지됨)",
         "restoreSkippedVisitCiphertext": "이 서버에 없는 키로 암호화된 진료 또는 의료진 텍스트(해당 내용 없이 유지됨)",
-        "restoreSkippedVaccinationCiphertext": "이 서버에 없는 키로 암호화된 예방접종 메모(접종 기록은 메모 없이 유지됨)"
+        "restoreSkippedVaccinationCiphertext": "이 서버에 없는 키로 암호화된 예방접종 메모(접종 기록은 메모 없이 유지됨)",
+        "restoreSkippedEnvironmentLocationCiphertext": "이 서버에 없는 키로 암호화된 환경 기간 또는 날짜의 위치(암호화된 채 유지되며 해당 날짜는 새로 가져오지 않음)"
       },
       "danger-zone": {
         "title": "위험 구역",
