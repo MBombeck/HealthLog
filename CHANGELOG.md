@@ -1,5 +1,206 @@
 # Changelog
 
+## [1.42.0] — 2026-10-09
+
+A day view behind every dated value, an optional timeline with life events,
+air quality and pollen per day, a Health Connect import, and the handover of
+a managed profile to the person it describes. The measurement table drops
+the samples the nightly fold used to keep, after a one-time repair of means
+an earlier fold computed from part of a day.
+
+### Added
+
+- **Day view (#613).** `?day=YYYY-MM-DD` opens one local day over the
+  current page: docked from 1280 px, a side sheet below that, a bottom sheet
+  on a phone, always a sheet on `/coach`. It shows the value it was opened
+  from, what ran through the day, eight curated readings against the 30-day
+  usual range (the rest behind "All values") and the day's entries in clock
+  order. Every chart drawn in days opens it (on touch the tooltip offers the
+  day first), as do data tables, the measurement, mood and intake lists,
+  heatmaps, lab readings, documents, workouts, symptom and illness days and
+  the days a Coach answer read. Back and Escape close it, Alt with an arrow
+  steps a day. A planned visit shows what changed since the last one from
+  `GET /api/day/notable`. Not offered: the dashboard's today area, tile
+  charts, the cycle calendar, model text, future dates, the clinician share
+  link and the doctor-report PDF.
+- **Timeline module (#613).** Opt-in. One SVG time axis from 768 px with
+  lanes for life events, conditions, allergies, medications, vaccinations,
+  visits and procedures, labs and documents, a year, month or week grid and
+  up to three monthly-mean value lines; a chronicle, newest first, on a
+  phone. Switching the module on opens a readiness inventory that rates
+  each lane and links each gap; it stays available as Data coverage.
+- **Life events.** Title, kind (family, home, work, loss, other), a start
+  at day, month or year precision, optional end and note; title and note
+  encrypted at rest (migration 0387). Owner only in this release: no share
+  level or MANAGE grant reads or writes them, and no model ever receives
+  them. They travel in both backup purposes and are wiped with the account.
+- **Air quality, pollen and UV (#615).** The environment fetch adds the
+  Open-Meteo air-quality feed (CAMS, `domains=auto`): PM2.5, PM10, NO2,
+  SO2, CO, the ozone 8-hour high, European and US AQI, UV, dust, aerosol
+  depth and six pollen groups, folded into local days (means and maxima need
+  18 of 24 hours) and stored as null where the feed has no value
+  (migration 0381). Pollen exists only in the European domain. A nightly
+  gap fill covers up to 90 days per account. PM2.5, the ozone high and the
+  highest pollen join the correlation channels. An account switch under
+  Location & weather (on by default), attributions beside the values, and a
+  dashboard chip on a day with high pollen, a warm night or very poor air.
+- **`get_environment` and `get_day`** for the Coach and MCP.
+  `get_environment` is module-gated and carries no coordinate or place name;
+  `get_day` leaves out life events, notes and document names and honours
+  the person's Coach exclusions.
+- **Health Connect import (#972).** Upload the ZIP Android's Health Connect
+  exports under Export & Import. It is read in the background (read-only
+  SQLite, schema version 9 or later, 1 GiB upload cap, one import per
+  account): daily totals from the top-priority app, per-minute heart rate
+  for 90 days and hourly means before that, sleep stages, workouts, cycle
+  days, water and nutrients, under the new source `HEALTH_CONNECT`
+  (migrations 0379, 0380). Apps already connected directly are skipped and a
+  second import of the same file writes nothing.
+- **Managed profile handover (#959).** A guardian with a fresh second factor
+  creates a one-time link (1, 7 or 14 days, shown once with a QR code) and
+  proposes no access, view only or manage per guardian. The person opens
+  `/claim/<token>`, sets a username, email and password, and decides each
+  guardian's access after signing in. Pending invitations are withdrawn;
+  disclaimer, onboarding and AI consent reset. Refused on `OIDC_ONLY`
+  instances (migrations 0383, 0390).
+- **Custom vaccines (#1005).** A record defines its own vaccine with the
+  antigens it covers, series length and booster interval; its doses count
+  into each antigen's series and settle boosters (migration 0386).
+- **Workout editing (#1162).** A hand-entered workout opens its form from
+  the detail page and saves as an overwrite of the same row.
+- **HRV RMSSD from Apple Health (#1110).** iOS 27's
+  `HKQuantityTypeIdentifierHeartRateVariabilityRMSSD` is stored as
+  `HRV_RMSSD` (1 to 300 ms) with its own source-priority ladder, charted
+  apart from SDNN.
+- **Apple Health arrival per type (#1173).** The Apple Health card shows
+  when each type last arrived, by which trigger (including the new
+  `manual` for Sync all) and when it last brought a new value
+  (migration 0384).
+- **Documents layout.** Preview cards or a compact list, months stacked or
+  flowing, per account (migration 0388).
+- **Measurement maintenance.** An admin card and
+  `POST /api/admin/maintenance/measurements` run `VACUUM (ANALYZE)` and a
+  `REINDEX INDEX CONCURRENTLY` per index, largest first.
+- **Query statistics.** The bundled database loads `pg_stat_statements`;
+  `CREATE EXTENSION` once to read it (`docs/ops/query-statistics.md`).
+
+### Changed
+
+- **Correlations remove season and trend.** Every daily pair is correlated
+  on residuals after a linear trend and one annual harmonic are taken out
+  of both series (trend only under 120 days), with p-values on the
+  Pyper-Peterman effective sample size. Weather channels compare the mean
+  of the day before and the day itself with the same day's outcome. Some
+  earlier findings no longer qualify.
+- **Fold leftovers.** The nightly folds delete the raw samples they fold
+  instead of keeping them for 75 days. A re-sent raw sample whose hour or
+  day a live `stats:` row covers is a duplicate with reason `folded_window`,
+  in the batch route, the export import and the Health Connect import. A
+  background purge removes the backlog in batches of 5,000 per account; the
+  sync feed and a restore leave these deletions out. Health Connect heart
+  rate is folded like Apple Health's.
+- **Duplicate batches.** A batch of samples the server already holds is
+  answered without a write and queues no record detection or reminder
+  sweep; caches are evicted only for a foreground or manual sync or a
+  hand-entered reading, and marked stale otherwise.
+- **Locations encrypted.** The home location, travel periods and stored
+  environment days keep their coarse location sealed (migration 0382); a
+  background job seals existing rows.
+- **Lighter client.** Settings sections load on their own (611 to 403 KB
+  gz) and the shared shell no longer carries Zod (199 to 136 KB gz).
+- **Wellness scores** show their course on each tile and page; the sleep
+  score and readiness reads add `series`. The proxy caveat line is gone.
+- **Empty states and add actions.** An empty list carries the one add
+  action; the Insights pages add through the header plus.
+- **Touch and small screens.** 44 px targets on touch screens, a sidebar
+  that fits short windows without a native scrollbar, the phone shell on a
+  phone held sideways, 16 px fields, safe areas in the installed app and
+  sheets that stay above the on-screen keyboard.
+- **Provider pause.** From five consecutive hard failures a provider is
+  skipped for a window that starts at 30 minutes and doubles, capped at a
+  day; a dead Codex refresh token reads as a sign-in to renew.
+- **`work_mem`** is set per app connection from `DATABASE_WORK_MEM`
+  (16MB); `DATABASE_SESSION_OPTIONS_DISABLED` sends no session options for
+  hosts behind PgBouncer.
+- Volume queues keep finished jobs for 96 hours instead of seven days.
+
+### Fixed
+
+- **Means folded from part of a day.** The folds cut at a fixed offset
+  instead of the local day boundary, so a second run replaced a mean-type
+  day, and the boundary hour of heart rate, HRV and SpO2, with the mean of
+  its later part. Folds now stop at the local day boundary, and a one-time
+  repair per account recomputes each mean from its remaining samples and
+  writes only values that differ (migration 0389). The purge waits for it.
+- **Push after an update.** Reload on the new-version hint unregistered the
+  service worker, which ended the Web Push subscription; it now updates the
+  worker instead.
+- **MCP deep links.** `/insights?metric=` and `/labs?analyte=` open the
+  metric's page and the marker's page.
+- **Apple Health status** no longer reads "waiting for first data" after an
+  export import.
+- **Strain** falls back to the device's day strain when no computed value
+  exists.
+- Failed briefing runs name each account's outcome, a briefing held back
+  for a causal claim gets one repair attempt instead of hourly retries, and
+  the tiered context converts stored times to the reader's zone.
+- Google Health re-reads two hours of intraday heart rate per sync, and the
+  first cycle of each local day a full day (#1023).
+- The capture sheet opens from the dashboard's add button on phones; the
+  installed app follows its own theme in the status bar and toasts.
+
+### Removed
+
+- The "took it twice" and "skipped a dose" achievements.
+
+### API
+
+All changes are additive.
+
+- New routes: `/api/day/{date}`, `/api/day/index`, `/api/day/notable`,
+  `/api/timeline`, `/api/timeline/readiness`, `/api/life-events`,
+  `/api/vaccinations/custom`, `/api/environment/preferences`,
+  `/api/documents/inbound/layout`, `/api/import/health-connect-export`.
+- The measurement source enum gains `HEALTH_CONNECT`.
+- `/api/auth/me` adds `timezone`, `glucoseUnit` and `features.trackIntake`;
+  module availability lists `timeline`.
+- `POST /api/measurements/batch` accepts `syncTrigger: "manual"`; a re-sent
+  sample whose hour or day is already condensed returns `duplicate` with
+  reason `folded_window`.
+- `GET /api/integrations/healthkit` adds `lastReceivedAt`, `lastTrigger` and
+  `lastNewSampleAt` per type.
+- The sync feed lists only deletions a person makes, not those of the
+  condensing step.
+- `GET /api/environment` adds `airQuality`, `latestDay` and `attributions`.
+- `GET`/`PUT /api/auth/me/source-priority` add `inUse`.
+- A dose for a record-only medication is refused with 422
+  `medication.intake.notTracked`; failed passkey sign-ins answer with
+  `passkey.*` codes instead of a 500.
+- `/api/medications/compliance` adds `meta.aggregate` and `?days=`;
+  `/api/mood/insights` takes `?days=` and returns `stabilityWindowDays`.
+- Coach steps can name the tools `get_day` and `get_environment`, the
+  domains `day` and `environment`, and a `day` date.
+- Vaccination doses carry `customVaccineId`, correlation findings `nEff`,
+  workouts `storedAvgHr` and `storedMaxHr`, and the sleep score and
+  readiness reads a `series` of past values.
+- `/api/life-events*` answer only the record's owner; a delegate gets 403,
+  the day's `lifeEvents` section reads `not_shared` and the timeline has no
+  `life` lane.
+- `POST /api/environment/backfill` answers 429
+  `environment.backfill_rate_limited` (three an hour per account) and 409
+  `environment.backfill_pending` while one is queued.
+- `GET /api/environment` may return `lat` and `lon` as `null`.
+- The handover claim preview no longer carries `grantId`; a guardian's
+  `displayName` may be `null`.
+- The restore report adds the catalog `environmentLocationCiphertext`.
+- `get_day` names documents and visits by kind only.
+
+### Thanks
+
+@lutzkind for #613, #615 and #586, @CritLoren for #972 and #1005, @ckaotik
+for #959, @BernhardBuckel for #1110, @mills1975 for #1173 and @NebuPookins
+for #1162.
+
 ## [1.41.2] — 2026-10-07
 
 More room for a Coach turn, prompt caching that holds across its rounds, and
