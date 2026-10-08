@@ -87,7 +87,7 @@ export const ingestPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "422": {
           description:
-            "Validation failed, with every issue listed rather than the first — an integration operator should see the whole shape at once. An empty or unstable `idempotencyKey` fails here: the column is unique table-wide, so an empty key would resolve to whichever unrelated row stored it first.",
+            "Validation failed, with every issue listed rather than the first — an integration operator should see the whole shape at once. An empty or unstable `idempotencyKey` fails here: the column is unique table-wide, so an empty key would resolve to whichever unrelated row stored it first. Also 422 with `meta.errorCode` = `medication.intake.notTracked` (v1.42.0) when the named medication is kept as a record only (`trackIntake: false`); checked after the token's scope, so a token without this medication's scope learns nothing about it.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "429": {

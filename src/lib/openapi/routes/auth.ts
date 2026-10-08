@@ -47,6 +47,7 @@ import {
   errorEnvelope,
   loginPasswordSchema,
   notImplementedResponse,
+  validationIssue,
 } from "./shared";
 import { passkeyLoginOptionsSchema } from "@/lib/validations/auth";
 
@@ -633,13 +634,7 @@ const authProfileUpdateResponse = z
         "Whether an insurance number is stored. The number itself is encrypted at rest and is never returned — only its presence.",
       ),
     rejectedFields: z
-      .array(
-        z.object({
-          path: z.string(),
-          code: z.string(),
-          message: z.string(),
-        }),
-      )
+      .array(validationIssue)
       .optional()
       .describe(
         "Present only on a PARTIAL success: the fields that were skipped while the rest of the patch was written. A 200 carrying this key means the save was incomplete — surface it, do not treat the response as a clean save. `code` is the validator code for a field that failed validation, or `rate_limited` for an email-address change that has spent the account's hourly budget; that one is not a bad value and the same address will be accepted once the window rolls over.",
@@ -1446,10 +1441,20 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "404": {
           description:
-            "The assertion resolved to a user row that no longer exists.",
+            "`meta.errorCode` = `passkey.unknown` (v1.42.0): no passkey with this credential id is registered on this server — it was removed here, or belongs to another server. Tell the person to sign in another way. Without a code: the assertion resolved to a user row that no longer exists.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
+        "401": {
+          description:
+            "The sign-in did not prove anything (v1.42.0 codes; before, the first case answered 500). `meta.errorCode` = `passkey.challenge.expired` when the challenge is gone — it expired after five minutes, was already used, or was begun for a different account — so start a new sign-in; `passkey.verification.failed` when the assertion was checked and refused (signature, origin, relying-party id or challenge mismatch).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "422": {
+          description:
+            "`challengeId` or `credential` is missing, or (`meta.errorCode` = `passkey.response.invalid`, v1.42.0) `credential` is not a WebAuthn authentication response.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },

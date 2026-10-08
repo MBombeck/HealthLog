@@ -153,6 +153,12 @@ const ACTIVE_RECORD_ONLY_FIELDS = [
  * only when the claim is true and checkable.
  */
 const NO_CLIENT_CONSUMER: Record<string, string> = {
+  features:
+    "A capability probe for clients released apart from the server: the native app asks " +
+    "whether this server takes the record-only medication switch before the account has a " +
+    "medication to learn it from (iOS #116, item 18). The web client is built into the same " +
+    "image as the server, so everything it renders is by construction supported; a web read " +
+    "of the flag would be a read written to satisfy this guard.",
   insurerIkNumber:
     "No web surface reads or writes it — the account form offers the insurer name and the " +
     "insurance number, not the institution number. The native client does consume it: it " +

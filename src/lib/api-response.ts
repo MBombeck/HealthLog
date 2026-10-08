@@ -7,6 +7,20 @@ export function apiSuccess<T>(data: T, status = 200) {
 }
 
 /**
+ * A success envelope that also carries `meta`: figures ABOUT the payload
+ * (an aggregate across its rows, the window it was cut to) that do not belong
+ * inside any one row. `data` keeps the shape the route always had, so a
+ * client that never reads `meta` decodes the response unchanged.
+ */
+export function apiSuccessWithMeta<T>(
+  data: T,
+  meta: Record<string, unknown>,
+  status = 200,
+) {
+  return NextResponse.json({ data, error: null, meta }, { status });
+}
+
+/**
  * Sanitised view of a single Zod issue. We surface `path`, `code`,
  * `message` and — for `unrecognized_keys` only — the bounded `keys`
  * list; `issue.params` may echo the offending user input

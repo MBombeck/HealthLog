@@ -95,6 +95,18 @@ export function glucoseBandParams(
   };
 }
 
+/**
+ * The stored glucose-unit choice as the closed pair, or `null` when none was
+ * made. The column is free text (a restored backup writes it unchecked), so a
+ * value that is neither unit reads as no choice rather than passing through to
+ * a client that decodes the pair.
+ */
+export function storedGlucoseUnit(
+  value: string | null | undefined,
+): GlucoseUnit | null {
+  return value === "mg/dL" || value === "mmol/L" ? value : null;
+}
+
 export function resolveGlucoseUnit(
   userPreference: string | null | undefined,
 ): GlucoseUnit {

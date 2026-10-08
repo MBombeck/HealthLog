@@ -326,7 +326,10 @@ export async function dispatchNotification(
       if (
         channel.type === "APNS" &&
         !delivery.managed &&
-        hasClientManagedApnsGate(recipientPayload.eventType) &&
+        hasClientManagedApnsGate(
+          recipientPayload.eventType,
+          recipientPayload.metadata,
+        ) &&
         (await resolveClientManagedApns())
       ) {
         const gate = CLIENT_MANAGED_APNS_EVENTS[recipientPayload.eventType];

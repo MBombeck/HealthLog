@@ -329,6 +329,14 @@ export function pairDailyBuckets(
 export type HeatmapWindowDays = 30 | 90 | 365;
 
 /**
+ * The trailing windows the stability score is offered over. 365 is the
+ * whole daily series the aggregate keeps, which is what `stability` has
+ * always covered.
+ */
+export const MOOD_STABILITY_WINDOWS = [30, 90, 180, 365] as const;
+export type MoodStabilityWindow = (typeof MOOD_STABILITY_WINDOWS)[number];
+
+/**
  * Adaptive heatmap window so the grid is never mostly-empty.
  *
  * - < 90 days of history → 30-day window (a fresh logger sees a dense
@@ -497,6 +505,13 @@ export interface MoodAggregates {
    * descriptive band. `null` for a sparse logger (< STABILITY_MIN_DAYS).
    */
   stability: MoodStability | null;
+  /**
+   * The same score over the shorter trailing windows a client can pick
+   * (`GET /api/mood/insights?days=N`). Cached with the rest of the aggregate
+   * so a period switch costs nothing; the route serves the chosen one as
+   * `stability` and does not publish this map.
+   */
+  stabilityByWindow: Record<MoodStabilityWindow, MoodStability | null>;
   tags: TagSummaryRow[];
   /**
    * v1.38 — how the day's pleasantness sat on days carrying each context
@@ -608,6 +623,16 @@ export function computeMoodAggregates(args: {
   const weekday = computeWeekdayAverages(moodDaily, now, tz);
   const timeOfDay = computeTimeOfDayAverages(entries);
   const stability = computeMoodStability(moodDaily);
+  const stabilityByWindow = Object.fromEntries(
+    MOOD_STABILITY_WINDOWS.map((days) => [
+      days,
+      days === 365
+        ? stability
+        : computeMoodStability(
+            moodDaily.filter((bucket) => bucket.dayOffset < days),
+          ),
+    ]),
+  ) as Record<MoodStabilityWindow, MoodStability | null>;
   const tags = computeTagSummary(entries, now);
   const structuredTags = computeStructuredTagSummary(entries, now);
   const tagInfluence = computeTagInfluence(entries, now);
@@ -689,6 +714,7 @@ export function computeMoodAggregates(args: {
     weekday,
     timeOfDay,
     stability,
+    stabilityByWindow,
     tags,
     structuredTags,
     tagInfluence,

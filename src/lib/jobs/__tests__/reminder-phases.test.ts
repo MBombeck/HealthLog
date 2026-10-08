@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   determinePhase,
   getPhaseKeyboard,
+  openingPhase,
   getPhaseMessage,
   resolvePhaseThresholds,
   DEFAULT_PHASE_CONFIG,
@@ -140,5 +141,28 @@ describe("getPhaseKeyboard — localised", () => {
       expect(cb).toContain("snooze:med-x:180");
       expect(cb).toContain("skip:med-x");
     }
+  });
+});
+
+describe("openingPhase", () => {
+  it("is GREEN for a window longer than the YELLOW lead", () => {
+    const t = resolvePhaseThresholds(DEFAULT_PHASE_CONFIG, 120);
+    expect(openingPhase(t, 120)).toBe("GREEN");
+  });
+
+  it("is YELLOW for a point slot, which never shows GREEN", () => {
+    const t = resolvePhaseThresholds(DEFAULT_PHASE_CONFIG, 0);
+    expect(openingPhase(t, 0)).toBe("YELLOW");
+    // The same window walked tick by tick reaches YELLOW before anything else.
+    expect(determinePhase(30, -30, t)).toBe("YELLOW");
+    expect(determinePhase(45, -45, t)).toBeNull();
+  });
+
+  it("is YELLOW when the GREEN lead is not longer than the YELLOW lead", () => {
+    const t = resolvePhaseThresholds(
+      { ...DEFAULT_PHASE_CONFIG, greenValue: 20, yellowValue: 30 },
+      120,
+    );
+    expect(openingPhase(t, 120)).toBe("YELLOW");
   });
 });

@@ -37,6 +37,12 @@ interface ClientManagedGate {
     userId: string,
     metadata: Record<string, unknown> | undefined,
   ) => Record<string, unknown>;
+  /**
+   * Which dispatches of the event the flag covers. Absent: all of them. The
+   * flag says the phone delivers this reminder itself, so it covers exactly
+   * what the phone replaces and nothing the phone does not send.
+   */
+  covers?: (metadata: Record<string, unknown> | undefined) => boolean;
 }
 
 function str(value: unknown): string {
@@ -62,6 +68,13 @@ export const CLIENT_MANAGED_APNS_EVENTS: Record<string, ClientManagedGate> = {
       phase: str(metadata?.phase),
       dose_at: str(metadata?.scheduledAt),
     }),
+    // The iOS client reminds once, at dose time, and sends no follow-ups of
+    // its own (iOS #116, item 21). So the flag keeps only the reminder that
+    // announces the dose off APNs; the escalations for a dose that is still
+    // open (`followUp: true`, set by the reminder cron) are pushed as usual.
+    // A dispatch that does not say is treated as the announcement, the
+    // behaviour every reminder had before the cron started saying.
+    covers: (metadata) => metadata?.followUp !== true,
   },
   MEASUREMENT_REMINDER: {
     isClientManaged: isMeasurementReminderClientManaged,
@@ -71,9 +84,15 @@ export const CLIENT_MANAGED_APNS_EVENTS: Record<string, ClientManagedGate> = {
 };
 
 /**
- * Does this event type have a client-managed opt-out at all? Cheap check
- * the dispatcher runs before paying for the preferences read.
+ * Does a client-managed opt-out apply to this dispatch at all? Cheap check
+ * the dispatcher runs before paying for the preferences read: the event type
+ * has to have the opt-out, and the opt-out has to cover this dispatch.
  */
-export function hasClientManagedApnsGate(eventType: string): boolean {
-  return eventType in CLIENT_MANAGED_APNS_EVENTS;
+export function hasClientManagedApnsGate(
+  eventType: string,
+  metadata?: Record<string, unknown>,
+): boolean {
+  const gate = CLIENT_MANAGED_APNS_EVENTS[eventType];
+  if (!gate) return false;
+  return gate.covers ? gate.covers(metadata) : true;
 }
