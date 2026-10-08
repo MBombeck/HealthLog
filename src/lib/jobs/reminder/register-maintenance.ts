@@ -754,8 +754,10 @@ const schedules: ScheduleEntry[] = [
  *     Any policy would collapse every keyless explicit-range backfill onto the
  *     shared empty key, so two different requested date ranges would silently
  *     become one. That is exactly the class of silent work-dropping a policy is
- *     supposed to prevent, so the queue keeps `standard` until the enqueue side
- *     gives the explicit-range variant a key of its own.
+ *     supposed to prevent, so the queue keeps `standard`. The settings
+ *     backfill (v1.42) is held per account by a keyed time slot
+ *     (`singletonSeconds`), which pg-boss enforces under any policy; the
+ *     travel-period refresh stays keyless so two periods never merge.
  *   - APPLE_HEALTH_IMPORT_V2_QUEUE, APPLE_HEALTH_IMPORT_LEGACY_QUEUE,
  *     DATA_BACKUP_QUEUE and PR_DETECTION_QUEUE send keylessly by design (each
  *     import / backup / detection run is a distinct unit of work). A policy

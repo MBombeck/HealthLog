@@ -34,7 +34,7 @@ import { prisma } from "@/lib/db";
 /** One budget window. */
 export interface BudgetWindow {
   /** Bucket key suffix, also the window's name. */
-  name: "minute" | "hour" | "day";
+  name: "minute" | "hour" | "day" | "account-day";
   windowMs: number;
   /** Calls admitted per window (whole calls). */
   limit: number;
@@ -45,6 +45,26 @@ export const OPEN_METEO_BUDGET_WINDOWS: readonly BudgetWindow[] = [
   { name: "hour", windowMs: 3_600_000, limit: 4_000 },
   { name: "day", windowMs: 86_400_000, limit: 8_000 },
 ];
+
+/**
+ * The share of the daily budget one account may use. The instance-wide
+ * windows alone let a single account drain the day for everyone (repeated
+ * backfills of a two-year range), so a request made for an account is also
+ * charged to that account's own daily bucket. One twentieth of the day is
+ * 400 calls: more than two full backfills of weather and air quality, and
+ * still leaves the rest of the day for nineteen other accounts.
+ */
+export const OPEN_METEO_ACCOUNT_DAY_SHARE = 0.05;
+
+const DAY_LIMIT =
+  OPEN_METEO_BUDGET_WINDOWS.find((w) => w.name === "day")?.limit ?? 0;
+
+/** The per-account daily window, charged only when a request names an account. */
+export const OPEN_METEO_ACCOUNT_DAY_WINDOW: BudgetWindow = {
+  name: "account-day",
+  windowMs: 86_400_000,
+  limit: Math.floor(DAY_LIMIT * OPEN_METEO_ACCOUNT_DAY_SHARE),
+};
 
 const BUCKET_PREFIX = "open-meteo-budget";
 const LOCK_KEY = "open-meteo-budget";
@@ -97,13 +117,23 @@ export function admitWeight(
 /**
  * Ask the budget for one request of `weight` calls. Returns true and charges
  * every window when it fits, false (charging nothing) when any window is
- * full.
+ * full. With `accountId`, the account's own daily share is checked and
+ * charged as well (`OPEN_METEO_ACCOUNT_DAY_SHARE`); requests made for no
+ * particular account (the geocoder) are bound by the instance windows only.
  */
-export async function reserveOpenMeteoCalls(weight: number): Promise<boolean> {
+export async function reserveOpenMeteoCalls(
+  weight: number,
+  accountId?: string,
+): Promise<boolean> {
   const weightCenti = Math.max(1, Math.ceil(weight * CENTI));
-  const keys = OPEN_METEO_BUDGET_WINDOWS.map(
-    (w) => `${BUCKET_PREFIX}:${w.name}`,
-  );
+  const windows: readonly BudgetWindow[] = accountId
+    ? [...OPEN_METEO_BUDGET_WINDOWS, OPEN_METEO_ACCOUNT_DAY_WINDOW]
+    : OPEN_METEO_BUDGET_WINDOWS;
+  const keyOf = (name: BudgetWindow["name"]) =>
+    name === "account-day"
+      ? `${BUCKET_PREFIX}:account:${accountId}:day`
+      : `${BUCKET_PREFIX}:${name}`;
+  const nameOfKey = new Map(windows.map((w) => [keyOf(w.name), w.name]));
   return prisma.$transaction(async (tx) => {
     // `pg_advisory_xact_lock` returns void, which the client cannot
     // deserialize as a column; selecting FROM it yields a plain row.
@@ -112,21 +142,18 @@ export async function reserveOpenMeteoCalls(weight: number): Promise<boolean> {
       FROM pg_advisory_xact_lock(hashtextextended(${LOCK_KEY}, 0))
     `;
     const rows = await tx.rateLimit.findMany({
-      where: { key: { in: keys } },
+      where: { key: { in: [...nameOfKey.keys()] } },
       select: { key: true, count: true, resetAt: true },
     });
     const buckets = new Map<BudgetWindow["name"], BudgetBucket>();
     for (const row of rows) {
-      const name = row.key.slice(BUCKET_PREFIX.length + 1) as
-        BudgetWindow["name"] | string;
-      if (name === "minute" || name === "hour" || name === "day") {
-        buckets.set(name, { count: row.count, resetAt: row.resetAt });
-      }
+      const name = nameOfKey.get(row.key);
+      if (name) buckets.set(name, { count: row.count, resetAt: row.resetAt });
     }
-    const decision = admitWeight(buckets, weightCenti, new Date());
+    const decision = admitWeight(buckets, weightCenti, new Date(), windows);
     if (!decision.admitted) return false;
     for (const [name, bucket] of decision.next) {
-      const key = `${BUCKET_PREFIX}:${name}`;
+      const key = keyOf(name);
       await tx.rateLimit.upsert({
         where: { key },
         create: { key, count: bucket.count, resetAt: bucket.resetAt },

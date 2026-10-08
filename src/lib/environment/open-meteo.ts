@@ -256,20 +256,24 @@ export async function geocodeLocation(
  * cloud) are requested alongside and aggregated to per-day values here. Throws
  * a {@link SafeFetchError} on egress failure so the caller can classify it,
  * and an {@link OpenMeteoBudgetExhaustedError} when the instance-wide request
- * budget refuses the call (nothing is sent then).
+ * budget, or the account's share of it (`budget.accountId`), refuses the call
+ * (nothing is sent then). The account never reaches the request.
  */
-export async function fetchDailyEnvironment(args: {
-  lat: number;
-  lon: number;
-  timezone: string;
-  startDate: string;
-  endDate: string;
-}): Promise<DailyEnvironmentObservation[]> {
+export async function fetchDailyEnvironment(
+  args: {
+    lat: number;
+    lon: number;
+    timezone: string;
+    startDate: string;
+    endDate: string;
+  },
+  budget: { accountId?: string } = {},
+): Promise<DailyEnvironmentObservation[]> {
   const weight = openMeteoCallWeight(
     ARCHIVE_VARIABLE_COUNT,
     enumerateDayCount(args.startDate, args.endDate),
   );
-  if (!(await reserveOpenMeteoCalls(weight))) {
+  if (!(await reserveOpenMeteoCalls(weight, budget.accountId))) {
     throw new OpenMeteoBudgetExhaustedError();
   }
   const url = new URL(`${ARCHIVE_BASE_URL}/v1/archive`);

@@ -118,6 +118,24 @@ export async function checkAnalyticsReadRateLimit(
 }
 
 /**
+ * Environment backfill: three a rolling hour per account. Each one can ask
+ * the shared Open-Meteo budget for a two-year range, so the general
+ * analytics ceiling (120 a minute) is far too loose for it.
+ */
+export const ENVIRONMENT_BACKFILL_LIMIT = 3;
+const ENVIRONMENT_BACKFILL_WINDOW_MS = 60 * 60 * 1000;
+
+export async function checkEnvironmentBackfillRateLimit(
+  userId: string,
+): Promise<RateLimitResult> {
+  return checkRateLimit(
+    `environment-backfill:${userId}`,
+    ENVIRONMENT_BACKFILL_LIMIT,
+    ENVIRONMENT_BACKFILL_WINDOW_MS,
+  );
+}
+
+/**
  * Shared per-account ceiling for the single-record writes.
  *
  * The batch endpoints have been capped at 60 calls a minute since they were

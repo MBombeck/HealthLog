@@ -40,6 +40,7 @@ vi.mock("@/lib/db", () => {
 });
 
 import {
+  OPEN_METEO_ACCOUNT_DAY_WINDOW,
   OPEN_METEO_BUDGET_WINDOWS,
   admitWeight,
   openMeteoCallWeight,
@@ -111,5 +112,25 @@ describe("reserveOpenMeteoCalls", () => {
     const dayBefore = store.get("open-meteo-budget:day")!.count;
     expect(await reserveOpenMeteoCalls(1)).toBe(false);
     expect(store.get("open-meteo-budget:day")!.count).toBe(dayBefore);
+  });
+});
+
+describe("the per-account share", () => {
+  it("refuses one account past its share while another account still gets through", async () => {
+    store.clear();
+    expect(OPEN_METEO_ACCOUNT_DAY_WINDOW.limit).toBe(400);
+    // A two-year backfill weighs about 63 calls; six of them fit in the
+    // share, the seventh does not.
+    for (let i = 0; i < 6; i++) {
+      expect(await reserveOpenMeteoCalls(62.57, "acct-a")).toBe(true);
+    }
+    expect(await reserveOpenMeteoCalls(62.57, "acct-a")).toBe(false);
+    expect(store.get("open-meteo-budget:account:acct-a:day")!.count).toBe(
+      6 * 6257,
+    );
+    // The instance day is far from full, so another account is admitted.
+    expect(await reserveOpenMeteoCalls(62.57, "acct-b")).toBe(true);
+    // A request made for no account is bound by the instance windows only.
+    expect(await reserveOpenMeteoCalls(1)).toBe(true);
   });
 });

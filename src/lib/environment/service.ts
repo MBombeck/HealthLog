@@ -330,13 +330,16 @@ export async function fetchAndStoreEnvironment(args: {
     const max = groupDays[groupDays.length - 1];
     let observations: DailyEnvironmentObservation[];
     try {
-      observations = await fetchDailyEnvironment({
-        lat: loc.lat,
-        lon: loc.lon,
-        timezone,
-        startDate: min,
-        endDate: max,
-      });
+      observations = await fetchDailyEnvironment(
+        {
+          lat: loc.lat,
+          lon: loc.lon,
+          timezone,
+          startDate: min,
+          endDate: max,
+        },
+        { accountId: userId },
+      );
     } catch (err) {
       if (err instanceof OpenMeteoBudgetExhaustedError) {
         // Nothing was sent. The remaining groups wait for the next run.
@@ -354,13 +357,16 @@ export async function fetchAndStoreEnvironment(args: {
     // air quality; the weather is stored regardless.
     let airByDay: Map<string, DailyAirQualityObservation> | null = null;
     if (airQuality) {
-      const result = await fetchDailyAirQuality({
-        lat: loc.lat,
-        lon: loc.lon,
-        timezone,
-        startDate: min,
-        endDate: max,
-      });
+      const result = await fetchDailyAirQuality(
+        {
+          lat: loc.lat,
+          lon: loc.lon,
+          timezone,
+          startDate: min,
+          endDate: max,
+        },
+        { accountId: userId },
+      );
       if (result.stopped === "budget") budgetBlocked = true;
       airByDay = new Map(result.days.map((d) => [d.date, d]));
       fetches += result.days.length > 0 ? 1 : 0;
@@ -574,13 +580,16 @@ export async function fillAirQualityGaps(
   let filled = 0;
   for (const group of byLocation.values()) {
     for (const range of nearbyRanges(group.days)) {
-      const result = await fetchDailyAirQuality({
-        lat: group.lat,
-        lon: group.lon,
-        timezone,
-        startDate: range[0],
-        endDate: range[range.length - 1],
-      });
+      const result = await fetchDailyAirQuality(
+        {
+          lat: group.lat,
+          lon: group.lon,
+          timezone,
+          startDate: range[0],
+          endDate: range[range.length - 1],
+        },
+        { accountId: userId },
+      );
       const wanted = new Set(range);
       const now = new Date();
       const ops = result.days
