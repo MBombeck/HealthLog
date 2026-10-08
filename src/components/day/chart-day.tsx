@@ -145,6 +145,30 @@ export function rugFraction(
 }
 
 /**
+ * Where a day's dot sits under a time axis drawn from real instants (a lab
+ * result at 08:10, a questionnaire in the evening), given the calendar day
+ * each point stands for. The span is the first to the last of those days,
+ * both included: a noon anchor tested against the instants dropped the first
+ * day when its reading came after noon UTC, the last when its reading came
+ * before, and a single reading never had a dot. The dot then sits along the
+ * instants' own span, held to its ends.
+ */
+export function timeRugFraction(
+  day: DateKey,
+  points: readonly RugPoint[],
+  days: ReadonlyArray<DateKey | null>,
+): number | null {
+  const keys = days.filter((d): d is DateKey => d !== null).sort();
+  if (keys.length === 0 || points.length === 0) return null;
+  if (day < keys[0]! || day > keys[keys.length - 1]!) return null;
+  const first = points[0]!.timestamp;
+  const last = points[points.length - 1]!.timestamp;
+  if (last === first) return 0.5;
+  const t = Date.parse(`${day}T12:00:00.000Z`);
+  return Math.min(1, Math.max(0, (t - first) / (last - first)));
+}
+
+/**
  * The row of day dots under a daily chart. `insetLeft` / `insetRight` are the
  * pixels between the chart box and the first and last point (margin, axis,
  * padding), so a dot lands under its day.
@@ -155,27 +179,51 @@ export function rugFraction(
  */
 export function DayRug({
   points,
+  pointDays,
   insetLeft,
   insetRight,
   axis = "index",
 }: {
   points: readonly RugPoint[];
+  /**
+   * The calendar day of each point, in data order (the `days` the chart hands
+   * `useChartDayLinks`). A time axis drawn from real instants places its dots
+   * by these; without them every point is read as a noon-UTC day anchor.
+   */
+  pointDays?: ReadonlyArray<DateKey | null>;
   insetLeft: number;
   insetRight: number;
   axis?: ChartDayAxis;
 }) {
   const today = useTodayKey();
   const open = useOpenDay();
+  const byDays = axis === "time" && pointDays !== undefined;
+  const dayKeys = byDays
+    ? pointDays.filter((d): d is DateKey => d !== null).sort()
+    : [];
   const first = points[0];
   const last = points[points.length - 1];
-  const from = first ? chartPointDayKey(first.timestamp) : null;
-  const to = last ? chartPointDayKey(last.timestamp) : null;
+  const from = byDays
+    ? (dayKeys[0] ?? null)
+    : first
+      ? chartPointDayKey(first.timestamp)
+      : null;
+  const to = byDays
+    ? (dayKeys[dayKeys.length - 1] ?? null)
+    : last
+      ? chartPointDayKey(last.timestamp)
+      : null;
   const index = useDayIndex(from, to);
   const data = index.data;
   const notable = new Set(data?.notable ?? []);
   const days = Object.keys(data?.days ?? {})
     .filter((day) => isOpenableDay(day, today))
-    .map((day) => ({ day, at: rugFraction(day, points, axis) }))
+    .map((day) => ({
+      day,
+      at: byDays
+        ? timeRugFraction(day, points, pointDays)
+        : rugFraction(day, points, axis),
+    }))
     .filter((entry): entry is { day: string; at: number } => entry.at !== null);
   return (
     <div

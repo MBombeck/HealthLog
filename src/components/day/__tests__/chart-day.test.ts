@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { chartPointDayKey, rugFraction, rugPosition } from "../chart-day";
+import {
+  chartPointDayKey,
+  rugFraction,
+  rugPosition,
+  timeRugFraction,
+} from "../chart-day";
 import { daysFromCoachSteps } from "../coach-day-chips";
 import { preparationRows } from "../since-last-visit";
 import type { CoachStep } from "@/lib/ai/coach/types";
@@ -150,5 +155,38 @@ describe("rug placement per axis", () => {
     expect(rugFraction("2026-01-04", points, "index")).toBeCloseTo(
       (1 + 2 / 3) / 2,
     );
+  });
+});
+
+describe("rug on a time axis drawn from real instants", () => {
+  const at = (iso: string) => ({ timestamp: Date.parse(iso) });
+
+  it("keeps the first day when its reading came after noon UTC", () => {
+    const points = [at("2026-03-01T18:30:00Z"), at("2026-03-05T08:00:00Z")];
+    const days = ["2026-03-01", "2026-03-05"];
+    expect(rugFraction("2026-03-01", points, "time")).toBeNull();
+    expect(timeRugFraction("2026-03-01", points, days)).toBe(0);
+  });
+
+  it("keeps the last day when its reading came before noon UTC", () => {
+    const points = [at("2026-03-01T08:00:00Z"), at("2026-03-05T07:00:00Z")];
+    const days = ["2026-03-01", "2026-03-05"];
+    expect(rugFraction("2026-03-05", points, "time")).toBeNull();
+    expect(timeRugFraction("2026-03-05", points, days)).toBe(1);
+  });
+
+  it("gives a single reading its dot", () => {
+    const points = [at("2026-03-03T21:00:00Z")];
+    expect(rugFraction("2026-03-03", points, "time")).toBeNull();
+    expect(timeRugFraction("2026-03-03", points, ["2026-03-03"])).toBe(0.5);
+  });
+
+  it("spans the readings' own days, not their UTC dates", () => {
+    // An evening reading in a zone ahead of UTC is the next local day.
+    const points = [at("2026-03-01T23:30:00Z"), at("2026-03-04T23:30:00Z")];
+    const days = ["2026-03-02", "2026-03-05"];
+    expect(timeRugFraction("2026-03-01", points, days)).toBeNull();
+    expect(timeRugFraction("2026-03-05", points, days)).toBe(1);
+    expect(timeRugFraction("2026-03-06", points, days)).toBeNull();
   });
 });
