@@ -19,6 +19,7 @@ import { I18nProvider, useTranslations } from "@/lib/i18n/context";
 import type { Locale } from "@/lib/i18n/config";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import { applyThemeColor } from "@/lib/pwa/theme-color";
 import { KeyboardInsetBridge } from "@/components/keyboard-inset-bridge";
 import { VersionPoller } from "@/components/version-poller";
 import { ServiceWorkerRegistrar } from "@/components/service-worker-registrar";
@@ -84,6 +85,9 @@ function getSystemTheme(): "dark" | "light" {
 function applyTheme(resolved: "dark" | "light") {
   document.documentElement.classList.remove("dark", "light");
   document.documentElement.classList.add(resolved);
+  // The browser bar and an installed app's status bar follow the theme the
+  // page painted, not the operating system's scheme (see theme-color.ts).
+  applyThemeColor(document, resolved);
 }
 
 // ── Theme as an external store ───────────────────────
@@ -378,6 +382,33 @@ function OfflineMutationToaster() {
 
 // ── Root Providers ───────────────────────────────────
 
+/**
+ * The app-wide toaster.
+ *
+ * Its theme is the one the page painted, not `"system"`: the app's theme is
+ * its own setting (dark by default), and a phone in light mode showed light
+ * toasts over the dark app.
+ *
+ * Below 600 px Sonner lays toasts across the bottom edge, 16 px up, which on
+ * a phone is on top of the bottom bar: the "new version" hint sat over the
+ * tabs and the add button until it was dismissed. The mobile offset lifts
+ * them above the bar and the home indicator. From `md` the bar is gone and
+ * the desktop offset applies.
+ */
+function AppToaster() {
+  const { resolvedTheme } = useTheme();
+  return (
+    <Toaster
+      position="bottom-right"
+      richColors
+      theme={resolvedTheme}
+      mobileOffset={{
+        bottom: "calc(4rem + env(safe-area-inset-bottom, 0px) + 0.75rem)",
+      }}
+    />
+  );
+}
+
 export function Providers({
   children,
   initialLocale,
@@ -405,7 +436,7 @@ export function Providers({
           <SharedRecordGrantLossBridge />
           <RecordSessionFenceBridge />
           {children}
-          <Toaster position="bottom-right" richColors />
+          <AppToaster />
           <KeyboardInsetBridge />
           <VersionPoller />
           <ServiceWorkerRegistrar />

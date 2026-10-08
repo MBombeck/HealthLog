@@ -12,10 +12,9 @@ import { Toaster as Sonner, type ToasterProps } from "sonner";
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
-      // `theme="system"` lets Sonner match the resolved theme on the
-      // root element (set pre-paint by the inline theme script in
-      // `app/layout.tsx`) instead of pinning dark — on light-mode the
-      // hardcoded dark toaster contrasted badly against the page.
+      // A fallback only: Sonner's `"system"` follows the operating
+      // system's scheme, not the app's theme, so the app's toaster passes
+      // its resolved theme (`AppToaster` in `providers.tsx`).
       theme="system"
       className="toaster group"
       icons={{

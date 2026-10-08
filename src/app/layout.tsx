@@ -9,6 +9,7 @@ import { MonitoringBootstrap } from "@/components/monitoring/bootstrap";
 import { WebVitalsReporter } from "@/components/monitoring/web-vitals-reporter";
 import { resolveInitialLocale } from "@/lib/i18n/resolve-initial-locale";
 import { isKeyMismatch } from "@/lib/boot/key-mismatch-state";
+import { THEME_COLOR } from "@/lib/pwa/theme-color";
 import { KeyMismatchPage } from "./key-mismatch-page";
 
 const inter = Inter({
@@ -71,9 +72,11 @@ export const viewport: Viewport = {
   // the active palette. The hex values are the resolved background of
   // `--background` from `app/globals.css` for each theme so the bar
   // edge never seams against the page on cold paint.
+  // The client rewrites both to the app's own theme once it is known
+  // (`applyThemeColor`), since that need not be the operating system's.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f3f2f5" },
-    { media: "(prefers-color-scheme: dark)", color: "#282a36" },
+    { media: "(prefers-color-scheme: light)", color: THEME_COLOR.light },
+    { media: "(prefers-color-scheme: dark)", color: THEME_COLOR.dark },
   ],
 };
 
