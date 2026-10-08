@@ -441,7 +441,7 @@
   --input: oklch(0.87 0.009 300);
   /* An off switch's track: the input grey sat at ~1.4:1 on the card, so an
    * off switch all but vanished. ~3.5:1 on --card clears the 3:1 floor for
-   * a control boundary. *
+   * a control boundary. */
   --switch-off: oklch(0.62 0.012 295);
   /* A disabled primary button: opacity-50 left white text on a washed
    * violet at ~2:1. A pale violet fill with a dark violet label (~5.5:1)
