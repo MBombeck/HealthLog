@@ -249,7 +249,10 @@ export function CoachNudgeCard({
               />
             </div>
           ))}
-          <div className="flex min-h-11 items-center gap-3">
+          {/* Stacked on a phone: at 16 px touch type the longest option
+              ("At most every two weeks") plus the label no longer fits one
+              row inside a 390 px card. */}
+          <div className="flex min-h-11 flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-3">
             <label
               htmlFor="coach-nudge-frequency"
               className="text-sm font-medium"
@@ -258,7 +261,7 @@ export function CoachNudgeCard({
             </label>
             <NativeSelect
               id="coach-nudge-frequency"
-              className="w-auto"
+              className="sm:w-auto"
               value={resolved.nudgeFrequency}
               disabled={!isAuthenticated || saving}
               onChange={(e) =>

@@ -48,6 +48,22 @@ const coverage = {
   missing: ["ACTIVITY", "SLEEP"],
 };
 
+/**
+ * The text of rendered markup: every character outside a `<…>` tag. A walk
+ * rather than a tag-stripping regex, which can leave a tag behind when one
+ * is split across another.
+ */
+function textOf(html: string): string {
+  let out = "";
+  let inTag = false;
+  for (const ch of html) {
+    if (ch === "<") inTag = true;
+    else if (ch === ">") inTag = false;
+    else if (!inTag) out += ch;
+  }
+  return out;
+}
+
 function render(node: React.ReactNode, locale: Locale = "en"): string {
   return renderToStaticMarkup(
     <I18nProvider initialLocale={locale}>{node}</I18nProvider>,
@@ -642,9 +658,7 @@ describe("<HealthScoreCard> composite states", () => {
     // The onset is an instant; it reads as the day it falls on in the
     // profile timezone, in the user's date format, never as raw ISO.
     // v1.42 — the date is a link to its day; the sentence reads the same.
-    expect(rest.replace(/<[^>]+>/g, "")).toMatch(
-      /Rest Mode active since \d{2}\/\d{2}\/2026\./,
-    );
+    expect(textOf(rest)).toMatch(/Rest Mode active since \d{2}\/\d{2}\/2026\./);
     expect(rest).not.toContain("T23:30:00");
     expect(rest).toContain('data-slot="health-score-tension"');
     expect(rest).toContain('data-slot="health-score-return-to-band"');
@@ -672,7 +686,7 @@ describe("<HealthScoreCard> composite states", () => {
       />,
     );
     const rest = atRest(html);
-    expect(rest.replace(/<[^>]+>/g, "")).toMatch(
+    expect(textOf(rest)).toMatch(
       /Rest Mode active since (07\/20\/2026|20\/07\/2026)/,
     );
     // The date opens the day it names, in the profile timezone.

@@ -42,22 +42,38 @@ function Probe({
   );
 }
 
+/**
+ * The text of rendered markup: every character outside a `<…>` tag. A walk
+ * rather than a tag-stripping regex, which can leave a tag behind when one
+ * is split across another.
+ */
+function textOf(html: string): string {
+  let out = "";
+  let inTag = false;
+  for (const ch of html) {
+    if (ch === "<") inTag = true;
+    else if (ch === ">") inTag = false;
+    else if (!inTag) out += ch;
+  }
+  return out;
+}
+
 function read(
   type: string,
   value: number,
   unit: string,
   locale: "en" | "de" = "en",
 ) {
-  return renderToStaticMarkup(
-    <I18nProvider
-      initialLocale={locale}
-      initialMessages={locale === "de" ? deMessages : enMessages}
-    >
-      <Probe type={type} value={value} unit={unit} />
-    </I18nProvider>,
-  )
-    .replace(/<[^>]+>/g, "")
-    .replace(/<!-- -->/g, "");
+  return textOf(
+    renderToStaticMarkup(
+      <I18nProvider
+        initialLocale={locale}
+        initialMessages={locale === "de" ? deMessages : enMessages}
+      >
+        <Probe type={type} value={value} unit={unit} />
+      </I18nProvider>,
+    ),
+  );
 }
 
 describe("a day's values in their charts' spelling", () => {

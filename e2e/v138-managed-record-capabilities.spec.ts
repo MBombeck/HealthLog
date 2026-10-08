@@ -26,6 +26,7 @@
  * the same ones, for the same reasons written there.
  */
 import type { Page } from "@playwright/test";
+import pg from "pg";
 
 import { expect, test } from "./setup/test";
 import {
@@ -111,15 +112,38 @@ test.describe.serial("a guardian's controls inside a managed profile", () => {
   if (!managed) throw new Error("managed record fixture is missing");
 
   test("offers the mood add control and lands the entry", async ({ page }) => {
+    // The profile starts every run without mood entries. The form stamps an
+    // entry to the minute and `(user, date, moodLoggedAt)` is unique, so a
+    // second run inside the same minute (a retry, a repeat) met a 409 for the
+    // entry the first one wrote. An empty record also fixes which control the
+    // page offers: the empty state's add, not the header's.
+    const dbUrl = process.env.DATABASE_URL;
+    test.skip(!dbUrl, "DATABASE_URL is required to reset the profile's mood");
+    const pool = new pg.Pool({ connectionString: dbUrl });
+    try {
+      await pool.query(
+        `DELETE FROM mood_entries
+          WHERE user_id = (SELECT id FROM users WHERE username = $1)`,
+        [managed.username],
+      );
+    } finally {
+      await pool.end();
+    }
+
     await openRecord(page, managed.username);
     const banner = page.locator('[data-slot="shared-record-banner"]');
     await expect(banner).toHaveAttribute("data-record-kind", "managed");
     await expect(banner).toHaveAttribute("data-access-level", "manage");
 
     await page.goto("/mood");
-    const add = page.locator('[data-slot="mood-add-entry"]');
-    await expect(add).toBeVisible({ timeout: 30_000 });
-    await add.click();
+    // Since v1.42 an empty list carries the one add control in its empty
+    // state and the header drops its own; the header's returns once there is
+    // an entry to list. Both are asserted on their data-slots.
+    const addFirst = page.locator('[data-slot="mood-add-first"]');
+    const addHeader = page.locator('[data-slot="mood-add-entry"]');
+    await expect(addFirst).toBeVisible({ timeout: 30_000 });
+    await expect(addHeader).toHaveCount(0);
+    await addFirst.click();
 
     const face = page.locator('[data-slot="mood-face"][data-mood="GUT"]');
     await expect(face).toBeVisible();
@@ -139,6 +163,8 @@ test.describe.serial("a guardian's controls inside a managed profile", () => {
     await expect(page.locator('[data-slot="mood-rows"]').first()).toBeVisible({
       timeout: 30_000,
     });
+    await expect(addHeader).toBeVisible();
+    await expect(addFirst).toHaveCount(0);
 
     await leaveRecord(page);
   });

@@ -24,6 +24,11 @@ function walk(dir: string): string[] {
   });
 }
 
+/** Every regex metacharacter escaped, the backslash included. */
+function escapeRegExp(text: string): string {
+  return text.replace(/[\\^$.*+?()[\]{}|/]/g, "\\$&");
+}
+
 describe("no link targets a retired route", () => {
   const files = walk(join(ROOT, "src"));
 
@@ -33,7 +38,7 @@ describe("no link targets a retired route", () => {
 
   it.each(Object.entries(RETIRED))("%s is linked as %s", (route) => {
     const pattern = new RegExp(
-      `(?:href|push|replace)[=(]\\s*\\{?\\s*["'\`]${route.replace(/\//g, "\\/")}["'\`?#]`,
+      `(?:href|push|replace)[=(]\\s*\\{?\\s*["'\`]${escapeRegExp(route)}["'\`?#]`,
     );
     const offenders = files
       .filter((file) => pattern.test(readFileSync(file, "utf8")))
