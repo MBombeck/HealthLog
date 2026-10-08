@@ -1500,23 +1500,14 @@ export function MeasurementList({
                                 their native decimal precision so
                                 "78.4 kg" no longer truncates to "78".
                                 v1.11.5 — sleep rows render TIME ASLEEP. */}
-                              {isSleep ? (
-                                formatDurationMinutes(m.value, t)
-                              ) : (
-                                <>
-                                  {isGrouped
-                                    ? fmt.integer(m.value)
-                                    : fmt.number(
-                                        rowDisplay(m).value,
-                                        rawDisplayFractionDigits(m.type),
-                                      )}{" "}
-                                  {measurementUnitLabel(
-                                    m.type,
-                                    isGrouped ? m.unit : rowDisplay(m).unit,
-                                    t,
-                                  )}
-                                </>
-                              )}
+                              {isSleep
+                                ? formatDurationMinutes(m.value, t)
+                                : isGrouped
+                                  ? fmt.integer(m.value)
+                                  : fmt.number(
+                                      rowDisplay(m).value,
+                                      rawDisplayFractionDigits(m.type),
+                                    )}
                             </span>
                             {isSleep ? (
                               <SleepNightCaption m={m} />
@@ -1536,6 +1527,20 @@ export function MeasurementList({
                               site. Relative under 24 h, absolute
                               older.
                             */}
+                              {/* The unit is meta, and on a phone a long
+                                one ("Atemzüge/min") beside the value pushed
+                                the row's controls; it leads the meta line
+                                instead. Sleep reads as a duration. */}
+                              {isSleep ? null : (
+                                <span data-slot="measurement-row-unit">
+                                  {measurementUnitLabel(
+                                    m.type,
+                                    isGrouped ? m.unit : rowDisplay(m).unit,
+                                    t,
+                                  )}
+                                  {" · "}
+                                </span>
+                              )}
                               {m.dayKey !== undefined ? (
                                 <DayLink date={m.dayKey}>
                                   {formatDateOrRelative(m.measuredAt, t)}
