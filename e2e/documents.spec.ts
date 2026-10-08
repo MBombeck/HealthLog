@@ -151,6 +151,57 @@ test.describe("document vault", () => {
     await ensureVaultFixture();
   });
 
+  // ── v1.42 — the archive as a month grid of preview tiles ──────────────
+
+  for (const [width, columns] of [
+    [390, 2],
+    [1440, 4],
+  ] as const) {
+    test(`the archive is a month grid of preview tiles, ${columns} across at ${width} px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+      await page.goto("/documents");
+      const firstRow = page.locator('[data-slot="document-month-row"]').first();
+      await expect(firstRow).toBeVisible({ timeout: 15_000 });
+
+      // Month headings stay the grid's section labels.
+      await expect(
+        page.locator('[data-slot="document-timeline"] h2').first(),
+      ).toBeVisible();
+
+      // Tiles with the preview on top, and at most `columns` side by side:
+      // the fullest mounted row holds exactly that many, on one line.
+      const tiles = page.locator(
+        '[data-slot="document-month-row"] [data-slot="document-card"]',
+      );
+      await expect(tiles.first()).toHaveAttribute("data-variant", "tile");
+      await expect(
+        tiles.first().locator('[data-slot="document-preview"]'),
+      ).toBeVisible();
+      const rows = await page
+        .locator('[data-slot="document-month-row"]')
+        .evaluateAll((els) =>
+          els.map((row) =>
+            Array.from(row.querySelectorAll('[data-slot="document-card"]')).map(
+              (el) => Math.round(el.getBoundingClientRect().top),
+            ),
+          ),
+        );
+      const fullest = rows.reduce((a, b) => (b.length > a.length ? b : a), []);
+      expect(fullest.length).toBe(columns);
+      expect(new Set(fullest).size).toBe(1);
+
+      // Nothing on the page scrolls sideways.
+      const overflow = await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      );
+      expect(overflow).toBeLessThanOrEqual(0);
+    });
+  }
+
   // ── §1A — the 30-second doctor flow, three independent routes ─────────
 
   test("doctor flow A: the type filter reaches the MRT report", async ({

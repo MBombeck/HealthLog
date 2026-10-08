@@ -190,6 +190,17 @@ const ALLOWED: Readonly<Record<string, { count: number; reason: string }>> = {
     count: 1,
     reason: "See readActiveJobsStartedBefore: null means no queue schema.",
   },
+  "lib/jobs/measurement-maintenance-status.ts::readMeasurementMaintenanceStatus":
+    {
+      count: 1,
+      reason:
+        "No pgboss schema on a web-only deployment; the admin card reads `available: false` and says so.",
+    },
+  "lib/jobs/measurement-maintenance-status.ts::readSizes": {
+    count: 1,
+    reason:
+      "A size probe for an admin card: null shows no figure, and the status read must not fail over it.",
+  },
   "lib/jobs/job-observer.ts::emitJobLine": {
     count: 1,
     reason:

@@ -7854,6 +7854,34 @@
         "backupsStillNeed": "Tutte le righe sono ruotate, ma i backup hanno ancora bisogno di {keys}",
         "backupsUnrecordedBadge": "Tutte le righe sono ruotate, ma backup più vecchi potrebbero ancora richiedere una chiave ritirata",
         "backupsDetail": "La rotazione cifra di nuovo ogni riga, ma un backup conserva la chiave con cui è stato scritto il suo contenuto, e ripristinarlo richiede quella chiave. Tieni una chiave ritirata in ENCRYPTION_KEYS finché compare qui sotto."
+      },
+      "maintenance": {
+        "title": "Manutenzione della tabella delle misurazioni",
+        "description": "Libera lo spazio occupato dai vecchi residui di sincronizzazione, una volta terminata la pulizia.",
+        "body": "Esegue un vacuum della tabella delle misurazioni e poi ricostruisce i suoi indici, uno alla volta. Lettura e salvataggio continuano a funzionare durante l'esecuzione. Scegli un'ora tranquilla e lascia spazio libero su disco per un'altra copia dell'indice più grande.",
+        "tableSize": "Tabella con indici",
+        "indexSize": "Indici",
+        "loading": "Verifica dello stato della manutenzione…",
+        "loadError": "Impossibile leggere lo stato della manutenzione.",
+        "unavailable": "Nessun processo in background è collegato, quindi la manutenzione non può essere eseguita qui.",
+        "purgePending": "La pulizia dei vecchi residui di sincronizzazione è ancora in corso. La manutenzione potrà partire quando sarà terminata.",
+        "state": {
+          "idle": "Non ancora eseguita.",
+          "queued": "In attesa del processo in background.",
+          "running": "In corso dalle {since}. Su un'istanza grande può richiedere un po' di tempo.",
+          "completed": "Terminata il {at}.",
+          "refusedPurge": "Non avviata, perché la pulizia era ancora in corso. Riavviala quando la pulizia sarà terminata.",
+          "alreadyRunning": "Non avviata, perché un'altra esecuzione era già in corso.",
+          "failed": "Interrotta il {at}. Il registro dell'app indica il passaggio e il runbook spiega cosa controllare."
+        },
+        "start": "Avvia manutenzione",
+        "confirmTitle": "Avviare la manutenzione adesso?",
+        "confirmBody": "Viene eseguita in background, un passaggio alla volta, e può richiedere un po' di tempo. Se oggi non hai ancora creato un backup, creane uno prima.",
+        "confirm": "Avvia",
+        "cancel": "Annulla",
+        "started": "Manutenzione avviata.",
+        "alreadyQueued": "Una manutenzione è già in coda o in corso.",
+        "startFailed": "Impossibile avviare la manutenzione."
       }
     },
     "carrier": "Operatore",

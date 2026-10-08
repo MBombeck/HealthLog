@@ -52,7 +52,14 @@ export function DocumentCard({
   tabIndex = 0,
   onCardFocus,
   onPrefetch,
+  variant = "row",
 }: {
+  /**
+   * `row` (default): the compact card with the preview at its leading edge.
+   * `tile`: the archive grid's tile, the preview filling the top of the card
+   * so a page is recognisable before its title is read.
+   */
+  variant?: "row" | "tile";
   document: InboundDocumentDto;
   selected: boolean;
   /** `range` = extend the selection from the last anchor (shift-click). */
@@ -127,9 +134,76 @@ export function DocumentCard({
     wasProcessingRef.current = processing;
   }, [processing]);
 
+  const tile = variant === "tile";
+  const showThumbnail = !!thumbnailUrl && !thumbnailFailed;
+  // An object URL over bytes the app transport already fetched, not a
+  // `/api/…` subresource: the browser issues a subresource itself and so
+  // cannot carry the record-session assertion, which the fence refuses on any
+  // session that has been inside a shared record. `next/image` is wrong here
+  // for the older reason too — it would proxy a PHI blob we deliberately
+  // never cache. Decorative (alt="") — the title beside it names the
+  // document. The laziness that `loading="lazy"` used to provide now lives in
+  // the hook's null path: a card with no thumbnail, or one whose thumbnail
+  // already failed, issues no request at all. onError falls back to the kind
+  // icon.
+  const thumbnail = showThumbnail ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={thumbnailUrl}
+      alt=""
+      decoding="async"
+      onError={() => setThumbFailed(true)}
+      className={cn("size-full object-cover", tile && "object-top")}
+    />
+  ) : null;
+
+  const selection = onToggleSelected ? (
+    <Checkbox
+      checked={selected}
+      // Explicit click handling instead of onCheckedChange: the mouse
+      // event carries `shiftKey` for file-manager range selection.
+      // preventDefault stops Radix's internal toggle (state is fully
+      // controlled by the page's selection set anyway).
+      onClick={(e) => {
+        e.preventDefault();
+        onToggleSelected(document.id, e.shiftKey);
+      }}
+      aria-label={t("documents.card.selectLabel", { title })}
+      className={cn(
+        "relative z-10 shrink-0 transition-opacity",
+        "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100",
+        selected && "opacity-100",
+        // On a tile the box floats over the preview, which can be any
+        // colour; the card background behind it keeps it readable.
+        tile && "bg-background absolute top-4 right-4",
+      )}
+    />
+  ) : null;
+
+  const titleBlock = (
+    <div className="flex min-w-0 flex-1 flex-col">
+      <p className="truncate text-sm font-medium">{title}</p>
+      <p className="text-muted-foreground truncate text-xs">
+        {date} · {size}
+      </p>
+      {showFilename ? (
+        // Filename on its OWN muted line so it never clips the date/size
+        // meta; the full name stays reachable on hover via `title`.
+        <p
+          data-slot="document-card-filename"
+          className="text-muted-foreground truncate text-xs"
+          title={document.filename ?? undefined}
+        >
+          {document.filename}
+        </p>
+      ) : null}
+    </div>
+  );
+
   return (
     <Card
       data-slot="document-card"
+      data-variant={variant}
       data-document-id={document.id}
       className={cn(
         "group relative h-full gap-2 py-3 transition-shadow md:py-4",
@@ -137,76 +211,47 @@ export function DocumentCard({
         highlighted && "ring-primary ring-2",
       )}
     >
-      <CardContent className="flex h-full flex-col gap-2 px-4">
-        <div className="flex items-start gap-2">
-          {thumbnailUrl && !thumbnailFailed ? (
-            // Leading-edge preview tile. Decorative (alt="") — the title
-            // beside it names the document. The laziness that `loading="lazy"`
-            // used to provide now lives in the hook's null path: a card with no
-            // thumbnail, or one whose thumbnail already failed, issues no
-            // request at all. onError falls back to the kind icon.
+      <CardContent
+        className={cn(
+          "flex h-full flex-col gap-2",
+          // A dense tile (UI standards §1): two or more of them sit side by
+          // side on a phone, where the default inset would eat the preview.
+          tile ? "px-3" : "px-4",
+        )}
+      >
+        {tile ? (
+          <>
             <span
-              data-slot="document-thumbnail"
-              className="bg-muted mt-0.5 block size-12 shrink-0 overflow-hidden rounded-md"
+              data-slot="document-preview"
+              className="bg-muted flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-lg"
             >
-              {/* An object URL over bytes the app transport already fetched,
-                  not a `/api/…` subresource: the browser issues a subresource
-                  itself and so cannot carry the record-session assertion, which
-                  the fence refuses on any session that has been inside a shared
-                  record. `next/image` is wrong here for the older reason too —
-                  it would proxy a PHI blob we deliberately never cache. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={thumbnailUrl}
-                alt=""
-                decoding="async"
-                onError={() => setThumbFailed(true)}
-                className="size-full object-cover"
-              />
-            </span>
-          ) : (
-            <Icon
-              className="text-foreground mt-0.5 size-5 shrink-0"
-              aria-hidden
-            />
-          )}
-          <div className="flex min-w-0 flex-1 flex-col">
-            <p className="truncate text-sm font-medium">{title}</p>
-            <p className="text-muted-foreground truncate text-xs">
-              {date} · {size}
-            </p>
-            {showFilename ? (
-              // Filename on its OWN muted line so it never clips the date/size
-              // meta; the full name stays reachable on hover via `title`.
-              <p
-                data-slot="document-card-filename"
-                className="text-muted-foreground truncate text-xs"
-                title={document.filename ?? undefined}
-              >
-                {document.filename}
-              </p>
-            ) : null}
-          </div>
-          {onToggleSelected && (
-            <Checkbox
-              checked={selected}
-              // Explicit click handling instead of onCheckedChange: the mouse
-              // event carries `shiftKey` for file-manager range selection.
-              // preventDefault stops Radix's internal toggle (state is fully
-              // controlled by the page's selection set anyway).
-              onClick={(e) => {
-                e.preventDefault();
-                onToggleSelected(document.id, e.shiftKey);
-              }}
-              aria-label={t("documents.card.selectLabel", { title })}
-              className={cn(
-                "relative z-10 shrink-0 transition-opacity",
-                "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100",
-                selected && "opacity-100",
+              {thumbnail ?? (
+                <Icon className="text-foreground size-8" aria-hidden />
               )}
-            />
-          )}
-        </div>
+            </span>
+            {titleBlock}
+            {selection}
+          </>
+        ) : (
+          <div className="flex items-start gap-2">
+            {thumbnail ? (
+              // Leading-edge preview tile.
+              <span
+                data-slot="document-thumbnail"
+                className="bg-muted mt-0.5 block size-12 shrink-0 overflow-hidden rounded-md"
+              >
+                {thumbnail}
+              </span>
+            ) : (
+              <Icon
+                className="text-foreground mt-0.5 size-5 shrink-0"
+                aria-hidden
+              />
+            )}
+            {titleBlock}
+            {selection}
+          </div>
+        )}
         {document.conditionLinks.length > 0 ||
         document.servingClass === "attachment" ||
         processing ||

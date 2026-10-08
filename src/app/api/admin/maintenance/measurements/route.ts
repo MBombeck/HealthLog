@@ -8,6 +8,9 @@
  * start while the compaction-tombstone purge is still working. At most one
  * run is queued or running; a second press answers `enqueued: false`.
  * Runbook: `docs/ops/measurement-maintenance.md`.
+ *
+ * `GET` reads where the newest run stands, for the admin card that starts it
+ * and follows it.
  */
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
@@ -26,6 +29,7 @@ import {
   MEASUREMENT_MAINTENANCE_SEND_OPTIONS,
   type MeasurementMaintenancePayload,
 } from "@/lib/jobs/measurement-maintenance";
+import { readMeasurementMaintenanceStatus } from "@/lib/jobs/measurement-maintenance-status";
 import { annotate } from "@/lib/logging/context";
 
 /** Two booleans; anything longer is not a request for this route. */
@@ -89,4 +93,18 @@ export const POST = apiHandler(async (request: NextRequest) => {
   annotate({ meta: { maintenance_enqueued: enqueued } });
 
   return apiSuccess({ enqueued }, 202);
+});
+
+export const GET = apiHandler(async () => {
+  await requireAdmin();
+  const status = await readMeasurementMaintenanceStatus();
+  annotate({
+    action: { name: "admin.maintenance.measurements.status" },
+    meta: {
+      available: status.available,
+      run_state: status.run?.state ?? null,
+      purge_pending: status.purgePending,
+    },
+  });
+  return apiSuccess(status);
 });

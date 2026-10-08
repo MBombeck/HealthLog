@@ -7854,6 +7854,34 @@
         "backupsStillNeed": "Every row is rotated, but backups still need {keys}",
         "backupsUnrecordedBadge": "Every row is rotated, but older backups may still need a retired key",
         "backupsDetail": "Rotation re-encrypts every row, but a backup keeps the key its content was written under, and restoring it needs that key. Keep a retired key in ENCRYPTION_KEYS until nothing below lists it."
+      },
+      "maintenance": {
+        "title": "Measurement table maintenance",
+        "description": "Gives back the space old sync leftovers held, once the cleanup has run.",
+        "body": "It vacuums the measurements table and then rebuilds its indexes, one at a time. Reading and saving keep working while it runs. Pick a quiet hour, and have free disk for one more copy of the largest index.",
+        "tableSize": "Table with indexes",
+        "indexSize": "Indexes",
+        "loading": "Checking where the maintenance stands…",
+        "loadError": "Could not read the maintenance status.",
+        "unavailable": "No background worker is connected, so the maintenance cannot run here.",
+        "purgePending": "The cleanup of old sync leftovers is still running. The maintenance can start once it has finished.",
+        "state": {
+          "idle": "Not run yet.",
+          "queued": "Waiting for the background worker.",
+          "running": "Running since {since}. This can take a while on a large instance.",
+          "completed": "Finished on {at}.",
+          "refusedPurge": "Did not start, because the cleanup was still running. Start it again once the cleanup has finished.",
+          "alreadyRunning": "Did not start, because another run was already working.",
+          "failed": "Stopped on {at}. The app log names the step, and the runbook explains what to check."
+        },
+        "start": "Start maintenance",
+        "confirmTitle": "Start the maintenance now?",
+        "confirmBody": "It runs in the background, one step at a time, and can take a while. If you have not taken a backup today, take one first.",
+        "confirm": "Start",
+        "cancel": "Cancel",
+        "started": "Maintenance started.",
+        "alreadyQueued": "A maintenance run is already queued or running.",
+        "startFailed": "Could not start the maintenance."
       }
     },
     "carrier": "Carrier",

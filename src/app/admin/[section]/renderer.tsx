@@ -5,7 +5,7 @@
  * a given slug. Lives next to the route page so the shell can stay a
  * server component while the auth-gated body remains a client component.
  *
- * This is the equivalent of `SECTION_COMPONENTS` in
+ * This is the equivalent of `SettingsSectionLoader` for
  * `src/app/settings/[section]/page.tsx`, lifted to a separate file so
  * the route page can be a server component (Settings can keep
  * `"use client"`-leaning components in its page because none of them
@@ -36,6 +36,7 @@ import { ModuleAvailabilitySection } from "@/components/admin/module-availabilit
 import { RemindersSection } from "@/components/admin/reminders-section";
 import { ServicesSection } from "@/components/admin/services-section";
 import { SystemStatusSection } from "@/components/admin/system-status-section";
+import { MeasurementMaintenanceCard } from "@/components/admin/measurement-maintenance-card";
 import { InviteTokensSection } from "@/components/admin/invite-tokens-section";
 import { UserManagementSection } from "@/components/admin/user-management-section";
 import type { AdminSectionSlug } from "@/components/admin/section-slugs";
@@ -60,6 +61,8 @@ export function AdminSectionRenderer({
       return (
         <SectionFrame>
           <SystemStatusSection />
+          {/* v1.42 — the table maintenance after the tombstone purge. */}
+          <MeasurementMaintenanceCard />
         </SectionFrame>
       );
     case "general":

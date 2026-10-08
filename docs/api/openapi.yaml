@@ -11106,6 +11106,23 @@ paths:
         "422": *a4
         "429": *a5
   /api/admin/maintenance/measurements:
+    get:
+      tags:
+        - Admin
+      summary: Where measurement table maintenance stands
+      description: "The newest maintenance run and its state, whether the compaction-tombstone purge is still at work, and the
+        table's size right now. The admin card polls it while a run is queued or running. Cookie auth only:
+        `requireAdmin()` refuses every Bearer caller."
+      responses:
+        "200":
+          description: The status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMeasurementMaintenanceStatusResponse"
+        "401": *a1
+        "422": *a4
+        "429": *a5
     post:
       tags:
         - Admin
@@ -57684,6 +57701,104 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    AdminMeasurementMaintenanceStatusResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AdminMeasurementMaintenanceStatus"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AdminMeasurementMaintenanceStatus:
+      type: object
+      properties:
+        available:
+          type: boolean
+          description: False when there is no background queue to ask (a web-only deployment); nothing can be started then.
+        purgePending:
+          type: boolean
+          description: The compaction-tombstone purge is queued or running. A run started now finishes at once with
+            `refused_purge_running`.
+        run:
+          anyOf:
+            - type: object
+              properties:
+                state:
+                  type: string
+                  enum:
+                    - queued
+                    - running
+                    - completed
+                    - failed
+                requestedAt:
+                  type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+                startedAt:
+                  anyOf:
+                    - type: string
+                      format: date-time
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+                    - type: "null"
+                finishedAt:
+                  anyOf:
+                    - type: string
+                      format: date-time
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+                    - type: "null"
+                outcome:
+                  anyOf:
+                    - type: string
+                      enum:
+                        - completed
+                        - refused_purge_running
+                        - already_running
+                    - type: "null"
+                  description: "How a `completed` run ended: `completed` did the work, the two refusals finished without touching the
+                    table. Null for any other state."
+              required:
+                - state
+                - requestedAt
+                - startedAt
+                - finishedAt
+                - outcome
+              additionalProperties: false
+            - type: "null"
+          description: The newest run pg-boss still keeps (terminal rows live seven days), or null when there is none.
+        sizes:
+          anyOf:
+            - type: object
+              properties:
+                tableBytes:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                  description: "`measurements` with its indexes and TOAST."
+                indexBytes:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                  description: Its indexes alone.
+              required:
+                - tableBytes
+                - indexBytes
+              additionalProperties: false
+            - type: "null"
+      required:
+        - available
+        - purgePending
+        - run
+        - sizes
       additionalProperties: false
     AdminMeasurementMaintenanceResponse:
       type: object

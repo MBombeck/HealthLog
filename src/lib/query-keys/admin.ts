@@ -48,6 +48,8 @@ export const adminKeys = {
   adminBackupRestores: () => ["admin", "backup-restores"] as const,
   /** v1.23 — encryption coverage + rotation progress (admin Encryption section). */
   adminEncryptionStatus: () => ["admin", "encryption", "status"] as const,
+  adminMeasurementMaintenance: () =>
+    ["admin", "maintenance", "measurements"] as const,
   /** v1.40.0 — the "Back up your encryption key" step (admin + dashboard banner). */
   adminEncryptionKeyBackup: () =>
     ["admin", "encryption", "key-backup"] as const,

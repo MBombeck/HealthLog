@@ -4,6 +4,7 @@ import {
   Fragment,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -18,6 +19,7 @@ import { ChatBubble, type FollowUpOffer, type ReplyOffer } from "./chat-bubble";
 import type { SuggestedReply } from "./suggested-replies";
 import { CoachMessageDatesProvider } from "./coach-results";
 import { ScrollToBottomButton } from "./scroll-to-bottom-button";
+import { openAtEnd } from "./open-at-end";
 import { focusCoachComposer } from "./composer-focus";
 import {
   EMPTY_LIVE_TURN_KEYS,
@@ -578,6 +580,21 @@ export function MessageThread({
     setPinned(true);
     el.scrollTo({ top: el.scrollHeight, behavior: scrollBehaviorForUser() });
   }, []);
+
+  // Opening a saved conversation lands on its last answer, and stays there
+  // while the answers' charts and tables finish loading (see `open-at-end`).
+  // Keyed on the conversation, so switching to another one re-opens at its
+  // end even when both have the same number of messages; a layout effect, so
+  // the first painted frame is already the end rather than the top.
+  const conversationId = conversation?.id ?? null;
+  const hasMessages = messages.length > 0;
+  useLayoutEffect(() => {
+    const el = scrollerRef.current;
+    if (!el || !conversationId || !hasMessages) return;
+    wasPinnedRef.current = true;
+    setPinned(true);
+    return openAtEnd(el);
+  }, [conversationId, hasMessages]);
 
   // Auto-scroll on new messages OR streaming-content growth, but only
   // when the user was already at the bottom. v1.4.25 W5 — the
