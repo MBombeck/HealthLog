@@ -104,9 +104,10 @@ export function MoodHeatmapBody({
  * painted heatmap takes: the reserved grid box, the legend line, the day
  * caption and the data-table toggle. `days` is the window when it is already
  * known; without it the shape assumes a window short enough to reach the cell
- * ceiling, which every window under a quarter year does on any width.
+ * ceiling on every width down to 360 px (eight weeks), the height most
+ * calendars settle at.
  */
-export function MoodHeatmapSkeleton({ days = 84 }: { days?: number }) {
+export function MoodHeatmapSkeleton({ days = 56 }: { days?: number }) {
   const timeZone = useDisplayTimezone();
   const coarse = useCoarsePointer();
   return (
