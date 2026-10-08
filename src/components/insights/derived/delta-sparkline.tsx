@@ -62,7 +62,14 @@ export function DeltaSparkline({
   const hasComparison = data.some((point) => point.b !== undefined);
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={data} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
+      {/* A sparkline is decoration inside an aria-hidden wrapper: without
+          the accessibility layer Recharts puts a focusable surface in it,
+          and a focus stop nobody can perceive is an axe failure. */}
+      <AreaChart
+        data={data}
+        margin={{ top: 2, right: 0, bottom: 2, left: 0 }}
+        accessibilityLayer={false}
+      >
         <defs>
           <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={strokeVar} stopOpacity={0.28} />
