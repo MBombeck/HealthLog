@@ -44002,6 +44002,8 @@ components:
         - updatedAt
       additionalProperties: false
       description: A soft-deleted measurement. Apply tombstones BEFORE upserts within a page to avoid resurrecting a row.
+        Since v1.42 only deletions a person makes appear here; the nightly fold that condenses raw samples into `stats:`
+        rows deletes them outright and lists nothing.
     SyncMoodUpsert:
       type: object
       properties:
@@ -45019,6 +45021,9 @@ components:
             an existing row. `skipped` — validation no-op; see `reason`. `failed` — retryable database failure that must
             not advance the entry cursor; the response is marked `Cache-Control: no-store`."
         reason:
+          description: "Why a row was `skipped` or a `duplicate`. `folded_window` (since v1.42): a raw sample of a dense or mean
+            type whose local day lies before the fold boundary and whose hour or day a live `stats:` row of the same
+            source already covers. Nothing to retry; treat it like any duplicate."
           type: string
         convertedValue:
           description: "Only on a `value_out_of_range` skip (since v1.39.1): the entry's value after conversion into the stored

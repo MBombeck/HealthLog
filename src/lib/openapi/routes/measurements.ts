@@ -147,7 +147,12 @@ const batchEntryResult = z
       .describe(
         "`inserted`/`duplicate` — the row landed (advance the cursor). `updated` — a `stats:` aggregate overwrote an existing row. `skipped` — validation no-op; see `reason`. `failed` — retryable database failure that must not advance the entry cursor; the response is marked `Cache-Control: no-store`.",
       ),
-    reason: z.string().optional(),
+    reason: z
+      .string()
+      .optional()
+      .describe(
+        "Why a row was `skipped` or a `duplicate`. `folded_window` (since v1.42): a raw sample of a dense or mean type whose local day lies before the fold boundary and whose hour or day a live `stats:` row of the same source already covers. Nothing to retry; treat it like any duplicate.",
+      ),
     convertedValue: z
       .number()
       .optional()
