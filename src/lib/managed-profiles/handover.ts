@@ -199,9 +199,12 @@ function proposalFor(state: HandoverState, grantId: string): HandoverAccess {
 async function isActiveGuardian(
   db: Pick<Transaction, "accountGrant">,
   profileId: string,
-  guardianId: string,
+  guardianId: string | null,
   now: Date,
 ): Promise<boolean> {
+  // A link whose creator's account is gone (`created_by_id` cleared) has no
+  // Guardian behind it.
+  if (guardianId === null) return false;
   const grant = await db.accountGrant.findFirst({
     where: {
       grantorId: profileId,
@@ -793,7 +796,23 @@ export async function decideHandover(input: {
         throw new HandoverError("no_pending");
       }
       const claim = state.claim;
-      const known = new Set(claim.guardians.map((e) => e.grantId));
+      // A former Guardian whose account is gone has nothing left to decide:
+      // the pending read leaves them out, and a decision that names them
+      // anyway is refused like one about a stranger, rather than failing on
+      // a grant written for an account that no longer exists.
+      const present = new Set(
+        (
+          await tx.user.findMany({
+            where: { id: { in: claim.guardians.map((e) => e.guardianId) } },
+            select: { id: true },
+          })
+        ).map((u) => u.id),
+      );
+      const known = new Set(
+        claim.guardians
+          .filter((e) => present.has(e.guardianId))
+          .map((e) => e.grantId),
+      );
       if (input.decisions.some((d) => !known.has(d.grantId))) {
         throw new HandoverError("unknown_guardian");
       }
@@ -807,6 +826,16 @@ export async function decideHandover(input: {
       }[] = [];
       const guardians: StoredClaimEntry[] = [];
       for (const entry of claim.guardians) {
+        if (!present.has(entry.guardianId)) {
+          guardians.push(entry);
+          outcome.push({
+            grantId: entry.grantId,
+            access: entry.applied,
+            changed: false,
+            skipped: true,
+          });
+          continue;
+        }
         const target =
           input.decisions.find((d) => d.grantId === entry.grantId)?.access ??
           entry.applied;

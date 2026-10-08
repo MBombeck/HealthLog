@@ -990,6 +990,48 @@ describe("the new owner's decision", () => {
     expect(response.status).toBe(422);
   });
 
+  it("keeps the decision waiting when the issuing Guardian deletes their account", async () => {
+    const h = await claimedHousehold((x) => [
+      { grantId: x.creatorGrant.id, proposal: "end" },
+      { grantId: x.secondGrant.id, proposal: "manage" },
+    ]);
+    const prisma = getPrismaClient();
+    await prisma.user.delete({ where: { id: h.creator.id } });
+
+    const handover = await prisma.managedProfileHandover.findFirstOrThrow({
+      where: { profileId: h.profile.id },
+    });
+    expect(handover.createdById).toBeNull();
+
+    const pending = (await (await readDecision()).json()).data.pending;
+    expect(pending).not.toBeNull();
+    expect(pending.guardians).toEqual([
+      expect.objectContaining({
+        grantId: h.secondGrant.id,
+        proposal: "manage",
+        current: "manage",
+        decidable: true,
+      }),
+    ]);
+    expect(
+      (await decide([{ grantId: h.secondGrant.id, access: "read" }])).status,
+    ).toBe(200);
+  });
+
+  it("refuses a decision about a Guardian whose account is gone", async () => {
+    const h = await claimedHousehold((x) => [
+      { grantId: x.secondGrant.id, proposal: "end" },
+    ]);
+    await getPrismaClient().user.delete({ where: { id: h.second.id } });
+    const response = await decide([
+      { grantId: h.secondGrant.id, access: "manage" },
+    ]);
+    expect(response.status).toBe(422);
+    expect((await response.json()).meta.errorCode).toBe(
+      "managed_profile.handover.unknown_guardian",
+    );
+  });
+
   it("answers no pending decision to an account that never was a profile", async () => {
     const someone = await person("someone");
     signIn(someone);
