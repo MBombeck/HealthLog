@@ -119,6 +119,7 @@ describe("redactSecrets", () => {
 
   it.each([
     ["an invite token", `hlv_${"0a".repeat(32)}`],
+    ["a managed-profile handover token", `hlp_${"0a".repeat(32)}`],
     ["a session secret", `hls_${"ab".repeat(32)}`],
     ["an elevation", `hle_${"cd".repeat(32)}`],
     ["a native sign-in handoff code", `hlh_${"Ab9_-".repeat(9)}Ab`],
@@ -216,6 +217,40 @@ describe("redactSecrets", () => {
     // v1.11.0 (Epic C, C6) — the raw `hls_` clinician share token rides as
     // the trailing path segment of `/c/<token>`. It must be scrubbed from
     // `http.path` / `http.route` before the Wide Event leaves the process.
+    // v1.42 (#959) — the handover link `/claim/<hlp_token>`.
+    it("registers the handover-link prefix in PATH_SECRET_PATHS", () => {
+      expect(PATH_SECRET_PATHS.map((entry) => entry.prefix)).toContain(
+        "/claim/",
+      );
+    });
+
+    it("redacts any segment on the handover-link path, token-shaped or not", () => {
+      expect(redactSecrets(`/claim/hlp_${"ab".repeat(32)}`)).toBe(
+        "/claim/[REDACTED]",
+      );
+      expect(redactSecrets("/claim/not-yet-a-token")).toBe("/claim/[REDACTED]");
+    });
+
+    it("redacts the handover token in the claim page's query string", () => {
+      expect(redactSecrets(`/auth/claim?token=hlp_${"ab".repeat(32)}`)).toBe(
+        "/auth/claim?token=[REDACTED]",
+      );
+    });
+
+    it("redacts the handover token in an absolute URL by its shape", () => {
+      const token = `hlp_${"cd".repeat(32)}`;
+      expect(
+        redactSecrets(`https://app.healthlog.dev/claim/${token}`),
+      ).not.toContain(token);
+    });
+
+    it("keeps the claim API routes' own path segments readable", () => {
+      expect(redactSecrets("/api/auth/claim/preview")).toBe(
+        "/api/auth/claim/preview",
+      );
+      expect(redactSecrets("/api/auth/claim")).toBe("/api/auth/claim");
+    });
+
     it("registers the clinician share-view prefix in PATH_SECRET_PATHS", () => {
       expect(PATH_SECRET_PATHS.map((entry) => entry.prefix)).toContain("/c/");
     });

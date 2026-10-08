@@ -112,38 +112,57 @@ export async function withdrawConsent(
   now: Date = new Date(),
   purge: typeof purgeRegenerableAiText = purgeRegenerableAiText,
 ): Promise<ConsentWithdrawal> {
-  return prisma.$transaction(async (tx) => {
-    const revoked: ConsentWithdrawal["revoked"] = [];
-    for (const kind of kinds) {
-      // The partial unique index keeps at most one active row per (user,
-      // kind), so one conditional update revokes "the" active receipt; a
-      // concurrent revoke finds nothing left to match and writes nothing.
-      const updated = await tx.consentReceipt.updateMany({
-        where: { userId, kind, revokedAt: null },
-        data: { revokedAt: now },
-      });
-      if (updated.count === 0) continue;
-      const receipt = await tx.consentReceipt.findFirst({
-        where: { userId, kind, revokedAt: now },
-        orderBy: { createdAt: "desc" },
-      });
-      if (receipt) revoked.push({ kind, receipt });
-    }
+  return prisma.$transaction((tx) =>
+    withdrawConsentInTransaction(tx, userId, kinds, now, purge),
+  );
+}
 
-    const touchedAnalysis = revoked.some(({ kind }) =>
-      INSIGHTS_CONSENT_KINDS.includes(kind),
-    );
-    if (!touchedAnalysis) return { revoked, purged: null };
-
-    const stillCovered = await tx.consentReceipt.count({
-      where: {
-        userId,
-        revokedAt: null,
-        kind: { in: [...INSIGHTS_CONSENT_KINDS] },
-      },
+/**
+ * The same withdrawal inside a caller's transaction.
+ *
+ * v1.42 (#959) — a managed profile's AI consent was given by its Guardian on
+ * the person's behalf. When the person claims the profile, every active
+ * receipt is withdrawn in the claim's own transaction, so the new owner starts
+ * from no consent and gives it themselves, and the text written under the
+ * Guardian's consent goes with it exactly as on any other withdrawal.
+ */
+export async function withdrawConsentInTransaction(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  kinds: readonly ConsentKind[],
+  now: Date = new Date(),
+  purge: typeof purgeRegenerableAiText = purgeRegenerableAiText,
+): Promise<ConsentWithdrawal> {
+  const revoked: ConsentWithdrawal["revoked"] = [];
+  for (const kind of kinds) {
+    // The partial unique index keeps at most one active row per (user,
+    // kind), so one conditional update revokes "the" active receipt; a
+    // concurrent revoke finds nothing left to match and writes nothing.
+    const updated = await tx.consentReceipt.updateMany({
+      where: { userId, kind, revokedAt: null },
+      data: { revokedAt: now },
     });
-    if (stillCovered > 0) return { revoked, purged: null };
+    if (updated.count === 0) continue;
+    const receipt = await tx.consentReceipt.findFirst({
+      where: { userId, kind, revokedAt: now },
+      orderBy: { createdAt: "desc" },
+    });
+    if (receipt) revoked.push({ kind, receipt });
+  }
 
-    return { revoked, purged: await purge(tx, userId) };
+  const touchedAnalysis = revoked.some(({ kind }) =>
+    INSIGHTS_CONSENT_KINDS.includes(kind),
+  );
+  if (!touchedAnalysis) return { revoked, purged: null };
+
+  const stillCovered = await tx.consentReceipt.count({
+    where: {
+      userId,
+      revokedAt: null,
+      kind: { in: [...INSIGHTS_CONSENT_KINDS] },
+    },
   });
+  if (stillCovered > 0) return { revoked, purged: null };
+
+  return { revoked, purged: await purge(tx, userId) };
 }

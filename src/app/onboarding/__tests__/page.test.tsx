@@ -39,12 +39,19 @@ vi.mock("@/components/onboarding/onboarding-shell", () => ({
   OnboardingShell: ({ children }: { children: ReactElement }) => children,
 }));
 
+const pendingHandoverMock = vi.fn(async () => false);
+vi.mock("@/lib/managed-profiles/handover", () => ({
+  hasPendingHandoverDecision: () => pendingHandoverMock(),
+}));
+
 import OnboardingRootPage from "../page";
 import { WelcomeScreen } from "@/components/onboarding/welcome-screen";
 
 beforeEach(() => {
   redirectMock.mockClear();
   loadMock.mockReset();
+  pendingHandoverMock.mockReset();
+  pendingHandoverMock.mockResolvedValue(false);
 });
 
 function state(
@@ -67,11 +74,15 @@ type ShellElement = ReactElement<{
   children: ReactElement<{ variant: string }>;
 }>;
 
-async function run(): Promise<
-  { redirect: string } | { element: ShellElement }
-> {
+async function run(
+  searchParams?: Record<string, string>,
+): Promise<{ redirect: string } | { element: ShellElement }> {
   try {
-    const element = (await OnboardingRootPage()) as ShellElement;
+    const element = (await OnboardingRootPage(
+      searchParams
+        ? { searchParams: Promise.resolve(searchParams) }
+        : undefined,
+    )) as ShellElement;
     return { element };
   } catch (e) {
     const tagged = e as Error & { __redirect__?: string };
@@ -87,6 +98,27 @@ function welcomeVariant(element: ShellElement): string {
 }
 
 describe("<OnboardingRootPage>", () => {
+  it("sends an account with a handover decision waiting to that screen first", async () => {
+    pendingHandoverMock.mockResolvedValue(true);
+    loadMock.mockResolvedValueOnce({
+      userId: "u1",
+      userLocale: "en",
+      state: state(),
+    });
+    expect(await run()).toEqual({ redirect: "/onboarding/handover" });
+  });
+
+  it("lets the handover screen's own 'later' through to the welcome", async () => {
+    pendingHandoverMock.mockResolvedValue(true);
+    loadMock.mockResolvedValueOnce({
+      userId: "u1",
+      userLocale: "en",
+      state: state(),
+    });
+    const result = await run({ handover: "later" });
+    expect("element" in result && welcomeVariant(result.element)).toBe("fresh");
+  });
+
   it("redirects to /auth/login when there is no session", async () => {
     loadMock.mockResolvedValueOnce(null);
     expect(await run()).toEqual({ redirect: "/auth/login" });

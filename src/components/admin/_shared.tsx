@@ -329,6 +329,8 @@ export function useAuthActionLabels(): Record<string, string> {
   return useMemo(
     () => ({
       "auth.register": t("admin.authRegister"),
+      // v1.42 (#959) — a managed profile taken over by its person.
+      "auth.claim": t("admin.authClaim"),
       "auth.login": t("admin.authLogin"),
       "auth.login.passkey": t("admin.authLoginPasskey"),
       "auth.login.password": t("admin.authLoginPassword"),

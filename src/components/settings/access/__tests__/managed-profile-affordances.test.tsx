@@ -141,6 +141,13 @@ vi.mock("@/lib/queries/use-managed-profiles", async (importOriginal) => {
   };
 });
 
+// v1.42 (#959) — the handover decision card at the top of the section. It
+// renders nothing without a pending decision, which is every case here.
+vi.mock("@/lib/queries/use-handover-decision", () => ({
+  useHandoverDecision: () => ({ data: { pending: null } }),
+  useDecideHandover: () => idle(),
+}));
+
 vi.mock("@/hooks/use-account-switch", () => ({
   useAccountSwitch: () => ({ mutate: vi.fn(), isPending: false }),
 }));
@@ -518,6 +525,24 @@ describe("ending a managed profile", () => {
     expect(html).toMatch(
       /data-slot="managed-profile-delete"[^>]*class="[^"]*min-h-11/,
     );
+  });
+
+  // v1.42 (#959) — the handover, offered beside edit and delete.
+  it("offers the handover on the profile's own row once the roster answered", () => {
+    authRef.value = { accounts: [entry()], active: null };
+    const html = renderGatedSection();
+    expect(html).toMatch(
+      /data-slot="managed-profile-handover-toggle"[^>]*class="[^"]*min-h-11/,
+    );
+    // Closed until somebody opens it: the panel reads its own status then.
+    expect(html).not.toContain('data-slot="managed-profile-handover"');
+  });
+
+  it("withholds the handover until the roster has answered", () => {
+    authRef.value = { accounts: [entry()], active: null };
+    rosterRef.value = "loading";
+    const html = renderGatedSection();
+    expect(html).not.toContain('data-slot="managed-profile-handover-toggle"');
   });
 
   it("withholds the control until the roster has answered", () => {

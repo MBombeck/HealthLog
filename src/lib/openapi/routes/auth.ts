@@ -46,9 +46,13 @@ import {
   stdResponses,
   errorEnvelope,
   loginPasswordSchema,
-  notImplementedResponse,
 } from "./shared";
 import { passkeyLoginOptionsSchema } from "@/lib/validations/auth";
+import {
+  claimPreviewSchema,
+  claimSchema,
+} from "@/lib/validations/managed-profile-handover";
+import { HANDOVER_ACCESS_LEVELS } from "@/lib/managed-profiles/handover-access";
 
 // ── Sub-schemas owned here (route-specific shapes) ───────────────────
 
@@ -699,48 +703,42 @@ const codexDevicePollResponse = z
   .meta({ id: "CodexDevicePollResponse" });
 
 // v1.42 (#959) — claiming a managed profile through its handover link.
-const claimTokenField = z
-  .string()
-  .describe(
-    "The `hlp_` token from the handover link. Sent in the body, never in a URL.",
-  );
+const claimPreviewRequest = claimPreviewSchema.meta({
+  id: "ProfileClaimPreviewRequest",
+  description:
+    "`token` is the `hlp_` token from the handover link. Sent in the body, never in a URL.",
+});
 
-const claimPreviewRequest = z
-  .object({ token: claimTokenField })
-  .strict()
-  .meta({ id: "ProfileClaimPreviewRequest" });
+const claimAccess = z
+  .enum(HANDOVER_ACCESS_LEVELS)
+  .meta({ id: "ProfileClaimGuardianAccess" });
 
 const claimPreview = z
   .object({
-    displayName: z.string(),
+    displayName: z
+      .string()
+      .nullable()
+      .describe("The profile's name, as its guardians set it."),
     expiresAt: z.iso.datetime({ offset: true }),
-    guardians: z.array(
-      z.object({
-        grantId: z.string(),
-        displayName: z.string(),
-        proposal: z.enum(["end", "read", "manage"]),
-      }),
-    ),
-  })
-  .meta({ id: "ProfileClaimPreview" });
-
-const claimRequest = z
-  .object({
-    token: claimTokenField,
-    username: z.string(),
-    email: z.string().describe("Required: the account needs a way back in."),
-    password: z.string(),
     guardians: z
       .array(
         z.object({
           grantId: z.string(),
-          decision: z.enum(["end", "read", "manage"]),
+          displayName: z.string(),
+          proposal: claimAccess,
         }),
       )
-      .describe("The new owner's decision per guardian."),
+      .describe(
+        "Each guardian and the access they keep after the claim, as proposed. The new owner confirms or changes it after signing in.",
+      ),
   })
-  .strict()
-  .meta({ id: "ProfileClaimRequest" });
+  .meta({ id: "ProfileClaimPreview" });
+
+const claimRequest = claimSchema.meta({
+  id: "ProfileClaimRequest",
+  description:
+    "`token` is the `hlp_` token from the handover link, in the body. `username` follows the registration rules and may not start with `managed-`; `email` is required, because the account needs a way back in; `password` follows the registration password policy.",
+});
 
 export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/auth/claim/preview": {
@@ -781,7 +779,6 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
-        ...notImplementedResponse,
       },
     },
   },
@@ -792,7 +789,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Auth"],
       summary: "Claim a managed profile",
       description:
-        "Turns the managed profile behind a handover link into the claimant's own account: sets the username, email and password on the profile's record, clears the managed marker, settles each guardian's access by the claimant's decision, withdraws pending MANAGE invitations, and resets the disclaimer, onboarding and AI consent so the new owner gives them personally. No data moves. Signs the new owner in. Anonymous; the token travels in the body, and every token failure answers the same 404.",
+        "Turns the managed profile behind a handover link into the claimant's own account, in one transaction: sets the username, email and password on the profile's record, clears the managed marker, withdraws pending invitations, applies each guardian's proposed access, and resets the disclaimer, onboarding and AI consent so the new owner gives them personally. The new owner then decides each guardian's access on first sign-in (`/api/account/handover-decision`). No data moves. Signs the new owner in. Anonymous; the token travels in the body, every token failure answers the same 404, and five attempts per fifteen minutes per source address are allowed.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: claimRequest } },
@@ -821,11 +818,10 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "409": {
           description:
-            "The request carries a signed-in session (`meta.errorCode: auth.already_authenticated`), or the username or email is taken.",
+            "The request carries a signed-in session (`meta.errorCode: auth.already_authenticated`), or the username or email is taken (`meta.errorCode: profile_claim.taken`).",
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
-        ...notImplementedResponse,
       },
     },
   },

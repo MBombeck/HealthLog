@@ -78,9 +78,6 @@ const DYNAMIC_ALLOWLIST_PREFIXES = [
  * before the release is tagged. It is NOT a place for keys nobody will wire.
  */
 const RELEASE_PENDING_PREFIXES: Record<string, string> = {
-  "auth.claim": "v1.42 managed-profile claim page (#959)",
-  "recordSharing.managed.handover":
-    "v1.42 managed-profile handover dialog (#959)",
   "settings.appleHealth.freshness":
     "v1.42 per-type HealthKit freshness list (#1173)",
   "insights.workouts.manual.editTitle": "v1.42 manual workout edit (#1162)",

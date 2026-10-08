@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { OnboardingShell } from "@/components/onboarding/onboarding-shell";
 import { WelcomeScreen } from "@/components/onboarding/welcome-screen";
+import { hasPendingHandoverDecision } from "@/lib/managed-profiles/handover";
 import { loadOnboardingFlowState } from "@/lib/onboarding/load-flow-state";
 import { isOnboardingSettled } from "@/lib/onboarding/needs";
 import { resumeScreen } from "@/lib/onboarding/wizard-steps";
@@ -21,12 +22,23 @@ import { resumeScreen } from "@/lib/onboarding/wizard-steps";
  * No session mirrors the proxy's own gate (`/onboarding` is a public path,
  * so the page has to say it too).
  */
-export default async function OnboardingRootPage() {
+export default async function OnboardingRootPage(props?: {
+  searchParams?: Promise<{ handover?: string | string[] }>;
+}) {
   const flow = await loadOnboardingFlowState();
   if (!flow) {
     redirect("/auth/login");
   }
   const { state, userLocale } = flow;
+
+  // v1.42 (#959) — an account that just claimed a managed profile decides its
+  // former Guardians' access first. `?handover=later` is that screen's own
+  // "later", which must not bounce straight back to it; the decision then
+  // waits in Settings → Shared access.
+  const handover = (await props?.searchParams)?.handover;
+  if (handover !== "later" && (await hasPendingHandoverDecision(flow.userId))) {
+    redirect("/onboarding/handover");
+  }
 
   const resume = resumeScreen(state);
   if (resume !== "welcome") {

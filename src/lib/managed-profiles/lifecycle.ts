@@ -407,21 +407,36 @@ export async function updateManagedProfile(input: {
 }
 
 /**
- * Internal-only future compatibility hook. There is intentionally no route for
- * this state change in the current product; holding the same lock ensures any
- * later handover cannot race a Guardian reduction.
+ * Clear the managed-profile marker: the record becomes an ordinary account.
+ *
+ * v1.42 (#959) — the handover's claim (`handover.ts`) is the one product path
+ * that calls this, inside its own transaction and in the same commit that sets
+ * the new owner's credentials and settles every Guardian's access. Passing
+ * `tx` runs it there; the advisory lock is re-entrant inside one transaction,
+ * so the claim, which already holds it, takes it again here at no cost.
+ * Without `tx` it opens a transaction of its own, which is what the lifecycle
+ * race tests drive it through.
+ *
+ * Holding the same lock is the point either way: an acceptance, a Guardian
+ * removal or a deletion that races the clearing is ordered entirely before or
+ * after it.
  */
-export async function clearManagedProfileMarker(input: {
-  profileId: string;
-}): Promise<void> {
-  await prisma.$transaction(async (tx) => {
-    await withManagedProfileLock(tx, input.profileId, async (profile) => {
+export async function clearManagedProfileMarker(
+  input: { profileId: string },
+  tx?: Transaction,
+): Promise<void> {
+  const clear = (client: Transaction) =>
+    withManagedProfileLock(client, input.profileId, async (profile) => {
       if (!profile) throw new ManagedProfileLifecycleError("not_found");
       if (!profile.managedProfileAt) return;
-      await tx.user.update({
+      await client.user.update({
         where: { id: profile.id },
         data: { managedProfileAt: null },
       });
     });
-  });
+  if (tx) {
+    await clear(tx);
+    return;
+  }
+  await prisma.$transaction(clear);
 }

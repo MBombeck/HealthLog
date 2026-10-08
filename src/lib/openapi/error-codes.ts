@@ -234,6 +234,8 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "managed_profile.guardian.duplicate",
       "managed_profile.guardian.managed_invitee",
       "managed_profile.guardian.required",
+      "managed_profile.handover.no_pending",
+      "managed_profile.handover.unknown_guardian",
       "managed_profile.not_found",
     ],
     measurement: [
@@ -314,6 +316,11 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "profile.update.emailSecondFactorRequired",
       "profile.update.invalidBody",
       "profile.update.nothingSaved",
+    ],
+    profile_claim: [
+      "profile_claim.invalid",
+      "profile_claim.oidc_only_unsupported",
+      "profile_claim.taken",
     ],
     record_write: ["record_write.rate_limited"],
     "report-selection": [

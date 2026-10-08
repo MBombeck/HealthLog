@@ -229,6 +229,9 @@ describe("grant management is not delegable by construction", () => {
     "app/api/account/grants/[id]/route.ts",
     "app/api/account/grants/[id]/accept/route.ts",
     "app/api/account/grants/[id]/renounce/route.ts",
+    // v1.42 (#959) — the new owner's decision about former Guardians ends and
+    // writes grant rows, so it is a grant route like the four above.
+    "app/api/account/handover-decision/route.ts",
   ];
 
   it("every grant route exists and resolves through bare requireAuth", () => {
@@ -298,6 +301,20 @@ describe("ending a grant and clearing the switch are one act", () => {
     expect(body.length).toBeGreaterThan(0);
     expect(body).toContain("$transaction");
     expect(body).toContain("clearActingSessions");
+  });
+
+  it("ends a handover Guardian's row and clears their switch in the caller's transaction", () => {
+    // v1.42 (#959) — the one other place a grant ends: settling a Guardian's
+    // access when a managed profile is claimed or decided. It runs inside the
+    // claim's own transaction (it takes `tx`), so the guard here is that the
+    // cleanup is part of the same function as the ending.
+    const body = functionBody(
+      read("lib/sharing/grants.ts"),
+      "settleHandoverGuardianGrant",
+    );
+    expect(body.length).toBeGreaterThan(0);
+    expect(body).toContain("revokedAt: input.now");
+    expect(body).toContain("clearActingSessions(pair, tx)");
   });
 
   it("routes an ending through the cleanup, never through the bare transition", () => {
