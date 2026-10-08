@@ -458,7 +458,7 @@ export function AuthShell({
             error after the user already filled in a form. */}
         {demoMode ? <DemoBanner /> : null}
         <MaintainershipBanner />
-        <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <div className="shell-desktop:flex-row flex min-h-0 flex-1 flex-col">
           <SidebarNav />
           {/* `min-w-0` lets the content column shrink below its children's
               intrinsic min width (e.g. the measurements table); without it
@@ -497,7 +497,7 @@ export function AuthShell({
               // for all of them at once instead of asking each new
               // absolutely-positioned child to remember its own wrapper.
               className={cn(
-                "relative flex-1 overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0",
+                "shell-desktop:pb-0 relative flex-1 overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom,0px))]",
                 fullBleed ? "flex flex-col" : "[scrollbar-gutter:stable]",
               )}
             >

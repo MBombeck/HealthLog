@@ -81,8 +81,10 @@ describe("<LayoutCoachFab>", () => {
     expect(html).toContain(
       "bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)]",
     );
+    // The bottom offset follows the shell, not a width: a phone held
+    // sideways keeps the bottom nav, so the FAB keeps clearing it there.
     expect(html).toContain(
-      "md:bottom-[calc(env(safe-area-inset-bottom,0px)+2rem)]",
+      "shell-desktop:bottom-[calc(env(safe-area-inset-bottom,0px)+2rem)]",
     );
     expect(html).toContain('data-keyboard-hide=""');
     expect(html).not.toContain("md:bottom-6");

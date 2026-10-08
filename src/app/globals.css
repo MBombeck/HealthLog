@@ -58,6 +58,30 @@
   }
 }
 
+/*
+ * `shell-desktop:` / `shell-mobile:` — which app shell the viewport gets.
+ * The desktop rail (sidebar, no bottom nav) from `md` up, EXCEPT a touch
+ * screen at most 520 px tall: a phone held sideways is 844–932 px wide but
+ * only 390–430 px tall, and the rail plus the top bar left it a sliver of
+ * content and no thumb-reachable navigation. It keeps the phone shell (top
+ * bar, bottom nav, capture button) instead. Everything that switches
+ * between the two shells keys on these, never on a bare `md:`, so the bars
+ * cannot disagree about which shell is showing.
+ */
+@custom-variant shell-desktop {
+  @media (min-width: 48rem) and (pointer: fine),
+    (min-width: 48rem) and (pointer: none),
+    (min-width: 48rem) and (min-height: 521px) {
+    @slot;
+  }
+}
+
+@custom-variant shell-mobile {
+  @media (max-width: 47.98rem), (pointer: coarse) and (max-height: 520px) {
+    @slot;
+  }
+}
+
 @theme inline {
   /* Extra-small breakpoint (30rem / 480px) for the narrowest phones — the
      default scale starts at sm (640px), which leaves a gap between an iPhone SE

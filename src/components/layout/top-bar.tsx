@@ -97,7 +97,10 @@ export function TopBar() {
       // inside its own 4rem, a 59 px inset left the bar a 5 px content box.
     >
       {/* Mobile logo */}
-      <Link href="/" className="flex min-h-11 items-center gap-2 md:hidden">
+      <Link
+        href="/"
+        className="shell-desktop:hidden flex min-h-11 items-center gap-2"
+      >
         <Logo className="text-primary" size={20} />
         <span className="font-bold tracking-tight">HealthLog</span>
       </Link>
@@ -105,7 +108,7 @@ export function TopBar() {
       {/* Desktop: the page's context, where a page gives one (the Coach's
           trail); otherwise an empty spacer. User controls are in the
           sidebar. */}
-      <TopBarContextOutlet className="hidden min-w-0 flex-1 items-center md:flex" />
+      <TopBarContextOutlet className="shell-desktop:flex hidden min-w-0 flex-1 items-center" />
 
       {/* Page-owned actions (the Coach's conversations toggle). `ml-auto`
           keeps them at the trailing edge, right before the mobile avatar
@@ -117,7 +120,7 @@ export function TopBar() {
       <TopBarActionsOutlet className="ml-auto flex shrink-0 items-center gap-1 empty:hidden md:-mr-3" />
 
       {/* Mobile-only auth section (desktop uses sidebar user section) */}
-      <div className="flex items-center gap-2 md:hidden">
+      <div className="shell-desktop:hidden flex items-center gap-2">
         {isLoading ? (
           <Skeleton className="bg-muted h-4 w-20 rounded" />
         ) : user ? (
