@@ -120,6 +120,8 @@ import {
 import { readCoachCorrelations } from "./correlations-read";
 import { readEnvironmentForTool } from "./environment-read";
 import { readDayForTool } from "./day-read";
+import { readCoachExclusions } from "@/lib/ai/coach/history-reach-read";
+import { fenceUserText } from "@/lib/ai/coach/data-fence";
 import { resolveLocaleForUser } from "@/lib/i18n/user-locale";
 import {
   resolveEmptyRead,
@@ -1033,6 +1035,9 @@ async function getDay(
     userId,
     date: parsed.data.date,
     reach,
+    // The person's Coach exclusions hold here as in every other read.
+    loadExcluded: () => readCoachExclusions(userId),
+    text: fenceUserText,
   });
   if (result.present) return { present: true, data: result.data };
   return { present: false, reason: result.reason };
