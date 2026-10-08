@@ -1462,15 +1462,19 @@ export function MeasurementList({
                               token `text-xs` (12 px, the mobile legibility
                               baseline) instead of an arbitrary per-site
                               size, so the row tracks the type scale. */}
-                            {(m.type === "BLOOD_PRESSURE_SYS" ||
-                              m.type === "BLOOD_PRESSURE_DIA") && (
-                              <Badge
-                                variant="outline"
-                                className="mr-1.5 h-5 px-1 text-xs"
-                              >
-                                {t(TYPE_LABEL_KEYS[m.type])}
-                              </Badge>
-                            )}
+                            {/* The type names the row: without it two
+                              readings in the same unit ("55 ms" HRV and
+                              "63 ms" RMSSD) could not be told apart on a
+                              phone, where the desktop table's type column
+                              does not exist. */}
+                            <p
+                              className="truncate text-xs font-medium"
+                              data-slot="measurement-row-type"
+                            >
+                              {TYPE_LABEL_KEYS[m.type]
+                                ? t(TYPE_LABEL_KEYS[m.type])
+                                : m.type}
+                            </p>
                             <span
                               className="font-semibold tabular-nums"
                               data-slot="measurement-row-value"

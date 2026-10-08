@@ -56,4 +56,8 @@ describe("measurementUnitLabel", () => {
   it("passes every other unit through", () => {
     expect(measurementUnitLabel("WEIGHT", "kg", t)).toBe("kg");
   });
+  it("drops the score and rating tokens", () => {
+    expect(measurementUnitLabel("RECOVERY_SCORE", "score", t)).toBe("");
+    expect(measurementUnitLabel("VISCERAL_FAT", "rating", t)).toBe("");
+  });
 });

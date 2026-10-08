@@ -417,5 +417,11 @@ export function measurementUnitLabel(
   t: (key: string) => string,
 ): string {
   const key = MEASUREMENT_UNIT_LABEL_KEYS[type];
-  return key ? t(key) : unit;
+  if (key) return t(key);
+  // A score or a rating is a bare number; "72 score" reads as a stray
+  // English token next to the German label, not as a unit.
+  if (UNITLESS_TOKENS.has(unit)) return "";
+  return unit;
 }
+
+const UNITLESS_TOKENS: ReadonlySet<string> = new Set(["score", "rating"]);
