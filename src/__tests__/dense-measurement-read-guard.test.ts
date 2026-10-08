@@ -123,6 +123,8 @@ const ALLOWED_SQL: Record<string, string> = {
     "Canonical-source blood pressure and weight over 90 days: sparse types, a few rows a day.",
   "lib/measurements/reconcile-external-measurement.ts::1":
     "Row locks (`FOR UPDATE`) on an id list the caller already read; returns those ids only.",
+  "lib/jobs/pr-detection.ts::1":
+    "Selects account ids; `measurements` is read inside `EXISTS`, one row per account at most.",
   "lib/rollups/measurement-coverage.ts::1":
     "Selects from `unnest` of the caller's type list; `measurements` is read inside `EXISTS`, one row per type at most.",
 };

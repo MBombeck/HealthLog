@@ -19,6 +19,8 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     user: {
       update: vi.fn(),
+      // The `folded_window` guard reads the account's zone for old samples.
+      findUnique: vi.fn().mockResolvedValue({ timezone: null }),
     },
     measurement: {
       findMany: vi.fn(),
@@ -366,7 +368,14 @@ describe("POST /api/measurements/batch — aggregated HR wire contract (iOS #34)
   it("keeps the per-sample uuid HR path immutable (duplicate, not overwrite)", async () => {
     const SAMPLE_ID = "B3A1C0DE-0000-4000-8000-000000000000";
     vi.mocked(prisma.measurement.findMany).mockResolvedValue([
-      { type: "PULSE", source: "APPLE_HEALTH", externalId: SAMPLE_ID },
+      {
+        type: "PULSE",
+        source: "APPLE_HEALTH",
+        externalId: SAMPLE_ID,
+        // Not the posted instant, so the exact-duplicate prefilter leaves
+        // the row to the reconciler this suite stubs.
+        measuredAt: new Date(0),
+      },
     ] as never);
 
     const res = await POST(
@@ -461,7 +470,14 @@ describe("POST /api/measurements/batch — stats tombstone resurrection", () => 
     // sample stays a checkpointing `duplicate` — no update runs at all.
     const SAMPLE_ID = "D00DAD00-0000-4000-8000-000000000000";
     vi.mocked(prisma.measurement.findMany).mockResolvedValue([
-      { type: "PULSE", source: "APPLE_HEALTH", externalId: SAMPLE_ID },
+      {
+        type: "PULSE",
+        source: "APPLE_HEALTH",
+        externalId: SAMPLE_ID,
+        // Not the posted instant, so the exact-duplicate prefilter leaves
+        // the row to the reconciler this suite stubs.
+        measuredAt: new Date(0),
+      },
     ] as never);
 
     const res = await POST(

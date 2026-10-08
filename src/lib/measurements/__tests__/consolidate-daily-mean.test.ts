@@ -94,6 +94,7 @@ describe("consolidateDailyMean — drain flow (mocked Prisma)", () => {
   function buildPrismaMock(rowsByType: Record<string, unknown[]>) {
     const upsert = vi.fn().mockResolvedValue({});
     const updateMany = vi.fn().mockResolvedValue({ count: 0 });
+    const deleteMany = vi.fn().mockResolvedValue({ count: 0 });
     const update = vi.fn().mockResolvedValue({});
     // Canonical-slot probe inside the write transaction — defaults to an
     // unoccupied slot (the pre-collision-fix happy path).
@@ -103,7 +104,13 @@ describe("consolidateDailyMean — drain flow (mocked Prisma)", () => {
         rowsByType[args.where.type] ?? [],
     );
     const tx = {
-      measurement: { upsert, updateMany, update, findFirst: txFindFirst },
+      measurement: {
+        upsert,
+        updateMany,
+        deleteMany,
+        update,
+        findFirst: txFindFirst,
+      },
     };
     return {
       mock: {
@@ -121,6 +128,7 @@ describe("consolidateDailyMean — drain flow (mocked Prisma)", () => {
       },
       upsert,
       updateMany,
+      deleteMany,
       update,
       txFindFirst,
       findManyMeasurement,
@@ -141,12 +149,12 @@ describe("consolidateDailyMean — drain flow (mocked Prisma)", () => {
     }
   });
 
-  it("upserts the per-day mean and soft-deletes the source rows", async () => {
+  it("upserts the per-day mean and deletes the source rows", async () => {
     const walkingSpeedRows = [
       row("a", 1.0, "2026-05-01T08:00:00.000Z"),
       row("b", 1.4, "2026-05-01T09:00:00.000Z"),
     ];
-    const { mock, upsert, updateMany } = buildPrismaMock({
+    const { mock, upsert, updateMany, deleteMany } = buildPrismaMock({
       WALKING_SPEED: walkingSpeedRows,
     });
 
@@ -161,11 +169,12 @@ describe("consolidateDailyMean — drain flow (mocked Prisma)", () => {
     // Unit is read straight off the day's rows (no separate query).
     expect(upsertArg.create.unit).toBe("m/s");
 
-    // soft-delete: updateMany sets deletedAt, never a hard delete.
-    const updArg = updateMany.mock.calls[0]?.[0] as {
-      data: { deletedAt: Date };
+    // v1.42 — the folded rows are deleted outright, no longer tombstoned.
+    const delArg = deleteMany.mock.calls[0]?.[0] as {
+      where: { id: { in: string[] } };
     };
-    expect(updArg.data.deletedAt).toBeInstanceOf(Date);
+    expect(delArg.where.id.in).toEqual(["a", "b"]);
+    expect(updateMany).not.toHaveBeenCalled();
     expect(summary.totals.daysConsolidated).toBe(1);
 
     // T3 — the rollup DAY bucket must be recomputed for the touched
@@ -277,6 +286,7 @@ describe("consolidateDailyMean — canonical-slot collision (second unique index
   function buildPrismaMock(rowsByType: Record<string, unknown[]>) {
     const upsert = vi.fn().mockResolvedValue({});
     const updateMany = vi.fn().mockResolvedValue({ count: 0 });
+    const deleteMany = vi.fn().mockResolvedValue({ count: 0 });
     const update = vi.fn().mockResolvedValue({});
     const txFindFirst = vi.fn().mockResolvedValue(null);
     const findManyMeasurement = vi.fn(
@@ -284,7 +294,13 @@ describe("consolidateDailyMean — canonical-slot collision (second unique index
         rowsByType[args.where.type] ?? [],
     );
     const tx = {
-      measurement: { upsert, updateMany, update, findFirst: txFindFirst },
+      measurement: {
+        upsert,
+        updateMany,
+        deleteMany,
+        update,
+        findFirst: txFindFirst,
+      },
     };
     return {
       mock: {
@@ -300,6 +316,7 @@ describe("consolidateDailyMean — canonical-slot collision (second unique index
       } as unknown as PrismaClient,
       upsert,
       updateMany,
+      deleteMany,
       update,
       txFindFirst,
     };

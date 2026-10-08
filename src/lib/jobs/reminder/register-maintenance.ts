@@ -790,6 +790,22 @@ const queuePolicies: QueuePolicyTable = {
     reason:
       "Fixed singleton key, admin-triggered. Two concurrent corpus rotations must never overlap; the route already reports a suppressed send back as alreadyQueued.",
   },
+  // v1.42 — operator-triggered VACUUM / REINDEX of `measurements`.
+  [MEASUREMENT_MAINTENANCE_QUEUE]: {
+    policy: "exclusive",
+    reason:
+      "Fixed singleton key, admin-triggered. Two maintenance passes would rebuild the same indexes side by side; the route reports a suppressed send back as enqueued: false.",
+  },
+  // v1.42 — compaction-tombstone backlog purge. `short`, not `exclusive`:
+  // a run that stops early sends its own follow-up while it is still active,
+  // and `exclusive` would swallow that send. A boot's send while a run is
+  // queued collapses into it; the delete predicate is idempotent, so a boot
+  // that lands beside an active run costs a duplicate scan, never a wrong row.
+  [COMPACTION_TOMBSTONE_PURGE_QUEUE]: {
+    policy: "short",
+    reason:
+      "Fixed singleton key; collapse queued duplicates only, so the active run can queue its own follow-up.",
+  },
 
   // Per-document, enqueued on upload. `short`, NOT `exclusive`: each handler
   // re-reads the document when it starts, so collapsing sends that arrive while

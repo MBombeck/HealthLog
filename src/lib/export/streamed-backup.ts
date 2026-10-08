@@ -104,9 +104,11 @@ function parseMeasurement(
 export interface ReadStreamedBackupOptions {
   /**
    * Called after each measurement passes the element schema, with how many
-   * have so far. For a caller that reports progress; keep it cheap.
+   * have so far and the parsed row. For a caller that reports progress or
+   * gathers a small index over the rows (the restore collects the live
+   * `stats:` ids it classifies compaction tombstones against); keep it cheap.
    */
-  onMeasurementChecked?: (checked: number) => void;
+  onMeasurementChecked?: (checked: number, row: BackupMeasurement) => void;
 }
 
 export async function readStreamedBackup(
@@ -129,7 +131,7 @@ export async function readStreamedBackup(
       const row = parseMeasurement(schema, element, index);
       if (!row.id && firstWithoutId === null) firstWithoutId = index;
       keys.visit(element, MEASUREMENTS);
-      options.onMeasurementChecked?.(index + 1);
+      options.onMeasurementChecked?.(index + 1, row);
     },
   });
 

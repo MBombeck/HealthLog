@@ -71,6 +71,7 @@ function buildPrismaMock(existingResting: Array<{ source: string }>) {
   const create = vi.fn().mockResolvedValue({ id: "minted-hourly" });
   const update = vi.fn().mockResolvedValue({});
   const updateMany = vi.fn().mockResolvedValue({ count: 0 });
+  const deleteMany = vi.fn().mockResolvedValue({ count: 0 });
   const txFindFirst = vi.fn().mockResolvedValue(null);
 
   // The probe. Honours a `source: { not: X }` clause exactly like the DB.
@@ -90,6 +91,7 @@ function buildPrismaMock(existingResting: Array<{ source: string }>) {
       update,
       findFirst: txFindFirst,
       updateMany,
+      deleteMany,
       upsert,
       findMany: candidateLookup(),
       createManyAndReturn: createManyVia(create),

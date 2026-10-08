@@ -110,8 +110,14 @@ describe("tombstone purge against a running restore (#1031)", () => {
       deleted: 3,
       drained: true,
       deferredAccounts: 1,
+      deferredUserIds: [RESTORING],
     });
-    expect(moods).toEqual({ deleted: 1, drained: true, deferredAccounts: 1 });
+    expect(moods).toEqual({
+      deleted: 1,
+      drained: true,
+      deferredAccounts: 1,
+      deferredUserIds: [RESTORING],
+    });
     // The stand-in rolled back, so the restoring account still has its
     // tombstones; the next run purges them.
     expect(
@@ -123,7 +129,12 @@ describe("tombstone purge against a running restore (#1031)", () => {
     expect(await prisma.moodEntry.count({ where: { userId: OTHER } })).toBe(0);
 
     const next = await cleanupExpiredMeasurementTombstones(prisma);
-    expect(next).toEqual({ deleted: 3, drained: true, deferredAccounts: 0 });
+    expect(next).toEqual({
+      deleted: 3,
+      drained: true,
+      deferredAccounts: 0,
+      deferredUserIds: [],
+    });
   }, 60_000);
 
   it("a restore that starts during the purge waits only for the account's batch", async () => {

@@ -122,6 +122,12 @@ import {
 } from "@/lib/medication-category";
 import { invalidateUserData } from "@/lib/cache/invalidate";
 import { TOMBSTONE_RETENTION_DAYS } from "@/lib/auth/native-client";
+import {
+  FOLDED_TYPES,
+  coveringStatsExternalId,
+  isFoldedWindowCandidate,
+} from "@/lib/measurements/folded-window";
+import { resolveUserTimezone } from "@/lib/measurements/consolidation-base";
 import { stampSyncReset } from "@/lib/sync/reset";
 import {
   classifyRestoreFailure,
@@ -418,14 +424,30 @@ export async function restoreBackup(
   // The measurements are the exception: `readStreamedBackup` checks each one
   // against the element schema as it goes and keeps only their count, and
   // the transaction reads them a second time, in batches, as it writes them.
+  // v1.42 — the live `stats:` ids of the folded types, gathered on the first
+  // read, so the measurement pass can tell a compaction tombstone from a
+  // person's deletion without a third read of the file.
+  const liveFoldStatsIds = new Set<string>();
+  const foldedTypes = new Set<string>(FOLDED_TYPES);
+  const noteLiveFoldRow = (row: BackupMeasurement) => {
+    if (
+      row.deletedAt == null &&
+      row.source === "APPLE_HEALTH" &&
+      foldedTypes.has(row.type) &&
+      row.externalId?.startsWith("stats:")
+    ) {
+      liveFoldStatsIds.add(`${row.type}|${row.externalId}`);
+    }
+  };
   let raw: unknown;
   let payload;
   let streamed: StreamedBackup;
   try {
     streamed = await readStreamedBackup(source, {
-      onMeasurementChecked: (checked) => {
+      onMeasurementChecked: (checked, row) => {
         progress.measurementsChecked = checked;
         report("validating");
+        noteLiveFoldRow(row);
       },
     });
     progress.measurementsTotal = streamed.measurementCount;
@@ -986,9 +1008,48 @@ export async function restoreBackup(
         // row.
         const tombstoneHorizonMs =
           Date.now() - TOMBSTONE_RETENTION_DAYS * 86_400_000;
+        //
+        // v1.42 — nor is a compaction tombstone, whatever its age: a raw
+        // Apple Health sample the folds soft-deleted before v1.42, whose hour
+        // or day a live `stats:` row in the same file covers. The folds
+        // delete those outright now and the backlog purge removes the old
+        // ones, so writing one back would only hand the purge the same row
+        // again; the `folded_window` ingest guard is what keeps the sample
+        // from being uploaded again. Classified by the rule the purge and
+        // the sync feed use (`folded-window.ts`), against the `stats:` ids
+        // gathered on the file's first read and the zone the account will
+        // have after the restore. Counted with the expired ones.
+        const foldTz = resolveUserTimezone(
+          payload.accountSettings?.timezone ??
+            (
+              await tx.user.findUnique({
+                where: { id: ownerId },
+                select: { timezone: true },
+              })
+            )?.timezone ??
+            null,
+        );
+        const isCompactionTombstone = (measurement: BackupMeasurement) => {
+          if (measurement.deletedAt == null) return false;
+          const row = {
+            type: measurement.type,
+            source: measurement.source ?? "MANUAL",
+            externalId: measurement.externalId ?? null,
+            measuredAt: new Date(measurement.measuredAt),
+          };
+          if (!isFoldedWindowCandidate(row, new Date(measurement.deletedAt))) {
+            return false;
+          }
+          const covering = coveringStatsExternalId(row, foldTz);
+          return (
+            covering !== null &&
+            liveFoldStatsIds.has(`${measurement.type}|${covering}`)
+          );
+        };
         const isExpiredTombstone = (measurement: BackupMeasurement) =>
           measurement.deletedAt != null &&
-          new Date(measurement.deletedAt).getTime() < tombstoneHorizonMs;
+          (new Date(measurement.deletedAt).getTime() < tombstoneHorizonMs ||
+            isCompactionTombstone(measurement));
         let expiredTombstonesSkipped = 0;
         report("measurements");
         await streamed.forEachMeasurementBatch(

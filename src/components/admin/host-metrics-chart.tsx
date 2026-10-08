@@ -20,8 +20,9 @@
  * `src/components/charts/scatter-correlation-chart.tsx` for the same
  * pattern + rationale.
  *
- * Polling: TanStack Query with `refetchInterval: 60_000` so the chart
- * surfaces a freshly-sampled minute as soon as the worker writes one.
+ * Polling: TanStack Query with `refetchInterval: 300_000` so the chart
+ * surfaces a fresh sample as soon as the worker writes one (every five
+ * minutes since v1.42).
  */
 
 import { useQuery } from "@tanstack/react-query";
@@ -148,9 +149,9 @@ export function HostMetricsChart() {
     queryFn: async () => {
       return apiGet<HostMetricsApiResponse>("/api/admin/host-metrics?since=2h");
     },
-    // 60s matches the sampler cadence — anything faster would just
-    // re-render the same data.
-    refetchInterval: 60_000,
+    // Five minutes matches the sampler cadence (`host-metric-sample`, v1.42)
+    // — anything faster would just re-render the same data.
+    refetchInterval: 300_000,
     refetchOnWindowFocus: false,
   });
 

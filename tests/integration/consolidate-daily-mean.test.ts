@@ -33,7 +33,7 @@ beforeEach(async () => {
 });
 
 describe("consolidateDailyMean (real Postgres)", () => {
-  it("collapses per-sample rows into one daily MEAN and soft-deletes the originals", async () => {
+  it("collapses per-sample rows into one daily MEAN and deletes the originals", async () => {
     const prisma = getPrismaClient();
     await prisma.measurement.createMany({
       data: [
@@ -85,14 +85,12 @@ describe("consolidateDailyMean (real Postgres)", () => {
     expect(live[0].value).toBeCloseTo(1.2, 6);
     expect(live[0].externalId).toBe(SPEED_STATS_ID);
 
-    const tombstoned = await prisma.measurement.findMany({
-      where: {
-        userId: TEST_USER_ID,
-        type: "WALKING_SPEED",
-        deletedAt: { not: null },
-      },
+    // v1.42 — the folded per-sample rows are deleted outright, not
+    // tombstoned: nothing of them is left in the table.
+    const all = await prisma.measurement.findMany({
+      where: { userId: TEST_USER_ID, type: "WALKING_SPEED" },
     });
-    expect(tombstoned).toHaveLength(3);
+    expect(all).toHaveLength(1);
   });
 
   it("leaves manual / Withings (non-APPLE_HEALTH) rows untouched", async () => {

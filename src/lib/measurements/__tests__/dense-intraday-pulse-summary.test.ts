@@ -57,7 +57,7 @@ function pulseRow(id: string, value: number, iso: string): PerSampleRow {
 /**
  * Prisma mock covering the full PULSE-summary flow: the scan (per-type rows),
  * the per-user native-resting probe (top-level `findFirst`), the fold
- * transaction (`create`/`update`/`findFirst`/`updateMany`), and the derived
+ * transaction (`create`/`update`/`findFirst`/`updateMany`/`deleteMany`), and the derived
  * resting `upsert` (top-level).
  */
 function buildPrismaMock(opts: {
@@ -68,7 +68,7 @@ function buildPrismaMock(opts: {
   const txCreate = vi.fn().mockResolvedValue({ id: "minted-daily" });
   const txUpdate = vi.fn().mockResolvedValue({});
   const txFindFirst = vi.fn().mockResolvedValue(null);
-  const txUpdateMany = vi
+  const txDeleteMany = vi
     .fn()
     .mockResolvedValue({ count: opts.pulseRows.length });
   const tx = {
@@ -76,7 +76,8 @@ function buildPrismaMock(opts: {
       create: txCreate,
       update: txUpdate,
       findFirst: txFindFirst,
-      updateMany: txUpdateMany,
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      deleteMany: txDeleteMany,
       findMany: candidateLookup(),
       createManyAndReturn: createManyVia(txCreate),
     },
@@ -102,7 +103,7 @@ function buildPrismaMock(opts: {
     $transaction: vi.fn(async (cb: (t: unknown) => Promise<unknown>) => cb(tx)),
   } as unknown as PrismaClient;
 
-  return { mock, txCreate, txUpdateMany, upsert, topFindFirst };
+  return { mock, txCreate, txDeleteMany, upsert, topFindFirst };
 }
 
 beforeEach(() => {
@@ -335,7 +336,8 @@ describe("PULSE fold — per-day failure boundary", () => {
             create: vi.fn().mockResolvedValue({ id: "minted" }),
             update: vi.fn(),
             findFirst: vi.fn().mockResolvedValue(null),
-            updateMany: vi.fn().mockResolvedValue({ count: 5 }),
+            updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+            deleteMany: vi.fn().mockResolvedValue({ count: 5 }),
             findMany: candidateLookup(),
             createManyAndReturn: createManyVia(
               vi.fn().mockResolvedValue({ id: "minted" }),

@@ -29,7 +29,8 @@
  *      widened from 36 hours to the retention window, and the fold grain
  *      set to the LOCAL HOUR: per-sample rows OLDER than the window fold
  *      to one `stats:<HK>:<YYYY-MM-DD>T<HH>` hourly-mean row per user ×
- *      type × local hour and the raw rows are tombstoned; rows INSIDE the
+ *      type × local hour and the raw rows are deleted (tombstoned before
+ *      v1.42); rows INSIDE the
  *      window stay raw so the Stress engine always has its per-sample
  *      inputs for the days it scores.
  *
@@ -137,7 +138,7 @@ export const DENSE_INTRADAY_RETENTION_TYPES: ReadonlySet<MeasurementType> =
 
 /**
  * Retention bound (days). Per-sample dense-tier rows older than this window
- * fold to hourly-mean rows and the raw rows tombstone; rows inside the
+ * fold to hourly-mean rows and the raw rows are deleted; rows inside the
  * window stay raw so the Stress engine has its intra-day inputs.
  *
  * 90 days comfortably covers the Stress engine's 7-day reference window and
@@ -464,10 +465,10 @@ export interface DenseIntradayRetentionOptions {
 /**
  * Run the dense intra-day retention drain. Folds per-sample dense-tier
  * rows older than the retention window into hourly-mean `stats:` rows
- * (user-local hours, anchored at local HH:30) and soft-deletes the raw
- * rows; rows inside the window stay raw. Idempotent — re-invocation after
- * a successful pass converges to zero work because the folded rows are
- * soft-deleted and so excluded from the live scan, and the minted hourly
+ * (user-local hours, anchored at local HH:30) and deletes the raw rows
+ * (soft-deleted before v1.42); rows inside the window stay raw. Idempotent —
+ * re-invocation after a successful pass converges to zero work because the
+ * folded rows are gone from the live scan, and the minted hourly
  * rows are excluded by the `NOT startsWith('stats:')` predicate.
  *
  * Does NOT enforce any auth gate — the queue handler owns that concern.
@@ -655,19 +656,23 @@ export async function runDenseIntradayRetention(
             retiredDaily = true;
           }
 
-          // Soft-delete the out-of-window per-sample rows in the same
-          // transaction — tombstone, never hard-delete; they remain until
-          // the tombstone-retention prune and drop off the live read + this
-          // pass's re-run discovery. EXCLUDE the adopted canonical rows: a
-          // per-sample row that happened to fall on an hourly anchor is the
-          // row just adopted as that hour's mean, so tombstoning it would
-          // erase the fold.
-          const del = await tx.measurement.updateMany({
+          // Delete the out-of-window per-sample rows in the same
+          // transaction. EXCLUDE the adopted canonical rows: a per-sample row
+          // that happened to fall on an hourly anchor is the row just adopted
+          // as that hour's mean, so removing it would erase the fold.
+          //
+          // v1.42 — deleted outright, like the cumulative drain's rows,
+          // where they used to be tombstoned for the 75-day retention. No
+          // client ever pulled these rows, so the tombstone told nobody
+          // anything; it only held the re-upload of a folded sample off,
+          // and the `folded_window` ingest guard (`folded-window.ts`) does
+          // that now from the live hourly row. The tombstones made up most
+          // of the table and its indexes.
+          const del = await tx.measurement.deleteMany({
             where: {
               id: { in: sourceRowIds, notIn: canonicalRowIds },
               deletedAt: null,
             },
-            data: { deletedAt: new Date() },
           });
           removed = del.count;
         });
@@ -777,7 +782,7 @@ export async function runDenseIntradayRetention(
     // not absorb, or a derived-resting upsert that races a native row — is
     // logged and STEPPED OVER so the global walk keeps draining every other
     // user / type / day. The failed day keeps its raw rows live (the fold
-    // soft-deletes only on a committed transaction), so the next nightly run
+    // deletes only on a committed transaction), so the next nightly run
     // retries it. Without this, one poisoned day aborted the whole walk and
     // stranded every later account.
     onBucketError: ({ userId, type, dateKey, error }) => {

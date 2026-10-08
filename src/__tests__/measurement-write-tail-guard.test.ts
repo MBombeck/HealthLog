@@ -98,6 +98,8 @@ const WRITE_SITES: Record<string, string> = {
     "encrypts the note column in place; no value, instant or type changes",
   "lib/jobs/measurement-tombstone-cleanup.ts":
     "hard-deletes rows that were already soft-deleted and read nowhere",
+  "lib/jobs/compaction-tombstone-purge.ts":
+    "hard-deletes compaction tombstones, rows already soft-deleted and read nowhere",
 };
 
 function sourceFiles(): string[] {

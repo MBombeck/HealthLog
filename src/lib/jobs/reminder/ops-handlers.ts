@@ -10,7 +10,11 @@ import { runGeoBackfill } from "@/lib/jobs/geo-backfill";
 import { fetchGeoLite2Databases } from "@/lib/geo/geolite2-fetch";
 import { type Geolite2FetchPayload } from "@/lib/jobs/geolite2-fetch";
 import { runTlsPinMonitor } from "@/lib/jobs/tls-pin-monitor";
-import { type PrDetectionPayload } from "@/lib/jobs/pr-detection";
+import {
+  listPrDetectionFallbackUserIds,
+  nextPrDetectionFallbackSince,
+  type PrDetectionPayload,
+} from "@/lib/jobs/pr-detection";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { runHostMetricTick } from "@/lib/jobs/host-metric-sampler";
@@ -225,8 +229,8 @@ export async function handlePrDetection(
   let tiesAcrossJobs = 0;
   let usersFailed = 0;
   let stoppedEarly = false;
-  // The cron pass walks every account's all-time history and ticks every
-  // thirty minutes. It stops between accounts once the job's budget is spent;
+  // The cron pass walks the all-time history of every account whose data
+  // changed since the last tick, every thirty minutes. It stops between accounts once the job's budget is spent;
   // the ingest jobs and the next tick carry the rest.
   const shouldStop = jobBudget(jobs);
   for (const job of jobs) {
@@ -240,9 +244,14 @@ export async function handlePrDetection(
         ?.userId;
       const silent =
         (job.data as PrDetectionPayload | undefined)?.silent ?? false;
+      // v1.42 — the cron path re-scans only accounts whose measurements or
+      // workouts changed since the previous tick (`pr-detection.ts`).
       const userIds: string[] = payloadUserId
         ? [payloadUserId]
-        : (await p.user.findMany({ select: { id: true } })).map((u) => u.id);
+        : await listPrDetectionFallbackUserIds(
+            p,
+            nextPrDetectionFallbackSince(),
+          );
 
       let insertedTotal = 0;
       let tiesTotal = 0;

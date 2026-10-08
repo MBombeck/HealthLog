@@ -43,11 +43,13 @@ export interface TombstonePurgeOutcome extends PurgeOutcome {
    * account was running. The next night purges them.
    */
   deferredAccounts: number;
+  /** The accounts behind `deferredAccounts`, for a per-account run report. */
+  deferredUserIds: string[];
 }
 
 type TombstoneRow = { id: string; userId: string };
 
-interface TombstonePurgeOptions {
+export interface TombstonePurgeOptions {
   prisma: PrismaClient;
   /** Up to `take` expired tombstones, none of them owned by `skipUserIds`. */
   findRows: (take: number, skipUserIds: string[]) => Promise<TombstoneRow[]>;
@@ -55,6 +57,17 @@ interface TombstonePurgeOptions {
   deleteIds: (tx: Prisma.TransactionClient, ids: string[]) => Promise<number>;
   batchSize?: number;
   maxBatches?: number;
+  /**
+   * Awaited between two batches. The compaction-tombstone backlog purge uses
+   * it to pause, so a run of forty batches does not hold the disk and the WAL
+   * at full rate for its whole length.
+   */
+  betweenBatches?: () => Promise<void>;
+  /**
+   * Ends the walk before the next batch when it returns `true`; the outcome
+   * then reports `drained: false`, exactly like a run that hit the batch cap.
+   */
+  shouldStop?: () => boolean;
 }
 
 /**
@@ -74,12 +87,14 @@ interface TombstonePurgeOptions {
  *
  * Still one delete statement per account per batch, never one per row.
  */
-async function purgeTombstonesByAccount({
+export async function purgeTombstonesByAccount({
   prisma,
   findRows,
   deleteIds,
   batchSize = PURGE_BATCH_SIZE,
   maxBatches = PURGE_MAX_BATCHES,
+  betweenBatches,
+  shouldStop,
 }: TombstonePurgeOptions): Promise<TombstonePurgeOutcome> {
   let deleted = 0;
   const deferred = new Set<string>();
@@ -87,9 +102,14 @@ async function purgeTombstonesByAccount({
     deleted,
     drained,
     deferredAccounts: deferred.size,
+    deferredUserIds: [...deferred],
   });
 
   for (let batch = 0; batch < maxBatches; batch++) {
+    if (batch > 0) {
+      if (shouldStop?.()) return outcome(false);
+      await betweenBatches?.();
+    }
     const rows = await findRows(batchSize, [...deferred]);
     if (rows.length === 0) return outcome(true);
 

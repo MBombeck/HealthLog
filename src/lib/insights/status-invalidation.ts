@@ -29,6 +29,7 @@ import {
   metricStatusScope,
 } from "@/lib/insights/metric-status-registry";
 import { annotate } from "@/lib/logging/context";
+import { listLiveMeasurementTypes } from "@/lib/measurements/live-types";
 import { aiCapabilityForRecord } from "@/lib/ai/capabilities/gate";
 import type { MeasurementType } from "@/generated/prisma/client";
 
@@ -248,16 +249,12 @@ export async function enqueueStatusRefillForUser(
   }
   const scopes = new Set<InsightStatusScope>(PER_STATUS_SCOPES);
   try {
-    // `groupBy` compiles to a server-side `GROUP BY` — Prisma's
-    // `distinct` dedups in the client AFTER pulling every live row, which
-    // on a dense multi-year account walks a six-figure row set to answer
-    // "which types exist?" on the request path.
-    const rows = await prisma.measurement.groupBy({
-      by: ["type"],
-      where: { userId, deletedAt: null },
-    });
-    for (const row of rows) {
-      const metricId = metricIdForMeasurementType(row.type);
+    // v1.42 — a loose index scan over the live-rows index (`live-types.ts`)
+    // rather than a `GROUP BY` that reads every live row of a dense
+    // multi-year account to answer "which types exist?".
+    const types = await listLiveMeasurementTypes(userId);
+    for (const type of types) {
+      const metricId = metricIdForMeasurementType(type);
       if (metricId) scopes.add(metricStatusScope(metricId));
     }
   } catch {
