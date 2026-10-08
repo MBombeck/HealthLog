@@ -35,6 +35,7 @@
  */
 import { Client } from "pg";
 import type { Job } from "pg-boss";
+import { sessionOptionsDisabled } from "@/lib/db";
 
 import { withJobLock } from "@/lib/jobs/job-lock";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
@@ -67,6 +68,21 @@ export interface MeasurementMaintenancePayload {
 /** Session settings of the maintenance connection. */
 export const MAINTENANCE_SESSION_OPTIONS =
   "-c statement_timeout=0 -c idle_in_transaction_session_timeout=0 -c maintenance_work_mem=128MB -c lock_timeout=300000";
+
+/**
+ * The same settings as `SET` statements, for a host behind a connection
+ * pooler that refuses the `options` startup parameter
+ * (`DATABASE_SESSION_OPTIONS_DISABLED`). Built from the constant above, whose
+ * every value is a literal, so nothing user-supplied reaches the SQL.
+ */
+export function maintenanceSessionStatements(): string[] {
+  return MAINTENANCE_SESSION_OPTIONS.split(/\s*-c\s+/)
+    .filter(Boolean)
+    .map((pair) => {
+      const [name, value] = pair.trim().split("=");
+      return `SET ${name} = '${value}'`;
+    });
+}
 
 /** The only shape an index name may have before it is spliced into SQL. */
 const INDEX_NAME = /^[a-z0-9_]{1,63}$/;
@@ -310,14 +326,20 @@ export async function handleMeasurementMaintenance(
     const guarded = await withJobLock(
       MEASUREMENT_MAINTENANCE_QUEUE,
       async () => {
+        const viaStatements = sessionOptionsDisabled();
         const client = new Client({
           connectionString: process.env.DATABASE_URL,
-          options: MAINTENANCE_SESSION_OPTIONS,
+          options: viaStatements ? undefined : MAINTENANCE_SESSION_OPTIONS,
           keepAlive: true,
         });
         client.on("error", () => {});
         await client.connect();
         try {
+          if (viaStatements) {
+            for (const statement of maintenanceSessionStatements()) {
+              await client.query(statement);
+            }
+          }
           return await runMeasurementMaintenance(client, payload);
         } finally {
           await client

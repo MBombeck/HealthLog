@@ -195,6 +195,9 @@ in `ignore_startup_parameters`. Either list it there, or set
 `DATABASE_SESSION_OPTIONS_DISABLED=1` so the app sends no session
 settings; set the timeout and `work_mem` on the database role instead
 (`ALTER ROLE healthlog SET work_mem = '16MB'`) if you still want them.
+The measurement maintenance job (Admin, System status) then applies its own
+settings with `SET` after connecting. Its concurrent index rebuild needs a
+session, so run it through a session-mode pool or a direct connection.
 
 ### Overriding the per-container pool ceiling
 
