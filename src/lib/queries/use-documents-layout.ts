@@ -40,6 +40,13 @@ export async function runSetDocumentsLayout(deps: {
 }): Promise<void> {
   const { patch, queryClient, t } = deps;
   const key = queryKeys.documentsLayout();
+  // A read still in flight (the first GET) would land after the flip and
+  // paint the old layout until the PUT answered. Cancel it first; only then
+  // is the flip safe, because a cancelled fetch reverts the cache as it
+  // settles. Without one in flight the flip stays synchronous.
+  if (queryClient.isFetching({ queryKey: key }) > 0) {
+    await queryClient.cancelQueries({ queryKey: key });
+  }
   const previous = queryClient.getQueryData<DocumentsLayout>(key);
   queryClient.setQueryData<DocumentsLayout>(key, {
     ...(previous ?? DEFAULT_DOCUMENTS_LAYOUT),
