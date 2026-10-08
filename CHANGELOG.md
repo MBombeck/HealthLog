@@ -148,6 +148,9 @@ an earlier fold computed from part of a day.
   first cycle of each local day a full day (#1023).
 - The capture sheet opens from the dashboard's add button on phones; the
   installed app follows its own theme in the status bar and toasts.
+- `source-map-js` 1.2.2, `postcss-selector-parser` 7.1.6 and `smol-toml`
+  1.9.0 close CVE-2026-93749, CVE-2026-104844 and GHSA-r4xh-jqrq-34v2 in the
+  build and development toolchain.
 
 ### Removed
 
