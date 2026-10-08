@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
   FolderOpen,
@@ -38,6 +38,12 @@ import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
+import { apiGet } from "@/lib/api/api-fetch";
+import type { LabResultListResponse } from "@/components/labs/types";
+import {
+  analyteFromQuery,
+  labHrefForAnalyteReading,
+} from "@/lib/labs/analyte-deep-link";
 
 export default function LabsPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -88,6 +94,26 @@ export default function LabsPage() {
     onRefresh: refreshVisible,
     disabled: dialogOpen,
   });
+
+  // MCP deep links (`/labs?analyte=<name>`) open the marker's own page. The
+  // newest reading under that exact name says which marker it is; a name
+  // with no reading keeps the list and drops the query.
+  const searchParams = useSearchParams();
+  const linkedAnalyte = analyteFromQuery(searchParams.get("analyte"));
+  const analyteLink = useQuery({
+    queryKey: queryKeys.labAnalyteLink(linkedAnalyte ?? ""),
+    queryFn: () =>
+      apiGet<LabResultListResponse>(
+        `/api/labs?analyte=${encodeURIComponent(linkedAnalyte ?? "")}&limit=1&sortDir=desc`,
+      ),
+    enabled: !!linkedAnalyte && isAuthenticated && enabled,
+  });
+  useEffect(() => {
+    if (!linkedAnalyte || !analyteLink.isFetched) return;
+    router.replace(
+      labHrefForAnalyteReading(analyteLink.data?.results?.[0]) ?? "/labs",
+    );
+  }, [linkedAnalyte, analyteLink.isFetched, analyteLink.data, router]);
 
   useEffect(() => {
     if (isLoading) return;

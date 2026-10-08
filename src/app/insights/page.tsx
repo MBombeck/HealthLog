@@ -4,7 +4,10 @@ import {
   QueryClient,
 } from "@tanstack/react-query";
 
+import { redirect } from "next/navigation";
+
 import { getUnswitchedSession } from "@/lib/auth/acting-carrier";
+import { insightsHrefForMetric } from "@/lib/insights/metric-deep-link";
 import { readDashboardSnapshotCached } from "@/lib/dashboard/snapshot-read";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -51,7 +54,19 @@ import InsightsPageClient from "./page-client";
  *  - Fail-soft: no session or a builder hiccup renders the page exactly as
  *    before this wrapper existed — the client cells own the fetch.
  */
-export default async function InsightsPage() {
+export default async function InsightsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+} = {}) {
+  // MCP deep links (`/insights?metric=<id>`) go to the metric's own page. An
+  // id that names no metric leaves the overview as it was.
+  const { metric } = (await searchParams) ?? {};
+  const target = insightsHrefForMetric(
+    typeof metric === "string" ? metric : null,
+  );
+  if (target) redirect(target);
+
   // Global SSR-prefetch kill-switch shared with the dashboard wrapper. The e2e
   // server sets `DASHBOARD_SSR_PREFETCH=false` so Playwright route mocks — which
   // only see CLIENT fetches — keep governing what every prefetched page paints.

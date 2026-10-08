@@ -29,6 +29,13 @@ export const labKeys = {
       params.sortDir,
     ] as const,
 
+  // `/labs?analyte=<name>` (MCP deep links): the newest reading stored under
+  // that exact analyte name, one row, to find its marker's page. Its own key
+  // because the page size differs from every list read; the `lab-results`
+  // prefix lets a result mutation evict it too.
+  labAnalyteLink: (analyte: string) =>
+    ["lab-results", "analyte-link", analyte] as const,
+
   // The visit form's lab picker: newest results, its own page size. Its own
   // key because the Labs list reads a different page size, and a shared key
   // would serve one read's page to the other.
