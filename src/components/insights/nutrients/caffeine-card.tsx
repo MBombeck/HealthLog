@@ -81,6 +81,7 @@ export function CaffeineCard() {
           unit={data.unit}
           valueLabel={t("nutrients.names.caffeine")}
           referenceValue={data.reference?.value ?? null}
+          dayLinks
         />
       </CardContent>
     </Card>

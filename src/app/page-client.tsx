@@ -1703,6 +1703,7 @@ export default function DashboardPageClient({
                 compareBaseline={compareBaseline}
                 userTimezone={user?.timezone}
                 valueScale={unitDisplay.transformFor("WEIGHT").factor}
+                dayLinks
               />
             ),
           });
@@ -1756,6 +1757,7 @@ export default function DashboardPageClient({
                     },
                   ]}
                   compareBaseline={compareBaseline}
+                  dayLinks
                 />
               ),
             });
@@ -1782,6 +1784,7 @@ export default function DashboardPageClient({
                 targetZones={bpTargetZones}
                 compareBaseline={compareBaseline}
                 userTimezone={user?.timezone}
+                dayLinks
               />
             ),
           });
@@ -1810,6 +1813,7 @@ export default function DashboardPageClient({
                 valueBands={hasRestingHr ? pulseBands : undefined}
                 compareBaseline={compareBaseline}
                 userTimezone={user?.timezone}
+                dayLinks
               />
             ),
           });
@@ -1834,6 +1838,7 @@ export default function DashboardPageClient({
                 valueBands={bodyFatBands}
                 compareBaseline={compareBaseline}
                 userTimezone={user?.timezone}
+                dayLinks
               />
             ),
           });
@@ -1850,6 +1855,7 @@ export default function DashboardPageClient({
                 onDataReady={() => markChartReady("mood-chart")}
                 compareBaseline={compareBaseline}
                 chartKey="mood"
+                dayLinks
               />
             ),
           });
@@ -1871,6 +1877,7 @@ export default function DashboardPageClient({
                 unit="h"
                 compareBaseline={compareBaseline}
                 userTimezone={user?.timezone}
+                dayLinks
               />
             ),
           });
@@ -1893,6 +1900,7 @@ export default function DashboardPageClient({
                 colors={["var(--success)"]}
                 compareBaseline={compareBaseline}
                 userTimezone={user?.timezone}
+                dayLinks
               />
             ),
           });
@@ -1913,6 +1921,7 @@ export default function DashboardPageClient({
                 onDataReady={() => markChartReady("medications")}
                 compareBaseline={compareBaseline}
                 userTimezone={user?.timezone}
+                dayLinks
               />
             ),
           });

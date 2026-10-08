@@ -24,6 +24,11 @@ import {
   type PillarDetailContext,
 } from "@/components/insights/health-score-pillar-detail";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  DAY_LINK_SLOT,
+  DayLink,
+  withDayLinkSlot,
+} from "@/components/day/day-link";
 import { formatDate } from "@/lib/date-format";
 import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
@@ -530,18 +535,30 @@ export function HealthScoreCard({
             data-slot="health-score-rest-mode"
             className="text-muted-foreground text-xs"
           >
-            {t("insights.healthScore.restMode", {
-              since: report.restMode.since
-                ? formatDate(
-                    userDayKey(
+            {/* v1.42 — the date opens the day rest mode began. */}
+            {report.restMode.since
+              ? withDayLinkSlot(
+                  t("insights.healthScore.restMode", { since: DAY_LINK_SLOT }),
+                  <DayLink
+                    date={userDayKey(
                       new Date(report.restMode.since),
                       user?.timezone || DEFAULT_TIMEZONE,
-                    ),
-                    dateFormat,
-                    locale,
-                  )
-                : t("insights.healthScore.none"),
-            })}
+                    )}
+                    size="xs"
+                  >
+                    {formatDate(
+                      userDayKey(
+                        new Date(report.restMode.since),
+                        user?.timezone || DEFAULT_TIMEZONE,
+                      ),
+                      dateFormat,
+                      locale,
+                    )}
+                  </DayLink>,
+                )
+              : t("insights.healthScore.restMode", {
+                  since: t("insights.healthScore.none"),
+                })}
           </p>
         ) : null}
         {tensionLine ? (

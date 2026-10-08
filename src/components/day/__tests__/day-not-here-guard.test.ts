@@ -7,9 +7,12 @@ import { describe, expect, it } from "vitest";
  * Where a date must NOT open the day (integration plan §1.2), frozen.
  *
  *   - the dashboard's today area: the dashboard is today; past days open as
- *     a layer over it, never as date navigation inside it;
- *   - a tile's mini chart: too small a target, and the tile has its own
- *     destination (the chart side is pinned in `health-chart-day-links`);
+ *     a layer over it, never as date navigation inside it. The dashboard's
+ *     charts below it do open their days (the maintainer's call on the
+ *     beta), like every chart drawn in days (`day-door-coverage-guard`);
+ *   - a trend card: it shows the latest value and a direction, no day, and
+ *     the whole tile leads to its metric page (the mini-chart side is
+ *     pinned in `health-chart-day-links`);
  *   - the cycle calendar: a tap there has meant "log this day" for years;
  *   - model-written text (the briefing, the Coach's prose): never parsed for
  *     dates; the Coach's days come from its tool calls as chips;
@@ -64,11 +67,14 @@ describe("the day view stays out of the surfaces it must not reach", () => {
     expect(offenders.map((f) => relative(ROOT, f))).toEqual([]);
   });
 
-  it("the dashboard's charts never ask for day links", () => {
+  it("the dashboard's today area hands no day door to its hero", () => {
+    // The charts below the hero open their days; the hero itself is today
+    // and stays on the list above. Pinned from the other side: the hero is
+    // still mounted by the dashboard, so the list entry is not stale.
     const dashboard = readFileSync(
       join(ROOT, "src/app/page-client.tsx"),
       "utf8",
     );
-    expect(dashboard).not.toMatch(/\bdayLinks\b/);
+    expect(dashboard).toMatch(/<TodayHero\b/);
   });
 });

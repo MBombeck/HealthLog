@@ -15,4 +15,7 @@ export const dayKeys = {
   day: (date: string) => ["day", "detail", date] as const,
   /** `GET /api/day/index`: the window bounds are the key. */
   dayIndex: (from: string, to: string) => ["day", "index", from, to] as const,
+  /** `GET /api/day/notable`: what changed in a window, for a visit. */
+  dayNotable: (from: string, to: string) =>
+    ["day", "notable", from, to] as const,
 };

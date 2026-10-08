@@ -31,6 +31,13 @@ import {
   type ChartBucketType,
 } from "@/lib/charts/bucket-time-series";
 import { RichChartTooltip, type RichTooltipRow } from "./chart-tooltip";
+import { ChartDataTable } from "./chart-data-table";
+import { chartPointDayKey } from "@/components/day/chart-day";
+import {
+  ChartDayFooter,
+  OPEN_DAY_LINE,
+  useChartDayLinks,
+} from "@/components/day/chart-day-links";
 import { ChartEmptyState } from "./chart-empty-state";
 import { ChartErrorState } from "./chart-error-state";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
@@ -102,6 +109,14 @@ interface MoodChartProps {
    * visibly before its measurement siblings. Optional and repeat-safe.
    */
   onDataReady?: () => void;
+  /**
+   * v1.42 — the chart is a door to its days, exactly as `HealthChart`'s
+   * `dayLinks`: a click on a point (the tooltip's button on touch) opens the
+   * day, the open day carries a dashed line, a row of dots marks the days
+   * with entries, and the data table under the chart links each date. Daily
+   * points only, never in `mini` mode.
+   */
+  dayLinks?: boolean;
 }
 
 // --- Constants ---
@@ -317,6 +332,7 @@ export function MoodChart({
   compareBaseline = "none",
   chartKey,
   onDataReady,
+  dayLinks = false,
 }: MoodChartProps) {
   const { isAuthenticated } = useAuth();
   const { t, locale } = useTranslations();
@@ -654,6 +670,27 @@ export function MoodChart({
       : sorted[mid];
   }, [chartData]);
 
+  // v1.42 — the chart as a door to its days (`dayLinks`), through the same
+  // hook every day-linked chart uses.
+  const dayLinksActive = dayLinks && !mini && activeBucket === "day";
+  const dayLinkSource = chartDataWithCompare ?? chartData;
+  const chartDays = useChartDayLinks({
+    enabled: dayLinksActive,
+    days: dayLinksActive
+      ? (dayLinkSource ?? []).map((point) => chartPointDayKey(point.timestamp))
+      : [],
+    focusFor: (index) => {
+      const point = dayLinkSource?.[index];
+      return point
+        ? {
+            label: displayTitle,
+            value: formatTooltipValue(point.score),
+            types: ["MOOD"],
+          }
+        : null;
+    },
+  });
+
   const animationsEnabled = !prefersReducedMotion();
 
   // v1.16.8 — only an EMPTY success hides the card (the dashboard gates
@@ -766,7 +803,8 @@ export function MoodChart({
         mini
           ? "h-[var(--chart-height,140px)]"
           : "h-[var(--chart-height,200px)] md:h-[var(--chart-height-md,220px)]"
-      } touch-pan-y`}
+      } touch-pan-y ${chartDays.plotClassName}`}
+      {...chartDays.plotProps}
       // Same stable hook as the measurement chart: rendered by the data
       // branch only, so the browser suite can gate on it instead of on
       // Recharts' own class names.
@@ -779,6 +817,7 @@ export function MoodChart({
           data={chartDataWithCompare ?? chartData}
           margin={{ top: 10, right: 8, bottom: 8, left: 8 }}
           accessibilityLayer
+          onClick={chartDays.onChartClick}
         >
           {/* v1.4.25 W3 — the mood chart's YAxis is pinned to
                     five mood-score ticks ([1,2,3,4,5]), which Recharts
@@ -868,7 +907,15 @@ export function MoodChart({
             tickMargin={10}
             tickFormatter={formatMoodTick}
           />
+          {chartDays.openIndex !== undefined ? (
+            <ReferenceLine
+              key="open-day"
+              x={chartDays.openIndex}
+              {...OPEN_DAY_LINE}
+            />
+          ) : null}
           <Tooltip
+            {...chartDays.tooltipProps}
             cursor={{
               stroke: "var(--muted-foreground)",
               strokeOpacity: 0.3,
@@ -968,7 +1015,16 @@ export function MoodChart({
                 }
               }
               if (rows.length === 0) return null;
-              return <RichChartTooltip active label={dateLabel} rows={rows} />;
+              return (
+                <RichChartTooltip
+                  active
+                  label={dateLabel}
+                  rows={rows}
+                  action={chartDays.tooltipAction(
+                    hoverPoint ? dayLinkSource?.indexOf(hoverPoint) : undefined,
+                  )}
+                />
+              );
             }}
           />
           <Line
@@ -1142,7 +1198,36 @@ export function MoodChart({
           </div>
         </div>
       </CardHeader>
-      <CardContent>{chartBody}</CardContent>
+      <CardContent>
+        {chartBody}
+        {!isLoading && !isError && chartData && chartData.length >= 3 ? (
+          <>
+            <ChartDayFooter
+              links={chartDays}
+              points={chartData}
+              // The plot's margin (8) + the y axis (65) + the x axis padding
+              // (10) on the left, margin + padding on the right.
+              insetLeft={8 + 65 + 10}
+              insetRight={8 + 10}
+            />
+            {dayLinksActive ? (
+              <ChartDataTable
+                points={chartData.map((point) => ({
+                  date: point.date,
+                  timestamp: point.timestamp,
+                  score: point.score,
+                }))}
+                columns={[{ key: "score", label: t("charts.moodScore") }]}
+                formatValue={formatTooltipValue}
+                formatDate={tzFmt.date}
+                bucket="day"
+                metricLabel={displayTitle}
+                dayLinks
+              />
+            ) : null}
+          </>
+        ) : null}
+      </CardContent>
     </Card>
   );
 }

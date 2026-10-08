@@ -2,6 +2,11 @@
 
 import { HeartPulse } from "lucide-react";
 
+import {
+  DAY_LINK_SLOT,
+  DayLinkStated,
+  withDayLinkSlot,
+} from "@/components/day/day-link";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { RestModeAnnotation } from "@/lib/analytics/score/types";
 
@@ -62,8 +67,14 @@ export function RestModeBanner({
           {t("insights.restMode.title")}
         </p>
         <p className="text-muted-foreground text-xs leading-relaxed">
-          {sinceLabel
-            ? t("insights.restMode.bodySince", { since: sinceLabel })
+          {/* v1.42 — the onset date opens the day the episode began. */}
+          {sinceLabel && since
+            ? withDayLinkSlot(
+                t("insights.restMode.bodySince", { since: DAY_LINK_SLOT }),
+                <DayLinkStated at={since} size="xs">
+                  {sinceLabel}
+                </DayLinkStated>,
+              )
             : t("insights.restMode.body")}
         </p>
       </div>

@@ -47,6 +47,9 @@ export function SleepDurationChart({
       yAxisUnit="h"
       compareBaseline={compareBaseline}
       userTimezone={userTimezone}
+      // v1.42 — the same doors to the day every metric page's chart has.
+      showDataTable
+      dayLinks
     />
   );
 }
