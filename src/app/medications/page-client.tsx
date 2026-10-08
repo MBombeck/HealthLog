@@ -521,6 +521,8 @@ export default function MedicationsPageClient() {
     ),
   });
 
+  const listEmpty = !isLoading && !isError && !medications?.length;
+
   return (
     <div className="space-y-6">
       <PullToRefreshIndicator {...pull} />
@@ -575,7 +577,9 @@ export default function MedicationsPageClient() {
               button's responsive tap-target floor (`min-h-11 sm:min-h-9`) so
               both primary "add" entry points clear the WCAG 2.5.5 44px mobile
               minimum identically. */}
-            {canAddMedication && (
+            {/* While the list is empty its empty state carries the one
+              add action; a second one in the header said it twice. */}
+            {canAddMedication && !listEmpty && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button className="min-h-11 sm:min-h-9">

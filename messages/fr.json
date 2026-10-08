@@ -2502,7 +2502,8 @@
       "moodHeatmapEmpty": "Carte thermique de l'humeur, aucun jour enregistré pour l'instant.",
       "complianceHeatmap": "Carte thermique d'observance des médicaments du {start} au {end}, {days} jours actifs.",
       "complianceHeatmapEmpty": "Carte thermique d'observance des médicaments, aucun jour actif pour l'instant."
-    }
+    },
+    "medicationsEmptyAction": "Ajouter un médicament"
   },
   "chart": {
     "overlay": {

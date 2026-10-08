@@ -2502,7 +2502,8 @@
       "moodHeatmapEmpty": "Mapa cieplna nastroju, brak zarejestrowanych dni.",
       "complianceHeatmap": "Mapa cieplna przyjmowania leków od {start} do {end}, {days} aktywnych dni.",
       "complianceHeatmapEmpty": "Mapa cieplna przyjmowania leków, brak aktywnych dni."
-    }
+    },
+    "medicationsEmptyAction": "Dodaj lek"
   },
   "chart": {
     "overlay": {

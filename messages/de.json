@@ -2502,7 +2502,8 @@
       "moodHeatmapEmpty": "Stimmungs-Heatmap, noch keine Tage erfasst.",
       "complianceHeatmap": "Heatmap zur Medikamenteneinnahme von {start} bis {end}, {days} aktive Tage.",
       "complianceHeatmapEmpty": "Heatmap zur Medikamenteneinnahme, noch keine aktiven Tage."
-    }
+    },
+    "medicationsEmptyAction": "Medikament anlegen"
   },
   "chart": {
     "overlay": {

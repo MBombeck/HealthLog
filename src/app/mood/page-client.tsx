@@ -28,6 +28,9 @@ export default function MoodPageClient() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  // The list's empty state carries the add action while there is nothing
+  // to list, so the header drops its own then.
+  const [listEmpty, setListEmpty] = useState(false);
   // v1.4.27 R4 RC2 — DOM-ref handle the form portals its action row
   // into. The ref lives on the `<ResponsiveSheet>` footer slot so the
   // Sheet branch can sticky-pin Save / Cancel above the keyboard.
@@ -109,7 +112,7 @@ export default function MoodPageClient() {
             )}
             {/* A mood entry is a MANAGE create: a WRITE delegate gets no add
                 path here, a guardian or a MANAGE delegate does. */}
-            {canAddMood && (
+            {canAddMood && !listEmpty && (
               <Button
                 onClick={() => setDialogOpen(true)}
                 className="min-h-11 sm:min-h-9"
@@ -136,7 +139,10 @@ export default function MoodPageClient() {
         />
       </ResponsiveSheet>
 
-      <MoodList onAddFirst={() => setDialogOpen(true)} />
+      <MoodList
+        onAddFirst={() => setDialogOpen(true)}
+        onEmptyChange={setListEmpty}
+      />
 
       {/* 2026-07-17 UX/IA audit M9 — mood tracking, the mental-wellbeing
           screeners, and the mood insights page form one mental-health

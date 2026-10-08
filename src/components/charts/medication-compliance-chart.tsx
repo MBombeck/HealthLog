@@ -32,6 +32,7 @@
  * `findAllByType` reconciliation; the dashboard's `next/dynamic` for
  * the wrapper itself stays intact.
  */
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { queryKeys } from "@/lib/query-keys";
@@ -50,6 +51,8 @@ import { ComplianceInfoTip } from "@/components/medications/card-parts/complianc
 import { TileHeader } from "@/components/insights/tile-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useAuth } from "@/hooks/use-auth";
 import {
   useDateFormatPreference,
@@ -275,6 +278,22 @@ export function MedicationComplianceChart({
     },
     enabled: isAuthenticated,
   });
+
+  // An empty compliance window means one of two things: no dose fell in it,
+  // or there is no medication at all. The second is not "no data in the
+  // chosen range" — it is a first step, so the tile offers it. The list
+  // read is the medications page's own cell (usually warm already).
+  const complianceEmpty = !isLoading && !isError && (data?.length ?? 0) === 0;
+  const medicationList = useQuery({
+    queryKey: queryKeys.medications(),
+    queryFn: () => apiGet<{ id: string }[]>("/api/medications"),
+    enabled: isAuthenticated && complianceEmpty,
+  });
+  const noMedications =
+    complianceEmpty &&
+    medicationList.isSuccess &&
+    (medicationList.data?.length ?? 0) === 0;
+  const { canWriteDomain } = useRecordCapabilities();
 
   // v1.16.0 — report the settled query to the dashboard's shared
   // reveal gate (see `onDataReady` prop doc).
@@ -532,6 +551,24 @@ export function MedicationComplianceChart({
           actionLabel={t("common.retry")}
           actionContext={displayTitle}
           onAction={() => void refetch()}
+        />
+      ) : !hasData && noMedications ? (
+        <EmptyState
+          variant="plain"
+          size="compact"
+          data-slot="medication-compliance-no-medications"
+          className="flex h-48 items-center justify-center"
+          icon={<Pill className="size-4" />}
+          title={t("medications.emptyTitle")}
+          action={
+            canWriteDomain("medications") ? (
+              <Button asChild size="sm">
+                <Link href="/medications/new">
+                  {t("charts.medicationsEmptyAction")}
+                </Link>
+              </Button>
+            ) : undefined
+          }
         />
       ) : !hasData ? (
         <div className="text-muted-foreground flex h-48 items-center justify-center text-sm">

@@ -86,7 +86,6 @@ export default function InsightsBmiPage() {
           icon={<Ruler className="size-6" />}
           title={t("insights.bmiEmptyTitle")}
           description={t("insights.bmiEmptyDescription")}
-          ctaSize="lg"
           action={
             <Button size="sm" asChild>
               <Link href="/settings/account">

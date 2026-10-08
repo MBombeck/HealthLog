@@ -91,7 +91,9 @@ export function VisitsSection({ enabled = true }: { enabled?: boolean }) {
                 {t("practitioners.linkLabel")}
               </Link>
             </Button>
-            {addButton}
+            {/* The empty state carries the add action while there is no
+                visit. */}
+            {!list.isPending && !list.isError && empty ? null : addButton}
           </>
         }
       />
@@ -113,7 +115,6 @@ export function VisitsSection({ enabled = true }: { enabled?: boolean }) {
           title={t("encounters.emptyTitle")}
           description={t("encounters.emptyDescription")}
           action={addButton ?? undefined}
-          ctaSize="lg"
         />
       ) : (
         <div className="space-y-6">

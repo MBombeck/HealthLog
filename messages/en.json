@@ -2502,7 +2502,8 @@
       "moodHeatmapEmpty": "Mood heatmap, no days logged yet.",
       "complianceHeatmap": "Medication compliance heatmap from {start} to {end}, {days} active days.",
       "complianceHeatmapEmpty": "Medication compliance heatmap, no active days yet."
-    }
+    },
+    "medicationsEmptyAction": "Add a medication"
   },
   "chart": {
     "overlay": {

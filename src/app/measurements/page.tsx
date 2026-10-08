@@ -67,6 +67,9 @@ export default function MeasurementsPage() {
     ? `${addParam}\u0000${returnToParam ?? ""}`
     : null;
   const [dialogOpen, setDialogOpen] = useState(() => initialAdd != null);
+  // The list's empty state carries the add action while there is nothing
+  // to list, so the header drops its own then.
+  const [listEmpty, setListEmpty] = useState(false);
   const [defaultType, setDefaultType] = useState<string | undefined>(
     () => initialAdd ?? undefined,
   );
@@ -151,7 +154,7 @@ export default function MeasurementsPage() {
         // admits, so this is the header action a delegate keeps. A read-only
         // delegate loses it entirely rather than meeting a disabled one.
         actions={
-          canAddMeasurement ? (
+          canAddMeasurement && !listEmpty ? (
             <Button
               data-slot="measurement-add"
               className="min-h-11 sm:min-h-9"
@@ -212,6 +215,7 @@ export default function MeasurementsPage() {
         fallback={<Skeleton className="h-[28rem] w-full rounded-xl" />}
       >
         <MeasurementList
+          onEmptyChange={setListEmpty}
           onAddFirst={() => {
             setReturnTo(null);
             setDialogOpen(true);

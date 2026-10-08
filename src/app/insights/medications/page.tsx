@@ -199,7 +199,6 @@ export default function InsightsMedikamentePage() {
           icon={<Pill className="size-6" />}
           title={t("insights.emptyState.medication.title")}
           description={t("insights.emptyState.medication.description")}
-          ctaSize="lg"
           action={
             <Button size="sm" asChild>
               <Link href="/medications">

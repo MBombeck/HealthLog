@@ -104,7 +104,11 @@ export function VaccinationsView() {
           </span>
         }
         description={t("vaccinations.subtitle")}
-        actions={addButton}
+        // The empty state carries the add action while the Impfpass is
+        // empty; the header offers it once there is a list to add to.
+        actions={
+          !isLoading && !isError && records.length === 0 ? null : addButton
+        }
       />
 
       <VaccinationSheet

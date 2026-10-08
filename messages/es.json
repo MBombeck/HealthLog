@@ -2502,7 +2502,8 @@
       "moodHeatmapEmpty": "Mapa de calor de estado de ánimo, aún no hay días registrados.",
       "complianceHeatmap": "Mapa de calor de cumplimiento de medicación de {start} a {end}, {days} días activos.",
       "complianceHeatmapEmpty": "Mapa de calor de cumplimiento de medicación, aún no hay días activos."
-    }
+    },
+    "medicationsEmptyAction": "Añadir un medicamento"
   },
   "chart": {
     "overlay": {

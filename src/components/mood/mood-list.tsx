@@ -174,9 +174,14 @@ interface MoodListProps {
    * rendering a no-op button.
    */
   onAddFirst?: () => void;
+  /**
+   * Told whether the unfiltered list is empty, so the page can drop its
+   * header add button while the empty state carries the add action.
+   */
+  onEmptyChange?: (empty: boolean) => void;
 }
 
-export function MoodList({ onAddFirst }: MoodListProps = {}) {
+export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
   const { t } = useTranslations();
   const fmt = useFormatters();
   const { isAuthenticated } = useAuth();
@@ -361,6 +366,12 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
     },
     enabled: isAuthenticated,
   });
+
+  const listEmpty =
+    !isLoading && !isError && !data?.entries?.length && moodFilter === "ALL";
+  useEffect(() => {
+    onEmptyChange?.(listEmpty);
+  }, [listEmpty, onEmptyChange]);
 
   // v1.16.4 — deletes are soft (tombstones), so the success toast can
   // carry a real Undo: it POSTs the ids to `/api/mood-entries/restore`,

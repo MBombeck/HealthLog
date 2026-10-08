@@ -196,6 +196,11 @@ interface MeasurementListProps {
    */
   onAddFirst?: () => void;
   /**
+   * Told whether the unfiltered list is empty, so the page can drop its
+   * header add button while the empty state carries the add action.
+   */
+  onEmptyChange?: (empty: boolean) => void;
+  /**
    * v1.8.5 — pin the list to a single `MeasurementType` and hide the
    * type selector. Used by the insights "all readings" subpage, which
    * already knows the metric from the route and wants a focused list
@@ -286,6 +291,7 @@ function sourceBadgeClass(source: string): string {
 export function MeasurementList({
   onEdit,
   onAddFirst,
+  onEmptyChange,
   lockedType,
 }: MeasurementListProps) {
   const { t } = useTranslations();
@@ -659,6 +665,15 @@ export function MeasurementList({
     },
     enabled: isAuthenticated,
   });
+
+  const listEmpty =
+    !isLoading &&
+    !isError &&
+    !data?.measurements?.length &&
+    (typeFilter === "ALL" || !!lockedType);
+  useEffect(() => {
+    onEmptyChange?.(listEmpty);
+  }, [listEmpty, onEmptyChange]);
 
   // v1.16.4 — deletes are soft (tombstones), so the success toast can
   // carry a real Undo: it POSTs the ids to `/api/measurements/restore`,

@@ -2502,7 +2502,8 @@
       "moodHeatmapEmpty": "Mappa di calore dell'umore, nessun giorno ancora registrato.",
       "complianceHeatmap": "Mappa di calore dell'aderenza ai farmaci dal {start} al {end}, {days} giorni attivi.",
       "complianceHeatmapEmpty": "Mappa di calore dell'aderenza ai farmaci, nessun giorno attivo."
-    }
+    },
+    "medicationsEmptyAction": "Aggiungi un farmaco"
   },
   "chart": {
     "overlay": {
