@@ -125,9 +125,9 @@ import { invalidateUserData } from "@/lib/cache/invalidate";
 import { TOMBSTONE_RETENTION_DAYS } from "@/lib/auth/native-client";
 import {
   FOLDED_TYPES,
-  coveringStatsExternalId,
-  isFoldedWindowCandidate,
+  compactionTombstoneCoverId,
 } from "@/lib/measurements/folded-window";
+import { enqueueMeasurementFoldRepair } from "@/lib/jobs/measurement-fold-repair";
 import { resolveUserTimezone } from "@/lib/measurements/consolidation-base";
 import { stampSyncReset } from "@/lib/sync/reset";
 import {
@@ -429,19 +429,28 @@ export async function restoreBackup(
   // the transaction reads them a second time, in batches, as it writes them.
   // v1.42 — the live `stats:` ids of the folded types, gathered on the first
   // read, so the measurement pass can tell a compaction tombstone from a
-  // person's deletion without a third read of the file.
+  // person's deletion without a third read of the file. Keyed by source as
+  // well: Health Connect folds into the same `stats:` ids as Apple Health, and
+  // an Apple Health hour must not make a Health Connect deletion look folded.
   const liveFoldStatsIds = new Set<string>();
   const foldedTypes = new Set<string>(FOLDED_TYPES);
+  const foldSources = new Set<string>(["APPLE_HEALTH", "HEALTH_CONNECT"]);
+  const foldStatsKey = (source: string, type: string, externalId: string) =>
+    `${source}|${type}|${externalId}`;
   const noteLiveFoldRow = (row: BackupMeasurement) => {
     if (
       row.deletedAt == null &&
-      row.source === "APPLE_HEALTH" &&
+      row.source !== undefined &&
+      foldSources.has(row.source) &&
       foldedTypes.has(row.type) &&
       row.externalId?.startsWith("stats:")
     ) {
-      liveFoldStatsIds.add(`${row.type}|${row.externalId}`);
+      liveFoldStatsIds.add(foldStatsKey(row.source, row.type, row.externalId));
     }
   };
+  // Set inside the transaction when the restore takes the account's fold
+  // repair marker away; the repair is queued once the transaction commits.
+  let foldRepairReset = false;
   let raw: unknown;
   let payload;
   let streamed: StreamedBackup;
@@ -1013,8 +1022,9 @@ export async function restoreBackup(
           Date.now() - TOMBSTONE_RETENTION_DAYS * 86_400_000;
         //
         // v1.42 — nor is a compaction tombstone, whatever its age: a raw
-        // Apple Health sample the folds soft-deleted before v1.42, whose hour
-        // or day a live `stats:` row in the same file covers. The folds
+        // sample the folds soft-deleted before v1.42, whose whole hour or day
+        // the fold had reached when it was deleted and which a live `stats:`
+        // row of the same source in the same file covers. The folds
         // delete those outright now and the backlog purge removes the old
         // ones, so writing one back would only hand the purge the same row
         // again; the `folded_window` ingest guard is what keeps the sample
@@ -1032,21 +1042,47 @@ export async function restoreBackup(
             )?.timezone ??
             null,
         );
+        // Only once the fold repair has been through the means this file
+        // holds. The repair recomputes a mean an older release folded from
+        // part of its day, and these tombstones are what it reads. A file
+        // exported after the account's repair finished carries repaired
+        // means, so its compaction tombstones can go. Any other file is
+        // written back whole, the account's repair marker is removed, and the
+        // repair runs again once the transaction commits; the purge then
+        // removes the tombstones as usual.
+        const foldRepair = await tx.measurementFoldRepair.findUnique({
+          where: { userId: ownerId },
+          select: { completedAt: true },
+        });
+        const dropCompactionTombstones =
+          foldRepair !== null &&
+          new Date(payload.exportedAt).getTime() >
+            foldRepair.completedAt.getTime();
+        if (!dropCompactionTombstones) {
+          await tx.measurementFoldRepair.deleteMany({
+            where: { userId: ownerId },
+          });
+          foldRepairReset = true;
+        }
         const isCompactionTombstone = (measurement: BackupMeasurement) => {
+          if (!dropCompactionTombstones) return false;
           if (measurement.deletedAt == null) return false;
-          const row = {
-            type: measurement.type,
-            source: measurement.source ?? "MANUAL",
-            externalId: measurement.externalId ?? null,
-            measuredAt: new Date(measurement.measuredAt),
-          };
-          if (!isFoldedWindowCandidate(row, new Date(measurement.deletedAt))) {
-            return false;
-          }
-          const covering = coveringStatsExternalId(row, foldTz);
+          const source = measurement.source ?? "MANUAL";
+          const covering = compactionTombstoneCoverId(
+            {
+              type: measurement.type,
+              source,
+              externalId: measurement.externalId ?? null,
+              measuredAt: new Date(measurement.measuredAt),
+              deletedAt: new Date(measurement.deletedAt),
+            },
+            foldTz,
+          );
           return (
             covering !== null &&
-            liveFoldStatsIds.has(`${measurement.type}|${covering}`)
+            liveFoldStatsIds.has(
+              foldStatsKey(source, measurement.type, covering),
+            )
           );
         };
         const isExpiredTombstone = (measurement: BackupMeasurement) =>
@@ -2808,6 +2844,24 @@ export async function restoreBackup(
   // ran past the per-request statement limit, the fold was dropped, and the
   // account's charts stayed empty until the next boot (#1031). It gets the
   // time the deadline check above keeps free for it instead.
+  // The restore took the fold repair marker away (see the measurement pass):
+  // queue the repair now that the restored rows are committed. Best-effort;
+  // the next boot's discovery queues it otherwise, and the purge waits
+  // either way.
+  if (foldRepairReset) {
+    try {
+      await enqueueMeasurementFoldRepair(ownerId);
+    } catch (err) {
+      annotate({
+        meta: {
+          fold_repair_enqueue_failed: true,
+          fold_repair_enqueue_error:
+            err instanceof Error ? err.message : String(err),
+        },
+      });
+    }
+  }
+
   if (measurementsRestored > 0) {
     try {
       await recomputeUserRollups(ownerId, {

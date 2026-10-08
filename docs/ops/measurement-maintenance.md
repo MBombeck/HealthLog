@@ -4,18 +4,56 @@ Since v1.42 the nightly folds of Apple Health data delete the raw samples they
 fold into hourly or daily rows, instead of keeping them as deleted rows for 75
 days. On an instance that has synced Apple Health for a while, those leftovers
 ("compaction tombstones") were most of the `measurements` table and of its
-indexes. Two pieces clean them up:
+indexes. Three pieces deal with them, in this order:
 
-1. **The backlog purge** runs by itself. Every worker boot queues one
+1. **The fold repair** runs by itself, once per account, before anything is
+   deleted. Up to v1.42 the folds could fold a day in two runs, and the
+   second run stored the mean of the later part of the day only. The repair
+   recomputes those hourly and daily means from all of the day's samples,
+   including the compaction tombstones, and corrects a stored mean only when
+   it differs. When it has finished an account it records that in
+   `measurement_fold_repairs`.
+2. **The backlog purge** runs by itself, after the repair. Every worker boot queues one
    `compaction-tombstone-purge` job. It deletes the leftovers 5,000 rows at a
    time, one account at a time, pausing briefly between batches, and stops
    after 40 batches; a run that stopped with work left queues the next one a
    minute later. Rows a person deleted are never touched by it: they keep the
-   75-day retention of the nightly tombstone cleanup.
-2. **The table maintenance** is yours to start, after the purge. It runs
+   75-day retention of the nightly tombstone cleanup. The purge leaves an
+   account alone until the repair has finished it, and a boot queues no purge
+   run while the repair has finished no account.
+3. **The table maintenance** is yours to start, after the purge. It runs
    `VACUUM (ANALYZE)` on `measurements` and then rebuilds each of its indexes
    with `REINDEX INDEX CONCURRENTLY`, largest first. The purge leaves the
    indexes full of empty pages, and only a rebuild gives that space back.
+
+## Repair before purge
+
+The order matters because the purge deletes what the repair reads. Do not
+delete compaction tombstones by hand, and do not insert rows into
+`measurement_fold_repairs` to hurry the purge along: a mean the repair has not
+seen keeps its wrong value for good once its tombstones are gone.
+
+The repair reports every run on the wide event `job.measurement_fold_repair`
+(`fold_repair_means_checked`, `fold_repair_means_corrected`,
+`fold_repair_resting_corrected`, and `fold_repair_by_type` with the same
+counts per type; counts only, never a value). It is finished when every
+account has a row:
+
+```sql
+SELECT count(*) AS accounts_left
+FROM users u
+LEFT JOIN measurement_fold_repairs r ON r.user_id = u.id
+WHERE r.user_id IS NULL;
+```
+
+Each run works on one account, a day at a time, and stops on its time budget
+with a follow-up that resumes at the next day; an account under restore is
+tried again five minutes later. While accounts are left, purge runs report
+them as `compaction_purge_awaiting_repair_accounts`.
+
+A restore of a backup exported before the account's repair finished writes
+the compaction tombstones back, removes the account's row and queues the
+repair again; the purge follows once the repair is through.
 
 ## Is the purge finished?
 

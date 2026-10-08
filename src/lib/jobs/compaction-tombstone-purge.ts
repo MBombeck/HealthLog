@@ -35,6 +35,13 @@
  *     and every boot queues one run.
  *   - Every run reports its outcome per account (`reportJobRun`) and its
  *     totals as job facts.
+ *
+ * Repair first. Some of these tombstones are the only remaining record of
+ * samples whose day an older release folded in two runs, leaving a mean of
+ * part of the day (`measurement-fold-repair.ts`). The purge therefore leaves
+ * an account alone until the repair has been through it (a
+ * `MeasurementFoldRepair` row), and the boot sends no run while no account
+ * has one. The repair queues a run as it finishes an account.
  */
 import { createHash } from "node:crypto";
 import type { Job } from "pg-boss";
@@ -84,6 +91,10 @@ export interface CompactionTombstonePurgeOutcome {
   scanned: number;
   /** The deferred accounts' ids. Never leaves the process unhashed. */
   deferredUserIds: string[];
+  /** Accounts left alone because the fold repair has not finished them. */
+  awaitingRepairAccounts: number;
+  /** Their ids. Never leaves the process unhashed. */
+  awaitingRepairUserIds: string[];
 }
 
 export interface PurgeCompactionTombstonesOptions {
@@ -115,6 +126,8 @@ export async function purgeCompactionTombstones(
   const scanPageSize = options.scanPageSize ?? PURGE_BATCH_SIZE;
   const pauseMs = options.pauseMs ?? BATCH_PAUSE_MS;
   const timezoneOf = new Map<string, string>();
+  const repaired = new Map<string, boolean>();
+  const awaitingRepair = new Set<string>();
   let scanned = 0;
 
   // The walk's position. Rows behind it are classified; the class-A ones wait
@@ -133,6 +146,17 @@ export async function purgeCompactionTombstones(
     for (const user of users) {
       timezoneOf.set(user.id, resolveUserTimezone(user.timezone));
     }
+  }
+
+  async function loadRepaired(userIds: string[]): Promise<void> {
+    const missing = userIds.filter((id) => !repaired.has(id));
+    if (missing.length === 0) return;
+    const rows = await prisma.measurementFoldRepair.findMany({
+      where: { userId: { in: missing } },
+      select: { userId: true },
+    });
+    const done = new Set(rows.map((row) => row.userId));
+    for (const id of missing) repaired.set(id, done.has(id));
   }
 
   async function classifyNextPage(skipUserIds: ReadonlySet<string>) {
@@ -175,7 +199,13 @@ export async function purgeCompactionTombstones(
       else byAccount.set(row.userId, [row]);
     }
     await timezoneFor([...byAccount.keys()]);
+    await loadRepaired([...byAccount.keys()]);
     for (const [userId, rows] of byAccount) {
+      // The repair reads these tombstones; nothing goes before it has run.
+      if (!repaired.get(userId)) {
+        awaitingRepair.add(userId);
+        continue;
+      }
       const tz = timezoneOf.get(userId);
       // An account deleted since the page was read has nothing left to purge.
       if (!tz) continue;
@@ -234,6 +264,8 @@ export async function purgeCompactionTombstones(
     deferredAccounts: outcome.deferredAccounts,
     scanned,
     deferredUserIds: outcome.deferredUserIds,
+    awaitingRepairAccounts: awaitingRepair.size,
+    awaitingRepairUserIds: [...awaitingRepair],
   };
 }
 
@@ -259,13 +291,18 @@ export async function handleCompactionTombstonePurge(
   return withBackgroundEvent("job.compaction_tombstone_purge", async (evt) => {
     const startedAt = Date.now();
     const result = await purgeCompactionTombstones(prisma, { shouldStop });
-    const candidates: JobRunCandidate[] = result.deferredUserIds.map(
-      (userId) => ({
+    const candidates: JobRunCandidate[] = [
+      ...result.deferredUserIds.map((userId): JobRunCandidate => ({
         key: accountKey(userId),
         outcome: "deferred",
         cause: "restore_in_progress",
-      }),
-    );
+      })),
+      ...result.awaitingRepairUserIds.map((userId): JobRunCandidate => ({
+        key: accountKey(userId),
+        outcome: "skipped",
+        cause: "awaiting_fold_repair",
+      })),
+    ];
     reportJobRun({
       queue: COMPACTION_TOMBSTONE_PURGE_QUEUE,
       runId: jobs[0]?.id ?? "unknown",
@@ -276,6 +313,10 @@ export async function handleCompactionTombstonePurge(
     evt.addMeta("compaction_purge_drained", result.drained);
     evt.addMeta("compaction_purge_deferred_accounts", result.deferredAccounts);
     evt.addMeta("compaction_purge_continuation", continuation);
+    evt.addMeta(
+      "compaction_purge_awaiting_repair_accounts",
+      result.awaitingRepairAccounts,
+    );
 
     // A run that stopped with work left sends the next one, but only when it
     // made progress, so a run that cannot delete anything cannot loop.
@@ -318,13 +359,21 @@ export async function handleCompactionTombstonePurge(
 
 /**
  * Queue one purge run when the worker boots. The run is self-limiting and
- * idempotent, so a boot that finds no backlog costs one cheap scan.
+ * idempotent, so a boot that finds no backlog costs one cheap scan. While the
+ * fold repair has finished no account, there is nothing the run may delete,
+ * so none is sent; the repair sends one as it finishes an account.
  */
-export async function enqueueBootTimeCompactionTombstonePurge(): Promise<{
+export async function enqueueBootTimeCompactionTombstonePurge(
+  prisma: Pick<PrismaClient, "measurementFoldRepair"> = defaultPrisma,
+): Promise<{
   enqueued: boolean;
 }> {
   const boss = getGlobalBoss();
   if (!boss) return { enqueued: false };
+  const anyRepaired = await prisma.measurementFoldRepair.findFirst({
+    select: { userId: true },
+  });
+  if (!anyRepaired) return { enqueued: false };
   const id = await boss.send(
     COMPACTION_TOMBSTONE_PURGE_QUEUE,
     { continuation: 0 },

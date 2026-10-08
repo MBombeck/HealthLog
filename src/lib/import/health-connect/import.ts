@@ -65,7 +65,10 @@ import {
   isFoldedWindowCandidate,
   loadFoldTimezone,
 } from "@/lib/measurements/folded-window";
-import { canonicalDailyTimestamp } from "@/lib/measurements/consolidation-tz";
+import {
+  canonicalDailyTimestamp,
+  foldBoundary,
+} from "@/lib/measurements/consolidation-tz";
 import { validateMeasurementRange } from "@/lib/validations/measurement";
 import { isModuleEnabled } from "@/lib/modules/gate";
 import { isCycleAvailableForUser } from "@/lib/cycle/gate";
@@ -482,7 +485,18 @@ class ImportRun {
     ) {
       return;
     }
-    const cutoff = this.now.getTime() - HC_RAW_PULSE_WINDOW_MS;
+    // The nightly fold folds this source's raw samples once their local day
+    // is over in full, 90 days back (`foldBoundary`). Splitting the export at
+    // the same instant keeps every day on one side: a day cut at
+    // `now - 90 days` itself got an hourly mean of its first part here and
+    // raw samples for the rest, and the fold then overwrote the boundary
+    // hour's mean with the mean of the raw part alone.
+    this.foldTz ??= await loadFoldTimezone(this.prisma, this.userId);
+    const cutoff = foldBoundary(
+      this.now,
+      HC_RAW_PULSE_WINDOW_MS,
+      this.foldTz,
+    ).getTime();
     await this.importHourlyPulse(cutoff);
     await this.importRawPulse(cutoff);
   }

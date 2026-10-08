@@ -1002,6 +1002,7 @@ model User {
   // move, a birth, a new job. Shared under the `profile` domain; never sent to
   // a model.
   lifeEvents                                LifeEvent[]
+  measurementFoldRepair                     MeasurementFoldRepair?
 
   // v1.7.0 profile — optional patient-identity fields surfaced on the
   // health-record export cover (PDF) and the FHIR `Patient` resource.
@@ -9640,4 +9641,25 @@ enum LifeEventPrecision {
   YEAR
 
   @@map("life_event_precision")
+}
+
+/// v1.42 — the fold repair has been through this account.
+///
+/// Before v1.42 the daily-mean consolidation and the dense hourly fold could
+/// fold a local day in two runs, the second overwriting the stored mean with
+/// the mean of the later part alone. The one-time repair
+/// (`src/lib/jobs/measurement-fold-repair.ts`) recomputes every such mean from
+/// the samples still in the table, the fold's own tombstones among them. The
+/// compaction-tombstone purge deletes exactly those tombstones, so it leaves an
+/// account alone until this row exists, and a restore that writes back a file
+/// older than `completedAt`'s run removes the row so the repair goes again.
+model MeasurementFoldRepair {
+  userId      String   @id @map("user_id")
+  /// When the repair finished the account. A restore compares it with the
+  /// file's export instant; the purge only asks whether the row exists.
+  completedAt DateTime @map("completed_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("measurement_fold_repairs")
 }

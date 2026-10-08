@@ -99,6 +99,8 @@ describe("consolidateDailyMean — drain flow (mocked Prisma)", () => {
     // Canonical-slot probe inside the write transaction — defaults to an
     // unoccupied slot (the pre-collision-fix happy path).
     const txFindFirst = vi.fn().mockResolvedValue(null);
+    // The fold leftovers of a day that already has a live daily row.
+    const txFindMany = vi.fn().mockResolvedValue([]);
     const findManyMeasurement = vi.fn(
       async (args: { where: { type: string } }) =>
         rowsByType[args.where.type] ?? [],
@@ -110,6 +112,7 @@ describe("consolidateDailyMean — drain flow (mocked Prisma)", () => {
         deleteMany,
         update,
         findFirst: txFindFirst,
+        findMany: txFindMany,
       },
     };
     return {
@@ -289,6 +292,8 @@ describe("consolidateDailyMean — canonical-slot collision (second unique index
     const deleteMany = vi.fn().mockResolvedValue({ count: 0 });
     const update = vi.fn().mockResolvedValue({});
     const txFindFirst = vi.fn().mockResolvedValue(null);
+    // The fold leftovers of a day that already has a live daily row.
+    const txFindMany = vi.fn().mockResolvedValue([]);
     const findManyMeasurement = vi.fn(
       async (args: { where: { type: string } }) =>
         rowsByType[args.where.type] ?? [],
@@ -300,6 +305,7 @@ describe("consolidateDailyMean — canonical-slot collision (second unique index
         deleteMany,
         update,
         findFirst: txFindFirst,
+        findMany: txFindMany,
       },
     };
     return {
@@ -319,6 +325,7 @@ describe("consolidateDailyMean — canonical-slot collision (second unique index
       deleteMany,
       update,
       txFindFirst,
+      txFindMany,
     };
   }
 
@@ -328,8 +335,21 @@ describe("consolidateDailyMean — canonical-slot collision (second unique index
     occupant: { id: string; externalId: string | null; deletedAt: Date | null },
   ) {
     txFindFirst.mockImplementation(
-      async (args: { where: { measuredAt: Date } }) =>
-        args.where.measuredAt.getTime() === noon.getTime() ? occupant : null,
+      async (args: {
+        where: { measuredAt?: Date; externalId?: string; deletedAt?: null };
+      }) => {
+        // The live-daily-row lookup (no instant): the occupant answers it
+        // when it is the live daily row itself.
+        if (args.where.measuredAt === undefined) {
+          return occupant.externalId === args.where.externalId &&
+            occupant.deletedAt === null
+            ? { id: occupant.id }
+            : null;
+        }
+        return args.where.measuredAt.getTime() === noon.getTime()
+          ? occupant
+          : null;
+      },
     );
   }
 
@@ -414,8 +434,44 @@ describe("consolidateDailyMean — canonical-slot collision (second unique index
     expect(summary.totals.daysFailed).toBe(0);
   });
 
-  it("re-run path: a slot row already carrying the target externalId is updated in place", async () => {
-    const { mock, upsert, update, txFindFirst } = buildPrismaMock({
+  it("re-run path: a slot row already carrying the target externalId is updated in place, with the mean over every sample of the day", async () => {
+    const { mock, upsert, update, txFindFirst, txFindMany } = buildPrismaMock({
+      WALKING_SPEED: [row("late", 1.2, "2026-05-01T18:00:00.000Z")],
+    });
+    occupySlot(txFindFirst, {
+      id: "mean-1",
+      externalId: targetExternalId,
+      deletedAt: null,
+    });
+    // A sample an earlier fold of the same day soft-deleted.
+    txFindMany.mockResolvedValue([
+      {
+        id: "early",
+        value: 1.0,
+        measuredAt: new Date("2026-05-01T07:00:00.000Z"),
+        externalId: "uuid-early",
+        deletedAt: new Date("2026-05-03T03:00:00.000Z"),
+        syncVersion: 1,
+      },
+    ]);
+
+    await consolidateDailyMean(mock, { log: () => {} });
+
+    // No shift, no yield — the upsert's update branch owns the row.
+    expect(update).not.toHaveBeenCalled();
+    const upsertArg = upsert.mock.calls[0]?.[0] as {
+      create: { measuredAt: Date };
+      update: { value: number };
+    };
+    expect(upsertArg.create.measuredAt.getTime()).toBe(noon.getTime());
+    // Not the late sample alone: the whole day.
+    expect(upsertArg.update.value).toBeCloseTo(1.1, 9);
+    // The live-row lookup and the single slot probe — no free-instant search.
+    expect(txFindFirst).toHaveBeenCalledTimes(2);
+  });
+
+  it("re-run path without fold leftovers keeps the stored mean and drops the raw rows", async () => {
+    const { mock, upsert, deleteMany, txFindFirst } = buildPrismaMock({
       WALKING_SPEED: [row("late", 1.2, "2026-05-01T18:00:00.000Z")],
     });
     occupySlot(txFindFirst, {
@@ -426,14 +482,8 @@ describe("consolidateDailyMean — canonical-slot collision (second unique index
 
     await consolidateDailyMean(mock, { log: () => {} });
 
-    // No shift, no yield — the upsert's update branch owns the row.
-    expect(update).not.toHaveBeenCalled();
-    const upsertArg = upsert.mock.calls[0]?.[0] as {
-      create: { measuredAt: Date };
-    };
-    expect(upsertArg.create.measuredAt.getTime()).toBe(noon.getTime());
-    // Only the single slot probe ran — no free-instant search.
-    expect(txFindFirst).toHaveBeenCalledTimes(1);
+    expect(upsert).not.toHaveBeenCalled();
+    expect(deleteMany).toHaveBeenCalledTimes(1);
   });
 
   it("a failing day bucket does not abort the pass — later buckets still consolidate", async () => {

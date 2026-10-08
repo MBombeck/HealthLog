@@ -88,8 +88,14 @@ async function account(id: string, signIn = false) {
  * One account's mix: the live hourly row, five class-A tombstones under it,
  * and class-B rows the purge must leave alone.
  */
-async function seedMix(userId: string) {
+async function seedMix(userId: string, repaired = true) {
   const prisma = getPrismaClient();
+  // The purge waits for the fold repair; these accounts have been through it.
+  if (repaired) {
+    await prisma.measurementFoldRepair.create({
+      data: { userId, completedAt: new Date(NOW - HOUR) },
+    });
+  }
   const compactedAt = new Date(NOW - DAY);
   await prisma.measurement.create({
     data: {
@@ -141,7 +147,9 @@ async function seedMix(userId: string) {
       source: "APPLE_HEALTH",
       measuredAt: meanAt,
       externalId: `uuid-${userId}-rr`,
-      deletedAt: new Date(meanAt.getTime() + 2 * DAY),
+      // Late enough that the whole local day was past the grace: a fold
+      // only takes complete days.
+      deletedAt: new Date(meanAt.getTime() + 3 * DAY),
     },
   });
   await prisma.measurement.createMany({
@@ -326,6 +334,22 @@ describe("compaction-tombstone purge", () => {
   }, 60_000);
 });
 
+describe("compaction-tombstone purge before the fold repair", () => {
+  it("leaves an account the repair has not finished alone", async () => {
+    const prisma = getPrismaClient();
+    await account("purge-unrepaired");
+    await seedMix("purge-unrepaired", false);
+    const { purgeCompactionTombstones } =
+      await import("@/lib/jobs/compaction-tombstone-purge");
+    const outcome = await purgeCompactionTombstones(prisma, { pauseMs: 0 });
+    expect(outcome.deleted).toBe(0);
+    expect(outcome.awaitingRepairAccounts).toBe(1);
+    for (const id of CLASS_A("purge-unrepaired")) {
+      expect(await ids("purge-unrepaired")).toContain(id);
+    }
+  });
+});
+
 describe("/api/sync/changes", () => {
   it("leaves compaction tombstones out and still reports a person's deletion", async () => {
     await account("feed", true);
@@ -404,6 +428,44 @@ describe("restore", () => {
     expect(restored).toContain("restore-a-classB-legacy");
     expect(restored).toContain("restore-a-hourly");
     expect(restored).toContain("restore-a-live");
+  }, 120_000);
+
+  it("writes class-A tombstones back from a file older than the fold repair, and runs the repair again", async () => {
+    const prisma = getPrismaClient();
+    await account("restore-old", true);
+    await seedMix("restore-old", false);
+    const { storeBackupBlob } = await import("@/lib/export/store-backup-blob");
+    const { streamFullBackupJson } =
+      await import("@/lib/export/full-backup-stream");
+    const { id: backupId } = await storeBackupBlob(
+      prisma,
+      { userId: "restore-old", type: "WEEKLY_AUTO" },
+      (write) =>
+        streamFullBackupJson(prisma, "restore-old", write, {
+          purpose: "disaster-recovery",
+        }),
+    );
+    // The repair finished after the file was exported.
+    await prisma.measurementFoldRepair.create({
+      data: { userId: "restore-old", completedAt: new Date(Date.now() + 1) },
+    });
+    const { POST } = await import("./restore-job-driver");
+    const res = await POST(
+      new Request(`http://localhost/api/admin/backups/${backupId}/restore`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ confirm: "RESTORE" }),
+      }) as never,
+      { params: Promise.resolve({ id: backupId }) },
+    );
+    expect(res.status).toBe(200);
+    const restored = await ids("restore-old");
+    for (const id of CLASS_A("restore-old")) expect(restored).toContain(id);
+    expect(
+      await prisma.measurementFoldRepair.findUnique({
+        where: { userId: "restore-old" },
+      }),
+    ).toBeNull();
   }, 120_000);
 });
 

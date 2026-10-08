@@ -1,3 +1,4 @@
+import { foldBoundary } from "../consolidation-tz";
 import { describe, expect, it, vi } from "vitest";
 
 // The SUM drain now recomputes the affected DAY rollup bucket after each
@@ -320,11 +321,13 @@ describe("drainPerSampleCumulative — cutoffHours", () => {
     expect(call.where.source).toBe("APPLE_HEALTH");
     expect(call.where.measuredAt?.lt).toBeInstanceOf(Date);
 
+    // The start of the account's local day that the 36-hour grace ends in:
+    // only complete local days fold.
     const cutoff = call.where.measuredAt!.lt as Date;
-    const expectedMin = beforeAt - 36 * 60 * 60 * 1000;
-    const expectedMax = afterAt - 36 * 60 * 60 * 1000;
-    expect(cutoff.getTime()).toBeGreaterThanOrEqual(expectedMin);
-    expect(cutoff.getTime()).toBeLessThanOrEqual(expectedMax);
+    const expected = [beforeAt, afterAt].map((t) =>
+      foldBoundary(new Date(t), 36 * 60 * 60 * 1000, "Europe/Berlin").getTime(),
+    );
+    expect(expected).toContain(cutoff.getTime());
   });
 
   it("omits the cutoff filter when cutoffHours is not provided (CLI / admin one-shot)", async () => {

@@ -24,6 +24,7 @@ import {
   DENSE_INTRADAY_RETENTION_TYPES,
 } from "../dense-intraday-retention";
 import type { PerSampleRow } from "../drain-per-sample-cumulative";
+import { foldBoundary } from "../consolidation-tz";
 import type { MeasurementType, PrismaClient } from "@/generated/prisma/client";
 import { candidateLookup, createManyVia } from "./hourly-mint-mock";
 
@@ -87,7 +88,10 @@ function buildPrismaMock(
           .fn()
           .mockResolvedValue([{ id: "user-1", timezone: "Europe/Berlin" }]),
       },
-      measurement: { findMany: findManyMeasurement },
+      measurement: {
+        findMany: findManyMeasurement,
+        count: vi.fn().mockResolvedValue(0),
+      },
       $transaction: vi.fn(async (cb: (t: unknown) => Promise<unknown>) =>
         cb(tx),
       ),
@@ -119,16 +123,29 @@ describe("runDenseIntradayRetention — retention bound", () => {
       ).where;
       expect(where.measuredAt?.lt).toBeInstanceOf(Date);
     }
-    // The cutoff is ~DENSE_INTRADAY_RETENTION_DAYS in the past.
+    // The cutoff is the start of the account's local day that
+    // DENSE_INTRADAY_RETENTION_DAYS back falls on: only complete local days
+    // fold, so no day is folded in two runs.
     const firstCutoff = (
       findManyMeasurement.mock.calls[0]?.[0] as unknown as {
         where: { measuredAt: { lt: Date } };
       }
-    ).where.measuredAt.lt.getTime();
-    const expected =
-      Date.now() - DENSE_INTRADAY_RETENTION_DAYS * 24 * 60 * 60 * 1000;
-    // Within a generous 60s of the expected boundary.
-    expect(Math.abs(firstCutoff - expected)).toBeLessThan(60_000);
+    ).where.measuredAt.lt;
+    const expected = foldBoundary(
+      new Date(),
+      DENSE_INTRADAY_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+      "Europe/Berlin",
+    );
+    expect(firstCutoff.getTime()).toBe(expected.getTime());
+    // Local midnight in Berlin.
+    expect(
+      new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Europe/Berlin",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
+      }).format(firstCutoff),
+    ).toBe("00:00");
   });
 
   it("folds everything when retentionDays = 0 (no window)", async () => {

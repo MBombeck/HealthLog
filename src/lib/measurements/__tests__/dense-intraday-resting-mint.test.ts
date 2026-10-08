@@ -116,6 +116,7 @@ function buildPrismaMock(existingResting: Array<{ source: string }>) {
         ),
         findFirst: probeFindFirst,
         upsert,
+        count: vi.fn().mockResolvedValue(0),
       },
       $transaction: vi.fn(async (cb: (t: unknown) => Promise<unknown>) =>
         cb(tx),

@@ -68,6 +68,12 @@ import {
   type CompactionTombstonePurgePayload,
 } from "@/lib/jobs/compaction-tombstone-purge";
 import {
+  MEASUREMENT_FOLD_REPAIR_QUEUE,
+  enqueueBootTimeMeasurementFoldRepair,
+  handleMeasurementFoldRepair,
+  type MeasurementFoldRepairPayload,
+} from "@/lib/jobs/measurement-fold-repair";
+import {
   MEASUREMENT_MAINTENANCE_QUEUE,
   handleMeasurementMaintenance,
   type MeasurementMaintenancePayload,
@@ -462,6 +468,10 @@ const allQueues = [
   // v1.42 — backlog purge of compaction tombstones, queued once at boot.
   // Without this entry the boot enqueue silently no-ops.
   COMPACTION_TOMBSTONE_PURGE_QUEUE,
+  // v1.42 — one-time repair of the means older releases folded from part of
+  // their window; the purge above waits for it. Without this entry the boot
+  // enqueue silently no-ops and the purge never runs.
+  MEASUREMENT_FOLD_REPAIR_QUEUE,
   // v1.42 — operator-triggered VACUUM / REINDEX of `measurements`. No
   // cron: the admin route enqueues it. Without this entry the trigger
   // silently no-ops.
@@ -806,6 +816,16 @@ const queuePolicies: QueuePolicyTable = {
     reason:
       "Fixed singleton key; collapse queued duplicates only, so the active run can queue its own follow-up.",
   },
+  // v1.42 — per-account fold repair. `short` for the same reason: a run the
+  // budget stopped sends its own follow-up for the account while it is still
+  // active. A boot's send for a queued account collapses into it; a duplicate
+  // beside an active run rewrites nothing, since only differing means are
+  // written.
+  [MEASUREMENT_FOLD_REPAIR_QUEUE]: {
+    policy: "short",
+    reason:
+      "Per-account singleton key; collapse queued duplicates only, so the active run can queue its own follow-up.",
+  },
 
   // Per-document, enqueued on upload. `short`, NOT `exclusive`: each handler
   // re-reads the document when it starts, so collapsing sends that arrive while
@@ -1146,6 +1166,14 @@ export async function registerMaintenanceQueues(
     COMPACTION_TOMBSTONE_PURGE_QUEUE,
     { localConcurrency: 1 },
     handleCompactionTombstonePurge,
+  );
+  // v1.42 — fold repair. Serial: each day holds the account against a
+  // concurrent restore, and the purge waits for it.
+  await createAndWork<MeasurementFoldRepairPayload>(
+    boss,
+    MEASUREMENT_FOLD_REPAIR_QUEUE,
+    { localConcurrency: 1 },
+    handleMeasurementFoldRepair,
   );
   // v1.42 — measurement table maintenance, operator-triggered only.
   await createAndWork<MeasurementMaintenancePayload>(
@@ -1895,8 +1923,32 @@ export async function enqueueMaintenanceBootDiscovery(): Promise<void> {
     );
   }
 
+  // v1.42 — the fold repair, once per account; the purge below waits for it.
+  try {
+    const { enqueued, skipped, error } =
+      await enqueueBootTimeMeasurementFoldRepair();
+    if (error) {
+      workerLog(
+        "error",
+        `[measurement-fold-repair] boot discovery failed: ${error}`,
+      );
+    } else {
+      workerLog(
+        "info",
+        `[measurement-fold-repair] boot discovery: enqueued=${enqueued} skipped=${skipped}`,
+      );
+    }
+  } catch (err) {
+    workerLog(
+      "error",
+      "[measurement-fold-repair] boot discovery threw an unexpected error",
+      err,
+    );
+  }
+
   // v1.42 — one compaction-tombstone purge run per boot. The run is
   // self-limiting and idempotent, so a boot with no backlog costs one query.
+  // It sends nothing until the fold repair has finished an account.
   try {
     const { enqueued } = await enqueueBootTimeCompactionTombstonePurge();
     workerLog(

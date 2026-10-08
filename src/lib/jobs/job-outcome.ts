@@ -43,6 +43,7 @@ export type JobFacts = Readonly<Record<string, JobFact>>;
  */
 export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "access_tokens_deleted",
+  "accounts_completed",
   // v1.40 — the document AI run reaper's three outcomes.
   "ai_runs_deleted",
   "ai_runs_timed_out",
@@ -138,6 +139,10 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "manual_mints_removed",
   "markers",
   "mean_days_consolidated",
+  // v1.42 — the one-time fold repair: windows whose stored mean was compared
+  // with the mean over every sample, and those it corrected. Counts only.
+  "means_checked",
+  "means_corrected",
   "mean_rows_soft_deleted",
   "measurements_imported",
   "measurements_migrated",
@@ -188,6 +193,7 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "refused",
   "reminders_due",
   "removed",
+  "resting_corrected",
   "rows_written",
   // v1.39.1 — the background restore of a stored backup, and the sweep that
   // re-queues one a stopped worker left running. Counts and a claim flag.
