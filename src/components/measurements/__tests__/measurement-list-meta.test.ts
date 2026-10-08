@@ -4,6 +4,7 @@ import {
   MEASUREMENT_TYPE_LABEL_KEYS,
   MEASUREMENT_TYPE_ICONS,
   MEASUREMENT_TYPE_COLORS,
+  measurementUnitLabel,
 } from "../measurement-list-meta";
 import enMessages from "../../../../messages/en.json";
 import deMessages from "../../../../messages/de.json";
@@ -39,5 +40,20 @@ describe("measurement-list-meta", () => {
       expect(en[leaf], `EN missing ${key} for ${type}`).toBeTruthy();
       expect(de[leaf], `DE missing ${key} for ${type}`).toBeTruthy();
     }
+  });
+});
+
+describe("measurementUnitLabel", () => {
+  const t = (key: string) => `t:${key}`;
+  it("shows the localised word for count-shaped source units", () => {
+    expect(measurementUnitLabel("FLIGHTS_CLIMBED", "count", t)).toBe(
+      "t:insights.units.flights",
+    );
+    expect(measurementUnitLabel("RESPIRATORY_RATE", "count/min", t)).toBe(
+      "t:insights.units.respiratoryRate",
+    );
+  });
+  it("passes every other unit through", () => {
+    expect(measurementUnitLabel("WEIGHT", "kg", t)).toBe("kg");
   });
 });

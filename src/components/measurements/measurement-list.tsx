@@ -104,6 +104,7 @@ import {
   MEASUREMENT_TYPE_LABEL_KEYS as TYPE_LABEL_KEYS,
   MEASUREMENT_TYPE_ICONS as TYPE_ICONS,
   MEASUREMENT_TYPE_COLORS as TYPE_COLORS,
+  measurementUnitLabel,
 } from "./measurement-list-meta";
 import {
   measurementListFiltersToSearch,
@@ -1262,7 +1263,11 @@ export function MeasurementList({
                                         rowDisplay(m).value,
                                         rawDisplayFractionDigits(m.type),
                                       )}{" "}
-                                  {isGrouped ? m.unit : rowDisplay(m).unit}
+                                  {measurementUnitLabel(
+                                    m.type,
+                                    isGrouped ? m.unit : rowDisplay(m).unit,
+                                    t,
+                                  )}
                                   {isGrouped && (
                                     <span className="text-muted-foreground ml-2 text-xs font-normal">
                                       {t("measurements.dailyTotalCaption", {
@@ -1486,7 +1491,11 @@ export function MeasurementList({
                                         rowDisplay(m).value,
                                         rawDisplayFractionDigits(m.type),
                                       )}{" "}
-                                  {isGrouped ? m.unit : rowDisplay(m).unit}
+                                  {measurementUnitLabel(
+                                    m.type,
+                                    isGrouped ? m.unit : rowDisplay(m).unit,
+                                    t,
+                                  )}
                                 </>
                               )}
                             </span>
