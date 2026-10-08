@@ -88,6 +88,7 @@ vi.mock("@/lib/db", () => ({
     measurementReminder: { findMany: vi.fn().mockResolvedValue([]) },
     vaccinationDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },
     vaccinationRecord: { findMany: vi.fn().mockResolvedValue([]) },
+    customVaccine: { findMany: vi.fn().mockResolvedValue([]) },
     encounterConditionLink: { findMany: vi.fn().mockResolvedValue([]) },
     encounterLabLink: { findMany: vi.fn().mockResolvedValue([]) },
     encounterDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },

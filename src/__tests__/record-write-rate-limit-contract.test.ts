@@ -58,6 +58,7 @@ const ON_THE_SHARED_BUCKET: Array<[route: string, openApiPath: string]> = [
   ],
   ["src/app/api/cycle/day-logs/route.ts", "/api/cycle/day-logs"],
   ["src/app/api/vaccinations/route.ts", "/api/vaccinations"],
+  ["src/app/api/vaccinations/custom/route.ts", "/api/vaccinations/custom"],
   ["src/app/api/allergies/route.ts", "/api/allergies"],
   ["src/app/api/biomarkers/route.ts", "/api/biomarkers"],
   ["src/app/api/encounters/route.ts", "/api/encounters"],

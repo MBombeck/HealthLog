@@ -28,11 +28,11 @@
  * medical-device boundary starts, and it is a separate venture's territory.
  * What this function reports is arithmetic on what a person wrote down.
  */
+import type { AntigenSlug } from "@/lib/vaccinations/vaccine-catalog";
 import {
-  componentsForSlug,
-  resolveCatalogEntry,
-  type AntigenSlug,
-} from "@/lib/vaccinations/vaccine-catalog";
+  resolveVaccineEntry,
+  type CustomVaccineLookup,
+} from "@/lib/vaccinations/resolve-vaccine-entry";
 
 /** One antigen's view of one dose. */
 export interface SeriesPosition {
@@ -46,7 +46,8 @@ export interface SeriesPosition {
   position: number;
   /**
    * How long the series is: the record's own override first, then the
-   * catalogue's typical value, then null when neither knows. Null is honest —
+   * catalogue's (or the person's own definition's) typical value, then null
+   * when neither knows. Null is honest —
    * a seasonal vaccine has no "of M".
    */
   total: number | null;
@@ -62,6 +63,8 @@ export interface SeriesInputRecord {
   id: string;
   occurredAt: Date;
   antigenSlug: string | null;
+  /** The person's own definition (v1.42, #1005), resolved after the slug. */
+  customVaccineId?: string | null;
   doseNumber: number | null;
   seriesDoses: number | null;
 }
@@ -80,6 +83,7 @@ export interface SeriesInputRecord {
  */
 export function deriveSeries(
   records: readonly SeriesInputRecord[],
+  customs?: CustomVaccineLookup,
 ): Map<string, SeriesPosition[]> {
   const result = new Map<string, SeriesPosition[]>();
   for (const record of records) result.set(record.id, []);
@@ -97,13 +101,14 @@ export function deriveSeries(
 
   for (const record of chronological) {
     // A free-text-only record — and a record whose slug the catalogue no
-    // longer resolves — yields nothing. Guessing an antigen from a name string
-    // is how a booster gets cleared by a dose that never contained it.
-    const components = componentsForSlug(record.antigenSlug);
+    // longer resolves, or whose own definition was removed — yields nothing.
+    // Guessing an antigen from a name string is how a booster gets cleared by
+    // a dose that never contained it.
+    const entry = resolveVaccineEntry(record, customs);
+    const components = entry?.components ?? [];
     if (components.length === 0) continue;
 
-    const catalogTotal =
-      resolveCatalogEntry(record.antigenSlug)?.typicalSeriesDoses ?? null;
+    const catalogTotal = entry?.typicalSeriesDoses ?? null;
     // The record's own override wins: it is what the person's actual schedule
     // was, and the catalogue only knows the typical one.
     const total = record.seriesDoses ?? catalogTotal;
@@ -140,6 +145,7 @@ export function deriveSeries(
 export function seriesForRecord(
   recordId: string,
   history: readonly SeriesInputRecord[],
+  customs?: CustomVaccineLookup,
 ): SeriesPosition[] {
-  return deriveSeries(history).get(recordId) ?? [];
+  return deriveSeries(history, customs).get(recordId) ?? [];
 }

@@ -28,7 +28,10 @@
 import type { Prisma } from "@/generated/prisma/client";
 
 import { computeReminderNextDueAt } from "@/lib/measurement-reminders/scheduling";
-import { componentsForSlug } from "@/lib/vaccinations/vaccine-catalog";
+import {
+  componentsForDose,
+  loadCustomVaccineLookup,
+} from "@/lib/vaccinations/resolve-vaccine-entry";
 
 /** What the confirm carries. All three are the user's edited-or-accepted values. */
 export interface BoosterMintInput {
@@ -80,14 +83,25 @@ export async function mintOrReanchorBooster(
 ): Promise<BoosterMintResult> {
   const record = await tx.vaccinationRecord.findFirst({
     where: { id: input.vaccinationId, userId, deletedAt: null },
-    select: { id: true, antigenSlug: true, occurredAt: true },
+    select: {
+      id: true,
+      antigenSlug: true,
+      customVaccineId: true,
+      occurredAt: true,
+    },
   });
   if (!record) return { outcome: "unknown-record" };
 
   // The reminder keys on the dose's PRIMARY component antigen — for a Tdap that
-  // is tetanus. A person who tracks the components separately can mint further
-  // reminders by hand; the offer covers the one the interval belongs to.
-  const [antigen] = componentsForSlug(record.antigenSlug);
+  // is tetanus, for the person's own definition the first antigen it lists. A
+  // person who tracks the components separately can mint further reminders by
+  // hand; the offer covers the one the interval belongs to.
+  const [antigen] = componentsForDose(
+    record,
+    record.customVaccineId
+      ? await loadCustomVaccineLookup(tx, userId)
+      : undefined,
+  );
   if (!antigen) return { outcome: "no-antigen" };
 
   const notifyHour = input.notifyHour ?? 9;

@@ -378,6 +378,7 @@ export const TWO_ENDED_MODELS = [
   // from anywhere else.
   "VaccinationRecord",
   "VaccinationDocumentLink",
+  "CustomVaccine",
   // The Vorsorge reminders, off the debt register at last (v1.37.20, #223 /
   // iOS #68), and the completion ledger carried with them from the release
   // that introduces it. The pairing is deliberate: the ledger arriving is
@@ -589,8 +590,6 @@ export const STRUCTURALLY_UNATTRIBUTABLE: Readonly<Record<string, string>> = {
  * rather than by what is cheapest to write.
  */
 export const COVERAGE_PENDING: Readonly<Record<string, string>> = {
-  CustomVaccine:
-    "The person's own vaccine definitions (v1.42, #1005). Until both ends land, a restored dose that pointed at one comes back as its bare `vaccineName`: no antigens, no series position, no booster rule.",
   WorkoutRoute:
     "GPS traces. Deliberately absent from the payload today and DISCLOSED as absent in the file's own manifest, which is why this is a documented exclusion rather than a silent one — but it is still a loss for a self-hoster with no other copy.",
   WorkoutSamples:

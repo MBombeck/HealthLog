@@ -9611,8 +9611,8 @@
     },
     "form": {
       "date": "Data",
-      "catalogLabel": "Szczepionka (katalog)",
-      "identityHint": "Wybierz z katalogu lub wpisz poniżej — wystarczy jedno.",
+      "catalogLabel": "Szczepionka",
+      "identityHint": "Wybierz szczepionkę z listy lub wpisz ją poniżej. Wystarczy jedno.",
       "catalogNone": "Wybierz szczepionkę",
       "catalogSearch": "Szukaj szczepionek",
       "catalogNoMatch": "Nie znaleziono wpisu w katalogu",
@@ -9744,7 +9744,15 @@
       "deleted": "Szczepionka usunięta",
       "deleteConfirm": "Usunąć tę szczepionkę? Zapisane już dawki zachowają swoją nazwę.",
       "saveFailed": "Nie udało się zapisać szczepionki.",
-      "nameTaken": "Masz już szczepionkę o tej nazwie."
+      "nameTaken": "Masz już szczepionkę o tej nazwie.",
+      "editTitle": "Edytuj własną szczepionkę",
+      "description": "Szczepionka spoza katalogu, liczona jak każdy wpis z katalogu.",
+      "componentsHint": "Wybierz wszystkie choroby, przed którymi chroni.",
+      "boosterHint": "Zostaw puste, jeśli nie ma dawki przypominającej.",
+      "protectsAgainst": "Chroni przed: {list}.",
+      "deleteTitle": "Usunąć własną szczepionkę?",
+      "sectionDescription": "Szczepionki dodane przez Ciebie, bo nie ma ich w katalogu.",
+      "catalogGroup": "Katalog"
     }
   },
   "illness": {
@@ -11786,7 +11794,10 @@
       "symptomEventDelete": "{name} usunął(-ęła) wpis objawu",
       "symptomDefinitionCreate": "{name} dodał(a) objaw",
       "symptomDefinitionUpdate": "{name} zmienił(a) objaw",
-      "symptomDefinitionDelete": "{name} usunął(-ęła) objaw"
+      "symptomDefinitionDelete": "{name} usunął(-ęła) objaw",
+      "customVaccineCreate": "{name} dodał własną szczepionkę",
+      "customVaccineUpdate": "{name} zmienił własną szczepionkę",
+      "customVaccineDelete": "{name} usunął własną szczepionkę"
     },
     "section": {
       "measurements": {

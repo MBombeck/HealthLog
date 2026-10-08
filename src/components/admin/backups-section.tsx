@@ -151,7 +151,7 @@ const RESTORE_PREVIEW_SECTIONS: ReadonlyArray<{
   },
   {
     labelKey: "previewVaccinations",
-    keys: ["vaccinations", "vaccinationLinks"],
+    keys: ["vaccinations", "vaccinationLinks", "customVaccines"],
   },
   {
     labelKey: "previewReminders",

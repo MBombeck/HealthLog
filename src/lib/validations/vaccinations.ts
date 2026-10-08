@@ -25,7 +25,10 @@
  */
 import { z } from "zod/v4";
 
-import { VACCINE_CATALOG_SLUGS } from "@/lib/vaccinations/vaccine-catalog";
+import {
+  ANTIGEN_SLUGS,
+  VACCINE_CATALOG_SLUGS,
+} from "@/lib/vaccinations/vaccine-catalog";
 
 const KNOWN_SLUGS: ReadonlySet<string> = new Set(VACCINE_CATALOG_SLUGS);
 
@@ -99,7 +102,7 @@ const linkIds = z.array(id).max(100).optional();
  * rather than leaving the person guessing which of the two the server meant.
  */
 const IDENTITY_MESSAGE =
-  "name the vaccine: pick one from the catalogue or type what the record says";
+  "name the vaccine: pick one from the catalogue or your own vaccines, or type what the record says";
 
 export const vaccinationCreateSchema = z
   .object({
@@ -114,13 +117,18 @@ export const vaccinationCreateSchema = z
     site: vaccinationSiteEnum.nullable().optional(),
     practitionerId: id.nullable().optional(),
     encounterId: id.nullable().optional(),
+    /**
+     * v1.42 (#1005) — one of the record's own vaccine definitions, the third
+     * identity arm. Re-narrowed to the resolved record in the route.
+     */
+    customVaccineId: id.nullable().optional(),
     /** Becomes `noteEncrypted`. Impfreaktionen live here. */
     note: z.string().max(2000).nullable().optional(),
     documentIds: linkIds,
   })
   .strict()
   .superRefine((body, ctx) => {
-    if (body.antigenSlug || body.vaccineName) return;
+    if (body.antigenSlug || body.vaccineName || body.customVaccineId) return;
     for (const path of ["antigenSlug", "vaccineName"] as const) {
       ctx.addIssue({ code: "custom", path: [path], message: IDENTITY_MESSAGE });
     }
@@ -151,6 +159,7 @@ export const vaccinationUpdateSchema = z
     site: vaccinationSiteEnum.nullable().optional(),
     practitionerId: id.nullable().optional(),
     encounterId: id.nullable().optional(),
+    customVaccineId: id.nullable().optional(),
     note: z.string().max(2000).nullable().optional(),
     documentIds: linkIds,
   })
@@ -160,9 +169,13 @@ export const vaccinationUpdateSchema = z
   })
   .refine(
     (body) =>
-      // Only when the edit clears BOTH arms in one call. Clearing one while
-      // the other stays is legal and the route checks the merged row.
-      !(body.antigenSlug === null && body.vaccineName === null),
+      // Only when the edit clears EVERY arm in one call. Clearing one while
+      // another stays is legal and the route checks the merged row.
+      !(
+        body.antigenSlug === null &&
+        body.vaccineName === null &&
+        body.customVaccineId === null
+      ),
     { path: ["antigenSlug"], message: IDENTITY_MESSAGE },
   );
 
@@ -189,6 +202,53 @@ export const vaccinationListQuerySchema = z
   });
 
 export type VaccinationListQuery = z.infer<typeof vaccinationListQuerySchema>;
+
+/* ── the record's own vaccines (v1.42, #1005) ─────────────────────── */
+
+/**
+ * The antigens a definition protects against: only from the catalogue's
+ * closed antigen list, because the series derivation and the booster match
+ * both key on those slugs. A disease the list does not carry is a free-text
+ * dose, not a definition.
+ */
+export const customVaccineComponentsSchema = z
+  .array(z.enum(ANTIGEN_SLUGS))
+  .min(1)
+  .max(ANTIGEN_SLUGS.length)
+  .refine((list) => new Set(list).size === list.length, {
+    message: "name each antigen once",
+  });
+
+/** The definition's name: what the person calls the product. */
+const customVaccineName = z.string().trim().min(1).max(100);
+
+export const customVaccineCreateSchema = z
+  .object({
+    name: customVaccineName,
+    components: customVaccineComponentsSchema,
+    typicalSeriesDoses: z.number().int().min(1).max(10).nullable().optional(),
+    /** Months; a decade booster is 120, bounded like the booster confirm. */
+    boosterIntervalMonths: z
+      .number()
+      .int()
+      .min(1)
+      .max(600)
+      .nullable()
+      .optional(),
+  })
+  .strict();
+
+export type CustomVaccineCreate = z.infer<typeof customVaccineCreateSchema>;
+
+/** Edit a definition; an omitted field is left untouched, an empty body 422s. */
+export const customVaccineUpdateSchema = customVaccineCreateSchema
+  .partial()
+  .strict()
+  .refine((body) => Object.keys(body).length > 0, {
+    message: "name at least one field to change",
+  });
+
+export type CustomVaccineUpdate = z.infer<typeof customVaccineUpdateSchema>;
 
 /* ── links ────────────────────────────────────────────────────────── */
 

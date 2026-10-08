@@ -17,6 +17,10 @@ import {
   deriveSeries,
   type SeriesInputRecord,
 } from "@/lib/vaccinations/series";
+import {
+  CUSTOM_VACCINE_RESOLVE_SELECT,
+  loadCustomVaccineLookup,
+} from "@/lib/vaccinations/resolve-vaccine-entry";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 /** Matches the visits service: the fallback when an account never set one. */
@@ -25,6 +29,9 @@ import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 export const VACCINATION_INCLUDE = {
   practitioner: true,
   encounter: { select: { id: true, occurredAt: true, kind: true } },
+  // v1.42 (#1005) — the person's own definition, resolved onto the DTO so no
+  // client needs a second read to name the dose or count its antigens.
+  customVaccine: { select: CUSTOM_VACCINE_RESOLVE_SELECT },
 } as const satisfies Prisma.VaccinationRecordInclude;
 
 /** What the series derivation needs, and nothing more. */
@@ -32,6 +39,7 @@ export const SERIES_SELECT = {
   id: true,
   occurredAt: true,
   antigenSlug: true,
+  customVaccineId: true,
   doseNumber: true,
   seriesDoses: true,
 } as const satisfies Prisma.VaccinationRecordSelect;
@@ -56,12 +64,20 @@ export async function loadSeriesHistory(
   });
 }
 
-/** Every record's resolved series positions, keyed by record id. */
+/**
+ * Every record's resolved series positions, keyed by record id. The record's
+ * own vaccine definitions are read beside the history, so a dose logged
+ * against one counts into the antigens it lists.
+ */
 export async function resolveSeriesFor(
   tx: Prisma.TransactionClient,
   userId: string,
 ) {
-  return deriveSeries(await loadSeriesHistory(tx, userId));
+  const [history, customs] = await Promise.all([
+    loadSeriesHistory(tx, userId),
+    loadCustomVaccineLookup(tx, userId),
+  ]);
+  return deriveSeries(history, customs);
 }
 
 /**
@@ -150,6 +166,18 @@ export async function resolveOwnerTimezone(userId: string): Promise<string> {
     select: { timezone: true },
   });
   return row?.timezone || DEFAULT_TIMEZONE;
+}
+
+/** Does the record own a live vaccine definition with this id? */
+export async function resolveOwnedCustomVaccine(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  customVaccineId: string,
+): Promise<{ id: string } | null> {
+  return tx.customVaccine.findFirst({
+    where: { id: customVaccineId, userId, deletedAt: null },
+    select: { id: true },
+  });
 }
 
 /** Does the caller own a live visit with this id? */

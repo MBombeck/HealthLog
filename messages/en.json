@@ -9611,8 +9611,8 @@
     },
     "form": {
       "date": "Date",
-      "catalogLabel": "Vaccine (catalogue)",
-      "identityHint": "Pick from the catalogue or type it in below — either is enough.",
+      "catalogLabel": "Vaccine",
+      "identityHint": "Pick a vaccine from the list or type it in below. Either is enough.",
       "catalogNone": "Choose a vaccine",
       "catalogSearch": "Search vaccines",
       "catalogNoMatch": "No catalogue entry found",
@@ -9744,7 +9744,15 @@
       "deleted": "Vaccine removed",
       "deleteConfirm": "Remove this vaccine? Doses already logged keep their name.",
       "saveFailed": "The vaccine could not be saved.",
-      "nameTaken": "You already have a vaccine with this name."
+      "nameTaken": "You already have a vaccine with this name.",
+      "editTitle": "Edit own vaccine",
+      "description": "A vaccine the catalogue does not list, counted like any catalogue entry.",
+      "componentsHint": "Choose every disease it protects against.",
+      "boosterHint": "Leave empty if there is no booster.",
+      "protectsAgainst": "Protects against {list}.",
+      "deleteTitle": "Remove own vaccine?",
+      "sectionDescription": "Vaccines you added yourself because the catalogue does not list them.",
+      "catalogGroup": "Catalogue"
     }
   },
   "illness": {
@@ -11786,7 +11794,10 @@
       "symptomEventDelete": "{name} deleted a symptom entry",
       "symptomDefinitionCreate": "{name} added a symptom",
       "symptomDefinitionUpdate": "{name} changed a symptom",
-      "symptomDefinitionDelete": "{name} removed a symptom"
+      "symptomDefinitionDelete": "{name} removed a symptom",
+      "customVaccineCreate": "{name} added an own vaccine",
+      "customVaccineUpdate": "{name} edited an own vaccine",
+      "customVaccineDelete": "{name} removed an own vaccine"
     },
     "section": {
       "measurements": {

@@ -12,6 +12,11 @@
  */
 import { prisma } from "@/lib/db";
 import { deriveSeries } from "@/lib/vaccinations/series";
+import {
+  CUSTOM_VACCINE_RESOLVE_SELECT,
+  customLookupOf,
+  resolveVaccineEntry,
+} from "@/lib/vaccinations/resolve-vaccine-entry";
 import { resolveEffectiveReferenceRange } from "@/lib/labs/reference-range";
 import { getEvent } from "@/lib/logging/context";
 import { decryptAllergyReaction } from "@/lib/doctor-report-helpers";
@@ -298,24 +303,32 @@ export async function loadImmunizations(
       doseNumber: true,
       site: true,
       practitioner: { select: { name: true } },
+      // v1.42 (#1005) — the person's own definition: its antigens place the
+      // dose in a series, and its name stands in when the dose has none.
+      customVaccineId: true,
+      customVaccine: { select: CUSTOM_VACCINE_RESOLVE_SELECT },
     },
   });
   if (rows.length === 0) return null;
 
+  const customs = customLookupOf(rows.map((row) => row.customVaccine));
   const series = deriveSeries(
     rows.map((row) => ({
       id: row.id,
       occurredAt: row.occurredAt,
       antigenSlug: row.antigenSlug,
+      customVaccineId: row.customVaccineId,
       doseNumber: row.doseNumber,
       seriesDoses: row.seriesDoses,
     })),
+    customs,
   );
 
   return rows.map((row) => ({
     occurredAt: row.occurredAt.toISOString(),
     antigenSlug: row.antigenSlug,
-    vaccineName: row.vaccineName,
+    vaccineName:
+      row.vaccineName ?? resolveVaccineEntry(row, customs)?.name ?? null,
     lotNumber: row.lotNumber,
     site: row.site,
     practitionerName: row.practitioner?.name ?? null,

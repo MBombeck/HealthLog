@@ -10,9 +10,11 @@
  * feature exists for. The only thing that can block Save is a missing date or
  * neither identity arm.
  *
- * The two identity arms are independent: picking a catalogue entry never
+ * The identity arms are independent: picking a catalogue entry never
  * overwrites what the person typed, and typing never clears a pick. Either is
- * sufficient; both are allowed.
+ * sufficient; both are allowed. Since v1.42 (#1005) the pick may also be one
+ * of the record's own vaccine definitions, chosen in the same picker, and a
+ * new definition can be added from it without leaving the form.
  *
  * Follows the encounter form's controlled-draft shape rather than a
  * react-hook-form instance — the sibling surface this plan cites as its
@@ -32,8 +34,14 @@ import { EncounterSuggestionField } from "@/components/encounters/encounter-sugg
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import type { Practitioner } from "@/hooks/use-practitioners";
-import type { Vaccination, VaccinationWriteBody } from "./use-vaccinations";
+import {
+  useCustomVaccines,
+  type CustomVaccine,
+  type Vaccination,
+  type VaccinationWriteBody,
+} from "./use-vaccinations";
 import { CatalogPicker } from "./catalog-picker";
+import { CustomVaccineSheet } from "./custom-vaccine-sheet";
 import { VaccinationDocumentPicker } from "./vaccination-document-picker";
 import { dayKeyAsUtcMidnight, isCalendarDateKey } from "@/lib/tz/date-only";
 
@@ -52,6 +60,8 @@ export interface VaccinationDraft {
   /** `YYYY-MM-DD`, the `DateField` contract. */
   occurredAt: string;
   antigenSlug: string | null;
+  /** One of the record's own vaccine definitions, or null. */
+  customVaccineId: string | null;
   vaccineName: string;
   doseNumber: string;
   seriesDoses: string;
@@ -85,6 +95,7 @@ export function emptyDraft(
   return {
     occurredAt: todayLocal(),
     antigenSlug: null,
+    customVaccineId: null,
     vaccineName: "",
     doseNumber: "",
     seriesDoses: "",
@@ -102,6 +113,8 @@ export function draftFromVaccination(row: Vaccination): VaccinationDraft {
   return {
     occurredAt: row.occurredAt.slice(0, 10),
     antigenSlug: row.antigenSlug,
+    // A definition removed since stays unpicked: the picker cannot name it.
+    customVaccineId: row.customVaccine ? row.customVaccineId : null,
     vaccineName: row.vaccineName ?? "",
     doseNumber: row.doseNumber?.toString() ?? "",
     seriesDoses: row.seriesDoses?.toString() ?? "",
@@ -125,7 +138,11 @@ export function draftInstant(day: string): string | null {
 
 /** Does the draft carry at least one identity arm? */
 export function draftHasIdentity(draft: VaccinationDraft): boolean {
-  return draft.antigenSlug !== null || draft.vaccineName.trim().length > 0;
+  return (
+    draft.antigenSlug !== null ||
+    draft.customVaccineId !== null ||
+    draft.vaccineName.trim().length > 0
+  );
 }
 
 function toInt(value: string): number | null {
@@ -145,6 +162,7 @@ export function draftToBody(
   return {
     occurredAt,
     antigenSlug: draft.antigenSlug,
+    customVaccineId: draft.customVaccineId,
     vaccineName: draft.vaccineName.trim() || null,
     doseNumber: toInt(draft.doseNumber),
     seriesDoses: toInt(draft.seriesDoses),
@@ -186,6 +204,11 @@ export function VaccinationForm({
   const [seriesOpen, setSeriesOpen] = useState(
     draft.doseNumber.length > 0 || draft.seriesDoses.length > 0,
   );
+  const customs = useCustomVaccines();
+  // The definition sheet, opened from the picker. Bumped `session` remounts
+  // it so a second open starts empty.
+  const [addingCustom, setAddingCustom] = useState(false);
+  const [customSession, setCustomSession] = useState(0);
 
   const anchor = draftInstant(draft.occurredAt);
 
@@ -212,9 +235,31 @@ export function VaccinationForm({
       >
         <CatalogPicker
           value={draft.antigenSlug}
-          onChange={(slug) => patch({ antigenSlug: slug })}
+          // One change per pick, so the two arms never race over one draft.
+          onChange={(slug) =>
+            patch({ antigenSlug: slug, customVaccineId: null })
+          }
+          customValue={draft.customVaccineId}
+          customs={customs.data ?? []}
+          onCustomChange={(id) =>
+            patch({ customVaccineId: id, antigenSlug: null })
+          }
+          onAddCustom={() => {
+            setCustomSession((n) => n + 1);
+            setAddingCustom(true);
+          }}
         />
       </FieldGroup>
+
+      <CustomVaccineSheet
+        key={customSession}
+        open={addingCustom}
+        onOpenChange={setAddingCustom}
+        customVaccine={null}
+        onSaved={(saved: CustomVaccine) =>
+          patch({ customVaccineId: saved.id, antigenSlug: null })
+        }
+      />
 
       <FieldGroup
         htmlFor="vaccination-free-text"

@@ -9,12 +9,7 @@ import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { inviteCreateSchema } from "@/lib/validations/invite";
 import { adminReminderCheckSchema } from "@/lib/validations/notifications";
-import {
-  dataEnvelope,
-  errorEnvelope,
-  notImplementedResponse,
-  stdResponses,
-} from "./shared";
+import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
 
 // v1.4.48 H-APNs-1 — admin diagnostic endpoint for the notification
 // subsystem. Mirrors the runtime types in
@@ -310,7 +305,6 @@ export const adminDiagnosticPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
-        ...notImplementedResponse,
       },
     },
   },

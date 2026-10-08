@@ -288,6 +288,7 @@ const COUNT_BACK: Record<
     p.vaccinationRecord.count({ where: { userId } }),
   VaccinationDocumentLink: (p, userId) =>
     p.vaccinationDocumentLink.count({ where: { userId } }),
+  CustomVaccine: (p, userId) => p.customVaccine.count({ where: { userId } }),
   MeasurementReminder: (p, userId) =>
     p.measurementReminder.count({ where: { userId } }),
   MeasurementReminderEvent: (p, userId) =>
@@ -1284,10 +1285,23 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
   // the skip test below). `reminderId` used to be deliberately absent here —
   // it was the one reference that could never resolve — and is deliberately
   // present since v1.37.20, because resolving is now the behaviour under test.
+  // v1.42 (#1005) — the person's own vaccine definition the dose also names.
+  // The catalogue slug still wins on read; the reference is what has to
+  // survive the trip, and it can only if the definition comes back first.
+  const customVaccine = await prisma.customVaccine.create({
+    data: {
+      userId: OWNER_ID,
+      name: "Round-trip travel combo",
+      components: ["typhoid", "hepatitis-a"],
+      typicalSeriesDoses: 2,
+      boosterIntervalMonths: 36,
+    },
+  });
   const vaccination = await prisma.vaccinationRecord.create({
     data: {
       userId: OWNER_ID,
       occurredAt: AT("2026-05-14T00:00:00.000Z"),
+      customVaccineId: customVaccine.id,
       antigenSlug: "tdap",
       vaccineName: "Tetanus, diphtheria and pertussis",
       doseNumber: 3,
@@ -2097,6 +2111,7 @@ describe("every model the plan claims two-ended survives a real restore", () => 
         practitioner: { select: { name: true } },
         encounter: { select: { occurredAt: true } },
         reminder: { select: { label: true } },
+        customVaccine: true,
         documentLinks: { select: { documentId: true } },
       },
     });
@@ -2114,6 +2129,14 @@ describe("every model the plan claims two-ended survives a real restore", () => 
       // the id survived the round trip instead of dropping to NULL the way it
       // had to before the reminders travelled.
       reminder: dose.reminder?.label ?? null,
+      customVaccine: dose.customVaccine
+        ? {
+            name: dose.customVaccine.name,
+            components: dose.customVaccine.components,
+            typicalSeriesDoses: dose.customVaccine.typicalSeriesDoses,
+            boosterIntervalMonths: dose.customVaccine.boosterIntervalMonths,
+          }
+        : null,
       links: dose.documentLinks.length,
       note: dose.noteEncrypted ? decryptFromBytes(dose.noteEncrypted) : null,
     }).toEqual({
@@ -2127,6 +2150,12 @@ describe("every model the plan claims two-ended survives a real restore", () => 
       practitioner: "Round-trip practice",
       encounterAt: "2026-06-30T08:00:00.000Z",
       reminder: "Blutdruck messen",
+      customVaccine: {
+        name: "Round-trip travel combo",
+        components: ["typhoid", "hepatitis-a"],
+        typicalSeriesDoses: 2,
+        boosterIntervalMonths: 36,
+      },
       links: 1,
       note: "sore arm for a day, nothing else",
     });

@@ -21,7 +21,9 @@
  *
  * A free-text-only dose matches nothing. Nothing here reads `vaccineName`: a
  * name string is not evidence about which antigens were in the syringe, and a
- * booster cleared by a guess is worse than a booster not cleared at all.
+ * booster cleared by a guess is worse than a booster not cleared at all. A
+ * dose logged against the person's own vaccine definition (v1.42, #1005)
+ * counts its listed antigens, the same way a catalogue combination does.
  *
  * ── Cold path only ─────────────────────────────────────────────────────────
  *
@@ -50,7 +52,11 @@ import {
   satisfyReminder,
   type SatisfiableReminder,
 } from "@/lib/measurement-reminders/satisfy";
-import { componentsForSlug } from "@/lib/vaccinations/vaccine-catalog";
+import {
+  componentsForDose,
+  loadCustomVaccineLookup,
+  type VaccineIdentity,
+} from "@/lib/vaccinations/resolve-vaccine-entry";
 
 /** What the create route needs back: which reminders moved, and the first. */
 export interface BoosterSatisfyResult {
@@ -82,11 +88,16 @@ const EMPTY: BoosterSatisfyResult = {
 export async function satisfyBoostersForDose(
   tx: Prisma.TransactionClient,
   userId: string,
-  antigenSlug: string | null,
+  identity: VaccineIdentity,
   occurredAt: Date,
   timezone: string,
 ): Promise<BoosterSatisfyResult> {
-  const components = componentsForSlug(antigenSlug);
+  const components = componentsForDose(
+    identity,
+    identity.customVaccineId
+      ? await loadCustomVaccineLookup(tx, userId)
+      : undefined,
+  );
   if (components.length === 0) return EMPTY;
 
   const reminders = await tx.measurementReminder.findMany({

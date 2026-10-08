@@ -29,6 +29,8 @@ import {
   vaccinationSiteEnum,
   vaccinationBoosterSchema,
   vaccinationSuggestQuerySchema,
+  customVaccineCreateSchema,
+  customVaccineUpdateSchema,
 } from "@/lib/validations/vaccinations";
 import { measurementReminderDto } from "@/lib/validations/measurement-reminders";
 
@@ -37,7 +39,6 @@ import {
   errorEnvelope,
   idempotencyKeyParameter,
   idempotentWrite,
-  notImplementedResponse,
   recordRefusal,
   recordWriteRateLimitResponse,
   stdResponses,
@@ -49,13 +50,13 @@ import {
 const createVaccinationRequest = vaccinationCreateSchema.meta({
   id: "CreateVaccinationRequest",
   description:
-    "Log one administered dose. `occurredAt` is required and must not be in the future — a vaccination is recorded after the fact, and a planned booster is a reminder rather than a record. Exactly one identity arm is required: either `antigenSlug` (a slug the catalogue offers) or `vaccineName` (whatever the person's own record says, verbatim, which may be a trade name). Everything else is optional, so a decades-old paper entry with nothing but a date and a name is loggable. `note` is encrypted at rest. `documentIds` pre-links the scanned pages; an id naming nothing the caller owns is dropped rather than refused, so a link never blocks a save. Logging a dose satisfies any booster reminder keyed to one of its component antigens.",
+    "Log one administered dose. `occurredAt` is required and must not be in the future — a vaccination is recorded after the fact, and a planned booster is a reminder rather than a record. At least one identity arm is required: `antigenSlug` (a slug the catalogue offers), `customVaccineId` (one of the record's own vaccine definitions, see `/api/vaccinations/custom`; an id the record does not hold live is a 404 `vaccination.custom-vaccine-not-found`) or `vaccineName` (whatever the person's own record says, verbatim, which may be a trade name). When both a slug and a definition are given, the catalogue is the answer. Everything else is optional, so a decades-old paper entry with nothing but a date and a name is loggable. `note` is encrypted at rest. `documentIds` pre-links the scanned pages; an id naming nothing the caller owns is dropped rather than refused, so a link never blocks a save. Logging a dose satisfies any booster reminder keyed to one of its component antigens, the antigens of an own definition included.",
 });
 
 const updateVaccinationRequest = vaccinationUpdateSchema.meta({
   id: "UpdateVaccinationRequest",
   description:
-    "Partial edit of a dose; an omitted key leaves the column untouched, and a body naming nothing is a 422. `occurredAt` is editable because a transcription typo is the common case — and editing it deliberately does NOT re-run the booster satisfaction, so correcting a date can never move a reminder's due date. An edit that would leave the record with neither identity arm is refused. A present `documentIds` array replaces the links, empty array included.",
+    "Partial edit of a dose; an omitted key leaves the column untouched, and a body naming nothing is a 422. `occurredAt` is editable because a transcription typo is the common case — and editing it deliberately does NOT re-run the booster satisfaction, so correcting a date can never move a reminder's due date. An edit that would leave the record with no identity arm (slug, own definition or name) is refused. `customVaccineId: null` unlinks the dose from its own definition. A present `documentIds` array replaces the links, empty array included.",
 });
 
 const listVaccinationsQuery = vaccinationListQuerySchema.meta({
@@ -150,6 +151,55 @@ const practitioner = z
       "The practice that administered the dose, resolved rather than an id. Null when the record names none.",
   });
 
+// v1.42 (#1005) — the record's own vaccine definitions.
+const customVaccine = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    components: z
+      .array(z.string())
+      .describe(
+        "Catalogue antigen slugs the product protects against, only ones this release knows.",
+      ),
+    typicalSeriesDoses: z.number().int().nullable(),
+    boosterIntervalMonths: z.number().int().nullable(),
+    createdAt: z.iso.datetime({ offset: true }),
+    updatedAt: z.iso.datetime({ offset: true }),
+  })
+  .meta({
+    id: "CustomVaccine",
+    description:
+      "A vaccine the record's owner defined for a product the shipped catalogue does not list, in the shape a catalogue entry resolves to. A dose logged against it counts into the series of each listed antigen, settles a booster reminder keyed to one of them and offers one from `boosterIntervalMonths`, exactly as a catalogue pick does. `name` is the person's own wording.",
+  });
+
+const customVaccineCreateRequest = customVaccineCreateSchema.meta({
+  id: "CreateCustomVaccineRequest",
+  description:
+    "A new definition. `components` lists one to all of the catalogue's antigen slugs, each once — a disease outside that list is logged as a free-text dose instead. `typicalSeriesDoses` (1–10) and `boosterIntervalMonths` (1–600) are optional; the interval prefills the booster offer after a dose.",
+});
+
+const customVaccineUpdateRequest = customVaccineUpdateSchema.meta({
+  id: "UpdateCustomVaccineRequest",
+  description:
+    "Partial edit; an omitted key is left untouched and an empty body is a 422. The change applies to every dose logged against the definition, because the series is derived on read; it never re-runs booster satisfaction.",
+});
+
+const customVaccineNotFound = {
+  "404": {
+    description:
+      "No live definition with this id on the record (`vaccination.custom.not-found`).",
+    content: { "application/json": { schema: errorEnvelope } },
+  },
+} as const;
+
+const customVaccineNameTaken = {
+  "409": {
+    description:
+      "A live definition on the record already carries this name, compared without case (`vaccination.custom.name-taken`).",
+    content: { "application/json": { schema: errorEnvelope } },
+  },
+} as const;
+
 const vaccination = z
   .object({
     id: z.string(),
@@ -161,6 +211,14 @@ const vaccination = z
     lotNumber: z.string().nullable(),
     site: vaccinationSiteEnum.nullable(),
     catalogEntry: catalogEntry.nullable(),
+    customVaccineId: z.string().nullable().meta({
+      description:
+        "The record's own vaccine definition the dose names (v1.42), verbatim.",
+    }),
+    customVaccine: customVaccine.nullable().meta({
+      description:
+        "That definition, resolved, or null when the dose names none or it was removed. When `catalogEntry` is also set, the catalogue is the answer.",
+    }),
     series: z.array(seriesPosition),
     practitioner: practitioner.nullable(),
     encounter: vaccinationEncounter.nullable(),
@@ -244,43 +302,15 @@ const vaccinationNotFound = {
 
 const idPath = { path: z.object({ id: z.string() }) };
 
-// v1.42 (#1005) — the record's own vaccine definitions.
-const customVaccine = z
-  .object({
-    id: z.string(),
-    name: z.string(),
-    components: z
-      .array(z.string())
-      .describe("Catalogue antigen slugs the product covers."),
-    typicalSeriesDoses: z.number().int().nullable(),
-    boosterIntervalMonths: z.number().int().nullable(),
-    createdAt: z.iso.datetime({ offset: true }),
-    updatedAt: z.iso.datetime({ offset: true }),
-  })
-  .meta({ id: "CustomVaccine" });
-
-const customVaccineCreateRequest = z
-  .object({
-    name: z.string(),
-    components: z.array(z.string()),
-    typicalSeriesDoses: z.number().int().nullable().optional(),
-    boosterIntervalMonths: z.number().int().nullable().optional(),
-  })
-  .strict()
-  .meta({ id: "CreateCustomVaccineRequest" });
-
-const customVaccineUpdateRequest = customVaccineCreateRequest
-  .partial()
-  .meta({ id: "UpdateCustomVaccineRequest" });
-
 export const vaccinationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/vaccinations/custom": {
     get: {
       tags: ["Records"],
       summary: "List the record's own vaccines",
       description:
-        "Vaccine definitions the record's owner added for products the shipped catalogue does not list. Soft-deleted definitions are excluded.",
+        "The vaccine definitions the record's owner added for products the shipped catalogue does not list, by name. Removed definitions are excluded. Readable under a `profile` grant like the dose list.",
       responses: {
+        ...recordRefusal(),
         "200": {
           description: "The definitions, by name.",
           content: {
@@ -293,19 +323,19 @@ export const vaccinationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
-        ...notImplementedResponse,
       },
     },
     post: {
       tags: ["Records"],
       summary: "Add an own vaccine",
       description:
-        "Defines a vaccine in the same shape a catalogue entry resolves to, so series and booster logic treat both alike. Names are unique per record.",
+        "Defines a vaccine in the same shape a catalogue entry resolves to, so the series and booster logic treat both alike. Names are unique per record, compared without case; adding a name the person removed earlier brings that definition back with the new values (its doses were let go on removal and stay so). Audits as `vaccination.custom.create`.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: customVaccineCreateRequest } },
       },
       responses: {
+        ...recordRefusal(),
         "201": {
           description: "Created.",
           content: {
@@ -317,13 +347,9 @@ export const vaccinationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
-        "409": {
-          description: "A live definition with this name already exists.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
+        ...customVaccineNameTaken,
         ...stdResponses,
         ...recordWriteRateLimitResponse,
-        ...notImplementedResponse,
       },
     },
   },
@@ -331,13 +357,15 @@ export const vaccinationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
     patch: {
       tags: ["Records"],
       summary: "Edit an own vaccine",
-      description: "Changes one definition. Owner-scoped; an unknown id 404s.",
+      description:
+        "Changes one definition; every dose logged against it reads the change. Owner-scoped; an unknown or removed id 404s. Audits as `vaccination.custom.update`, naming a rename without quoting it.",
       requestParams: idPath,
       requestBody: {
         required: true,
         content: { "application/json": { schema: customVaccineUpdateRequest } },
       },
       responses: {
+        ...recordRefusal(),
         "200": {
           description: "Updated.",
           content: {
@@ -349,25 +377,19 @@ export const vaccinationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
-        "404": {
-          description: "No such definition on this record.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        "409": {
-          description: "A live definition with this name already exists.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
+        ...customVaccineNotFound,
+        ...customVaccineNameTaken,
         ...stdResponses,
-        ...notImplementedResponse,
       },
     },
     delete: {
       tags: ["Records"],
       summary: "Remove an own vaccine",
       description:
-        "Soft-deletes one definition. Doses logged against it stay, on their `vaccineName`.",
+        "Soft-deletes one definition and lets go of every dose that named it. A dose keeps a name: one without wording of its own takes the definition's name as its `vaccineName` first. Removing twice succeeds. Audits as `vaccination.custom.delete` with the number of doses let go.",
       requestParams: idPath,
       responses: {
+        ...recordRefusal(),
         "200": {
           description: "Removed.",
           content: {
@@ -379,12 +401,8 @@ export const vaccinationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
-        "404": {
-          description: "No such definition on this record.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
+        ...customVaccineNotFound,
         ...stdResponses,
-        ...notImplementedResponse,
       },
     },
   },
@@ -421,6 +439,11 @@ export const vaccinationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       responses: {
         ...idempotentWrite(),
         ...recordRefusal(),
+        "404": {
+          description:
+            "A practice, visit or own vaccine the body names is not the record's (`vaccination.practitioner-not-found`, `vaccination.encounter-not-found`, `vaccination.custom-vaccine-not-found`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
         "201": {
           description: "Dose logged.",
           content: {

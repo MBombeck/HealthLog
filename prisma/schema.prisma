@@ -9330,9 +9330,11 @@ model VaccinationRecord {
   /// `lastSatisfiedAt` per reminder, this keeps the first match in catalogue
   /// component order.
   reminderId      String?          @map("reminder_id")
-  /// @pending-consumer(#1005) v1.42 — the user's own vaccine definition when
-  /// the dose is for a product the catalogue does not list. Catalogue wins
-  /// when both resolve. SetNull on delete: the dose keeps its `vaccineName`.
+  /// v1.42 (#1005) — the user's own vaccine definition when the dose is for a
+  /// product the catalogue does not list, resolved through
+  /// `src/lib/vaccinations/resolve-vaccine-entry.ts`. Catalogue wins when both
+  /// resolve. Removing the definition unlinks the dose and leaves it a name
+  /// (`removeCustomVaccine`); SetNull covers a hard delete the same way.
   customVaccineId String?          @map("custom_vaccine_id")
   /// The one free-text field (AES-256-GCM at rest, the `*Encrypted` Bytes
   /// convention). Impfreaktionen live here in v1 rather than in a structured
@@ -9365,13 +9367,14 @@ model VaccinationRecord {
 model CustomVaccine {
   id                    String    @id @default(cuid())
   userId                String    @map("user_id")
-  /// @pending-consumer(#1005) Display name, unique per user.
+  /// Display name, unique per user (the API also refuses a case-only twin).
   name                  String
-  /// @pending-consumer(#1005) Antigen slugs the product covers.
+  /// Antigen slugs the product covers, from `ANTIGEN_SLUGS`; storage is
+  /// tolerant, the resolver skips a slug it does not know.
   components            String[]
-  /// @pending-consumer(#1005) Typical primary-series length.
+  /// Typical primary-series length; the series total for its doses.
   typicalSeriesDoses    Int?      @map("typical_series_doses")
-  /// @pending-consumer(#1005) Booster interval in months; NULL = no booster.
+  /// Booster interval in months, the booster offer's prefill; NULL = none.
   boosterIntervalMonths Int?      @map("booster_interval_months")
   /// Soft-delete tombstone. NULL = live.
   deletedAt             DateTime? @map("deleted_at")
