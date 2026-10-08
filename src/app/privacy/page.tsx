@@ -207,7 +207,7 @@ export default function PrivacyPage() {
             href="/auth/login"
             className="text-muted-foreground hover:text-foreground inline-flex min-h-11 items-center text-sm"
           >
-            Sign in
+            <span lang="de">Anmelden</span>
           </Link>
         </div>
       </header>
