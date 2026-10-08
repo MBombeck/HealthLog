@@ -21,6 +21,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RevealWhenSettled } from "@/components/ui/reveal-when-settled";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { bodySiteText } from "@/components/encounters/encounter-labels";
 import { canReadBodySites } from "@/hooks/use-body-sites";
@@ -154,49 +155,56 @@ export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
         }
       />
 
-      {episode?.note ? (
-        <Card>
-          <CardContent>
-            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-              {t("illness.detail.note")}
-            </p>
-            <p className="text-foreground mt-1 text-sm whitespace-pre-wrap">
-              {episode.note}
-            </p>
-          </CardContent>
-        </Card>
-      ) : null}
+      {/* Every card below has a data-shaped height (the day timeline above
+          all). Revealed together once the reads settle, so none of them
+          pushes the rest down while the page loads. */}
+      <RevealWhenSettled
+        fallback={<Skeleton className="h-96 w-full rounded-xl" />}
+      >
+        {episode?.note ? (
+          <Card>
+            <CardContent>
+              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                {t("illness.detail.note")}
+              </p>
+              <p className="text-foreground mt-1 text-sm whitespace-pre-wrap">
+                {episode.note}
+              </p>
+            </CardContent>
+          </Card>
+        ) : null}
 
-      {/* The per-day timeline lives only on the detail surface — the list
-          rows stay clean summaries, so navigating here reveals genuinely new
-          content (today's logged symptoms / impact / fever). */}
-      {episode ? (
-        <IllnessDayTimeline
-          episodeId={episode.id}
-          onLogDay={() => setLogOpen(true)}
-        />
-      ) : null}
+        {/* The per-day timeline lives only on the detail surface — the list
+            rows stay clean summaries, so navigating here reveals genuinely new
+            content (today's logged symptoms / impact / fever). */}
+        {episode ? (
+          <IllnessDayTimeline
+            episodeId={episode.id}
+            onLogDay={() => setLogOpen(true)}
+          />
+        ) : null}
 
-      {/* v1.40 — the person's own symptoms filed against this episode or
-          logged while it ran. Renders nothing when there are none. */}
-      {episode ? <EpisodeSymptomsCard episode={episode} /> : null}
+        {/* v1.40 — the person's own symptoms filed against this episode or
+            logged while it ran. Renders nothing when there are none. */}
+        {episode ? <EpisodeSymptomsCard episode={episode} /> : null}
 
-      {isLoading ? (
-        <Skeleton className="h-40 w-full" />
-      ) : (
-        <IllnessCorrelationCard episodeId={episodeId} />
-      )}
+        {isLoading ? (
+          <Skeleton className="h-40 w-full" />
+        ) : (
+          <IllnessCorrelationCard episodeId={episodeId} />
+        )}
 
-      {/* Condition ⇄ documents linking, condition side: the episode's
-          linked documents plus link/upload entries into the vault. Renders
-          nothing when the documents module is off for this account. */}
-      {episode ? <EpisodeDocumentsCard episodeId={episode.id} /> : null}
+        {/* Condition ⇄ documents linking, condition side: the episode's
+            linked documents plus link/upload entries into the vault. Renders
+            nothing when the documents module is off for this account. */}
+        {episode ? <EpisodeDocumentsCard episodeId={episode.id} /> : null}
 
-      {/* Condition ⇄ visits linking, condition side ONLY. A visit never
-          suggests an episode: an episode spans weeks and a visit is a point,
-          so the reverse match would be wrong often enough to train the person
-          to ignore every suggestion in the product. */}
-      {episode ? <EpisodeVisitsCard episodeId={episode.id} /> : null}
+        {/* Condition ⇄ visits linking, condition side ONLY. A visit never
+            suggests an episode: an episode spans weeks and a visit is a point,
+            so the reverse match would be wrong often enough to train the person
+            to ignore every suggestion in the product. */}
+        {episode ? <EpisodeVisitsCard episodeId={episode.id} /> : null}
+      </RevealWhenSettled>
 
       {episode ? (
         <>

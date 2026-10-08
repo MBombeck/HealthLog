@@ -56,6 +56,7 @@ import { Gauge, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
+import { RevealWhenSettled } from "@/components/ui/reveal-when-settled";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -319,194 +320,201 @@ export function ScoreSection() {
   const busy = saveMutation.isPending;
 
   return (
-    <div className="space-y-6" data-slot="score-section">
-      {showNotice && notice ? (
-        <ScoreChangeNotice
-          configVersion={configQuery.data?.version ?? 0}
-          changedAt={configQuery.data?.changedAt ?? null}
-          dismissing={dismissMutation.isPending}
-          onDismiss={() => dismissMutation.mutate(notice.itemKey)}
-        />
-      ) : null}
-
-      {showComposition && composition ? (
-        <ScoreCompositionNotice
-          left={composition.left}
-          joined={composition.joined}
-          dismissing={dismissCompositionMutation.isPending}
-          onDismiss={() =>
-            dismissCompositionMutation.mutate(composition.itemKey)
-          }
-        />
-      ) : null}
-
-      {configQuery.isError ? (
-        <QueryErrorCard
-          title={t("settings.sections.score.loadFailed")}
-          onRetry={() => void configQuery.refetch()}
-        />
-      ) : (
-        <SettingsCard
-          as="section"
-          data-slot="score-config-card"
-          aria-labelledby="score-config-title"
-        >
-          <SettingsCardHeader
-            icon={Gauge}
-            titleId="score-config-title"
-            title={t("settings.sections.score.card.title")}
-            description={t("settings.sections.score.card.description")}
+    // The two notices land with the score report, a slower read than the
+    // configuration, and arrived above the card it had already painted. The
+    // section reveals once both settle.
+    <RevealWhenSettled
+      fallback={<Skeleton className="h-[35rem] w-full rounded-xl" />}
+    >
+      <div className="space-y-6" data-slot="score-section">
+        {showNotice && notice ? (
+          <ScoreChangeNotice
+            configVersion={configQuery.data?.version ?? 0}
+            changedAt={configQuery.data?.changedAt ?? null}
+            dismissing={dismissMutation.isPending}
+            onDismiss={() => dismissMutation.mutate(notice.itemKey)}
           />
+        ) : null}
 
-          <div className="space-y-6">
-            {/* The sentence the whole feature exists for. Foreground, in
-                the body, because it is content and not a meta
-                description. */}
-            <p data-slot="score-config-three-axes" className="text-sm">
-              {t("settings.sections.score.threeAxes")}
-            </p>
+        {showComposition && composition ? (
+          <ScoreCompositionNotice
+            left={composition.left}
+            joined={composition.joined}
+            dismissing={dismissCompositionMutation.isPending}
+            onDismiss={() =>
+              dismissCompositionMutation.mutate(composition.itemKey)
+            }
+          />
+        ) : null}
 
-            {/* v1.38 — the breadth sentence. Three areas of health used to
-                be the price of a score, and the write refused anything
-                narrower; it is a recommendation now and one pillar saves.
-                The recommendation stays on the surface anyway, because a
-                one-area score is honest but thin and a person choosing
-                what counts should know that before they save, not after
-                the card tells them what it rests on. Content, so
-                foreground and in the body beside the sentence it
-                qualifies — not a muted footnote under the rows. */}
-            <p data-slot="score-config-recommendation" className="text-sm">
-              {t("settings.sections.score.recommendation")}
-            </p>
+        {configQuery.isError ? (
+          <QueryErrorCard
+            title={t("settings.sections.score.loadFailed")}
+            onRetry={() => void configQuery.refetch()}
+          />
+        ) : (
+          <SettingsCard
+            as="section"
+            data-slot="score-config-card"
+            aria-labelledby="score-config-title"
+          >
+            <SettingsCardHeader
+              icon={Gauge}
+              titleId="score-config-title"
+              title={t("settings.sections.score.card.title")}
+              description={t("settings.sections.score.card.description")}
+            />
 
-            {/* The starting points. Both name data; neither names a
-                person. A template that supplies a rationale for dropping a
-                pillar is the one shape the evidence rules out, so there is
-                none. */}
-            <div
-              data-slot="score-config-presets"
-              className="flex flex-wrap items-center gap-2"
-            >
-              <span className="text-muted-foreground text-xs">
-                {t("settings.sections.score.presets.label")}
-              </span>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={busy}
-                data-slot="score-config-preset-all"
-                className="min-h-11 sm:min-h-9"
-                onClick={() => {
-                  setRefusal(null);
-                  setDraft([...SCORE_PILLAR_IDS]);
-                }}
-              >
-                {t("settings.sections.score.presets.all")}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={busy || !dirty}
-                data-slot="score-config-preset-current"
-                className="min-h-11 sm:min-h-9"
-                onClick={() => {
-                  setRefusal(null);
-                  setDraft([...serverSelection]);
-                }}
-              >
-                {t("settings.sections.score.presets.current")}
-              </Button>
-            </div>
-
-            {refusal ? (
-              <p
-                data-slot="score-config-refusal"
-                role="alert"
-                className="text-destructive text-sm"
-              >
-                {t(refusal)}
+            <div className="space-y-6">
+              {/* The sentence the whole feature exists for. Foreground, in
+                  the body, because it is content and not a meta
+                  description. */}
+              <p data-slot="score-config-three-axes" className="text-sm">
+                {t("settings.sections.score.threeAxes")}
               </p>
-            ) : null}
 
-            {analyticsQuery.isError ? (
-              <QueryErrorRow
-                slot="score-config-eligibility-error"
-                message={t("settings.sections.score.eligibilityFailed")}
-                onRetry={() => void analyticsQuery.refetch()}
-              />
-            ) : null}
+              {/* v1.38 — the breadth sentence. Three areas of health used to
+                  be the price of a score, and the write refused anything
+                  narrower; it is a recommendation now and one pillar saves.
+                  The recommendation stays on the surface anyway, because a
+                  one-area score is honest but thin and a person choosing
+                  what counts should know that before they save, not after
+                  the card tells them what it rests on. Content, so
+                  foreground and in the body beside the sentence it
+                  qualifies — not a muted footnote under the rows. */}
+              <p data-slot="score-config-recommendation" className="text-sm">
+                {t("settings.sections.score.recommendation")}
+              </p>
 
-            {configQuery.isLoading ? (
-              <div data-slot="score-config-loading" className="space-y-3">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-11 w-full" />
-                <Skeleton className="h-11 w-full" />
-                <Skeleton className="h-11 w-full" />
-              </div>
-            ) : (
-              // One flat list of topics separated by hairline dividers, the
-              // way Anamnese lists its facts. The group headings are gone; the
-              // registry order (domain, then pillar) is preserved by flattening
-              // the groups in order, and each row keeps its `data-domain` for
-              // tests and e2e.
-              <div className="divide-border divide-y">
-                {groups.flatMap((group) =>
-                  group.rows.map((row) => (
-                    <ScorePillarRow
-                      key={row.id}
-                      row={row}
-                      pending={busy}
-                      onToggle={(next) => toggle(row.id, next)}
-                    />
-                  )),
-                )}
-              </div>
-            )}
-
-            {omitted.length > 0 ? (
-              <p
-                data-slot="score-config-omitted"
-                data-count={omitted.length}
-                className="text-muted-foreground text-xs"
+              {/* The starting points. Both name data; neither names a
+                  person. A template that supplies a rationale for dropping a
+                  pillar is the one shape the evidence rules out, so there is
+                  none. */}
+              <div
+                data-slot="score-config-presets"
+                className="flex flex-wrap items-center gap-2"
               >
-                {t("settings.sections.score.omitted", {
-                  count: omitted.length,
-                })}{" "}
-                <Link
-                  href="/settings/modules"
-                  data-slot="score-config-omitted-link"
-                  className="text-foreground underline underline-offset-2"
+                <span className="text-muted-foreground text-xs">
+                  {t("settings.sections.score.presets.label")}
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  data-slot="score-config-preset-all"
+                  className="min-h-11 sm:min-h-9"
+                  onClick={() => {
+                    setRefusal(null);
+                    setDraft([...SCORE_PILLAR_IDS]);
+                  }}
                 >
-                  {t("settings.sections.score.omittedLink")}
-                </Link>
-              </p>
-            ) : null}
-          </div>
+                  {t("settings.sections.score.presets.all")}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={busy || !dirty}
+                  data-slot="score-config-preset-current"
+                  className="min-h-11 sm:min-h-9"
+                  onClick={() => {
+                    setRefusal(null);
+                    setDraft([...serverSelection]);
+                  }}
+                >
+                  {t("settings.sections.score.presets.current")}
+                </Button>
+              </div>
 
-          {/* Bottom-right, in its own row, like every other settings card
-              that saves a form. */}
-          <SettingsCardActions>
-            <Button
-              size="sm"
-              type="button"
-              onClick={() => saveMutation.mutate(draft)}
-              disabled={busy || !dirty || configQuery.isLoading}
-              data-slot="score-config-save"
-              className="min-h-11 sm:min-h-9"
-            >
-              {busy ? (
-                <Loader2
-                  aria-hidden="true"
-                  className="size-3.5 animate-spin motion-reduce:animate-none"
+              {refusal ? (
+                <p
+                  data-slot="score-config-refusal"
+                  role="alert"
+                  className="text-destructive text-sm"
+                >
+                  {t(refusal)}
+                </p>
+              ) : null}
+
+              {analyticsQuery.isError ? (
+                <QueryErrorRow
+                  slot="score-config-eligibility-error"
+                  message={t("settings.sections.score.eligibilityFailed")}
+                  onRetry={() => void analyticsQuery.refetch()}
                 />
               ) : null}
-              {t("settings.sections.score.save")}
-            </Button>
-          </SettingsCardActions>
-        </SettingsCard>
-      )}
-    </div>
+
+              {configQuery.isLoading ? (
+                <div data-slot="score-config-loading" className="space-y-3">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-11 w-full" />
+                  <Skeleton className="h-11 w-full" />
+                  <Skeleton className="h-11 w-full" />
+                </div>
+              ) : (
+                // One flat list of topics separated by hairline dividers, the
+                // way Anamnese lists its facts. The group headings are gone; the
+                // registry order (domain, then pillar) is preserved by flattening
+                // the groups in order, and each row keeps its `data-domain` for
+                // tests and e2e.
+                <div className="divide-border divide-y">
+                  {groups.flatMap((group) =>
+                    group.rows.map((row) => (
+                      <ScorePillarRow
+                        key={row.id}
+                        row={row}
+                        pending={busy}
+                        onToggle={(next) => toggle(row.id, next)}
+                      />
+                    )),
+                  )}
+                </div>
+              )}
+
+              {omitted.length > 0 ? (
+                <p
+                  data-slot="score-config-omitted"
+                  data-count={omitted.length}
+                  className="text-muted-foreground text-xs"
+                >
+                  {t("settings.sections.score.omitted", {
+                    count: omitted.length,
+                  })}{" "}
+                  <Link
+                    href="/settings/modules"
+                    data-slot="score-config-omitted-link"
+                    className="text-foreground underline underline-offset-2"
+                  >
+                    {t("settings.sections.score.omittedLink")}
+                  </Link>
+                </p>
+              ) : null}
+            </div>
+
+            {/* Bottom-right, in its own row, like every other settings card
+                that saves a form. */}
+            <SettingsCardActions>
+              <Button
+                size="sm"
+                type="button"
+                onClick={() => saveMutation.mutate(draft)}
+                disabled={busy || !dirty || configQuery.isLoading}
+                data-slot="score-config-save"
+                className="min-h-11 sm:min-h-9"
+              >
+                {busy ? (
+                  <Loader2
+                    aria-hidden="true"
+                    className="size-3.5 animate-spin motion-reduce:animate-none"
+                  />
+                ) : null}
+                {t("settings.sections.score.save")}
+              </Button>
+            </SettingsCardActions>
+          </SettingsCard>
+        )}
+      </div>
+    </RevealWhenSettled>
   );
 }

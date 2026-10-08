@@ -68,6 +68,7 @@ import { bucketCaptionKey } from "@/lib/charts/bucket-caption";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { ChartOverlayControls } from "./chart-overlay-controls";
 import { ChartDataTable, type ChartDataTableColumn } from "./chart-data-table";
+import { ChartFooterReserve } from "./chart-skeleton";
 import { useChartOverlayPrefs } from "@/hooks/use-chart-overlay-prefs";
 import { useViewportWidth } from "@/hooks/use-viewport-width";
 import { computeTickPositions } from "@/lib/charts/x-axis-density";
@@ -1945,7 +1946,15 @@ export function HealthChart({
         // card height never jumps when the data lands — the dashboard's
         // shared-reveal overlay and every insights mount stay
         // layout-shift-free.
-        <Skeleton className={`w-full ${chartHeightClass}`} />
+        <>
+          <Skeleton className={`w-full ${chartHeightClass}`} />
+          {mini ? null : (
+            <ChartFooterReserve
+              dayLinks={dayLinksActive}
+              dataTable={showDataTable}
+            />
+          )}
+        </>
       ) : isError ? (
         // v1.16.8 — a failed query paints as an ERROR with a retry
         // affordance, not as the "no data in this range" empty state.

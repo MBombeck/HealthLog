@@ -17,6 +17,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { PageAuthGate } from "@/components/ui/page-auth-gate";
 import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh-indicator";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import { RevealWhenSettled } from "@/components/ui/reveal-when-settled";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Plus } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "@/lib/i18n/context";
@@ -203,14 +205,21 @@ export default function MeasurementsPage() {
         />
       </ResponsiveSheet>
 
-      <MeasurementList
-        onAddFirst={() => {
-          setReturnTo(null);
-          setDialogOpen(true);
-        }}
-      />
+      {/* The list's height is the data's; the custom metrics sit below it.
+          Revealed together once both reads settle, so neither pushes the
+          other down the page while it loads. */}
+      <RevealWhenSettled
+        fallback={<Skeleton className="h-[28rem] w-full rounded-xl" />}
+      >
+        <MeasurementList
+          onAddFirst={() => {
+            setReturnTo(null);
+            setDialogOpen(true);
+          }}
+        />
 
-      <CustomMetricList />
+        <CustomMetricList />
+      </RevealWhenSettled>
     </div>
   );
 }
