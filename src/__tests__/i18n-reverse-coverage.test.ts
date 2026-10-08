@@ -91,8 +91,6 @@ const RELEASE_PENDING_PREFIXES: Record<string, string> = {
   "environment.fields.europeanAqi": "v1.42 air-quality field label (#615)",
   "environment.fields.uvIndexMax": "v1.42 air-quality field label (#615)",
   "environment.fields.dustMax": "v1.42 air-quality field label (#615)",
-  "insights.correlation.dailySameDay":
-    "v1.42 same-day environment correlation templates (#615)",
   "settings.appleHealth.freshness":
     "v1.42 per-type HealthKit freshness list (#1173)",
   "insights.workouts.manual.editTitle": "v1.42 manual workout edit (#1162)",

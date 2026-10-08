@@ -473,12 +473,23 @@ export const discoveredCorrelation = z
       .string()
       .optional()
       .describe("Display label for a dynamic outcome channel."),
-    n: z
+    n: z.number().int().describe("Paired-day count after the lag join (≥ 20)."),
+    nEff: z
       .number()
-      .int()
-      .describe("Paired-day count after the day+1 lag join (≥ 20)."),
-    r: z.number().describe("Pearson r over the lag-joined daily series."),
-    pValue: z.number().describe("Two-sided exact Student-t p-value (< 0.05)."),
+      .optional()
+      .describe(
+        "v1.42 — effective sample size after serial correlation (Pyper–Peterman), ≤ `n`. The p-value, the shrinkage and the tier use it.",
+      ),
+    r: z
+      .number()
+      .describe(
+        "Pearson r over the lag-joined daily series, computed on residuals: a linear trend (and, from 120 paired days, one annual harmonic) is removed from both series first (v1.42).",
+      ),
+    pValue: z
+      .number()
+      .describe(
+        "Two-sided exact Student-t p-value (< 0.05) at the effective sample size.",
+      ),
     qValue: z
       .number()
       .describe(
@@ -497,7 +508,12 @@ export const discoveredCorrelation = z
     interpretation: z
       .string()
       .describe("Conservative, descriptive interpretation — never causal."),
-    lagDays: z.number().int().describe("Lag in days applied (1)."),
+    lagDays: z
+      .number()
+      .int()
+      .describe(
+        "Lag in days applied: 1 = behaviour day, outcome the next day; 0 = the environmental channels, whose exposure is the mean of the day before and the day itself, paired with the same day's outcome (v1.42).",
+      ),
     window: z
       .enum(["retrospective", "recent"])
       .optional()

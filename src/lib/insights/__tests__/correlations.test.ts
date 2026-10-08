@@ -8,6 +8,7 @@ import {
   MIN_PAIRED_N,
   MAX_P_VALUE,
 } from "../correlations";
+import { seededRng } from "./helpers/seeded-series";
 
 /**
  * v1.4.20 phase B3 — correlation discovery.
@@ -265,11 +266,14 @@ describe("correlateBpCompliance", () => {
   });
 
   it("returns ok with negative r for strong compliance↔BP support", () => {
+    // Day-to-day: a higher-compliance day has a lower systolic (seeded noise,
+    // no shared trend), so the relation survives detrending.
+    const rng = seededRng(7);
     const daily = buildPairs(
-      Array.from(
-        { length: 20 },
-        (_, i) => [50 + i * 2.5, 150 - i * 1.5] as [number, number],
-      ),
+      Array.from({ length: 20 }, () => {
+        const c = 50 + rng.n() * 20;
+        return [c, 190 - c * 0.8 + rng.n() * 2] as [number, number];
+      }),
     );
     const result = correlateBpCompliance({ daily });
     expect(result.status).toBe("ok");
@@ -281,6 +285,20 @@ describe("correlateBpCompliance", () => {
       expect(result.interpretation).not.toMatch(/causes?/i);
       expect(result.confidenceBand.label).toBeDefined();
     }
+  });
+
+  it("does not report two series that only share a trend (v1.42)", () => {
+    // Compliance creeping up while systolic creeps down over the same weeks is
+    // a shared drift, not a day-to-day relation. Before v1.42 this pair read
+    // r ≈ −1; the trend is now removed from both arms first.
+    const daily = buildPairs(
+      Array.from(
+        { length: 20 },
+        (_, i) => [50 + i * 2.5, 150 - i * 1.5] as [number, number],
+      ),
+    );
+    const result = correlateBpCompliance({ daily });
+    expect(result.status).toBe("insufficient");
   });
 
   it("returns insufficient (not_significant) when r is near zero", () => {

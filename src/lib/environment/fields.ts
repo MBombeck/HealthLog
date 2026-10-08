@@ -7,7 +7,7 @@
  *   - the SIGNAL REGISTRY (`src/lib/signals/registry.ts`) registers one
  *     `kind:"environment"` signal per field here, so each gets a stable signal
  *     key + display metadata for free; and
- *   - the CORRELATION ENGINE reads {@link ENVIRONMENT_CHANNEL_KEYS} to fold the
+ *   - the CORRELATION ENGINE reads {@link ENVIRONMENT_FIELDS} to fold the
  *     same fields in as lagged BEHAVIOUR (exposure) channels against mood /
  *     sleep / vitals.
  *
@@ -20,6 +20,28 @@
  * `column` is the `EnvironmentContext` numeric column the field reads. Leaf
  * module (no imports) so both the registry and the pure correlation engine can
  * depend on it without a cycle.
+ *
+ * Lag semantics (v1.42). Every field here is tested as ONE hypothesis per
+ * outcome: the exposure is the mean of the day before and the day itself
+ * ("lag 0–1"), paired with the outcome on the same day. The correlation read
+ * in `correlation-channel-series.ts` builds that mean, emits a point only for
+ * a day whose previous day is stored too, and tags the series `lagDays: 0`; a
+ * discovered pair therefore reports `lagDays: 0` and narrates "on the day and
+ * the day before". Two reasons, both about getting the night right:
+ *
+ *  - sleep is keyed on the day you wake up, so last night's sleep sits on day
+ *    D, and the overnight low that shaped it is the early morning of D (and the
+ *    evening of D−1). The old fixed next-day lag paired the night's low with
+ *    the FOLLOWING night;
+ *  - testing lag 0 and lag 1 separately would double the environmental tests
+ *    in the false-discovery family (and taking whichever looked better would
+ *    be selection without correction). The averaged window covers both at the
+ *    cost of one test.
+ *
+ * Season and trend are removed from both series before any of this is
+ * correlated (see `src/lib/insights/seasonal-adjust.ts`), so a field that only
+ * follows the calendar does not surface. A new field added below inherits all
+ * of it with no further wiring.
  */
 
 /** The `EnvironmentContext` numeric columns a correlation field can read. */
@@ -115,5 +137,3 @@ export const ENVIRONMENT_FIELDS: readonly EnvironmentField[] = [
     i18nLabelKey: "environment.fields.pressureDelta",
   },
 ] as const;
-
-/** The correlation channel keys, in declaration order. */

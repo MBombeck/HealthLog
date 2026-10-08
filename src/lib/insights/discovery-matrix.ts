@@ -58,6 +58,7 @@ import {
   type MoodFactorWindowFetch,
 } from "@/lib/insights/correlation-channel-series";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
+import { ENVIRONMENT_FIELDS } from "@/lib/environment/fields";
 import {
   correlationChannelSurfaceId,
   isSurfaceVisible,
@@ -303,7 +304,16 @@ export async function assembleDiscoveryMatrix(
     readMood(userId, tz, since, opts.includeMoodFactors === true),
     fetchComplianceSeries(userId, tz, since),
     fetchSymptomSeries(userId, tz, since),
-    fetchEnvironmentSeries(userId, since),
+    // The weather read is skipped outright when the environment module is off:
+    // the mask below would drop every ENV_* series anyway, so reading them
+    // was a wasted query on every scan. Probed through the first field's
+    // surface id, which the surface map owns (all ENV_* share one module).
+    isSurfaceVisible(
+      correlationChannelSurfaceId(ENVIRONMENT_FIELDS[0].key),
+      opts.modules,
+    )
+      ? fetchEnvironmentSeries(userId, since)
+      : Promise.resolve([] as NamedSeries[]),
     fetchCustomMetricBehaviourSeries(userId, tz, since),
     fetchSymptomEventSeries(userId, tz, since),
   ]);
@@ -332,9 +342,11 @@ export async function assembleDiscoveryMatrix(
       series.push({ key, role: "outcome", points: points(key) });
     }
   }
-  // Environmental exposure and custom metrics are lag SOURCES only: they pair
-  // (D → D+1) against every outcome above, under the unchanged n ≥ 20 / FDR /
-  // effect-size gates, so a thin weather or custom series degrades to absent.
+  // Environmental exposure and custom metrics are lag SOURCES only. Custom
+  // metrics pair D → D+1; the environmental series carry `lagDays: 0` over an
+  // exposure already averaged across D−1 and D (see `fetchEnvironmentSeries`).
+  // Both run under the same n ≥ 20 / FDR / effect-size gates, so a thin
+  // weather or custom series degrades to absent.
   series.push(...environmentSeries, ...customMetricSeries);
   // The person's own symptoms are OUTCOMES: "short sleep, then an aura the
   // next day" is the question they log them to answer. Each is its own

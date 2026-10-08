@@ -37,8 +37,21 @@
  * n ≥ 20 / p < 0.05 / BH-FDR / effect-size-floor / shrinkage gates as every
  * other channel, so a thin series degrades to absent rather than to a spurious
  * link. The series builders live in `correlation-series-builders.ts`.
+ *
+ * v1.42 — every daily pair is tested on seasonally adjusted residuals: the
+ * annual cycle (from 120 paired days on) and a linear trend are removed from
+ * both series, and the p-value uses the Pyper–Peterman effective sample size
+ * instead of n. Two series that only share the calendar no longer surface as
+ * related (see `seasonal-adjust.ts` for the method and the simulation behind
+ * it). Shrinkage and the phrasing tier read the effective size too, so a
+ * strongly autocorrelated pair cannot be narrated as a deep, confident one.
  */
-import { pearson, MIN_PAIRED_N } from "@/lib/insights/correlations";
+import {
+  pearson,
+  seasonallyAdjustedPearson,
+  MIN_PAIRED_N,
+  type DayPair,
+} from "@/lib/insights/correlations";
 import { type Locale } from "@/lib/i18n/config";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { shiftDateKey } from "@/lib/tz/format";
@@ -173,6 +186,14 @@ export interface NamedSeries {
   /** User-facing label for dynamic channels such as custom metrics. */
   label?: string;
   points: DailySeriesPoint[];
+  /**
+   * Behaviour channels only: the lag this channel pairs at, overriding the
+   * scan's default (1). The environmental-exposure channels set 0 because
+   * their points are already the mean of the day before and the day itself
+   * (see the environment read in `correlation-channel-series.ts`), so "lag 0"
+   * there means the averaged 0–1 window, tested as one hypothesis.
+   */
+  lagDays?: number;
 }
 
 /** One discovered, FDR-surviving correlation pair. */
@@ -180,12 +201,20 @@ export interface DiscoveredCorrelation {
   behaviour: string;
   outcome: string;
   behaviourLabel?: string;
-  /** Paired-day count after the day+1 lag join. */
   outcomeLabel?: string;
+  /** Paired-day count after the lag join. */
   n: number;
-  /** Pearson r (lag-joined). */
+  /**
+   * Effective sample size after serial correlation (Pyper–Peterman). The
+   * p-value, the shrinkage and the tier use it; `n` stays the day count.
+   */
+  nEff?: number;
+  /**
+   * Partial correlation of the lag-joined pair with trend (and, from 120
+   * paired days, the annual cycle) removed from both series.
+   */
   r: number;
-  /** Two-sided exact Student-t p-value. */
+  /** Two-sided exact Student-t p-value at `nEff` degrees of freedom. */
   pValue: number;
   /** Benjamini-Hochberg adjusted q-value. */
   qValue: number;
@@ -202,7 +231,10 @@ export interface DiscoveredCorrelation {
   tier: ConfidenceTier;
   /** Conservative, descriptive interpretation — never causal, tier-hedged. */
   interpretation: string;
-  /** Lag in days applied (always 1 here). */
+  /**
+   * Lag in days applied: 1 (behaviour day D, outcome D+1) by default; 0 for
+   * the environmental channels, whose exposure is the mean of D−1 and D.
+   */
   lagDays: number;
   /**
    * v1.22 — which window surfaced the pair. `retrospective` = the standard
@@ -264,12 +296,31 @@ export function lagJoin(
   return { xs, ys };
 }
 
+/** {@link lagJoin} keeping the behaviour day each pair is keyed on. */
+function lagJoinPairs(
+  behaviour: DailySeriesPoint[],
+  outcome: DailySeriesPoint[],
+  lagDays: number,
+): DayPair[] {
+  const outcomeByDay = new Map(outcome.map((p) => [p.day, p.value]));
+  const pairs: DayPair[] = [];
+  for (const b of behaviour) {
+    const target = outcomeByDay.get(shiftDay(b.day, lagDays));
+    if (target != null && Number.isFinite(b.value) && Number.isFinite(target)) {
+      pairs.push({ day: b.day, x: b.value, y: target });
+    }
+  }
+  return pairs;
+}
+
 interface RawPair {
   behaviour: string;
   outcome: string;
   n: number;
+  nEff: number;
   r: number;
   pValue: number;
+  lagDays: number;
   behaviourLabel?: string;
   outcomeLabel?: string;
 }
@@ -317,6 +368,7 @@ function interpret(
   outcome: string,
   r: number,
   tier: ConfidenceTier,
+  lagDays: number,
   t: Translate,
   behaviourLabel?: string,
   outcomeLabel?: string,
@@ -333,7 +385,10 @@ function interpret(
   // "on the evidence so far" phrasing. Each tier keeps its own template.
   const tierKey =
     tier === "faint" ? "faint" : tier === "high" ? "high" : "moderate";
-  return t(`insights.correlation.daily.${tierKey}`, params);
+  // Lag 0 is the averaged same-day window of the exposure channels ("on the
+  // day and the day before"); every other pair reads as next-day.
+  const template = lagDays === 0 ? "dailySameDay" : "daily";
+  return t(`insights.correlation.${template}.${tierKey}`, params);
 }
 
 /**
@@ -430,9 +485,11 @@ export function discoveryMeasurementTypes(keys: readonly string[]): string[] {
 /**
  * Run the FDR-controlled discovery over the behaviour × outcome matrix.
  *
- * 1. For every (behaviour, outcome) pair, lag-join (D → D+1) and run
- *    Pearson with the exact p-value. Pairs below `minPairs` paired days
- *    are dropped (not tested — they cannot be defensibly assessed).
+ * 1. For every (behaviour, outcome) pair, lag-join (D → D+lag, the series'
+ *    own lag or the scan default), remove trend and season from both arms
+ *    and run Pearson on the residuals with the effective-n p-value. Pairs
+ *    below `minPairs` paired days, or too few to fit the basis, are dropped
+ *    (not tested — they cannot be defensibly assessed).
  * 2. Across the tested pairs, compute BH q-values.
  * 3. Surface pairs with p < 0.05 AND q ≤ `fdrQ`, ranked by q then |r|.
  *
@@ -476,16 +533,19 @@ export function discoverCorrelations(
       // auto-correlation tautology, not a cross-domain insight; excluding it
       // before testing stops it crowding out genuine cross-metric links.
       if (metricFamily(b.key) === metricFamily(o.key)) continue;
-      const { xs, ys } = lagJoin(b.points, o.points, lagDays);
-      if (xs.length < minPairs) continue;
-      const result = pearson({ xs, ys, minPairs });
+      const pairLag = b.lagDays ?? lagDays;
+      const pairs = lagJoinPairs(b.points, o.points, pairLag);
+      if (pairs.length < minPairs) continue;
+      const result = seasonallyAdjustedPearson(pairs, { minPairs });
       if (result.status !== "ok") continue;
       tested.push({
         behaviour: b.key,
         outcome: o.key,
         n: result.n,
+        nEff: result.effectiveN,
         r: result.r,
         pValue: result.pValue,
+        lagDays: pairLag,
         behaviourLabel: b.label,
         outcomeLabel: o.label,
       });
@@ -506,8 +566,10 @@ export function discoverCorrelations(
     // tiers to `null` and is dropped: it is statistically real but explains too
     // little variance to narrate as a driver.
     .map((t) => {
-      const shrunkR = shrinkEstimate(t.r, t.n);
-      const tier = confidenceTier(shrunkR, t.n);
+      // v1.42 — shrink and tier by the EFFECTIVE size: a persistent pair's
+      // 180 days may be worth 30 independent ones, and is narrated as such.
+      const shrunkR = shrinkEstimate(t.r, t.nEff);
+      const tier = confidenceTier(shrunkR, t.nEff);
       return { ...t, shrunkR, tier };
     })
     .filter(
@@ -525,6 +587,7 @@ export function discoverCorrelations(
       behaviourLabel: t.behaviourLabel,
       outcomeLabel: t.outcomeLabel,
       n: t.n,
+      nEff: t.nEff,
       r: t.r,
       pValue: t.pValue,
       qValue: Math.round(t.qValue * 1000) / 1000,
@@ -535,11 +598,12 @@ export function discoverCorrelations(
         t.outcome,
         t.r,
         t.tier,
+        t.lagDays,
         translate,
         t.behaviourLabel,
         t.outcomeLabel,
       ),
-      lagDays,
+      lagDays: t.lagDays,
     }))
     // RECON1 (D2-2 / D4) — rank by the SHRUNK effect magnitude (a deep, strong
     // pair leads a thin one even if the thin one's raw r is higher), with q as

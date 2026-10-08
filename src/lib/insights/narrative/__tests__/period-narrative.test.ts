@@ -12,6 +12,7 @@ import type {
 import { DEFAULT_UNIT_PREFERENCES } from "@/lib/measurements/display-transform";
 import { buildDeterministicNarrative } from "../period-narrative-deterministic";
 import { buildNarrativeUserPrompt } from "../period-narrative-generate";
+import { coupledPair } from "../../__tests__/helpers/seeded-series";
 
 /**
  * Build a contiguous daily series ending at `endDay` (YYYY-MM-DD), one point
@@ -310,12 +311,12 @@ describe("assemblePeriodNarrativeContext — band transitions", () => {
 
 describe("assemblePeriodNarrativeContext — drivers (FDR-controlled)", () => {
   it("surfaces a strong lagged relationship and keeps it descriptive-only", () => {
-    // 31 contiguous days; outcome[D+1] = 2 * behaviour[D] + small noise so the
-    // lag-1 join yields a strong Pearson r over ≥ 20 paired days.
-    const bVals = Array.from({ length: 31 }, (_, i) => 10 + i);
-    const oVals = Array.from({ length: 31 }, (_, i) =>
-      i === 0 ? 0 : 2 * (10 + (i - 1)) + (i % 2 === 0 ? 0.5 : -0.5),
-    );
+    // 31 contiguous days; outcome[D+1] = 2 * behaviour[D] + noise (seeded),
+    // so the lag-1 join yields a strong day-to-day r over ≥ 20 paired days.
+    // Not two straight lines: a shared trend is removed before correlating.
+    const { behaviour: bVals, outcome: oVals } = coupledPair(3, 31, 2, {
+      noiseSd: 0.5,
+    });
     const behaviour = seriesEndingAt(bVals, "2026-04-30");
     const outcome = seriesEndingAt(oVals, "2026-04-30");
     const discoverySeries: NamedSeries[] = [

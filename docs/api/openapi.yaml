@@ -34740,6 +34740,9 @@ components:
           type: integer
           minimum: -9007199254740991
           maximum: 9007199254740991
+        nEff:
+          description: v1.42 — effective sample size after serial correlation, ≤ `n`; the p-value uses it.
+          type: number
         r:
           type: number
         pValue:
@@ -62417,13 +62420,18 @@ components:
           type: integer
           minimum: -9007199254740991
           maximum: 9007199254740991
-          description: Paired-day count after the day+1 lag join (≥ 20).
+          description: Paired-day count after the lag join (≥ 20).
+        nEff:
+          description: v1.42 — effective sample size after serial correlation (Pyper–Peterman), ≤ `n`. The p-value, the shrinkage
+            and the tier use it.
+          type: number
         r:
           type: number
-          description: Pearson r over the lag-joined daily series.
+          description: "Pearson r over the lag-joined daily series, computed on residuals: a linear trend (and, from 120 paired
+            days, one annual harmonic) is removed from both series first (v1.42)."
         pValue:
           type: number
-          description: Two-sided exact Student-t p-value (< 0.05).
+          description: Two-sided exact Student-t p-value (< 0.05) at the effective sample size.
         qValue:
           type: number
           description: Benjamini-Hochberg FDR-adjusted q-value (≤ the surface threshold).
@@ -62446,7 +62454,8 @@ components:
           type: integer
           minimum: -9007199254740991
           maximum: 9007199254740991
-          description: Lag in days applied (1).
+          description: "Lag in days applied: 1 = behaviour day, outcome the next day; 0 = the environmental channels, whose
+            exposure is the mean of the day before and the day itself, paired with the same day's outcome (v1.42)."
         window:
           description: v1.22 — which window surfaced the pair. Absent on the 180-day scan (retrospective default); `recent` for an
             emerging early-detection pair.

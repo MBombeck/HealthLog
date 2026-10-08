@@ -7,6 +7,7 @@ import {
   type DailySeriesPoint,
   type NamedSeries,
 } from "../correlation-discovery";
+import { coupledPair } from "./helpers/seeded-series";
 
 /** Build a contiguous daily series from day-1 of a month. */
 function series(values: number[], startDay = 1): DailySeriesPoint[] {
@@ -327,9 +328,10 @@ describe("D2-2 — effect-size floor on discovered drivers", () => {
   });
 
   it("a strong deep pair is narrated with confident phrasing (high tier)", () => {
-    const n = 90;
-    const behaviour = Array.from({ length: n }, (_, i) => i + (i % 4));
-    const outcome = [0, ...behaviour.slice(0, n - 1).map((v) => v * 2 + 5)];
+    // Seeded noise with a real next-day coupling (r ≈ 0.9). A deterministic
+    // periodic fixture would not do here: its autocorrelation is perfect, so
+    // the effective sample size collapses and the pair is honestly thin.
+    const { behaviour, outcome } = coupledPair(11, 90, 2);
     const result = discoverCorrelations(
       [
         {
@@ -352,21 +354,15 @@ describe("D2-2 — effect-size floor on discovered drivers", () => {
   });
 
   it("a faint-tier pair is hedged, never confident", () => {
+    // A seed whose sample effect lands mid-band (shrunk r ≈ 0.25).
+    const FAINT_SEED = 2;
     // Construct a pair whose SHRUNK r lands in [floor, confident): a moderate
     // raw r on a sample deep enough to clear significance but whose shrunk
     // magnitude stays under the confident threshold.
-    const n = 60;
-    // Target shrunk r ≈ 0.25 ⇒ raw r ≈ 0.25 * (n+10)/n ≈ 0.29.
-    const behaviour = Array.from(
-      { length: n },
-      (_, i) => Math.sin(i * 0.9) * 10 + 50,
-    );
-    const outcome = [
-      0,
-      ...behaviour
-        .slice(0, n - 1)
-        .map((v, i) => v * 0.35 + Math.cos(i * 2.1) * 9 + 100),
-    ];
+    // Seeded noise with a weak next-day coupling (slope 0.3, r ≈ 0.3) over
+    // 200 days: significant, but the shrunk effect stays under the confident
+    // threshold.
+    const { behaviour, outcome } = coupledPair(FAINT_SEED, 200, 0.3);
     const result = discoverCorrelations(
       [
         {
@@ -382,7 +378,7 @@ describe("D2-2 — effect-size floor on discovered drivers", () => {
       (p) =>
         p.behaviour === "TIME_IN_DAYLIGHT" && p.outcome === "SLEEP_DURATION",
     );
-    // Deterministic: raw r=0.35, shrunk to ≈0.30 by n=59 → faint tier.
+    // Deterministic for the fixed seed: shrunk r in [0.2, 0.3) → faint tier.
     expect(pair).toBeDefined();
     expect(pair!.tier).toBe("faint");
     expect(Math.abs(pair!.shrunkR)).toBeGreaterThanOrEqual(EFFECT_SIZE_FLOOR);
@@ -401,9 +397,7 @@ describe("D2-2 — effect-size floor on discovered drivers", () => {
   // pins the fix: with `locale: "de"` the interpretation is the German template
   // (localised metric label + correctly-negated "keine Ursache"), NOT English.
   it("narrates in the reader's locale — German, never the English string", () => {
-    const n = 90;
-    const behaviour = Array.from({ length: n }, (_, i) => i + (i % 4));
-    const outcome = [0, ...behaviour.slice(0, n - 1).map((v) => v * 2 + 5)];
+    const { behaviour, outcome } = coupledPair(11, 90, 2);
     const seriesInput: NamedSeries[] = [
       {
         key: "TIME_IN_DAYLIGHT",
@@ -474,21 +468,12 @@ describe("compliance + symptom channels (FDREXTEND)", () => {
   });
 
   it("surfaces an adherence-dip → next-day symptom-flare link at a confident tier", () => {
-    // 70 contiguous days. Lower adherence on day D drives a higher symptom
-    // burden on day D+1 (the flagship cross-metric link). Adherence oscillates
-    // 100/70/40; symptom[d+1] = (100 - adherence[d]) scaled into 0..3.
-    const n = 70;
-    const adherence = Array.from({ length: n }, (_, i) =>
-      i % 3 === 0 ? 100 : i % 3 === 1 ? 70 : 40,
-    );
-    const symptom = [
-      0,
-      ...adherence
-        .slice(0, n - 1)
-        // (100 - a) maps 0..60 → ~0..3, plus a tiny deterministic jitter so the
-        // pair is not a perfect line (a real-world-shaped strong link).
-        .map((a, i) => ((100 - a) / 20) * (i % 2 === 0 ? 1.0 : 0.98)),
-    ];
+    // 120 contiguous days. Lower adherence on day D drives a higher symptom
+    // burden on day D+1 (the flagship cross-metric link). Adherence varies day to day (seeded); the symptom burden the day after
+    // falls as adherence rises, with independent noise on top.
+    const pair0 = coupledPair(23, 120, -2);
+    const adherence = pair0.behaviour.map((v) => 70 + v * 10);
+    const symptom = pair0.outcome.map((v) => (v - 40) / 7);
     const result = discoverCorrelations(
       [
         {
@@ -717,8 +702,9 @@ describe("discoverEmergingCorrelations (early detection)", () => {
     // retrospective scan needs ≥ 20 lagged pairs, so it sees NOTHING; the early
     // window (floor 10) catches it — exactly the early-detection mandate.
     const len = 18;
-    const beh = Array.from({ length: len }, (_, i) => (i % 2 ? 2 : 9));
-    const out = beh.map((b, i) => 40 + b * 3 + (i % 2 ? 0.3 : -0.3));
+    const { behaviour: beh, outcome: out } = coupledPair(5, len, 3, {
+      noiseSd: 0.5,
+    });
     const series: NamedSeries[] = [
       { key: "MOOD", role: "behaviour", points: longSeries(beh) },
       {
@@ -876,5 +862,102 @@ describe("discoverLabOutcomeCorrelations (labs ↔ outcomes)", () => {
     });
     // HRV is not a curated lab-outcome target → no pair tested.
     expect(result.pairsTested).toBe(0);
+  });
+});
+
+describe("v1.42 — per-series lag and the averaged environment window", () => {
+  it("pairs a lagDays-0 exposure with the same day and narrates it so", () => {
+    // Exposure (already the D−1/D mean upstream) drives the outcome on the
+    // SAME day; the default next-day join would see noise.
+    const { behaviour, outcome } = coupledPair(31, 120, 2);
+    const sameDayOutcome = outcome.slice(1);
+    const exposure = behaviour.slice(0, -1);
+    const result = discoverCorrelations(
+      [
+        {
+          key: "ENV_TEMP_MIN",
+          role: "behaviour",
+          points: longSeries(exposure),
+          lagDays: 0,
+        },
+        {
+          key: "SLEEP_DURATION",
+          role: "outcome",
+          points: longSeries(sameDayOutcome),
+        },
+      ],
+      { locale: "en" },
+    );
+    expect(result.pairsTested).toBe(1);
+    const pair = result.discovered[0];
+    expect(pair).toBeDefined();
+    expect(pair.lagDays).toBe(0);
+    expect(pair.nEff).toBeGreaterThan(0);
+    expect(pair.nEff).toBeLessThanOrEqual(pair.n);
+    expect(pair.interpretation).toMatch(/on the day and the day before/);
+    expect(pair.interpretation).not.toMatch(/next-day/);
+  });
+
+  it("keeps the next-day lag and wording for every other channel", () => {
+    const { behaviour, outcome } = coupledPair(11, 90, 2);
+    const result = discoverCorrelations(
+      [
+        {
+          key: "ACTIVITY_STEPS",
+          role: "behaviour",
+          points: longSeries(behaviour),
+        },
+        { key: "SLEEP_DURATION", role: "outcome", points: longSeries(outcome) },
+      ],
+      { locale: "en" },
+    );
+    expect(result.discovered[0].lagDays).toBe(1);
+    expect(result.discovered[0].interpretation).toMatch(/next-day/);
+  });
+
+  it("counts each exposure × outcome once in the false-discovery family", () => {
+    const { behaviour, outcome } = coupledPair(13, 90, 0);
+    const result = discoverCorrelations(
+      [
+        {
+          key: "ENV_PRESSURE_MEAN",
+          role: "behaviour",
+          points: longSeries(behaviour),
+          lagDays: 0,
+        },
+        { key: "MOOD", role: "outcome", points: longSeries(outcome) },
+        {
+          key: "SLEEP_DURATION",
+          role: "outcome",
+          points: longSeries(outcome),
+        },
+      ],
+      { locale: "en" },
+    );
+    expect(result.pairsTested).toBe(2);
+  });
+
+  it("carries a series' own lag into the emerging pass", () => {
+    const { behaviour, outcome } = coupledPair(17, 40, 3, { noiseSd: 0.5 });
+    const series: NamedSeries[] = [
+      {
+        key: "ENV_TEMP_MEAN",
+        role: "behaviour",
+        points: longSeries(behaviour.slice(0, -1)),
+        lagDays: 0,
+      },
+      {
+        key: "HEART_RATE_VARIABILITY",
+        role: "outcome",
+        points: longSeries(outcome.slice(1)),
+      },
+    ];
+    const empty = { discovered: [], pairsTested: 0, fdrQ: 0.1, minPairs: 20 };
+    const { emerging } = discoverEmergingCorrelations(series, empty, {
+      recentFromDayKey: longSeries(behaviour)[0].day,
+      locale: "en",
+      minPairs: 10,
+    });
+    expect(emerging[0]?.lagDays).toBe(0);
   });
 });

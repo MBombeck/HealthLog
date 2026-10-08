@@ -54,7 +54,7 @@ import {
   pickMainNightAndNaps,
   type SleepStageRow,
 } from "@/lib/analytics/sleep-night";
-import { isNearUtc } from "@/lib/tz/format";
+import { isNearUtc, shiftDateKey } from "@/lib/tz/format";
 import { probeRollupCoverage } from "@/lib/rollups/measurement-coverage";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import type {
@@ -258,7 +258,7 @@ export async function fetchEnvironmentSeries(
   });
 
   return ENVIRONMENT_FIELDS.map((field) => {
-    const points: DailySeriesPoint[] = [];
+    const daily: DailySeriesPoint[] = [];
     for (const row of rows) {
       const raw = row[field.column];
       if (raw == null || !Number.isFinite(raw)) continue;
@@ -267,10 +267,40 @@ export async function fetchEnvironmentSeries(
         field.column === "sunshineSec" || field.column === "daylightSec"
           ? raw / 3600
           : raw;
-      points.push({ day: row.date, value });
+      daily.push({ day: row.date, value });
     }
-    return { key: field.key, role: "behaviour" as const, points };
+    // v1.42 — one averaged-lag hypothesis per outcome: the exposure on day D
+    // is the mean of D−1 and D, paired with the outcome on D (`lagDays: 0`).
+    // See the lag note in `src/lib/environment/fields.ts`.
+    return {
+      key: field.key,
+      role: "behaviour" as const,
+      points: averageWithPreviousDay(daily),
+      lagDays: 0,
+    };
   });
+}
+
+/**
+ * Exposure over "the day before and the day itself": for each day D whose
+ * previous calendar day is also present, the mean of the two values, keyed
+ * on D. A day without its predecessor yields no point (no half-window mean).
+ * Pure; input order is irrelevant, output is ascending by day.
+ */
+export function averageWithPreviousDay(
+  points: readonly DailySeriesPoint[],
+): DailySeriesPoint[] {
+  const byDay = new Map<string, number>();
+  for (const p of points) {
+    if (Number.isFinite(p.value)) byDay.set(p.day, p.value);
+  }
+  const out: DailySeriesPoint[] = [];
+  for (const day of [...byDay.keys()].sort()) {
+    const prev = byDay.get(shiftDateKey(day, -1));
+    if (prev === undefined) continue;
+    out.push({ day, value: (prev + (byDay.get(day) as number)) / 2 });
+  }
+  return out;
 }
 
 /** Explicit deterministic ceiling on opt-in custom behaviour channels. */
