@@ -4726,8 +4726,8 @@
       "emptyCta": "Connecter un appareil"
     },
     "intradayPulse": {
-      "title": "Le rythme de votre journée",
-      "caption": "Votre fréquence cardiaque au fil de la journée, moyennée par tranches de 10 minutes.",
+      "title": "Pouls au fil de la journée",
+      "caption": "Moyenné par tranches de 10 minutes.",
       "hourlyNote": "Moyenne horaire affichée pour cette journée — les jours récents affichent le détail complet par tranches de 10 minutes.",
       "empty": "Pas encore assez de mesures pour cette journée pour en afficher le rythme.",
       "coverageOne": "Basé sur 1 mesure sur {hours}h.",
@@ -12265,7 +12265,8 @@
       "fewer": "Afficher moins",
       "note": "Établi à partir de vos entrées, sans évaluation. Chaque date ouvre la journée entière.",
       "report": "Rapport médical du {date} à aujourd’hui"
-    }
+    },
+    "travel": "En déplacement"
   },
   "timeline": {
     "title": "Chronologie",

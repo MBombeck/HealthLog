@@ -4726,8 +4726,8 @@
       "emptyCta": "Gerät verbinden"
     },
     "intradayPulse": {
-      "title": "Der Verlauf deines Tages",
-      "caption": "Dein Puls über den Tag, gemittelt in 10-Minuten-Schritten.",
+      "title": "Puls über den Tag",
+      "caption": "Gemittelt in 10-Minuten-Schritten.",
       "hourlyNote": "Stündlicher Durchschnitt für diesen Tag — aktuelle Tage zeigen das volle 10-Minuten-Detail.",
       "empty": "Für diesen Tag noch nicht genug Pulswerte, um den Tagesverlauf zu zeigen.",
       "coverageOne": "Basierend auf 1 Messung über {hours}h.",
@@ -12265,7 +12265,8 @@
       "fewer": "Weniger anzeigen",
       "note": "Zusammengestellt aus deinen Einträgen, ohne Bewertung. Jedes Datum öffnet den ganzen Tag.",
       "report": "Arztbericht {date} bis heute"
-    }
+    },
+    "travel": "Unterwegs"
   },
   "timeline": {
     "title": "Zeitleiste",

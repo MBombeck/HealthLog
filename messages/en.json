@@ -4726,8 +4726,8 @@
       "emptyCta": "Connect a device"
     },
     "intradayPulse": {
-      "title": "Your day's shape",
-      "caption": "Your heart rate through the day, averaged in 10-minute steps.",
+      "title": "Pulse through the day",
+      "caption": "Averaged in 10-minute steps.",
       "hourlyNote": "Showing this day's hourly average — recent days show the full 10-minute detail.",
       "empty": "Not enough heart-rate readings for this day to show its shape yet.",
       "coverageOne": "Based on 1 reading across {hours}h.",
@@ -12265,7 +12265,8 @@
       "fewer": "Show fewer",
       "note": "Compiled from your entries, without judgement. Every date opens the whole day.",
       "report": "Doctor report from {date} to today"
-    }
+    },
+    "travel": "Away"
   },
   "timeline": {
     "title": "Timeline",

@@ -4726,8 +4726,8 @@
       "emptyCta": "Collega un dispositivo"
     },
     "intradayPulse": {
-      "title": "L'andamento della tua giornata",
-      "caption": "La tua frequenza cardiaca durante il giorno, mediata in intervalli di 10 minuti.",
+      "title": "Battito nel corso della giornata",
+      "caption": "Media su intervalli di 10 minuti.",
       "hourlyNote": "Media oraria per questo giorno — i giorni recenti mostrano il dettaglio completo a 10 minuti.",
       "empty": "Non ci sono ancora abbastanza misurazioni per questo giorno per mostrarne l'andamento.",
       "coverageOne": "Basato su 1 misurazione in {hours}h.",
@@ -12265,7 +12265,8 @@
       "fewer": "Mostra meno",
       "note": "Raccolto dalle tue voci, senza valutazioni. Ogni data apre l’intera giornata.",
       "report": "Referto medico dal {date} a oggi"
-    }
+    },
+    "travel": "In viaggio"
   },
   "timeline": {
     "title": "Cronologia",

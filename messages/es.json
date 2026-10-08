@@ -4726,8 +4726,8 @@
       "emptyCta": "Conectar un dispositivo"
     },
     "intradayPulse": {
-      "title": "La forma de tu día",
-      "caption": "Tu frecuencia cardíaca a lo largo del día, promediada en tramos de 10 minutos.",
+      "title": "Pulso a lo largo del día",
+      "caption": "Promediado en intervalos de 10 minutos.",
       "hourlyNote": "Mostrando el promedio por hora de este día — los días recientes muestran el detalle completo de 10 minutos.",
       "empty": "Aún no hay suficientes lecturas para este día para mostrar su forma.",
       "coverageOne": "Basado en 1 lectura a lo largo de {hours}h.",
@@ -12265,7 +12265,8 @@
       "fewer": "Mostrar menos",
       "note": "Reunido a partir de tus entradas, sin valoración. Cada fecha abre el día completo.",
       "report": "Informe médico del {date} hasta hoy"
-    }
+    },
+    "travel": "De viaje"
   },
   "timeline": {
     "title": "Cronología",

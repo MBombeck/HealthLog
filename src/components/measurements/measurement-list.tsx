@@ -1435,7 +1435,7 @@ export function MeasurementList({
                       className="bg-card border-border data-[state=selected]:border-primary/60 data-[state=selected]:bg-primary/5"
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 overflow-hidden">
+                        <div className="flex min-w-0 flex-1 items-center gap-2">
                           {/* v1.15.13 — multi-select checkbox in a 44px tap
                             target; absent for synthetic grouped rows. */}
                           {!isGrouped && canManage && (
@@ -1472,7 +1472,7 @@ export function MeasurementList({
                               <Icon className="h-4 w-4" />
                             </button>
                           )}
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             {/* v1.22 — metadata badges sit on the scale
                               token `text-xs` (12 px, the mobile legibility
                               baseline) instead of an arbitrary per-site
@@ -1520,7 +1520,10 @@ export function MeasurementList({
                                 </span>
                               )
                             )}
-                            <p className="text-muted-foreground truncate text-xs">
+                            {/* The meta line wraps rather than truncates:
+                              cut to "vor 9 Stunden…" it hid the day it
+                              opens and the source beside it. */}
+                            <p className="text-muted-foreground text-xs">
                               {/*
                               v1.4.43 QoL (L8) — see desktop
                               counterpart at the same `measuredAt`

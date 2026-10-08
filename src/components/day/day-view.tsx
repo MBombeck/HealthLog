@@ -276,7 +276,7 @@ export function DayView({
         data-slot="day-body"
         className={cn(
           "flex min-h-0 flex-1 flex-col overflow-x-clip overflow-y-auto overscroll-contain",
-          compact ? "gap-6 px-4 pt-0.5 pb-4" : "gap-6 px-6 pt-5 pb-6",
+          compact ? "gap-6 px-4 pt-0.5 pb-4" : "gap-6 px-6 pt-4 pb-6",
         )}
       >
         {/* What the day holds, as meta under the header. The line keeps its

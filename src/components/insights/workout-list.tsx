@@ -137,7 +137,9 @@ export function WorkoutList({
                     />
                   ) : null}
                 </span>
-                <span className="text-muted-foreground truncate text-xs">
+                {/* Wraps rather than truncates, so the day it opens
+                    stays readable beside the stats column. */}
+                <span className="text-muted-foreground text-xs">
                   <DayLinkAt at={workout.startedAt} className="z-10">
                     {formatDate(workout.startedAt, locale, timeFormat)}
                   </DayLinkAt>

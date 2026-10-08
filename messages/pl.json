@@ -4726,8 +4726,8 @@
       "emptyCta": "Połącz urządzenie"
     },
     "intradayPulse": {
-      "title": "Przebieg Twojego dnia",
-      "caption": "Twoje tętno w ciągu dnia, uśrednione w 10-minutowych odcinkach.",
+      "title": "Tętno w ciągu dnia",
+      "caption": "Uśrednione w krokach co 10 minut.",
       "hourlyNote": "Pokazano średnią godzinową dla tego dnia — ostatnie dni pokazują pełny, 10-minutowy szczegół.",
       "empty": "Za mało pomiarów z tego dnia, aby pokazać jego przebieg.",
       "coverageOne": "Na podstawie 1 pomiaru w ciągu {hours}h.",
@@ -12265,7 +12265,8 @@
       "fewer": "Pokaż mniej",
       "note": "Zestawione z Twoich wpisów, bez oceny. Każda data otwiera cały dzień.",
       "report": "Raport lekarski od {date} do dziś"
-    }
+    },
+    "travel": "W podróży"
   },
   "timeline": {
     "title": "Oś czasu",
