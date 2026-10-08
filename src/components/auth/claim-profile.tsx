@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { KeyRound, Loader2, LogOut } from "lucide-react";
@@ -124,6 +125,16 @@ export function ClaimProfile({ token }: { token: string | null }) {
           title={t("auth.claim.invalid")}
           description={t("auth.claim.invalidHint")}
         />
+        {/* A dead link is not a dead end: the way on is the sign-in page. */}
+        <Button
+          asChild
+          variant="outline"
+          size="lg"
+          className="mt-8 min-h-11 w-full"
+          data-slot="claim-to-login"
+        >
+          <Link href="/auth/login">{t("auth.login")}</Link>
+        </Button>
       </ClaimCard>
     );
   }

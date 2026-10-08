@@ -144,7 +144,7 @@ export function BiomarkerForm({
       {onCancel ? (
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           onClick={onCancel}
           disabled={submitting}
         >

@@ -64,6 +64,9 @@ function EmptyState({
       className={cn(
         "flex flex-col items-center justify-center text-center",
         size === "compact" ? "gap-2 py-4" : "gap-3 py-8",
+        // The card variant paints a border, so its content insets from it:
+        // a full-width phone CTA otherwise ran edge to edge into the frame.
+        variant === "card" && "px-4",
       )}
     >
       {icon ? (

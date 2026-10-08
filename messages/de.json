@@ -463,7 +463,6 @@
       "signOut": "Abmelden und Einladung annehmen"
     },
     "createAccount": "Konto erstellen",
-    "newAccount": "Neues Konto erstellen",
     "backToPasskey": "Zurück zu Passkey",
     "passkeySetupLater": "Passkeys kannst du jederzeit in den Einstellungen einrichten.",
     "passwordMinLength": "Min. 12 Zeichen",
@@ -583,7 +582,6 @@
     "quickAddLifeEvent": "Lebensereignis erfassen",
     "customizeDashboard": "Dashboard anpassen",
     "medicationIntakeQuickAdd": {
-      "sheetTitle": "Medikamenteneinnahme erfassen",
       "sheetDescription": "Dosis, Zeitpunkt und Medikament in wenigen Tipps protokollieren.",
       "medicationLabel": "Medikament",
       "medicationPlaceholder": "Medikament auswählen",
@@ -764,7 +762,7 @@
     "valueWithUnit": "Wert ({unit})",
     "timestamp": "Zeitpunkt",
     "timestampBackdateHint": "Datum und Uhrzeit anpassen, um einen vergangenen Wert zu erfassen.",
-    "notesPlaceholder": "z.B. nach dem Essen",
+    "notesPlaceholder": "z. B. nach dem Essen",
     "formReset": "Formular zurücksetzen",
     "saveError": "Fehler beim Speichern",
     "duplicateTimestamp": "Zum gewählten Zeitpunkt existiert bereits ein Messwert dieses Typs.",
@@ -895,7 +893,7 @@
     "factorNo": "Nein",
     "factorRatingOption": "{label}: {value} von {max}",
     "tags": "Tags",
-    "tagsPlaceholder": "z.B. Sport, Arbeit, Familie",
+    "tagsPlaceholder": "z. B. Sport, Arbeit, Familie",
     "tagsHelp": "Kommagetrennt eingeben",
     "timestamp": "Zeitpunkt",
     "date": "Datum",
@@ -2409,6 +2407,7 @@
     "days7Label": "7T",
     "days7Title": "Letzte 7 Tage",
     "days30Label": "30T",
+    "daysNLabel": "{days}T",
     "days30Title": "Letzte 30 Tage",
     "days90Label": "90T",
     "days90Title": "Letzte 90 Tage",
@@ -4743,6 +4742,12 @@
       "settingsBody": "HealthLog funktioniert vollständig ohne KI. Verbinde unten einen Anbieter, wenn du ein tägliches Briefing, kurze Notizen zu deinen Werten und den Coach möchtest.",
       "action": "KI einrichten",
       "dismiss": "Nicht jetzt"
+    },
+    "bmiHeight": {
+      "coachPrefill": "Ich habe meine Körpergröße noch nicht eingetragen — warum ist der BMI wichtig, und was sollte ich wissen, bevor ich sie eintrage?"
+    },
+    "medicationsEmpty": {
+      "coachPrefill": "Ich habe noch keine Medikamente angelegt — was sollte ich wissen, bevor ich hier anfange, meine Therapietreue zu verfolgen?"
     }
   },
   "thresholds": {
@@ -6554,7 +6559,7 @@
       "createFailed": "Das Token konnte nicht erstellt werden. Bitte versuche es erneut."
     },
     "tokenMintMovedDescription": "Tokens werden dort ausgestellt, wo sie gelten: oben für Messwerte und Dokumente, oder im API-Endpoint eines Medikaments für genau dieses Medikament.",
-    "tokenNamePlaceholder": "Token-Name (z.B. iPhone Shortcut)",
+    "tokenNamePlaceholder": "Token-Name (z. B. iPhone Shortcut)",
     "tokenCreated": "Token erstellt — kopiere ihn jetzt! Er wird nicht erneut angezeigt.",
     "tokenCopy": "Token kopieren",
     "tokenCopied": "Token in die Zwischenablage kopiert",
@@ -8017,7 +8022,9 @@
     "noneUnlockedYet": "Noch keine Erfolge freigeschaltet.",
     "pointsValue": "{points} Punkte",
     "metricCount": "{count}",
-    "metricDays": "{count} Tage",
+    "metricDaysOne": "{count} Tag",
+    "metricDaysFew": "{count} Tage",
+    "metricDaysOther": "{count} Tage",
     "metricPercent": "{count}%",
     "badges": {
       "intakeTotal1": {
@@ -8497,6 +8504,10 @@
     "currentValue": "Aktuell: {value} {unit}",
     "targetRangeValue": "Zielbereich: {min}–{max} {unit}",
     "sourceLabel": "Quelle: {source}",
+    "sourceNames": {
+      "moodEntries": "Stimmungseinträge",
+      "sevenDays": "7 Tage"
+    },
     "inTarget": "Im Zielbereich",
     "aboveTarget": "{delta} {unit} über Zielbereich",
     "belowTarget": "{delta} {unit} unter Zielbereich",
@@ -8588,7 +8599,7 @@
     "noActiveMedications": "Keine aktiven Medikamente gefunden.",
     "whichMedication": "<b>Welches Medikament eingenommen?</b>",
     "cancelButton": "Abbrechen",
-    "askMedicationName": "Bitte Medikament angeben, z.B. <b>genommen Ramipril</b>.",
+    "askMedicationName": "Bitte Medikament angeben, z. B. <b>genommen Ramipril</b>.",
     "medicationNotFoundExact": "Medikament nicht gefunden. Bitte Namen exakt wie in HealthLog senden.",
     "helpHeader": "<b>Verfügbare Befehle:</b>",
     "helpBody": "/help — Diese Hilfe anzeigen\n/add — Einnahme erfassen\n/start — Bot starten\n\n<b>Textbefehle:</b>\ngenommen &lt;Name&gt; — Einnahme bestätigen\n\n<b>Über die Buttons in Erinnerungen:</b>\n• Genommen — Einnahme bestätigen\n• 🕐 1h / 🕐 3h — Erinnerung verschieben\n• ⏭ Überspringen — Einnahme überspringen\n• ✓ Bestätigen — Verpasste Einnahme bestätigen",
@@ -9931,7 +9942,7 @@
     "loadError": "Diese Episode konnte nicht geladen werden.",
     "backToList": "Zurück zum Journal",
     "detail": {
-      "note": "Note"
+      "note": "Notiz"
     },
     "edit": {
       "title": "Episode bearbeiten",
@@ -10747,7 +10758,7 @@
     },
     "filter": {
       "searchLabel": "Dokumente durchsuchen",
-      "searchPlaceholder": "Titel oder Dateiname suchen…",
+      "searchPlaceholder": "Titel, Dateiname",
       "typeGroup": "Dokumenttyp",
       "conditionGroup": "Erkrankung",
       "procedureGroup": "Eingriffe und Operationen",
@@ -12036,8 +12047,7 @@
     "title": "Praxen und Ärzte",
     "description": "Dein eigenes Adressbuch — einmal tippen, überall auswählen.",
     "linkLabel": "Adressbuch",
-    "add": "Eintrag",
-    "searchPlaceholder": "Name, Praxis oder Fachrichtung suchen",
+    "searchPlaceholder": "Name, Praxis oder Fach suchen",
     "loadError": "Adressbuch konnte nicht geladen werden.",
     "emptyTitle": "Noch kein Eintrag",
     "emptyDescription": "Lege eine Praxis an, damit du sie beim Termin auswählen kannst.",
@@ -12133,7 +12143,6 @@
     "unreadableLabel": "Unlesbares Symptom",
     "intensityPill": "{value}/10",
     "entry": {
-      "sheetTitle": "Symptom erfassen",
       "sheetDescription": "Eines deiner eigenen Symptome, wie stark und wann.",
       "symptom": "Symptom",
       "symptomRequired": "Wähle ein Symptom.",

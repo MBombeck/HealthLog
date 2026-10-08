@@ -255,7 +255,7 @@ export function LogDaySheet({
       description={t("illness.sheet.description")}
       footer={
         <>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t("common.cancel")}
           </Button>
           <Button onClick={handleSave} disabled={upsert.isPending}>

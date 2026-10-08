@@ -131,4 +131,11 @@ describe("MeasurementList — Sys/Dia disambiguation badge (mobile list)", () =>
     expect(countOccurrences(mobile, ">Sys<")).toBe(1);
     expect(countOccurrences(mobile, ">Dia<")).toBe(1);
   });
+
+  it("names the type on every mobile row, not only blood pressure", () => {
+    vi.mocked(useIsMobile).mockReturnValue(true);
+    expect(
+      countOccurrences(render("en"), 'data-slot="measurement-row-type"'),
+    ).toBe(baseMeasurements.length);
+  });
 });

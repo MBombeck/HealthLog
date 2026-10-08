@@ -110,4 +110,16 @@ describe("getIntegrationCallbackUrls", () => {
     expect(urls.withings).toBe("http://health.example/api/withings/callback");
     expect(urls.whoop).toBe("http://health.example/api/whoop/callback");
   });
+
+  it("reports null rather than 'undefined/api/…' when the app URL is unset", () => {
+    // A resolver that splices the unset variable into its template would
+    // otherwise hand the card "undefined/api/polar/callback" to show.
+    const urls = getIntegrationCallbackUrls();
+    for (const provider of INTEGRATION_CALLBACK_PROVIDERS) {
+      expect(urls[provider] ?? "", provider).not.toMatch(/^undefined/);
+      if (urls[provider] !== null) {
+        expect(urls[provider], provider).toMatch(/^https?:\/\//);
+      }
+    }
+  });
 });

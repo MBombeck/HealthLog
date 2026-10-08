@@ -208,7 +208,9 @@ export default function InsightsMedikamentePage() {
             </Button>
           }
         />
-        <CoachLaunchButton prefill="I haven't added any medications yet — what should I know before I start tracking medication compliance here?" />
+        <CoachLaunchButton
+          prefill={t("insights.medicationsEmpty.coachPrefill")}
+        />
       </SubPageShell>
     );
   }

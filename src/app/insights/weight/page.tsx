@@ -48,7 +48,11 @@ export default function InsightsGewichtPage() {
   const { compareBaseline } = useInsightsLayoutPrefs(isAuthenticated);
   const unitDisplay = useUnitDisplay();
 
-  const { data: analytics, isEmpty } = useInsightsAnalytics("WEIGHT");
+  const {
+    data: analytics,
+    isEmpty,
+    isLoading: analyticsLoading,
+  } = useInsightsAnalytics("WEIGHT");
   const weightSummary = analytics?.summaries?.WEIGHT ?? null;
 
   // v1.34 — the user's own weight target, read through the shared
@@ -170,6 +174,7 @@ export default function InsightsGewichtPage() {
       explainerMetric="weight"
       statStrip={
         <MetricStatStrip
+          pending={analyticsLoading}
           summary={displaySummary}
           unit={weightUnit}
           fractionDigits={weightTransform.decimals}

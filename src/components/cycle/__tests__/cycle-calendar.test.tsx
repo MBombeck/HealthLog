@@ -97,6 +97,18 @@ describe("<CycleCalendar>", () => {
     expect(html).toContain('role="columnheader"');
   });
 
+  it("nests headers and day cells in ARIA rows (grid > row > cell)", () => {
+    const html = render(
+      <CycleCalendar days={[]} today={today} onSelectDay={() => {}} />,
+    );
+    // A header row plus at least four week rows; a header or cell directly
+    // under the grid is an invalid ARIA tree.
+    expect(html.match(/role="row"/g)?.length ?? 0).toBeGreaterThanOrEqual(5);
+    expect(html).not.toMatch(
+      /role="grid"[^>]*>\s*<div[^>]*role="(columnheader|gridcell)"/,
+    );
+  });
+
   it("exposes the flow level on a logged period day as a stable data-attr", () => {
     const days = [
       { ...dayBase("2026-06-10"), isPeriodLogged: true, flow: "HEAVY" },

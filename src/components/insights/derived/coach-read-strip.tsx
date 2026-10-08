@@ -11,6 +11,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { metricFractionDigits } from "@/lib/measurements/value-domain";
 import { apiGet } from "@/lib/api/api-fetch";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { TileHeader } from "@/components/insights/tile-header";
 import type { CoachReadStripData } from "@/lib/insights/derived/coach-read-shape";
 
@@ -78,7 +79,7 @@ export function CoachReadStrip({
   const transformed = unitDisplay.isTransformed(metricType);
   const resolvedUnit = transformed ? unitDisplay.unitFor(metricType) : unit;
 
-  const { data } = useQuery({
+  const { data, isError } = useQuery({
     queryKey: queryKeys.insightsCoachRead(metricType, locale),
     queryFn: () =>
       apiGet<CoachReadStripData>(
@@ -88,10 +89,34 @@ export function CoachReadStrip({
     staleTime: 5 * 60 * 1000,
   });
 
-  // Match the rest of the query-dependent insights chrome: don't paint a
-  // branch during SSR / hydration (React #418) and don't paint until the
-  // read lands.
-  if (!mounted || !data) return null;
+  // Don't paint a data branch during SSR / hydration (React #418). While the
+  // read is on its way the strip holds its place with a card of the same
+  // shape: it lands above the chart, and popping in later pushed the chart
+  // and everything under it down the page. A landed read always paints (the
+  // baseline line degrades to the "learning" copy), so the placeholder only
+  // ever gives way to a card of its own height; a failed read drops it.
+  if (!mounted || !data) {
+    if (!isAuthenticated || isError) return null;
+    return (
+      <Card
+        data-slot="coach-read-strip"
+        data-state="loading"
+        aria-busy="true"
+        className="gap-2 py-3 md:py-4"
+      >
+        <CardHeader>
+          <TileHeader
+            icon={Sparkles}
+            title={t("insights.coach.readStrip.label")}
+            titleAs="h2"
+          />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-5.5 w-3/4" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   const fmt = (value: number): string =>
     new Intl.NumberFormat(locale, {

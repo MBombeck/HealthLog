@@ -35,7 +35,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { PageAuthGate } from "@/components/ui/page-auth-gate";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { useAuth } from "@/hooks/use-auth";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { formatDate } from "@/lib/format";
 import { useAchievementsQuery } from "@/lib/queries/use-achievements-query";
 import {
@@ -81,12 +81,13 @@ const CATEGORY_LABEL_KEY: Record<AchievementCategory, string> = {
 function formatMetric(
   format: AchievementProgress["format"],
   value: number,
-  t: (key: string, params?: Record<string, string | number>) => string,
+  i18n: Pick<ReturnType<typeof useTranslations>, "t" | "tCount">,
 ) {
   if (format === "percent")
-    return t("achievements.metricPercent", { count: value });
-  if (format === "days") return t("achievements.metricDays", { count: value });
-  return t("achievements.metricCount", { count: value });
+    return i18n.t("achievements.metricPercent", { count: value });
+  // "1 Tag", not "1 Tage": the day count takes the plural form.
+  if (format === "days") return i18n.tCount("achievements.metricDays", value);
+  return i18n.t("achievements.metricCount", { count: value });
 }
 
 /**
@@ -127,9 +128,11 @@ export function groupByCategory(
 interface AchievementCardProps {
   achievement: AchievementProgress;
   t: ReturnType<typeof useTranslations>["t"];
+  tCount: ReturnType<typeof useTranslations>["tCount"];
 }
 
-function AchievementCard({ achievement, t }: AchievementCardProps) {
+function AchievementCard({ achievement, t, tCount }: AchievementCardProps) {
+  const i18n = { t, tCount };
   const Icon = iconMap[achievement.icon] ?? Star;
   const unlocked = achievement.unlocked;
 
@@ -175,7 +178,7 @@ function AchievementCard({ achievement, t }: AchievementCardProps) {
       className={
         unlocked
           ? "border-primary/30 from-primary/8 to-primary/0 rounded-xl border bg-gradient-to-br p-3"
-          : "border-border bg-card/50 rounded-xl border p-3 opacity-70"
+          : "border-border bg-card/50 rounded-xl border p-3"
       }
     >
       <div className="mb-2 flex items-start justify-between gap-2">
@@ -191,7 +194,7 @@ function AchievementCard({ achievement, t }: AchievementCardProps) {
           </div>
           <div className="min-w-0">
             <h3 className="text-sm font-semibold">{t(achievement.titleKey)}</h3>
-            <p className="text-muted-foreground line-clamp-2 text-xs">
+            <p className="text-muted-foreground text-xs">
               {t(achievement.descriptionKey)}
             </p>
           </div>
@@ -215,8 +218,16 @@ function AchievementCard({ achievement, t }: AchievementCardProps) {
         <div className="mt-2 space-y-1.5">
           <p className="text-muted-foreground text-xs">
             {t("achievements.criterionHint", {
-              current: formatMetric(achievement.format, achievement.current, t),
-              target: formatMetric(achievement.format, achievement.target, t),
+              current: formatMetric(
+                achievement.format,
+                achievement.current,
+                i18n,
+              ),
+              target: formatMetric(
+                achievement.format,
+                achievement.target,
+                i18n,
+              ),
             })}
           </p>
           {/* v1.4.33 IW9 — aria-label so the bar carries an accessible name. */}
@@ -224,8 +235,16 @@ function AchievementCard({ achievement, t }: AchievementCardProps) {
             value={achievement.progressPercent}
             className="h-1.5"
             aria-label={t("achievements.criterionHint", {
-              current: formatMetric(achievement.format, achievement.current, t),
-              target: formatMetric(achievement.format, achievement.target, t),
+              current: formatMetric(
+                achievement.format,
+                achievement.current,
+                i18n,
+              ),
+              target: formatMetric(
+                achievement.format,
+                achievement.target,
+                i18n,
+              ),
             })}
           />
         </div>
@@ -259,7 +278,9 @@ function AchievementCard({ achievement, t }: AchievementCardProps) {
 
 export default function AchievementsPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const { t } = useTranslations();
+  const { t, tCount } = useTranslations();
+  const fmt = useFormatters();
+  const i18n = { t, tCount };
 
   // v1.18.0 — the achievements module gate. When the account has the
   // module turned off the whole page disappears: an empty state stands in
@@ -335,9 +356,9 @@ export default function AchievementsPage() {
             {t("achievements.points")}
           </p>
           <p className="text-4xl leading-none font-bold md:text-5xl">
-            {summary?.earnedPoints ?? 0}
+            {fmt.integer(summary?.earnedPoints ?? 0)}
             <span className="text-muted-foreground ml-2 text-base font-medium">
-              / {summary?.totalPoints ?? 0}
+              / {fmt.integer(summary?.totalPoints ?? 0)}
             </span>
           </p>
           <Progress
@@ -373,7 +394,7 @@ export default function AchievementsPage() {
               <p className="text-base font-semibold">
                 {t(summary.nextAchievement.titleKey)}
               </p>
-              <p className="text-muted-foreground line-clamp-2 text-xs">
+              <p className="text-muted-foreground text-xs">
                 {t(summary.nextAchievement.descriptionKey)}
               </p>
               <p className="text-muted-foreground text-xs leading-relaxed">
@@ -381,13 +402,13 @@ export default function AchievementsPage() {
                 {formatMetric(
                   summary.nextAchievement.format,
                   summary.nextAchievement.current,
-                  t,
+                  i18n,
                 )}{" "}
                 /{" "}
                 {formatMetric(
                   summary.nextAchievement.format,
                   summary.nextAchievement.target,
-                  t,
+                  i18n,
                 )}{" "}
                 ({summary.nextAchievement.progressPercent}%)
               </p>
@@ -449,6 +470,7 @@ export default function AchievementsPage() {
                       key={achievement.id}
                       achievement={achievement}
                       t={t}
+                      tCount={tCount}
                     />
                   ))}
                 </div>

@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { CloudSun, MapPin, Plane, Trash2, Wind } from "lucide-react";
 
 import { SettingsCard } from "@/components/settings/settings-card";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { Button } from "@/components/ui/button";
 import { DateField } from "@/components/ui/date-field";
@@ -30,7 +31,7 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { formatDateTime } from "@/lib/format";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import {
   apiDelete,
   apiGet,
@@ -122,6 +123,7 @@ function envValue(value: number | null, unit: string, digits = 0): string {
 
 export function EnvironmentSection() {
   const { t, tCount } = useTranslations();
+  const fmt = useFormatters();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   // Date defaults are the user's own days. The UTC day was tomorrow for
@@ -306,7 +308,7 @@ export function EnvironmentSection() {
               {home.since && (
                 <p className="text-muted-foreground text-xs">
                   {t("settings.sections.environment.home.since", {
-                    date: home.since.slice(0, 10),
+                    date: fmt.dateShortSmartCalendar(home.since.slice(0, 10)),
                   })}
                 </p>
               )}
@@ -393,7 +395,8 @@ export function EnvironmentSection() {
                   className="flex items-center justify-between gap-2 p-2"
                 >
                   <span className="text-sm">
-                    {tr.label} · {tr.startDate} – {tr.endDate}
+                    {tr.label} · {fmt.dateShortSmartCalendar(tr.startDate)} –{" "}
+                    {fmt.dateShortSmartCalendar(tr.endDate)}
                   </span>
                   <ConfirmButton
                     slot="travel-remove"
@@ -531,7 +534,7 @@ export function EnvironmentSection() {
         <p className="text-sm leading-relaxed">
           {t("settings.sections.environment.backfill.description")}
         </p>
-        <div className="flex flex-wrap items-end gap-2">
+        <div className="flex flex-wrap items-end gap-4">
           <div className="space-y-1">
             <Label htmlFor="env-backfill-start">
               {t("settings.sections.environment.startDate")}
@@ -552,6 +555,32 @@ export function EnvironmentSection() {
               onChange={setBackfillEnd}
             />
           </div>
+        </div>
+        {data && (
+          <p className="text-muted-foreground text-xs">
+            {t("settings.sections.environment.storedDays", {
+              count: data.context.days,
+            })}
+          </p>
+        )}
+        {data?.lastFetchFailure && (
+          <p
+            role="status"
+            data-testid="environment-fetch-failed"
+            className="text-destructive text-xs"
+          >
+            {tCount(
+              "settings.sections.environment.fetchFailed",
+              data.lastFetchFailure.failures,
+              {
+                count: data.lastFetchFailure.failures,
+                when: formatDateTime(data.lastFetchFailure.lastFailedAt),
+              },
+            )}
+          </p>
+        )}
+        {/* The action row closes the card; the status lines sit above it. */}
+        <SettingsCardActions>
           <Button
             type="button"
             size="sm"
@@ -566,30 +595,7 @@ export function EnvironmentSection() {
           >
             {t("settings.sections.environment.backfill.run")}
           </Button>
-        </div>
-        {data && (
-          <p className="text-muted-foreground text-xs">
-            {t("settings.sections.environment.storedDays", {
-              count: data.context.days,
-            })}
-          </p>
-        )}
-        {data?.lastFetchFailure && (
-          <p
-            role="status"
-            data-testid="environment-fetch-failed"
-            className="text-destructive mt-1 text-xs"
-          >
-            {tCount(
-              "settings.sections.environment.fetchFailed",
-              data.lastFetchFailure.failures,
-              {
-                count: data.lastFetchFailure.failures,
-                when: formatDateTime(data.lastFetchFailure.lastFailedAt),
-              },
-            )}
-          </p>
-        )}
+        </SettingsCardActions>
       </SettingsCard>
 
       {/* Air quality, pollen and UV (v1.42) */}
@@ -636,7 +642,7 @@ export function EnvironmentSection() {
                 <div className="space-y-2">
                   <p className="text-sm font-medium">
                     {t("settings.sections.environment.airQuality.latest", {
-                      date: data.latestDay.date,
+                      date: fmt.dateShortSmartCalendar(data.latestDay.date),
                     })}
                   </p>
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
@@ -700,7 +706,7 @@ export function EnvironmentSection() {
       {/* Attribution (CC BY 4.0 for Open-Meteo; Copernicus notice for the
           air-quality values), one line per source. */}
       <ul
-        className="text-muted-foreground space-y-0.5 pl-1 text-xs"
+        className="text-muted-foreground space-y-0.5 text-xs"
         aria-label={t("settings.sections.environment.airQuality.attribution")}
       >
         {(

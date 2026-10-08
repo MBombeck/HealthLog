@@ -122,8 +122,10 @@ function CatalogRowSkeleton() {
       data-slot="catalog-row-skeleton"
       className="flex items-start justify-between gap-3 py-2"
     >
-      <div className="min-w-0 flex-1 space-y-1.5">
-        <Skeleton className="h-4 w-32" />
+      {/* Sized to the loaded row (a 22 px name-and-badge line over a 16 px
+          source line), so the groups below do not move when it lands. */}
+      <div className="min-w-0 flex-1 space-y-1">
+        <Skeleton className="h-5.5 w-32" />
         <Skeleton className="h-3 w-48" />
       </div>
       <Skeleton className="h-8 w-20 shrink-0" />

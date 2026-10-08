@@ -7,7 +7,7 @@ import {
   stripComments,
   walkSourceFiles,
 } from "@/__tests__/helpers/source-files";
-import { axisUnitSuffix } from "../axis-unit";
+import { axisTickUnitSuffix, axisUnitSuffix } from "../axis-unit";
 
 const COMPONENTS = join(process.cwd(), "src", "components");
 
@@ -52,5 +52,17 @@ describe("axis unit suffix", () => {
       .filter(({ value }) => /["`] /.test(value))
       .map(({ file, value }) => `${file}: unit=${value}`);
     expect(offenders).toEqual([]);
+  });
+});
+
+describe("axisTickUnitSuffix", () => {
+  it("keeps a short unit on the ticks", () => {
+    expect(axisTickUnitSuffix("bpm")).toBe(axisUnitSuffix("bpm"));
+    expect(axisTickUnitSuffix("mg/dL")).toBe(axisUnitSuffix("mg/dL"));
+  });
+  it("keeps a word-length unit off the ticks, where it was clipped", () => {
+    expect(axisTickUnitSuffix("Schritte")).toBeUndefined();
+    expect(axisTickUnitSuffix("Atemzüge/min")).toBeUndefined();
+    expect(axisTickUnitSuffix("mL/(kg·min)")).toBeUndefined();
   });
 });

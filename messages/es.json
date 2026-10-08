@@ -463,7 +463,6 @@
       "signOut": "Cerrar sesión y aceptar la invitación"
     },
     "createAccount": "Crear cuenta",
-    "newAccount": "Crear cuenta nueva",
     "backToPasskey": "Volver a passkey",
     "passkeySetupLater": "Puedes configurar passkeys más tarde en los ajustes.",
     "passwordMinLength": "Mín. 12 caracteres",
@@ -583,7 +582,6 @@
     "quickAddLifeEvent": "Registrar acontecimiento vital",
     "customizeDashboard": "Personalizar panel",
     "medicationIntakeQuickAdd": {
-      "sheetTitle": "Registrar toma de medicación",
       "sheetDescription": "Registra dosis, hora y medicamento en unos pocos toques.",
       "medicationLabel": "Medicamento",
       "medicationPlaceholder": "Selecciona un medicamento",
@@ -2409,6 +2407,7 @@
     "days7Label": "7 d",
     "days7Title": "Últimos 7 días",
     "days30Label": "30 d",
+    "daysNLabel": "{days} d",
     "days30Title": "Últimos 30 días",
     "days90Label": "90 d",
     "days90Title": "Últimos 90 días",
@@ -4743,6 +4742,12 @@
       "settingsBody": "HealthLog funciona por completo sin IA. Conecta un proveedor abajo si quieres un resumen diario, notas breves sobre tus mediciones y el Coach.",
       "action": "Configurar IA",
       "dismiss": "Ahora no"
+    },
+    "bmiHeight": {
+      "coachPrefill": "Todavía no he indicado mi altura: ¿por qué importa el IMC y qué debería saber antes de configurarla?"
+    },
+    "medicationsEmpty": {
+      "coachPrefill": "Todavía no he añadido medicamentos: ¿qué debería saber antes de empezar a seguir aquí la adherencia?"
     }
   },
   "thresholds": {
@@ -8017,7 +8022,9 @@
     "noneUnlockedYet": "Aún no has desbloqueado ningún logro.",
     "pointsValue": "{points} puntos",
     "metricCount": "{count}",
-    "metricDays": "{count} días",
+    "metricDaysOne": "{count} día",
+    "metricDaysFew": "{count} días",
+    "metricDaysOther": "{count} días",
     "metricPercent": "{count}%",
     "badges": {
       "intakeTotal1": {
@@ -8497,6 +8504,10 @@
     "currentValue": "Actual: {value} {unit}",
     "targetRangeValue": "Rango objetivo: {min}–{max} {unit}",
     "sourceLabel": "Fuente: {source}",
+    "sourceNames": {
+      "moodEntries": "Entradas de ánimo",
+      "sevenDays": "7 días"
+    },
     "inTarget": "En rango objetivo",
     "aboveTarget": "{delta} {unit} por encima del rango",
     "belowTarget": "{delta} {unit} por debajo del rango",
@@ -9931,7 +9942,7 @@
     "loadError": "No se pudo cargar este episodio.",
     "backToList": "Volver al diario",
     "detail": {
-      "note": "Note"
+      "note": "Nota"
     },
     "edit": {
       "title": "Editar episodio",
@@ -12036,7 +12047,6 @@
     "title": "Consultas y médicos",
     "description": "Tu propia agenda: escribe una consulta una vez y elígela en todas partes.",
     "linkLabel": "Agenda",
-    "add": "Entrada",
     "searchPlaceholder": "Buscar nombre, consulta o especialidad",
     "loadError": "No se pudo cargar la agenda.",
     "emptyTitle": "Todavía no hay entradas",
@@ -12133,7 +12143,6 @@
     "unreadableLabel": "Síntoma ilegible",
     "intensityPill": "{value}/10",
     "entry": {
-      "sheetTitle": "Registrar síntoma",
       "sheetDescription": "Uno de tus propios síntomas, su intensidad y cuándo.",
       "symptom": "Síntoma",
       "symptomRequired": "Elige un síntoma.",

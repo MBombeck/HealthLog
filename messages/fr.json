@@ -463,7 +463,6 @@
       "signOut": "Se déconnecter et accepter l'invitation"
     },
     "createAccount": "Créer un compte",
-    "newAccount": "Créer un nouveau compte",
     "backToPasskey": "Revenir à la passkey",
     "passkeySetupLater": "Tu peux configurer les passkeys plus tard dans les paramètres.",
     "passwordMinLength": "Min. 12 caractères",
@@ -583,7 +582,6 @@
     "quickAddLifeEvent": "Enregistrer un événement de vie",
     "customizeDashboard": "Personnaliser le tableau de bord",
     "medicationIntakeQuickAdd": {
-      "sheetTitle": "Saisir une prise de médicament",
       "sheetDescription": "Enregistre la dose, l’heure et le médicament en quelques touches.",
       "medicationLabel": "Médicament",
       "medicationPlaceholder": "Sélectionner un médicament",
@@ -2409,6 +2407,7 @@
     "days7Label": "7 j",
     "days7Title": "7 derniers jours",
     "days30Label": "30 j",
+    "daysNLabel": "{days} j",
     "days30Title": "30 derniers jours",
     "days90Label": "90 j",
     "days90Title": "90 derniers jours",
@@ -4743,6 +4742,12 @@
       "settingsBody": "HealthLog fonctionne entièrement sans IA. Connectez un fournisseur ci-dessous si vous voulez un briefing quotidien, de courtes notes sur vos mesures et le Coach.",
       "action": "Configurer l'IA",
       "dismiss": "Pas maintenant"
+    },
+    "bmiHeight": {
+      "coachPrefill": "Je n’ai pas encore indiqué ma taille — pourquoi l’IMC compte-t-il, et que dois-je savoir avant de la renseigner ?"
+    },
+    "medicationsEmpty": {
+      "coachPrefill": "Je n’ai encore ajouté aucun médicament — que dois-je savoir avant de suivre ici l’observance ?"
     }
   },
   "thresholds": {
@@ -8017,7 +8022,9 @@
     "noneUnlockedYet": "Aucune réussite débloquée pour l’instant.",
     "pointsValue": "{points} points",
     "metricCount": "{count}",
-    "metricDays": "{count} jours",
+    "metricDaysOne": "{count} jour",
+    "metricDaysFew": "{count} jours",
+    "metricDaysOther": "{count} jours",
     "metricPercent": "{count}%",
     "badges": {
       "intakeTotal1": {
@@ -8497,6 +8504,10 @@
     "currentValue": "Actuel : {value} {unit}",
     "targetRangeValue": "Plage cible : {min}–{max} {unit}",
     "sourceLabel": "Source : {source}",
+    "sourceNames": {
+      "moodEntries": "Entrées d’humeur",
+      "sevenDays": "7 jours"
+    },
     "inTarget": "Dans la plage cible",
     "aboveTarget": "{delta} {unit} au-dessus de la plage",
     "belowTarget": "{delta} {unit} en dessous de la plage",
@@ -12036,7 +12047,6 @@
     "title": "Cabinets et médecins",
     "description": "Votre carnet d'adresses : saisissez un cabinet une fois, choisissez-le partout.",
     "linkLabel": "Carnet d'adresses",
-    "add": "Entrée",
     "searchPlaceholder": "Rechercher un nom, un cabinet ou une spécialité",
     "loadError": "Impossible de charger le carnet d'adresses.",
     "emptyTitle": "Aucune entrée",
@@ -12133,7 +12143,6 @@
     "unreadableLabel": "Symptôme illisible",
     "intensityPill": "{value}/10",
     "entry": {
-      "sheetTitle": "Noter un symptôme",
       "sheetDescription": "L'un de tes propres symptômes, son intensité et quand.",
       "symptom": "Symptôme",
       "symptomRequired": "Choisis un symptôme.",

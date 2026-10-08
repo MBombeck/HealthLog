@@ -347,8 +347,8 @@ export function SymptomEntryForm({
           htmlFor={`${formId}-episode`}
           label={
             <>
-              {t("symptoms.entry.during")}{" "}
-              <span className="text-muted-foreground font-normal">
+              {t("symptoms.entry.during")}
+              <span className="text-muted-foreground ml-1 font-normal">
                 ({t("common.optional")})
               </span>
             </>
@@ -376,8 +376,8 @@ export function SymptomEntryForm({
         htmlFor={`${formId}-note`}
         label={
           <>
-            {t("symptoms.entry.note")}{" "}
-            <span className="text-muted-foreground font-normal">
+            {t("symptoms.entry.note")}
+            <span className="text-muted-foreground ml-1 font-normal">
               ({t("common.optional")})
             </span>
           </>

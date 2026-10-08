@@ -95,7 +95,7 @@ export default function InsightsBmiPage() {
             </Button>
           }
         />
-        <CoachLaunchButton prefill="I haven't set my height yet — why does BMI matter, and what should I know before I configure it?" />
+        <CoachLaunchButton prefill={t("insights.bmiHeight.coachPrefill")} />
       </SubPageShell>
     );
   }

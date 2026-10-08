@@ -219,7 +219,9 @@ function CoachConversationsBody({ readOnly }: { readOnly: boolean }) {
                       className={cn(
                         "group relative flex flex-wrap items-center gap-1.5 rounded-xl px-3 py-2.5",
                         "text-sm transition-colors",
-                        "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+                        // The title is the reader's own content: foreground,
+                        // with the timestamp below as the muted meta line.
+                        "text-foreground hover:bg-muted/40",
                       )}
                     >
                       <button

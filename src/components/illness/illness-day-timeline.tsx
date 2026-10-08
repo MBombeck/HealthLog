@@ -86,7 +86,8 @@ function DayLogRow({ log }: { log: IllnessDayLogDTO }) {
       ) : null}
 
       {log.note ? (
-        <p className="text-muted-foreground text-sm whitespace-pre-wrap">
+        // User-written text reads in the content colour, never muted.
+        <p className="text-foreground text-sm whitespace-pre-wrap">
           {log.note}
         </p>
       ) : null}

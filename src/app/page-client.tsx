@@ -28,7 +28,11 @@ import {
   TrendingUp,
   Wind,
 } from "lucide-react";
-import { convertGlucose, resolveGlucoseUnit } from "@/lib/glucose";
+import {
+  convertGlucose,
+  glucoseFractionDigits,
+  resolveGlucoseUnit,
+} from "@/lib/glucose";
 import { cn } from "@/lib/utils";
 import {
   resolveDashboardLayout,
@@ -1039,6 +1043,7 @@ export default function DashboardPageClient({
             node: (
               <TrendCard
                 key="bp-sys"
+                fractionDigits={0}
                 label={t("dashboard.bloodPressureSysShort")}
                 latest={sys?.latest ?? null}
                 unit="mmHg"
@@ -1080,6 +1085,7 @@ export default function DashboardPageClient({
             node: (
               <TrendCard
                 key="bp-dia"
+                fractionDigits={0}
                 label={t("dashboard.bloodPressureDiaShort")}
                 latest={dia?.latest ?? null}
                 unit="mmHg"
@@ -1121,6 +1127,7 @@ export default function DashboardPageClient({
             node: (
               <TrendCard
                 key="pulse"
+                fractionDigits={0}
                 label={t("dashboard.pulseShort")}
                 latest={pulseTileSummary?.latest ?? null}
                 unit="bpm"
@@ -1243,6 +1250,7 @@ export default function DashboardPageClient({
             node: (
               <TrendCard
                 key="steps"
+                fractionDigits={0}
                 label={t("dashboard.stepsShort") ?? "Steps"}
                 latest={stepsSummary?.latest ?? null}
                 unit=""
@@ -1303,6 +1311,7 @@ export default function DashboardPageClient({
             node: (
               <TrendCard
                 key="hrv"
+                fractionDigits={0}
                 // Name the measure when the RMSSD series is the one on show.
                 // Without it a ring / strap reading (typically 20-60 ms) sits
                 // under the same label as an SDNN one and reads as a collapse
@@ -1631,6 +1640,7 @@ export default function DashboardPageClient({
                       : null
                   }
                   unit={displayGlucoseUnit}
+                  fractionDigits={glucoseFractionDigits(displayGlucoseUnit)}
                   avg7={
                     s.avg7 != null
                       ? convertGlucose(s.avg7, displayGlucoseUnit)

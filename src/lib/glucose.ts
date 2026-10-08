@@ -27,6 +27,11 @@ export function mmolToMgdl(mmol: number): number {
   return Math.round(mmol * MGDL_PER_MMOL);
 }
 
+/** Decimal places a glucose value is shown at: whole mg/dL, tenths of mmol/L. */
+export function glucoseFractionDigits(unit: GlucoseUnit): number {
+  return unit === "mmol/L" ? 1 : 0;
+}
+
 export function convertGlucose(value: number, to: GlucoseUnit): number {
   return to === "mmol/L" ? mgdlToMmol(value) : Math.round(value);
 }
@@ -80,7 +85,7 @@ export function glucoseBandParams(
   unit: GlucoseUnit,
   formatNumber: (value: number, fractionDigits: number) => string,
 ): Record<string, string> {
-  const digits = unit === "mmol/L" ? 1 : 0;
+  const digits = glucoseFractionDigits(unit);
   const v = (point: GlucoseCutPoint) =>
     formatNumber(unit === "mmol/L" ? point.mmol : point.mgdl, digits);
   return {

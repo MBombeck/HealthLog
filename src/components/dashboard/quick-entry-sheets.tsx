@@ -203,7 +203,7 @@ export function QuickEntrySheets({
       <ResponsiveSheet
         open={openSheet === "measurement"}
         onOpenChange={handleQuickEntryOpenChange}
-        title={t("measurements.addMeasurement")}
+        title={t("dashboard.quickAddMeasurement")}
         footer={<div ref={setMeasurementFooterEl} className="flex w-full" />}
       >
         <MeasurementForm
@@ -215,7 +215,7 @@ export function QuickEntrySheets({
       <ResponsiveSheet
         open={openSheet === "mood"}
         onOpenChange={handleQuickEntryOpenChange}
-        title={t("mood.addEntry")}
+        title={t("dashboard.quickAddMood")}
         footer={<div ref={setMoodFooterEl} className="flex w-full" />}
       >
         <MoodForm
@@ -231,7 +231,7 @@ export function QuickEntrySheets({
       <ResponsiveSheet
         open={openSheet === "medicationIntake"}
         onOpenChange={handleQuickEntryOpenChange}
-        title={t("dashboard.medicationIntakeQuickAdd.sheetTitle")}
+        title={t("dashboard.quickAddMedicationIntake")}
         description={t("dashboard.medicationIntakeQuickAdd.sheetDescription")}
         footer={
           <div ref={setMedicationIntakeFooterEl} className="flex w-full" />
@@ -249,7 +249,7 @@ export function QuickEntrySheets({
       <ResponsiveSheet
         open={openSheet === "symptom"}
         onOpenChange={handleQuickEntryOpenChange}
-        title={t("symptoms.entry.sheetTitle")}
+        title={t("dashboard.quickAddSymptom")}
         description={t("symptoms.entry.sheetDescription")}
         footer={<div ref={setSymptomFooterEl} className="flex w-full" />}
       >
@@ -267,7 +267,7 @@ export function QuickEntrySheets({
       <ResponsiveSheet
         open={openSheet === "workout"}
         onOpenChange={handleQuickEntryOpenChange}
-        title={t("insights.workouts.manual.sheetTitle")}
+        title={t("dashboard.quickAddWorkout")}
         description={t("insights.workouts.manual.sheetDescription")}
         footer={<div ref={setWorkoutFooterEl} className="flex w-full" />}
       >
@@ -285,7 +285,7 @@ export function QuickEntrySheets({
       <ResponsiveSheet
         open={openSheet === "lifeEvent"}
         onOpenChange={handleQuickEntryOpenChange}
-        title={t("lifeEvents.title")}
+        title={t("dashboard.quickAddLifeEvent")}
         description={t("lifeEvents.subtitle")}
         footer={<div ref={setLifeEventFooterEl} className="flex w-full" />}
       >

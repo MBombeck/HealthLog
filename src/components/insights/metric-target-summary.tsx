@@ -421,16 +421,38 @@ function TargetReferencePanel({
               rel="noopener noreferrer"
               className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
             >
-              <span>{t("targets.sourceLabel", { source: target.source })}</span>
+              <span>
+                {t("targets.sourceLabel", {
+                  source: sourceName(target.source, t),
+                })}
+              </span>
               <ExternalLink className="size-3" aria-hidden="true" />
             </a>
           ) : (
             <span className="text-muted-foreground text-xs">
-              {t("targets.sourceLabel", { source: target.source })}
+              {t("targets.sourceLabel", {
+                source: sourceName(target.source, t),
+              })}
             </span>
           )}
         </div>
       </CardContent>
     </Card>
   );
+}
+
+/**
+ * Two target sources are plain descriptions rather than a citation ("Mood
+ * entries", "7-day"); the server sends them in English, so they are named in
+ * the reader's language here. Every other source is a citation (ESH 2023,
+ * WHO, AASM/SRS) and reads as it is.
+ */
+const SOURCE_NAME_KEYS: Record<string, string> = {
+  "Mood entries": "targets.sourceNames.moodEntries",
+  "7-day": "targets.sourceNames.sevenDays",
+};
+
+export function sourceName(source: string, t: (key: string) => string): string {
+  const key = SOURCE_NAME_KEYS[source];
+  return key ? t(key) : source;
 }

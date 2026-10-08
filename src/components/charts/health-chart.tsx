@@ -76,7 +76,7 @@ import {
   type MetricWindowStats,
 } from "@/lib/charts/window-stats";
 import { shouldFireDataReady } from "@/lib/charts/data-ready-latch";
-import { axisUnitSuffix } from "@/lib/charts/axis-unit";
+import { axisTickUnitSuffix } from "@/lib/charts/axis-unit";
 import { chartPointDayKey } from "@/components/day/chart-day";
 import {
   ChartDayFooter,
@@ -2078,7 +2078,7 @@ export function HealthChart({
                     }
                     unit={
                       showYAxisUnit
-                        ? axisUnitSuffix(yAxisUnit ?? unit)
+                        ? axisTickUnitSuffix(yAxisUnit ?? unit)
                         : undefined
                     }
                   />

@@ -46,4 +46,13 @@ describe("<EmptyState>", () => {
     expect(card).toContain("border-dashed");
     expect(plain).not.toContain("border-dashed");
   });
+
+  it("insets the card variant's content from its border, not the plain one", () => {
+    const card = renderToStaticMarkup(<EmptyState title="leer" />);
+    const plain = renderToStaticMarkup(
+      <EmptyState title="leer" variant="plain" />,
+    );
+    expect(card).toMatch(/class="[^"]*\bpx-4\b/);
+    expect(plain).not.toMatch(/\bpx-4\b/);
+  });
 });

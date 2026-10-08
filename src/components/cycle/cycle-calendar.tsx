@@ -236,204 +236,216 @@ export function CycleCalendar({
         aria-label={monthLabel}
         className="grid grid-cols-7 gap-1"
       >
-        {weekdays.map((wk, i) => (
-          <div
-            key={i}
-            role="columnheader"
-            className="text-muted-foreground text-2xs pb-1 text-center font-medium uppercase"
-          >
-            {wk}
-          </div>
-        ))}
+        {/* Rows are `display: contents`: they give the grid its ARIA rows
+            (grid > row > columnheader | gridcell) without touching the
+            seven-column CSS grid the cells lay out in. */}
+        <div role="row" className="contents">
+          {weekdays.map((wk, i) => (
+            <div
+              key={i}
+              role="columnheader"
+              className="text-muted-foreground text-2xs pb-1 text-center font-medium uppercase"
+            >
+              {wk}
+            </div>
+          ))}
+        </div>
 
-        {grid.map((cell, i) => {
-          if (!cell) return <div key={`empty-${i}`} aria-hidden="true" />;
-          const date = ymd(cell);
-          const info = byDate.get(date);
-          const isToday = date === today;
-          // A CONFIRMED-ovulation day is the predicted-ovulation day that also
-          // matches the prediction's retrospective estimate. It supersedes the
-          // predicted dot with the distinct light oval (Apple's idiom).
-          const isConfirmedOvulation =
-            !!info?.isPredictedOvulation &&
-            confirmedOvulation != null &&
-            date === confirmedOvulation;
-          const isPredictedOvulationDot =
-            !!info?.isPredictedOvulation && !isConfirmedOvulation;
+        {Array.from({ length: Math.ceil(grid.length / 7) }, (_, r) => (
+          <div key={`row-${r}`} role="row" className="contents">
+            {grid.slice(r * 7, r * 7 + 7).map((cell, j) => {
+              const i = r * 7 + j;
+              if (!cell) return <div key={`empty-${i}`} aria-hidden="true" />;
+              const date = ymd(cell);
+              const info = byDate.get(date);
+              const isToday = date === today;
+              // A CONFIRMED-ovulation day is the predicted-ovulation day that also
+              // matches the prediction's retrospective estimate. It supersedes the
+              // predicted dot with the distinct light oval (Apple's idiom).
+              const isConfirmedOvulation =
+                !!info?.isPredictedOvulation &&
+                confirmedOvulation != null &&
+                date === confirmedOvulation;
+              const isPredictedOvulationDot =
+                !!info?.isPredictedOvulation && !isConfirmedOvulation;
 
-          const markers: string[] = [];
-          if (info?.isPeriodLogged) {
-            // Restate the flow grade in the aria text so the shading is never
-            // colour-only (the legend covers it; the cell names it too).
-            const flowKey =
-              info.flow && info.flow !== "NONE"
-                ? `cycle.calendar.flow${info.flow.charAt(0)}${info.flow.slice(1).toLowerCase()}`
-                : null;
-            markers.push(
-              flowKey
-                ? `${t("cycle.calendar.legendPeriod")} (${t(flowKey)})`
-                : t("cycle.calendar.legendPeriod"),
-            );
-          }
-          if (info?.isPredictedPeriod)
-            markers.push(t("cycle.calendar.legendPredicted"));
-          if (info?.isFertileWindow)
-            markers.push(t("cycle.calendar.legendFertile"));
-          if (isConfirmedOvulation)
-            markers.push(t("cycle.calendar.legendOvulationConfirmed"));
-          else if (isPredictedOvulationDot)
-            markers.push(t("cycle.calendar.legendOvulation"));
-          if (info?.hasSymptoms)
-            markers.push(t("cycle.calendar.legendSymptoms"));
-          const hasIntercourse = !!info?.sexualActivity;
-          if (hasIntercourse)
-            markers.push(t("cycle.calendar.legendIntercourse"));
-          const others = info ? otherEntryLabels(info, t) : [];
-          markers.push(...others);
+              const markers: string[] = [];
+              if (info?.isPeriodLogged) {
+                // Restate the flow grade in the aria text so the shading is never
+                // colour-only (the legend covers it; the cell names it too).
+                const flowKey =
+                  info.flow && info.flow !== "NONE"
+                    ? `cycle.calendar.flow${info.flow.charAt(0)}${info.flow.slice(1).toLowerCase()}`
+                    : null;
+                markers.push(
+                  flowKey
+                    ? `${t("cycle.calendar.legendPeriod")} (${t(flowKey)})`
+                    : t("cycle.calendar.legendPeriod"),
+                );
+              }
+              if (info?.isPredictedPeriod)
+                markers.push(t("cycle.calendar.legendPredicted"));
+              if (info?.isFertileWindow)
+                markers.push(t("cycle.calendar.legendFertile"));
+              if (isConfirmedOvulation)
+                markers.push(t("cycle.calendar.legendOvulationConfirmed"));
+              else if (isPredictedOvulationDot)
+                markers.push(t("cycle.calendar.legendOvulation"));
+              if (info?.hasSymptoms)
+                markers.push(t("cycle.calendar.legendSymptoms"));
+              const hasIntercourse = !!info?.sexualActivity;
+              if (hasIntercourse)
+                markers.push(t("cycle.calendar.legendIntercourse"));
+              const others = info ? otherEntryLabels(info, t) : [];
+              markers.push(...others);
 
-          const aria = `${date}${markers.length ? `, ${markers.join(", ")}` : ""}`;
-          const flowLevel =
-            info?.isPeriodLogged && info.flow && info.flow !== "NONE"
-              ? info.flow
-              : info?.isPeriodLogged
-                ? "UNGRADED"
-                : undefined;
+              const aria = `${date}${markers.length ? `, ${markers.join(", ")}` : ""}`;
+              const flowLevel =
+                info?.isPeriodLogged && info.flow && info.flow !== "NONE"
+                  ? info.flow
+                  : info?.isPeriodLogged
+                    ? "UNGRADED"
+                    : undefined;
 
-          const content = (
-            <>
-              {/* Fertile window: a soft full-cell band (calm fill, not a hard
+              const content = (
+                <>
+                  {/* Fertile window: a soft full-cell band (calm fill, not a hard
                   ring) so the window reads as a continuous range across days. */}
-              {info?.isFertileWindow ? (
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-0.5 rounded-md opacity-15"
-                  style={{ backgroundColor: FERTILE_HUE }}
-                />
-              ) : null}
+                  {info?.isFertileWindow ? (
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-0.5 rounded-md opacity-15"
+                      style={{ backgroundColor: FERTILE_HUE }}
+                    />
+                  ) : null}
 
-              {/* Logged-period filled pip behind the number — shaded by flow on
+                  {/* Logged-period filled pip behind the number — shaded by flow on
                   the single-hue opacity ladder (SPOTTING→HEAVY). */}
-              {info?.isPeriodLogged ? (
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-1 rounded-md"
-                  style={{
-                    backgroundColor: FLOW_HUE,
-                    opacity: flowOpacity(info.flow),
-                  }}
-                />
-              ) : null}
+                  {info?.isPeriodLogged ? (
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-1 rounded-md"
+                      style={{
+                        backgroundColor: FLOW_HUE,
+                        opacity: flowOpacity(info.flow),
+                      }}
+                    />
+                  ) : null}
 
-              {/* Confirmed-ovulation oval: a restrained light oval ringed in the
+                  {/* Confirmed-ovulation oval: a restrained light oval ringed in the
                   ovulatory hue, deliberately distinct from the predicted dot. */}
-              {isConfirmedOvulation ? (
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-x-1 inset-y-2 rounded-full ring-2 ring-inset"
-                  style={
-                    {
-                      backgroundColor: OVULATION_HUE,
-                      opacity: 0.22,
-                      "--tw-ring-color": OVULATION_HUE,
-                    } as React.CSSProperties
-                  }
-                />
-              ) : null}
+                  {isConfirmedOvulation ? (
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-x-1 inset-y-2 rounded-full ring-2 ring-inset"
+                      style={
+                        {
+                          backgroundColor: OVULATION_HUE,
+                          opacity: 0.22,
+                          "--tw-ring-color": OVULATION_HUE,
+                        } as React.CSSProperties
+                      }
+                    />
+                  ) : null}
 
-              <span className={cn("relative z-10", isToday && "text-primary")}>
-                {cell.getDate()}
-              </span>
+                  <span
+                    className={cn("relative z-10", isToday && "text-primary")}
+                  >
+                    {cell.getDate()}
+                  </span>
 
-              {/* Predicted-period day: a soft FILL behind the number (like a
+                  {/* Predicted-period day: a soft FILL behind the number (like a
                   logged period day, but lighter) with a dashed outline so it
                   still reads as predicted, not confirmed — replaces the old
                   hatched underline, which looked unfinished. */}
-              {info?.isPredictedPeriod && !info?.isPeriodLogged ? (
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-1 rounded-md border border-dashed"
-                  style={{
-                    backgroundColor: FLOW_HUE,
-                    opacity: 0.3,
-                    borderColor: FLOW_HUE,
-                  }}
-                />
-              ) : null}
+                  {info?.isPredictedPeriod && !info?.isPeriodLogged ? (
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-1 rounded-md border border-dashed"
+                      style={{
+                        backgroundColor: FLOW_HUE,
+                        opacity: 0.3,
+                        borderColor: FLOW_HUE,
+                      }}
+                    />
+                  ) : null}
 
-              {/* Marker row: predicted-ovulation + symptom dots. The confirmed
+                  {/* Marker row: predicted-ovulation + symptom dots. The confirmed
                   oval lives behind the number, so it needs no row dot. */}
-              <span
-                aria-hidden="true"
-                className="relative z-10 mt-0.5 flex h-2 items-center gap-0.5"
-              >
-                {isPredictedOvulationDot ? (
                   <span
-                    className="h-1.5 w-1.5 rounded-full"
-                    style={{ backgroundColor: OVULATION_HUE }}
-                  />
-                ) : null}
-                {info?.hasSymptoms ? (
-                  <span className="bg-muted-foreground/70 h-1 w-1 rounded-full" />
-                ) : null}
-                {hasIntercourse ? (
-                  <span
-                    data-slot="cycle-calendar-intercourse"
-                    className="mx-px size-2 rotate-45"
-                    style={{ backgroundColor: INTERCOURSE_HUE }}
-                  />
-                ) : null}
-                {others.length > 0 ? (
-                  <span
-                    data-slot="cycle-calendar-other"
-                    className="border-muted-foreground size-1.5 rounded-full border"
-                  />
-                ) : null}
-              </span>
-            </>
-          );
+                    aria-hidden="true"
+                    className="relative z-10 mt-0.5 flex h-2 items-center gap-0.5"
+                  >
+                    {isPredictedOvulationDot ? (
+                      <span
+                        className="h-1.5 w-1.5 rounded-full"
+                        style={{ backgroundColor: OVULATION_HUE }}
+                      />
+                    ) : null}
+                    {info?.hasSymptoms ? (
+                      <span className="bg-muted-foreground/70 h-1 w-1 rounded-full" />
+                    ) : null}
+                    {hasIntercourse ? (
+                      <span
+                        data-slot="cycle-calendar-intercourse"
+                        className="mx-px size-2 rotate-45"
+                        style={{ backgroundColor: INTERCOURSE_HUE }}
+                      />
+                    ) : null}
+                    {others.length > 0 ? (
+                      <span
+                        data-slot="cycle-calendar-other"
+                        className="border-muted-foreground size-1.5 rounded-full border"
+                      />
+                    ) : null}
+                  </span>
+                </>
+              );
 
-          const cellClass = cn(
-            "relative flex aspect-square min-h-11 flex-col items-center justify-center rounded-lg text-sm transition-colors",
-            isToday && "font-semibold",
-          );
-          const cellAttrs = {
-            role: "gridcell" as const,
-            "aria-label": aria,
-            "aria-current": isToday ? ("date" as const) : undefined,
-            "data-flow-level": flowLevel,
-            "data-fertile": info?.isFertileWindow ? "true" : undefined,
-            "data-predicted":
-              info?.isPredictedPeriod && !info?.isPeriodLogged
-                ? "true"
-                : undefined,
-            "data-ovulation": isConfirmedOvulation
-              ? "confirmed"
-              : isPredictedOvulationDot
-                ? "predicted"
-                : undefined,
-            "data-intercourse": hasIntercourse ? "true" : undefined,
-            "data-other-entries": others.length > 0 ? "true" : undefined,
-          };
+              const cellClass = cn(
+                "relative flex aspect-square min-h-11 flex-col items-center justify-center rounded-lg text-sm transition-colors",
+                isToday && "font-semibold",
+              );
+              const cellAttrs = {
+                role: "gridcell" as const,
+                "aria-label": aria,
+                "aria-current": isToday ? ("date" as const) : undefined,
+                "data-flow-level": flowLevel,
+                "data-fertile": info?.isFertileWindow ? "true" : undefined,
+                "data-predicted":
+                  info?.isPredictedPeriod && !info?.isPeriodLogged
+                    ? "true"
+                    : undefined,
+                "data-ovulation": isConfirmedOvulation
+                  ? "confirmed"
+                  : isPredictedOvulationDot
+                    ? "predicted"
+                    : undefined,
+                "data-intercourse": hasIntercourse ? "true" : undefined,
+                "data-other-entries": others.length > 0 ? "true" : undefined,
+              };
 
-          return onSelectDay ? (
-            <button
-              key={date}
-              type="button"
-              {...cellAttrs}
-              onClick={() => onSelectDay(date)}
-              className={cn(
-                cellClass,
-                "hover:bg-accent focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:outline-none",
-              )}
-            >
-              {content}
-            </button>
-          ) : (
-            <div key={date} {...cellAttrs} className={cellClass}>
-              {content}
-            </div>
-          );
-        })}
+              return onSelectDay ? (
+                <button
+                  key={date}
+                  type="button"
+                  {...cellAttrs}
+                  onClick={() => onSelectDay(date)}
+                  className={cn(
+                    cellClass,
+                    "hover:bg-accent focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:outline-none",
+                  )}
+                >
+                  {content}
+                </button>
+              ) : (
+                <div key={date} {...cellAttrs} className={cellClass}>
+                  {content}
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </div>
 
       <CalendarLegend />

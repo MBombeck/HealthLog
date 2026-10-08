@@ -59,7 +59,12 @@ const RESOLVERS: Record<IntegrationCallbackProvider, () => string> = {
 
 function resolve(provider: IntegrationCallbackProvider): string | null {
   try {
-    return RESOLVERS[provider]();
+    const url = RESOLVERS[provider]();
+    // Some resolvers splice an unset NEXT_PUBLIC_APP_URL into the template
+    // and hand back "undefined/api/…/callback". That is not a URL anyone can
+    // paste into a vendor form; report it as not configured so the card
+    // shows the path instead.
+    return /^https?:\/\//i.test(url) ? url : null;
   } catch {
     return null;
   }

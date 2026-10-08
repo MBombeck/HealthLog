@@ -463,7 +463,6 @@
       "signOut": "Esci e accetta l'invito"
     },
     "createAccount": "Crea account",
-    "newAccount": "Crea un nuovo account",
     "backToPasskey": "Torna a passkey",
     "passkeySetupLater": "Puoi configurare le passkey più tardi dalle impostazioni.",
     "passwordMinLength": "Min. 12 caratteri",
@@ -583,7 +582,6 @@
     "quickAddLifeEvent": "Registra evento di vita",
     "customizeDashboard": "Personalizza dashboard",
     "medicationIntakeQuickAdd": {
-      "sheetTitle": "Registra assunzione del farmaco",
       "sheetDescription": "Registra dose, orario e farmaco con pochi tap.",
       "medicationLabel": "Farmaco",
       "medicationPlaceholder": "Seleziona un farmaco",
@@ -2409,6 +2407,7 @@
     "days7Label": "7 g",
     "days7Title": "Ultimi 7 giorni",
     "days30Label": "30 g",
+    "daysNLabel": "{days} g",
     "days30Title": "Ultimi 30 giorni",
     "days90Label": "90 g",
     "days90Title": "Ultimi 90 giorni",
@@ -4743,6 +4742,12 @@
       "settingsBody": "HealthLog funziona completamente senza IA. Collega un fornitore qui sotto se vuoi un riepilogo giornaliero, brevi note sulle tue misurazioni e il Coach.",
       "action": "Configura IA",
       "dismiss": "Non ora"
+    },
+    "bmiHeight": {
+      "coachPrefill": "Non ho ancora inserito la mia altezza: perché conta il BMI e cosa dovrei sapere prima di impostarla?"
+    },
+    "medicationsEmpty": {
+      "coachPrefill": "Non ho ancora aggiunto farmaci: cosa dovrei sapere prima di iniziare a monitorare qui l’aderenza?"
     }
   },
   "thresholds": {
@@ -8017,7 +8022,9 @@
     "noneUnlockedYet": "Nessun obiettivo ancora sbloccato.",
     "pointsValue": "{points} punti",
     "metricCount": "{count}",
-    "metricDays": "{count} giorni",
+    "metricDaysOne": "{count} giorno",
+    "metricDaysFew": "{count} giorni",
+    "metricDaysOther": "{count} giorni",
     "metricPercent": "{count}%",
     "badges": {
       "intakeTotal1": {
@@ -8497,6 +8504,10 @@
     "currentValue": "Attuale: {value} {unit}",
     "targetRangeValue": "Range obiettivo: {min}–{max} {unit}",
     "sourceLabel": "Fonte: {source}",
+    "sourceNames": {
+      "moodEntries": "Voci dell’umore",
+      "sevenDays": "7 giorni"
+    },
     "inTarget": "Nel range obiettivo",
     "aboveTarget": "{delta} {unit} sopra il range",
     "belowTarget": "{delta} {unit} sotto il range",
@@ -9931,7 +9942,7 @@
     "loadError": "Impossibile caricare questo episodio.",
     "backToList": "Torna al diario",
     "detail": {
-      "note": "Note"
+      "note": "Nota"
     },
     "edit": {
       "title": "Modifica episodio",
@@ -12036,7 +12047,6 @@
     "title": "Studi e medici",
     "description": "La tua rubrica: scrivi uno studio una volta e selezionalo ovunque.",
     "linkLabel": "Rubrica",
-    "add": "Voce",
     "searchPlaceholder": "Cerca nome, studio o specializzazione",
     "loadError": "Impossibile caricare la rubrica.",
     "emptyTitle": "Nessuna voce",
@@ -12133,7 +12143,6 @@
     "unreadableLabel": "Sintomo illeggibile",
     "intensityPill": "{value}/10",
     "entry": {
-      "sheetTitle": "Registra sintomo",
       "sheetDescription": "Uno dei tuoi sintomi, quanto forte e quando.",
       "symptom": "Sintomo",
       "symptomRequired": "Scegli un sintomo.",

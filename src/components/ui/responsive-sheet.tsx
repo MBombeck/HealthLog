@@ -131,6 +131,23 @@ const CONTENT_WIDTH_CLASS: Record<
  * the form's chrome is unchanged because both branches expose the
  * same header / body / footer slot shape.
  */
+/**
+ * Phone branch only: on open, focus the sheet itself instead of its first
+ * field. Radix's default lands on the first tabbable element, and when that
+ * is a text-like field (a date, a name) the phone raises its keyboard over a
+ * sheet the person has not read yet, and the sheet jumps up under it. Focus
+ * still moves into the sheet (the content is focusable and traps focus), a
+ * field a form focuses on purpose (`autoFocus`, a mount effect) keeps it, and
+ * the desktop dialog keeps the default.
+ */
+export function keepKeyboardDownOnOpen(event: Event): void {
+  event.preventDefault();
+  const content = event.currentTarget as HTMLElement | null;
+  if (content && !content.contains(document.activeElement)) {
+    content.focus({ preventScroll: true });
+  }
+}
+
 export function ResponsiveSheet({
   open,
   onOpenChange,
@@ -153,6 +170,7 @@ export function ResponsiveSheet({
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent
           onCloseAutoFocus={onCloseAutoFocus}
+          onOpenAutoFocus={keepKeyboardDownOnOpen}
           side="bottom"
           showCloseButton={showCloseButton}
           data-slot="responsive-sheet-content"

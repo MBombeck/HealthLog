@@ -17,13 +17,14 @@ import type { ChartOverlayKey } from "@/lib/dashboard-layout";
 import { metricFractionDigits } from "@/lib/measurements/value-domain";
 import { Button } from "@/components/ui/button";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
-import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
 import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";
 import { MetricStatusCard } from "@/components/insights/metric-status-card";
 import { MetricEmptyState } from "@/components/insights/metric-empty-state";
-import { MetricStatStrip } from "@/components/insights/metric-stat-strip";
+import {
+  MetricStatStrip,
+  MetricStatStripSkeleton,
+} from "@/components/insights/metric-stat-strip";
 import { CoachReadStrip } from "@/components/insights/derived/coach-read-strip";
 import { MeasurementDiversityNudge } from "@/components/insights/measurement-diversity-nudge";
 import { MetricTargetSummary } from "@/components/insights/metric-target-summary";
@@ -371,7 +372,7 @@ export function HealthKitMetricPage({
         description={description}
         explainerMetric={explainerMetric}
         explainerParams={explainerParams}
-        statStrip={<StatStripSkeleton />}
+        statStrip={<MetricStatStripSkeleton />}
       >
         <ChartSkeleton />
       </SubPageShell>
@@ -536,34 +537,5 @@ export function HealthKitMetricPage({
           resting-pulse + HRV pages mount the ECG cross-link here. */}
       {afterAssessment}
     </SubPageShell>
-  );
-}
-
-/**
- * v1.12.7 — layout-stable loading shell for the stat strip slot. Mirrors
- * the loaded `<MetricStatStrip>` card chrome (denser `py-3` rhythm, one
- * header row + a four-up grid) so the page does not jump when the analytics
- * read lands. Decorative — hidden from assistive tech; the chart skeleton
- * below it carries the `aria-busy` announcement.
- */
-function StatStripSkeleton() {
-  return (
-    <Card
-      data-slot="metric-stat-strip-skeleton"
-      aria-hidden="true"
-      className="gap-2 py-3 md:py-4"
-    >
-      <CardContent className="space-y-3">
-        <Skeleton className="h-5 w-32" />
-        <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="min-h-[44px] space-y-1">
-              <Skeleton className="h-3 w-12" />
-              <Skeleton className="h-5 w-16" />
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
   );
 }

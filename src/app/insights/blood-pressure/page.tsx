@@ -46,8 +46,11 @@ export default function InsightsBlutdruckPage() {
   const { t } = useTranslations();
   const { compareBaseline } = useInsightsLayoutPrefs(user != null);
 
-  const { data: analytics, isEmpty } =
-    useInsightsAnalytics("BLOOD_PRESSURE_SYS");
+  const {
+    data: analytics,
+    isEmpty,
+    isLoading: analyticsLoading,
+  } = useInsightsAnalytics("BLOOD_PRESSURE_SYS");
   // v1.12.4 — blood pressure is two series, so it stacks two stat strips
   // (systolic / diastolic) rather than the single-series strip the other
   // metrics carry. Both summaries ride the same `summaries` slice.
@@ -128,6 +131,7 @@ export default function InsightsBlutdruckPage() {
         // brushing the single chart reports per-type windowed stats and each
         // column reads its own half.
         <MetricStatStrip
+          pending={analyticsLoading}
           groupLabel={t("insights.bloodPressureSectionTitle")}
           series={[
             {

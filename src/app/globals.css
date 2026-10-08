@@ -46,6 +46,18 @@
   }
 }
 
+/*
+ * `pointer-coarse:` — a finger is the primary pointer. The control
+ * primitives (Button, tab triggers, the sidebar rail rows) grow their hit
+ * area to the 44 px touch floor under it, so a phone or a touch tablet gets
+ * reachable targets while a mouse keeps the compact desktop density.
+ */
+@custom-variant pointer-coarse {
+  @media (pointer: coarse) {
+    @slot;
+  }
+}
+
 @theme inline {
   /* Extra-small breakpoint (30rem / 480px) for the narrowest phones — the
      default scale starts at sm (640px), which leaves a gap between an iPhone SE

@@ -60,7 +60,7 @@ function Section({
       <h2 className="text-xl font-semibold tracking-tight md:text-2xl">
         {title}
       </h2>
-      <div className="text-muted-foreground space-y-3 text-sm leading-relaxed md:text-base">
+      <div className="text-foreground space-y-3 text-sm leading-relaxed md:text-base">
         {children}
       </div>
     </section>
@@ -117,7 +117,7 @@ export default function AboutPage() {
               href="https://github.com/MBombeck/HealthLog"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline"
+              className="text-primary underline underline-offset-2"
             >
               github.com/MBombeck/HealthLog
             </a>{" "}
@@ -145,7 +145,7 @@ export default function AboutPage() {
               href="https://www.maxmind.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline"
+              className="text-primary underline underline-offset-2"
             >
               www.maxmind.com
             </a>
@@ -164,7 +164,7 @@ export default function AboutPage() {
               href="https://www.maxmind.com/en/geolite/eula"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline"
+              className="text-primary underline underline-offset-2"
             >
               GeoLite End User License Agreement
             </a>
@@ -173,7 +173,7 @@ export default function AboutPage() {
               href="https://creativecommons.org/licenses/by-sa/4.0/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline"
+              className="text-primary underline underline-offset-2"
             >
               Creative Commons Attribution-ShareAlike 4.0 International License
             </a>{" "}

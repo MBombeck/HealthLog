@@ -71,7 +71,7 @@ function Section({
         {`${numberLabel}. ${titleEn}`}
       </h2>
       <div
-        className="text-muted-foreground space-y-3 text-sm leading-relaxed md:text-base"
+        className="text-foreground space-y-3 text-sm leading-relaxed md:text-base"
         data-slot="privacy-section-de"
         lang="de"
       >
@@ -94,7 +94,7 @@ function Section({
           </span>
         </summary>
         <div
-          className="text-muted-foreground space-y-3 px-3 pb-3 text-sm leading-relaxed md:text-base"
+          className="text-foreground space-y-3 px-3 pb-3 text-sm leading-relaxed md:text-base"
           lang="en"
         >
           {bodyEn}
@@ -164,7 +164,7 @@ function SubProcessor({
           href={policyUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-primary hover:underline"
+          className="text-primary underline underline-offset-2"
         >
           Privacy policy / Datenschutzerklärung
         </a>
@@ -358,7 +358,7 @@ export default function PrivacyPage() {
                   href="https://github.com/MBombeck/HealthLog"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary hover:underline"
+                  className="text-primary underline underline-offset-2"
                 >
                   github.com/MBombeck/HealthLog
                 </a>{" "}
@@ -386,13 +386,14 @@ export default function PrivacyPage() {
           bodyEn={
             <>
               <p>
-                HealthLog is an open-source, self-hostable personal-health-
-                tracking application. Source code is published at{" "}
+                HealthLog is an open-source, self-hostable
+                personal-health-tracking application. Source code is published
+                at{" "}
                 <a
                   href="https://github.com/MBombeck/HealthLog"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary hover:underline"
+                  className="text-primary underline underline-offset-2"
                 >
                   github.com/MBombeck/HealthLog
                 </a>{" "}
@@ -406,7 +407,7 @@ export default function PrivacyPage() {
               </p>
               <p>
                 The controller under Art. 4 (7) GDPR is the operator of this
-                instance (an individual based in Germany). Self- hosted
+                instance (an individual based in Germany). Self-hosted
                 deployments controlled by a different operator are governed by
                 that operator&apos;s own privacy policy; this document applies
                 only to this instance.
@@ -454,7 +455,7 @@ export default function PrivacyPage() {
                 </li>
                 <li>
                   Profil-Metadaten: Sprache, Zeitzone, Geburtsdatum (optional),
-                  biologisches Geschlecht (optional), Körper- größe (optional) —
+                  biologisches Geschlecht (optional), Körpergröße (optional) —
                   zur Berechnung altersgerechter Zielbereiche und des BMI.
                 </li>
               </ul>
@@ -462,7 +463,7 @@ export default function PrivacyPage() {
                 2.2 Manuell erfasste Gesundheitsdaten
               </h3>
               <p>
-                Jeder in den App-Formularen eingegebene Wert, einschließ- lich
+                Jeder in den App-Formularen eingegebene Wert, einschließlich
                 Zeitstempel, optionaler Notiz und Metrik-Typ. Die vollständige
                 Aufzählung der unterstützten Metriken steht im OpenAPI-Schema;
                 die nutzerrelevante Teilmenge umfasst Körpergewicht, Körperfett,
@@ -587,9 +588,9 @@ export default function PrivacyPage() {
               </ul>
               <p>
                 Schreibzugriff wird für eine Teilmenge angefordert (Körpermasse,
-                Blutdruck systolisch / diastolisch, Blut- zucker), damit
-                manuelle Einträge in der iOS-App zurück nach HealthKit fließen
-                können. Der Nutzer steuert beide Richtungen über die
+                Blutdruck systolisch / diastolisch, Blutzucker), damit manuelle
+                Einträge in der iOS-App zurück nach HealthKit fließen können.
+                Der Nutzer steuert beide Richtungen über die
                 Berechtigungsoberfläche der iOS- Health-App und kann jederzeit
                 widerrufen.
               </p>
@@ -598,25 +599,24 @@ export default function PrivacyPage() {
               </h3>
               <p>
                 Verbindet der Nutzer ein Withings-Konto, speichert HealthLog die
-                OAuth-Refresh- und -Access-Token (spalten- weise verschlüsselt)
+                OAuth-Refresh- und -Access-Token (spaltenweise verschlüsselt)
                 sowie die Withings-Nutzerkennung. Webhook-getriebene
-                Folgesynchronisierungen ziehen Körper- gewicht, Fettanteil,
+                Folgesynchronisierungen ziehen Körpergewicht, Fettanteil,
                 fettfreie Masse, Muskelmasse, Knochenmasse, Wassergehalt,
                 Magermasse, Hydration, Blutdruck (systolisch / diastolisch) und
-                Puls, Blut- zucker, Körpertemperatur (Basal- und
-                Hauttemperatur), Aktivitätssummen (Schritte, Distanz, aktive
-                Kalorien), Schlafsitzungen mit Pro-Stadien-Segmenten (Awake /
-                Light / Deep / REM) sowie SpO₂ und Herzfrequenzvariabilität,
-                soweit vorhanden.
+                Puls, Blutzucker, Körpertemperatur (Basal- und Hauttemperatur),
+                Aktivitätssummen (Schritte, Distanz, aktive Kalorien),
+                Schlafsitzungen mit Pro-Stadien-Segmenten (Awake / Light / Deep
+                / REM) sowie SpO₂ und Herzfrequenzvariabilität, soweit
+                vorhanden.
               </p>
               <h3 className="text-foreground pt-2 text-base font-semibold">
                 2.5 Medikamente
               </h3>
               <ul className="list-disc space-y-1 pl-5">
                 <li>
-                  Aktive Verordnungen: Wirkstoffname, Stärke, Verabreich-
-                  ungsweg, Einnahmeplan, Behandlungsklasse (Standard oder
-                  GLP-1).
+                  Aktive Verordnungen: Wirkstoffname, Stärke, Verabreichungsweg,
+                  Einnahmeplan, Behandlungsklasse (Standard oder GLP-1).
                 </li>
                 <li>
                   Einnahme-Ereignisse: geplante Zeit, tatsächliche Zeit, Status
@@ -716,8 +716,8 @@ export default function PrivacyPage() {
                   <code className="bg-muted rounded px-1 py-0.5 text-xs">
                     X-Device-Id
                   </code>{" "}
-                  -Header — für Mehrgeräte-Synchronisation und Miss-
-                  brauchsschutz.
+                  -Header — für Mehrgeräte-Synchronisation und
+                  Missbrauchsschutz.
                 </li>
                 <li>
                   Apple-Push-Notification-Service-(APNs)-Geräte-Token und
@@ -759,8 +759,8 @@ export default function PrivacyPage() {
               </h3>
               <ul className="list-disc space-y-1 pl-5">
                 <li>
-                  Keine Werbe-Identifier, Fingerprints oder anwendungs-
-                  übergreifenden Tracker.
+                  Keine Werbe-Identifier, Fingerprints oder
+                  anwendungsübergreifenden Tracker.
                 </li>
                 <li>Keine Zahlungsdaten (es gibt keinen Bezahltarif).</li>
                 <li>
@@ -938,11 +938,11 @@ export default function PrivacyPage() {
                 </li>
               </ul>
               <p>
-                Write access is requested for a subset (body mass, blood-
-                pressure systolic / diastolic, blood glucose) so that manual
-                entries made inside the iOS app can flow back into HealthKit.
-                The user controls both directions in the iOS Health app&apos;s
-                permission surface and may revoke at any time.
+                Write access is requested for a subset (body mass,
+                blood-pressure systolic / diastolic, blood glucose) so that
+                manual entries made inside the iOS app can flow back into
+                HealthKit. The user controls both directions in the iOS Health
+                app&apos;s permission surface and may revoke at any time.
               </p>
               <h3 className="text-foreground pt-2 text-base font-semibold">
                 2.4 Withings sync (optional)
@@ -1057,8 +1057,8 @@ export default function PrivacyPage() {
               </h3>
               <ul className="list-disc space-y-1 pl-5">
                 <li>
-                  A device identifier (random UUID generated client- side,
-                  stored in the iOS Keychain) sent as the{" "}
+                  A device identifier (random UUID generated client-side, stored
+                  in the iOS Keychain) sent as the{" "}
                   <code className="bg-muted rounded px-1 py-0.5 text-xs">
                     X-Device-Id
                   </code>{" "}
@@ -1135,16 +1135,15 @@ export default function PrivacyPage() {
                   Authentifizierungsdaten
                 </span>{" "}
                 — Identifikation des Nutzers und Sicherung der Sitzung.
-                Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO (Vertrags-
-                erfüllung).
+                Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung).
               </li>
               <li>
                 <span className="text-foreground font-medium">
                   Gesundheitsdaten
                 </span>{" "}
                 — Darstellung von Verläufen, Berechnung der Zielwerte- Treue,
-                Erzeugung des Coach-Snapshots auf Abruf. Rechts- grundlage: Art.
-                9 Abs. 2 lit. a DSGVO (ausdrückliche Einwilligung für Daten
+                Erzeugung des Coach-Snapshots auf Abruf. Rechtsgrundlage: Art. 9
+                Abs. 2 lit. a DSGVO (ausdrückliche Einwilligung für Daten
                 besonderer Kategorien).
               </li>
               <li>
@@ -1420,8 +1419,8 @@ export default function PrivacyPage() {
                 <span className="text-foreground font-medium">
                   Kein HealthLog-iCloud-Speicher
                 </span>{" "}
-                — HealthLog speichert Server-Datenbank, lokale Gesundheits-
-                caches, Offline-Outbox, ECG- und Workout-Payloads,
+                — HealthLog speichert Server-Datenbank, lokale
+                Gesundheits-Caches, Offline-Outbox, ECG- und Workout-Payloads,
                 KI-Transkript-Cache, Medikamentenplaner-Datenbank sowie Widget-
                 und Watch-Snapshots weder in iCloud noch in CloudKit. Lokale
                 gesundheitsbezogene Speicher liegen in geschütztem App- oder
@@ -1587,10 +1586,10 @@ export default function PrivacyPage() {
                 <span className="text-foreground font-medium">
                   Widerspruch und automatisierte Entscheidungen (Art. 21–22)
                 </span>{" "}
-                — der KI-Coach trifft keine automatisierten Entscheid- ungen im
+                — der KI-Coach trifft keine automatisierten Entscheidungen im
                 Sinne von Art. 22 DSGVO. Er erzeugt Texte zum Nachlesen; ohne
                 ausdrückliche Bestätigung wird keine Aktion ausgeführt. Siehe
-                Abschnitt 7 zur Medizinpro- dukte-Grenze.
+                Abschnitt 7 zur Medizinprodukte-Grenze.
               </li>
               <li>
                 <span className="text-foreground font-medium">
@@ -1959,7 +1958,7 @@ export default function PrivacyPage() {
                 </span>{" "}
                 <a
                   href="mailto:mbombeck@gmail.com"
-                  className="text-primary hover:underline"
+                  className="text-primary underline underline-offset-2"
                 >
                   mbombeck@gmail.com
                 </a>
@@ -1980,7 +1979,7 @@ export default function PrivacyPage() {
                   href="https://github.com/MBombeck/HealthLog/issues"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary hover:underline"
+                  className="text-primary underline underline-offset-2"
                 >
                   github.com/MBombeck/HealthLog/issues
                 </a>{" "}
@@ -2008,7 +2007,7 @@ export default function PrivacyPage() {
                 </span>{" "}
                 <a
                   href="mailto:mbombeck@gmail.com"
-                  className="text-primary hover:underline"
+                  className="text-primary underline underline-offset-2"
                 >
                   mbombeck@gmail.com
                 </a>
@@ -2028,7 +2027,7 @@ export default function PrivacyPage() {
                   href="https://github.com/MBombeck/HealthLog/issues"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary hover:underline"
+                  className="text-primary underline underline-offset-2"
                 >
                   github.com/MBombeck/HealthLog/issues
                 </a>{" "}
