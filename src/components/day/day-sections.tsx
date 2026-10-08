@@ -165,11 +165,17 @@ const RUNNING_COLOR: Record<DayRunningKind, string> = {
  * The server names a few records by a sentinel rather than by text it would
  * have to translate: a cycle is titled "cycle", a trip "travel", a cycle
  * day carries its flow level. They are worded here, in the reader's
- * language; every other title is the record's own text.
+ * language; every other title is the record's own text. The record's kind
+ * decides, not the title: a medication or a document the person named
+ * "cycle" keeps its own name.
  */
-function dayTitle(title: string, t: (key: string) => string): string {
-  if (title === "cycle") return t("nav.cycle");
-  if (title === "travel") return t("day.travel");
+export function dayTitle(
+  kind: string,
+  title: string,
+  t: (key: string) => string,
+): string {
+  if (kind === "cyclePhase" || kind === "cycleDayLog") return t("nav.cycle");
+  if (kind === "travel") return t("day.travel");
   return title;
 }
 
@@ -217,7 +223,7 @@ export function DayRunning({ items }: { items: readonly DayRunningItem[] }) {
               />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium">
-                  {dayTitle(item.title, t)}
+                  {dayTitle(item.kind, item.title, t)}
                 </span>
                 <span className="text-muted-foreground block truncate text-xs">
                   {parts.join(" · ")}
@@ -456,11 +462,11 @@ export function DayEvents({ events }: { events: readonly DayEvent[] }) {
                     data-slot="day-event-link"
                     className="focus-visible:ring-ring/50 block text-sm leading-5 font-medium after:absolute after:inset-0 after:rounded-md after:content-[''] focus-visible:outline-none focus-visible:after:ring-[3px] focus-visible:after:ring-inherit"
                   >
-                    {dayTitle(event.title, t)}
+                    {dayTitle(event.kind, event.title, t)}
                   </Link>
                 ) : (
                   <p className="text-sm leading-5 font-medium">
-                    {dayTitle(event.title, t)}
+                    {dayTitle(event.kind, event.title, t)}
                   </p>
                 )}
                 {event.meta ? (
