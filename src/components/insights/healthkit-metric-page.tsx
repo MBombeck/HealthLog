@@ -73,6 +73,16 @@ export interface HealthKitMetricPageProps {
    * `fallbackMeasurementType` is set.
    */
   fallbackMeasureLabel?: string;
+  /**
+   * v1.42 (#1110) — short label naming the PRIMARY measure (e.g. "SDNN").
+   * Since iOS 27 one account can hold both HRV measures from the same
+   * watch. They are different statistics on different scales, so when
+   * both have rows the page charts each on its own, each titled with its
+   * measure, instead of hiding the second behind the first.
+   */
+  primaryMeasureLabel?: string;
+  /** Line colour of the fallback measure's own chart; defaults to `color`. */
+  fallbackColor?: `var(--${string})`;
   /** The InsightMetric key used by `useInsightsAnalytics()`. */
   insightMetric: InsightMetric;
   /** The chart-overlay slot id. */
@@ -215,6 +225,8 @@ export function HealthKitMetricPage({
   measurementType,
   fallbackMeasurementType,
   fallbackMeasureLabel,
+  primaryMeasureLabel,
+  fallbackColor,
   insightMetric,
   chartKey,
   i18nPrefix,
@@ -269,6 +281,11 @@ export function HealthKitMetricPage({
   const effectiveType = usingFallback
     ? (fallbackMeasurementType as string)
     : measurementType;
+  // v1.42 (#1110) — both measures present: the primary keeps the strip, the
+  // coach read and the value list, and the fallback measure gets a chart of
+  // its own beneath it. Never one line, never one hidden.
+  const bothMeasures =
+    !!fallbackMeasurementType && primaryCount > 0 && fallbackCount > 0;
 
   // v1.32.26 — resolve the display unit + scale from the user's preference for
   // a type with a registered transform (kg↔lb, cm↔in, °C↔°F). When resolved,
@@ -421,7 +438,11 @@ export function HealthKitMetricPage({
           summary={summary}
           unit={resolvedYAxisUnit ?? resolvedUnit ?? ""}
           fractionDigits={resolvedFractionDigits}
-          seriesLabel={title}
+          seriesLabel={
+            bothMeasures && primaryMeasureLabel
+              ? `${title} · ${primaryMeasureLabel}`
+              : title
+          }
           icon={statIcon}
           windowStats={statsByType?.[effectiveType] ?? null}
           medianLabel={statMedianLabel}
@@ -455,7 +476,9 @@ export function HealthKitMetricPage({
         title={
           usingFallback && fallbackMeasureLabel
             ? `${t(`${i18nPrefix}.chartTitle`)} · ${fallbackMeasureLabel}`
-            : t(`${i18nPrefix}.chartTitle`)
+            : bothMeasures && primaryMeasureLabel
+              ? `${t(`${i18nPrefix}.chartTitle`)} · ${primaryMeasureLabel}`
+              : t(`${i18nPrefix}.chartTitle`)
         }
         titleIcon={statIcon}
         colors={[color]}
@@ -469,6 +492,27 @@ export function HealthKitMetricPage({
         onVisibleStats={onVisibleStats}
         showDataTable
       />
+      {bothMeasures ? (
+        <HealthChartDynamic
+          chartKey={chartKey}
+          types={[fallbackMeasurementType as string]}
+          title={
+            fallbackMeasureLabel
+              ? `${t(`${i18nPrefix}.chartTitle`)} · ${fallbackMeasureLabel}`
+              : t(`${i18nPrefix}.chartTitle`)
+          }
+          titleIcon={statIcon}
+          colors={[fallbackColor ?? color]}
+          unit={resolvedUnit}
+          yAxisUnit={resolvedYAxisUnit}
+          compareBaseline={compareBaseline}
+          userTimezone={user?.timezone}
+          valueScale={resolvedScale}
+          valueOffset={resolvedOffset}
+          onVisibleStats={onVisibleStats}
+          showDataTable
+        />
+      ) : null}
       {targetSummarySlug ? (
         <MetricTargetSummary slug={targetSummarySlug} />
       ) : null}

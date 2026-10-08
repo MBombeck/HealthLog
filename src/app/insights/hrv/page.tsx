@@ -15,7 +15,9 @@ import { EcgCrossLink } from "@/components/insights/ecg-cross-link";
  * SDNN as millisecond `HEART_RATE_VARIABILITY` rows; Oura / Polar / WHOOP
  * store nightly RMSSD as `HRV_RMSSD`. The page renders SDNN when present
  * and falls back to the RMSSD series (labelled "RMSSD") otherwise, so a
- * ring / strap user's stored HRV always surfaces.
+ * ring / strap user's stored HRV always surfaces. Since iOS 27 an Apple
+ * Watch writes both (#1110); with rows of both the page charts each on its
+ * own, labelled, because the two are not one measure.
  */
 export default function InsightsHrvPage() {
   return (
@@ -23,6 +25,8 @@ export default function InsightsHrvPage() {
       measurementType="HEART_RATE_VARIABILITY"
       fallbackMeasurementType="HRV_RMSSD"
       fallbackMeasureLabel="RMSSD"
+      primaryMeasureLabel="SDNN"
+      fallbackColor="var(--chart-2)"
       statusMetric="HEART_RATE_VARIABILITY"
       insightMetric="HEART_RATE_VARIABILITY"
       chartKey="hrv"

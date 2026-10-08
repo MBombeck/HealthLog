@@ -337,6 +337,21 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     aggregation: "mean",
     isPrivacySensitive: true,
   },
+  // v1.42 (#1110) — RMSSD HRV, new in iOS / watchOS 27.0. Apple documents it
+  // as `HKQuantityTypeIdentifier.heartRateVariabilityRMSSD`, symbol
+  // `c:@HKQuantityTypeIdentifierHeartRateVariabilityRMSSD`
+  // (developer.apple.com/documentation/healthkit/hkquantitytypeidentifier/
+  // heartratevariabilityrmssd). It lands on `HRV_RMSSD` beside WHOOP, Oura
+  // and Polar, never on the SDNN type: the two are different statistics.
+  HKQuantityTypeIdentifierHeartRateVariabilityRMSSD: {
+    hkIdentifier: "HKQuantityTypeIdentifierHeartRateVariabilityRMSSD",
+    measurementType: "HRV_RMSSD",
+    hkUnit: "ms",
+    dbUnit: "ms",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+    isPrivacySensitive: true,
+  },
 
   // ── Activity (cumulative) ───────────────────────────────────
   HKQuantityTypeIdentifierStepCount: {

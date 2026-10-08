@@ -238,8 +238,17 @@ function tracksOf(kind: SeriesBlockKind, block: Rec): Track[] {
         ]
       : [];
   switch (kind) {
-    case "value":
+    case "value": {
+      // A metric with several measures (HRV: SDNN and RMSSD, #1110) keeps
+      // one timeline per measure, each condensed as its own series.
+      const byMeasure = block.byMeasure;
+      if (isRecord(byMeasure)) {
+        return Object.keys(byMeasure).flatMap((measure) =>
+          single(byMeasure[measure], "value", measure),
+        );
+      }
       return single(block.timeline, "value", null);
+    }
     case "sleep":
       return single(block.timeline, "minutes", null);
     case "compliance":
