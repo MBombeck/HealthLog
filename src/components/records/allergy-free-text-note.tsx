@@ -21,7 +21,7 @@
  * Plain text only — the value renders exclusively through the input; no
  * markdown anywhere.
  */
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -50,7 +50,15 @@ interface AboutMeData {
 const FIELD_CLASSES =
   "border-input bg-background placeholder:text-muted-foreground focus-visible:border-input-focus w-full rounded-md border px-3 py-2 text-sm focus-visible:outline-none";
 
-export function AllergyFreeTextNote() {
+export function AllergyFreeTextNote({
+  leadingAction,
+}: {
+  /**
+   * The card's other action (the allergy list's add button), placed before
+   * Save so the card ends in one action row (design standards §12).
+   */
+  leadingAction?: ReactNode;
+} = {}) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<string | null>(null);
@@ -121,12 +129,18 @@ export function AllergyFreeTextNote() {
         onChange={(e) => setDraft(e.target.value)}
       />
       {query.isError ? (
-        <QueryErrorRow
-          message={t("settings.ai.aboutMe.loadError")}
-          onRetry={() => query.refetch()}
-        />
+        <>
+          <QueryErrorRow
+            message={t("settings.ai.aboutMe.loadError")}
+            onRetry={() => query.refetch()}
+          />
+          {leadingAction ? (
+            <SettingsCardActions>{leadingAction}</SettingsCardActions>
+          ) : null}
+        </>
       ) : (
         <SettingsCardActions>
+          {leadingAction}
           <Button
             type="button"
             size="sm"

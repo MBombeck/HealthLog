@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
@@ -24,8 +24,18 @@ import type { AllergyDTO } from "@/lib/records/dto";
  * v1.25 (W-RECORDS) — the structured allergy/intolerance manager. Renders in
  * the Settings → Anamnese section: a list of records with add / edit / delete.
  * Patient-reported reference data, not a clinical diagnosis.
+ *
+ * `afterList` lets the card put something between the list and the action
+ * row (the free-text note in the Anamnesis card) while keeping ONE action
+ * row as the card's last element (design standards §12): it receives the
+ * add button (null while the empty state offers its own) and renders the
+ * row itself. Without it the manager closes with its own row.
  */
-export function AllergyManager() {
+export function AllergyManager({
+  afterList,
+}: {
+  afterList?: (addAction: ReactNode | null) => ReactNode;
+} = {}) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
@@ -119,6 +129,19 @@ export function AllergyManager() {
     );
   }
 
+  const addAction =
+    !isLoading && !isError && rows.length > 0 ? (
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={openNew}
+        className="min-h-11 sm:min-h-9"
+      >
+        <Plus className="h-4 w-4" />
+        {t("records.allergies.add")}
+      </Button>
+    ) : null;
+
   return (
     <div className="space-y-4">
       {isLoading ? (
@@ -146,21 +169,12 @@ export function AllergyManager() {
       )}
 
       {/* The add action closes the list (design standards §12); an empty
-          list leaves it to the empty state's own button. Outline here,
-          because the card's primary is the free-text note's Save below. */}
-      {!isLoading && !isError && rows.length > 0 ? (
-        <SettingsCardActions>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={openNew}
-            className="min-h-11 sm:min-h-9"
-          >
-            <Plus className="h-4 w-4" />
-            {t("records.allergies.add")}
-          </Button>
-        </SettingsCardActions>
-      ) : null}
+          list leaves it to the empty state's own button. Outline, because
+          where the card carries the free-text note its Save is the primary
+          in the same row. */}
+      {afterList
+        ? afterList(addAction)
+        : addAction && <SettingsCardActions>{addAction}</SettingsCardActions>}
 
       <ResponsiveSheet
         open={formOpen}

@@ -1,3 +1,4 @@
+import type React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
@@ -38,10 +39,30 @@ vi.mock("@/components/records/health-profile-facts-manager", () => ({
   HealthProfileFactsManager: () => null,
 }));
 vi.mock("@/components/records/allergy-manager", () => ({
-  AllergyManager: () => <div data-slot="allergy-manager-probe" />,
+  AllergyManager: ({
+    afterList,
+  }: {
+    afterList?: (add: React.ReactNode) => React.ReactNode;
+  }) => (
+    <div data-slot="allergy-manager-probe">
+      {afterList ? (
+        afterList(<button data-slot="allergy-add-probe" />)
+      ) : (
+        <div data-slot="allergy-manager-own-actions" />
+      )}
+    </div>
+  ),
 }));
 vi.mock("@/components/records/allergy-free-text-note", () => ({
-  AllergyFreeTextNote: () => <div data-slot="allergy-free-text-probe" />,
+  AllergyFreeTextNote: ({
+    leadingAction,
+  }: {
+    leadingAction?: React.ReactNode;
+  }) => (
+    <div data-slot="allergy-free-text-probe">
+      <div data-slot="settings-card-actions">{leadingAction}</div>
+    </div>
+  ),
 }));
 vi.mock("@/components/records/about-me-note-manager", () => ({
   AboutMeNoteManager: () => <div data-slot="about-me-note-probe" />,
@@ -86,6 +107,19 @@ describe("Anamnese — the About-me note card (#159)", () => {
     expect(noteAt).toBeGreaterThan(managerAt);
     const between = html.slice(managerAt, noteAt);
     expect(between).not.toContain("<h2");
+  });
+
+  it("ends the allergies card in one action row carrying the add action", () => {
+    // The list's add button rides the note's row (design standards §12):
+    // the manager renders no row of its own, and the note's row holds add.
+    const html = renderSection();
+    expect(html).not.toContain('data-slot="allergy-manager-own-actions"');
+    const note = html.slice(
+      html.indexOf('data-slot="allergy-free-text-probe"'),
+    );
+    expect(note).toMatch(
+      /data-slot="settings-card-actions"><button data-slot="allergy-add-probe"/,
+    );
   });
 
   it("keeps the same AI-surface gate as the inclusion card", () => {

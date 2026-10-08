@@ -111,11 +111,13 @@ export function AnamnesisSection() {
           title={t("records.allergies.cardTitle")}
           description={t("records.allergies.cardDescription")}
         />
-        <AllergyManager />
         {/* #159 — the free-text supplement to the structured list above,
             moved here from the account-settings "About me" panel so both
-            allergy inputs live in one card. */}
-        <AllergyFreeTextNote />
+            allergy inputs live in one card. The list's add button rides the
+            note's action row, so the card ends in one row. */}
+        <AllergyManager
+          afterList={(add) => <AllergyFreeTextNote leadingAction={add} />}
+        />
       </SettingsCard>
 
       <SettingsCard>
