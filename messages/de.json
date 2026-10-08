@@ -5810,8 +5810,10 @@
           "operatorDisabled": "Luftqualität ist auf diesem Server abgeschaltet.",
           "coverage": "{count} Tage mit Luftqualitätsdaten",
           "pollenEuropeOnly": "Pollendaten gibt es nur für Europa.",
-          "attribution": "Luftqualität: Copernicus-Atmosphärenüberwachungsdienst (CAMS), über Open-Meteo.",
-          "saveError": "Die Einstellung konnte nicht gespeichert werden."
+          "attribution": "Datenquellen und Lizenzen",
+          "saveError": "Die Einstellung konnte nicht gespeichert werden.",
+          "latest": "Jüngster Tag ({date})",
+          "modelNote": "Modellierte Außenwerte für deine Gegend, nicht deine persönliche Belastung."
         }
       },
       "score": {
@@ -9999,7 +10001,8 @@
         "illness": "Krankheit und Erholung",
         "cycle": "Zyklus",
         "correlations": "Zusammenhänge zwischen Messgrößen",
-        "snapshot": "Datenübersicht"
+        "snapshot": "Datenübersicht",
+        "environment": "Wetter und Luft"
       },
       "window": {
         "last7days": "letzte 7 Tage",
@@ -10633,7 +10636,6 @@
       "precip": "Niederschlag",
       "pressureMean": "Luftdruck",
       "pressureDelta": "Druckschwankung",
-      "apparentMax": "Gefühlte Höchsttemperatur",
       "pm25": "Feinstaub (PM2,5)",
       "pm10": "Feinstaub (PM10)",
       "no2": "Stickstoffdioxid",
@@ -10642,6 +10644,20 @@
       "uvIndexMax": "UV-Index (Höchstwert)",
       "dustMax": "Saharastaub",
       "pollenMax": "Pollen (höchster Wert)"
+    },
+    "chip": {
+      "day": "Wetter am {date}",
+      "pollenHigh": "Viel Pollen: {kinds}",
+      "hotNight": "Warme Nacht",
+      "veryPoorAir": "Sehr schlechte Luft"
+    },
+    "pollen": {
+      "alder": "Erle",
+      "birch": "Birke",
+      "grass": "Gräser",
+      "mugwort": "Beifuß",
+      "olive": "Olive",
+      "ragweed": "Ambrosia"
     }
   },
   "documents": {

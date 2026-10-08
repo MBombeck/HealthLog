@@ -49,12 +49,13 @@ export const coachStepDomainSchema = z
     "illness",
     "cycle",
     "correlations",
+    "environment",
     "snapshot",
   ])
   .meta({
     id: "CoachStepDomain",
     description:
-      "The data domain a step, table or chip is about: a measurement-backed scope source, or a domain read as a whole (labs, illness, cycle, correlations, the full snapshot).",
+      "The data domain a step, table or chip is about: a measurement-backed scope source, or a domain read as a whole (labs, illness, cycle, correlations, the environment, the full snapshot).",
   });
 
 const coachResultGranularitySchema = z.enum(["day", "week", "month"]);

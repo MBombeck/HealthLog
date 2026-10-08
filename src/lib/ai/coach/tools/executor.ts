@@ -106,6 +106,7 @@ import {
   getCycleArgsSchema,
   getCorrelationsArgsSchema,
   getMetricTableArgsSchema,
+  getEnvironmentArgsSchema,
   isCoachToolName,
   showResultArgsSchema,
   SHOW_RESULT_TOOL_NAME,
@@ -116,6 +117,7 @@ import {
   METRIC_SERIES_EXCLUDED_SOURCES,
 } from "./source-keys";
 import { readCoachCorrelations } from "./correlations-read";
+import { readEnvironmentForTool } from "./environment-read";
 import { resolveLocaleForUser } from "@/lib/i18n/user-locale";
 import {
   resolveEmptyRead,
@@ -489,6 +491,8 @@ async function dispatchRead(
         turn,
         reach,
       );
+    case "get_environment":
+      return getEnvironment(userId, rawArgs, fallbackWindow, reach);
   }
 }
 
@@ -1006,6 +1010,33 @@ async function getCorrelations(
       pairsTested: result.pairsTested,
       windowDays: result.windowDays,
     },
+  };
+}
+
+/**
+ * v1.42 (#615) — the stored days' weather and air quality, without any
+ * location. Module-gated inside the reader (off answers `module_disabled`
+ * without reading a row) and clamped to the lookback limit.
+ */
+async function getEnvironment(
+  userId: string,
+  rawArgs: unknown,
+  fallbackWindow: CoachScopeWindow | undefined,
+  reach: CoachHistoryReach,
+): Promise<CoachToolResult> {
+  const parsed = getEnvironmentArgsSchema.safeParse(rawArgs);
+  if (!parsed.success) return badArgs("get_environment", parsed.error);
+  const result = await readEnvironmentForTool({
+    userId,
+    window: parsed.data.window ?? fallbackWindow ?? "last30days",
+    reach,
+  });
+  if (result.present) return { present: true, data: result.data };
+  return {
+    present: false,
+    reason: result.reason,
+    ...(result.searchedWindow ? { searchedWindow: result.searchedWindow } : {}),
+    ...(result.available ? { available: result.available } : {}),
   };
 }
 

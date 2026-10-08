@@ -32,8 +32,8 @@
  *
  * ── Encryption ─────────────────────────────────────────────────────────────
  *
- * One column is sealed, the insurance number, and it follows the split every
- * other section uses: a disaster-recovery file carries the ciphertext
+ * Two values are sealed, the insurance number and (v1.42) the environment
+ * home, and both follow the split every other section uses: a disaster-recovery file carries the ciphertext
  * verbatim (so the restore's key check sees it), a portable file carries the
  * readable value and the restore seals it under this host's key.
  */
@@ -52,6 +52,7 @@ import {
   readAvatarDimensions,
 } from "@/lib/avatar";
 import { decrypt, encrypt } from "@/lib/crypto";
+import { readLocation, sealLocation } from "@/lib/environment/location-cipher";
 import {
   USER_COLUMN_BACKUP_CLASS,
   type AccountSettingColumn,
@@ -382,34 +383,98 @@ const insuranceNumber: SettingCodec = {
 };
 
 /**
- * v1.42 (#615) — the sealed home location. A disaster-recovery file carries
- * the ciphertext verbatim, like the insurance number, because it is restored
- * onto a host holding the same keys. A portable file leaves it out: the
- * readable home rides `homeLat` / `homeLon` / `homeLabel` until those columns
- * drop, and the receiving host's encryption backfill seals it again.
+ * v1.42 (#615) — the environment home, sealed at rest as one value
+ * (`homeLocationEncrypted`, see `src/lib/environment/location-cipher.ts`)
+ * beside the readable `homeLat` / `homeLon` / `homeLabel` that the
+ * encryption backfill empties. The four columns travel as one, the way the
+ * avatar's three do:
+ *
+ *   - a portable file carries the home readable, opened from the sealed copy
+ *     when there is one, and no sealed value;
+ *   - a disaster-recovery file carries the sealed value verbatim (base64)
+ *     beside whatever the readable columns still hold.
+ *
+ * The restore writes the sealed value as it came, or seals a readable home
+ * under this host's key, and writes the readable columns empty either way. A
+ * file whose home is null clears the account's home. A home without a label
+ * (allowed since v1.25) is sealed with an empty label, which every reader
+ * shows as no label.
  */
-const homeLocationSealed: SettingCodec = {
+const homeLocation: SettingCodec = {
   write: (row, disasterRecovery) => {
-    if (!disasterRecovery) return {};
-    const sealed = row.homeLocationEncrypted;
-    return {
-      homeLocationEncrypted:
-        sealed instanceof Uint8Array
-          ? Buffer.from(sealed).toString("base64")
-          : null,
-    };
+    const sealed =
+      row.homeLocationEncrypted instanceof Uint8Array
+        ? row.homeLocationEncrypted
+        : null;
+    if (disasterRecovery) {
+      return {
+        homeLat: row.homeLat,
+        homeLon: row.homeLon,
+        homeLabel: row.homeLabel,
+        homeLocationEncrypted:
+          sealed && sealed.byteLength > 0
+            ? Buffer.from(sealed).toString("base64")
+            : null,
+      };
+    }
+    const home = readLocation({
+      sealed,
+      lat: row.homeLat as number | null,
+      lon: row.homeLon as number | null,
+      label: (row.homeLabel as string | null) ?? "",
+    });
+    return home
+      ? {
+          homeLat: home.lat,
+          homeLon: home.lon,
+          homeLabel: home.label === "" ? null : home.label,
+        }
+      : { homeLat: null, homeLon: null, homeLabel: null };
   },
   read: (entry) => {
-    if (!has(entry, "homeLocationEncrypted")) return undefined;
-    const value = entry.homeLocationEncrypted;
-    if (value === null) return null;
-    if (typeof value !== "string") return new Refused("homeLocationEncrypted");
-    const buffer = Buffer.from(value, "base64");
-    if (buffer.byteLength === 0) return new Refused("homeLocationEncrypted");
-    const bytes = new Uint8Array(new ArrayBuffer(buffer.byteLength));
-    bytes.set(buffer);
-    return bytes;
+    const cleared = {
+      homeLocationEncrypted: null,
+      homeLat: null,
+      homeLon: null,
+      homeLabel: null,
+    };
+    const sealedValue = entry.homeLocationEncrypted;
+    if (has(entry, "homeLocationEncrypted") && sealedValue !== null) {
+      if (typeof sealedValue !== "string") {
+        return new Refused("homeLocationEncrypted");
+      }
+      const buffer = Buffer.from(sealedValue, "base64");
+      if (buffer.byteLength === 0) return new Refused("homeLocationEncrypted");
+      const bytes = new Uint8Array(new ArrayBuffer(buffer.byteLength));
+      bytes.set(buffer);
+      return { ...cleared, homeLocationEncrypted: bytes };
+    }
+    if (!has(entry, "homeLat") && !has(entry, "homeLon")) {
+      // Neither form in the file: a sealed null alone still says "no home".
+      return has(entry, "homeLocationEncrypted") ? cleared : undefined;
+    }
+    const lat = entry.homeLat ?? null;
+    const lon = entry.homeLon ?? null;
+    const label = entry.homeLabel ?? null;
+    if (lat === null || lon === null) return cleared;
+    if (
+      typeof lat !== "number" ||
+      typeof lon !== "number" ||
+      (label !== null && typeof label !== "string")
+    ) {
+      return new Refused("homeLat");
+    }
+    return {
+      ...cleared,
+      homeLocationEncrypted: sealLocation({ lat, lon, label: label ?? "" }),
+    };
   },
+};
+
+/** Carried by the home codec above. */
+const ridesWithHome: SettingCodec = {
+  write: () => ({}),
+  read: () => undefined,
 };
 
 const ACCOUNT_SETTING_CODECS: Readonly<
@@ -428,12 +493,12 @@ const ACCOUNT_SETTING_CODECS: Readonly<
   avatarBytes: avatar,
   avatarContentType: ridesWithAvatar,
   avatarUpdatedAt: ridesWithAvatar,
-  homeLat: plain("homeLat"),
-  homeLon: plain("homeLon"),
-  homeLabel: plain("homeLabel"),
+  homeLat: ridesWithHome,
+  homeLon: ridesWithHome,
+  homeLabel: ridesWithHome,
   homeTimezone: timeZone("homeTimezone", true),
   homeSince: instant("homeSince"),
-  homeLocationEncrypted: homeLocationSealed,
+  homeLocationEncrypted: homeLocation,
   environmentAirQualityEnabled: plain("environmentAirQualityEnabled"),
   timezone: timeZone("timezone", false),
   locale: oneOf("locale", locales, true),
@@ -560,8 +625,9 @@ export function admitAccountSettings(
       refused.push(...value.refused);
       continue;
     }
-    if (column === "avatarBytes") {
-      // The avatar codec answers for all three of its columns at once.
+    if (column === "avatarBytes" || column === "homeLocationEncrypted") {
+      // The avatar codec answers for all three of its columns at once, the
+      // home codec for all four of its.
       Object.assign(data, value);
       continue;
     }

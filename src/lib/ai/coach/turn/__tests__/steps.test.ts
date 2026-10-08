@@ -44,6 +44,7 @@ const DOMAINS: CoachStepDomain[] = [
   "illness",
   "cycle",
   "correlations",
+  "environment",
   "snapshot",
 ];
 /** Every call a turn can make: the catalogue and `show_result`. */

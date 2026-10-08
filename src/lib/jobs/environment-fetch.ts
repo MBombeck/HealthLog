@@ -16,6 +16,14 @@
  * home location, so a disabled account never triggers an outbound fetch. Egress
  * runs through `safeFetch` inside the Open-Meteo client. Recurring → pg-boss
  * (never a CLI script; the prod image strips `tsx`).
+ *
+ * v1.42 (#615) — the same per-user run fetches air quality, pollen and UV
+ * with the weather, and then fills up to 90 stored days whose air-quality
+ * part is still missing, newest first (`fillAirQualityGaps`). Every request
+ * asks the instance-wide Open-Meteo budget first; a refused request ends the
+ * run as done with `budget_blocked`, and the next night continues. The home
+ * is found by its sealed copy as well as by the readable columns the
+ * encryption backfill has not cleared yet.
  */
 import { prisma } from "@/lib/db";
 import type { PgBoss } from "pg-boss";
@@ -30,8 +38,10 @@ import {
   ENVIRONMENT_LOOKBACK_DAYS,
   ENVIRONMENT_MAX_BACKFILL_DAYS,
   fetchAndStoreEnvironment,
+  fillAirQualityGaps,
   utcDayKey,
 } from "@/lib/environment/service";
+import { enumerateDayCount } from "@/lib/environment/day-span";
 import { recordError } from "@/lib/jobs/worker-status";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { workerLog } from "./reminder/shared";
@@ -110,7 +120,14 @@ export async function enqueueEnvironmentFetchDiscovery(
   // consults the per-user preference map + the operator availability.
   const [candidates, operatorAvailability] = await Promise.all([
     prisma.user.findMany({
-      where: { homeLat: { not: null }, homeLon: { not: null } },
+      // The sealed home (v1.42), or the readable one a row the encryption
+      // backfill has not reached yet still carries.
+      where: {
+        OR: [
+          { homeLocationEncrypted: { not: null } },
+          { homeLat: { not: null }, homeLon: { not: null } },
+        ],
+      },
       select: { id: true, modulePreferencesJson: true },
     }),
     getOperatorModuleAvailability(),
@@ -174,7 +191,7 @@ export async function handleEnvironmentFetch(
 
   const { startDate, endDate } = resolveRange(payload);
   // Clamp the span so a crafted backfill can never fan out an unbounded range.
-  const span = enumerateSpanDays(startDate, endDate);
+  const span = enumerateDayCount(startDate, endDate);
   if (span > ENVIRONMENT_MAX_BACKFILL_DAYS) {
     workerLog(
       "error",
@@ -193,27 +210,31 @@ export async function handleEnvironmentFetch(
       startDate,
       endDate,
     });
+    // The gap fill runs on the nightly path only; an explicit backfill range
+    // already fetched the air quality of the days it stored. It is skipped
+    // when the budget already refused this run.
+    const explicitRange = payload.startDate != null || payload.endDate != null;
+    const gaps =
+      explicitRange || result.budgetBlocked
+        ? { filled: 0, stopped: null }
+        : await fillAirQualityGaps(userId);
+    const budgetBlocked = result.budgetBlocked || gaps.stopped === "budget";
     workerLog(
       "info",
-      `[environment-fetch] user=${userId} ${startDate}..${endDate} stored=${result.stored} skipped=${result.skipped} fetches=${result.fetches}`,
+      `[environment-fetch] user=${userId} ${startDate}..${endDate} stored=${result.stored} skipped=${result.skipped} fetches=${result.fetches} aq_gap_days=${gaps.filled}${budgetBlocked ? " budget_blocked" : ""}`,
     );
+    // A refused request is not a failure: nothing was sent, and the days it
+    // would have filled are exactly what the next night looks for.
     return jobDone({
       days_stored: result.stored,
       days_skipped: result.skipped,
       fetches: result.fetches,
+      rows_upserted: gaps.filled,
+      budget_blocked: budgetBlocked,
     });
   } catch (err) {
     recordError();
     workerLog("error", `[environment-fetch] user=${userId} failed`, err);
     throw err;
   }
-}
-
-function enumerateSpanDays(start: string, end: string): number {
-  const [sy, sm, sd] = start.split("-").map(Number);
-  const [ey, em, ed] = end.split("-").map(Number);
-  const days = Math.round(
-    (Date.UTC(ey, em - 1, ed) - Date.UTC(sy, sm - 1, sd)) / MS_PER_DAY,
-  );
-  return days + 1;
 }

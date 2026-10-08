@@ -26,7 +26,8 @@
  * the user can tell you" is the right move for data the record does not hold,
  * and exactly the wrong one for data it does. `outside_reach` is data
  * the record holds beyond the lookback limit the person set: the model is told
- * it exists, gets no figure from it, and points at the setting.
+ * it exists, gets no figure from it, and points at the setting. Rule 9
+ * (v1.42) frames the environment read: modelled outdoor values, never a cause.
  */
 import type { Locale } from "@/lib/i18n/config";
 
@@ -47,7 +48,8 @@ You have read-only retrieval tools and a DATA INVENTORY listing what the user ha
 5. If you can answer without data (a definition, a "what can you help with?"), just answer — do not call a tool.
 6. Keep using the EVIDENCE (---KEYVALUES---) block exactly as before, citing only numbers you fetched this turn.
 7. A present get_metric_series result always carries numbers. When it is "condensed", cite its "summary" (when it has one) and the points it kept. When the question needs more history or finer detail than a series carries (all time, every month, a table), call get_metric_table yourself in this same answer. Never ask the user whether you should fetch it, unless the CLARIFYING QUESTIONS rule applies, and never tell them the numbers were not given to you.
-8. You have several rounds: read, look at what came back, and fetch what is still missing in the next one. Never repeat a call you already made this turn; its result is above. If a round has to be your last, you are told so: then answer from what you have.`;
+8. You have several rounds: read, look at what came back, and fetch what is still missing in the next one. Never repeat a call you already made this turn; its result is above. If a round has to be your last, you are told so: then answer from what you have.
+9. Environment (get_environment, and the weather, air and pollen patterns get_correlations reports): these are modelled outdoor conditions at a coarse location, not the user's own exposure. Say what the days were like and that something occurred together; never that the weather, the air or the pollen caused a reading, a symptom or a mood.`;
 
 const DE = `TOOL-BASIERTE ABFRAGE (diese Unterhaltung)
 
@@ -66,7 +68,8 @@ Du hast schreibgeschützte Abfrage-Tools und ein DATA INVENTORY, das auflistet, 
 5. Wenn du ohne Daten antworten kannst (eine Definition, „Wobei kannst du helfen?"), antworte einfach — rufe kein Tool auf.
 6. Nutze den EVIDENZ-Block (---KEYVALUES---) genau wie zuvor und zitiere nur Zahlen, die du in diesem Zug abgerufen hast.
 7. Ein vorhandenes Ergebnis von get_metric_series enthält immer Zahlen. Ist es „condensed", nenne die Werte aus „summary" (falls vorhanden) und die Punkte, die es behalten hat. Braucht die Frage mehr Verlauf oder feinere Werte, als eine Serie trägt (gesamter Zeitraum, jeder Monat, eine Tabelle), rufe get_metric_table in derselben Antwort selbst auf. Frage den Nutzer nie, ob du das abrufen sollst, außer die Regel CLARIFYING QUESTIONS greift, und sage nie, die Zahlen seien dir nicht mitgegeben worden.
-8. Du hast mehrere Runden: abrufen, ansehen, was zurückkam, und in der nächsten Runde holen, was noch fehlt. Wiederhole keinen Aufruf, den du in diesem Zug schon gemacht hast; sein Ergebnis steht oben. Muss eine Runde deine letzte sein, wird dir das gesagt: dann antworte mit dem, was du hast.`;
+8. Du hast mehrere Runden: abrufen, ansehen, was zurückkam, und in der nächsten Runde holen, was noch fehlt. Wiederhole keinen Aufruf, den du in diesem Zug schon gemacht hast; sein Ergebnis steht oben. Muss eine Runde deine letzte sein, wird dir das gesagt: dann antworte mit dem, was du hast.
+9. Umwelt (get_environment und die Wetter-, Luft- und Pollenmuster aus get_correlations): das sind modellierte Außenwerte für einen groben Ort, nicht die persönliche Belastung des Nutzers. Beschreibe, wie die Tage waren und dass etwas zusammen auftrat; sage nie, Wetter, Luft oder Pollen hätten einen Wert, ein Symptom oder eine Stimmung verursacht.`;
 
 export function buildToolModeAddendum(locale: Locale): string {
   return locale === "de" ? DE : EN;

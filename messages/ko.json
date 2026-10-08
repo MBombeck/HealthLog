@@ -5810,8 +5810,10 @@
           "operatorDisabled": "이 서버에서는 대기질 기능이 꺼져 있습니다.",
           "coverage": "대기질 데이터가 있는 날 {count}일",
           "pollenEuropeOnly": "꽃가루 데이터는 유럽만 제공됩니다.",
-          "attribution": "대기질: 코페르니쿠스 대기 모니터링 서비스(CAMS), Open-Meteo 경유.",
-          "saveError": "설정을 저장하지 못했습니다."
+          "attribution": "데이터 출처와 라이선스",
+          "saveError": "설정을 저장하지 못했습니다.",
+          "latest": "가장 최근 날짜 ({date})",
+          "modelNote": "내 지역의 실외 모델값이며, 개인 노출량이 아닙니다."
         }
       },
       "score": {
@@ -9999,7 +10001,8 @@
         "illness": "질병과 회복",
         "cycle": "생리 주기",
         "correlations": "지표 간 연관성",
-        "snapshot": "기록 요약"
+        "snapshot": "기록 요약",
+        "environment": "날씨와 대기"
       },
       "window": {
         "last7days": "최근 7일",
@@ -10633,7 +10636,6 @@
       "precip": "강수량",
       "pressureMean": "기압",
       "pressureDelta": "기압 변화",
-      "apparentMax": "체감 최고 기온",
       "pm25": "초미세먼지 (PM2.5)",
       "pm10": "미세먼지 (PM10)",
       "no2": "이산화질소",
@@ -10642,6 +10644,20 @@
       "uvIndexMax": "자외선 지수 (최고)",
       "dustMax": "사하라 먼지",
       "pollenMax": "꽃가루 (최고)"
+    },
+    "chip": {
+      "day": "{date} 날씨",
+      "pollenHigh": "꽃가루 많음: {kinds}",
+      "hotNight": "더운 밤",
+      "veryPoorAir": "대기질 매우 나쁨"
+    },
+    "pollen": {
+      "alder": "오리나무",
+      "birch": "자작나무",
+      "grass": "잔디",
+      "mugwort": "쑥",
+      "olive": "올리브",
+      "ragweed": "돼지풀"
     }
   },
   "documents": {

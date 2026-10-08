@@ -18,7 +18,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CloudSun, MapPin, Plane, Trash2 } from "lucide-react";
+import { CloudSun, MapPin, Plane, Trash2, Wind } from "lucide-react";
 
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -26,11 +26,19 @@ import { Button } from "@/components/ui/button";
 import { DateField } from "@/components/ui/date-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
-import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api/api-fetch";
+import {
+  apiDelete,
+  apiGet,
+  apiPatch,
+  apiPost,
+  apiPut,
+} from "@/lib/api/api-fetch";
+import { pollenMax, type PollenByKind } from "@/lib/environment/day-flags";
 import { queryKeys } from "@/lib/query-keys";
 import {
   DEFAULT_TIMEZONE,
@@ -76,6 +84,40 @@ interface EnvironmentOverview {
    * "every run failed", so the count is never rendered on its own. */
   lastFetchFailure: { lastFailedAt: string; failures: number } | null;
   attribution: string;
+  /** v1.42 — the air-quality part: switches and coverage. */
+  airQuality: {
+    enabled: boolean;
+    operatorDisabled: boolean;
+    days: number;
+    latestDate: string | null;
+    domain: string | null;
+  };
+  /** v1.42 — the newest stored day; `airQuality` null while off/unfetched. */
+  latestDay: {
+    date: string;
+    tempMin: number | null;
+    tempMax: number | null;
+    apparentMax: number | null;
+    airQuality: {
+      pm25Mean: number | null;
+      pm10Mean: number | null;
+      no2Mean: number | null;
+      o3Max8h: number | null;
+      eaqiMax: number | null;
+      uvIndexMax: number | null;
+      dustMax: number | null;
+      pollen: PollenByKind;
+    } | null;
+  } | null;
+  /** v1.42 — every attribution line, weather first. */
+  attributions: string[];
+}
+
+/** One value of the newest day, or a dash when the feed did not cover it. */
+function envValue(value: number | null, unit: string, digits = 0): string {
+  if (value == null) return "–";
+  const rounded = Number(value.toFixed(digits));
+  return unit ? `${rounded} ${unit}` : String(rounded);
 }
 
 export function EnvironmentSection() {
@@ -190,6 +232,16 @@ export function EnvironmentSection() {
       toast.success(t("settings.sections.environment.travelRemoved"));
     },
     onError: () => toast.error(t("settings.sections.environment.saveError")),
+  });
+
+  const setAirQuality = useMutation({
+    mutationKey: queryKeys.environment(),
+    mutationFn: (airQualityEnabled: boolean) =>
+      apiPatch("/api/environment/preferences", { airQualityEnabled }),
+    // The switch itself shows the new state; no toast on success.
+    onSuccess: () => invalidate(),
+    onError: () =>
+      toast.error(t("settings.sections.environment.airQuality.saveError")),
   });
 
   const backfill = useMutation({
@@ -540,10 +592,125 @@ export function EnvironmentSection() {
         )}
       </SettingsCard>
 
-      {/* Attribution (CC BY 4.0, required) */}
-      <p className="text-muted-foreground pl-1 text-xs">
-        {data?.attribution ?? "Weather data by Open-Meteo.com"}
-      </p>
+      {/* Air quality, pollen and UV (v1.42) */}
+      {data && (
+        <SettingsCard data-testid="environment-air-quality">
+          <SettingsCardHeader
+            icon={Wind}
+            title={t("settings.sections.environment.airQuality.title")}
+            status={
+              <label className="flex min-h-11 items-center gap-3">
+                <Switch
+                  checked={
+                    data.airQuality.enabled && !data.airQuality.operatorDisabled
+                  }
+                  onCheckedChange={(next) => setAirQuality.mutate(next)}
+                  disabled={
+                    data.airQuality.operatorDisabled || setAirQuality.isPending
+                  }
+                  aria-label={t(
+                    "settings.sections.environment.airQuality.toggle",
+                  )}
+                />
+              </label>
+            }
+          />
+          <p className="text-sm leading-relaxed">
+            {t("settings.sections.environment.airQuality.description")}
+          </p>
+          {data.airQuality.operatorDisabled ? (
+            <p className="text-muted-foreground text-sm">
+              {t("settings.sections.environment.airQuality.operatorDisabled")}
+            </p>
+          ) : data.airQuality.enabled ? (
+            <div className="space-y-3">
+              <p className="text-muted-foreground text-xs">
+                {t("settings.sections.environment.airQuality.coverage", {
+                  count: data.airQuality.days,
+                })}
+                {data.airQuality.domain === "cams_global"
+                  ? ` ${t("settings.sections.environment.airQuality.pollenEuropeOnly")}`
+                  : ""}
+              </p>
+              {data.latestDay?.airQuality && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">
+                    {t("settings.sections.environment.airQuality.latest", {
+                      date: data.latestDay.date,
+                    })}
+                  </p>
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    {(
+                      [
+                        [
+                          "environment.fields.pm25",
+                          envValue(data.latestDay.airQuality.pm25Mean, "µg/m³"),
+                        ],
+                        [
+                          "environment.fields.pm10",
+                          envValue(data.latestDay.airQuality.pm10Mean, "µg/m³"),
+                        ],
+                        [
+                          "environment.fields.no2",
+                          envValue(data.latestDay.airQuality.no2Mean, "µg/m³"),
+                        ],
+                        [
+                          "environment.fields.ozone8h",
+                          envValue(data.latestDay.airQuality.o3Max8h, "µg/m³"),
+                        ],
+                        [
+                          "environment.fields.europeanAqi",
+                          envValue(data.latestDay.airQuality.eaqiMax, ""),
+                        ],
+                        [
+                          "environment.fields.uvIndexMax",
+                          envValue(data.latestDay.airQuality.uvIndexMax, "", 1),
+                        ],
+                        [
+                          "environment.fields.dustMax",
+                          envValue(data.latestDay.airQuality.dustMax, "µg/m³"),
+                        ],
+                        [
+                          "environment.fields.pollenMax",
+                          envValue(
+                            pollenMax(data.latestDay.airQuality.pollen),
+                            "/m³",
+                          ),
+                        ],
+                      ] as const
+                    ).map(([labelKey, value]) => (
+                      <div key={labelKey} className="contents">
+                        <dt className="text-muted-foreground text-xs">
+                          {t(labelKey)}
+                        </dt>
+                        <dd className="tabular-nums">{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p className="text-muted-foreground text-xs">
+                    {t("settings.sections.environment.airQuality.modelNote")}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : null}
+        </SettingsCard>
+      )}
+
+      {/* Attribution (CC BY 4.0 for Open-Meteo; Copernicus notice for the
+          air-quality values), one line per source. */}
+      <ul
+        className="text-muted-foreground space-y-0.5 pl-1 text-xs"
+        aria-label={t("settings.sections.environment.airQuality.attribution")}
+      >
+        {(
+          data?.attributions ?? [
+            data?.attribution ?? "Weather data by Open-Meteo.com",
+          ]
+        ).map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
     </div>
   );
 }

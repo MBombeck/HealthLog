@@ -6,6 +6,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  * hosted defaults must still apply; before, the empty string was kept and
  * every request died on `new URL("/v1/search")` with ERR_INVALID_URL.
  */
+// The instance-wide request budget lives in Postgres; these tests are about
+// the request itself, so the budget admits every call.
+vi.mock("@/lib/environment/request-budget", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/lib/environment/request-budget")
+  >()),
+  reserveOpenMeteoCalls: vi.fn(async () => true),
+}));
+
 beforeEach(() => {
   vi.resetModules();
 });

@@ -60,3 +60,25 @@ export const AIR_QUALITY_ATTRIBUTIONS = [
     url: "https://open-meteo.com/",
   },
 ] as const;
+
+/**
+ * The attribution lines, in display order, for wherever environment values
+ * are shown (settings, the Coach and MCP read, the docs). The weather line
+ * always; the two air-quality lines when air-quality values are part of what
+ * is shown. "Contains modified" because hourly values are folded into days
+ * here (the Copernicus licence asks for that wording on derived data); the
+ * year is the newest year the shown values come from.
+ */
+export function environmentAttributionLines(args: {
+  airQuality: boolean;
+  year: number;
+}): string[] {
+  const lines = ["Weather data by Open-Meteo.com (CC BY 4.0)"];
+  if (args.airQuality) {
+    lines.push(
+      "Air quality data by Open-Meteo.com (CC BY 4.0)",
+      `Contains modified Copernicus Atmosphere Monitoring Service information ${args.year}`,
+    );
+  }
+  return lines;
+}

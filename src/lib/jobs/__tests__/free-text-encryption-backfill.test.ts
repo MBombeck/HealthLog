@@ -5,6 +5,7 @@ import {
   decryptRouteGeometry,
   encryptRouteGeometry,
 } from "@/lib/workouts/route-geometry-cipher";
+import { openLocation, sealLocation } from "@/lib/environment/location-cipher";
 
 // ── in-memory store backing a minimal prisma mock ──────────────────────────
 interface ConversationRow {
@@ -37,11 +38,36 @@ interface RouteRow {
   geometryEncrypted: Uint8Array | null;
 }
 
+/** v1.42 — an account's environment home; `userId` is its own id. */
+interface HomeRow {
+  id: string;
+  userId: string;
+  homeLat: number | null;
+  homeLon: number | null;
+  homeLabel: string | null;
+  homeLocationEncrypted: Uint8Array | null;
+  updatedAt?: Date;
+}
+/** v1.42 — a dated location period or a stored day (label column named). */
+interface PlaceRow {
+  id: string;
+  userId: string;
+  lat: number | null;
+  lon: number | null;
+  label?: string | null;
+  locationLabel?: string | null;
+  locationEncrypted: Uint8Array | null;
+  updatedAt?: Date;
+}
+
 const store = vi.hoisted(() => ({
   conversations: [] as ConversationRow[],
   entries: [] as EntryRow[],
   practitioners: [] as PractitionerRow[],
   routes: [] as RouteRow[],
+  homes: [] as HomeRow[],
+  travels: [] as PlaceRow[],
+  days: [] as PlaceRow[],
 }));
 
 vi.mock("@/lib/jobs/boss-instance", () => ({ getGlobalBoss: () => null }));
@@ -56,10 +82,11 @@ vi.mock("@/lib/db", () => {
       // The handler pages on the owner plus "a readable column is set": the
       // user id directly, or through the workout for a route.
       findMany: async (args: {
-        where: { userId?: string; workout?: { userId: string } };
+        where: { userId?: string; id?: string; workout?: { userId: string } };
         take: number;
       }) => {
-        const userId = args.where.userId ?? args.where.workout?.userId;
+        const userId =
+          args.where.userId ?? args.where.workout?.userId ?? args.where.id;
         return rows()
           .filter(
             (r) => r.userId === userId && readable.some((k) => r[k] !== null),
@@ -117,6 +144,9 @@ vi.mock("@/lib/db", () => {
     customMetricEntry: delegate(() => store.entries, ["note"]),
     practitioner: delegate(() => store.practitioners, ["phone", "location"]),
     workoutRoute: delegate(() => store.routes, ["geometry"]),
+    user: delegate(() => store.homes, ["homeLat"]),
+    environmentTravelLocation: delegate(() => store.travels, ["lat"]),
+    environmentContext: delegate(() => store.days, ["lat"]),
   };
   return {
     prisma: {
@@ -224,6 +254,72 @@ beforeEach(() => {
     },
     { id: "r3", userId: "u2", geometry: TRACK, geometryEncrypted: null },
   ];
+  const stamp = new Date("2026-02-01T08:00:00.000Z");
+  store.homes = [
+    {
+      id: "u1",
+      userId: "u1",
+      homeLat: 51.5,
+      homeLon: 7.2,
+      homeLabel: "Bochum, Germany",
+      homeLocationEncrypted: null,
+      updatedAt: stamp,
+    },
+    {
+      id: "u2",
+      userId: "u2",
+      homeLat: 48.1,
+      homeLon: 11.6,
+      homeLabel: "Munich, Germany",
+      homeLocationEncrypted: null,
+      updatedAt: stamp,
+    },
+  ];
+  store.travels = [
+    {
+      id: "t1",
+      userId: "u1",
+      lat: 38.7,
+      lon: -9.1,
+      label: "Lisbon, Portugal",
+      locationEncrypted: null,
+      updatedAt: stamp,
+    },
+    // Already sealed by this release's writer.
+    {
+      id: "t2",
+      userId: "u1",
+      lat: null,
+      lon: null,
+      label: null,
+      locationEncrypted: sealLocation({
+        lat: 41.4,
+        lon: 2.2,
+        label: "Barcelona, Spain",
+      }),
+      updatedAt: stamp,
+    },
+  ];
+  store.days = [
+    {
+      id: "d1",
+      userId: "u1",
+      lat: 38.7,
+      lon: -9.1,
+      locationLabel: "Lisbon, Portugal",
+      locationEncrypted: null,
+      updatedAt: stamp,
+    },
+    {
+      id: "d2",
+      userId: "u2",
+      lat: 48.1,
+      lon: 11.6,
+      locationLabel: "Munich, Germany",
+      locationEncrypted: null,
+      updatedAt: stamp,
+    },
+  ];
 });
 
 afterEach(() => {
@@ -241,6 +337,9 @@ describe("runFreeTextEncryptionBackfillForUser", () => {
       routeGeometriesMigrated: 1,
       appointmentAddressesCleared: 0,
       contactAuditRowsScrubbed: 0,
+      homeLocationsMigrated: 1,
+      travelLocationsMigrated: 1,
+      dayLocationsMigrated: 1,
     });
 
     const c1 = store.conversations.find((r) => r.id === "c1")!;
@@ -344,10 +443,62 @@ describe("runFreeTextEncryptionBackfillForUser", () => {
       routeGeometriesMigrated: 0,
       appointmentAddressesCleared: 0,
       contactAuditRowsScrubbed: 0,
+      homeLocationsMigrated: 0,
+      travelLocationsMigrated: 0,
+      dayLocationsMigrated: 0,
     });
     expect(store.conversations.find((r) => r.id === "c1")!.titleEncrypted).toBe(
       sealed,
     );
+  });
+
+  it("seals the environment home, periods and days, clears the readable columns, keeps the stamps", async () => {
+    const t2Before = store.travels.find(
+      (r) => r.id === "t2",
+    )!.locationEncrypted;
+    await runFreeTextEncryptionBackfillForUser("u1");
+
+    const home = store.homes.find((r) => r.id === "u1")!;
+    expect(home).toMatchObject({
+      homeLat: null,
+      homeLon: null,
+      homeLabel: null,
+    });
+    expect(openLocation(home.homeLocationEncrypted!)).toEqual({
+      lat: 51.5,
+      lon: 7.2,
+      label: "Bochum, Germany",
+    });
+    expect(home.updatedAt).toEqual(new Date("2026-02-01T08:00:00.000Z"));
+
+    const t1 = store.travels.find((r) => r.id === "t1")!;
+    expect(t1).toMatchObject({ lat: null, lon: null, label: null });
+    expect(openLocation(t1.locationEncrypted!)).toEqual({
+      lat: 38.7,
+      lon: -9.1,
+      label: "Lisbon, Portugal",
+    });
+    expect(store.travels.find((r) => r.id === "t2")!.locationEncrypted).toBe(
+      t2Before,
+    );
+
+    const d1 = store.days.find((r) => r.id === "d1")!;
+    expect(d1).toMatchObject({ lat: null, lon: null, locationLabel: null });
+    expect(openLocation(d1.locationEncrypted!).label).toBe("Lisbon, Portugal");
+
+    // Another account's rows are untouched.
+    expect(store.homes.find((r) => r.id === "u2")!.homeLat).toBe(48.1);
+    expect(store.days.find((r) => r.id === "d2")!.lat).toBe(48.1);
+  });
+
+  it("seals a home stored without a label with an empty one", async () => {
+    store.homes[0].homeLabel = null;
+    await runFreeTextEncryptionBackfillForUser("u1");
+    expect(openLocation(store.homes[0].homeLocationEncrypted!)).toEqual({
+      lat: 51.5,
+      lon: 7.2,
+      label: "",
+    });
   });
 
   it("is fail-closed: without a key every readable row stays intact", async () => {
@@ -357,6 +508,10 @@ describe("runFreeTextEncryptionBackfillForUser", () => {
     expect(store.conversations.find((r) => r.id === "c1")).toMatchObject({
       title: "Why is my pressure up after the new tablets?",
       titleEncrypted: null,
+    });
+    expect(store.days.find((r) => r.id === "d1")).toMatchObject({
+      lat: 38.7,
+      locationEncrypted: null,
     });
   });
 });

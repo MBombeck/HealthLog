@@ -19,7 +19,14 @@
  * only" — see the nightly job and the backfill route.
  */
 import { envOr } from "@/lib/env";
+import { annotate } from "@/lib/logging/context";
 import { safeFetch, SafeFetchError } from "@/lib/safe-fetch";
+import { enumerateDayCount } from "@/lib/environment/day-span";
+import {
+  OpenMeteoBudgetExhaustedError,
+  openMeteoCallWeight,
+  reserveOpenMeteoCalls,
+} from "@/lib/environment/request-budget";
 
 /** Hosted archive default; override with `OPENMETEO_BASE_URL` (self-host). */
 const ARCHIVE_BASE_URL = envOr(
@@ -58,6 +65,8 @@ export interface DailyEnvironmentObservation {
   tempMax: number | null;
   tempMean: number | null;
   apparentMean: number | null;
+  /** v1.42 — daily apparent ("feels-like") maximum, °C. */
+  apparentMax: number | null;
   sunshineSec: number | null;
   daylightSec: number | null;
   precipSum: number | null;
@@ -97,6 +106,7 @@ interface ArchiveDaily {
   temperature_2m_max?: (number | null)[];
   temperature_2m_mean?: (number | null)[];
   apparent_temperature_mean?: (number | null)[];
+  apparent_temperature_max?: (number | null)[];
   sunshine_duration?: (number | null)[];
   daylight_duration?: (number | null)[];
   precipitation_sum?: (number | null)[];
@@ -115,22 +125,29 @@ interface ArchiveResponse {
   hourly?: ArchiveHourly;
 }
 
-const DAILY_FIELDS = [
+const DAILY_FIELD_LIST = [
   "temperature_2m_min",
   "temperature_2m_max",
   "temperature_2m_mean",
   "apparent_temperature_mean",
+  "apparent_temperature_max",
   "sunshine_duration",
   "daylight_duration",
   "precipitation_sum",
   "weather_code",
-].join(",");
+];
+const DAILY_FIELDS = DAILY_FIELD_LIST.join(",");
 
-const HOURLY_FIELDS = [
+const HOURLY_FIELD_LIST = [
   "surface_pressure",
   "relative_humidity_2m",
   "cloud_cover",
-].join(",");
+];
+const HOURLY_FIELDS = HOURLY_FIELD_LIST.join(",");
+
+/** Variables one archive request asks for, for the request budget. */
+const ARCHIVE_VARIABLE_COUNT =
+  DAILY_FIELD_LIST.length + HOURLY_FIELD_LIST.length;
 
 /** Per-day aggregation accumulator for the hourly-only fields. */
 interface HourlyDayAgg {
@@ -173,6 +190,13 @@ export async function geocodeLocation(
 ): Promise<GeocodeResult[]> {
   const trimmed = query.trim();
   if (trimmed.length === 0) return [];
+
+  // A geocoder call weighs one; a refused one answers "no match" rather than
+  // reaching the host, and says why on the request's event.
+  if (!(await reserveOpenMeteoCalls(1))) {
+    annotate({ action: { name: "environment.geocode.budget_exhausted" } });
+    return [];
+  }
 
   const url = new URL(`${GEOCODING_BASE_URL}/v1/search`);
   url.searchParams.set("name", trimmed);
@@ -230,7 +254,9 @@ export async function geocodeLocation(
  * Fetch the daily environment observations for a coarse location over a date
  * range (inclusive YYYY-MM-DD). The hourly-only fields (pressure / humidity /
  * cloud) are requested alongside and aggregated to per-day values here. Throws
- * a {@link SafeFetchError} on egress failure so the caller can classify it.
+ * a {@link SafeFetchError} on egress failure so the caller can classify it,
+ * and an {@link OpenMeteoBudgetExhaustedError} when the instance-wide request
+ * budget refuses the call (nothing is sent then).
  */
 export async function fetchDailyEnvironment(args: {
   lat: number;
@@ -239,6 +265,13 @@ export async function fetchDailyEnvironment(args: {
   startDate: string;
   endDate: string;
 }): Promise<DailyEnvironmentObservation[]> {
+  const weight = openMeteoCallWeight(
+    ARCHIVE_VARIABLE_COUNT,
+    enumerateDayCount(args.startDate, args.endDate),
+  );
+  if (!(await reserveOpenMeteoCalls(weight))) {
+    throw new OpenMeteoBudgetExhaustedError();
+  }
   const url = new URL(`${ARCHIVE_BASE_URL}/v1/archive`);
   url.searchParams.set("latitude", String(args.lat));
   url.searchParams.set("longitude", String(args.lon));
@@ -285,6 +318,7 @@ export async function fetchDailyEnvironment(args: {
       tempMax: firstNumber(daily.temperature_2m_max?.[i]),
       tempMean: firstNumber(daily.temperature_2m_mean?.[i]),
       apparentMean: firstNumber(daily.apparent_temperature_mean?.[i]),
+      apparentMax: firstNumber(daily.apparent_temperature_max?.[i]),
       sunshineSec: firstNumber(daily.sunshine_duration?.[i]),
       daylightSec: firstNumber(daily.daylight_duration?.[i]),
       precipSum: firstNumber(daily.precipitation_sum?.[i]),

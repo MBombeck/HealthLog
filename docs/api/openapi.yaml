@@ -21901,9 +21901,10 @@ paths:
       tags:
         - Environment
       summary: Change the environment switches
-      description: Turns the air-quality part of the module on or off for this account (on by default). Off means the nightly
-        fetch skips the air-quality feed and the overview leaves the fields out; days already stored are kept.
-        Module-gated. Strict body.
+      description: "Turns the air-quality part of the module on or off for this account (on by default). Off means the nightly
+        fetch skips the air-quality feed, and the overview, the Coach, MCP and the correlations leave the air-quality
+        values out; days already stored keep theirs. Turning it on queues a refresh, and the nightly gap fill catches up
+        on older days. Module-gated. Strict body: an unknown key is a 422."
       requestBody:
         required: true
         content:
@@ -21921,7 +21922,6 @@ paths:
         "403": *a20
         "422": *a4
         "429": *a5
-        "501": *a9
   /api/environment:
     get:
       tags:
@@ -53899,6 +53899,7 @@ components:
             - get_cycle
             - get_correlations
             - get_metric_table
+            - get_environment
             - show_result
             - snapshot
         labelKey:
@@ -54011,9 +54012,10 @@ components:
         - illness
         - cycle
         - correlations
+        - environment
         - snapshot
       description: "The data domain a step, table or chip is about: a measurement-backed scope source, or a domain read as a
-        whole (labs, illness, cycle, correlations, the full snapshot)."
+        whole (labs, illness, cycle, correlations, the environment, the full snapshot)."
     CoachMethod:
       type: object
       properties:
@@ -54097,6 +54099,7 @@ components:
                 - get_cycle
                 - get_correlations
                 - get_metric_table
+                - get_environment
             domain:
               $ref: "#/components/schemas/CoachStepDomain"
             window:
@@ -54835,6 +54838,7 @@ components:
                 - get_cycle
                 - get_correlations
                 - get_metric_table
+                - get_environment
             domain:
               $ref: "#/components/schemas/CoachStepDomain"
             window:
@@ -79101,12 +79105,171 @@ components:
         attribution:
           type: string
           description: Upstream attribution string. Display it wherever the observations are shown.
+        airQuality:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+              description: The account's switch (`PATCH /api/environment/preferences`).
+            operatorDisabled:
+              type: boolean
+              description: True when the operator turned air quality off for the instance; the account switch then has no effect.
+            days:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+              description: Stored days the air-quality feed returned hourly values for.
+            latestDate:
+              anyOf:
+                - type: string
+                - type: "null"
+              description: Newest such day (YYYY-MM-DD).
+            domain:
+              anyOf:
+                - type: string
+                - type: "null"
+              description: "The model domain of that day: `cams_europe` (about 11 km, with pollen) or `cams_global` (about 45 km, no
+                pollen)."
+          required:
+            - enabled
+            - operatorDisabled
+            - days
+            - latestDate
+            - domain
+          additionalProperties: false
+          description: v1.42 — the air-quality part of the module.
+        latestDay:
+          anyOf:
+            - type: object
+              properties:
+                date:
+                  type: string
+                  description: YYYY-MM-DD of the newest stored day.
+                tempMin:
+                  anyOf:
+                    - type: number
+                    - type: "null"
+                tempMax:
+                  anyOf:
+                    - type: number
+                    - type: "null"
+                apparentMax:
+                  anyOf:
+                    - type: number
+                    - type: "null"
+                  description: Daily feels-like maximum, °C.
+                airQuality:
+                  anyOf:
+                    - type: object
+                      properties:
+                        pm25Mean:
+                          anyOf:
+                            - type: number
+                            - type: "null"
+                          description: PM2.5 daily mean, µg/m³.
+                        pm10Mean:
+                          anyOf:
+                            - type: number
+                            - type: "null"
+                          description: PM10 daily mean, µg/m³.
+                        no2Mean:
+                          anyOf:
+                            - type: number
+                            - type: "null"
+                          description: NO2 daily mean, µg/m³.
+                        o3Max8h:
+                          anyOf:
+                            - type: number
+                            - type: "null"
+                          description: Ozone, highest 8-hour running mean, µg/m³.
+                        eaqiMax:
+                          anyOf:
+                            - type: number
+                            - type: "null"
+                          description: European air-quality index, daily maximum.
+                        uvIndexMax:
+                          anyOf:
+                            - type: number
+                            - type: "null"
+                        dustMax:
+                          anyOf:
+                            - type: number
+                            - type: "null"
+                          description: Dust, µg/m³.
+                        pollen:
+                          type: object
+                          properties:
+                            alder:
+                              anyOf:
+                                - type: number
+                                - type: "null"
+                            birch:
+                              anyOf:
+                                - type: number
+                                - type: "null"
+                            grass:
+                              anyOf:
+                                - type: number
+                                - type: "null"
+                            mugwort:
+                              anyOf:
+                                - type: number
+                                - type: "null"
+                            olive:
+                              anyOf:
+                                - type: number
+                                - type: "null"
+                            ragweed:
+                              anyOf:
+                                - type: number
+                                - type: "null"
+                          required:
+                            - alder
+                            - birch
+                            - grass
+                            - mugwort
+                            - olive
+                            - ragweed
+                          additionalProperties: false
+                          description: Daily maxima, grains/m³; null where not covered (outside Europe, before mid 2022).
+                      required:
+                        - pm25Mean
+                        - pm10Mean
+                        - no2Mean
+                        - o3Max8h
+                        - eaqiMax
+                        - uvIndexMax
+                        - dustMax
+                        - pollen
+                      additionalProperties: false
+                    - type: "null"
+                  description: Null while air quality is off for the account or the instance, and for a day whose air-quality part was not
+                    fetched yet. Null values inside mean not covered, never zero.
+              required:
+                - date
+                - tempMin
+                - tempMax
+                - apparentMax
+                - airQuality
+              additionalProperties: false
+            - type: "null"
+          description: v1.42 — the newest stored day, usually yesterday or the day before (the archive settles late). No forecast.
+            Null when nothing is stored.
+        attributions:
+          type: array
+          items:
+            type: string
+          description: v1.42 — every attribution line, weather first; the air-quality lines (Open-Meteo, Copernicus) while air
+            quality is on. Display them wherever the values are shown.
       required:
         - home
         - travel
         - context
         - lastFetchFailure
         - attribution
+        - airQuality
+        - latestDay
+        - attributions
       additionalProperties: false
       description: "The module overview: home, travel overrides, a count of stored observations, and whether the background
         fetch is healthy."

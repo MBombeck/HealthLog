@@ -5,8 +5,12 @@ const measurementFindMany = vi.fn();
 const moodFindMany = vi.fn();
 const customMetricFindMany = vi.fn();
 const environmentFindMany = vi.fn();
+const userFindUnique = vi.fn(async () => ({
+  environmentAirQualityEnabled: true,
+}));
 vi.mock("@/lib/db", () => ({
   prisma: {
+    user: { findUnique: () => userFindUnique() },
     measurement: { findMany: (a: unknown) => measurementFindMany(a) },
     moodEntry: { findMany: (a: unknown) => moodFindMany(a) },
     customMetric: { findMany: (a: unknown) => customMetricFindMany(a) },
@@ -16,6 +20,7 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+import { ENVIRONMENT_FIELDS, POLLEN_COLUMNS } from "@/lib/environment/fields";
 import {
   averageWithPreviousDay,
   fetchEnvironmentSeries,
@@ -397,5 +402,95 @@ describe("environment exposure: the averaged lag 0–1 window (v1.42)", () => {
     expect(tMin.points).toEqual([{ day: "2026-05-02", value: 9 }]);
     const sun = series.find((s) => s.key === "ENV_SUNSHINE")!;
     expect(sun.points).toEqual([{ day: "2026-05-02", value: 1.5 }]);
+  });
+});
+
+describe("environment exposure: the air-quality channels (v1.42, #615)", () => {
+  beforeEach(() => {
+    environmentFindMany.mockReset();
+    userFindUnique.mockReset();
+    userFindUnique.mockResolvedValue({ environmentAirQualityEnabled: true });
+    vi.unstubAllEnvs();
+  });
+
+  it("selects every column a channel reads (an unselected column reads as never covered)", async () => {
+    environmentFindMany.mockResolvedValueOnce([]);
+    await fetchEnvironmentSeries("u1", new Date("2026-04-01T00:00:00Z"));
+    const select = (
+      environmentFindMany.mock.calls[0][0] as {
+        select: Record<string, boolean>;
+      }
+    ).select;
+    const read = ENVIRONMENT_FIELDS.flatMap((f) =>
+      f.column === "pollenMax" ? [...POLLEN_COLUMNS] : [f.column],
+    );
+    for (const column of read) expect(select[column], column).toBe(true);
+  });
+
+  it("adds exactly three air-quality channels", () => {
+    expect(
+      ENVIRONMENT_FIELDS.filter((f) => f.airQuality).map((f) => f.key),
+    ).toEqual(["ENV_PM25", "ENV_OZONE_8H", "ENV_POLLEN_MAX"]);
+  });
+
+  it("takes the pollen high over the covered kinds, never a zero for the uncovered", async () => {
+    environmentFindMany.mockResolvedValueOnce([
+      {
+        date: "2026-05-01",
+        pm25Mean: 10,
+        o3Max8h: 80,
+        pollenBirchMax: 40,
+        pollenGrassMax: null,
+        pollenAlderMax: null,
+      },
+      {
+        date: "2026-05-02",
+        pm25Mean: 14,
+        o3Max8h: null,
+        pollenBirchMax: null,
+        pollenGrassMax: 20,
+        pollenAlderMax: 2,
+      },
+      // A day the feed did not cover at all: no point, not a zero.
+      { date: "2026-05-03", pm25Mean: null, o3Max8h: null },
+    ]);
+    const series = await fetchEnvironmentSeries(
+      "u1",
+      new Date("2026-04-01T00:00:00Z"),
+    );
+    const by = (key: string) => series.find((s) => s.key === key)!.points;
+    expect(by("ENV_POLLEN_MAX")).toEqual([{ day: "2026-05-02", value: 30 }]);
+    expect(by("ENV_PM25")).toEqual([{ day: "2026-05-02", value: 12 }]);
+    // Ozone is missing on 05-02, so no averaged point anywhere.
+    expect(by("ENV_OZONE_8H")).toEqual([]);
+  });
+
+  it("leaves the air-quality channels empty when the account turned air quality off", async () => {
+    userFindUnique.mockResolvedValue({ environmentAirQualityEnabled: false });
+    environmentFindMany.mockResolvedValueOnce([
+      { date: "2026-05-01", pm25Mean: 10, tempMin: 5 },
+      { date: "2026-05-02", pm25Mean: 14, tempMin: 7 },
+    ]);
+    const series = await fetchEnvironmentSeries(
+      "u1",
+      new Date("2026-04-01T00:00:00Z"),
+    );
+    expect(series.find((s) => s.key === "ENV_PM25")!.points).toEqual([]);
+    expect(series.find((s) => s.key === "ENV_TEMP_MIN")!.points).toEqual([
+      { day: "2026-05-02", value: 6 },
+    ]);
+  });
+
+  it("leaves them empty when the operator turned air quality off", async () => {
+    vi.stubEnv("ENVIRONMENT_AIR_QUALITY_DISABLED", "1");
+    environmentFindMany.mockResolvedValueOnce([
+      { date: "2026-05-01", pm25Mean: 10 },
+      { date: "2026-05-02", pm25Mean: 14 },
+    ]);
+    const series = await fetchEnvironmentSeries(
+      "u1",
+      new Date("2026-04-01T00:00:00Z"),
+    );
+    expect(series.find((s) => s.key === "ENV_PM25")!.points).toEqual([]);
   });
 });

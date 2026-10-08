@@ -5810,8 +5810,10 @@
           "operatorDisabled": "La qualité de l’air est désactivée sur ce serveur.",
           "coverage": "{count} jours avec des données de qualité de l’air",
           "pollenEuropeOnly": "Les données de pollen ne couvrent que l’Europe.",
-          "attribution": "Qualité de l’air : service de surveillance de l’atmosphère de Copernicus (CAMS), via Open-Meteo.",
-          "saveError": "Le réglage n’a pas pu être enregistré."
+          "attribution": "Sources de données et licences",
+          "saveError": "Le réglage n’a pas pu être enregistré.",
+          "latest": "Jour le plus récent ({date})",
+          "modelNote": "Valeurs extérieures modélisées pour ta zone, pas ton exposition personnelle."
         }
       },
       "score": {
@@ -9999,7 +10001,8 @@
         "illness": "Maladie et récupération",
         "cycle": "Cycle",
         "correlations": "Liens entre indicateurs",
-        "snapshot": "Résumé des données"
+        "snapshot": "Résumé des données",
+        "environment": "Météo et air"
       },
       "window": {
         "last7days": "7 derniers jours",
@@ -10633,7 +10636,6 @@
       "precip": "Précipitations",
       "pressureMean": "Pression atmosphérique",
       "pressureDelta": "Variation de pression",
-      "apparentMax": "Maximum ressenti",
       "pm25": "Particules fines (PM2,5)",
       "pm10": "Particules (PM10)",
       "no2": "Dioxyde d’azote",
@@ -10642,6 +10644,20 @@
       "uvIndexMax": "Indice UV (maximum)",
       "dustMax": "Poussières du Sahara",
       "pollenMax": "Pollen (valeur la plus élevée)"
+    },
+    "chip": {
+      "day": "Météo du {date}",
+      "pollenHigh": "Beaucoup de pollen : {kinds}",
+      "hotNight": "Nuit chaude",
+      "veryPoorAir": "Air très mauvais"
+    },
+    "pollen": {
+      "alder": "aulne",
+      "birch": "bouleau",
+      "grass": "graminées",
+      "mugwort": "armoise",
+      "olive": "olivier",
+      "ragweed": "ambroisie"
     }
   },
   "documents": {

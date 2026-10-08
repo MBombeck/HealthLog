@@ -84,3 +84,17 @@ export type EnvironmentBackfillInput = z.infer<
 export const geocodeQuerySchema = z
   .object({ q: z.string().trim().min(1).max(120) })
   .strict();
+
+/**
+ * v1.42 (#615) — the account's environment switches. Today one: whether the
+ * air-quality, pollen and UV part is fetched and shown. Strict.
+ */
+export const environmentPreferencesSchema = z
+  .object({
+    airQualityEnabled: z.boolean(),
+  })
+  .strict();
+
+export type EnvironmentPreferencesInput = z.infer<
+  typeof environmentPreferencesSchema
+>;

@@ -19,6 +19,10 @@
  * schema exactly as it was advertised. A tool the case table does not cover
  * fails the run, so a new tool cannot ship without joining it.
  *
+ * v1.42: `get_environment` declares its result field by field, so the
+ * strict validator here is also what proves it carries no coordinate and no
+ * place name: an undeclared key would fail the run.
+ *
  * It also pins the live-rows rule on the two presence probes: a measurement
  * type whose readings were all deleted is not listed as present.
  */
@@ -37,6 +41,7 @@ import {
 } from "@/lib/mcp/rich-reads";
 import type { McpAuthContext } from "@/lib/mcp/auth";
 
+import { sealLocation } from "@/lib/environment/location-cipher";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
 const DAY = 86_400_000;
@@ -241,6 +246,42 @@ async function seedRecord(): Promise<string> {
       },
     });
   }
+  // v1.42 — environment days with weather and air quality, one of them not
+  // yet fetched, so get_environment answers its full shape (and a null
+  // air-quality part) under the strict validator. The location is sealed.
+  for (let i = 2; i <= 12; i += 1) {
+    await prisma.environmentContext.create({
+      data: {
+        userId: id,
+        date: isoDay(daysAgo(i)),
+        source: i === 5 ? "TRAVEL" : "HOME",
+        locationEncrypted: sealLocation({
+          lat: 51.5,
+          lon: 7.2,
+          label: "Somewhere",
+        }),
+        tempMin: 10 + (i % 4),
+        tempMax: 20,
+        tempMean: 15,
+        apparentMax: 21,
+        sunshineSec: 7200,
+        ...(i === 3
+          ? {}
+          : {
+              pm25Mean: 8,
+              pm25Max: 16,
+              o3Max8h: 70,
+              eaqiMax: 40,
+              uvIndexMax: 3,
+              pollenGrassMax: 12,
+              pollenBirchMax: null,
+              aqDomain: "cams_europe",
+              aqHours: 24,
+              aqFetchedAt: daysAgo(1),
+            }),
+      },
+    });
+  }
   return id;
 }
 
@@ -297,6 +338,7 @@ const CASES: Record<string, Array<Record<string, unknown>>> = {
   get_workouts: [{ window: "last30days" }],
   get_illness_recovery: [{}],
   get_cycle: [{}],
+  get_environment: [{}, { window: "last7days" }],
   get_metrics: [
     { metrics: ["weight", "bp", "steps"], window: "last30days" },
     { metrics: ["hrv", "vo2_max"] },
@@ -434,6 +476,27 @@ describe("MCP tool outputs against their advertised schemas", () => {
       expect(failures).toEqual([]);
       expect(validated).toBeGreaterThan(Object.keys(CASES).length);
       expect(presentReads.size).toBeGreaterThanOrEqual(12);
+    } finally {
+      await close();
+    }
+  });
+
+  it("get_environment answers with data and no location anywhere", async () => {
+    const { client, close } = await connect(userId);
+    try {
+      const result = await client.callTool({
+        name: "get_environment",
+        arguments: {},
+      });
+      const out = result.structuredContent as {
+        present: boolean;
+        data?: { daily: Array<{ airQuality?: unknown }> };
+      };
+      expect(out.present).toBe(true);
+      expect(out.data!.daily.some((d) => d.airQuality === null)).toBe(true);
+      const text = JSON.stringify(out);
+      expect(text).not.toMatch(/"(lat|lon|label|locationLabel)"/);
+      expect(text).not.toContain("Somewhere");
     } finally {
       await close();
     }

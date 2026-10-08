@@ -69,6 +69,7 @@ import { summaryToTrend7Delta } from "@/lib/analytics/trend-delta";
 import { GettingStartedChecklist } from "@/components/onboarding/getting-started-checklist";
 import { RecentAchievementsCard } from "@/components/gamification/recent-achievements-card";
 import { RecentWorkoutsTile } from "@/components/dashboard/recent-workouts-tile";
+import { EnvironmentChip } from "@/components/dashboard/environment-chip";
 import { SleepSourceDiscrepancyMarker } from "@/components/insights/sleep-source-discrepancy-marker";
 import { VorsorgeDashboardCard } from "@/components/measurement-reminders/vorsorge-dashboard-card";
 
@@ -963,6 +964,12 @@ export default function DashboardPageClient({
           <QueryErrorCard onRetry={() => digestQuery.refetch()} />
         ) : null
       }
+
+      {/* v1.42 (#615) — a quiet note about the newest stored environment
+          day (high pollen, a hot night, very poor air). Renders nothing
+          unless one of those applies, and nothing before mount (the module
+          map and the overview are client reads). Not a layout widget. */}
+      {mounted && <EnvironmentChip />}
 
       {/* v1.18.6 — the spotlight tour launcher moved to the app-shell
        * (`AuthShell`) so its overlay survives the cross-page

@@ -487,7 +487,13 @@ export type CoachStepStatus = "running" | "done" | "empty" | "failed";
  * scope sources plus the domains that are read as a whole.
  */
 export type CoachStepDomain =
-  CoachScopeSource | "labs" | "illness" | "cycle" | "correlations" | "snapshot";
+  | CoachScopeSource
+  | "labs"
+  | "illness"
+  | "cycle"
+  | "correlations"
+  | "environment"
+  | "snapshot";
 
 /** Why a step or a method entry found nothing. */
 export type CoachStepReason =
