@@ -2240,7 +2240,6 @@
     "cardLowStockRunway": "Vorrat: ≈ {days} Tage",
     "takeActionFor": "Einnehmen — {name}",
     "skipActionFor": "Überspringen — {name}",
-    "reorderTitle": "Reihenfolge anpassen",
     "reorderDescription": "Bestimme die Reihenfolge deiner Medikamente — sie gilt für die Karten- und die Tabellenansicht.",
     "reorderSaved": "Reihenfolge gespeichert",
     "reorderSaveFailed": "Reihenfolge konnte nicht gespeichert werden",
@@ -4784,7 +4783,8 @@
     "metricBodyWater": "Körperwasser",
     "metricBoneMass": "Knochenmasse",
     "metricOxygenSaturation": "Sauerstoffsättigung (SpO₂)",
-    "unsetExplanation": "Kein eigener Wert — berechneter Default aktiv."
+    "unsetExplanation": "Kein eigener Wert — berechneter Default aktiv.",
+    "cardTitle": "Bereiche je Messgröße"
   },
   "onboarding": {
     "errorGeneric": "Beim Abschluss des Setups ist etwas schiefgelaufen. Bitte versuche es erneut.",
@@ -5372,7 +5372,7 @@
         "description": "Lege fest, welche Quelle führt, wenn mehrere am selben Tag dieselbe Metrik liefern.",
         "integrationsHint": "Neue Datenquellen verbindest oder trennst du auf der Integrationen-Seite.",
         "integrationsHintLink": "Integrationen öffnen",
-        "cardTitle": "Quellen-Priorität pro Metrik",
+        "cardTitle": "Rangfolge je Messgröße",
         "help": "Liefern mehrere Quellen denselben Wert am selben Tag, zählt die oberste Quelle als kanonisch.",
         "resetDefaults": "Auf Standard zurücksetzen",
         "resetDefaultsTitle": "Quellen-Reihenfolge zurücksetzen?",
@@ -5778,7 +5778,7 @@
       },
       "anamnesis": {
         "title": "Anamnese",
-        "subtitle": "Verwalte deine Allergien und deine Familienanamnese.",
+        "subtitle": "Deine Vorgeschichte, Lebensumstände, Notfalldaten und was die KI lesen darf.",
         "description": "Strukturierte Datensätze zu Allergien und Familienanamnese."
       },
       "environment": {
@@ -5962,7 +5962,6 @@
     },
     "changePassword": "Passwort ändern",
     "changePasswordDescription": "Ersetze dein aktuelles Passwort durch ein neues.",
-    "passwordReset": "Passwort-Reset",
     "currentPassword": "Aktuelles Passwort",
     "newPassword": "Neues Passwort",
     "confirmNewPassword": "Neues Passwort bestätigen",
@@ -6042,7 +6041,6 @@
     "webPushSubscribed": "Push-Benachrichtigungen aktiviert!",
     "webPushUnsubscribed": "Push-Benachrichtigungen deaktiviert.",
     "webPushSubscribeFailed": "Aktivierung fehlgeschlagen",
-    "kiInsightsDescription": "Optional: Hinterlege deinen OpenAI-Key für tägliche, automatische Auswertungen in den Insights.",
     "codexConnected": "ChatGPT erfolgreich verbunden! Insights sind jetzt aktiv.",
     "codexDisconnected": "ChatGPT-Verbindung getrennt.",
     "codexConnectionFailed": "ChatGPT-Verbindung fehlgeschlagen. Bitte versuche es erneut.",
@@ -6090,7 +6088,7 @@
           "admin-openai": "Admin-OpenAI"
         },
         "title": "Fallback-Kette",
-        "description": "Wenn der primäre Provider ausfällt, läuft HealthLog die Kette der Reihe nach durch. Reihenfolge per Pfeile ändern, Schalter deaktiviert einen Eintrag ohne ihn zu entfernen.",
+        "description": "Fällt der aktive Anbieter aus, versucht HealthLog den nächsten eingeschalteten in dieser Reihenfolge.",
         "moveUp": "Nach oben",
         "moveDown": "Nach unten",
         "removeFromChain": "Aus Kette entfernen",
@@ -6103,11 +6101,8 @@
         "resetConfirmTitle": "Kette auf Standard zurücksetzen?",
         "resetConfirmBody": "Die Kette wird auf Codex → OpenAI → Anthropic → Lokal → Admin-OpenAI zurückgesetzt. Gespeicherte Zugangsdaten bleiben erhalten."
       },
-      "providerCardTitle": "KI-Anbieter",
       "activeProviderHeading": "Aktiver Provider",
-      "activeProviderBody": "Wähle den Provider, der zuerst genutzt wird. Das Formular darunter konfiguriert ausschließlich den ausgewählten Provider; die Fallback-Kette unten regelt, was passiert, wenn er ausfällt.",
       "activeProviderLabel": "Primärer Provider",
-      "providerConfigTitle": "Provider-Konfiguration",
       "providerSelect": {
         "codex": "ChatGPT-Account (Codex)",
         "openai": "OpenAI (eigener API-Key)",
@@ -6246,21 +6241,21 @@
       "responseTimeoutInvalid": "Gib eine Zahl zwischen 10 und 600 Sekunden ein.",
       "autoRead": {
         "title": "Dokumente automatisch mit KI lesen",
-        "subLabel": "Dokumente werden von deinem konfigurierten KI-Anbieter gelesen und indiziert, ohne dass du jedes Dokument einzeln bestätigen musst.",
+        "subLabel": "Dein KI-Anbieter liest und indiziert neue Dokumente, ohne dass du jedes einzeln bestätigst.",
         "honesty": "Wenn aktiviert, wird jedes hochgeladene Dokument an deinen konfigurierten KI-Anbieter gesendet, um gelesen, beschrieben und für die Suche indiziert zu werden — ohne Bestätigung pro Dokument. Das Einschalten wirkt außerdem rückwirkend: Bereits hochgeladene Dokumente ohne Zusammenfassung werden ebenfalls gesendet, bis zu 200 pro Einschaltvorgang. Das geschieht auf dem Server, und der Inhalt des Dokuments verlässt dabei diese Maschine in Richtung dieses Anbieters. Wenn dein konfigurierter Anbieter eine Abo-Verbindung ist (ein angemeldetes KI-Konto statt eines API-Schlüssels), gelten dessen eigene Datenschutzeinstellungen — Abo-Anbieter dürfen den Inhalt zur Verbesserung ihrer Modelle verwenden, und kein Auftragsverarbeitungsvertrag deckt das ab. Dokumente, die von einem selbst gehosteten lokalen Modell gelesen werden, verlassen deinen Server nie. Standardmäßig aus; aktiviere es nur, wenn du diesen Kompromiss für deine Dokumente akzeptierst.",
         "confirm": "Verstanden — aktivieren",
         "cancel": "Abbrechen"
       },
       "centralCodex": {
         "title": "Gemeinsamen KI-Zugang des Servers nutzen",
-        "subLabel": "Leite KI-Anfragen über die vom Betreiber für diesen Server eingerichtete Verbindung — zusätzlich zu deinen eigenen Anbietern als Rückfallebene.",
+        "subLabel": "KI-Anfragen laufen über die gemeinsame Verbindung des Servers, deine eigenen Anbieter dienen als Rückfall.",
         "honesty": "Der gemeinsame Zugang ist ein einzelnes angemeldetes KI-Konto, das der Betreiber für alle auf diesem Server verbunden hat — nicht dein eigener Schlüssel. Anfragen darüber werden vom Anbieter standardmäßig zum Training genutzt und von keiner Auftragsverarbeitungsvereinbarung gedeckt, die Stunden- und Wochenlimits des Kontos teilst du dir mit allen anderen, die zugestimmt haben, und deine eigenen Anbieter werden weiterhin zuerst versucht. Aktiviere es nur, wenn du diesen Kompromiss akzeptierst.",
         "confirm": "Verstanden — Verbindung nutzen",
         "cancel": "Abbrechen"
       },
       "consent": {
         "title": "KI-Einwilligung",
-        "activeSince": "Erteilt am {date}. Deine Gesundheitsdaten dürfen für die KI-Funktionen an den eingestellten Anbieter gesendet werden.",
+        "activeSince": "Erteilt am {date}: Deine Gesundheitsdaten dürfen für die KI-Funktionen an den eingestellten Anbieter gehen.",
         "withdrawn": "Widerrufen. Sofern keine andere Einwilligung sie abdeckt, nutzen Coach und Insights den KI-Zugang dieses Servers nicht mehr, und kein Online-Modell liest deine Dokumente. Mit deinem eigenen Schlüssel oder einem lokalen Modell laufen Coach und Insights weiter.",
         "withdraw": "Einwilligung widerrufen",
         "confirmBody": "Sofern keine andere Einwilligung sie noch abdeckt, endet sofort: der Coach und die Insights, wo sie den KI-Zugang dieses Servers nutzen, und das Lesen von Dokumenten mit einem Online-Modell. Mit deinem eigenen Schlüssel oder einem lokalen Modell laufen Coach und Insights weiter. Sofern keine andere Einwilligung die Insights noch abdeckt, werden die Notizen gelöscht, die ein Modell für dich geschrieben hat: Statusnotizen, das tägliche Briefing, von einem Modell geschriebene Zeitraum-Zusammenfassungen, Ankunftszeilen und Trainingsnotizen. Deine Coach-Gespräche, was sich der Coach gemerkt hat, deine Pläne und deine Dokument-Zusammenfassungen bleiben, und du kannst sie selbst lesen oder löschen.",
@@ -6271,7 +6266,7 @@
         "error": "Der Widerruf konnte nicht gespeichert werden. Bitte versuche es erneut.",
         "documentReading": {
           "title": "Einwilligung zum Lesen von Dokumenten",
-          "activeSince": "Erteilt am {date}. Dokumente, gescannte Laborbefunde und Medikamentenbeschreibungen dürfen zum Lesen an deinen KI-Dienst gesendet werden.",
+          "activeSince": "Erteilt am {date}: Dokumente, Laborscans und Medikamententexte dürfen zum Lesen an deinen KI-Dienst gehen.",
           "confirmBody": "Dokumente, gescannte Laborbefunde und Medikamentenbeschreibungen werden nicht mehr zum Lesen gesendet. Nichts, was du bereits hast, wird gelöscht."
         }
       },
@@ -6305,7 +6300,9 @@
           "high": "Hoch"
         },
         "coachNote": "Im Coach gilt die Denktiefe aus den Coach-Einstellungen."
-      }
+      },
+      "providerCardDescription": "Der Anbieter, den HealthLog zuerst fragt, mit Schlüssel und Modell.",
+      "runtimeTitle": "Prüfen und aktualisieren"
     },
     "dashboard": {
       "units": {
@@ -7162,7 +7159,8 @@
       "description": "Damit werden deine Gesundheitsdaten weitergegeben oder exportiert. Bestätige, dass du es bist, um fortzufahren.",
       "signInAgain": "Melde dich neu an und versuche es dann noch einmal. Dein Konto hat kein Passwort und keinen Passkey, den du hier bestätigen könntest.",
       "failed": "Das hat nicht geklappt. Prüfe deine Eingabe und versuche es noch einmal."
-    }
+    },
+    "passwordTitle": "Passwort"
   },
   "admin": {
     "title": "Administration",
@@ -7282,9 +7280,9 @@
     "defaultLanguage": "Standard-Sprache",
     "defaultLanguageDescription": "Wird für neue Nutzer und als Fallback verwendet.",
     "defaultUserTimezone": "Standard-Zeitzone für neue Konten",
-    "defaultUserTimezoneDescription": "Wird für neue Konten ohne erkannte Browser-Zeitzone verwendet. Bestehende Nutzer sind nicht betroffen.",
+    "defaultUserTimezoneDescription": "Gilt für neue Konten ohne erkannte Browser-Zeitzone; bestehende Konten behalten ihre.",
     "defaultUserTimezoneFallback": "Europe/Berlin (Standard)",
-    "servicesGlobal": "Dienste (global)",
+    "servicesGlobal": "Kanäle und API",
     "servicesGlobalDescription": "Deaktivierte Dienste stehen keinem Nutzer zur Verfügung.",
     "telegramGlobal": "Telegram-Benachrichtigungen erlauben.",
     "ntfyGlobal": "ntfy-Benachrichtigungen erlauben.",
@@ -7295,16 +7293,16 @@
     "offlineGeoFallback": "Online ({host}) — GeoLite2-Datenbanken einbinden und GEOLITE2_DIR setzen",
     "apiGlobal": "API-Endpunkte und API-Tokens erlauben.",
     "umamiTitle": "Umami",
-    "umamiDescription": "Web-Analyse mit Umami",
+    "umamiDescription": "Web-Analyse mit Umami.",
     "glitchtipTitle": "GlitchTip",
-    "glitchtipDescription": "Fehler-Tracking mit GlitchTip",
+    "glitchtipDescription": "Fehler-Tracking mit GlitchTip.",
     "webPushVapidTitle": "Web Push VAPID",
-    "umamiEnabled": "Umami-Tracking aktivieren.",
+    "umamiEnabled": "Umami-Tracking aktivieren",
     "umamiScriptUrl": "Umami Script-URL",
     "umamiScriptUrlPlaceholder": "https://analytics.example.com/script.js",
     "umamiWebsiteId": "Umami Website-ID",
     "umamiWebsiteIdPlaceholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-    "glitchtipEnabled": "GlitchTip Fehler-Tracking aktivieren.",
+    "glitchtipEnabled": "GlitchTip-Fehler-Tracking aktivieren",
     "glitchtipDsn": "GlitchTip DSN",
     "glitchtipDsnPlaceholder": "https://<public-key>@glitchtip.example.com/<project-id>",
     "glitchtipEnvironment": "GlitchTip Environment",
@@ -7366,8 +7364,8 @@
       "title": "Modulverfügbarkeit",
       "description": "Schalte ein Modul für den gesamten Server ab.",
       "saveError": "Modulverfügbarkeit konnte nicht aktualisiert werden.",
-      "detail": "Ein hier deaktiviertes Modul ist für jedes Konto aus — unabhängig von den persönlichen Einstellungen. Kerndaten (Gewicht, Blutdruck, Puls, Medikamente) sind immer aktiv und lassen sich nicht abschalten.",
-      "coachFollowsSwitch": "Folgt dem Coach-Schalter unter Assistenz."
+      "detail": "Gewicht, Blutdruck und Puls sind Kerndaten und bleiben immer aktiv.",
+      "coachFollowsSwitch": "Folgt dem Coach-Schalter im Bereich Coach."
     },
     "invites": {
       "title": "Einladungen",
@@ -7452,7 +7450,6 @@
     "tokenNeverUsed": "Nie",
     "tokensEmptyTitle": "Noch keine API-Tokens",
     "tokensEmptyDescription": "Tokens werden bei der Anmeldung nativer Clients oder über Einstellungen → Account ausgestellt.",
-    "loginOverview": "Anmeldeübersicht",
     "loginOverviewDescription": "Anmelde- und Auth-Ereignisse aller Konten, filterbar und als CSV exportierbar.",
     "allAuthEvents": "Alle Auth-Ereignisse",
     "failedOnly": "Nur fehlgeschlagene",
@@ -7560,7 +7557,7 @@
       },
       "services": {
         "title": "Dienste",
-        "subtitle": "Benachrichtigungskanäle und Integrationen systemweit aktivieren oder deaktivieren."
+        "subtitle": "Benachrichtigungskanäle und die API für den ganzen Server ein- oder ausschalten."
       },
       "integrations": {
         "title": "Integrationen",
@@ -7646,7 +7643,8 @@
         "refresh": "Aktualisieren",
         "eventDetails": "Event-Details",
         "closeDetails": "Details schließen",
-        "processDetail": "Der Puffer ist flüchtig und auf 500 Einträge begrenzt."
+        "processDetail": "Der Puffer ist flüchtig und auf 500 Einträge begrenzt.",
+        "cardTitle": "Letzte Ereignisse"
       },
       "backups": {
         "title": "Backups",
@@ -7830,7 +7828,6 @@
       "encryption": {
         "title": "Verschlüsselung",
         "subtitle": "Verschlüsselungsabdeckung und Schlüsselrotations-Status für ruhende Daten.",
-        "loading": "Verschlüsselungsstatus wird geladen…",
         "loadError": "Verschlüsselungsstatus konnte nicht geladen werden.",
         "coverageTitle": "Abdeckung",
         "coverageDescription": "Wie viele verschlüsselte Zeilen unter welcher Schlüssel-ID liegen.",
@@ -7908,7 +7905,7 @@
     },
     "carrier": "Netzbetreiber",
     "mfaRequired": "Zweiten Faktor verlangen",
-    "mfaRequiredDescription": "Jedes Konto ohne aktiven zweiten Faktor wird nach der Anmeldung zur Einrichtung geleitet. Das fordert Web-Nutzer zur Einrichtung auf — es blockiert jedoch keinen direkten API- oder nativen (Bearer-)Zugriff für noch nicht eingerichtete Konten.",
+    "mfaRequiredDescription": "Konten ohne zweiten Faktor werden nach der Web-Anmeldung zur Einrichtung geleitet; API- und nativer (Bearer-)Zugriff bleiben offen.",
     "mfaEnforcedOn": "MFA an",
     "mfaEnforcedOff": "MFA aus",
     "mfaEnforcedOnHint": "Für diesen Nutzer ist ein zweiter Faktor erforderlich. Klicken, um die Anforderung aufzuheben.",
@@ -8006,7 +8003,9 @@
       "restartNote": "Starte HealthLog nach der Änderung neu.",
       "lastResort": "Letzter Ausweg, nur wenn du sicher bist, dass der Schlüssel stimmt, und keiner der drei Wege passt: setze {setting} und starte neu. HealthLog liefert dann trotzdem aus und schreibt den Befund nur ins Log. Damit ist eine Sicherheitsprüfung abgeschaltet: Mit einem falschen Schlüssel scheitert jeder verschlüsselte Wert, und neue Daten werden unter diesem Schlüssel geschrieben.",
       "codes": "Für den Betrieb: API-Anfragen antworten mit 503 und dem Fehlercode {code}, /api/health meldet den Grund {reason}."
-    }
+    },
+    "loginOverviewCardTitle": "Anmeldeereignisse",
+    "userColumn": "Nutzer"
   },
   "achievements": {
     "title": "Erfolge",

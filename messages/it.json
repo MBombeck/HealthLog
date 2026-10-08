@@ -2240,7 +2240,6 @@
     "cardLowStockRunway": "Scorta: ≈ {days} giorni",
     "takeActionFor": "Assumi – {name}",
     "skipActionFor": "Salta – {name}",
-    "reorderTitle": "Modifica ordine",
     "reorderDescription": "Imposta l'ordine dei tuoi farmaci: vale per la vista a schede e per la tabella.",
     "reorderSaved": "Ordine salvato",
     "reorderSaveFailed": "Impossibile salvare l’ordine",
@@ -4784,7 +4783,8 @@
     "metricBodyWater": "Acqua corporea",
     "metricBoneMass": "Massa ossea",
     "metricOxygenSaturation": "Saturazione di ossigeno (SpO₂)",
-    "unsetExplanation": "Nessun valore personale — è attivo il predefinito calcolato."
+    "unsetExplanation": "Nessun valore personale — è attivo il predefinito calcolato.",
+    "cardTitle": "Intervalli per metrica"
   },
   "onboarding": {
     "errorGeneric": "Qualcosa è andato storto durante il completamento della configurazione. Riprova.",
@@ -5372,7 +5372,7 @@
         "description": "Scegli quale fonte prevale quando più di una registra la stessa metrica lo stesso giorno.",
         "integrationsHint": "Collega o scollega le fonti dati nella pagina Integrazioni.",
         "integrationsHintLink": "Apri le integrazioni",
-        "cardTitle": "Priorità delle fonti per metrica",
+        "cardTitle": "Ordine per metrica",
         "help": "Se più fonti forniscono lo stesso valore nello stesso giorno, la fonte in cima conta come canonica.",
         "resetDefaults": "Ripristina i valori predefiniti",
         "resetDefaultsTitle": "Reimpostare l’ordine delle fonti?",
@@ -5778,7 +5778,7 @@
       },
       "anamnesis": {
         "title": "Anamnesi",
-        "subtitle": "Gestisci le tue allergie e la tua anamnesi familiare.",
+        "subtitle": "La tua anamnesi, lo stile di vita, i dati di emergenza e ciò che l’IA può leggere.",
         "description": "Record strutturati di allergie e anamnesi familiare."
       },
       "environment": {
@@ -5962,7 +5962,6 @@
     },
     "changePassword": "Cambia password",
     "changePasswordDescription": "Sostituisci la password attuale con una nuova.",
-    "passwordReset": "Reimposta password",
     "currentPassword": "Password attuale",
     "newPassword": "Nuova password",
     "confirmNewPassword": "Conferma nuova password",
@@ -6042,7 +6041,6 @@
     "webPushSubscribed": "Notifiche push attivate!",
     "webPushUnsubscribed": "Notifiche push disattivate.",
     "webPushSubscribeFailed": "Attivazione non riuscita",
-    "kiInsightsDescription": "Facoltativo: salva la tua chiave OpenAI per analisi giornaliere e automatiche in Insights.",
     "codexConnected": "ChatGPT connesso correttamente! Insights è ora attivo.",
     "codexDisconnected": "Connessione a ChatGPT rimossa.",
     "codexConnectionFailed": "Connessione a ChatGPT non riuscita. Riprova.",
@@ -6090,7 +6088,7 @@
           "admin-openai": "OpenAI amministratore"
         },
         "title": "Catena di fallback",
-        "description": "Se il provider principale fallisce, HealthLog percorre la catena in ordine. Trascina le righe per riordinarle; usa l’interruttore per disattivare un provider senza rimuoverlo.",
+        "description": "Se il fornitore attivo non risponde, HealthLog prova il successivo attivo in quest’ordine.",
         "moveUp": "Sposta su",
         "moveDown": "Sposta giù",
         "removeFromChain": "Rimuovi dalla catena",
@@ -6103,11 +6101,8 @@
         "resetConfirmTitle": "Ripristinare la catena ai valori predefiniti?",
         "resetConfirmBody": "La catena torna a Codex → OpenAI → Anthropic → Locale → OpenAI amministratore. Le credenziali salvate non vengono toccate."
       },
-      "providerCardTitle": "Provider IA",
       "activeProviderHeading": "Provider attivo",
-      "activeProviderBody": "Scegli il provider da usare per primo. Il modulo qui sotto configura solo il provider selezionato; la catena di fallback in fondo decide cosa accade se fallisce.",
       "activeProviderLabel": "Provider principale",
-      "providerConfigTitle": "Configurazione del provider",
       "providerSelect": {
         "codex": "Account ChatGPT (Codex)",
         "openai": "OpenAI (la tua chiave API)",
@@ -6253,14 +6248,14 @@
       },
       "centralCodex": {
         "title": "Usa l'accesso IA condiviso del server",
-        "subLabel": "Instrada le richieste IA attraverso la connessione che l'operatore ha configurato per questo server, insieme ai tuoi provider come ripiego.",
+        "subLabel": "Le richieste IA passano dalla connessione condivisa del server, con i tuoi provider come ripiego.",
         "honesty": "L'accesso condiviso è un unico account IA con accesso eseguito che l'operatore ha collegato per tutti su questo server, non la tua chiave. Le richieste che vi effettui vengono usate per impostazione predefinita per addestrare i modelli del provider e nessun accordo sul trattamento dei dati le copre, i limiti orari e settimanali dell'account sono condivisi con tutti gli altri che hanno aderito, e i tuoi provider vengono comunque provati per primi. Attivalo solo se accetti questo compromesso.",
         "confirm": "Ho capito — usa la connessione",
         "cancel": "Annulla"
       },
       "consent": {
         "title": "Consenso IA",
-        "activeSince": "Concesso il {date}. I tuoi dati sanitari possono essere inviati al provider configurato per le funzioni IA.",
+        "activeSince": "Concesso il {date}: i tuoi dati sanitari possono essere inviati al provider configurato per le funzioni IA.",
         "withdrawn": "Revocato. Salvo che un altro consenso lo copra, il Coach e Insights non usano più l'accesso IA fornito da questo server e nessun modello online legge i tuoi documenti. Con la tua chiave o un modello locale, il Coach e Insights continuano a funzionare.",
         "withdraw": "Revoca il consenso",
         "confirmBody": "Salvo che un altro consenso li copra ancora, si fermano subito: il Coach e Insights quando usano l'accesso IA fornito da questo server, e la lettura dei documenti con un modello online. Con la tua chiave o un modello locale, il Coach e Insights continuano a funzionare. Salvo che un altro consenso copra ancora Insights, le note che un modello ha scritto per te vengono eliminate: note di stato, il riepilogo giornaliero, i riepiloghi di periodo scritti da un modello, le righe di arrivo e le note sugli allenamenti. Le tue conversazioni con il Coach, ciò che il Coach ricordava, i tuoi piani e i riepiloghi dei tuoi documenti restano, e puoi leggerli o eliminarli tu stesso.",
@@ -6271,7 +6266,7 @@
         "error": "Non è stato possibile salvare la revoca. Riprova.",
         "documentReading": {
           "title": "Consenso alla lettura dei documenti",
-          "activeSince": "Dato il {date}. Documenti, referti di laboratorio scansionati e descrizioni di farmaci possono essere inviati al tuo servizio di IA per la lettura.",
+          "activeSince": "Dato il {date}: documenti, referti scansionati e testi dei farmaci possono andare al tuo servizio di IA per la lettura.",
           "confirmBody": "Documenti, referti di laboratorio scansionati e descrizioni di farmaci non vengono più inviati per la lettura. Nulla di ciò che hai già viene eliminato."
         }
       },
@@ -6305,7 +6300,9 @@
           "high": "Alto"
         },
         "coachNote": "Nel Coach vale la profondità di ragionamento delle impostazioni del Coach."
-      }
+      },
+      "providerCardDescription": "Il fornitore che HealthLog interpella per primo, con chiave e modello.",
+      "runtimeTitle": "Verifica e aggiorna"
     },
     "dashboard": {
       "units": {
@@ -7162,7 +7159,8 @@
       "description": "Questa azione condivide o esporta i tuoi dati sanitari. Conferma che sei tu per continuare.",
       "signInAgain": "Accedi di nuovo, poi riprova. Il tuo account non ha una password o una passkey da confermare qui.",
       "failed": "Non ha funzionato. Controlla quanto inserito e riprova."
-    }
+    },
+    "passwordTitle": "Password"
   },
   "admin": {
     "title": "Administration",
@@ -7282,9 +7280,9 @@
     "defaultLanguage": "Lingua predefinita",
     "defaultLanguageDescription": "Usata per i nuovi utenti e come ripiego.",
     "defaultUserTimezone": "Fuso orario predefinito per i nuovi account",
-    "defaultUserTimezoneDescription": "Usato per i nuovi account privi di un fuso rilevato dal browser. Non influisce sugli utenti esistenti.",
+    "defaultUserTimezoneDescription": "Usato per i nuovi account senza fuso rilevato dal browser; gli account esistenti mantengono il proprio.",
     "defaultUserTimezoneFallback": "Europe/Berlin (predefinito)",
-    "servicesGlobal": "Servizi (globale)",
+    "servicesGlobal": "Canali e API",
     "servicesGlobalDescription": "I servizi disattivati non sono disponibili per alcun utente.",
     "telegramGlobal": "Consentire le notifiche Telegram.",
     "ntfyGlobal": "Consentire le notifiche ntfy.",
@@ -7295,16 +7293,16 @@
     "offlineGeoFallback": "Online ({host}) — monta i database GeoLite2 e imposta GEOLITE2_DIR",
     "apiGlobal": "Consentire endpoint API e token API.",
     "umamiTitle": "Umami",
-    "umamiDescription": "Analisi web con Umami",
+    "umamiDescription": "Analisi web con Umami.",
     "glitchtipTitle": "GlitchTip",
-    "glitchtipDescription": "Tracciamento degli errori con GlitchTip",
+    "glitchtipDescription": "Tracciamento degli errori con GlitchTip.",
     "webPushVapidTitle": "Web Push VAPID",
-    "umamiEnabled": "Abilitare il tracciamento Umami.",
+    "umamiEnabled": "Abilita il tracciamento Umami",
     "umamiScriptUrl": "URL dello script Umami",
     "umamiScriptUrlPlaceholder": "https://analytics.example.com/script.js",
     "umamiWebsiteId": "ID del sito web Umami",
     "umamiWebsiteIdPlaceholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-    "glitchtipEnabled": "Abilitare il tracciamento degli errori GlitchTip.",
+    "glitchtipEnabled": "Abilita il tracciamento degli errori GlitchTip",
     "glitchtipDsn": "GlitchTip DSN",
     "glitchtipDsnPlaceholder": "https://<public-key>@glitchtip.example.com/<project-id>",
     "glitchtipEnvironment": "Ambiente GlitchTip",
@@ -7366,8 +7364,8 @@
       "title": "Disponibilità dei moduli",
       "description": "Disattiva un modulo per l'intero server.",
       "saveError": "Impossibile aggiornare la disponibilità dei moduli.",
-      "detail": "Un modulo disattivato qui è spento per ogni account, indipendentemente dalle preferenze personali. I domini principali (peso, pressione, polso, farmaci) sono sempre attivi e non possono essere disattivati.",
-      "coachFollowsSwitch": "Segue l'interruttore Coach in Assistente."
+      "detail": "Peso, pressione e polso sono misure di base e restano sempre attivi.",
+      "coachFollowsSwitch": "Segue l'interruttore Coach nella sezione Coach."
     },
     "invites": {
       "title": "Inviti",
@@ -7452,7 +7450,6 @@
     "tokenNeverUsed": "Mai",
     "tokensEmptyTitle": "Ancora nessun token API",
     "tokensEmptyDescription": "I token vengono emessi quando un client nativo accede o tramite Impostazioni → Account.",
-    "loginOverview": "Panoramica degli accessi",
     "loginOverviewDescription": "Eventi di accesso e autenticazione di tutti gli account, filtrabili ed esportabili in CSV.",
     "allAuthEvents": "Tutti gli eventi di autenticazione",
     "failedOnly": "Solo non riusciti",
@@ -7560,7 +7557,7 @@
       },
       "services": {
         "title": "Servizi",
-        "subtitle": "Abilita o disabilita i canali di notifica e le integrazioni a livello di sistema."
+        "subtitle": "Attiva o disattiva i canali di notifica e l'API per l'intero server."
       },
       "integrations": {
         "title": "Integrazioni",
@@ -7646,7 +7643,8 @@
         "refresh": "Aggiorna",
         "eventDetails": "Dettagli dell'evento",
         "closeDetails": "Chiudi dettagli",
-        "processDetail": "Il buffer è volatile e limitato a 500 voci."
+        "processDetail": "Il buffer è volatile e limitato a 500 voci.",
+        "cardTitle": "Eventi recenti"
       },
       "backups": {
         "title": "Backup",
@@ -7830,7 +7828,6 @@
       "encryption": {
         "title": "Crittografia",
         "subtitle": "Copertura della crittografia e stato della rotazione delle chiavi per i dati a riposo.",
-        "loading": "Caricamento dello stato della crittografia...",
         "loadError": "Impossibile caricare lo stato della crittografia.",
         "coverageTitle": "Copertura",
         "coverageDescription": "Quante righe cifrate stanno sotto ogni id di chiave.",
@@ -7908,7 +7905,7 @@
     },
     "carrier": "Operatore",
     "mfaRequired": "Richiedi un secondo fattore",
-    "mfaRequiredDescription": "Ogni account senza un secondo fattore attivo viene indirizzato alla configurazione dopo l'accesso. Questo invita gli utenti web ad attivarlo, ma non blocca l'accesso diretto via API o nativo (Bearer) per gli account non ancora configurati.",
+    "mfaRequiredDescription": "Gli account senza secondo fattore vengono indirizzati alla configurazione dopo un accesso web; l'accesso via API o nativo (Bearer) resta aperto.",
     "mfaEnforcedOn": "MFA attivo",
     "mfaEnforcedOff": "MFA disattivato",
     "mfaEnforcedOnHint": "Per questo utente è richiesto un secondo fattore. Clicca per non richiederlo più.",
@@ -8006,7 +8003,9 @@
       "restartNote": "Riavvia HealthLog dopo la modifica.",
       "lastResort": "Ultima risorsa, solo se sei certo che la chiave sia giusta e nessuna delle tre soluzioni vale: imposta {setting} e riavvia. HealthLog serve comunque e si limita a registrare il problema nel log. Così si disattiva un controllo di sicurezza: con una chiave sbagliata ogni valore cifrato fallisce e i nuovi dati vengono scritti con quella chiave.",
       "codes": "Per chi gestisce il server: le richieste API rispondono 503 con il codice di errore {code}, e /api/health indica il motivo {reason}."
-    }
+    },
+    "loginOverviewCardTitle": "Eventi di accesso",
+    "userColumn": "Utente"
   },
   "achievements": {
     "title": "Obiettivi",

@@ -2240,7 +2240,6 @@
     "cardLowStockRunway": "Zapas: ≈ {days} dni",
     "takeActionFor": "Przyjmij – {name}",
     "skipActionFor": "Pomiń – {name}",
-    "reorderTitle": "Zmień kolejność",
     "reorderDescription": "Ustal kolejność swoich leków – obowiązuje w widoku kart i w tabeli.",
     "reorderSaved": "Kolejność zapisana",
     "reorderSaveFailed": "Nie udało się zapisać kolejności",
@@ -4784,7 +4783,8 @@
     "metricBodyWater": "Woda w organizmie",
     "metricBoneMass": "Masa kostna",
     "metricOxygenSaturation": "Saturacja tlenem (SpO₂)",
-    "unsetExplanation": "Brak własnej wartości — aktywna jest wartość domyślna."
+    "unsetExplanation": "Brak własnej wartości — aktywna jest wartość domyślna.",
+    "cardTitle": "Zakresy według metryki"
   },
   "onboarding": {
     "errorGeneric": "Coś poszło nie tak podczas kończenia konfiguracji. Spróbuj ponownie.",
@@ -5372,7 +5372,7 @@
         "description": "Wybierz, które źródło wygrywa, gdy kilka rejestruje tę samą metrykę tego samego dnia.",
         "integrationsHint": "Źródła danych podłączysz lub odłączysz na stronie integracji.",
         "integrationsHintLink": "Otwórz integracje",
-        "cardTitle": "Priorytet źródeł według metryki",
+        "cardTitle": "Kolejność według metryki",
         "help": "Gdy kilka źródeł dostarcza tę samą wartość tego samego dnia, źródło na górze liczy się jako kanoniczne.",
         "resetDefaults": "Przywróć wartości domyślne",
         "resetDefaultsTitle": "Zresetować kolejność źródeł?",
@@ -5778,7 +5778,7 @@
       },
       "anamnesis": {
         "title": "Wywiad medyczny",
-        "subtitle": "Zarządzaj swoimi alergiami i wywiadem rodzinnym.",
+        "subtitle": "Twoja historia zdrowia, styl życia, dane alarmowe i to, co może czytać AI.",
         "description": "Ustrukturyzowane rekordy alergii i wywiadu rodzinnego."
       },
       "environment": {
@@ -5962,7 +5962,6 @@
     },
     "changePassword": "Zmień hasło",
     "changePasswordDescription": "Zastąp obecne hasło nowym.",
-    "passwordReset": "Resetowanie hasła",
     "currentPassword": "Obecne hasło",
     "newPassword": "Nowe hasło",
     "confirmNewPassword": "Potwierdź nowe hasło",
@@ -6042,7 +6041,6 @@
     "webPushSubscribed": "Powiadomienia push włączone!",
     "webPushUnsubscribed": "Powiadomienia push wyłączone.",
     "webPushSubscribeFailed": "Aktywacja nie powiodła się",
-    "kiInsightsDescription": "Opcjonalnie: zapisz swój klucz OpenAI, aby uzyskać codzienne, automatyczne analizy w Insights.",
     "codexConnected": "ChatGPT połączony pomyślnie! Insights jest teraz aktywny.",
     "codexDisconnected": "Połączenie z ChatGPT usunięte.",
     "codexConnectionFailed": "Połączenie z ChatGPT nie powiodło się. Spróbuj ponownie.",
@@ -6090,7 +6088,7 @@
           "admin-openai": "OpenAI administratora"
         },
         "title": "Łańcuch zapasowy",
-        "description": "Jeśli główny dostawca zawiedzie, HealthLog przechodzi przez łańcuch po kolei. Przeciągaj wiersze, aby zmienić kolejność; użyj przełącznika, aby wyłączyć dostawcę bez usuwania go.",
+        "description": "Gdy aktywny dostawca zawiedzie, HealthLog próbuje kolejnego włączonego w tej kolejności.",
         "moveUp": "Przesuń w górę",
         "moveDown": "Przesuń w dół",
         "removeFromChain": "Usuń z łańcucha",
@@ -6103,11 +6101,8 @@
         "resetConfirmTitle": "Przywrócić domyślny łańcuch?",
         "resetConfirmBody": "Łańcuch wraca do Codex → OpenAI → Anthropic → Lokalny → OpenAI administratora. Zapisane dane logowania pozostają nienaruszone."
       },
-      "providerCardTitle": "Dostawca AI",
       "activeProviderHeading": "Aktywny dostawca",
-      "activeProviderBody": "Wybierz dostawcę, którego chcesz użyć jako pierwszego. Formularz poniżej konfiguruje tylko wybranego dostawcę; łańcuch zapasowy na dole decyduje, co się stanie w razie awarii.",
       "activeProviderLabel": "Główny dostawca",
-      "providerConfigTitle": "Konfiguracja dostawcy",
       "providerSelect": {
         "codex": "Konto ChatGPT (Codex)",
         "openai": "OpenAI (Twój klucz API)",
@@ -6253,14 +6248,14 @@
       },
       "centralCodex": {
         "title": "Użyj wspólnego dostępu AI serwera",
-        "subLabel": "Kieruj zapytania AI przez połączenie skonfigurowane przez operatora dla tego serwera, obok Twoich własnych dostawców jako rozwiązanie awaryjne.",
+        "subLabel": "Zapytania AI idą przez wspólne połączenie serwera, a Twoi dostawcy służą jako zapas.",
         "honesty": "Wspólny dostęp to jedno zalogowane konto AI, które operator podłączył dla wszystkich na tym serwerze — nie Twój własny klucz. Zapytania, które przez nie wysyłasz, są domyślnie wykorzystywane do trenowania modeli dostawcy i nie obejmuje ich żadna umowa powierzenia przetwarzania danych, godzinowe i tygodniowe limity konta dzielisz z wszystkimi innymi, którzy się zgodzili, a Twoi właśni dostawcy są próbowani jako pierwsi. Włącz to tylko, jeśli akceptujesz ten kompromis.",
         "confirm": "Rozumiem — użyj połączenia",
         "cancel": "Anuluj"
       },
       "consent": {
         "title": "Zgoda na AI",
-        "activeSince": "Udzielona {date}. Twoje dane zdrowotne mogą być wysyłane do skonfigurowanego dostawcy na potrzeby funkcji AI.",
+        "activeSince": "Udzielona {date}: Twoje dane zdrowotne mogą trafiać do skonfigurowanego dostawcy na potrzeby funkcji AI.",
         "withdrawn": "Wycofana. Jeśli żadna inna zgoda tego nie obejmuje, Coach i Insights nie korzystają już z dostępu AI zapewnianego przez ten serwer, a żaden model online nie czyta Twoich dokumentów. Na własnym kluczu lub lokalnym modelu Coach i Insights działają dalej.",
         "withdraw": "Wycofaj zgodę",
         "confirmBody": "Jeśli żadna inna Twoja zgoda ich nie obejmuje, od razu przestają działać: Coach i Insights tam, gdzie korzystają z dostępu AI zapewnianego przez ten serwer, oraz czytanie dokumentów przez model online. Na własnym kluczu lub lokalnym modelu Coach i Insights działają dalej. Jeśli żadna inna zgoda nie obejmuje już Insights, notatki napisane dla Ciebie przez model zostają usunięte: notatki o stanie, codzienne podsumowanie, podsumowania okresu napisane przez model, linie po nowym pomiarze i notatki o treningach. Twoje rozmowy z Coachem, to, co zapamiętał Coach, Twoje plany i podsumowania dokumentów zostają, a Ty możesz je sam przeczytać lub usunąć.",
@@ -6271,7 +6266,7 @@
         "error": "Nie udało się zapisać wycofania. Spróbuj ponownie.",
         "documentReading": {
           "title": "Zgoda na odczyt dokumentów",
-          "activeSince": "Udzielona {date}. Dokumenty, zeskanowane wyniki badań i opisy leków mogą być wysyłane do Twojej usługi AI do odczytu.",
+          "activeSince": "Udzielona {date}: dokumenty, skany badań i opisy leków mogą trafiać do Twojej usługi AI do odczytu.",
           "confirmBody": "Dokumenty, zeskanowane wyniki badań i opisy leków nie są już wysyłane do odczytu. Nic, co już masz, nie zostaje usunięte."
         }
       },
@@ -6305,7 +6300,9 @@
           "high": "Wysokie"
         },
         "coachNote": "W Coachu obowiązuje głębokość myślenia z ustawień Coacha."
-      }
+      },
+      "providerCardDescription": "Dostawca, którego HealthLog pyta najpierw, wraz z kluczem i modelem.",
+      "runtimeTitle": "Sprawdź i odśwież"
     },
     "dashboard": {
       "units": {
@@ -7162,7 +7159,8 @@
       "description": "Ta czynność udostępnia lub eksportuje Twoje dane zdrowotne. Potwierdź, że to Ty, aby kontynuować.",
       "signInAgain": "Zaloguj się ponownie, a potem spróbuj jeszcze raz. Twoje konto nie ma hasła ani klucza dostępu do potwierdzenia tutaj.",
       "failed": "To się nie udało. Sprawdź wprowadzone dane i spróbuj ponownie."
-    }
+    },
+    "passwordTitle": "Hasło"
   },
   "admin": {
     "title": "Administracja",
@@ -7282,9 +7280,9 @@
     "defaultLanguage": "Domyślny język",
     "defaultLanguageDescription": "Używany dla nowych użytkowników i jako rozwiązanie zapasowe.",
     "defaultUserTimezone": "Domyślna strefa czasowa dla nowych kont",
-    "defaultUserTimezoneDescription": "Używana dla nowych kont bez strefy wykrytej przez przeglądarkę. Nie wpływa na istniejących użytkowników.",
+    "defaultUserTimezoneDescription": "Używana dla nowych kont bez strefy wykrytej przez przeglądarkę; istniejące konta zachowują swoją.",
     "defaultUserTimezoneFallback": "Europe/Berlin (domyślna)",
-    "servicesGlobal": "Usługi (globalne)",
+    "servicesGlobal": "Kanały i API",
     "servicesGlobalDescription": "Wyłączone usługi nie są dostępne dla żadnego użytkownika.",
     "telegramGlobal": "Zezwól na powiadomienia Telegram.",
     "ntfyGlobal": "Zezwól na powiadomienia ntfy.",
@@ -7295,16 +7293,16 @@
     "offlineGeoFallback": "Online ({host}) — podłącz bazy GeoLite2 i ustaw GEOLITE2_DIR",
     "apiGlobal": "Zezwól na punkty końcowe API i tokeny API.",
     "umamiTitle": "Umami",
-    "umamiDescription": "Analityka internetowa z Umami",
+    "umamiDescription": "Analityka internetowa z Umami.",
     "glitchtipTitle": "GlitchTip",
-    "glitchtipDescription": "Śledzenie błędów z GlitchTip",
+    "glitchtipDescription": "Śledzenie błędów z GlitchTip.",
     "webPushVapidTitle": "Web Push VAPID",
-    "umamiEnabled": "Włącz śledzenie Umami.",
+    "umamiEnabled": "Włącz śledzenie Umami",
     "umamiScriptUrl": "Adres URL skryptu Umami",
     "umamiScriptUrlPlaceholder": "https://analytics.example.com/script.js",
     "umamiWebsiteId": "Identyfikator witryny Umami",
     "umamiWebsiteIdPlaceholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-    "glitchtipEnabled": "Włącz śledzenie błędów GlitchTip.",
+    "glitchtipEnabled": "Włącz śledzenie błędów GlitchTip",
     "glitchtipDsn": "GlitchTip DSN",
     "glitchtipDsnPlaceholder": "https://<public-key>@glitchtip.example.com/<project-id>",
     "glitchtipEnvironment": "Środowisko GlitchTip",
@@ -7366,8 +7364,8 @@
       "title": "Dostępność modułów",
       "description": "Wyłącz moduł dla całego serwera.",
       "saveError": "Nie udało się zaktualizować dostępności modułów.",
-      "detail": "Moduł wyłączony tutaj jest nieaktywny dla każdego konta, niezależnie od preferencji użytkownika. Domeny podstawowe (waga, ciśnienie, tętno, leki) są zawsze włączone i nie można ich wyłączyć.",
-      "coachFollowsSwitch": "Podlega przełącznikowi Coach w sekcji Asystent."
+      "detail": "Waga, ciśnienie i tętno to podstawowe pomiary i zawsze pozostają włączone.",
+      "coachFollowsSwitch": "Podlega przełącznikowi Coach w sekcji Coach."
     },
     "invites": {
       "title": "Zaproszenia",
@@ -7452,7 +7450,6 @@
     "tokenNeverUsed": "Nigdy",
     "tokensEmptyTitle": "Brak tokenów API",
     "tokensEmptyDescription": "Tokeny są wydawane, gdy klient natywny się loguje, lub przez Ustawienia → Konto.",
-    "loginOverview": "Przegląd logowań",
     "loginOverviewDescription": "Zdarzenia logowania i uwierzytelniania wszystkich kont, z filtrowaniem i eksportem CSV.",
     "allAuthEvents": "Wszystkie zdarzenia uwierzytelniania",
     "failedOnly": "Tylko nieudane",
@@ -7560,7 +7557,7 @@
       },
       "services": {
         "title": "Usługi",
-        "subtitle": "Włącz lub wyłącz kanały powiadomień i integracje w całym systemie."
+        "subtitle": "Włącz lub wyłącz kanały powiadomień i API dla całego serwera."
       },
       "integrations": {
         "title": "Integracje",
@@ -7646,7 +7643,8 @@
         "refresh": "Odśwież",
         "eventDetails": "Szczegóły zdarzenia",
         "closeDetails": "Zamknij szczegóły",
-        "processDetail": "Bufor jest ulotny i ograniczony do 500 wpisów."
+        "processDetail": "Bufor jest ulotny i ograniczony do 500 wpisów.",
+        "cardTitle": "Ostatnie zdarzenia"
       },
       "backups": {
         "title": "Kopie zapasowe",
@@ -7830,7 +7828,6 @@
       "encryption": {
         "title": "Szyfrowanie",
         "subtitle": "Pokrycie szyfrowaniem i status rotacji kluczy dla danych w spoczynku.",
-        "loading": "Ładowanie statusu szyfrowania...",
         "loadError": "Nie udało się wczytać statusu szyfrowania.",
         "coverageTitle": "Pokrycie",
         "coverageDescription": "Ile zaszyfrowanych wierszy przypada na każdy identyfikator klucza.",
@@ -7908,7 +7905,7 @@
     },
     "carrier": "Operator",
     "mfaRequired": "Wymagaj drugiego składnika",
-    "mfaRequiredDescription": "Każde konto bez aktywnego drugiego składnika jest po zalogowaniu kierowane do konfiguracji. To zachęca użytkowników sieci do włączenia go, ale nie blokuje bezpośredniego dostępu przez API ani natywnego (Bearer) dla kont jeszcze nieskonfigurowanych.",
+    "mfaRequiredDescription": "Konta bez drugiego składnika są po logowaniu w przeglądarce kierowane do jego konfiguracji; dostęp przez API i natywny (Bearer) pozostaje otwarty.",
     "mfaEnforcedOn": "MFA wł.",
     "mfaEnforcedOff": "MFA wył.",
     "mfaEnforcedOnHint": "Ten użytkownik musi używać drugiego składnika. Kliknij, aby przestać go wymagać.",
@@ -8006,7 +8003,9 @@
       "restartNote": "Po zmianie uruchom HealthLog ponownie.",
       "lastResort": "Ostateczność, tylko jeśli masz pewność, że klucz jest właściwy, a żadna z trzech dróg nie pasuje: ustaw {setting} i uruchom ponownie. HealthLog będzie wtedy działać mimo to i tylko zapisze wynik w logu. To wyłącza kontrolę bezpieczeństwa: przy złym kluczu każda zaszyfrowana wartość zawiedzie, a nowe dane zostaną zapisane tym kluczem.",
       "codes": "Dla administratora: żądania API odpowiadają 503 z kodem błędu {code}, a /api/health podaje powód {reason}."
-    }
+    },
+    "loginOverviewCardTitle": "Zdarzenia logowania",
+    "userColumn": "Użytkownik"
   },
   "achievements": {
     "title": "Osiągnięcia",
