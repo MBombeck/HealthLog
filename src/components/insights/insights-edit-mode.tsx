@@ -45,6 +45,12 @@ import {
   type InsightsSectionConfig,
   type InsightsSectionId,
 } from "@/lib/insights-layout";
+import {
+  arrangeSavePayload,
+  arrangementSignature,
+  reconcileArrangeDraft,
+  seedArrangeDraft,
+} from "@/lib/insights-arrange-draft";
 import { apiDelete, apiPut } from "@/lib/api/api-fetch";
 import {
   readUpdatedAtToken,
@@ -66,8 +72,9 @@ import {
  * Tile-level management (the per-metric detail pages + their nav pills)
  * moved to Settings → Insights in v1.15.20 — the pill-order section there
  * carries both sorting AND the eye toggles, so the disclosure this card used
- * to nest under the Vitals row was a duplicate surface. The card keeps the
- * draft's `tiles` untouched and links to the settings section instead.
+ * to nest under the Vitals row was a duplicate surface. A save sends the
+ * CURRENT server tiles (never a copy taken at mount), so a pill-order save
+ * made beside this card survives a later section save.
  */
 
 /** Localized title key per section id — used for the edit-card label. */
@@ -118,16 +125,21 @@ export function InsightsEditMode({
   const { t } = useTranslations();
   const queryClient = useQueryClient();
 
-  // Local draft seeded from the resolved layout. Edits mutate the draft only;
-  // "Fertig" flushes it via the PUT mutation. Sections/tiles are sorted by
-  // order for stable rendering.
-  const [draft, setDraft] = useState<InsightsLayout>(() => ({
-    version: layout.version,
-    sections: [...layout.sections].sort((a, b) => a.order - b.order),
-    // Tiles pass through the save verbatim — pill order + visibility are
-    // managed on Settings → Insights since v1.15.20.
-    tiles: [...layout.tiles].sort((a, b) => a.order - b.order),
-  }));
+  // Local section draft seeded from the resolved layout. Edits mutate the
+  // draft only; "Fertig" flushes it via the PUT mutation. When the server copy
+  // changes underneath (the pill manager beside the Settings card also flips
+  // the "ecg" section), an untouched draft re-seeds in render — the
+  // React-sanctioned "adjust state on prop change" pattern — so it never turns
+  // someone else's save into a pending edit of its own.
+  const [draftState, setDraftState] = useState(() =>
+    seedArrangeDraft(layout.sections),
+  );
+  const reconciled = reconcileArrangeDraft(draftState, layout.sections);
+  if (reconciled) setDraftState(reconciled);
+  const draftSections = (reconciled ?? draftState).sections;
+  const setDraftSections = (
+    update: (sections: InsightsSectionConfig[]) => InsightsSectionConfig[],
+  ) => setDraftState((d) => ({ ...d, sections: update(d.sections) }));
 
   // v1.15.11 QA L5 — on mount move focus to the edit-card heading so keyboard /
   // screen-reader users land on the surface they just opened (not the top of
@@ -147,14 +159,14 @@ export function InsightsEditMode({
   );
 
   const saveMutation = useMutation({
-    mutationFn: async (next: InsightsLayout) => {
+    mutationFn: async (sections: InsightsSectionConfig[]) => {
       // v1.32.21 (R5a) — echo the optimistic-concurrency base token this edit
       // was based on so an interleaved write (a Settings pill-order Save, or
       // this surface open in another tab) 409s instead of clobbering.
       return apiPut<InsightsLayoutWithToken>(
         "/api/insights/layout",
         withBaseToken(
-          { version: 2, sections: next.sections, tiles: next.tiles },
+          arrangeSavePayload(sections, layout),
           readUpdatedAtToken(queryClient, queryKeys.insightsLayout()),
         ),
       );
@@ -196,11 +208,7 @@ export function InsightsEditMode({
         queryKey: queryKeys.insightsLayout(),
       });
       // Re-seed the draft so the open editor reflects the restored defaults.
-      setDraft({
-        version: saved.version,
-        sections: [...saved.sections].sort((a, b) => a.order - b.order),
-        tiles: [...saved.tiles].sort((a, b) => a.order - b.order),
-      });
+      setDraftState(seedArrangeDraft(saved.sections));
       toast.success(t("insights.editMode.resetSuccess"));
     },
     onError: () => toast.error(t("insights.editMode.saveError")),
@@ -210,38 +218,34 @@ export function InsightsEditMode({
   // The Settings card's Save waits for a change, like the pill-order Save
   // beside it; the overview's inline editor keeps "Done" live because it
   // also closes the editor.
-  const arrangement = (rows: readonly InsightsSectionConfig[]) =>
-    [...rows]
-      .sort((a, b) => a.order - b.order)
-      .map((r) => `${r.id}:${r.visible ? 1 : 0}`)
-      .join(",");
-  const dirty = arrangement(draft.sections) !== arrangement(layout.sections);
+  const dirty =
+    arrangementSignature(draftSections) !==
+    arrangementSignature(layout.sections);
 
   const sections = useMemo(
-    () => [...draft.sections].sort((a, b) => a.order - b.order),
-    [draft.sections],
+    () => [...draftSections].sort((a, b) => a.order - b.order),
+    [draftSections],
   );
   const sectionIds = sections.map((s) => s.id);
 
   function toggleSection(id: InsightsSectionId, visible: boolean) {
-    setDraft((d) => ({
-      ...d,
-      sections: d.sections.map((s) => (s.id === id ? { ...s, visible } : s)),
-    }));
+    setDraftSections((rows) =>
+      rows.map((s) => (s.id === id ? { ...s, visible } : s)),
+    );
   }
 
   function handleSectionDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const reordered = reorderById<InsightsSectionConfig>(
-      draft.sections,
+      draftSections,
       String(active.id),
       String(over.id),
     );
-    setDraft((d) => ({ ...d, sections: reordered }));
+    setDraftSections(() => reordered);
   }
 
-  const allHidden = draft.sections.every((s) => !s.visible);
+  const allHidden = draftSections.every((s) => !s.visible);
 
   return (
     <SettingsCard data-slot="insights-edit-mode">
@@ -282,7 +286,7 @@ export function InsightsEditMode({
             />
             <Button
               size="sm"
-              onClick={() => saveMutation.mutate(draft)}
+              onClick={() => saveMutation.mutate(draftSections)}
               disabled={busy}
               data-slot="insights-edit-done"
             >
@@ -356,7 +360,7 @@ export function InsightsEditMode({
           <Button
             size="sm"
             className="min-h-11 sm:min-h-9"
-            onClick={() => saveMutation.mutate(draft)}
+            onClick={() => saveMutation.mutate(draftSections)}
             disabled={busy || !dirty}
             data-slot="insights-edit-done"
           >
