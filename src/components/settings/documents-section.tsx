@@ -9,7 +9,7 @@
  * shape): the card/list view and the month arrangement. Both persist per user
  * through `/api/documents/inbound/layout`.
  */
-import { Eye, Rows3, WrapText } from "lucide-react";
+import { LayoutGrid, Rows3, WrapText } from "lucide-react";
 
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { SettingsCard } from "@/components/settings/settings-card";
@@ -26,7 +26,7 @@ export function DocumentsSection() {
     <div className="space-y-6" data-slot="documents-layout-settings">
       <SettingsCard id="documents-view" className="scroll-mt-28">
         <SettingsCardHeader
-          icon={Eye}
+          icon={LayoutGrid}
           title={t("moduleList.viewHeading")}
           description={t("documents.layout.viewDescription")}
           status={<ModuleViewToggle view={layout.view} onChange={setView} />}

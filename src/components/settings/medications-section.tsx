@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { LayoutGrid, Loader2, Pill } from "lucide-react";
+import { LayoutGrid, ListOrdered } from "lucide-react";
 
 import {
   MedicationOrderEditor,
@@ -9,6 +9,7 @@ import {
 } from "@/components/medications/medication-order-editor";
 import { MedicationViewToggle } from "@/components/medications/medication-view-toggle";
 import { SettingsCard } from "@/components/settings/settings-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { InjectionSitesCard } from "@/components/settings/injection-sites-card";
 import { useAuth } from "@/hooks/use-auth";
@@ -81,33 +82,39 @@ export function MedicationsSection() {
       {/* View preference — cards vs table. The shared header toggle
           writes optimistically, so there is no Save button here. */}
       <SettingsCard id="medications-view" className="scroll-mt-28">
+        {/* Same shape as the Labs and Documents view cards: the hint is the
+            header description, the toggle sits in the status slot. */}
         <SettingsCardHeader
           icon={LayoutGrid}
           title={t("medications.viewToggleLabel")}
-        />
-        <div className="border-border bg-background/30 flex min-h-12 items-center justify-between gap-3 rounded-md border px-3 py-2">
-          <p className="text-muted-foreground min-w-0 text-xs">
-            {t("medications.viewToggleHint")}
-          </p>
-          {isLayoutLoading ? (
-            <Loader2 className="text-muted-foreground h-4 w-4 animate-spin motion-reduce:animate-none" />
-          ) : (
+          description={t("medications.viewToggleHint")}
+          status={
+            // Painted from the first frame, like the Labs and Documents
+            // toggles: a spinner the width of one icon swapped for a
+            // two-button toggle moved the cards below it.
             <MedicationViewToggle view={layout.view} onChange={setView} />
-          )}
-        </div>
+          }
+        />
       </SettingsCard>
 
       {/* Manual order — applies to both list views. */}
       <SettingsCard id="medications-order" className="scroll-mt-28">
         <SettingsCardHeader
-          icon={Pill}
-          title={t("medications.reorderTitle")}
+          icon={ListOrdered}
+          title={t("moduleList.reorder.heading")}
           description={t("medications.reorderDescription")}
         />
         {isLoading || isLayoutLoading ? (
-          <div className="text-muted-foreground flex items-center gap-2 text-sm">
-            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-            {t("common.loading")}
+          // Row-shaped placeholders instead of a one-line spinner, so the
+          // card below moves less when the list arrives.
+          <div
+            className="space-y-2"
+            role="status"
+            aria-label={t("common.loading")}
+          >
+            {Array.from({ length: 3 }, (_, i) => (
+              <Skeleton key={i} className="h-14 w-full rounded-md" />
+            ))}
           </div>
         ) : (
           <MedicationOrderEditor medications={ordered} />
