@@ -13,9 +13,14 @@ vi.mock("@/lib/db", () => ({
     fitbitConnection: { findUnique: vi.fn(async () => null) },
     googleHealthConnection: { findUnique: vi.fn(async () => null) },
     moodEntry: { count: vi.fn(async () => 0) },
-    measurement: { groupBy: vi.fn(async () => []) },
+    $queryRaw: vi.fn(async () => []),
     workout: { groupBy: vi.fn(async () => []) },
   },
+}));
+
+// v1.42 — the per-source type walk that replaced the measurement groupBy.
+vi.mock("@/lib/measurements/live-types", () => ({
+  listLiveMeasurementTypes: vi.fn(async () => []),
 }));
 
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
@@ -53,6 +58,7 @@ vi.mock("@/lib/oura/credentials", () => ({
 
 import { GET } from "../route";
 import { prisma } from "@/lib/db";
+import { listLiveMeasurementTypes } from "@/lib/measurements/live-types";
 import { ATTEMPT_STALE_AFTER_MS } from "@/lib/integrations/sync-verdict";
 
 const userFind = prisma.user.findUnique as ReturnType<typeof vi.fn>;
@@ -315,7 +321,7 @@ describe("/api/integrations/status — the freshness read failed", () => {
   });
 
   it("reports the degradation instead of passing an empty list off as an answer", async () => {
-    (prisma.measurement.groupBy as ReturnType<typeof vi.fn>).mockRejectedValue(
+    vi.mocked(listLiveMeasurementTypes).mockRejectedValue(
       new Error("statement timeout"),
     );
 
@@ -331,9 +337,7 @@ describe("/api/integrations/status — the freshness read failed", () => {
   });
 
   it("reports no degradation when the read simply found nothing", async () => {
-    (prisma.measurement.groupBy as ReturnType<typeof vi.fn>).mockResolvedValue(
-      [],
-    );
+    vi.mocked(listLiveMeasurementTypes).mockResolvedValue([]);
     (prisma.workout.groupBy as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
     const envelope = await fetchEnvelope();

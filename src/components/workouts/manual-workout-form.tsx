@@ -1,9 +1,9 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
-import { Loader2, Plus } from "lucide-react";
+import { Check, Loader2, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
@@ -33,6 +33,7 @@ import {
   type ManualWorkoutDraft,
   type ManualWorkoutEntry,
   type ManualWorkoutField,
+  type ManualWorkoutOriginal,
 } from "@/lib/workouts/manual-entry";
 import {
   workoutSportTypeEnum,
@@ -49,10 +50,23 @@ import {
  * `onSuccess` / `onCancel` close the sheet.
  */
 
+/**
+ * Edit mode (#1162): the stored workout's own `manual:` id and the values it
+ * opens with. Saving re-posts that id, which the batch route applies as an
+ * overwrite of that one row.
+ */
+export interface ManualWorkoutEdit {
+  externalId: string;
+  original: ManualWorkoutOriginal;
+}
+
 interface ManualWorkoutFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
   footerSlot?: HTMLElement | null;
+  edit?: ManualWorkoutEdit;
+  /** Whether the fields differ from what the form opened with. */
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 interface BatchResult {
@@ -104,6 +118,8 @@ export function ManualWorkoutForm({
   onSuccess,
   onCancel,
   footerSlot,
+  edit,
+  onDirtyChange,
 }: ManualWorkoutFormProps) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
@@ -114,10 +130,20 @@ export function ManualWorkoutForm({
   // Minted once per opened form and sent with every submit, so a second tap
   // or a retried request lands as a duplicate rather than a second row, and
   // a submit after an edit updates the row the first submit stored.
-  const [externalId] = useState(newManualWorkoutExternalId);
-  const [draft, setDraft] = useState<ManualWorkoutDraft>(() =>
-    emptyManualWorkoutDraft(),
+  // An edit sends the stored row's own id instead.
+  const [externalId] = useState(
+    () => edit?.externalId ?? newManualWorkoutExternalId(),
   );
+  const [initialDraft] = useState<ManualWorkoutDraft>(
+    () => edit?.original.draft ?? emptyManualWorkoutDraft(),
+  );
+  const [draft, setDraft] = useState<ManualWorkoutDraft>(initialDraft);
+  const dirty = (
+    Object.keys(initialDraft) as Array<keyof ManualWorkoutDraft>
+  ).some((key) => draft[key] !== initialDraft[key]);
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
   const [errors, setErrors] = useState<
     Partial<Record<ManualWorkoutField, string>>
   >({});
@@ -158,6 +184,7 @@ export function ManualWorkoutForm({
       unitPreference: preference,
       externalId,
       now: new Date(),
+      original: edit?.original,
     });
     if (!built.ok) {
       setErrors(built.errors);
@@ -174,6 +201,8 @@ export function ManualWorkoutForm({
           "empty",
           t("insights.workouts.manual.alreadySaved"),
         );
+      } else if (outcome === "updated") {
+        toastWrittenOutcome("success", t("insights.workouts.manual.updated"));
       } else {
         toastWrittenOutcome("success", t("common.saved"));
       }
@@ -216,6 +245,8 @@ export function ManualWorkoutForm({
       >
         {saving ? (
           <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
+        ) : edit ? (
+          <Check className="size-4" />
         ) : (
           <Plus className="size-4" />
         )}
@@ -278,16 +309,20 @@ export function ManualWorkoutForm({
           max={wallClockNow(new Date(), timezone)}
           aria-invalid={!!errors.start || undefined}
           aria-describedby={[
-            `${ids.start}-hint`,
+            edit ? undefined : `${ids.start}-hint`,
             describedBy("start", `${ids.start}-error`),
           ]
             .filter(Boolean)
             .join(" ")}
           data-testid="manual-workout-start"
         />
-        <p id={`${ids.start}-hint`} className="text-muted-foreground text-xs">
-          {t("insights.workouts.manual.startHint")}
-        </p>
+        {/* "Leave empty if you just finished" is about logging; an edit
+            opens with the stored start in place. */}
+        {edit ? null : (
+          <p id={`${ids.start}-hint`} className="text-muted-foreground text-xs">
+            {t("insights.workouts.manual.startHint")}
+          </p>
+        )}
         <FieldError id={`${ids.start}-error`} message={fieldError("start")} />
       </div>
 

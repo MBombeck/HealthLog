@@ -25044,7 +25044,9 @@ components:
           description: 'Diagnostic-only. Names what triggered this sync (foreground app open, background refresh, a push wake, or
             a user-initiated `manual` "Sync all" run, since v1.42). Recorded on the ingest wide event and kept on the
             account as `lastSyncTrigger` — plus `lastBackgroundSyncAt` for a `background` or `push` trigger — both
-            readable from `GET /api/integrations/healthkit`. It does not affect dedup, attribution, or how any sample is
+            readable from `GET /api/integrations/healthkit`. Since v1.42 it is also recorded per measurement type the
+            batch carried (Apple Health rows only), served as `lastReceivedAt` / `lastTrigger` / `lastNewSampleAt` on
+            each `metricFreshness` entry of that read. It does not affect dedup, attribution, or how any sample is
             stored. Optional and backward-compatible: pre-#66 clients omit it.'
           type: string
           enum:
@@ -45253,6 +45255,22 @@ components:
               maximum: 9007199254740991
             - type: "null"
         minHr:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        storedAvgHr:
+          description: The row's own average heart rate (v1.42). `avgHr` may be filled in from a same-session twin by the
+            canonical picker; this is the stored value, which an edit of a hand-entered workout sends back so the twin's
+            value is not written onto it.
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        storedMaxHr:
+          description: The row's own maximum heart rate (v1.42), as `storedAvgHr` is to `avgHr`.
           anyOf:
             - type: integer
               minimum: -9007199254740991
@@ -73189,11 +73207,11 @@ components:
           description: Present on the GET read; omitted from the PATCH echo.
           $ref: "#/components/schemas/SyncHealth"
         metricFreshness:
-          description: Per-metric-type freshness for the `APPLE_HEALTH` source. Present on the GET read; omitted from the PATCH
-            echo.
+          description: Per-metric-type freshness for the `APPLE_HEALTH` source, with the per-type arrival facts. Present on the
+            GET read; omitted from the PATCH echo.
           type: array
           items:
-            $ref: "#/components/schemas/MetricFreshnessEntry"
+            $ref: "#/components/schemas/AppleHealthMetricFreshnessEntry"
         syncProgress:
           description: Backfill/sync progress summary. Present on the GET read (null when the progress read failed); omitted from
             the PATCH echo.
@@ -73261,7 +73279,7 @@ components:
       additionalProperties: false
       description: Server-resolved sync-health verdict. The single source of liveness truth — `lastSyncedAt` alone cannot
         express 'this pipe stopped delivering'.
-    MetricFreshnessEntry:
+    AppleHealthMetricFreshnessEntry:
       type: object
       properties:
         type:
@@ -73276,13 +73294,44 @@ components:
           type: boolean
           description: This type has gone quiet while the source around it reads healthy — the dead-pipe signature (e.g. a single
             revoked HealthKit permission). Only ever true when the verdict is `fresh`.
+        lastReceivedAt:
+          description: "When a live sync batch last carried this type (inserted, updated or duplicate entries all count). Null
+            when no live sync has carried it yet: a type that so far came only from the export import, or from before
+            v1.42. `lastSeenAt` is when the newest sample was TAKEN; this is when the server last RECEIVED the type.
+            Omitted on the `WORKOUTS` entry, which the ledger does not cover, and on every entry when the ledger read
+            failed."
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+        lastTrigger:
+          description: The `syncTrigger` of that batch. Null when the client reported none. A type whose trigger is only ever
+            `manual` reaches the server only through a user-started full sync. Same omission rules as `lastReceivedAt`.
+          anyOf:
+            - type: string
+              enum:
+                - foreground
+                - background
+                - push
+                - manual
+              description: What triggered a HealthKit batch.
+            - type: "null"
+        lastNewSampleAt:
+          description: When a live sync batch last brought a new or updated sample of this type, as opposed to duplicates only.
+            Null when none has. Same omission rules as `lastReceivedAt`.
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
       required:
         - type
         - lastSeenAt
         - stale
       additionalProperties: false
-      description: Per-metric-type last-seen timestamp with the server-computed staleness flag. Only types that have actually
-        delivered appear — absence is absence, never an invented row.
+      description: "Per-type Apple Health freshness: the newest sample's timestamp and staleness flag, plus the per-type
+        arrival facts recorded by `POST /api/measurements/batch` (v1.42)."
     AppleHealthSyncProgress:
       type: object
       properties:
@@ -75150,6 +75199,28 @@ components:
         entry carries, plus the extras that provider has. The optional fields are not optional per request — each is
         present exactly for the providers named in its description and absent for the rest, so branch on `integration`,
         not on presence."
+    MetricFreshnessEntry:
+      type: object
+      properties:
+        type:
+          type: string
+          description: The measurement type (e.g. `RESPIRATORY_RATE`), or `WORKOUTS` for the workout leg.
+        lastSeenAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: Newest recorded reading for this type from this source.
+        stale:
+          type: boolean
+          description: This type has gone quiet while the source around it reads healthy — the dead-pipe signature (e.g. a single
+            revoked HealthKit permission). Only ever true when the verdict is `fresh`.
+      required:
+        - type
+        - lastSeenAt
+        - stale
+      additionalProperties: false
+      description: Per-metric-type last-seen timestamp with the server-computed staleness flag. Only types that have actually
+        delivered appear — absence is absence, never an invented row.
     FitbitResumeEnvelope:
       type: object
       properties:

@@ -176,4 +176,12 @@ describe("metricKeyForType — source-priority ladder coverage (v1.18.10 I-5)", 
     expect(metricKeyForType("STRESS_SCORE")).toBe("stress");
     expect(RANKED_TYPES).toContain("STRESS_SCORE");
   });
+
+  it("ranks RMSSD HRV on its own ladder, never on SDNN's (#1110)", () => {
+    // Since iOS 27 Apple Health writes RMSSD next to WHOOP / Oura / Polar,
+    // so a day can hold it from two sources.
+    expect(metricKeyForType("HRV_RMSSD")).toBe("hrvRmssd");
+    expect(metricKeyForType("HEART_RATE_VARIABILITY")).toBe("hrv");
+    expect(RANKED_TYPES).toContain("HRV_RMSSD");
+  });
 });

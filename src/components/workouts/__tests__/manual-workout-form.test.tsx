@@ -47,7 +47,10 @@ import {
   canDeleteWorkout,
   deleteManualWorkout,
 } from "../delete-workout-button";
-import type { ManualWorkoutEntry } from "@/lib/workouts/manual-entry";
+import {
+  manualWorkoutOriginalFromRow,
+  type ManualWorkoutEntry,
+} from "@/lib/workouts/manual-entry";
 
 const ENTRY: ManualWorkoutEntry = {
   sportType: "cycling",
@@ -249,5 +252,41 @@ describe("delete — a hand-entered workout in one's own record only", () => {
     expect(client.invalidateQueries).toHaveBeenCalledWith({
       queryKey: queryKeys.workouts(),
     });
+  });
+});
+
+describe("<ManualWorkoutForm> — editing a stored workout (#1162)", () => {
+  const original = manualWorkoutOriginalFromRow(
+    {
+      sportType: "cycling",
+      startedAt: "2026-09-15T06:00:00.000Z",
+      endedAt: "2026-09-15T07:30:00.000Z",
+      durationSec: 5400,
+      distanceM: 32000,
+      activeEnergyKcal: 640,
+      minHr: null,
+      stepCount: null,
+      elevationM: null,
+      pauseDurationSec: null,
+      storedAvgHr: 131,
+      storedMaxHr: null,
+    },
+    { timezone: "Europe/Berlin", unitPreference: "metric" },
+  );
+
+  it("opens on the stored values", () => {
+    const html = render(
+      <ManualWorkoutForm edit={{ externalId: ENTRY.externalId, original }} />,
+    );
+    expect(html).toContain('value="2026-09-15T08:00"');
+    expect(html).toContain('value="1"');
+    expect(html).toContain('value="30"');
+    expect(html).toContain('value="32"');
+    expect(html).toContain('value="640"');
+  });
+
+  it("opens empty when it is not editing", () => {
+    const html = render(<ManualWorkoutForm />);
+    expect(html).not.toContain('value="640"');
   });
 });

@@ -8,13 +8,34 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const groupByMock = vi.hoisted(() => vi.fn());
+/**
+ * The fixtures keep the grouped-row shape (`source`, `type`, `_max`) the read
+ * used to take. Since v1.42 the module asks `listLiveMeasurementTypes` per
+ * source and then probes each type's newest row in one raw query; the two
+ * mocks below answer both from the same fixture rows.
+ */
+type GroupedRow = {
+  source: string;
+  type: string;
+  _max: { measuredAt: Date | null };
+};
+let measurementRows: GroupedRow[] = [];
+const groupByMock = {
+  mockResolvedValue(rows: GroupedRow[]) {
+    measurementRows = rows;
+  },
+};
+const liveTypesMock = vi.hoisted(() => vi.fn());
+const queryRawMock = vi.hoisted(() => vi.fn());
 const workoutGroupByMock = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/db", () => ({
   prisma: {
-    measurement: { groupBy: groupByMock },
+    $queryRaw: queryRawMock,
     workout: { groupBy: workoutGroupByMock },
   },
+}));
+vi.mock("@/lib/measurements/live-types", () => ({
+  listLiveMeasurementTypes: liveTypesMock,
 }));
 
 import {
@@ -28,7 +49,32 @@ import {
 } from "../sync-verdict";
 
 beforeEach(() => {
-  groupByMock.mockReset();
+  measurementRows = [];
+  liveTypesMock.mockReset();
+  liveTypesMock.mockImplementation(
+    async (_userId: string, options: { source: string }) =>
+      measurementRows
+        .filter((row) => row.source === options.source)
+        .map((row) => row.type),
+  );
+  queryRawMock.mockReset();
+  queryRawMock.mockImplementation(
+    async (_strings: TemplateStringsArray, ...values: unknown[]) => {
+      const types = values.find(Array.isArray) as string[];
+      const source = values.find(
+        (value) =>
+          typeof value === "string" &&
+          measurementRows.some((row) => row.source === value),
+      );
+      return types.map((type) => ({
+        type,
+        last_seen:
+          measurementRows.find(
+            (row) => row.source === source && row.type === type,
+          )?._max.measuredAt ?? null,
+      }));
+    },
+  );
   workoutGroupByMock.mockReset();
   workoutGroupByMock.mockResolvedValue([]);
 });
@@ -65,11 +111,10 @@ describe("getSourceMetricFreshness", () => {
     expect(result.withings).toEqual([
       { type: "WEIGHT", lastSeenAt: "2026-07-06T00:00:00.000Z" },
     ]);
-    // Only the sync sources are queried.
-    expect(groupByMock.mock.calls[0][0].where.source.in).toEqual(
-      Object.values(INTEGRATION_MEASUREMENT_SOURCE),
-    );
-    expect(groupByMock.mock.calls[0][0].where.deletedAt).toBeNull();
+    // Only the sync sources are asked about, one live-type walk each.
+    expect(
+      liveTypesMock.mock.calls.map((call) => call[1].source).sort(),
+    ).toEqual([...Object.values(INTEGRATION_MEASUREMENT_SOURCE)].sort());
   });
 
   it("skips rows with no reading and unmapped sources", async () => {
@@ -175,9 +220,30 @@ describe("getSourceFreshness — one source, for Apple Health", () => {
     expect(await getSourceFreshness("u1", "APPLE_HEALTH")).toEqual([
       { type: "RESPIRATORY_RATE", lastSeenAt: "2026-07-01T00:00:00.000Z" },
     ]);
-    expect(groupByMock.mock.calls[0][0].where.source.in).toEqual([
-      "APPLE_HEALTH",
+    expect(liveTypesMock).toHaveBeenCalledTimes(1);
+    expect(liveTypesMock.mock.calls[0][1]).toEqual({ source: "APPLE_HEALTH" });
+  });
+
+  it("issues no per-type probe when the source has no live types", async () => {
+    expect(await getSourceFreshness("u1", "APPLE_HEALTH")).toEqual([]);
+    expect(queryRawMock).not.toHaveBeenCalled();
+  });
+
+  it("probes live rows of the one source only", async () => {
+    groupByMock.mockResolvedValue([
+      {
+        source: "APPLE_HEALTH",
+        type: "PULSE",
+        _max: { measuredAt: new Date("2026-07-01T00:00:00.000Z") },
+      },
     ]);
+    await getSourceFreshness("u1", "APPLE_HEALTH");
+    const sql = (queryRawMock.mock.calls[0][0] as TemplateStringsArray).join(
+      "?",
+    );
+    expect(sql).toContain('"deleted_at" IS NULL');
+    expect(sql).toContain('"source" = ?::"measurement_source"');
+    expect(sql).toContain("LIMIT 1");
   });
 });
 

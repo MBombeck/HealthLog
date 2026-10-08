@@ -151,6 +151,11 @@ export function metricKeyForType(
       return "restingHeartRate";
     case "HEART_RATE_VARIABILITY":
       return "hrv";
+    // v1.42 (#1110) — RMSSD has its own ladder: WHOOP, Oura, Polar and,
+    // since iOS 27, Apple Health all write it, so one day can hold it from
+    // two sources.
+    case "HRV_RMSSD":
+      return "hrvRmssd";
     case "RESPIRATORY_RATE":
       return "respiratoryRate";
     case "OXYGEN_SATURATION":

@@ -305,6 +305,13 @@ export interface WorkoutDetailPayload extends WorkoutListEntry {
    */
   dayKey: string;
   minHr: number | null;
+  /**
+   * The row's own heart rate, before the canonical picker filled any of it
+   * in from a twin. An edit of a hand-entered workout sends these back
+   * (#1162); `avgHr` / `maxHr` are for display.
+   */
+  storedAvgHr?: number | null;
+  storedMaxHr?: number | null;
   stepCount: number | null;
   elevationM: number | null;
   pauseDurationSec: number | null;

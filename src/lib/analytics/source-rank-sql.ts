@@ -34,6 +34,8 @@ import {
 export const RANKED_TYPES: readonly MeasurementType[] = [
   "RESTING_HEART_RATE",
   "HEART_RATE_VARIABILITY",
+  // v1.42 (#1110) — the `hrvRmssd` ladder.
+  "HRV_RMSSD",
   "RESPIRATORY_RATE",
   "OXYGEN_SATURATION",
   "BODY_TEMPERATURE",

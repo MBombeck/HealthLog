@@ -120,6 +120,14 @@ The HK quantity types that map to HealthLog metric types live in
 mapped set (for example workout routes) is counted as unsupported and
 not stored.
 
+Heart-rate variability comes in two measures, and they stay two types.
+`HeartRateVariabilitySDNN` becomes `HEART_RATE_VARIABILITY`;
+`HeartRateVariabilityRMSSD`, which iOS and watchOS 27 added, becomes
+`HRV_RMSSD`, the same type WHOOP, Oura and Polar write. RMSSD readings
+up to 300 ms are accepted. When both arrive, the HRV page charts each on
+its own and the Coach reads them apart, because one is not a stand-in for
+the other.
+
 ### ECG archive safety, privacy, and idempotency
 
 ECG support is source-agnostic: if HealthKit includes a valid
@@ -283,6 +291,9 @@ Concrete consequences:
 - Manual entries always rank below either device source. The IMPORT
   source tag — the lowest rank — is reserved for legacy CSV/JSON
   imports that pre-date the Apple Health passthrough.
+
+RMSSD HRV has its own ladder, **WHOOP ≻ OURA ≻ POLAR ≻ APPLE_HEALTH**,
+separate from the SDNN one.
 
 Override per-user via Settings → Sources (`/settings/sources`).
 

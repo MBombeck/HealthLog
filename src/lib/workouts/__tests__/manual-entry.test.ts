@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildManualWorkoutEntry,
+  canEditWorkout,
   canLogWorkout,
+  manualWorkoutOriginalFromRow,
+  type StoredManualWorkout,
   emptyManualWorkoutDraft,
   newManualWorkoutExternalId,
   wallClockNow,
@@ -281,5 +284,134 @@ describe("canLogWorkout — who is offered the entry", () => {
 
   it("withholds it inside somebody else's record", () => {
     expect(canLogWorkout(SHARED, { workouts: true })).toBe(false);
+  });
+});
+
+describe("editing a stored workout (#1162)", () => {
+  // 07:12:34 in Berlin, 47 min 20 s, 5 000 m, with values the form has no
+  // field for (written by a client other than this form).
+  const ROW: StoredManualWorkout = {
+    sportType: "running",
+    startedAt: "2026-09-15T05:12:34.000Z",
+    endedAt: "2026-09-15T05:59:54.000Z",
+    durationSec: 2840,
+    distanceM: 5000,
+    activeEnergyKcal: 410,
+    minHr: 98,
+    stepCount: 6400,
+    elevationM: 42.5,
+    pauseDurationSec: 60,
+    storedAvgHr: 142,
+    storedMaxHr: 171,
+  };
+  const EDIT_ID = "manual:7c1d2e3f-aaaa-4bbb-8ccc-dddddddddddd";
+
+  function original(unitPreference: "metric" | "imperial" = "metric") {
+    return manualWorkoutOriginalFromRow(ROW, {
+      timezone: "Europe/Berlin",
+      unitPreference,
+    });
+  }
+
+  function save(
+    edit: Partial<ManualWorkoutDraft>,
+    unitPreference: "metric" | "imperial" = "metric",
+  ) {
+    const o = original(unitPreference);
+    const result = buildManualWorkoutEntry(
+      { ...o.draft, ...edit },
+      { ...CTX, unitPreference, externalId: EDIT_ID, original: o },
+    );
+    if (!result.ok) throw new Error(JSON.stringify(result.errors));
+    return result.entry;
+  }
+
+  it("opens on the stored values, in the profile zone and the reader's unit", () => {
+    expect(original().draft).toEqual({
+      sportType: "running",
+      start: "2026-09-15T07:12",
+      hours: "0",
+      minutes: "47",
+      distance: "5",
+      energyKcal: "410",
+    });
+    expect(original("imperial").draft.distance).toBe("3.11");
+  });
+
+  it("saves an untouched edit as exactly the stored row", () => {
+    expect(save({}, "imperial")).toEqual({
+      sportType: "running",
+      startedAt: ROW.startedAt,
+      endedAt: ROW.endedAt,
+      source: "MANUAL",
+      externalId: EDIT_ID,
+      totalDistanceM: 5000,
+      totalEnergyKcal: 410,
+      avgHeartRate: 142,
+      maxHeartRate: 171,
+      minHeartRate: 98,
+      stepCount: 6400,
+      elevationM: 42.5,
+      pauseDurationSec: 60,
+    });
+  });
+
+  // The batch route nulls every overwritable column a re-post leaves out, so
+  // an edit of one field must carry the rest or it erases them.
+  it("keeps heart rate, steps and the rest when only the energy changes", () => {
+    const entry = save({ energyKcal: "450" });
+    expect(entry.totalEnergyKcal).toBe(450);
+    expect(entry).toMatchObject({
+      avgHeartRate: 142,
+      maxHeartRate: 171,
+      minHeartRate: 98,
+      stepCount: 6400,
+      elevationM: 42.5,
+      pauseDurationSec: 60,
+      totalDistanceM: 5000,
+      startedAt: ROW.startedAt,
+    });
+  });
+
+  it("re-derives start and end from the fields once either changes", () => {
+    const entry = save({ minutes: "50" });
+    // 07:12 Berlin = 05:12Z, now to the minute, plus 50 minutes.
+    expect(entry.startedAt).toBe("2026-09-15T05:12:00.000Z");
+    expect(entry.endedAt).toBe("2026-09-15T06:02:00.000Z");
+  });
+
+  it("clears a distance the person emptied", () => {
+    expect(save({ distance: "" })).not.toHaveProperty("totalDistanceM");
+  });
+
+  it("is accepted by the batch route's own schema", () => {
+    const parsed = createBatchWorkoutSchema.safeParse({
+      workouts: [save({ energyKcal: "450" })],
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it("is offered for a form-entered workout in one's own record only", () => {
+    const own = { inSharedRecord: false };
+    expect(canEditWorkout({ source: "MANUAL", externalId: EDIT_ID }, own)).toBe(
+      true,
+    );
+    expect(
+      canEditWorkout(
+        { source: "MANUAL", externalId: EDIT_ID },
+        { inSharedRecord: true },
+      ),
+    ).toBe(false);
+    expect(
+      canEditWorkout({ source: "APPLE_HEALTH", externalId: EDIT_ID }, own),
+    ).toBe(false);
+    // A MANUAL row without the form's id would not be overwritten by a
+    // re-post, so it is not offered.
+    expect(canEditWorkout({ source: "MANUAL", externalId: null }, own)).toBe(
+      false,
+    );
+    expect(
+      canEditWorkout({ source: "MANUAL", externalId: "uuid-123" }, own),
+    ).toBe(false);
   });
 });
