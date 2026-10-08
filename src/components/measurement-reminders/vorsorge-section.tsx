@@ -1002,7 +1002,6 @@ function VorsorgeCard({
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          variant="destructive"
           disabled={busy}
           onSelect={() => setConfirmDelete(true)}
         >

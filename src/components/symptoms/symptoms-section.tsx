@@ -223,7 +223,6 @@ function DefinitionMenu({
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            variant="destructive"
             onSelect={(e) => {
               e.preventDefault();
               setConfirmOpen(true);
@@ -301,7 +300,6 @@ export function SymptomEventMenu({
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            variant="destructive"
             onSelect={(e) => {
               e.preventDefault();
               setConfirmOpen(true);

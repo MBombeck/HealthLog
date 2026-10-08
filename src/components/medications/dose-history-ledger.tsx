@@ -868,7 +868,6 @@ export function LedgerRowItem({
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => onDelete(intake.id as string)}
-                    className="text-destructive focus:text-destructive"
                     data-slot="ledger-delete"
                   >
                     <Trash2 aria-hidden="true" className="mr-2 size-4" />

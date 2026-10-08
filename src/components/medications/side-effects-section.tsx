@@ -352,7 +352,7 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-muted-foreground hover:text-destructive size-11 shrink-0"
+                    className="text-muted-foreground hover:text-foreground size-11 shrink-0"
                     aria-label={t("medications.sideEffects.deleteCta")}
                     onClick={() => setPendingDeleteId(row.id)}
                     disabled={deleteMutation.isPending}

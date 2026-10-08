@@ -579,7 +579,7 @@ function ApiTokensCard() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="text-destructive h-9 w-9"
+                                  className="text-muted-foreground hover:text-foreground h-9 w-9"
                                   aria-label={t("settings.tokenRevokeAction")}
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
@@ -676,7 +676,7 @@ function ApiTokensCard() {
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button
-                              variant="destructive"
+                              variant="outline"
                               size="sm"
                               className="min-h-11 w-full"
                             >

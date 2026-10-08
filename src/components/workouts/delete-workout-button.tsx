@@ -99,7 +99,7 @@ export function DeleteWorkoutButton({
         title={t("insights.workouts.manual.deleteLabel")}
         onClick={() => setOpen(true)}
         className={cn(
-          "text-muted-foreground hover:text-destructive relative size-10",
+          "text-muted-foreground hover:text-foreground relative size-10",
           "before:absolute before:-inset-1.5 before:content-['']",
         )}
       >

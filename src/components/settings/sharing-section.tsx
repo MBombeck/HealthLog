@@ -242,7 +242,7 @@ function ShareLinksCard() {
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button
-                          variant="destructive"
+                          variant="outline"
                           size="sm"
                           className="ml-auto flex min-h-11 w-fit sm:min-h-9"
                         >

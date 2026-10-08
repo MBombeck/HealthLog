@@ -1770,7 +1770,6 @@ export function MeasurementList({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start">
                         <DropdownMenuItem
-                          variant="destructive"
                           onClick={() => setEditDeleteDialogOpen(true)}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
