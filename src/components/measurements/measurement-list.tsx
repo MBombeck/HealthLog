@@ -1535,7 +1535,10 @@ export function MeasurementList({
                                 the row's controls; it leads the meta line
                                 instead. Sleep reads as a duration. */}
                               {isSleep ? null : (
-                                <span data-slot="measurement-row-unit">
+                                <span
+                                  data-slot="measurement-row-unit"
+                                  className="whitespace-nowrap"
+                                >
                                   {measurementUnitLabel(
                                     m.type,
                                     isGrouped ? m.unit : rowDisplay(m).unit,
@@ -1545,11 +1548,17 @@ export function MeasurementList({
                                 </span>
                               )}
                               {m.dayKey !== undefined ? (
-                                <DayLink date={m.dayKey}>
+                                <DayLink
+                                  date={m.dayKey}
+                                  className="whitespace-nowrap"
+                                >
                                   {formatDateOrRelative(m.measuredAt, t)}
                                 </DayLink>
                               ) : (
-                                <DayLinkAt at={m.measuredAt}>
+                                <DayLinkAt
+                                  at={m.measuredAt}
+                                  className="whitespace-nowrap"
+                                >
                                   {formatDateOrRelative(m.measuredAt, t)}
                                 </DayLinkAt>
                               )}
