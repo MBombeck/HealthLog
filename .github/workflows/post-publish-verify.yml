@@ -45,7 +45,7 @@ permissions:
 jobs:
   verify:
     name: Pull and smoke-test exact published image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
       IMAGE_REF: ${{ inputs.image_ref }}

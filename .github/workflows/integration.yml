@@ -22,7 +22,7 @@ jobs:
   # job timeout only needs to catch a container that never boots. Each shard
   # boots its own Postgres testcontainer.
   shard:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     strategy:
       fail-fast: false
@@ -67,7 +67,7 @@ jobs:
   # carries that name and answers for every shard: it fails when any shard
   # failed or was cancelled, so a half-green matrix cannot satisfy the gate.
   integration:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: shard
     if: always()
     timeout-minutes: 5
