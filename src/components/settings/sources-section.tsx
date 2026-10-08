@@ -727,8 +727,10 @@ function SourcesSkeletonList() {
         <Skeleton className="h-14 w-full rounded-md" />
         <Skeleton className="h-14 w-full rounded-md" />
       </div>
-      {[0, 1, 2, 3].map((i) => (
-        <Skeleton key={i} className="h-11 w-full rounded-md" />
+      {/* One collapsed line per remaining metric: the upper bound, so the
+          action row below never jumps down when the ladders arrive. */}
+      {SOURCE_PRIORITY_METRIC_KEYS.slice(1).map((metric) => (
+        <Skeleton key={metric} className="h-11 w-full rounded-md" />
       ))}
     </div>
   );
