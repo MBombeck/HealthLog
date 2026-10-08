@@ -49,11 +49,18 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { DocumentsView } from "../documents-view";
 
-function render(search: string, seedList?: { kinds?: never } | object) {
+function render(
+  search: string,
+  seedList?: { kinds?: never } | object,
+  layout: object | null = { version: 1, view: "cards", arrangement: "stacked" },
+) {
   mockSearch = search;
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  if (layout !== null) {
+    queryClient.setQueryData(queryKeys.documentsLayout(), layout);
+  }
   if (seedList !== undefined) {
     queryClient.setQueryData(queryKeys.inboundDocumentList(seedList), {
       pages: [{ documents: [], nextCursor: null }],
@@ -78,6 +85,29 @@ describe("<DocumentsView> states", () => {
     expect(html).toContain('data-slot="document-upload-zone"');
     // A pending list must never read as an empty vault.
     expect(html).not.toContain("Your document vault is empty");
+  });
+
+  it("header: a wrench opens the vault's display settings, left of Upload", () => {
+    const html = render("", {});
+    const wrench = html.indexOf('data-slot="documents-customize"');
+    expect(wrench).toBeGreaterThan(-1);
+    expect(html).toContain('href="/settings/layout/documents"');
+    expect(html.indexOf("Upload", wrench)).toBeGreaterThan(wrench);
+  });
+
+  it("first load waits for the presentation, then paints the list skeleton for a list reader", () => {
+    // The presentation read is still out: the vault does not guess a shape.
+    const pending = render("", {}, null);
+    expect(pending).toContain('data-slot="documents-loading"');
+    expect(pending).not.toContain("Your document vault is empty");
+
+    const listReader = render("", undefined, {
+      version: 1,
+      view: "list",
+      arrangement: "flow",
+    });
+    expect(listReader).toContain('data-slot="documents-loading"');
+    expect(listReader).not.toContain("aspect-[4/3]");
   });
 
   it("filter bar: type facet is a compact dropdown, not an inline chip row", () => {

@@ -27,7 +27,7 @@ import { computeVascularAgeDelta } from "./vascular-age";
 import { computeHrvBalance } from "./hrv-balance";
 import { computeBmi } from "./bmi";
 import { computeSleepScore } from "./sleep-score";
-import { computeReadiness } from "./readiness";
+import { computeReadiness, readReadinessHistory } from "./readiness";
 import { computeCoincidentDeviation } from "./coincident-deviation";
 import { computeTrajectory } from "./trajectory";
 import { computeSameTimeBaseline } from "./same-time-baseline";
@@ -141,11 +141,22 @@ export async function computeDerivedMetric(
         windowDays: args.windowDays,
         now,
       }) as Promise<Derived<unknown>>;
-    case "READINESS":
-      return computeReadiness(args.userId, args.profile, {
+    case "READINESS": {
+      const readiness = await computeReadiness(args.userId, args.profile, {
         windowDays: args.windowDays,
         now,
-      }) as Promise<Derived<unknown>>;
+      });
+      // The blend's course rides beside today's score for the surfaces that
+      // draw it; the nightly job's own compute never pays for the read.
+      if (readiness.status === "ok" && readiness.value) {
+        readiness.value.series = await readReadinessHistory(
+          args.userId,
+          now,
+          readiness.provenance.windowDays,
+        );
+      }
+      return readiness as Derived<unknown>;
+    }
     case "COINCIDENT_DEVIATION":
       return computeCoincidentDeviation(args.userId, args.profile, {
         windowDays: args.windowDays,

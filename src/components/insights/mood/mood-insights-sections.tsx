@@ -12,7 +12,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { queryKeys } from "@/lib/query-keys";
 import { useTranslations } from "@/lib/i18n/context";
-import { MoodHeatmap } from "@/components/charts/mood-heatmap";
+import {
+  MoodHeatmap,
+  MoodHeatmapSkeleton,
+} from "@/components/charts/mood-heatmap";
 import { SectionCard, type MoodInsightsResponse } from "./mood-insights-shared";
 import { apiGet } from "@/lib/api/api-fetch";
 
@@ -97,15 +100,14 @@ const MoodInsightsBreakdowns = dynamic(
  */
 export type MoodInsightsRegion = "heatmap" | "assessment" | "rest";
 
-export function MoodInsightsSections({
-  region = "rest",
-}: {
-  region?: MoodInsightsRegion;
-} = {}) {
+/**
+ * The one read every region shares, exported so the page can wait on the same
+ * cell (same key, same fetch, same options) when it decides when the calendar
+ * and the line chart appear.
+ */
+export function useMoodInsights() {
   const { isAuthenticated } = useAuth();
-  const { t } = useTranslations();
-
-  const { data, isLoading, isError, refetch } = useQuery({
+  return useQuery({
     queryKey: queryKeys.moodInsights(),
     queryFn: async () => {
       return apiGet<MoodInsightsResponse>("/api/mood/insights");
@@ -113,11 +115,42 @@ export function MoodInsightsSections({
     enabled: isAuthenticated,
     staleTime: 60_000,
   });
+}
+
+export function MoodInsightsSections({
+  region = "rest",
+  reveal = true,
+}: {
+  region?: MoodInsightsRegion;
+  /**
+   * v1.42 — heatmap region only: hold the calendar on its skeleton until the
+   * page says the line chart below is ready too, so the two appear in the
+   * same frame instead of one popping in after the other. The skeleton holds
+   * the calendar's final height, so the reveal moves nothing.
+   */
+  reveal?: boolean;
+} = {}) {
+  const { t } = useTranslations();
+
+  const { data, isLoading, isPending, isError, refetch } = useMoodInsights();
+
+  // `isPending`, not `isLoading`: before the session resolves the read is
+  // disabled rather than loading, and the frame must already be there.
+  if (region === "heatmap" && (isPending || (!reveal && !isError))) {
+    // The calendar's frame and final height from the first paint; the
+    // window is known once the read has landed, assumed short until then.
+    if (data && data.summary.totalEntries === 0) return null;
+    return (
+      <SectionCard title={t("insights.mood.heatmapTitle")} icon={CalendarDays}>
+        <MoodHeatmapSkeleton days={data?.heatmap.windowDays} />
+      </SectionCard>
+    );
+  }
 
   if (isLoading) {
-    // Only the "rest" region carries the page-level loading skeleton; the
-    // heatmap / assessment regions stay invisible while loading so they don't
-    // stack three skeletons down the page.
+    // Only the "rest" region carries the page-level loading skeleton (the
+    // heatmap's own is above); the assessment region stays invisible while
+    // loading so the page does not stack skeletons down its length.
     return region === "rest" ? (
       <Skeleton className="h-48 w-full rounded-lg" />
     ) : null;

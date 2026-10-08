@@ -52,7 +52,7 @@ import {
   nowProvenanceTimestamp,
 } from "./coverage";
 import type { BaselineProfile } from "./baseline";
-import type { Derived } from "./types";
+import { SPARKLINE_MAX_POINTS, type Derived } from "./types";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** Default trailing window for the consistency/timing baseline (days). */
@@ -93,6 +93,14 @@ export interface SleepScoreValue {
   subScores: SleepSubScore[];
   /** Nights in the window that backed the consistency/timing baseline. */
   windowNights: number;
+  /**
+   * v1.42 — the score of every scorable night in the window (oldest → newest,
+   * capped to `SPARKLINE_MAX_POINTS`), so a surface can show the score's
+   * course rather than one night. Each night is scored by the same blend as
+   * the headline, against the same window's habitual midpoint, so the last
+   * point IS `score`. Additive; older clients ignore it.
+   */
+  series: number[];
 }
 
 // ── pure scorers (exported for tests) ─────────────────────────────────
@@ -530,6 +538,26 @@ export async function computeSleepScore(
   };
 
   const { score, subScores } = blendSleepSubScores(raw);
+
+  // The same blend over every scorable night in the window. Consistency is a
+  // window-level figure and timing reads against the window's habitual
+  // midpoint, so every night is judged by the yardstick the headline uses.
+  const consistency = scoreConsistency(midpoints);
+  const series = scorableNights.slice(-SPARKLINE_MAX_POINTS).map(
+    (night) =>
+      blendSleepSubScores({
+        sufficiency: scoreSufficiency(night.asleepMinutes, needMinutes),
+        efficiency: scoreEfficiency(night.asleepMinutes, night.inBedMinutes),
+        consistency,
+        timing: scoreTiming(night.midpoint, habitualMidpoint, midpoints.length),
+        composition: scoreComposition(
+          night.remMinutes,
+          night.deepMinutes,
+          night.asleepMinutes,
+          night.hasStageBreakdown,
+        ),
+      }).score,
+  );
   const presentCount = subScores.filter((s) => s.value !== null).length;
   const missing = subScores.filter((s) => s.value === null).map((s) => s.key);
 
@@ -557,6 +585,7 @@ export async function computeSleepScore(
         latest.inBedMinutes === null ? null : Math.round(latest.inBedMinutes),
       subScores,
       windowNights: scorableNights.length,
+      series,
     },
     coverage,
     confidence,

@@ -200,6 +200,7 @@ const STATIC_SURFACE_MODULE = {
   "settings-layout:mood": "mood",
   "settings-layout:labs": "labs",
   "settings-layout:illness": "illness",
+  "settings-layout:documents": "inboundDocuments",
 
   // ── Correlation channels ──
   // Rated mood factors (`FACTOR:<key>`) are mood's too; see

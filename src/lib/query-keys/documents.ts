@@ -30,6 +30,12 @@ export interface DocumentVaultFilters {
 
 export const documentKeys = {
   documents: () => ["documents"] as const,
+  /**
+   * The vault presentation (view + month arrangement). Deliberately outside
+   * the `["documents"]` prefix: a document write changes nothing about how
+   * the vault is laid out, so it must not refetch this.
+   */
+  documentsLayout: () => ["documents-layout"] as const,
   inboundDocuments: () => ["documents", "inbound"] as const,
   /**
    * The parameterised vault list (keyset-paginated via `useInfiniteQuery`).

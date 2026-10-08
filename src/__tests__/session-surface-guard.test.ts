@@ -138,6 +138,8 @@ describe("S1 — the direct session-resolution set is frozen", () => {
       "RSC prefetch of the session user's coach state, skipped under a switch",
     "app/insights/page.tsx":
       "RSC prefetch of the session user's insights, skipped under a switch",
+    "app/insights/mood/page.tsx":
+      "RSC prefetch of the session user's mood calendar and line, skipped under a switch",
     "app/insights/workouts/page.tsx":
       "RSC prefetch of the session user's workouts, skipped under a switch",
     "app/medications/page.tsx":

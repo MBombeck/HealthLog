@@ -17386,6 +17386,46 @@ paths:
         "403": *a11
         "422": *a4
         "429": *a5
+  /api/documents/inbound/layout:
+    get:
+      tags:
+        - Documents
+      summary: Get the vault presentation
+      description: The resolved card/list view and month arrangement for the vault, with defaults filled in when nothing has
+        been chosen. Inside a shared record this answers the owner's choice.
+      responses:
+        "200":
+          description: The resolved presentation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentsLayoutEnvelope"
+        "401": *a1
+        "403": *a11
+        "422": *a4
+        "429": *a5
+    put:
+      tags:
+        - Documents
+      summary: Change the vault presentation
+      description: "Preserve-when-absent: a body carrying only `view` keeps the stored arrangement and vice versa. Returns the
+        full resolved presentation. Refused while acting inside somebody else's record."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentsLayoutPutBody"
+      responses:
+        "200":
+          description: The presentation as stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentsLayoutSavedEnvelope"
+        "401": *a1
+        "422": *a4
+        "429": *a5
   /api/documents/inbound/bulk:
     post:
       tags:
@@ -31275,6 +31315,26 @@ components:
       additionalProperties: false
       description: Partial edit of a family-history entry; an omitted key leaves the column untouched. A `null`
         `ageAtOnset`/`note` clears that field. Rejects unknown keys.
+    DocumentsLayoutPutBody:
+      type: object
+      properties:
+        version:
+          type: number
+          const: 1
+        view:
+          type: string
+          enum:
+            - cards
+            - list
+        arrangement:
+          type: string
+          enum:
+            - stacked
+            - flow
+      required:
+        - version
+      additionalProperties: false
+      description: Either field may be omitted; the stored value is kept for the one left out.
     DocumentBulkRequest:
       type: object
       properties:
@@ -36661,6 +36721,7 @@ components:
                 insightsLayoutJson: {}
                 medicationListLayoutJson: {}
                 moodTagLayoutJson: {}
+                documentsLayoutJson: {}
                 reportSelectionJson: {}
                 globalExcludedInjectionSites:
                   type: array
@@ -72135,6 +72196,65 @@ components:
         - linkedProcedures
         - assistAvailable
         - contentIndex
+      additionalProperties: false
+    DocumentsLayoutEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/DocumentsLayout"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DocumentsLayout:
+      type: object
+      properties:
+        version:
+          type: number
+          const: 1
+        view:
+          type: string
+          enum:
+            - cards
+            - list
+          description: '`cards` renders the preview-tile grid, `list` one compact row per document. Default "cards".'
+        arrangement:
+          type: string
+          enum:
+            - stacked
+            - flow
+          description: '`stacked` gives every month its own block; `flow` runs the documents across the full width and wraps, with
+            month names inline. Default "stacked".'
+      required:
+        - version
+        - view
+        - arrangement
+      additionalProperties: false
+      description: Per-user document vault presentation. Display-only; a client that does not render a vault ignores it.
+    DocumentsLayoutSavedEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/DocumentsLayout"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
       additionalProperties: false
     DocumentBulkEnvelope:
       type: object

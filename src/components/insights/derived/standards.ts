@@ -111,7 +111,6 @@ export const METRIC_PROVENANCE: Record<DerivedMetricId, MetricProvenanceMeta> =
         name: "Plews et al. 2013, Sports Medicine",
         url: "https://doi.org/10.1007/s40279-013-0071-8",
       },
-      caveatKey: "insights.derived.composite.READINESS.caveat",
     },
     RECOVERY_SCORE: {
       methodKey: "insights.derived.composite.RECOVERY_SCORE.method",
@@ -120,7 +119,6 @@ export const METRIC_PROVENANCE: Record<DerivedMetricId, MetricProvenanceMeta> =
         name: "Buchheit 2014, Front. Physiol.",
         url: "https://doi.org/10.3389/fphys.2014.00073",
       },
-      caveatKey: "insights.derived.composite.RECOVERY_SCORE.caveat",
     },
     STRESS_SCORE: {
       methodKey: "insights.derived.composite.STRESS_SCORE.method",
@@ -129,7 +127,6 @@ export const METRIC_PROVENANCE: Record<DerivedMetricId, MetricProvenanceMeta> =
         name: "Kim et al. 2018, Psychiatry Investig.",
         url: "https://doi.org/10.30773/pi.2017.08.17",
       },
-      caveatKey: "insights.derived.composite.STRESS_SCORE.caveat",
     },
     STRAIN_SCORE: {
       methodKey: "insights.derived.composite.STRAIN_SCORE.method",
@@ -138,7 +135,6 @@ export const METRIC_PROVENANCE: Record<DerivedMetricId, MetricProvenanceMeta> =
         name: "Banister 1991, TRIMP model",
         url: "https://en.wikipedia.org/wiki/Training_Impulse",
       },
-      caveatKey: "insights.derived.composite.STRAIN_SCORE.caveat",
     },
     WRIST_TEMPERATURE_BASELINE: {
       methodKey: "insights.derived.composite.WRIST_TEMPERATURE_BASELINE.method",

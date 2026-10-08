@@ -75,6 +75,7 @@ const sleepScore: SleepScoreValue = {
     { key: "composition", value: 88, weight: 0.15 },
   ],
   windowNights: 20,
+  series: [78, 82],
 };
 
 const recovery: WellnessScoreValue = {

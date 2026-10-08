@@ -31,14 +31,23 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useTranslations } from "@/lib/i18n/context";
 import type { InboundDocumentDto } from "@/lib/validations/inbound-documents";
 import { UploadStateCard } from "./document-card";
+import type {
+  DocumentsLayoutArrangement,
+  DocumentsLayoutView,
+} from "@/lib/documents/documents-layout";
 import {
   columnsForWidth,
   DocumentMonthHeading,
   DocumentMonthRow,
   estimatedRowHeight,
+  listColumnsForWidth,
 } from "./document-month-grid";
 import type { UploadQueueItem } from "./use-document-upload";
-import { buildTimelineItems, formatMonthLabel } from "./vault-utils";
+import {
+  buildFlowTimelineItems,
+  buildTimelineItems,
+  formatMonthLabel,
+} from "./vault-utils";
 
 const SCROLL_CONTAINER_ID = "main-content";
 
@@ -56,7 +65,13 @@ export function DocumentTimeline({
   highlightId,
   onPrefetch,
   timezone,
+  view = "cards",
+  arrangement = "stacked",
 }: {
+  /** Preview tiles or compact rows (the reader's vault presentation). */
+  view?: DocumentsLayoutView;
+  /** Months as their own blocks, or one continuous run across the width. */
+  arrangement?: DocumentsLayoutArrangement;
   /** The reader's profile zone; an undated document files under its upload day there. */
   timezone: string;
   documents: InboundDocumentDto[];
@@ -85,24 +100,39 @@ export function DocumentTimeline({
   // the remembered card left the corpus (filter change, deletion).
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // Measured columns — the ResizeObserver drives the row chunking.
+  const flow = arrangement === "flow";
+
+  // Measured columns — the ResizeObserver drives the row chunking. Tiles
+  // share a row on any width; compact rows only in the flowing arrangement,
+  // a stacked list stays one column.
   useEffect(() => {
     const el = listRef.current;
     if (!el) return;
     const update = () => {
-      setColumns(columnsForWidth(el.clientWidth));
-      setGridWidth(el.clientWidth);
+      const width = el.clientWidth;
+      setColumns(
+        view === "cards"
+          ? columnsForWidth(width)
+          : flow
+            ? listColumnsForWidth(width)
+            : 1,
+      );
+      setGridWidth(width);
     };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [view, flow]);
 
   const items = useMemo(
-    () => buildTimelineItems(documents, columns, timezone),
-    [documents, columns, timezone],
+    () =>
+      flow
+        ? buildFlowTimelineItems(documents, columns, timezone)
+        : buildTimelineItems(documents, columns, timezone),
+    [documents, columns, timezone, flow],
   );
+  const formatMonth = (key: string) => formatMonthLabel(key, locale);
 
   // The timeline does not start at the scrollport's top edge (page header,
   // filter bar, upload row sit above it) — feed the offset to the
@@ -134,7 +164,7 @@ export function DocumentTimeline({
     estimateSize: (index) =>
       items[index].type === "month"
         ? 40
-        : estimatedRowHeight(gridWidth, columns),
+        : estimatedRowHeight(gridWidth, columns, view, flow),
     getItemKey: (index) => items[index].key,
     overscan: 6,
     scrollMargin,
@@ -237,7 +267,12 @@ export function DocumentTimeline({
   ]);
 
   return (
-    <div data-slot="document-timeline" className="space-y-4">
+    <div
+      data-slot="document-timeline"
+      data-view={view}
+      data-arrangement={arrangement}
+      className="space-y-4"
+    >
       {uploadItems.length > 0 ? (
         <div
           data-slot="document-upload-queue"
@@ -296,6 +331,9 @@ export function DocumentTimeline({
                   <DocumentMonthRow
                     documents={item.documents}
                     columns={columns}
+                    view={view}
+                    monthStarts={item.monthStarts}
+                    formatMonth={formatMonth}
                     selectedIds={selectedIds}
                     onToggleSelected={onToggleSelected}
                     onOpen={onOpen}

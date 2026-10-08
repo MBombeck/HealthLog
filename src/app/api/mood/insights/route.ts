@@ -7,6 +7,7 @@ import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 import {
   fetchMoodAggregates,
   MOOD_STABILITY_WINDOWS,
+  moodInsightsWire,
   type MoodAggregates,
   type MoodStabilityWindow,
 } from "@/lib/insights/mood-aggregates";
@@ -74,17 +75,5 @@ export const GET = apiHandler(async (request: Request) => {
     },
   });
 
-  // The per-window map is the cache's, not the wire's: the chosen window is
-  // served as `stability`. An aggregate cached before the map existed has
-  // only the year, so a shorter window reads as not yet computed (`null`)
-  // until the next rebuild rather than as the year's score under a new name.
-  const { stabilityByWindow, ...wire } = result;
-  return apiSuccess({
-    ...wire,
-    stability:
-      stabilityWindowDays === 365
-        ? result.stability
-        : (stabilityByWindow?.[stabilityWindowDays] ?? null),
-    stabilityWindowDays,
-  });
+  return apiSuccess(moodInsightsWire(result, stabilityWindowDays));
 });
