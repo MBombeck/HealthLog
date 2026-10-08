@@ -78,6 +78,20 @@ describe("the shell owns the safe area", () => {
     );
   });
 
+  it("a bottom sheet on the keyboard drops its home-indicator padding", () => {
+    // Standing on the keyboard, the safe-area inset left a ~34 px gap
+    // between the sheet's last row and the keys.
+    expect(code(read("src/app/globals.css"))).toMatch(
+      /@custom-variant keyboard-open \(html\[data-keyboard="open"\] &\);/,
+    );
+    const sheet = code(read("src/components/ui/responsive-sheet.tsx"));
+    const padded = (sheet.match(
+      /"[^"]*pb-\[calc\(env\(safe-area-inset-bottom[^"]*"/g,
+    ) ?? []) as string[];
+    expect(padded.length).toBe(2);
+    for (const cls of padded) expect(cls).toMatch(/\bkeyboard-open:pb-4\b/);
+  });
+
   it("the sheet primitive names its side for those rules", () => {
     expect(read("src/components/ui/sheet.tsx")).toMatch(
       /data-sheet-side=\{side\}/,

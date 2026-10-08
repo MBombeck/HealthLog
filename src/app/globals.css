@@ -76,6 +76,13 @@
   }
 }
 
+/*
+ * `keyboard-open:` — while the on-screen keyboard is up (see the keyboard
+ * rules further down). A bottom sheet then stands on the keyboard, not on
+ * the home indicator, so its safe-area padding has nothing left to clear.
+ */
+@custom-variant keyboard-open (html[data-keyboard="open"] &);
+
 @custom-variant shell-mobile {
   @media (max-width: 47.98rem), (pointer: coarse) and (max-height: 520px) {
     @slot;

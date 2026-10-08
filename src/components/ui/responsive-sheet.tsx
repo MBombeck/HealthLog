@@ -257,7 +257,10 @@ export function ResponsiveSheet({
               // Without a footer the body is the sheet's bottom edge, so it
               // keeps its last row above the home indicator of an
               // installed app; the footer does that when there is one.
-              !footer && "pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]",
+              // Standing on the keyboard, the sheet is clear of the
+              // indicator already; the inset would leave a gap above it.
+              !footer &&
+                "keyboard-open:pb-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]",
               bodyClassName,
             )}
           >
@@ -266,7 +269,7 @@ export function ResponsiveSheet({
           {footer ? (
             <SheetFooter
               data-slot="responsive-sheet-footer"
-              className="border-border/70 bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky bottom-0 mt-0 flex-row justify-end gap-2 border-t p-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] backdrop-blur"
+              className="border-border/70 bg-background/95 supports-[backdrop-filter]:bg-background/80 keyboard-open:pb-4 sticky bottom-0 mt-0 flex-row justify-end gap-2 border-t p-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] backdrop-blur"
             >
               {footer}
             </SheetFooter>
