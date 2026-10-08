@@ -11881,7 +11881,7 @@
       },
       "profile": {
         "label": "Historia zdrowia",
-        "detail": "Alergie, wywiad rodzinny, dane z Twojego profilu zdrowotnego, wizyty lekarskie i gabinety, Twoja historia szczepień oraz Twoje wydarzenia życiowe."
+        "detail": "Alergie, wywiad rodzinny, dane z Twojego profilu zdrowotnego, wizyty lekarskie i gabinety oraz Twoja historia szczepień."
       },
       "illness": {
         "label": "Choroby",

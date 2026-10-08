@@ -23413,8 +23413,9 @@ paths:
       description: "Everything on one local calendar day: what ran through it (medications, an illness, a cycle phase, a
         trip), the readings in its window with the person's usual range, what happened on it, and deterministic notable
         observations as keys with parameters. Sections of a switched-off module are left out; sections the caller's
-        grant does not cover are named in `sections`. Read live from the record, never from the UTC rollups. A date that
-        is not a real calendar date answers 422."
+        grant does not cover are named in `sections`. Life events and the environment are the owner's only: for a
+        delegate at any level they are named `not_shared`. Read live from the record, never from the UTC rollups. A date
+        that is not a real calendar date answers 422."
       parameters:
         - in: path
           name: date
@@ -23441,7 +23442,8 @@ paths:
       summary: The record over the years
       description: Lanes of conditions, allergies, medications, vaccinations, visits, lab days, documents and life events, the
         standing items without a start, and monthly (or finer, by zoom) value series. Empty lanes are not sent; lanes of
-        a switched-off module never are. Requires the opt-in `timeline` module.
+        a switched-off module never are. The `life` lane (life events and travel periods) is the owner's only and is
+        never sent to a delegate. Requires the opt-in `timeline` module.
       parameters:
         - in: query
           name: zoom
@@ -23503,8 +23505,8 @@ paths:
         - Records
       summary: What the timeline can show
       description: "One row per lane: carries, thin or empty, a count, a detail as a message key with parameters, and the gaps
-        with one in-app link each. The verdict is one of two words, never a score. Requires the opt-in `timeline`
-        module."
+        with one in-app link each. The verdict is one of two words, never a score. The `life` lane is reported to the
+        owner only. Requires the opt-in `timeline` module."
       responses:
         "200":
           description: The readiness inventory.
@@ -23521,8 +23523,8 @@ paths:
       tags:
         - Records
       summary: List life events
-      description: The record's life events, oldest first; soft-deleted ones are excluded. Title and note are decrypted for
-        the caller. Part of the `profile` sharing domain. Life events are never sent to a model.
+      description: "The account's own life events, oldest first; soft-deleted ones are excluded. Title and note are decrypted
+        for the caller. Owner-only: no delegate reads them at any share level. Life events are never sent to a model."
       responses:
         "200":
           description: The life events.
@@ -23531,7 +23533,20 @@ paths:
               schema:
                 $ref: "#/components/schemas/LifeEventListEnvelope"
         "401": *a1
-        "403": *a11
+        "403": &a68
+          description: >-
+            Owner-only in v1.42: no share reaches life events, not a `profile` share, a whole-record share or MANAGE,
+            and not a guardian acting for a managed profile.
+
+
+            Refused: the request was made while the session is acting on another account (`meta.errorCode` =
+            `sharing.not_permitted`). This operation resolves the CALLER and never a named record, so under a switch it
+            refuses instead of quietly answering with the caller's own — leave the shared record first. No grant at any
+            level opens it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
     post:
@@ -23540,7 +23555,8 @@ paths:
       summary: Add a life event
       description: "A dated anchor in the person's life. `precision` says how much of the date is known and applies to both
         ends: at MONTH a date is the first of its month, at YEAR the first of its year. `endDate`, when given, is not
-        before `startDate`. Title (1-120 characters) and note (up to 2000) are encrypted at rest."
+        before `startDate`. Title (1-120 characters) and note (up to 2000) are encrypted at rest. Owner-only, like every
+        life-event route."
       parameters:
         - *a6
       requestBody:
@@ -23557,7 +23573,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateLifeEventEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a68
         "409": *a7
         "422": *a4
         "429": *a12
@@ -23588,9 +23604,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateLifeEventEnvelope"
         "401": *a1
-        "403": *a11
-        "404": &a68
-          description: No such life event on this record.
+        "403": *a68
+        "404": &a69
+          description: No such life event on this account.
           content:
             application/json:
               schema:
@@ -23616,8 +23632,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteLifeEventEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a68
+        "403": *a68
+        "404": *a69
         "422": *a4
         "429": *a5
   /api/bugreport:

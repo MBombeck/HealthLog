@@ -32,15 +32,27 @@ import {
   idempotentWrite,
   recordRefusal,
   recordWriteRateLimitResponse,
+  SHARING_NOT_PERMITTED_DESCRIPTION,
   stdResponses,
 } from "./shared";
+
+const LIFE_EVENTS_OWNER_ONLY =
+  "Owner-only in v1.42: no share reaches life events, not a `profile` share, a whole-record share or MANAGE, and not a guardian acting for a managed profile.";
+
+/** The 403 of an owner-only life-event route. */
+const lifeEventRefusal = {
+  "403": {
+    description: `${LIFE_EVENTS_OWNER_ONLY}\n\n${SHARING_NOT_PERMITTED_DESCRIPTION}`,
+    content: { "application/json": { schema: errorEnvelope } },
+  },
+};
 
 const TIMELINE_OFF =
   "`module.disabled` with `meta.module = timeline`: the record has the timeline switched off (it is opt-in), or the operator turned it off server-wide.";
 
 const lifeEventNotFound = {
   "404": {
-    description: "No such life event on this record.",
+    description: "No such life event on this account.",
     content: { "application/json": { schema: errorEnvelope } },
   },
 };
@@ -96,7 +108,7 @@ export const dayPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Records"],
       summary: "One day across the record",
       description:
-        "Everything on one local calendar day: what ran through it (medications, an illness, a cycle phase, a trip), the readings in its window with the person's usual range, what happened on it, and deterministic notable observations as keys with parameters. Sections of a switched-off module are left out; sections the caller's grant does not cover are named in `sections`. Read live from the record, never from the UTC rollups. A date that is not a real calendar date answers 422.",
+        "Everything on one local calendar day: what ran through it (medications, an illness, a cycle phase, a trip), the readings in its window with the person's usual range, what happened on it, and deterministic notable observations as keys with parameters. Sections of a switched-off module are left out; sections the caller's grant does not cover are named in `sections`. Life events and the environment are the owner's only: for a delegate at any level they are named `not_shared`. Read live from the record, never from the UTC rollups. A date that is not a real calendar date answers 422.",
       requestParams: { path: dayPathSchema },
       responses: {
         "200": {
@@ -117,7 +129,7 @@ export const dayPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Records"],
       summary: "The record over the years",
       description:
-        "Lanes of conditions, allergies, medications, vaccinations, visits, lab days, documents and life events, the standing items without a start, and monthly (or finer, by zoom) value series. Empty lanes are not sent; lanes of a switched-off module never are. Requires the opt-in `timeline` module.",
+        "Lanes of conditions, allergies, medications, vaccinations, visits, lab days, documents and life events, the standing items without a start, and monthly (or finer, by zoom) value series. Empty lanes are not sent; lanes of a switched-off module never are. The `life` lane (life events and travel periods) is the owner's only and is never sent to a delegate. Requires the opt-in `timeline` module.",
       requestParams: { query: timelineQuerySchema },
       responses: {
         "200": {
@@ -138,7 +150,7 @@ export const dayPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Records"],
       summary: "What the timeline can show",
       description:
-        "One row per lane: carries, thin or empty, a count, a detail as a message key with parameters, and the gaps with one in-app link each. The verdict is one of two words, never a score. Requires the opt-in `timeline` module.",
+        "One row per lane: carries, thin or empty, a count, a detail as a message key with parameters, and the gaps with one in-app link each. The verdict is one of two words, never a score. The `life` lane is reported to the owner only. Requires the opt-in `timeline` module.",
       responses: {
         "200": {
           description: "The readiness inventory.",
@@ -161,7 +173,7 @@ export const dayPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Records"],
       summary: "List life events",
       description:
-        "The record's life events, oldest first; soft-deleted ones are excluded. Title and note are decrypted for the caller. Part of the `profile` sharing domain. Life events are never sent to a model.",
+        "The account's own life events, oldest first; soft-deleted ones are excluded. Title and note are decrypted for the caller. Owner-only: no delegate reads them at any share level. Life events are never sent to a model.",
       responses: {
         "200": {
           description: "The life events.",
@@ -175,7 +187,7 @@ export const dayPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
-        ...recordRefusal(),
+        ...lifeEventRefusal,
       },
     },
     post: {
@@ -183,7 +195,7 @@ export const dayPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Records"],
       summary: "Add a life event",
       description:
-        "A dated anchor in the person's life. `precision` says how much of the date is known and applies to both ends: at MONTH a date is the first of its month, at YEAR the first of its year. `endDate`, when given, is not before `startDate`. Title (1-120 characters) and note (up to 2000) are encrypted at rest.",
+        "A dated anchor in the person's life. `precision` says how much of the date is known and applies to both ends: at MONTH a date is the first of its month, at YEAR the first of its year. `endDate`, when given, is not before `startDate`. Title (1-120 characters) and note (up to 2000) are encrypted at rest. Owner-only, like every life-event route.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: lifeEventCreateSchema } },
@@ -198,7 +210,7 @@ export const dayPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
-        ...recordRefusal(),
+        ...lifeEventRefusal,
         ...recordWriteRateLimitResponse,
         ...idempotentWrite(),
       },
@@ -226,7 +238,7 @@ export const dayPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...lifeEventNotFound,
         ...stdResponses,
-        ...recordRefusal(),
+        ...lifeEventRefusal,
       },
     },
     delete: {
@@ -245,7 +257,7 @@ export const dayPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...lifeEventNotFound,
         ...stdResponses,
-        ...recordRefusal(),
+        ...lifeEventRefusal,
       },
     },
   },

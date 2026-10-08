@@ -482,31 +482,6 @@ export const ADMITTED_MUTATING_HANDLERS = [
     "manage",
     "delete",
   ),
-  // v1.42 (#613) — life events, MANAGE on all three verbs.
-  handler(
-    "app/api/life-events/route.ts",
-    "/api/life-events",
-    "POST",
-    "profile",
-    "manage",
-    "create",
-  ),
-  handler(
-    "app/api/life-events/[id]/route.ts",
-    "/api/life-events/[id]",
-    "PATCH",
-    "profile",
-    "manage",
-    "update",
-  ),
-  handler(
-    "app/api/life-events/[id]/route.ts",
-    "/api/life-events/[id]",
-    "DELETE",
-    "profile",
-    "manage",
-    "delete",
-  ),
   handler(
     "app/api/illness/episodes/[id]/day-logs/route.ts",
     "/api/illness/episodes/[id]/day-logs",
