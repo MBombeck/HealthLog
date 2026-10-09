@@ -76,8 +76,10 @@ an earlier fold computed from part of a day.
   when each type last arrived, by which trigger (including the new
   `manual` for Sync all) and when it last brought a new value
   (migration 0384).
-- **Documents layout.** Preview cards or a compact list, months stacked or
-  flowing, per account (migration 0388).
+- **Documents layout.** Preview cards or a compact list, months flowing
+  side by side (the default) or stacked, per account (migration 0388). Only
+  a field the person picked is stored, so an untouched one follows the
+  default.
 - **Measurement maintenance.** An admin card and
   `POST /api/admin/maintenance/measurements` run `VACUUM (ANALYZE)` and a
   `REINDEX INDEX CONCURRENTLY` per index, largest first.

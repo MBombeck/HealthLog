@@ -31,9 +31,10 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useTranslations } from "@/lib/i18n/context";
 import type { InboundDocumentDto } from "@/lib/validations/inbound-documents";
 import { UploadStateCard } from "./document-card";
-import type {
-  DocumentsLayoutArrangement,
-  DocumentsLayoutView,
+import {
+  DEFAULT_DOCUMENTS_LAYOUT,
+  type DocumentsLayoutArrangement,
+  type DocumentsLayoutView,
 } from "@/lib/documents/documents-layout";
 import {
   columnsForWidth,
@@ -65,8 +66,8 @@ export function DocumentTimeline({
   highlightId,
   onPrefetch,
   timezone,
-  view = "cards",
-  arrangement = "stacked",
+  view = DEFAULT_DOCUMENTS_LAYOUT.view,
+  arrangement = DEFAULT_DOCUMENTS_LAYOUT.arrangement,
 }: {
   /** Preview tiles or compact rows (the reader's vault presentation). */
   view?: DocumentsLayoutView;

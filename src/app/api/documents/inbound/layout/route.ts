@@ -20,6 +20,7 @@ import {
   DOCUMENTS_LAYOUT_ARRANGEMENTS,
   DOCUMENTS_LAYOUT_VIEWS,
   resolveDocumentsLayout,
+  storedDocumentsLayoutChoices,
   type DocumentsLayout,
 } from "@/lib/documents/documents-layout";
 import { annotate } from "@/lib/logging/context";
@@ -35,12 +36,12 @@ const layoutPutSchema = z
   })
   .strict();
 
-async function readLayout(userId: string): Promise<DocumentsLayout> {
+async function readStoredLayout(userId: string): Promise<unknown> {
   const row = await prisma.user.findUnique({
     where: { id: userId },
     select: { documentsLayoutJson: true },
   });
-  return resolveDocumentsLayout(row?.documentsLayoutJson);
+  return row?.documentsLayoutJson;
 }
 
 export const GET = apiHandler(async () => {
@@ -51,7 +52,7 @@ export const GET = apiHandler(async () => {
   const gate = await requireModuleEnabled(user.id, "inboundDocuments");
   if (!gate.enabled) return gate.response;
 
-  const layout = await readLayout(user.id);
+  const layout = resolveDocumentsLayout(await readStoredLayout(user.id));
   annotate({
     action: { name: "documents.layout.read" },
     meta: { view: layout.view, arrangement: layout.arrangement },
@@ -78,17 +79,20 @@ export const PUT = apiHandler(async (request: Request) => {
   }
 
   // Preserve-when-absent: one stored read fills whichever field the body
-  // left out.
-  const existing = await readLayout(user.id);
-  const next: DocumentsLayout = {
-    version: 1,
-    view: parsed.data.view ?? existing.view,
-    arrangement: parsed.data.arrangement ?? existing.arrangement,
+  // left out. Only fields the user has chosen are written, so a field never
+  // picked keeps following the default (which can change between releases).
+  const choices = {
+    ...storedDocumentsLayoutChoices(await readStoredLayout(user.id)),
+    ...(parsed.data.view ? { view: parsed.data.view } : {}),
+    ...(parsed.data.arrangement
+      ? { arrangement: parsed.data.arrangement }
+      : {}),
   };
+  const next: DocumentsLayout = resolveDocumentsLayout(choices);
 
   await prisma.user.update({
     where: { id: user.id },
-    data: { documentsLayoutJson: toJson(next) },
+    data: { documentsLayoutJson: toJson({ version: 1, ...choices }) },
   });
 
   annotate({
