@@ -57,8 +57,9 @@ const GOTIFY_PRIORITY: Record<PriorityBand, number> = {
  * The request body for the configured format.
  *
  * Discreet mode (cycle privacy) is honoured the same way in both: the title
- * and message arrive already masked upstream, and the event name a relay
- * could route on is replaced by the generic `reminder`.
+ * and message arrive already masked upstream, every text field (including the
+ * generic body's `content` and `text`) is built from them, and the event name
+ * a relay could route on is replaced by the generic `reminder`.
  */
 export function buildWebhookBody(
   config: Pick<WebhookChannelConfig, "format">,
@@ -83,22 +84,50 @@ export function buildWebhookBody(
     });
   }
 
-  // Generic envelope. Discord and Slack ignore unknown keys, so one shape
-  // covers the common JSON relays. Unchanged since v1.18.4: an existing
-  // Home Assistant or n8n rule parses these exact fields.
+  // Generic envelope. The first four fields are unchanged since v1.18.4, in
+  // the same order: an existing Home Assistant or n8n rule parses them.
+  // Discord and Slack do not read them. Discord answers 400 "Cannot send an
+  // empty message" unless the body carries `content` (or `embeds`), and a
+  // Slack incoming webhook needs `text`. Both get the same plain text,
+  // built from the already masked title and message, so discreet mode
+  // holds. `allowed_mentions` with an empty `parse` stops Discord from
+  // resolving `@everyone`, `@here` or `<@id>` that a message might contain.
+  // Each target ignores the keys meant for the others.
+  const text = [title, message].filter((part) => part.length > 0).join("\n");
   return JSON.stringify({
     title,
     message,
     eventType,
     priority: band,
+    content: truncateCodePoints(text, DISCORD_CONTENT_LIMIT),
+    text,
+    allowed_mentions: { parse: [] },
   });
+}
+
+/** Discord rejects a `content` longer than 2000 characters. */
+const DISCORD_CONTENT_LIMIT = 2000;
+
+/**
+ * Cut `value` to at most `limit` code points, the last one an ellipsis when
+ * anything was dropped. Counts code points, not UTF-16 units, so a cut never
+ * splits a surrogate pair.
+ */
+function truncateCodePoints(value: string, limit: number): string {
+  const points = Array.from(value);
+  if (points.length <= limit) return value;
+  return `${points
+    .slice(0, limit - 1)
+    .join("")
+    .trimEnd()}\u2026`;
 }
 
 /**
  * Send a notification via a generic outbound webhook (v1.17.1).
  *
  * The user supplies a URL and optionally one custom header, and chooses the
- * body shape: HealthLog's generic JSON envelope, or the body Gotify's
+ * body shape: HealthLog's generic JSON envelope (which a Discord or Slack
+ * webhook URL also accepts as is), or the body Gotify's
  * `POST /message` binds (see `buildWebhookBody`). Gotify takes its app token
  * as an `X-Gotify-Key` header or a `token` query parameter. The body is plain
  * text (no markdown — hard rule); `title`/`message` are stripped of HTML and

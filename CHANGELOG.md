@@ -155,6 +155,14 @@ an earlier fold computed from part of a day.
 - **Push after an update.** Reload on the new-version hint unregistered the
   service worker, which ended the Web Push subscription; it now updates the
   worker instead.
+- **Discord and Slack webhooks.** A Discord webhook URL answered the test
+  and every reminder with "Cannot send an empty message", and a Slack
+  incoming webhook refused the body too: the generic format carried neither
+  Discord's `content` nor Slack's `text`. It now sends both as plain text
+  (title and message, cut to Discord's 2000 characters), tells Discord to
+  resolve no mentions, and keeps `title`, `message`, `eventType` and
+  `priority` unchanged for Home Assistant and n8n rules. Discreet mode
+  covers the new fields.
 - **MCP deep links.** `/insights?metric=` and `/labs?analyte=` open the
   metric's page and the marker's page.
 - **Apple Health status** no longer reads "waiting for first data" after an
