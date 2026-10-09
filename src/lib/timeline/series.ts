@@ -35,7 +35,7 @@ import { prisma } from "@/lib/db";
 import { isCumulativeDaySumType } from "@/lib/measurements/cumulative-day-sum";
 import { readCanonicalRollupBuckets } from "@/lib/rollups/measurement-read";
 import { ROLLUP_FOLD_WINDOW_MS } from "@/lib/rollups/measurement-rollups";
-import { dateOnlyKey } from "@/lib/tz/date-only";
+import { dateOnlyKey, dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
 import {
   daysBetweenDateKeys,
   shiftDateKey,
@@ -247,6 +247,14 @@ async function measurementSeries(args: {
       bucket,
     );
     const boundary = startOfLocalDayKey(boundaryKey, args.tz);
+    // The live days end at the local boundary; the rolled-up months start at
+    // the boundary month. The rollup tier keys its months by the UTC
+    // calendar, so the window is compared by UTC date: west of UTC the local
+    // midnight of the boundary month comes hours after that month's UTC
+    // start, and a read from it left the month out.
+    const rollupFrom = dayKeyAsUtcMidnight(
+      boundaryKey > args.from ? boundaryKey : args.from,
+    );
     const [older, recent] = await Promise.all([
       preFoldBuckets({
         userId: args.userId,
@@ -261,8 +269,8 @@ async function measurementSeries(args: {
         ? monthsFromRollups({
             userId: args.userId,
             type: args.type,
-            from: boundary > start ? boundary : start,
-            to: end,
+            from: rollupFrom,
+            to: dayKeyAsUtcMidnight(args.to),
             priorityJson: args.priorityJson,
           }).then((months) => foldMonths(months, bucket))
         : Promise.resolve([]),
