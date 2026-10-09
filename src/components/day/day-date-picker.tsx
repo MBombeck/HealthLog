@@ -5,7 +5,7 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
-import { resolveDateFnsLocale } from "@/components/ui/date-field";
+import { resolveDateFnsLocale } from "@/components/ui/calendar-locale";
 import {
   Popover,
   PopoverContent,

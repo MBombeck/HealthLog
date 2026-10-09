@@ -11,6 +11,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
+const transactionLock = vi.hoisted(() => vi.fn(async () => []));
 const transactionUser = vi.hoisted(() => ({
   findUnique: vi.fn(),
   update: vi.fn(),
@@ -123,8 +124,12 @@ beforeEach(() => {
   // test below the dead-switch block assumes.
   vi.mocked(isModuleEnabled).mockResolvedValue(true as never);
   vi.mocked(prisma.$transaction).mockImplementation((async (
-    callback: (tx: { user: typeof transactionUser }) => Promise<unknown>,
-  ) => callback({ user: transactionUser })) as never);
+    callback: (tx: {
+      user: typeof transactionUser;
+      $queryRaw: typeof transactionLock;
+    }) => Promise<unknown>,
+  ) =>
+    callback({ user: transactionUser, $queryRaw: transactionLock })) as never);
 });
 
 describe("PUT /api/dashboard/widgets — 422 multi-issue envelope (v1.4.42 W2)", () => {
@@ -942,9 +947,13 @@ describe("DELETE /api/dashboard/widgets — web-owned reset scope", () => {
     expect(res.status).toBe(200);
 
     expect(prisma.$transaction).toHaveBeenCalledOnce();
-    expect(vi.mocked(prisma.$transaction).mock.calls[0]?.[1]).toEqual({
-      isolationLevel: "Serializable",
-    });
+    // A row lock, not Serializable isolation, which failed concurrent
+    // writers with a serialization error.
+    expect(vi.mocked(prisma.$transaction).mock.calls[0]?.[1]).toBeUndefined();
+    expect(transactionLock).toHaveBeenCalledOnce();
+    expect(
+      (transactionLock.mock.calls[0] as unknown[] | undefined)?.[0],
+    ).toEqual(expect.arrayContaining([expect.stringContaining("FOR UPDATE")]));
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
     expect(prisma.user.update).not.toHaveBeenCalled();
     expect(transactionUser.findUnique).toHaveBeenCalledOnce();

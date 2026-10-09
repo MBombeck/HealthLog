@@ -494,32 +494,33 @@ export const DELETE = apiHandler(async () => {
   // dashboard to defaults is the loudest possible version of redecorating it.
   const { user } = await requireAuth();
 
-  const { normalized, updatedAt } = await prisma.$transaction(
-    async (tx) => {
-      const existing = await tx.user.findUnique({
-        where: { id: user.id },
-        select: { dashboardWidgetsJson: true },
-      });
-      const existingLayout = resolveDashboardLayout(
-        existing?.dashboardWidgetsJson,
-      );
-      const normalized = serializeDashboardLayout({
-        ...existingLayout,
-        widgets: DEFAULT_DASHBOARD_LAYOUT.widgets,
-        enabledHeroItemKinds: DEFAULT_DASHBOARD_LAYOUT.enabledHeroItemKinds,
-        // A reset brings a hidden top card back.
-        todayCardVisible: DEFAULT_DASHBOARD_LAYOUT.todayCardVisible,
-      });
+  // Under a row lock rather than Serializable isolation: a reset racing a
+  // chart-overlay toggle on the same account waits for it instead of
+  // failing with a serialization error (a 500).
+  const { normalized, updatedAt } = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM users WHERE id = ${user.id} FOR UPDATE`;
+    const existing = await tx.user.findUnique({
+      where: { id: user.id },
+      select: { dashboardWidgetsJson: true },
+    });
+    const existingLayout = resolveDashboardLayout(
+      existing?.dashboardWidgetsJson,
+    );
+    const normalized = serializeDashboardLayout({
+      ...existingLayout,
+      widgets: DEFAULT_DASHBOARD_LAYOUT.widgets,
+      enabledHeroItemKinds: DEFAULT_DASHBOARD_LAYOUT.enabledHeroItemKinds,
+      // A reset brings a hidden top card back.
+      todayCardVisible: DEFAULT_DASHBOARD_LAYOUT.todayCardVisible,
+    });
 
-      const updated = await tx.user.update({
-        where: { id: user.id },
-        data: { dashboardWidgetsJson: toJson(normalized) },
-        select: { updatedAt: true },
-      });
-      return { normalized, updatedAt: updated.updatedAt.toISOString() };
-    },
-    { isolationLevel: "Serializable" },
-  );
+    const updated = await tx.user.update({
+      where: { id: user.id },
+      data: { dashboardWidgetsJson: toJson(normalized) },
+      select: { updatedAt: true },
+    });
+    return { normalized, updatedAt: updated.updatedAt.toISOString() };
+  });
 
   annotate({ action: { name: "dashboard.widgets.reset" } });
 

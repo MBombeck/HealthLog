@@ -626,7 +626,10 @@ test("an open day stays open from the timeline to another page", async ({
   await expect(panel).toHaveCount(0);
   await page.locator('a[href="/timeline"]').first().click();
   await expect(page).toHaveURL(/\/timeline$/);
-  await expect(page.locator('[data-slot="day-rail"]')).toBeVisible();
+  await expect(page.locator('[data-slot="day-strip"]')).toHaveAttribute(
+    "data-state",
+    "closed",
+  );
   await expect(panel).toHaveCount(0);
 });
 
@@ -774,4 +777,103 @@ test("listing all of a day's values scrolls the panel, never the page", async ({
   const after = await heights();
   expect(Math.abs(after.doc - before.doc)).toBeLessThanOrEqual(2);
   expect(Math.abs(after.main - before.main)).toBeLessThanOrEqual(2);
+});
+
+test("the day's strip stays at the right edge, opens and closes the day, and never moves", async ({
+  page,
+}, testInfo) => {
+  await setTimelineModuleOn(page);
+  await mockTimeline(page, "full", TODAY);
+  const strip = page.locator('[data-slot="day-strip"]');
+  const toggle = page.locator('[data-slot="day-strip-toggle"]');
+  const panel = page.locator('[data-slot="day-panel"]');
+  const where = async () => {
+    const box = (await strip.boundingBox())!;
+    return [box.x, box.y, box.width, box.height].map(Math.round);
+  };
+  const measure = () =>
+    page.evaluate(() => {
+      const main = document.getElementById("main-content")!;
+      const doc = document.scrollingElement!;
+      return {
+        docSw: doc.scrollWidth - doc.clientWidth,
+        docSh: doc.scrollHeight - doc.clientHeight,
+        mainSw: main.scrollWidth - main.clientWidth,
+        bar: document
+          .querySelector('[data-slot="top-bar"]')!
+          .getBoundingClientRect().bottom,
+      };
+    });
+
+  for (const width of [1280, 1440, 1920]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/timeline");
+    await expect(
+      page.locator('[data-slot="timeline-chart"] > svg'),
+    ).toBeVisible({ timeout: 20_000 });
+
+    // Closed: the strip is there, at the right edge, below the top bar's
+    // band, holding today.
+    await expect(strip).toHaveAttribute("data-state", "closed");
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    const closed = await where();
+    expect(closed[0] + closed[2], `${width}px right edge`).toBe(width);
+    const before = await measure();
+    expect(
+      Math.round((await toggle.boundingBox())!.y),
+      `${width}px below the band`,
+    ).toBe(Math.round(before.bar));
+    expect(before.docSw).toBeLessThanOrEqual(0);
+    expect(before.mainSw).toBeLessThanOrEqual(0);
+
+    // A click opens the day left of the strip; the strip stays put.
+    await toggle.click();
+    await expect(panel).toHaveAttribute("data-shell", "docked");
+    await expect(strip).toHaveAttribute("data-state", "open");
+    await expect(page.locator("#day-docked-panel")).toHaveAttribute(
+      "data-state",
+      "open",
+    );
+    await expect
+      .poll(async () => {
+        const box = (await panel.boundingBox())!;
+        return Math.round(box.x + box.width);
+      })
+      .toBe(closed[0]);
+    expect(await where()).toEqual(closed);
+    await expect(panel.locator("h2").first()).toBeFocused();
+    const open = await measure();
+    expect(open.docSw, `${width}px open, sideways`).toBeLessThanOrEqual(0);
+    expect(open.mainSw, `${width}px open, sideways`).toBeLessThanOrEqual(0);
+    expect(open.docSh, `${width}px open, page height`).toBeLessThanOrEqual(
+      before.docSh,
+    );
+    await testInfo.attach(`day-strip-${width}-open`, {
+      body: await page.screenshot(),
+      contentType: "image/png",
+    });
+
+    // A second click closes it; focus stays on the strip, which stays put.
+    await toggle.click();
+    await expect(panel).toHaveCount(0);
+    await expect(strip).toHaveAttribute("data-state", "closed");
+    await expect(toggle).toBeFocused();
+    expect(await where()).toEqual(closed);
+    await expect(page).toHaveURL(/\/timeline$/);
+  }
+
+  // Both themes, open at 1440.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  for (const colorScheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme });
+    await page.goto("/timeline");
+    await toggle.click();
+    await expect(panel).toHaveAttribute("data-shell", "docked");
+    await testInfo.attach(`day-strip-1440-${colorScheme}`, {
+      body: await page.screenshot(),
+      contentType: "image/png",
+    });
+    await toggle.click();
+    await expect(panel).toHaveCount(0);
+  }
 });

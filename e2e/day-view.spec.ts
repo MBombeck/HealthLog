@@ -29,8 +29,8 @@ import { MOBILE_ROUTES_ANALYTE } from "./setup/mobile-routes-fixture";
  * the header's `day-date-button` and its `day-date-picker` (days keyed by
  * `data-date-key`, dotted by `data-entries`, and `day-date-today`),
  * `chart-plot[data-day-links]`, `chart-tooltip-open-day`, `day-prev` /
- * `day-next` / `day-close`, and the collapsed edge `day-rail` (+ `data-day`)
- * with its `day-expand`.
+ * `day-next` / `day-close`, and the docked day's strip `day-strip`
+ * (+ `data-day`, `data-state`) with its `day-strip-toggle`.
  */
 
 const panel = (page: Page) => page.locator('[data-slot="day-panel"]');
@@ -145,7 +145,7 @@ test.describe("the day view", () => {
     await expect(tiles).toHaveCount(2);
     await expect(
       scores.locator('[data-slot="day-score"][data-score="healthScore"]'),
-    ).toHaveAttribute("href", "/insights");
+    ).toHaveAttribute("href", "/insights/health-score");
     await expect(
       scores.locator('[data-slot="day-score"][data-score="strain"]'),
     ).toHaveAttribute("href", "/insights/scores/strain");
@@ -164,7 +164,7 @@ test.describe("the day view", () => {
     expect(order).toEqual(["day-values", "day-scores", "day-events"]);
   });
 
-  test("the docked day collapses to an edge and comes back on another page", async ({
+  test("the docked day folds beside its strip and comes back on another page", async ({
     page,
   }, testInfo) => {
     test.skip(
@@ -178,14 +178,16 @@ test.describe("the day view", () => {
     await page.locator('[data-slot="day-close"]').click();
     await expect(panel(page)).toHaveCount(0);
     await expect(page).toHaveURL(/\/mood$/);
-    // A narrow edge stays, holding the day, and focus waits on its button.
-    const rail = page.locator('[data-slot="day-rail"]');
-    const expand = page.locator('[data-slot="day-expand"]');
+    // The strip stays, holding the day, and focus waits on it.
+    const rail = page.locator('[data-slot="day-strip"]');
+    const expand = page.locator('[data-slot="day-strip-toggle"]');
     await expect(rail).toHaveAttribute("data-day", day);
+    await expect(rail).toHaveAttribute("data-state", "closed");
     await expect(expand).toBeFocused();
     await expect(expand).toHaveAttribute("aria-expanded", "false");
+    await expect(expand).toHaveAttribute("aria-controls", "day-docked-panel");
     expect(await expand.getAttribute("aria-label")).toMatch(/^Show /);
-    expect((await rail.boundingBox())!.width).toBeLessThanOrEqual(48);
+    expect((await rail.boundingBox())!.width).toBeLessThanOrEqual(40);
 
     // Another page: the edge is still there and brings the same day back,
     // from the keyboard too.
@@ -200,7 +202,9 @@ test.describe("the day view", () => {
     );
     await expect(page).toHaveURL(new RegExp(`/labs\\?day=${day}$`));
     await expect(panel(page).locator("h2").first()).toBeFocused();
-    await expect(rail).toHaveCount(0);
+    // Open, the strip stays where it was and says so.
+    await expect(rail).toHaveAttribute("data-state", "open");
+    await expect(expand).toHaveAttribute("aria-expanded", "true");
   });
 
   test("the date opens a calendar; a picked day opens, Today goes to today", async ({
@@ -278,7 +282,7 @@ test.describe("the day view", () => {
     await expect(panel(page).locator('[data-slot="day-next"]')).toBeDisabled();
   });
 
-  test("a sheet closes for good and leaves no edge behind", async ({
+  test("a sheet closes for good and leaves no strip behind", async ({
     page,
   }, testInfo) => {
     const desktop = testInfo.project.name === "chromium-desktop";
@@ -298,7 +302,7 @@ test.describe("the day view", () => {
     await page.locator('[data-slot="day-close"]').click();
     await expect(panel(page)).toHaveCount(0);
     await expect(page).toHaveURL(/\/mood$/);
-    await expect(page.locator('[data-slot="day-rail"]')).toHaveCount(0);
+    await expect(page.locator('[data-slot="day-strip"]')).toHaveCount(0);
   });
 
   test("a future or malformed ?day= is dropped without a word", async ({

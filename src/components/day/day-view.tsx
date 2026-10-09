@@ -26,10 +26,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { useModuleEnabled } from "@/hooks/use-module-enabled";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { DAY_QUERY_PARAM, type DateKey } from "@/lib/day/contract";
-import { resolveIntlLocale } from "@/lib/format-locale";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
+import { useLongDayLabel } from "./day-label";
 import { DayDatePicker } from "./day-date-picker";
 import type { DayFocus } from "./day-layer-controller";
 import {
@@ -54,22 +54,6 @@ import { useDayValueFormat } from "./use-day-value-format";
  * sheet from the bottom). Header, body and footer are this component, so the
  * three frames cannot drift apart.
  */
-
-/** "Saturday, 3 January 2026", for the header and the spoken name. */
-export function useLongDayLabel(
-  length: "long" | "short" = "long",
-): (date: DateKey) => string {
-  const { locale } = useTranslations();
-  const intl = resolveIntlLocale(locale);
-  return (date: DateKey) =>
-    new Intl.DateTimeFormat(intl, {
-      weekday: length,
-      day: "numeric",
-      month: length,
-      year: "numeric",
-      timeZone: "UTC",
-    }).format(new Date(`${date}T12:00:00.000Z`));
-}
 
 export interface DayViewProps {
   date: DateKey;
