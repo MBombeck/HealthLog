@@ -1251,9 +1251,26 @@ describe("scores", () => {
     await time(access);
     const base = await time(without);
     const full = await time(access);
-    console.info(
-      `[day scores] median loadDay ${base.toFixed(1)} ms without scores, ${full.toFixed(1)} ms with (+${(full - base).toFixed(1)} ms)`,
+    // The scores' own reads, alone and in sequence: what they cost even
+    // where nothing runs beside them.
+    const { readDayScores } = await import("@/lib/day/scores");
+    const alone: number[] = [];
+    for (let i = 0; i < 7; i += 1) {
+      const t0 = performance.now();
+      await readDayScores({
+        userId: owner.id,
+        day: DAY,
+        tz: "Europe/Berlin",
+        modules: access.modules,
+        priorityJson: null,
+      });
+      alone.push(performance.now() - t0);
+    }
+    const scoresAlone = alone.sort((x, y) => x - y)[3]!;
+    process.stdout.write(
+      `[day scores] median loadDay ${base.toFixed(1)} ms without scores, ${full.toFixed(1)} ms with (+${(full - base).toFixed(1)} ms); score reads alone ${scoresAlone.toFixed(1)} ms\n`,
     );
+    expect(scoresAlone).toBeLessThan(150);
     expect(full - base).toBeLessThan(150);
   });
 });
