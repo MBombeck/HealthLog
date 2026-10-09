@@ -12284,7 +12284,15 @@
       "note": "Reunido a partir de tus entradas, sin valoración. Cada fecha abre el día completo.",
       "report": "Informe médico del {date} hasta hoy"
     },
-    "travel": "De viaje"
+    "travel": "De viaje",
+    "event": {
+      "started": "Inicio: {label}",
+      "ended": "Fin: {label}",
+      "paused": "Pausa: {label}",
+      "resumed": "Reanudación: {label}",
+      "illnessBegan": "Inicio: {label}",
+      "illnessResolved": "Recuperación: {label}"
+    }
   },
   "timeline": {
     "title": "Cronología",
@@ -12487,6 +12495,11 @@
       "label": "Periodo elegido",
       "open": "Elegir un periodo",
       "clear": "Mostrar todo"
+    },
+    "item": {
+      "labValuesOne": "1 valor de laboratorio",
+      "labValuesFew": "{count} valores de laboratorio",
+      "labValuesOther": "{count} valores de laboratorio"
     }
   },
   "lifeEvents": {

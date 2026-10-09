@@ -81439,10 +81439,14 @@ components:
           type: string
         title:
           type: string
+          description: "The record's own name, or a code the client words: a mood, a screener's instrument, a workout's sport,
+            `cycle` for a cycle day."
         meta:
           anyOf:
             - type: string
             - type: "null"
+          description: "The second line: text (a dose, a lab value, a duration) or a code or number the client words (a category,
+            a kind, a severity, a screener's score and band, an intensity, a dose number)."
         note:
           anyOf:
             - type: string
@@ -81672,10 +81676,14 @@ components:
           description: False when the start is a stand-in (a medication without a start date starts at its first intake).
         label:
           type: string
+          description: The item's name. A trip is labelled `travel` and a cycle `cycle`; the client words both.
         sub:
           anyOf:
             - type: string
             - type: "null"
+          description: "The second line, by kind: a code for a life event (its category), a visit or procedure (its encounter
+            kind) and a document (its kind); the analyte count for a lab day; the dose as text for a medication or a
+            dose change. The client words every code."
         href:
           anyOf:
             - type: string

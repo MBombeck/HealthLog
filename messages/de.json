@@ -12284,7 +12284,15 @@
       "note": "Zusammengestellt aus deinen Einträgen, ohne Bewertung. Jedes Datum öffnet den ganzen Tag.",
       "report": "Arztbericht {date} bis heute"
     },
-    "travel": "Unterwegs"
+    "travel": "Unterwegs",
+    "event": {
+      "started": "{label} begonnen",
+      "ended": "{label} beendet",
+      "paused": "{label} pausiert",
+      "resumed": "{label} wieder aufgenommen",
+      "illnessBegan": "{label} begann",
+      "illnessResolved": "{label} abgeklungen"
+    }
   },
   "timeline": {
     "title": "Zeitleiste",
@@ -12487,6 +12495,11 @@
       "label": "Gewählter Zeitraum",
       "open": "Zeitraum wählen",
       "clear": "Alles zeigen"
+    },
+    "item": {
+      "labValuesOne": "1 Laborwert",
+      "labValuesFew": "{count} Laborwerte",
+      "labValuesOther": "{count} Laborwerte"
     }
   },
   "lifeEvents": {

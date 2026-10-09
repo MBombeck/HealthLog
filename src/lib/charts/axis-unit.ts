@@ -11,7 +11,8 @@
 export function axisUnitSuffix(
   unit: string | null | undefined,
 ): string | undefined {
-  return unit ? ` ${unit}` : undefined;
+  // A space inside the unit ("/ 5") would break the label the same way.
+  return unit ? ` ${unit.replace(/ /g, "\u00a0")}` : undefined;
 }
 
 /**

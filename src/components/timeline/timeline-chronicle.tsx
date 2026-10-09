@@ -41,6 +41,8 @@ import {
   type ChronicleGrouping,
   type ChronicleRails,
 } from "./chronicle-model";
+import { useItemWords } from "./item-words";
+import { TIMELINE_CHRONICLE_NOTABLE_KEY } from "./label-keys";
 import {
   formatAtPrecision,
   formatDayMonth,
@@ -146,9 +148,10 @@ export function TimelineChronicle({
   onEditLifeEvent: ((id: string) => void) | null;
 }) {
   const { t, tCount, locale } = useTranslations();
+  const words = useItemWords();
   const intl = resolveIntlLocale(locale);
   const [standingOpen, setStandingOpen] = useState(true);
-  const chips = standingChips(timeline);
+  const chips = standingChips(timeline, (item) => words(item).label);
   const rows = buildChronicle(timeline, today, grouping);
   // The means ride on the month headers, each bucket on the newest month it
   // overlaps; the year view lists none.
@@ -180,23 +183,28 @@ export function TimelineChronicle({
   } {
     if (entry.kind === "notable") {
       return {
-        title: t(`timeline.chronicle.notable.${entry.notable}`),
+        title: t(TIMELINE_CHRONICLE_NOTABLE_KEY[entry.notable]),
         meta: t("timeline.chronicle.notableMeta"),
       };
     }
     const { item, role } = entry;
+    const { label, sub } = words(item);
     if (role === "end") {
+      // A pause that ends is the medication taken up again, not ended.
       return {
-        title: t("timeline.chronicle.ended", { label: item.label }),
+        title:
+          item.kind === "pause"
+            ? t("day.event.resumed", { label: item.label })
+            : t("timeline.chronicle.ended", { label }),
         meta: entry.days
           ? tCount("timeline.chronicle.afterDays", entry.days)
           : null,
       };
     }
-    const meta = [item.sub, item.startKnown ? null : t("timeline.startMissing")]
+    const meta = [sub, item.startKnown ? null : t("timeline.startMissing")]
       .filter(Boolean)
       .join(" · ");
-    return { title: item.label, meta: meta || null };
+    return { title: label, meta: meta || null };
   }
 
   return (

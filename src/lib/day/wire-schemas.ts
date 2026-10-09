@@ -122,8 +122,17 @@ const dayEvent = z
     kind: z.enum(DAY_EVENT_KINDS),
     section: daySectionKey,
     id: z.string(),
-    title: z.string(),
-    meta: z.string().nullable(),
+    title: z
+      .string()
+      .describe(
+        "The record's own name, or a code the client words: a mood, a screener's instrument, a workout's sport, `cycle` for a cycle day.",
+      ),
+    meta: z
+      .string()
+      .nullable()
+      .describe(
+        "The second line: text (a dose, a lab value, a duration) or a code or number the client words (a category, a kind, a severity, a screener's score and band, an intensity, a dose number).",
+      ),
     note: z
       .string()
       .nullable()
@@ -318,8 +327,17 @@ const timelineItem = z
       .describe(
         "False when the start is a stand-in (a medication without a start date starts at its first intake).",
       ),
-    label: z.string(),
-    sub: z.string().nullable(),
+    label: z
+      .string()
+      .describe(
+        "The item's name. A trip is labelled `travel` and a cycle `cycle`; the client words both.",
+      ),
+    sub: z
+      .string()
+      .nullable()
+      .describe(
+        "The second line, by kind: a code for a life event (its category), a visit or procedure (its encounter kind) and a document (its kind); the analyte count for a lab day; the dose as text for a medication or a dose change. The client words every code.",
+      ),
     href: z.string().nullable(),
   })
   .meta({ id: "TimelineItem" });

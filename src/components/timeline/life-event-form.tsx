@@ -47,6 +47,11 @@ import {
   type LifeEventDraft,
   type LifeEventDraftErrors,
 } from "./life-event-draft";
+import {
+  LIFE_EVENT_CATEGORY_KEY,
+  LIFE_EVENT_ERROR_KEY,
+  LIFE_EVENT_PRECISION_KEY,
+} from "./label-keys";
 import { Segmented } from "./segmented";
 import { formatMonthLong, todayKeyIn } from "./timeline-dates";
 import { useLifeEventMutations } from "./use-timeline";
@@ -105,7 +110,7 @@ function CategoryChips({
                 : "border-border text-foreground hover:bg-accent",
             )}
           >
-            {t(`lifeEvents.category.${category}`)}
+            {t(LIFE_EVENT_CATEGORY_KEY[category])}
           </button>
         );
       })}
@@ -227,7 +232,7 @@ export function LifeEventForm({
     value: LifeEventDraft[K],
   ) => setDraft((d) => ({ ...d, [key]: value }));
   const fieldError = (field: keyof LifeEventDraftErrors) =>
-    errors[field] ? t(`lifeEvents.errors.${errors[field]}`) : undefined;
+    errors[field] ? t(LIFE_EVENT_ERROR_KEY[errors[field]]) : undefined;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -381,7 +386,7 @@ export function LifeEventForm({
           <Segmented
             options={LIFE_EVENT_PRECISIONS.map((p) => ({
               value: p,
-              label: t(`lifeEvents.precision.${p}`),
+              label: t(LIFE_EVENT_PRECISION_KEY[p]),
             }))}
             value={draft.precision}
             onChange={(p) => setDraft((d) => withPrecision(d, p))}

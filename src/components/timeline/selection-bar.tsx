@@ -30,6 +30,7 @@ import {
   formatMonthLong,
   formatMonthYear,
 } from "./timeline-dates";
+import { useItemWords } from "./item-words";
 import { itemsInPeriod } from "./timeline-geometry";
 import { MeanPartsLine, laneDotStyle } from "./timeline-chart";
 import {
@@ -67,6 +68,7 @@ export function SelectionBar({
   onEditLifeEvent,
 }: SelectionBarProps) {
   const { t, tCount, locale } = useTranslations();
+  const words = useItemWords();
   const intl = resolveIntlLocale(locale);
   const bucket = timeline.bucket;
   const periodFrom = bucketStart(selected, bucket);
@@ -138,7 +140,8 @@ export function SelectionBar({
               : item.precision === "DAY"
                 ? formatDayMonth(item.start, intl)
                 : formatAtPrecision(item.start, item.precision, intl);
-        const text = `${item.label}${item.sub ? ` ${item.sub}` : ""} · ${when}`;
+        const { label, sub } = words(item);
+        const text = [label, sub, when].filter(Boolean).join(" · ");
         const editable = item.kind === "lifeEvent" && onEditLifeEvent;
         if (!canOpenDay && !editable) {
           return (

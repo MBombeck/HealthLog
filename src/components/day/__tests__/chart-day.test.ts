@@ -80,6 +80,7 @@ describe("Coach day chips", () => {
 
 describe("visit preparation", () => {
   const spell = {
+    changeTitle: (_kind: string, title: string) => title,
     notableTitle: () => "Blood pressure",
     notableText: () => "Highest daily value since March",
     countMeta: (count: number) => (count > 1 ? `${count} entries` : null),

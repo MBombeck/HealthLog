@@ -51,6 +51,8 @@ import type {
 import { resolveIntlLocale } from "@/lib/format-locale";
 import { useTranslations } from "@/lib/i18n/context";
 
+import { useItemWords, type ItemWordsFn } from "./item-words";
+import { TIMELINE_LANE_LABEL_KEY } from "./label-keys";
 import {
   bucketAfter,
   bucketStart,
@@ -147,6 +149,7 @@ export function TimelineChart({
   onOpenDay,
 }: TimelineChartProps) {
   const { t, locale } = useTranslations();
+  const words = useItemWords();
   const fmt = seriesFormat;
   const intl = resolveIntlLocale(locale);
   const { ref, width } = useElementWidth<HTMLDivElement>();
@@ -164,11 +167,12 @@ export function TimelineChart({
             lanes,
             series: timeline.series,
             bucket: timeline.bucket,
+            words,
             startMissing: t("timeline.startMissing"),
             today,
           })
         : null,
-    [width, window, lanes, timeline.series, timeline.bucket, t, today],
+    [width, window, lanes, timeline.series, timeline.bucket, words, t, today],
   );
 
   const floor = timeline.range.dataFrom ?? window.from;
@@ -420,7 +424,7 @@ function ChartBody({
               fontWeight={500}
               fill="var(--foreground)"
             >
-              {fitText(t(`timeline.lanes.${lane.key}`), scale.x0 - 30, 13)}
+              {fitText(t(TIMELINE_LANE_LABEL_KEY[lane.key]), scale.x0 - 30, 13)}
             </text>
             {lane.spans.map((span) => (
               <SpanMark
@@ -676,17 +680,19 @@ function spanTitle(
   span: PlacedSpan,
   intl: string,
   t: ReturnType<typeof useTranslations>["t"],
+  words: ItemWordsFn,
 ): string {
   const { item } = span;
+  const { label, sub } = words(item);
   const from = formatAtPrecision(item.start, item.precision, intl);
   const to = item.open
     ? t("timeline.selection.ongoing")
     : formatAtPrecision(item.end ?? item.start, item.precision, intl);
-  const name = item.sub ? `${item.label} · ${item.sub}` : item.label;
+  const name = sub ? `${label} · ${sub}` : label;
   return `${name}: ${t("timeline.selection.range", { from, to })}`;
 }
 
-function SpanMark({
+export function SpanMark({
   span,
   color,
   x0,
@@ -700,7 +706,8 @@ function SpanMark({
   t: ReturnType<typeof useTranslations>["t"];
 }) {
   const { item, xStart, xEnd, y } = span;
-  const title = spanTitle(span, intl, t);
+  const words = useItemWords();
+  const title = spanTitle(span, intl, t, words);
   if (span.pause) {
     return (
       <g data-kind="pause">
@@ -763,7 +770,7 @@ function SpanMark({
   );
 }
 
-function PointMark({
+export function PointMark({
   point,
   color,
   intl,
@@ -773,7 +780,8 @@ function PointMark({
   intl: string;
 }) {
   const { x, y, item, shape } = point;
-  const title = `${item.label}${item.sub ? ` · ${item.sub}` : ""}: ${formatAtPrecision(item.start, item.precision, intl)}`;
+  const { label, sub } = useItemWords()(item);
+  const title = `${label}${sub ? ` · ${sub}` : ""}: ${formatAtPrecision(item.start, item.precision, intl)}`;
   let glyph: React.ReactNode;
   switch (shape) {
     case "diamond":
@@ -873,6 +881,7 @@ function TimelineTable({
   intl: string;
 }) {
   const { t } = useTranslations();
+  const words = useItemWords();
   const rows = timeline.lanes
     .filter((lane) => !hiddenLanes.has(lane.key))
     .flatMap((lane) => lane.items.map((item) => ({ lane: lane.key, item })))
@@ -891,11 +900,15 @@ function TimelineTable({
       <tbody>
         {rows.map(({ lane, item }) => (
           <tr key={`${lane}-${item.id}`}>
-            <td>{t(`timeline.lanes.${lane}`)}</td>
+            <td>{t(TIMELINE_LANE_LABEL_KEY[lane])}</td>
             <td>
-              {item.label}
-              {item.sub ? ` · ${item.sub}` : ""}
-              {!item.startKnown ? ` · ${t("timeline.startMissing")}` : ""}
+              {[
+                words(item).label,
+                words(item).sub,
+                item.startKnown ? null : t("timeline.startMissing"),
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </td>
             <td>{formatAtPrecision(item.start, item.precision, intl)}</td>
             <td>

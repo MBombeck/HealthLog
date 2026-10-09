@@ -32,8 +32,17 @@ export interface LifeEventDraft {
   note: string;
 }
 
+/** What a draft can be refused for, each worded under `lifeEvents.errors`. */
+export type LifeEventDraftError =
+  | "titleRequired"
+  | "titleTooLong"
+  | "categoryRequired"
+  | "dateRequired"
+  | "endBeforeStart"
+  | "noteTooLong";
+
 export type LifeEventDraftErrors = Partial<
-  Record<"title" | "category" | "start" | "end" | "note", string>
+  Record<"title" | "category" | "start" | "end" | "note", LifeEventDraftError>
 >;
 
 /** Snap a date to the first day of its month or year. */

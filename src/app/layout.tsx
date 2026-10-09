@@ -131,7 +131,9 @@ export default async function RootLayout({
           id="healthlog-i18n-boot"
           strategy="beforeInteractive"
           nonce={nonce}
-          src={`/i18n/${initialLocale}.js?v=${process.env.NEXT_PUBLIC_APP_VERSION || "dev"}`}
+          // Keyed by the catalogs' content (`next.config.ts`), not the
+          // release: the service worker serves this URL cache-first.
+          src={`/i18n/${initialLocale}.js?v=${process.env.NEXT_PUBLIC_I18N_CATALOG_VERSION || "dev"}`}
         />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>

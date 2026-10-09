@@ -12,7 +12,6 @@ import {
   estimateTextWidth,
   fitText,
   gridTicks,
-  itemLabel,
   itemsInPeriod,
   latestDataDate,
   layoutLane,
@@ -25,8 +24,11 @@ import {
   type LaneLayout,
   type TimelineLayout,
 } from "../timeline-geometry";
+import { itemLine } from "../item-words";
 import { dayNumber } from "../timeline-dates";
-import { TODAY, fullTimeline, item } from "./timeline-fixture";
+import { TODAY, fullTimeline, item, wordsIn } from "./timeline-fixture";
+
+const WORDS = wordsIn("de");
 
 const FMT = {
   year: (k: string) => k.slice(0, 4),
@@ -42,6 +44,7 @@ function layoutAt(width: number): TimelineLayout {
     lanes: tl.lanes,
     series: tl.series,
     bucket: tl.bucket,
+    words: WORDS,
     startMissing: "Startdatum fehlt",
     today: TODAY,
   });
@@ -183,7 +186,7 @@ describe("gridTicks", () => {
 describe("layoutLane", () => {
   const window = { from: "2019-01-01", to: "2026-12-31" };
   const scale = createScale(window, 164, 1200);
-  const opts = { startMissing: "Startdatum fehlt", today: TODAY };
+  const opts = { words: WORDS, startMissing: "Startdatum fehlt", today: TODAY };
 
   it("puts overlapping periods on separate rows and lets later ones reuse a free row", () => {
     const lane = fullTimeline().lanes.find((l) => l.key === "illness")!;
@@ -207,6 +210,23 @@ describe("layoutLane", () => {
     expect(pause.row).toBe(host.row);
   });
 
+  it("labels a pause as a pause, above the medication it interrupts", () => {
+    const lane = fullTimeline().lanes.find((l) => l.key === "medications")!;
+    const wide = createScale(
+      { from: "2021-01-01", to: "2021-12-31" },
+      164,
+      1200,
+    );
+    const layout = layoutLane(
+      { lane, top: 0 },
+      { from: "2021-01-01", to: "2021-12-31" },
+      wide,
+      opts,
+    );
+    const label = layout.labels.find((l) => l.itemId === "pause-1");
+    expect(label?.text).toBe("Ramipril pausiert");
+  });
+
   it("starts an open period at its start and runs it to today", () => {
     const lane = fullTimeline().lanes.find((l) => l.key === "allergies")!;
     const layout = layoutLane({ lane, top: 0 }, window, scale, opts);
@@ -226,7 +246,7 @@ describe("layoutLane", () => {
       label: "Ramipril",
       sub: "5 mg",
     });
-    expect(itemLabel(unknown, "Startdatum fehlt")).toBe(
+    expect(itemLine(unknown, WORDS, "Startdatum fehlt")).toBe(
       "Ramipril · 5 mg · Startdatum fehlt",
     );
     const layout = layoutLane(

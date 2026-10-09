@@ -12284,7 +12284,15 @@
       "note": "Raccolto dalle tue voci, senza valutazioni. Ogni data apre l’intera giornata.",
       "report": "Referto medico dal {date} a oggi"
     },
-    "travel": "In viaggio"
+    "travel": "In viaggio",
+    "event": {
+      "started": "Inizio: {label}",
+      "ended": "Fine: {label}",
+      "paused": "Pausa: {label}",
+      "resumed": "Ripresa: {label}",
+      "illnessBegan": "Inizio: {label}",
+      "illnessResolved": "Guarigione: {label}"
+    }
   },
   "timeline": {
     "title": "Cronologia",
@@ -12487,6 +12495,11 @@
       "label": "Periodo scelto",
       "open": "Scegli un periodo",
       "clear": "Mostra tutto"
+    },
+    "item": {
+      "labValuesOne": "1 valore di laboratorio",
+      "labValuesFew": "{count} valori di laboratorio",
+      "labValuesOther": "{count} valori di laboratorio"
     }
   },
   "lifeEvents": {

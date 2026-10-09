@@ -34,7 +34,7 @@ import {
 import { getUnitForType } from "@/lib/measurements/unit-map";
 import { queryKeys } from "@/lib/query-keys";
 
-import { DAY_SECTION_LABEL, useNotableText } from "./day-sections";
+import { DAY_SECTION_LABEL, dayTitle, useNotableText } from "./day-sections";
 import { DayLink } from "./day-link";
 import { dateKeyOfInstant } from "./day-url";
 import { tileKeyOf } from "./day-values-model";
@@ -86,6 +86,8 @@ export interface PrepRow {
 export function preparationRows(
   window: Pick<DayNotableWindowResponse, "observations" | "changes">,
   spell: {
+    /** A change's title in the reader's words (`dayTitle`). */
+    changeTitle: (kind: string, title: string) => string;
     notableTitle: (notable: DayNotable) => string;
     notableText: (notable: DayNotable) => string | null;
     countMeta: (count: number) => string | null;
@@ -97,7 +99,7 @@ export function preparationRows(
       key: `${change.kind}-${change.id}-${change.date}`,
       date: change.date,
       Icon: EVENT_ICON[change.kind] ?? FileText,
-      title: change.title,
+      title: spell.changeTitle(change.kind, change.title),
       meta: spell.countMeta(change.count),
     });
   }
@@ -171,6 +173,7 @@ export function SinceLastVisit({
 
   const rows = window.data
     ? preparationRows(window.data, {
+        changeTitle: (kind, title) => dayTitle(kind, title, t),
         notableTitle,
         notableText,
         countMeta: (count) =>

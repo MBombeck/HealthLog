@@ -12284,7 +12284,15 @@
       "note": "Compiled from your entries, without judgement. Every date opens the whole day.",
       "report": "Doctor report from {date} to today"
     },
-    "travel": "Away"
+    "travel": "Away",
+    "event": {
+      "started": "{label} started",
+      "ended": "{label} ended",
+      "paused": "{label} paused",
+      "resumed": "{label} resumed",
+      "illnessBegan": "{label} began",
+      "illnessResolved": "{label} resolved"
+    }
   },
   "timeline": {
     "title": "Timeline",
@@ -12487,6 +12495,11 @@
       "label": "Chosen range",
       "open": "Choose a range",
       "clear": "Show everything"
+    },
+    "item": {
+      "labValuesOne": "1 lab value",
+      "labValuesFew": "{count} lab values",
+      "labValuesOther": "{count} lab values"
     }
   },
   "lifeEvents": {

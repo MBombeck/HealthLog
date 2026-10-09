@@ -20,6 +20,8 @@ import {
 import { TIMELINE_MAX_SERIES, type TimelineLaneKey } from "@/lib/day/contract";
 import { useTranslations } from "@/lib/i18n/context";
 
+import { TIMELINE_LANE_LABEL_KEY } from "./label-keys";
+
 /** The most value lines the chart runs under its lanes. */
 export const MAX_VALUE_SERIES = TIMELINE_MAX_SERIES;
 
@@ -131,7 +133,7 @@ export function LayersMenu({
             onSelect={(event) => event.preventDefault()}
             onCheckedChange={(next) => onToggle(lane, next === true)}
           >
-            {t(`timeline.lanes.${lane}`)}
+            {t(TIMELINE_LANE_LABEL_KEY[lane])}
           </DropdownMenuCheckboxItem>
         ))}
         <DropdownMenuSeparator />
