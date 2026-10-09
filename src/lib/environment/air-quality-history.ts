@@ -15,13 +15,17 @@
  *     (only the air-quality part is fetched then, as the nightly gap fill
  *     does);
  *   - otherwise in the dated location period that covers it, else at the
- *     home. Unlike the nightly resolver this also places days before
- *     `homeSince` at the home: those are exactly the days the history is for,
- *     and a period entered for a trip still wins. Such a day gets its weather
- *     row with the air quality, because the air quality is stored on it.
+ *     home, but the home only from `homeSince` on (or on every day when no
+ *     `homeSince` is stored). A day before the home was set is never placed
+ *     there: the weather and air of a place the person was not at would be
+ *     wrong data in the correlations, the Coach and the day view, and an
+ *     empty day is honest where a wrong one is not. Such a day is filled
+ *     only when a period covers it. A day without a row gets its weather row
+ *     with the air quality, because the air quality is stored on it.
  *
  * A day inside a period whose sealed location does not open is skipped (fail
- * closed, as in the service), and so is a day with no place at all. A day the
+ * closed, as in the service), and so is a day with no place at all; neither
+ * counts towards the progress, which counts only days that can be filled. A day the
  * source does not reach at its location (before 2013 in Europe, before August
  * 2022 elsewhere, `earliestAirQualityDay`) is neither fetched nor counted: it
  * stays without a value, which says nothing about the air, rather than
@@ -189,7 +193,9 @@ export function historyRequestFits(
 
 /**
  * Where a day without a row is placed: the period that covers it, else the
- * home, also before `homeSince` (see the header). Pure; exported for tests.
+ * home from `homeSince` on, or on every day when no `homeSince` is stored
+ * (see the header). Null for a day before the home with no period. Pure;
+ * exported for tests.
  */
 export function resolveHistoryLocation(
   day: string,
@@ -201,7 +207,7 @@ export function resolveHistoryLocation(
       return { lat: t.lat, lon: t.lon, label: t.label, source: "TRAVEL" };
     }
   }
-  if (home) {
+  if (home && (home.since === null || day >= home.since)) {
     return { lat: home.lat, lon: home.lon, label: home.label, source: "HOME" };
   }
   return null;

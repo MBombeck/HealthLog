@@ -4,7 +4,10 @@
  *
  *   - every past local day with an entry is filled: a day with a weather row
  *     gets its air quality, a day without one gets both, a day of a trip is
- *     fetched at the trip's place, a day before the home was set at the home;
+ *     fetched at the trip's place, a day from the home's effective date at
+ *     the home;
+ *   - a day before the home was set is filled only inside a location period;
+ *     without one it stays empty and is not counted;
  *   - a day before the source reaches stays without a row and is not counted,
  *     and the last week is left to the nightly fetch;
  *   - nearby days share one request, the coordinates sent are the coarse
@@ -32,6 +35,7 @@ const OWNER = "aq-history-owner";
 const NOW = new Date("2026-10-09T03:00:00Z");
 const BOCHUM = { lat: 51.5, lon: 7.2, label: "Bochum" };
 const LISBON = { lat: 38.7, lon: -9.1, label: "Lisbon" };
+const ESSEN = { lat: 51.5, lon: 7.0, label: "Essen" };
 
 function daysBetween(start: string, end: string): string[] {
   const out: string[] = [];
@@ -108,8 +112,8 @@ beforeEach(async () => {
       timezone: "Europe/Berlin",
       homeLocationEncrypted: sealLocation(BOCHUM),
       homeTimezone: "Europe/Berlin",
-      // Set recently: every day below lies before it.
-      homeSince: new Date("2026-09-01T00:00:00Z"),
+      // Days before it are filled only inside a location period.
+      homeSince: new Date("2025-01-01T00:00:00Z"),
       modulePreferencesJson: { environment: true },
     },
   });
@@ -121,16 +125,27 @@ beforeEach(async () => {
       locationEncrypted: sealLocation(LISBON),
     },
   });
-  // Entries: one before the source reaches, two nearby days in 2020, one on
-  // a trip, one on a day with a weather row lacking air quality, one on a
-  // day already done, a mood entry, and one inside the last week.
+  await prisma.environmentTravelLocation.create({
+    data: {
+      userId: OWNER,
+      startDate: "2020-03-01",
+      endDate: "2020-03-10",
+      locationEncrypted: sealLocation(ESSEN),
+    },
+  });
+  // Entries: one before the source reaches, two nearby days on a 2020 trip,
+  // one before the home with no trip, one on a 2024 trip, one on a day with a
+  // weather row lacking air quality, one on a day already done, one at home
+  // without a row, a mood entry, and one inside the last week.
   for (const day of [
     "2012-06-01",
     "2020-03-01",
     "2020-03-05",
+    "2020-06-01",
     "2024-07-05",
     "2025-05-01",
     "2025-06-01",
+    "2025-09-10",
     "2026-10-06",
   ]) {
     await measurementOn(day);
@@ -185,8 +200,8 @@ describe("air-quality history backfill", () => {
     const result = await runAirQualityHistory(OWNER, { now: NOW });
     expect(result).toMatchObject({
       status: "complete",
-      total: 5,
-      done: 5,
+      total: 6,
+      done: 6,
       remaining: 0,
     });
 
@@ -200,15 +215,28 @@ describe("air-quality history backfill", () => {
       "2024-07-05",
       "2025-05-01",
       "2025-06-01",
+      "2025-09-10",
     ]);
+    // Before the home and outside every period: no row, not counted.
+    expect(rows.find((r) => r.date === "2020-06-01")).toBeUndefined();
     for (const row of rows) expect(row.aqFetchedAt).not.toBeNull();
     const byDate = new Map(rows.map((r) => [r.date, r]));
-    // A day before the home was set: placed at the home, weather and air.
+    // A day before the home was set, inside a period: at the period's place.
     expect(byDate.get("2020-03-01")).toMatchObject({
-      source: "HOME",
+      source: "TRAVEL",
       pm25Mean: 12,
       tempMax: 5,
       lat: null,
+    });
+    expect(
+      openLocation(byDate.get("2020-03-01")!.locationEncrypted!),
+    ).toMatchObject({ lat: 51.5, lon: 7.0 });
+    // A day after the home was set, without a row: at the home.
+    const home = byDate.get("2025-09-10")!;
+    expect(home).toMatchObject({ source: "HOME", pm25Mean: 12, tempMax: 5 });
+    expect(openLocation(home.locationEncrypted!)).toMatchObject({
+      lat: 51.5,
+      lon: 7.2,
     });
     // Pollen is not asked for before 2021, so it stays null, not zero.
     expect(byDate.get("2020-03-01")!.pollenBirchMax).toBeNull();
@@ -238,6 +266,7 @@ describe("air-quality history backfill", () => {
         u.searchParams.get("end_date"),
       ]),
     ).toEqual([
+      ["2025-09-10", "2025-09-10"],
       ["2025-05-01", "2025-05-01"],
       ["2024-07-05", "2024-07-05"],
       ["2020-03-01", "2020-03-05"],
@@ -254,12 +283,12 @@ describe("air-quality history backfill", () => {
       sent
         .filter((u) => u.pathname === "/v1/archive")
         .map((u) => u.searchParams.get("start_date")),
-    ).toEqual(["2024-07-05", "2020-03-01"]);
+    ).toEqual(["2025-09-10", "2024-07-05", "2020-03-01"]);
 
     const user = await prisma.user.findUniqueOrThrow({ where: { id: OWNER } });
     expect(user.environmentAqHistoryJson).toMatchObject({
-      total: 5,
-      done: 5,
+      total: 6,
+      done: 6,
       complete: true,
     });
 
@@ -284,7 +313,7 @@ describe("air-quality history backfill", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
     const user = await prisma.user.findUniqueOrThrow({ where: { id: OWNER } });
     expect(user.environmentAqHistoryJson).toMatchObject({
-      total: 5,
+      total: 6,
       done: 1,
       complete: false,
     });

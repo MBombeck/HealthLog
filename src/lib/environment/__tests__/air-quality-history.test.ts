@@ -135,11 +135,25 @@ describe("resolveHistoryLocation", () => {
     });
   });
 
-  it("places a day before the home was set at the home", () => {
-    expect(resolveHistoryLocation("2020-03-01", home, [trip])).toMatchObject({
+  it("places a day from the home's effective date on at the home", () => {
+    expect(resolveHistoryLocation("2026-09-01", home, [trip])).toMatchObject({
       lat: 51.5,
       source: "HOME",
     });
+  });
+
+  it("leaves a day before the home was set without a place, unless a period covers it", () => {
+    expect(resolveHistoryLocation("2026-08-31", home, [trip])).toBeNull();
+    expect(resolveHistoryLocation("2020-03-01", home, [trip])).toBeNull();
+    expect(resolveHistoryLocation("2024-07-14", home, [trip])).toMatchObject({
+      source: "TRAVEL",
+    });
+  });
+
+  it("places every day at a home stored without an effective date", () => {
+    expect(
+      resolveHistoryLocation("2015-01-01", { ...home, since: null }, []),
+    ).toMatchObject({ lat: 51.5, source: "HOME" });
   });
 
   it("places nothing without a home or a period", () => {

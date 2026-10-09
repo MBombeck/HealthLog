@@ -45,11 +45,13 @@ an earlier fold computed from part of a day.
   Location & weather (on by default), attributions beside the values, and a
   dashboard chip on a day with high pollen, a warm night or very poor air.
 - **Air quality for the past.** A background job fills air quality, pollen
-  and UV for every earlier local day with an entry: after the update, when
-  the home is set and when air quality is switched on. A trip day is fetched
-  at the trip's place, other days at the home, also before it was set. The
-  source reaches back to 2013 in Europe and to August 2022 elsewhere, pollen
-  from 2021 in Europe only; older days stay empty. Nearby days share one
+  and UV for earlier local days with an entry: after the update, when the
+  home is set and when air quality is switched on. A day inside a location
+  period is fetched at that place, a day from the home's effective date on
+  at the home; a day before it with no period stays empty rather than
+  borrowing a place the person was not at. The source reaches back to 2013
+  in Europe and to August 2022 elsewhere, pollen from 2021 in Europe only;
+  older days stay empty. Nearby days share one
   request of up to 90 days, a run holds itself to 300 of the account's 400
   daily calls and half of each instance window, and a long history spreads
   over several nights. Location & weather shows the progress (migration
