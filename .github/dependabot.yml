@@ -35,6 +35,18 @@ updates:
       # arrive.
       - dependency-name: "zod"
         versions: [">=4.5.0"]
+      # Next 16.4.0 breaks URL state after history traversal: with a sheet
+      # opened through `?doc=`, Back leaves it open, and `[` / `]` sometimes
+      # do not move `?day=`. Reproduced in three end-to-end journeys (3 of 40
+      # repeated runs on 16.4.0, 0 of 80 on 16.3.8 with everything else
+      # equal). 16.3.8 carries every published security fix, so the line
+      # waits for a 16.4 patch; the two packages that move with it wait too.
+      - dependency-name: "next"
+        versions: ["16.4.0"]
+      - dependency-name: "eslint-config-next"
+        versions: ["16.4.0"]
+      - dependency-name: "@next/bundle-analyzer"
+        versions: ["16.4.0"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
