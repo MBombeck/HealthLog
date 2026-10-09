@@ -318,32 +318,29 @@ export function ConversationsPanel({
       )}
     >
       {inSheet ? null : (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              ref={collapseRef}
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={collapseDocked}
-              data-slot="coach-panel-collapse"
-              aria-controls={COACH_PANEL_ID}
-              aria-expanded={true}
-              aria-label={t("insights.coach.frame.hidePanel")}
-              className={PANEL_HEADER_BUTTON}
-            >
-              {/* The day's own fold control and glyph, mirrored so it
-                  points the way the panel goes. */}
-              <PanelRightClose
-                className={cn(PANEL_HEADER_ICON, "-scale-x-100")}
-                aria-hidden="true"
-              />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            {t("insights.coach.frame.hidePanel")}
-          </TooltipContent>
-        </Tooltip>
+        // A title, not a tooltip: focus lands here when the panel opens
+        // from its edge, and a tooltip opened by that focus would take the
+        // next Escape for itself.
+        <Button
+          ref={collapseRef}
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={collapseDocked}
+          data-slot="coach-panel-collapse"
+          aria-controls={COACH_PANEL_ID}
+          aria-expanded={true}
+          aria-label={t("insights.coach.frame.hidePanel")}
+          title={t("insights.coach.frame.hidePanel")}
+          className={PANEL_HEADER_BUTTON}
+        >
+          {/* The day's own fold control and glyph, mirrored so it points
+              the way the panel goes. */}
+          <PanelRightClose
+            className={cn(PANEL_HEADER_ICON, "-scale-x-100")}
+            aria-hidden="true"
+          />
+        </Button>
       )}
       {inSheet ? (
         <SheetTitle className="min-w-0 flex-1 truncate text-lg leading-tight font-semibold">
@@ -475,30 +472,24 @@ export function ConversationsPanel({
                     "border-sidebar-border flex shrink-0 items-center justify-center",
                   )}
                 >
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        ref={expandRef}
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={expandDocked}
-                        data-slot="coach-panel-expand"
-                        aria-controls={COACH_PANEL_ID}
-                        aria-expanded={false}
-                        aria-label={t("insights.coach.frame.showPanel")}
-                        className={PANEL_HEADER_BUTTON}
-                      >
-                        <PanelRightOpen
-                          className={cn(PANEL_HEADER_ICON, "-scale-x-100")}
-                          aria-hidden="true"
-                        />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="left">
-                      {t("insights.coach.frame.showPanel")}
-                    </TooltipContent>
-                  </Tooltip>
+                  <Button
+                    ref={expandRef}
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={expandDocked}
+                    data-slot="coach-panel-expand"
+                    aria-controls={COACH_PANEL_ID}
+                    aria-expanded={false}
+                    aria-label={t("insights.coach.frame.showPanel")}
+                    title={t("insights.coach.frame.showPanel")}
+                    className={PANEL_HEADER_BUTTON}
+                  >
+                    <PanelRightOpen
+                      className={cn(PANEL_HEADER_ICON, "-scale-x-100")}
+                      aria-hidden="true"
+                    />
+                  </Button>
                 </div>
                 {/* The rest of the edge takes a click too and names the
                     list; the keyboard has the button above. */}

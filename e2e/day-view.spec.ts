@@ -224,6 +224,17 @@ test.describe("the day view", () => {
     // The keyboard: Enter opens, Escape closes the calendar only.
     await page.keyboard.press("Enter");
     await expect(picker).toBeVisible();
+    // The calendar has the keyboard before Escape is pressed.
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            document.activeElement?.closest(
+              '[role="dialog"]:not([data-slot="day-panel"])',
+            ) != null,
+        ),
+      )
+      .toBe(true);
     await page.keyboard.press("Escape");
     await expect(picker).toHaveCount(0);
     await expect(panel(page)).toBeVisible();

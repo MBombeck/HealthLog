@@ -238,6 +238,7 @@ export function DayView({
             date={date}
             today={today}
             onPick={onPick}
+            variant={compact ? "sheet" : "popover"}
             label={
               compact ? (
                 <>

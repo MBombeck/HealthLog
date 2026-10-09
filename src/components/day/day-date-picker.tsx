@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { resolveDateFnsLocale } from "@/components/ui/date-field";
 import {
   Popover,
@@ -25,9 +26,10 @@ import { useDayIndex } from "./use-day";
  *
  * No icon and no field: the header keeps its one line, and the arrows
  * beside it stay the way to the neighbouring days. Radix owns the keyboard
- * (Enter or Space opens, Escape closes, focus returns to the date), and
- * the same popover serves the docked column and both sheets, with touch-
- * sized cells wherever the pointer is coarse.
+ * (Enter or Space opens, Escape closes, focus returns to the date). A
+ * popover beside the date serves the docked column and the side sheet; in
+ * the phone's bottom sheet the calendar rises as a sheet of its own, with
+ * touch-sized cells wherever the pointer is coarse.
  */
 
 /** `YYYY-MM-DD` → a local `Date` at midnight, the calendar's own unit. */
@@ -75,6 +77,7 @@ export function DayDatePicker({
   today,
   label,
   onPick,
+  variant = "popover",
   className,
 }: {
   date: DateKey;
@@ -82,33 +85,91 @@ export function DayDatePicker({
   /** The date as the header writes it: the button's text. */
   label: React.ReactNode;
   onPick: (date: DateKey) => void;
+  /**
+   * `sheet` in the phone's bottom sheet: a month of finger-sized cells
+   * does not fit beside a header that sits halfway down the screen, so the
+   * calendar rises as its own bottom sheet there.
+   */
+  variant?: "popover" | "sheet";
   className?: string;
 }) {
   const { t } = useTranslations();
   const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const [month, setMonth] = useState(() => keyToLocalDate(date));
   const range = monthWindow(month, today);
   const index = useDayIndex(range.from, range.to, open);
 
-  return (
-    <Popover
-      open={open}
-      onOpenChange={(next) => {
-        // Each opening starts on the month of the day on screen.
-        if (next) setMonth(keyToLocalDate(date));
-        setOpen(next);
+  const onOpenChange = (next: boolean) => {
+    // Each opening starts on the month of the day on screen.
+    if (next) setMonth(keyToLocalDate(date));
+    setOpen(next);
+  };
+  const buttonClass = cn(
+    "hover:bg-muted/60 focus-visible:ring-ring/50 data-[state=open]:bg-muted/60 -mx-1 block max-w-full truncate rounded-md px-1 text-left transition-colors focus-visible:ring-[3px] focus-visible:outline-none",
+    className,
+  );
+  const calendar = (
+    <DayCalendar
+      date={date}
+      today={today}
+      month={month}
+      onMonthChange={setMonth}
+      withEntries={Object.keys(index.data?.days ?? {}) as DateKey[]}
+      onPick={(next) => {
+        setOpen(false);
+        const day = pickedDay(next, date, today);
+        if (day !== null) onPick(day);
       }}
-    >
+    />
+  );
+
+  if (variant === "sheet") {
+    return (
+      <>
+        <button
+          ref={buttonRef}
+          type="button"
+          data-slot="day-date-button"
+          data-state={open ? "open" : "closed"}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          title={t("day.pickDate")}
+          onClick={() => onOpenChange(true)}
+          className={buttonClass}
+        >
+          {label}
+        </button>
+        <ResponsiveSheet
+          open={open}
+          onOpenChange={onOpenChange}
+          title={t("day.pickerTitle")}
+          hideHeader
+          showCloseButton={false}
+          bodyClassName="items-center p-2"
+          // Back to the date, inside the day's own sheet.
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            buttonRef.current?.focus({ preventScroll: true });
+          }}
+        >
+          <div data-slot="day-date-picker" className="w-fit">
+            {calendar}
+          </div>
+        </ResponsiveSheet>
+      </>
+    );
+  }
+
+  return (
+    <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
         <button
           type="button"
           data-slot="day-date-button"
           aria-haspopup="dialog"
           title={t("day.pickDate")}
-          className={cn(
-            "hover:bg-muted/60 focus-visible:ring-ring/50 data-[state=open]:bg-muted/60 -mx-1 block max-w-full truncate rounded-md px-1 text-left transition-colors focus-visible:ring-[3px] focus-visible:outline-none",
-            className,
-          )}
+          className={buttonClass}
         >
           {label}
         </button>
@@ -119,18 +180,7 @@ export function DayDatePicker({
         aria-label={t("day.pickerTitle")}
         className="w-auto p-0"
       >
-        <DayCalendar
-          date={date}
-          today={today}
-          month={month}
-          onMonthChange={setMonth}
-          withEntries={Object.keys(index.data?.days ?? {}) as DateKey[]}
-          onPick={(next) => {
-            setOpen(false);
-            const day = pickedDay(next, date, today);
-            if (day !== null) onPick(day);
-          }}
-        />
+        {calendar}
       </PopoverContent>
     </Popover>
   );
