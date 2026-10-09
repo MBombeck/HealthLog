@@ -971,19 +971,25 @@ export default function DashboardPageClient({
         // v1.42 — the top card can be switched off in the layout settings;
         // only an explicit `false` hides it, and with it its skeleton and
         // its error card.
-        layout.todayCardVisible === false ? null : digestQuery.data ? (
-          <TodayHero
-            digest={digestQuery.data}
-            renderFilteredAllClear={renderFilteredHeroAllClear}
-            // Server-persisted hero choice — rides the same resolved layout
-            // as the widget visibility below, so SSR and hydration agree.
-            primaryContent={layout.hero ?? "score"}
-          />
-        ) : !mounted || digestQuery.isLoading ? (
-          <TodayHeroSkeleton />
-        ) : digestQuery.isError ? (
-          <QueryErrorCard onRetry={() => digestQuery.refetch()} />
-        ) : null
+        layout.todayCardVisible === false ? null : (
+          // `contents`: a stable hook for the switch, no box of its own.
+          <div data-slot="today-card" className="contents">
+            {digestQuery.data ? (
+              <TodayHero
+                digest={digestQuery.data}
+                renderFilteredAllClear={renderFilteredHeroAllClear}
+                // Server-persisted hero choice — rides the same resolved
+                // layout as the widget visibility below, so SSR and
+                // hydration agree.
+                primaryContent={layout.hero ?? "score"}
+              />
+            ) : !mounted || digestQuery.isLoading ? (
+              <TodayHeroSkeleton />
+            ) : digestQuery.isError ? (
+              <QueryErrorCard onRetry={() => digestQuery.refetch()} />
+            ) : null}
+          </div>
+        )
       }
 
       {/* v1.42 (#615) — a quiet note about the newest stored environment
