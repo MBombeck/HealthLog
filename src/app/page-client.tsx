@@ -1780,7 +1780,6 @@ export default function DashboardPageClient({
                 title={t("dashboard.bloodPressure")}
                 colors={["var(--chart-3)", "var(--chart-4)"]}
                 unit="mmHg"
-                yAxisUnit="Hg"
                 targetZones={bpTargetZones}
                 compareBaseline={compareBaseline}
                 userTimezone={user?.timezone}
