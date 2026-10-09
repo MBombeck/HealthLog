@@ -116,7 +116,7 @@ describe("BD-Zielbereich tile (v1.4.28 FB-C1/C2 rewrite)", () => {
   it("renders the empty-hint placeholder instead of a percentage on thin data (v1.17 W1b)", () => {
     const html = render(
       <TrendCard
-        label="BP in Target · 23d"
+        label="BP in Target (23d)"
         latest={null}
         emptyHint="collecting data"
         unit="%"
@@ -130,7 +130,7 @@ describe("BD-Zielbereich tile (v1.4.28 FB-C1/C2 rewrite)", () => {
     expect(html).toContain('data-slot="trend-card-empty-hint"');
     expect(html).toContain("collecting data");
     // The dynamic span label is shown in place of the static "· 90 T".
-    expect(html).toContain("BP in Target · 23d");
+    expect(html).toContain("BP in Target (23d)");
     // No numeric headline value renders when the hint takes the slot.
     expect(html).not.toContain('data-slot="trend-card-value"');
   });

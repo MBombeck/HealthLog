@@ -527,7 +527,7 @@ export function DocumentsView() {
           label: `${
             visit.practitioner?.name ??
             encounterKindText(t, visit.kind as EncounterKind)
-          } · ${format.date(visit.occurredAt)}`,
+          }, ${format.date(visit.occurredAt)}`,
         })),
     [visits.data, t, format],
   );

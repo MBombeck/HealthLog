@@ -757,7 +757,7 @@ describe("doctor-report surgical history section", () => {
     );
     const text = await extractText(bytes);
     expect(text).toContain("Operationen und Eingriffe");
-    expect(text).toMatch(/Knee · Links/);
+    expect(text).toMatch(/Knee \(Links\)/);
   });
 
   it("omits the section when there is no procedure", async () => {
@@ -819,7 +819,7 @@ describe("doctor-report condition body site", () => {
   it("prints the site with its side in the report's language", async () => {
     const text = await render(CONDITIONS, "de");
     expect(text).toContain("Körperstelle");
-    expect(text).toMatch(/Knee · Links/);
+    expect(text).toMatch(/Knee \(Links\)/);
   });
 
   it("keeps the old table when no condition names a site", async () => {

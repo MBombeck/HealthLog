@@ -63,7 +63,7 @@ export function VaccinationDocumentSuggestion({
       : (candidate.vaccineName ?? t("vaccinations.suggestion.unnamed"));
     // A date stored at UTC midnight: render the calendar date, not the
     // instant (the previous evening west of UTC).
-    return `${name} · ${formatCalendarDate(candidate.occurredAt.slice(0, 10), dateFormat, locale)}`;
+    return `${name}, ${formatCalendarDate(candidate.occurredAt.slice(0, 10), dateFormat, locale)}`;
   };
 
   const onPick = (candidate: VaccinationSuggestion) => {
