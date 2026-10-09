@@ -11,7 +11,8 @@
  * (the account switch, the operator switch, how many days carry air-quality
  * values), the newest stored day for the dashboard chips (with its air
  * quality only while the part is on), and every attribution line in
- * `attributions`.
+ * `attributions`, and the progress of the air-quality history backfill
+ * (`airQuality.history`).
  */
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
@@ -23,6 +24,7 @@ import { isAirQualityOperatorDisabled } from "@/lib/environment/open-meteo-air-q
 import { environmentAttributionLines } from "@/lib/environment/air-quality-contract";
 import { readLocation } from "@/lib/environment/location-cipher";
 import { isAirQualityActive } from "@/lib/environment/service";
+import { readAirQualityHistoryState } from "@/lib/environment/air-quality-history";
 import { ENVIRONMENT_FETCH_QUEUE } from "@/lib/jobs/environment-fetch";
 import { readQueueFailureForUser } from "@/lib/jobs/job-failures";
 
@@ -54,6 +56,7 @@ export const GET = apiHandler(async () => {
         homeSince: true,
         timezone: true,
         environmentAirQualityEnabled: true,
+        environmentAqHistoryJson: true,
       },
     }),
     prisma.environmentTravelLocation.findMany({
@@ -157,6 +160,19 @@ export const GET = apiHandler(async () => {
   const accountEnabled = profile?.environmentAirQualityEnabled ?? true;
   const operatorDisabled = isAirQualityOperatorDisabled();
   const airActive = isAirQualityActive(accountEnabled);
+  // The history backfill's progress, while the part is on: what the last run
+  // counted, so the card can say how far the past has been filled.
+  const historyState = airActive
+    ? readAirQualityHistoryState(profile?.environmentAqHistoryJson)
+    : null;
+  const history = historyState
+    ? {
+        total: historyState.total,
+        done: historyState.done,
+        complete: historyState.complete,
+        checkedAt: historyState.checkedAt,
+      }
+    : null;
   const latestYear = Number(
     (latestAir?.date ?? latest?.date ?? new Date().toISOString()).slice(0, 4),
   );
@@ -219,6 +235,7 @@ export const GET = apiHandler(async () => {
       days: airDays,
       latestDate: latestAir?.date ?? null,
       domain: latestAir?.aqDomain ?? null,
+      history,
     },
     latestDay,
     // null = the last background runs did not fail (or there is no queue to

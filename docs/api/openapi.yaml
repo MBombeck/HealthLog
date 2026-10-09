@@ -79608,12 +79608,43 @@ components:
                 - type: "null"
               description: "The model domain of that day: `cams_europe` (about 11 km, with pollen) or `cams_global` (about 45 km, no
                 pollen)."
+            history:
+              anyOf:
+                - type: object
+                  properties:
+                    total:
+                      type: integer
+                      minimum: -9007199254740991
+                      maximum: 9007199254740991
+                      description: Past days with entries the source can serve at their place (from 2013 in Europe, from August 2022
+                        elsewhere). Older days stay without values.
+                    done:
+                      type: integer
+                      minimum: -9007199254740991
+                      maximum: 9007199254740991
+                      description: Of those, the days whose air quality is stored.
+                    complete:
+                      type: boolean
+                      description: True when nothing the source serves is left.
+                    checkedAt:
+                      type: string
+                      description: ISO instant of the run that counted them.
+                  required:
+                    - total
+                    - done
+                    - complete
+                    - checkedAt
+                  additionalProperties: false
+                - type: "null"
+              description: Progress of the background backfill that fills air quality for every past day with entries. Null before its
+                first run and while air quality is off.
           required:
             - enabled
             - operatorDisabled
             - days
             - latestDate
             - domain
+            - history
           additionalProperties: false
           description: v1.42 — the air-quality part of the module.
         latestDay:

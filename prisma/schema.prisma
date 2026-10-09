@@ -113,6 +113,12 @@ model User {
   /// nightly fetch skips the air-quality feed and the surfaces leave the
   /// fields out. The operator switch `ENVIRONMENT_AIR_QUALITY_DISABLED` wins.
   environmentAirQualityEnabled Boolean   @default(true) @map("environment_air_quality_enabled")
+  /// v1.42 — progress of the air-quality history backfill
+  /// (`src/lib/environment/air-quality-history.ts`): how many past days with
+  /// entries the source can cover, how many carry air quality, when it was
+  /// last checked and whether it is through. Written by the job only; read by
+  /// `GET /api/environment` for the settings card. Null until the first run.
+  environmentAqHistoryJson     Json?     @map("environment_aq_history_json")
 
   // Codex OAuth (ChatGPT subscription)
   codexAccessTokenEncrypted  String?   @map("codex_access_token_encrypted")

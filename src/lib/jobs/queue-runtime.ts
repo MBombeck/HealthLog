@@ -466,4 +466,7 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "environment-fetch": short(
     "A fan-out of sends, or one account's bounded archive range.",
   ),
+  "environment-aq-history": short(
+    "A fan-out of sends, or one account's history run: at most eight ranges of up to 90 days, two requests each, then a follow-up.",
+  ),
 };

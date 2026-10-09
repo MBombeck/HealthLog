@@ -909,6 +909,9 @@ export const USER_COLUMN_BACKUP_CLASS = {
   // The restore stamps its own: paired clients' cursors from before it must
   // be refused, which a carried value would undo.
   syncResetAt: "OPERATIONAL",
+  // v1.42 — the air-quality history backfill's progress; the restored
+  // account's job recounts it on its next run.
+  environmentAqHistoryJson: "OPERATIONAL",
 
   // ── Settings ──────────────────────────────────────────────────────────────
   // The body and the person, for the reference ranges, the score and the

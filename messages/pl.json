@@ -5826,6 +5826,8 @@
           "operatorDisabled": "Jakość powietrza jest wyłączona na tym serwerze.",
           "coverage": "Dni z danymi o jakości powietrza: {count}",
           "pollenEuropeOnly": "Dane o pyłkach obejmują tylko Europę.",
+          "historyProgress": "Uzupełnianie jakości powietrza: {done} z {total} dni",
+          "historyComplete": "Jakość powietrza uzupełniono dla wszystkich wcześniejszych dni z wpisami, które obejmuje źródło ({total} dni). Starsze dni pozostają puste.",
           "attribution": "Źródła danych i licencje",
           "saveError": "Nie udało się zapisać ustawienia.",
           "latest": "Najnowszy dzień ({date})",

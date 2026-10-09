@@ -5826,6 +5826,8 @@
           "operatorDisabled": "Air quality is turned off on this server.",
           "coverage": "{count} days with air-quality data",
           "pollenEuropeOnly": "Pollen data covers Europe only.",
+          "historyProgress": "Backfilling air quality: {done} of {total} days",
+          "historyComplete": "Air quality is filled in for every earlier day with entries that the source covers ({total} days). Older days stay empty.",
           "attribution": "Data sources and licences",
           "saveError": "The setting could not be saved.",
           "latest": "Newest day ({date})",

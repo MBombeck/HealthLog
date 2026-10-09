@@ -5826,6 +5826,8 @@
           "operatorDisabled": "Luftqualität ist auf diesem Server abgeschaltet.",
           "coverage": "{count} Tage mit Luftqualitätsdaten",
           "pollenEuropeOnly": "Pollendaten gibt es nur für Europa.",
+          "historyProgress": "Luftqualität wird nachgeladen: {done} von {total} Tagen",
+          "historyComplete": "Luftqualität ist für alle früheren Tage mit Einträgen nachgeladen, die die Quelle abdeckt ({total} Tage). Ältere Tage bleiben leer.",
           "attribution": "Datenquellen und Lizenzen",
           "saveError": "Die Einstellung konnte nicht gespeichert werden.",
           "latest": "Jüngster Tag ({date})",

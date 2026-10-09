@@ -20,6 +20,7 @@ import { prisma } from "@/lib/db";
 import { environmentPreferencesSchema } from "@/lib/validations/environment";
 import { isAirQualityOperatorDisabled } from "@/lib/environment/open-meteo-air-quality";
 import { enqueueEnvironmentFetch } from "@/lib/jobs/environment-fetch";
+import { enqueueAirQualityHistory } from "@/lib/jobs/environment-air-quality-history";
 
 export const PATCH = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
@@ -57,6 +58,8 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     before?.environmentAirQualityEnabled === false
   ) {
     await enqueueEnvironmentFetch({ userId: user.id });
+    // Switched on: fill the past as well, every earlier day with entries.
+    await enqueueAirQualityHistory(user.id);
   }
 
   annotate({

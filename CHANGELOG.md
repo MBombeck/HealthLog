@@ -44,6 +44,16 @@ an earlier fold computed from part of a day.
   highest pollen join the correlation channels. An account switch under
   Location & weather (on by default), attributions beside the values, and a
   dashboard chip on a day with high pollen, a warm night or very poor air.
+- **Air quality for the past.** A background job fills air quality, pollen
+  and UV for every earlier local day with an entry: after the update, when
+  the home is set and when air quality is switched on. A trip day is fetched
+  at the trip's place, other days at the home, also before it was set. The
+  source reaches back to 2013 in Europe and to August 2022 elsewhere, pollen
+  from 2021 in Europe only; older days stay empty. Nearby days share one
+  request of up to 90 days, a run holds itself to 300 of the account's 400
+  daily calls and half of each instance window, and a long history spreads
+  over several nights. Location & weather shows the progress (migration
+  0391).
 - **`get_environment` and `get_day`** for the Coach and MCP.
   `get_environment` is module-gated and carries no coordinate or place name;
   `get_day` leaves out life events, notes and document names and honours
@@ -181,7 +191,8 @@ All changes are additive.
   `lastNewSampleAt` per type.
 - The sync feed lists only deletions a person makes, not those of the
   condensing step.
-- `GET /api/environment` adds `airQuality`, `latestDay` and `attributions`.
+- `GET /api/environment` adds `airQuality` (with `history`, the progress of
+  the past-days backfill), `latestDay` and `attributions`.
 - `GET`/`PUT /api/auth/me/source-priority` add `inUse`.
 - A dose for a record-only medication is refused with 422
   `medication.intake.notTracked`; failed passkey sign-ins answer with

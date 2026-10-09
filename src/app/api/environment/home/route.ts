@@ -18,6 +18,7 @@ import { homeLocationSchema } from "@/lib/validations/environment";
 import { roundCoarse } from "@/lib/environment/open-meteo";
 import { sealLocation } from "@/lib/environment/location-cipher";
 import { enqueueEnvironmentFetch } from "@/lib/jobs/environment-fetch";
+import { enqueueAirQualityHistory } from "@/lib/jobs/environment-air-quality-history";
 
 export const PUT = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
@@ -67,6 +68,9 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   // Kick a lookback refresh so recent days populate promptly. No-ops cleanly
   // when no worker is bound; the nightly cron still covers it.
   await enqueueEnvironmentFetch({ userId: user.id });
+  // And the past: air quality for every earlier day with entries, in the
+  // background and inside the request budget. A no-op while it is off.
+  await enqueueAirQualityHistory(user.id);
 
   annotate({ action: { name: "environment.home.set" } });
 

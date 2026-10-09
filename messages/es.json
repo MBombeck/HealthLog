@@ -5826,6 +5826,8 @@
           "operatorDisabled": "La calidad del aire está desactivada en este servidor.",
           "coverage": "{count} días con datos de calidad del aire",
           "pollenEuropeOnly": "Los datos de polen solo cubren Europa.",
+          "historyProgress": "Completando la calidad del aire: {done} de {total} días",
+          "historyComplete": "La calidad del aire está completada para todos los días anteriores con registros que cubre la fuente ({total} días). Los días más antiguos quedan vacíos.",
           "attribution": "Fuentes de datos y licencias",
           "saveError": "No se pudo guardar el ajuste.",
           "latest": "Día más reciente ({date})",

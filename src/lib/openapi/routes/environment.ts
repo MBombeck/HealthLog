@@ -163,6 +163,29 @@ const environmentOverview = z
           .describe(
             "The model domain of that day: `cams_europe` (about 11 km, with pollen) or `cams_global` (about 45 km, no pollen).",
           ),
+        history: z
+          .object({
+            total: z
+              .number()
+              .int()
+              .describe(
+                "Past days with entries the source can serve at their place (from 2013 in Europe, from August 2022 elsewhere). Older days stay without values.",
+              ),
+            done: z
+              .number()
+              .int()
+              .describe("Of those, the days whose air quality is stored."),
+            complete: z
+              .boolean()
+              .describe("True when nothing the source serves is left."),
+            checkedAt: z
+              .string()
+              .describe("ISO instant of the run that counted them."),
+          })
+          .nullable()
+          .describe(
+            "Progress of the background backfill that fills air quality for every past day with entries. Null before its first run and while air quality is off.",
+          ),
       })
       .describe("v1.42 — the air-quality part of the module."),
     latestDay: z

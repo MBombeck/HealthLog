@@ -29,6 +29,8 @@ import {
   ozoneMax8h,
   uvIndexMax,
   variablesForChunk,
+  airQualityChunkWeight,
+  earliestAirQualityDay,
   type AirQualityHourly,
 } from "../open-meteo-air-quality";
 
@@ -172,14 +174,24 @@ describe("aggregateAirQuality", () => {
 });
 
 describe("requests", () => {
-  it("splits into 90-day chunks and asks the pre-2022 ones for the pollutants only", () => {
+  it("splits into 90-day chunks and asks each era only for what it carries", () => {
     expect(chunkDays("2022-01-01", "2022-07-01")).toEqual([
       { startDate: "2022-01-01", endDate: "2022-03-31" },
       { startDate: "2022-04-01", endDate: "2022-06-29" },
       { startDate: "2022-06-30", endDate: "2022-07-01" },
     ]);
-    expect(variablesForChunk("2022-03-31")).toHaveLength(8);
-    expect(variablesForChunk("2022-06-29")).toHaveLength(17);
+    // Pollutants and indices alone before 2021.
+    expect(variablesForChunk("2020-12-31")).toHaveLength(8);
+    // Pollen and dust join in 2021 (Europe).
+    expect(variablesForChunk("2021-01-01")).toHaveLength(15);
+    expect(variablesForChunk("2022-07-31")).toHaveLength(15);
+    // UV and aerosol depth from CAMS global, August 2022 on.
+    expect(variablesForChunk("2022-08-01")).toHaveLength(17);
+    // Weight: 90 days of the full set is 1.7 × 90 / 14 calls.
+    expect(airQualityChunkWeight("2023-01-01", "2023-03-31")).toBeCloseTo(
+      (1.7 * 90) / 14,
+    );
+    expect(airQualityChunkWeight("2015-01-01", "2015-01-01")).toBe(1);
   });
 
   it("sends the coarse coordinates, the timezone and domains=auto, nothing else", async () => {
@@ -266,6 +278,28 @@ describe("requests", () => {
       ["2012-12-30", 0, null],
       ["2012-12-31", 0, null],
     ]);
+  });
+
+  it("answers days before August 2022 outside Europe as uncoverable without a request", async () => {
+    const fetchSpy = vi.fn(async (_url: unknown) =>
+      Response.json({ hourly: dayFixture("2022-08-01", 10) }),
+    );
+    vi.stubGlobal("fetch", fetchSpy);
+    const result = await fetchDailyAirQuality({
+      lat: 40.7,
+      lon: -74,
+      timezone: "UTC",
+      startDate: "2022-07-30",
+      endDate: "2022-08-01",
+    });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const url = new URL(String(fetchSpy.mock.calls[0]![0]));
+    expect(url.searchParams.get("start_date")).toBe("2022-08-01");
+    expect(
+      result.days.filter((d) => d.aqHours === 0).map((d) => d.date),
+    ).toEqual(["2022-07-30", "2022-07-31"]);
+    expect(earliestAirQualityDay(40.7, -74)).toBe("2022-08-01");
+    expect(earliestAirQualityDay(51.5, 7.2)).toBe("2013-01-01");
   });
 
   it("honours a self-hosted endpoint", async () => {
