@@ -72,6 +72,7 @@ import { enumerateDayCount } from "@/lib/environment/day-span";
 import {
   openMeteoCallWeight,
   reserveOpenMeteoCalls,
+  type BudgetCeiling,
 } from "@/lib/environment/request-budget";
 
 /** Hosted default; override with `OPENMETEO_AIR_QUALITY_URL` (self-host). */
@@ -395,7 +396,7 @@ export async function fetchDailyAirQuality(
     startDate: string;
     endDate: string;
   },
-  budget: { accountId?: string } = {},
+  budget: { accountId?: string; ceiling?: BudgetCeiling } = {},
 ): Promise<AirQualityFetchResult> {
   const days: DailyAirQualityObservation[] = [];
   // Days before the feed's first day at this location are answered here,
@@ -415,7 +416,9 @@ export async function fetchDailyAirQuality(
   for (const chunk of chunks) {
     const variables = variablesForChunk(chunk.endDate);
     const weight = airQualityChunkWeight(chunk.startDate, chunk.endDate);
-    if (!(await reserveOpenMeteoCalls(weight, budget.accountId))) {
+    if (
+      !(await reserveOpenMeteoCalls(weight, budget.accountId, budget.ceiling))
+    ) {
       return { days, stopped: "budget" };
     }
     try {

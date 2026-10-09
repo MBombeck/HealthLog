@@ -45,6 +45,7 @@ import {
   admitWeight,
   openMeteoCallWeight,
   reserveOpenMeteoCalls,
+  windowsUnderCeiling,
   type BudgetBucket,
 } from "../request-budget";
 
@@ -132,5 +133,46 @@ describe("the per-account share", () => {
     expect(await reserveOpenMeteoCalls(62.57, "acct-b")).toBe(true);
     // A request made for no account is bound by the instance windows only.
     expect(await reserveOpenMeteoCalls(1)).toBe(true);
+  });
+});
+
+describe("a caller's own ceiling", () => {
+  const ceiling = { instanceShare: 0.5, accountDayCalls: 300 };
+
+  it("lowers each instance window to its share and the account's day to its calls", () => {
+    const windows = windowsUnderCeiling(
+      [...OPEN_METEO_BUDGET_WINDOWS, OPEN_METEO_ACCOUNT_DAY_WINDOW],
+      ceiling,
+    );
+    expect(windows.map((w) => [w.name, w.limit, w.windowMs])).toEqual([
+      ["minute", 250, 60_000],
+      ["hour", 2_000, 3_600_000],
+      ["day", 4_000, 86_400_000],
+      ["account-day", 300, 86_400_000],
+    ]);
+    expect(windowsUnderCeiling(OPEN_METEO_BUDGET_WINDOWS, undefined)).toBe(
+      OPEN_METEO_BUDGET_WINDOWS,
+    );
+  });
+
+  it("refuses past the ceiling what the budget alone would admit, and charges nothing", async () => {
+    store.clear();
+    const later = new Date(Date.now() + 3_600_000);
+    store.set("open-meteo-budget:account:acct-c:day", {
+      count: 295 * 100,
+      resetAt: later,
+    });
+    expect(await reserveOpenMeteoCalls(5, "acct-c", ceiling)).toBe(true);
+    expect(await reserveOpenMeteoCalls(0.1, "acct-c", ceiling)).toBe(false);
+    expect(store.get("open-meteo-budget:account:acct-c:day")!.count).toBe(
+      300 * 100,
+    );
+    // The same request without the ceiling is still inside the budget.
+    expect(await reserveOpenMeteoCalls(0.1, "acct-c")).toBe(true);
+
+    store.clear();
+    store.set("open-meteo-budget:minute", { count: 246 * 100, resetAt: later });
+    expect(await reserveOpenMeteoCalls(5, "acct-c", ceiling)).toBe(false);
+    expect(await reserveOpenMeteoCalls(4, "acct-c", ceiling)).toBe(true);
   });
 });

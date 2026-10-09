@@ -26,6 +26,7 @@ import {
   OpenMeteoBudgetExhaustedError,
   openMeteoCallWeight,
   reserveOpenMeteoCalls,
+  type BudgetCeiling,
 } from "@/lib/environment/request-budget";
 
 /** Hosted archive default; override with `OPENMETEO_BASE_URL` (self-host). */
@@ -278,10 +279,12 @@ export async function fetchDailyEnvironment(
     startDate: string;
     endDate: string;
   },
-  budget: { accountId?: string } = {},
+  budget: { accountId?: string; ceiling?: BudgetCeiling } = {},
 ): Promise<DailyEnvironmentObservation[]> {
   const weight = archiveRequestWeight(args.startDate, args.endDate);
-  if (!(await reserveOpenMeteoCalls(weight, budget.accountId))) {
+  if (
+    !(await reserveOpenMeteoCalls(weight, budget.accountId, budget.ceiling))
+  ) {
     throw new OpenMeteoBudgetExhaustedError();
   }
   const url = new URL(`${ARCHIVE_BASE_URL}/v1/archive`);
