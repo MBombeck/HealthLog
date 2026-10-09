@@ -165,9 +165,13 @@ test.describe("document vault", () => {
       const firstRow = page.locator('[data-slot="document-month-row"]').first();
       await expect(firstRow).toBeVisible({ timeout: 15_000 });
 
-      // Month headings stay the grid's section labels.
+      // The months run side by side by default: a month is marked above
+      // its first document instead of taking a heading row of its own.
       await expect(
-        page.locator('[data-slot="document-timeline"] h2').first(),
+        page.locator('[data-slot="document-timeline"]'),
+      ).toHaveAttribute("data-arrangement", "flow");
+      await expect(
+        page.locator('[data-slot="document-flow-month"]').first(),
       ).toBeVisible();
 
       // Tiles with the preview on top, and at most `columns` side by side:
