@@ -7,6 +7,10 @@ import type {
 } from "@/lib/ai/coach/types";
 import { queryKeys } from "@/lib/query-keys";
 import {
+  readCoachDeleteJournal,
+  writeCoachDeleteJournal,
+} from "@/lib/ai/coach/delete-journal";
+import {
   CONVERSATION_DELETE_UNDO_MS,
   commitCoachConversationDelete,
   createCoachConversationDeleteQueue,
@@ -180,18 +184,45 @@ describe("Coach conversation delete caches and request", () => {
     respond(404);
     const client = seeded();
     const onFailed = vi.fn();
-    commitCoachConversationDelete(client, "c1", onFailed);
+    commitCoachConversationDelete(client, "c1", null, onFailed);
     await vi.waitFor(() => expect(global.fetch).toHaveBeenCalledOnce());
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(onFailed).not.toHaveBeenCalled();
     expect(headIds(client)).toEqual(["c2"]);
   });
 
+  it("settles a 404 against the journal entry of its own scope only", async () => {
+    const map = new Map<string, string>();
+    vi.stubGlobal("window", {
+      sessionStorage: {
+        getItem: (key: string) => map.get(key) ?? null,
+        setItem: (key: string, value: string) => void map.set(key, value),
+        removeItem: (key: string) => void map.delete(key),
+      },
+    });
+    try {
+      // The same id journaled in another record must survive this settle.
+      writeCoachDeleteJournal("user-a:managed-1", "c1", true);
+      respond(404);
+      const client = seeded();
+      const onFailed = vi.fn();
+      commitCoachConversationDelete(client, "c1", "user-a:own", onFailed);
+      expect(readCoachDeleteJournal("user-a:own")).toEqual(["c1"]);
+      await vi.waitFor(() =>
+        expect(readCoachDeleteJournal("user-a:own")).toEqual([]),
+      );
+      expect(onFailed).not.toHaveBeenCalled();
+      expect(readCoachDeleteJournal("user-a:managed-1")).toEqual(["c1"]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("restores the lists and reports a failed delete", async () => {
     respond(500);
     const client = seeded();
     const onFailed = vi.fn();
-    commitCoachConversationDelete(client, "c1", onFailed);
+    commitCoachConversationDelete(client, "c1", null, onFailed);
     expect(headIds(client)).toEqual(["c2"]);
     await vi.waitFor(() => expect(onFailed).toHaveBeenCalledOnce());
     expect(headIds(client)).toEqual(["c1", "c2"]);

@@ -46,6 +46,13 @@ import {
   apiPost,
 } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
+import { getRecordScope } from "@/lib/query-keys/record-scope";
+import {
+  coachDeleteJournalOwner,
+  resendCoachDeleteJournal,
+  writeCoachDeleteJournal,
+} from "@/lib/ai/coach/delete-journal";
+import { useAuth } from "@/hooks/use-auth";
 
 /**
  * v1.4.20 phase B2b — TanStack Query + SSE client for the AI Coach
@@ -430,46 +437,6 @@ function subscribeHiddenConversations(listener: () => void): () => void {
   return () => hiddenConversationListeners.delete(listener);
 }
 
-/**
- * Deletes sent but not yet confirmed, kept in `sessionStorage` so they
- * outlive a reload. A reload inside the undo window sends the DELETE with
- * `keepalive` from the old page, and the new page's list read can reach the
- * server before it: without the journal that read brings the row back. The
- * new page hides every journaled id and sends its DELETE again; a 404 then
- * means it is already gone.
- */
-const DELETE_JOURNAL_KEY = "healthlog:coach-conversation-deletes";
-
-function readDeleteJournal(): string[] {
-  try {
-    const raw = window.sessionStorage.getItem(DELETE_JOURNAL_KEY);
-    const parsed: unknown = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed)
-      ? parsed.filter((id): id is string => typeof id === "string")
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeDeleteJournal(id: string, present: boolean): void {
-  try {
-    const ids = new Set(readDeleteJournal());
-    if (present) ids.add(id);
-    else ids.delete(id);
-    if (ids.size === 0) {
-      window.sessionStorage.removeItem(DELETE_JOURNAL_KEY);
-    } else {
-      window.sessionStorage.setItem(
-        DELETE_JOURNAL_KEY,
-        JSON.stringify([...ids]),
-      );
-    }
-  } catch {
-    // Storage unavailable: the keepalive request still carries the delete.
-  }
-}
-
 const deletesInFlight = new Set<string>();
 
 /**
@@ -477,16 +444,20 @@ const deletesInFlight = new Set<string>();
  * `pagehide` is on the wire before the page is torn down. Every list cache
  * drops the row first; a failure restores them, shows the row again and
  * calls `onFailed`. A 404 is success: the row is gone, which is the point.
+ * That reading holds because the delete is only ever sent in the scope it
+ * was journaled under (`owner`, see `@/lib/ai/coach/delete-journal`); with no
+ * known owner nothing is journaled and the keepalive request is all there is.
  */
 export function commitCoachConversationDelete(
   queryClient: QueryClient,
   id: string,
+  owner: string | null,
   onFailed: () => void,
 ): void {
   if (deletesInFlight.has(id)) return;
   deletesInFlight.add(id);
   setConversationHidden(id, true);
-  writeDeleteJournal(id, true);
+  if (owner !== null) writeCoachDeleteJournal(owner, id, true);
   const request = deleteCoachConversationRequest(id);
   const snapshot = removeCoachConversationFromCaches(queryClient, id);
   request
@@ -506,7 +477,7 @@ export function commitCoachConversationDelete(
     )
     .finally(() => {
       deletesInFlight.delete(id);
-      writeDeleteJournal(id, false);
+      if (owner !== null) writeCoachDeleteJournal(owner, id, false);
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.list() });
     });
 }
@@ -522,7 +493,7 @@ export function commitCoachConversationDelete(
  * sent to the background, a tab switched away), on `pagehide` (reload,
  * close, navigation away) and when the owning component unmounts; the
  * request goes out with `keepalive`, and a delete the page could not confirm
- * is sent again by the next one (see the journal above). Before that, a
+ * is sent again by the next one (see `@/lib/ai/coach/delete-journal`). Before that, a
  * delete followed by a reload inside the window was never sent, and the
  * conversation came back.
  *
@@ -532,6 +503,11 @@ export function commitCoachConversationDelete(
 export function useDeleteCoachConversationWithUndo() {
   const queryClient = useQueryClient();
   const { t } = useTranslations();
+  const { user } = useAuth();
+  // The account and the record this page acts on; the journal is bound to it.
+  const owner = user
+    ? coachDeleteJournalOwner(user.id, getRecordScope())
+    : null;
   const pendingDeleteIds = useSyncExternalStore(
     subscribeHiddenConversations,
     () => hiddenConversationIds,
@@ -544,7 +520,7 @@ export function useDeleteCoachConversationWithUndo() {
   useEffect(() => {
     const failedMessage = t("insights.coach.historyDeleteFailed");
     commitRef.current = (id) =>
-      commitCoachConversationDelete(queryClient, id, () =>
+      commitCoachConversationDelete(queryClient, id, owner, () =>
         toast.error(failedMessage),
       );
   });
@@ -560,9 +536,13 @@ export function useDeleteCoachConversationWithUndo() {
   );
 
   useEffect(() => {
-    // Finish what a previous page of this tab could not confirm.
-    for (const id of readDeleteJournal()) commitRef.current(id);
+    // Finish what a previous page of this tab could not confirm, in this
+    // scope only: another account's or another record's entries stay put.
+    if (owner === null) return;
+    resendCoachDeleteJournal(owner, (id) => commitRef.current(id));
+  }, [owner]);
 
+  useEffect(() => {
     const onVisibilityChange = () => {
       if (document.visibilityState === "hidden") getQueue().flush();
     };

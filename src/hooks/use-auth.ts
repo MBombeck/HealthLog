@@ -28,6 +28,7 @@ import type { ModuleAccessState } from "@/lib/sharing/module-disclosure";
 import type { OnboardingStateDto } from "@/lib/onboarding/needs";
 import type { TourProgress } from "@/lib/onboarding/tour-progress";
 import { clearLastDay } from "@/lib/day/last-day";
+import { clearCoachDeleteJournal } from "@/lib/ai/coach/delete-journal";
 import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
 import {
   setRecordScope,
@@ -624,6 +625,9 @@ export function clearCachesForSessionEnd(queryClient: QueryClient): void {
   clearWasAuthenticated();
   // The day the layer last showed is a date of this account's record.
   clearLastDay();
+  // Coach deletes this session could not confirm belong to its account; the
+  // next one must not re-send them against its own record.
+  clearCoachDeleteJournal();
   void clearOfflineCachesForSessionEnd();
 }
 

@@ -29,6 +29,12 @@ vi.mock("@/lib/day/last-day", () => ({
   clearLastDay: () => clearLastDay(),
 }));
 
+// Coach deletes the ending session could not confirm belong to its account.
+const clearCoachDeleteJournal = vi.fn();
+vi.mock("@/lib/ai/coach/delete-journal", () => ({
+  clearCoachDeleteJournal: () => clearCoachDeleteJournal(),
+}));
+
 // `use-auth` pulls in the typed fetch wrapper, the router, and the i18n
 // context at module load. None of them matter for the pure session-end
 // helper, so stub them so the import is side-effect free in the test env.
@@ -48,6 +54,7 @@ import { clearCachesForSessionEnd } from "../use-auth";
 afterEach(() => {
   clearOfflineCachesForSessionEnd.mockClear();
   clearLastDay.mockClear();
+  clearCoachDeleteJournal.mockClear();
 });
 
 describe("clearCachesForSessionEnd — cross-user in-memory wipe", () => {
@@ -79,5 +86,10 @@ describe("clearCachesForSessionEnd — cross-user in-memory wipe", () => {
   it("forgets the day the layer last showed", () => {
     clearCachesForSessionEnd(new QueryClient());
     expect(clearLastDay).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears the Coach delete journal", () => {
+    clearCachesForSessionEnd(new QueryClient());
+    expect(clearCoachDeleteJournal).toHaveBeenCalledTimes(1);
   });
 });
