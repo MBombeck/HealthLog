@@ -80922,7 +80922,6 @@ components:
                 - workouts
                 - cycle
                 - environment
-                - lifestyle
                 - lifeEvents
           description: Each day in the window that holds anything, keyed `YYYY-MM-DD`, with the sections it holds. Days without
             entries are absent.
@@ -81073,7 +81072,6 @@ components:
             - workouts
             - cycle
             - environment
-            - lifestyle
             - lifeEvents
         id:
           type: string
@@ -81176,7 +81174,6 @@ components:
               - workouts
               - cycle
               - environment
-              - lifestyle
               - lifeEvents
           additionalProperties:
             type: object
@@ -81217,7 +81214,6 @@ components:
             - restMode
             - cyclePhase
             - travel
-            - lifestyle
             - lifeEvent
         section:
           type: string
@@ -81238,7 +81234,6 @@ components:
             - workouts
             - cycle
             - environment
-            - lifestyle
             - lifeEvents
         id:
           type: string
@@ -81251,8 +81246,12 @@ components:
             - type: "null"
           description: A second line, already formatted (a dose, a destination).
         since:
-          type: string
-          description: A local calendar date, `YYYY-MM-DD`.
+          anyOf:
+            - type: string
+              description: A local calendar date, `YYYY-MM-DD`.
+            - type: "null"
+          description: The record's own start date. Null when the record holds none (a medication filed without a start date); the
+            entry's creation date is never put in its place.
         until:
           anyOf:
             - type: string
@@ -81265,7 +81264,7 @@ components:
               exclusiveMinimum: 0
               maximum: 9007199254740991
             - type: "null"
-          description: Day n of the period, counting `since` as day 1.
+          description: Day n of the period, counting `since` as day 1; null when `since` is null.
         dayCount:
           anyOf:
             - type: integer
@@ -81391,7 +81390,6 @@ components:
             - workouts
             - cycle
             - environment
-            - lifestyle
             - lifeEvents
         id:
           type: string

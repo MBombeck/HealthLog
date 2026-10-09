@@ -88,7 +88,6 @@ export const DAY_INDEX_MAX_SPAN_DAYS = 366;
  *   workouts     sessions started that day
  *   cycle        the cycle phase and the day log
  *   environment  the day's environment row and a travel period
- *   lifestyle    anamnesis facts valid on that day (shift work, …)
  *   lifeEvents   life events dated that day at DAY precision, or spanning it
  */
 export const DAY_SECTION_KEYS = [
@@ -108,7 +107,6 @@ export const DAY_SECTION_KEYS = [
   "workouts",
   "cycle",
   "environment",
-  "lifestyle",
   "lifeEvents",
 ] as const;
 
@@ -138,7 +136,14 @@ export const DAY_SECTION_UNAVAILABLE_REASONS = [
 export type DaySectionUnavailableReason =
   (typeof DAY_SECTION_UNAVAILABLE_REASONS)[number];
 
-/** Something that runs through the day rather than happening on it. */
+/**
+ * Something that runs through the day rather than happening on it: a record
+ * with a start of its own (a medication, a course, a pause, an illness, a
+ * cycle, a trip, a life event that spans days). Profile facts such as smoking
+ * status or a shift pattern are not here: they describe the person, they
+ * hold no start the person gave, and counting "day n" from when they were
+ * filed would state a duration nobody recorded.
+ */
 export const DAY_RUNNING_KINDS = [
   "medication",
   "medicationCourse",
@@ -147,7 +152,6 @@ export const DAY_RUNNING_KINDS = [
   "restMode",
   "cyclePhase",
   "travel",
-  "lifestyle",
   "lifeEvent",
 ] as const;
 

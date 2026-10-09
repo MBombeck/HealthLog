@@ -63,14 +63,20 @@ const dayRunningItem = z
       .string()
       .nullable()
       .describe("A second line, already formatted (a dose, a destination)."),
-    since: dateKeySchema,
+    since: dateKeySchema
+      .nullable()
+      .describe(
+        "The record's own start date. Null when the record holds none (a medication filed without a start date); the entry's creation date is never put in its place.",
+      ),
     until: dateKeySchema.nullable().describe("Null while it is still open."),
     dayIndex: z
       .number()
       .int()
       .positive()
       .nullable()
-      .describe("Day n of the period, counting `since` as day 1."),
+      .describe(
+        "Day n of the period, counting `since` as day 1; null when `since` is null.",
+      ),
     dayCount: z
       .number()
       .int()

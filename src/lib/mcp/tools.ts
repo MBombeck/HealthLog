@@ -1000,7 +1000,7 @@ const getDayOutput: z.ZodRawShape = {
           section: modelDaySection,
           title: z.string(),
           sub: z.string().nullable(),
-          since: z.string(),
+          since: z.string().nullable(),
           until: z.string().nullable(),
           dayIndex: z.number().nullable(),
           dayCount: z.number().nullable(),
@@ -1781,7 +1781,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: DAY_TOOL_NAME,
     title: "Get one day",
     description:
-      "Fetch one local calendar day of the user's record (YYYY-MM-DD, in the user's own time zone): what ran through it (medications and courses with dose and day n, pauses, an illness with its day n, a cycle phase, anamnesis facts), the readings in that day's window with the user's usual range over the 30 days before (null with too little history), what happened on it (intakes, dose changes, symptoms, lab results, visits, vaccinations, check-ups, documents by kind, mood and screener scores, workouts), and deterministic notable observations (highest or lowest for at least three months, first reading of a kind). Notes, document names, visit reasons, practitioner names and life events are never included. `unavailable` names sections whose module is off (module_disabled). Each result carries `url`, the day in the app. Returns { present: false } with no_data, outside_window (a future date) or invalid_arguments.",
+      "Fetch one local calendar day of the user's record (YYYY-MM-DD, in the user's own time zone): what ran through it (medications and courses with dose and day n, pauses, an illness with its day n, a cycle phase, a trip; day n counts from the record's own start date and is null, with `since` null, when the record holds none), the readings in that day's window with the user's usual range over the 30 days before (null with too little history), what happened on it (intakes, dose changes, symptoms, lab results, visits, vaccinations, check-ups, documents by kind, mood and screener scores, workouts), and deterministic notable observations (highest or lowest for at least three months, first reading of a kind). Notes, document names, visit reasons, practitioner names and life events are never included. `unavailable` names sections whose module is off (module_disabled). Each result carries `url`, the day in the app. Returns { present: false } with no_data, outside_window (a future date) or invalid_arguments.",
     inputShape: {
       date: z.string().describe("The local calendar date, YYYY-MM-DD."),
     },

@@ -190,6 +190,48 @@ describe("<DayView>", () => {
     expect(html).toContain('href="/illness/ep1"');
   });
 
+  it("states no day count for a record without a start, and words a life event's category", async () => {
+    dayQuery = {
+      data: {
+        ...DAY,
+        running: [
+          {
+            kind: "medication",
+            section: "medications",
+            id: "m9",
+            title: "Levothyroxine",
+            sub: "50 µg",
+            since: null,
+            until: null,
+            dayIndex: null,
+            dayCount: null,
+            href: "/medications/m9",
+          },
+          {
+            kind: "lifeEvent",
+            section: "lifeEvents",
+            id: "le1",
+            title: "Parental leave",
+            sub: "FAMILY",
+            since: "2025-12-01",
+            until: "2026-02-28",
+            dayIndex: 34,
+            dayCount: 90,
+            href: null,
+          },
+        ],
+      },
+    };
+    const html = await render();
+    const rows = html.split('data-slot="day-running-item"').slice(1);
+    const med = rows.find((row) => row.includes("Levothyroxine")) ?? "";
+    expect(med).toContain("50 µg");
+    expect(med.split("</li>")[0]).not.toMatch(/Day \d|since/);
+    const leave = rows.find((row) => row.includes("Parental leave")) ?? "";
+    expect(leave).toContain("Family · Day 34 of 90");
+    expect(leave).not.toContain("FAMILY");
+  });
+
   it("folds the blood pressure into one tile on its number line", async () => {
     const html = await render();
     expect(html).toContain('data-type="BLOOD_PRESSURE"');

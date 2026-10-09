@@ -211,6 +211,43 @@ describe("a local day across a clock change", () => {
     expect(after.events.some((e) => e.kind === "mood")).toBe(false);
   });
 
+  it("runs only records with a start of their own, never a profile fact or an entry date", async () => {
+    const db = getPrismaClient();
+    const owner = await makeUser("run");
+    // Filed on the 17th: a person who quit years ago would read "day 13".
+    await db.healthProfileFactRevision.create({
+      data: {
+        userId: owner.id,
+        kind: "SMOKING_STATUS",
+        valueEncrypted: encryptToBytes("FORMER"),
+        validFrom: new Date("2026-03-17T08:00:00.000Z"),
+        provenance: "USER_REPORTED",
+      },
+    });
+    // A medication filed on the 17th without a start date.
+    await db.medication.create({
+      data: {
+        userId: owner.id,
+        name: "Levothyroxine",
+        dose: "50 µg",
+        createdAt: new Date("2026-03-17T08:00:00.000Z"),
+      },
+    });
+    await signIn(owner.id);
+
+    const day = await json<Day>(await getDay("2026-03-29"));
+    expect(day.running.map((r) => r.kind)).toEqual(["medication"]);
+    expect(day.running[0]).toMatchObject({
+      title: "Levothyroxine",
+      since: null,
+      dayIndex: null,
+      dayCount: null,
+    });
+    // The entry's date still bounds which days show it.
+    const before = await json<Day>(await getDay("2026-03-16"));
+    expect(before.running).toEqual([]);
+  });
+
   it("holds 25 hours on the fall-back day", async () => {
     const db = getPrismaClient();
     const owner = await makeUser("fall");
