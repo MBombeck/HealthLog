@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 
 import {
-  LIFE_EVENT_CATEGORIES,
   type DayEvent,
   type DayEventKind,
   type DayNotable,
@@ -32,7 +31,9 @@ import {
   type DayRunningKind,
   type DayValue,
 } from "@/lib/day/contract";
+import { visitKindWords } from "@/components/timeline/item-words";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { MOOD_LABEL_KEYS } from "@/lib/mood/labels";
 import { cn } from "@/lib/utils";
 
 import type { DayFocus } from "./day-layer-controller";
@@ -161,43 +162,114 @@ const RUNNING_COLOR: Record<DayRunningKind, string> = {
   lifeEvent: "var(--chart-2)",
 };
 
+type Translate = (
+  key: string,
+  params?: Record<string, string | number>,
+) => string;
+
+/** The bundle's wording of `key`, or null when the bundle has none. */
+function known(t: Translate, key: string): string | null {
+  const value = t(key);
+  return value === key ? null : value;
+}
+
 /**
- * The server names a few records by a sentinel rather than by text it would
- * have to translate: a cycle is titled "cycle", a trip "travel", a cycle
- * day carries its flow level. They are worded here, in the reader's
- * language; every other title is the record's own text. The record's kind
- * decides, not the title: a medication or a document the person named
- * "cycle" keeps its own name.
+ * The server sends what the record holds and leaves the words to the reader's
+ * language: a cycle is titled "cycle" and a trip "travel", a mood entry
+ * carries its mood code, a screener its instrument, a workout its sport, and
+ * a start, an end, a pause or a resumption the bare name of what started,
+ * ended, paused or resumed. They are worded here. The record's kind decides,
+ * not the title: a medication or a document the person named "cycle" keeps
+ * its own name.
  */
-export function dayTitle(
-  kind: string,
-  title: string,
-  t: (key: string) => string,
-): string {
-  if (kind === "cyclePhase" || kind === "cycleDayLog") return t("nav.cycle");
-  if (kind === "travel") return t("day.travel");
-  return title;
+export function dayTitle(kind: string, title: string, t: Translate): string {
+  switch (kind) {
+    case "cyclePhase":
+    case "cycleDayLog":
+      return t("nav.cycle");
+    case "travel":
+      return t("day.travel");
+    case "medicationStart":
+    case "courseStart":
+      return t("day.event.started", { label: title });
+    case "medicationEnd":
+    case "courseEnd":
+      return t("day.event.ended", { label: title });
+    case "pauseStart":
+    case "medicationPause":
+      return t("day.event.paused", { label: title });
+    case "pauseEnd":
+      return t("day.event.resumed", { label: title });
+    case "illnessOnset":
+      return t("day.event.illnessBegan", { label: title });
+    case "illnessResolved":
+      return t("day.event.illnessResolved", { label: title });
+    case "mood": {
+      const key = MOOD_LABEL_KEYS[title];
+      return (key ? known(t, key) : null) ?? t("nav.mood");
+    }
+    case "assessment":
+      return (
+        known(t, `mentalHealth.instrument.${title.toLowerCase()}`) ?? title
+      );
+    case "workout":
+      return known(t, `insights.workouts.sport.${title}`) ?? title;
+    default:
+      return title;
+  }
 }
 
 const FLOW_LEVELS = new Set(["NONE", "SPOTTING", "LIGHT", "MEDIUM", "HEAVY"]);
 
-const LIFE_EVENT_CATEGORY_SET: ReadonlySet<string> = new Set(
-  LIFE_EVENT_CATEGORIES,
-);
-
-function dayMeta(
+/**
+ * A row's second line. Where it is a code (a category, a kind, a severity, a
+ * band) or a bare number (an intensity, a dose number, a functional impact),
+ * it is worded; a code the bundle does not know is left out rather than
+ * shown raw. A dose, a duration or a lab value is the record's own text.
+ */
+export function dayMeta(
   kind: string,
   meta: string,
-  t: (key: string) => string,
-): string {
-  if (kind === "cycleDayLog" && FLOW_LEVELS.has(meta)) {
-    return `${t("cycle.flow.label")}: ${t(`cycle.flow.${meta}`)}`;
+  t: Translate,
+  title = "",
+): string | null {
+  switch (kind) {
+    case "cycleDayLog":
+      return FLOW_LEVELS.has(meta)
+        ? `${t("cycle.flow.label")}: ${t(`cycle.flow.${meta}`)}`
+        : null;
+    case "lifeEvent":
+      return known(t, `lifeEvents.category.${meta}`);
+    // The mood is the title; its score says the same thing again.
+    case "mood":
+      return null;
+    case "assessment": {
+      const [score, band] = meta.split(" ");
+      const bandText = band
+        ? known(t, `mentalHealth.band.${title}.${band}`)
+        : null;
+      return [score, bandText].filter(Boolean).join(" · ") || null;
+    }
+    case "symptom":
+      return t("symptoms.intensityPill", { value: meta });
+    case "allergyOnset":
+      return known(t, `records.allergies.severity.${meta}`);
+    case "visit":
+    case "procedure":
+      return meta === "PLANNED"
+        ? t("encounters.status.planned")
+        : visitKindWords(t, meta);
+    case "vaccination":
+      return t("vaccinations.series.doseN", { position: meta });
+    case "illnessDayLog": {
+      const impact = known(t, `illness.impact.${meta}`);
+      return impact ? t("illness.timeline.impact", { impact }) : null;
+    }
+    case "document":
+      return known(t, `documents.kind.${meta}`);
+    default:
+      return meta;
   }
-  // A life event's second line is its category, a closed code.
-  if (kind === "lifeEvent" && LIFE_EVENT_CATEGORY_SET.has(meta)) {
-    return t(`lifeEvents.category.${meta}`);
-  }
-  return meta;
 }
 
 export function DayRunning({ items }: { items: readonly DayRunningItem[] }) {
@@ -452,6 +524,9 @@ export function DayEvents({ events }: { events: readonly DayEvent[] }) {
       <ul className="divide-border divide-y">
         {events.map((event) => {
           const Icon = EVENT_ICON[event.kind];
+          const meta = event.meta
+            ? dayMeta(event.kind, event.meta, t, event.title)
+            : null;
           return (
             <li
               key={`${event.kind}-${event.id}`}
@@ -485,10 +560,8 @@ export function DayEvents({ events }: { events: readonly DayEvent[] }) {
                     {dayTitle(event.kind, event.title, t)}
                   </p>
                 )}
-                {event.meta ? (
-                  <p className="text-muted-foreground mt-0.5 text-xs">
-                    {dayMeta(event.kind, event.meta, t)}
-                  </p>
+                {meta ? (
+                  <p className="text-muted-foreground mt-0.5 text-xs">{meta}</p>
                 ) : null}
                 {event.note ? (
                   // The person's own words: content, never muted.

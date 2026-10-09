@@ -23,7 +23,7 @@ import { MeanPartsLine, SeriesLines, TimelineChart } from "../timeline-chart";
 import { TimelineChronicle } from "../timeline-chronicle";
 import { layoutTimeline } from "../timeline-geometry";
 import { useSeriesValueFormat } from "../use-series-value-format";
-import { TODAY, fullTimeline, readiness } from "./timeline-fixture";
+import { TODAY, fullTimeline, readiness, wordsIn } from "./timeline-fixture";
 
 function render(node: React.ReactElement, locale: "de" | "en" = "de") {
   // A fresh client with no account answer: the unit preference resolves to
@@ -54,8 +54,21 @@ function I18nProbe({
   return <>{run(t)}</>;
 }
 
-/** The text a reader sees, without the markup between the runs. */
-const text = (html: string) => html.replace(/<[^>]+>/g, "");
+/**
+ * The text a reader sees, without the markup between the runs. A walk over
+ * the characters rather than a pattern, so a tag split across another cannot
+ * survive it.
+ */
+function text(html: string): string {
+  let out = "";
+  let inTag = false;
+  for (const ch of html) {
+    if (ch === "<") inTag = true;
+    else if (ch === ">") inTag = false;
+    else if (!inTag) out += ch;
+  }
+  return out;
+}
 
 const COLORS = assignSeriesColors([
   "BLOOD_PRESSURE_SYS",
@@ -153,6 +166,32 @@ describe("chronicle", () => {
     expect(html).toMatch(/data-date="2026-01-03"><button[^>]*bg-muted/);
   });
 
+  it("reads a pause as paused and resumed, never as an end", () => {
+    const html = text(
+      render(
+        <WithFormat
+          build={(format) => (
+            <TimelineChronicle
+              timeline={fullTimeline()}
+              today={TODAY}
+              grouping="month"
+              selected={null}
+              seriesColor={seriesColor}
+              seriesFormat={format}
+              onOpenDay={() => undefined}
+              onEditLifeEvent={null}
+            />
+          )}
+        />,
+        "en",
+      ),
+    );
+    expect(html).toContain("Ramipril paused");
+    expect(html).toContain("Ramipril resumed");
+    expect(html).toContain("after 11 days");
+    expect(html).not.toContain("Ramipril ended");
+  });
+
   it("shows the month's means beside the month", () => {
     const html = render(
       <WithFormat
@@ -241,6 +280,11 @@ describe("selection bar", () => {
     expect(html).not.toContain("Bluthochdruck");
     expect(html).toContain("3. Jan. öffnen");
     expect(html).toContain('data-date="2026-01-03"');
+  });
+
+  it("names a pause as a pause", () => {
+    const html = text(bar("2021-06-05"));
+    expect(html).toContain("Ramipril pausiert · 1. Juni bis 11. Juni");
   });
 
   it("names the bucket's means with the readings behind each", () => {
@@ -364,6 +408,7 @@ describe("value line colours", () => {
       lanes: [],
       series: fullTimeline().series,
       bucket: "month",
+      words: wordsIn(),
       startMissing: "",
       today: TODAY,
     });

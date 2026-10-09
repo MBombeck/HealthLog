@@ -10,6 +10,19 @@ import type {
   TimelineReadinessResponse,
   TimelineResponse,
 } from "@/lib/day/contract";
+import type { Locale } from "@/lib/i18n/config";
+import { pluralKey } from "@/lib/i18n/plural";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+
+import { makeItemWords, type ItemWordsFn } from "../item-words";
+
+/** An item's words from the real bundle, outside a React tree. */
+export function wordsIn(locale: Locale = "de"): ItemWordsFn {
+  const { t } = getServerTranslator(locale);
+  return makeItemWords(t, (base, count, params) =>
+    t(pluralKey(base, count, locale), { count, ...params }),
+  );
+}
 
 export function item(
   over: Partial<TimelineItem> & Pick<TimelineItem, "id" | "kind" | "start">,
@@ -174,8 +187,8 @@ export function fullTimeline(): TimelineResponse {
             id: "pause-1",
             kind: "pause",
             start: "2021-06-01",
-            end: "2021-06-20",
-            label: "Pause",
+            end: "2021-06-11",
+            label: "Ramipril",
           }),
         ],
       },

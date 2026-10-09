@@ -99,10 +99,12 @@ function groupsBetween(
 
 /**
  * The Ongoing block: what has no start (`standing`) and every period still
- * open. Allergies fold into one chip when there is more than one.
+ * open, each period named by `label` (`item-words.ts`, so a running pause
+ * reads as paused). Allergies fold into one chip when there is more than one.
  */
 export function standingChips(
   timeline: Pick<TimelineResponse, "lanes" | "standing">,
+  label: (item: TimelineItem) => string,
 ): StandingChip[] {
   const chips: StandingChip[] = [];
   const allergies: StandingChip[] = [];
@@ -116,7 +118,7 @@ export function standingChips(
     const lane = timeline.lanes.find((l) => l.key === key);
     for (const item of lane?.items ?? []) {
       if (item.open)
-        push({ lane: key, id: item.id, label: item.label, count: 1 });
+        push({ lane: key, id: item.id, label: label(item), count: 1 });
     }
   }
   const ordered = chips.sort(

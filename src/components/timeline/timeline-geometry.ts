@@ -26,6 +26,7 @@ import type {
   TimelineZoom,
 } from "@/lib/day/contract";
 
+import { itemLine, type ItemWordsFn } from "./item-words";
 import {
   addMonths,
   bucketAfter,
@@ -455,17 +456,6 @@ function inWindow(item: TimelineItem, window: TimeWindow): boolean {
   return item.start >= window.from;
 }
 
-/**
- * The visible text of an item: its label, the dose or second line when it
- * has one, and the unknown-start note.
- */
-export function itemLabel(item: TimelineItem, startMissing: string): string {
-  const parts = [item.label];
-  if (item.sub && item.kind !== "doseChange") parts.push(item.sub);
-  if (!item.startKnown) parts.push(startMissing);
-  return parts.filter(Boolean).join(" · ");
-}
-
 interface LaneInput {
   lane: TimelineLane;
   top: number;
@@ -480,7 +470,12 @@ export function layoutLane(
   { lane, top }: LaneInput,
   window: TimeWindow,
   scale: Scale,
-  options: { startMissing: string; today: string },
+  options: {
+    /** How an item reads (`item-words.ts`): codes worded, never raw. */
+    words: ItemWordsFn;
+    startMissing: string;
+    today: string;
+  },
 ): LaneLayout {
   const visible = lane.items.filter((item) => inWindow(item, window));
   const pointItems = visible.filter(
@@ -580,7 +575,13 @@ export function layoutLane(
   const rows = Math.max(1, pointRows + rowEnds.length);
   const height = LANE_PAD_TOP + (rows - 1) * ROW_HEIGHT + LANE_PAD_BOTTOM;
 
-  const labels = placeLabels(spans, points, scale, options.startMissing);
+  const labels = placeLabels(
+    spans,
+    points,
+    scale,
+    options.words,
+    options.startMissing,
+  );
   return { key: lane.key, top, height, rows, spans, points, labels };
 }
 
@@ -595,6 +596,7 @@ function placeLabels(
   spans: PlacedSpan[],
   points: PlacedPoint[],
   scale: Scale,
+  words: ItemWordsFn,
   startMissing: string,
 ): PlacedLabel[] {
   const occ = new LineOccupancy();
@@ -662,7 +664,9 @@ function placeLabels(
     return true;
   };
 
-  for (const s of openSpans) aboveLabel(s, itemLabel(s.item, startMissing));
+  for (const s of openSpans) {
+    aboveLabel(s, itemLine(s.item, words, startMissing));
+  }
   // A point's name starts just clear of its own glyph.
   const besideGlyph = (p: PlacedPoint) =>
     p.x + GLYPH_HALF_WIDTH[p.shape] + BESIDE_MARGIN + 1;
@@ -671,11 +675,10 @@ function placeLabels(
   for (const kind of ["lifeEvent", "procedure"] as const) {
     const strong = kind === "lifeEvent";
     for (const p of points.filter((p) => p.item.kind === kind)) {
-      if (
-        rightLabel(p.item.id, p.row, besideGlyph(p), p.y, p.item.label, strong)
-      )
+      const { label } = words(p.item);
+      if (rightLabel(p.item.id, p.row, besideGlyph(p), p.y, label, strong))
         continue;
-      leftLabel(p.item.id, p.row, leftOfGlyph(p), p.y, p.item.label, strong);
+      leftLabel(p.item.id, p.row, leftOfGlyph(p), p.y, label, strong);
     }
   }
   // A period's name goes right of its bar, else above it, else left of it.
@@ -683,7 +686,7 @@ function placeLabels(
   // shown once: the repeats read as the same thing again.
   const shownOnRow = new Set<string>();
   for (const s of closedSpans.sort((a, b) => a.xStart - b.xStart)) {
-    const text = itemLabel(s.item, startMissing);
+    const text = itemLine(s.item, words, startMissing);
     const rowKey = `${s.row}:${text}`;
     if (shownOnRow.has(rowKey)) continue;
     const strong = s.item.kind === "lifeEvent";
@@ -693,9 +696,10 @@ function placeLabels(
       leftLabel(s.item.id, s.row, s.xStart - 6, s.y, text, strong);
     if (placed) shownOnRow.add(rowKey);
   }
-  for (const s of pausesWithLabel) aboveLabel(s, s.item.label);
+  for (const s of pausesWithLabel) aboveLabel(s, words(s.item).label);
   for (const p of points.filter((p) => p.shape === "doseMark")) {
-    const text = p.item.sub ?? p.item.label;
+    const dose = words(p.item);
+    const text = dose.sub ?? dose.label;
     const a = p.x + 2;
     const b = a + estimateTextWidth(text);
     if (fitsCard(a, b) && occ.tryAdd(line(p.row, "above"), a, b)) {
@@ -864,6 +868,7 @@ export function layoutTimeline(input: {
   lanes: readonly TimelineLane[];
   series: readonly TimelineSeries[];
   bucket: TimelineBucket;
+  words: ItemWordsFn;
   startMissing: string;
   today: string;
 }): TimelineLayout {
@@ -875,6 +880,7 @@ export function layoutTimeline(input: {
     const lane = input.lanes.find((l) => l.key === key);
     if (!lane) continue;
     const layout = layoutLane({ lane, top }, input.window, scale, {
+      words: input.words,
       startMissing: input.startMissing,
       today: input.today,
     });

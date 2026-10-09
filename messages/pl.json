@@ -12284,7 +12284,15 @@
       "note": "Zestawione z Twoich wpisów, bez oceny. Każda data otwiera cały dzień.",
       "report": "Raport lekarski od {date} do dziś"
     },
-    "travel": "W podróży"
+    "travel": "W podróży",
+    "event": {
+      "started": "Początek: {label}",
+      "ended": "Koniec: {label}",
+      "paused": "Wstrzymano: {label}",
+      "resumed": "Wznowiono: {label}",
+      "illnessBegan": "Początek: {label}",
+      "illnessResolved": "Wyzdrowienie: {label}"
+    }
   },
   "timeline": {
     "title": "Oś czasu",
@@ -12487,6 +12495,11 @@
       "label": "Wybrany zakres",
       "open": "Wybierz zakres",
       "clear": "Pokaż wszystko"
+    },
+    "item": {
+      "labValuesOne": "1 wynik badania",
+      "labValuesFew": "{count} wyniki badań",
+      "labValuesOther": "{count} wyników badań"
     }
   },
   "lifeEvents": {

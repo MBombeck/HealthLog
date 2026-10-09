@@ -12284,7 +12284,15 @@
       "note": "평가 없이 기록에서 모았어요. 날짜를 누르면 그날 전체가 열려요.",
       "report": "{date}부터 오늘까지 진료 보고서"
     },
-    "travel": "여행 중"
+    "travel": "여행 중",
+    "event": {
+      "started": "{label} 시작",
+      "ended": "{label} 끝남",
+      "paused": "{label} 일시 중지",
+      "resumed": "{label} 다시 시작",
+      "illnessBegan": "{label} 시작",
+      "illnessResolved": "{label} 나음"
+    }
   },
   "timeline": {
     "title": "타임라인",
@@ -12487,6 +12495,11 @@
       "label": "선택한 기간",
       "open": "기간 선택",
       "clear": "전체 보기"
+    },
+    "item": {
+      "labValuesOne": "검사 수치 {count}개",
+      "labValuesFew": "검사 수치 {count}개",
+      "labValuesOther": "검사 수치 {count}개"
     }
   },
   "lifeEvents": {

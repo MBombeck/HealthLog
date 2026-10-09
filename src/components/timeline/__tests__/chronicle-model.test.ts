@@ -148,7 +148,7 @@ describe("buildChronicle", () => {
 
 describe("standingChips", () => {
   it("collects open things once and folds several allergies into one chip", () => {
-    const chips = standingChips(fullTimeline());
+    const chips = standingChips(fullTimeline(), (i) => i.label);
     expect(chips.map((c) => c.id)).toEqual([
       "ill-chronic",
       "med-1",
@@ -162,6 +162,8 @@ describe("standingChips", () => {
     tl.standing = [
       { lane: "illness", id: "pre", label: "Asthma", since: null, href: null },
     ];
-    expect(standingChips(tl).map((c) => c.label)).toContain("Asthma");
+    expect(standingChips(tl, (i) => i.label).map((c) => c.label)).toContain(
+      "Asthma",
+    );
   });
 });
