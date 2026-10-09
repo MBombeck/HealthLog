@@ -1,11 +1,6 @@
 import type { DayRunningItem } from "@/lib/day/contract";
 
-const CYCLE_PHASES: ReadonlySet<string> = new Set([
-  "MENSTRUAL",
-  "FOLLICULAR",
-  "OVULATORY",
-  "LUTEAL",
-]);
+import { CYCLE_PHASE_LINE_KEY } from "./label-keys";
 
 /**
  * The quiet line under a running cycle: "Cycle day 12, follicular phase",
@@ -18,8 +13,10 @@ export function cycleRunningLine(
   t: (key: string, params?: Record<string, string | number>) => string,
 ): string | null {
   if (item.kind !== "cyclePhase" || item.dayIndex === null) return null;
-  if (item.sub !== null && CYCLE_PHASES.has(item.sub)) {
-    return t(`day.cyclePhaseLine.${item.sub}`, { n: item.dayIndex });
-  }
+  const key =
+    item.sub === null
+      ? undefined
+      : (CYCLE_PHASE_LINE_KEY as Readonly<Record<string, string>>)[item.sub];
+  if (key) return t(key, { n: item.dayIndex });
   return t("day.cycleDay", { n: item.dayIndex });
 }

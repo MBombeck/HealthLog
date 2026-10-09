@@ -97,3 +97,13 @@ export const ILLNESS_IMPACT_KEY: Readonly<Record<string, string>> = {
   "2": "illness.impact.2",
   "3": "illness.impact.3",
 };
+
+/** The quiet line under a running cycle, by the phase code the server sends. */
+export const CYCLE_PHASE_LINE_KEY: Readonly<
+  Record<"MENSTRUAL" | "FOLLICULAR" | "OVULATORY" | "LUTEAL", string>
+> = {
+  MENSTRUAL: "day.cyclePhaseLine.MENSTRUAL",
+  FOLLICULAR: "day.cyclePhaseLine.FOLLICULAR",
+  OVULATORY: "day.cyclePhaseLine.OVULATORY",
+  LUTEAL: "day.cyclePhaseLine.LUTEAL",
+};
