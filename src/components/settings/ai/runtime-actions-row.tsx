@@ -222,6 +222,7 @@ export function RuntimeActionsRow({
     // result) sit ABOVE it, never under it.
     <SettingsCard data-slot="ai-runtime-card">
       <SettingsCardHeader
+        anchor="ai-runtime"
         icon={Activity}
         title={t("settings.ai.runtimeTitle")}
         description={lastInsightLine ?? undefined}

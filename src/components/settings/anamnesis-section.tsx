@@ -56,6 +56,7 @@ export function AnamnesisSection() {
       {(coachEnabled || insightsEnabled) && (
         <SettingsCard>
           <SettingsCardHeader
+            anchor="ai-inclusion"
             icon={EyeOff}
             title={t("records.aiInclusion.cardTitle")}
             description={t("records.aiInclusion.cardDescription")}
@@ -67,6 +68,7 @@ export function AnamnesisSection() {
       {coachEnabled && (
         <SettingsCard>
           <SettingsCardHeader
+            anchor="conditions"
             icon={HeartPulse}
             title={t("records.conditions.cardTitle")}
             description={t("records.conditions.cardDescription")}
@@ -87,6 +89,7 @@ export function AnamnesisSection() {
           data-testid="records-about-me-card"
         >
           <SettingsCardHeader
+            anchor="about-me"
             icon={NotebookPen}
             title={t("settings.ai.aboutMe.title")}
             titleId="records-about-me-title"
@@ -98,6 +101,7 @@ export function AnamnesisSection() {
 
       <SettingsCard>
         <SettingsCardHeader
+          anchor="profile-facts"
           icon={ClipboardList}
           title={t("records.profileFacts.cardTitle")}
           description={t("records.profileFacts.cardDescription")}
@@ -107,6 +111,7 @@ export function AnamnesisSection() {
 
       <SettingsCard>
         <SettingsCardHeader
+          anchor="allergies"
           icon={ShieldAlert}
           title={t("records.allergies.cardTitle")}
           description={t("records.allergies.cardDescription")}
@@ -122,6 +127,7 @@ export function AnamnesisSection() {
 
       <SettingsCard>
         <SettingsCardHeader
+          anchor="family-history"
           icon={Users}
           title={t("records.family.cardTitle")}
           description={t("records.family.cardDescription")}
@@ -131,6 +137,7 @@ export function AnamnesisSection() {
 
       <SettingsCard>
         <SettingsCardHeader
+          anchor="emergency"
           icon={Siren}
           title={t("records.emergency.cardTitle")}
           description={t("records.emergency.cardDescription")}

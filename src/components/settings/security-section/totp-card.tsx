@@ -251,6 +251,7 @@ export function TotpCard({
   return (
     <SettingsCard data-testid="totp-card">
       <SettingsCardHeader
+        anchor="two-factor"
         icon={Smartphone}
         title={t("settings.security.totp.title")}
         description={t("settings.security.totp.description")}

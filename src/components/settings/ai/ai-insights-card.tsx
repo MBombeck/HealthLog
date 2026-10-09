@@ -195,6 +195,7 @@ export function AiInsightsCard({
     <div className="space-y-6">
       <SettingsCard data-slot="ai-provider-card">
         <SettingsCardHeader
+          anchor="ai-provider"
           icon={Sparkles}
           title={t("settings.ai.activeProviderHeading")}
           description={t("settings.ai.providerCardDescription")}

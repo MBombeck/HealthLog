@@ -114,7 +114,8 @@ test.describe("keyboard shortcuts", () => {
   test("keys typed into a field stay in the field", async ({ page }) => {
     await withTimelineModule(page, true);
     await page.goto("/");
-    await shellReady(page);
+    const main = page.locator("#main-content");
+    await expect(main).toBeVisible({ timeout: 20_000 });
     // A plain field in the page: the rule is about the focused element, not
     // about which page carries it.
     await page.evaluate(() => {
@@ -124,6 +125,7 @@ test.describe("keyboard shortcuts", () => {
       document.getElementById("main-content")?.prepend(field);
     });
     const field = page.getByTestId("probe-field");
+    await expect(field).toBeVisible();
     await field.focus();
     await page.keyboard.type("gt n ? [");
     await expect(field).toHaveValue("gt n ? [");

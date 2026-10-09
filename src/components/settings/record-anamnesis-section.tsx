@@ -50,6 +50,7 @@ export function RecordAnamnesisSection() {
     <div className="space-y-6" data-slot="record-anamnesis-section">
       <SettingsCard>
         <SettingsCardHeader
+          anchor="allergies"
           icon={ShieldAlert}
           title={t("records.allergies.cardTitle")}
           description={t("records.allergies.cardDescription")}
@@ -59,6 +60,7 @@ export function RecordAnamnesisSection() {
 
       <SettingsCard>
         <SettingsCardHeader
+          anchor="family-history"
           icon={Users}
           title={t("records.family.cardTitle")}
           description={t("records.family.cardDescription")}

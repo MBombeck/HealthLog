@@ -1,13 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 
 import { stepDay, useOpenDay } from "@/components/day/day-layer-controller";
 import { useTodayKey } from "@/components/day/use-today-key";
@@ -16,6 +10,7 @@ import {
   CapturePicker,
   visibleCaptureKinds,
 } from "@/components/layout/capture-picker";
+import { openCommandPalette } from "@/components/command-palette/palette-store";
 import { KeyboardShortcutsDialog } from "@/components/layout/keyboard-shortcuts-dialog";
 import {
   isSettingsUtilityDestination,
@@ -67,6 +62,25 @@ export function openShortcutsHelp(): void {
   setShortcutsHelpOpen(true);
 }
 
+let captureOpen = false;
+const captureListeners = new Set<() => void>();
+
+function setCaptureOpen(open: boolean): void {
+  if (captureOpen === open) return;
+  captureOpen = open;
+  for (const listener of captureListeners) listener();
+}
+
+function subscribeCapture(listener: () => void): () => void {
+  captureListeners.add(listener);
+  return () => captureListeners.delete(listener);
+}
+
+/** Open the add menu (the same picker as the bottom bar's button). */
+export function openCapturePicker(): void {
+  setCaptureOpen(true);
+}
+
 function useShortcutOffer(): ShortcutOffer & { canCapture: boolean } {
   const { user } = useAuth();
   const navModules = useNavModules();
@@ -102,7 +116,11 @@ export function GlobalShortcuts() {
     () => helpOpen,
     () => false,
   );
-  const [captureOpen, setCaptureOpen] = useState(false);
+  const capture = useSyncExternalStore(
+    subscribeCapture,
+    () => captureOpen,
+    () => false,
+  );
   const offer = useShortcutOffer();
   const openDay = useOpenDay();
   const today = useTodayKey();
@@ -146,6 +164,10 @@ export function GlobalShortcuts() {
           event.preventDefault();
           setCaptureOpen(true);
           return;
+        case "palette":
+          event.preventDefault();
+          openCommandPalette();
+          return;
         case "help":
           event.preventDefault();
           setShortcutsHelpOpen(true);
@@ -166,6 +188,7 @@ export function GlobalShortcuts() {
       document.removeEventListener("keydown", onKeyDown);
       // Leaving the shell (signing out) leaves the list closed.
       setShortcutsHelpOpen(false);
+      setCaptureOpen(false);
     };
   }, []);
 
@@ -178,7 +201,7 @@ export function GlobalShortcuts() {
         canCapture={offer.canCapture}
       />
       {offer.canCapture ? (
-        <CapturePicker open={captureOpen} onOpenChange={setCaptureOpen} />
+        <CapturePicker open={capture} onOpenChange={setCaptureOpen} />
       ) : null}
     </>
   );

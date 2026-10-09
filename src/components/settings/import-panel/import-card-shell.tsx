@@ -5,6 +5,8 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 
 export interface ImportCardShellProps {
   testId: string;
+  /** Deep-link anchor for the card (`/settings/export#<anchor>`). */
+  anchor: string;
   icon: LucideIcon;
   title: string;
   description: string;
@@ -13,6 +15,7 @@ export interface ImportCardShellProps {
 
 export function ImportCardShell({
   testId,
+  anchor,
   icon: Icon,
   title,
   description,
@@ -20,7 +23,12 @@ export function ImportCardShell({
 }: ImportCardShellProps) {
   return (
     <SettingsCard data-testid={testId} className="flex h-full flex-col">
-      <SettingsCardHeader icon={Icon} title={title} description={description} />
+      <SettingsCardHeader
+        anchor={anchor}
+        icon={Icon}
+        title={title}
+        description={description}
+      />
       <div className="flex flex-1 flex-col gap-3">{children}</div>
     </SettingsCard>
   );

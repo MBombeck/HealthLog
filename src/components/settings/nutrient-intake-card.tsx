@@ -72,6 +72,7 @@ export function NutrientIntakeCard() {
   return (
     <SettingsCard data-slot="nutrient-intake-card">
       <SettingsCardHeader
+        anchor="nutrient-intake"
         icon={Leaf}
         title={t("settings.sections.sources.nutrients.title")}
         description={t("settings.sections.sources.nutrients.description", {

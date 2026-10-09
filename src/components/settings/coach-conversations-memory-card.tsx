@@ -72,6 +72,7 @@ export function CoachConversationsMemoryCard({
       data-testid="settings-coach-conversations-card"
     >
       <SettingsCardHeader
+        anchor="coach-conversations"
         icon={MessagesSquare}
         titleId="settings-coach-conversations-title"
         title={t("settings.ai.coachConversations.title")}

@@ -75,6 +75,7 @@ export function ManagedProfileCard() {
   return (
     <SettingsCard data-slot="managed-profile-card">
       <SettingsCardHeader
+        anchor="managed-profiles"
         icon={UserRoundCog}
         title={t("recordSharing.managed.title")}
         description={t("recordSharing.managed.description")}

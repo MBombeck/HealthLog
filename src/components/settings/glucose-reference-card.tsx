@@ -66,6 +66,7 @@ export function GlucoseReferenceCard() {
   return (
     <SettingsCard>
       <SettingsCardHeader
+        anchor="glucose-reference"
         icon={Droplet}
         title={t("settings.glucoseReference.title")}
         description={t("settings.glucoseReference.description")}

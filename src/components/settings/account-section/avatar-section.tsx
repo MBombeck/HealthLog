@@ -108,7 +108,11 @@ export function AvatarSection() {
 
   return (
     <SettingsCard>
-      <SettingsCardHeader icon={ImageUp} title={t("settings.avatar.title")} />
+      <SettingsCardHeader
+        anchor="avatar"
+        icon={ImageUp}
+        title={t("settings.avatar.title")}
+      />
       {/* The accepted formats and limits belong to the sentence that explains
           what this card does, not to a caption of their own under the buttons.
           Two strings rather than one merged key: the same wording is the

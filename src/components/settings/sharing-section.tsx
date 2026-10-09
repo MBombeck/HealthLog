@@ -160,6 +160,7 @@ function ShareLinksCard() {
 
       <SettingsCard data-testid="share-links-card">
         <SettingsCardHeader
+          anchor="share-links-active"
           icon={List}
           title={t("settings.sharing.activeTitle")}
           description={t("settings.sharing.activeDescription")}

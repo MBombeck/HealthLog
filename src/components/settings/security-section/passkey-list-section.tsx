@@ -190,6 +190,7 @@ export function PasskeyListSection({
   return (
     <SettingsCard>
       <SettingsCardHeader
+        anchor="passkeys"
         icon={Fingerprint}
         title={t("settings.passkeys")}
         description={t("settings.passkeysDescription")}

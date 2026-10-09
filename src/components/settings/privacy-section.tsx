@@ -84,6 +84,7 @@ export function PrivacySection() {
       {/* Encryption at rest */}
       <SettingsCard>
         <SettingsCardHeader
+          anchor="encryption"
           icon={ShieldCheck}
           title={t("settings.privacy.encryption.title")}
         />
@@ -103,6 +104,7 @@ export function PrivacySection() {
       {/* What's stored */}
       <SettingsCard>
         <SettingsCardHeader
+          anchor="stored-data"
           icon={Database}
           title={t("settings.privacy.stored.title")}
         />
@@ -128,6 +130,7 @@ export function PrivacySection() {
       {/* Retention */}
       <SettingsCard>
         <SettingsCardHeader
+          anchor="retention"
           icon={Clock}
           title={t("settings.privacy.retention.title")}
           description={t("settings.privacy.retention.description")}
@@ -166,6 +169,7 @@ export function PrivacySection() {
       {/* Export */}
       <SettingsCard>
         <SettingsCardHeader
+          anchor="your-data-export"
           icon={Download}
           title={t("settings.privacy.export.title")}
           description={t("settings.privacy.export.description")}
@@ -187,6 +191,7 @@ export function PrivacySection() {
       {/* Delete / reset — with the honest backup lag disclosure */}
       <SettingsCard>
         <SettingsCardHeader
+          anchor="delete-data"
           icon={Trash2}
           title={t("settings.privacy.delete.title")}
           description={t("settings.privacy.delete.description")}
@@ -208,6 +213,7 @@ export function PrivacySection() {
           no longer carries the control it named. */}
       <SettingsCard>
         <SettingsCardHeader
+          anchor="privacy-posture"
           icon={Sparkles}
           title={t("settings.privacy.posture.title")}
           description={t("settings.privacy.posture.description")}

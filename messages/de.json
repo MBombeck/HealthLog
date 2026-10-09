@@ -12554,11 +12554,41 @@
       "body": "Titel und Notiz sind danach nicht mehr da."
     }
   },
+  "palette": {
+    "open": "Suchen…",
+    "openLabel": "Seiten, Einstellungen und Aktionen suchen",
+    "title": "Suche",
+    "description": "Finde eine Seite, eine Einstellung, ein Modul oder eine Aktion.",
+    "placeholder": "Seiten, Einstellungen, Module suchen…",
+    "results": "Treffer",
+    "noResults": "Nichts gefunden für „{query}“.",
+    "moduleOn": "An",
+    "moduleOff": "Aus",
+    "hintMove": "Wählen",
+    "hintOpen": "Öffnen",
+    "hintClose": "Schließen",
+    "groups": {
+      "recent": "Zuletzt",
+      "pages": "Seiten",
+      "insights": "Insights",
+      "settings": "Einstellungen",
+      "modules": "Module",
+      "actions": "Aktionen"
+    },
+    "actions": {
+      "capture": "Neuer Eintrag",
+      "coach": "Coach fragen",
+      "backup": "Backup erstellen",
+      "today": "Heute öffnen",
+      "shortcuts": "Tastenkürzel zeigen"
+    }
+  },
   "shortcuts": {
     "title": "Tastenkürzel",
     "description": "Tasten, die überall in der App funktionieren, außer während du in ein Feld tippst.",
     "menuEntry": "Tastenkürzel",
     "then": "dann",
+    "search": "Suchen",
     "help": "Diese Liste zeigen",
     "close": "Dialog oder Bereich schließen",
     "previousDay": "Vorheriger Tag",

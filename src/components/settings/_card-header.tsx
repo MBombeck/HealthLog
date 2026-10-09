@@ -55,6 +55,12 @@ export interface SettingsCardHeaderProps {
    *  broken. Multi-sentence prose goes in the body as
    *  `<p className="text-sm">` (foreground). */
   description?: React.ReactNode;
+  /** Optional deep-link anchor: the header carries it as its `id` (with the
+   *  shell's `scroll-mt-28`), so `/settings/<section>#<anchor>` lands on this
+   *  card. The command palette links every card it lists this way; the
+   *  anchors it relies on are pinned in `src/lib/command-palette/
+   *  settings-cards.ts`. */
+  anchor?: string;
   /** Optional right-aligned status surface — typically an
    *  `<IntegrationStatusPill>` or a wrapper around badges. */
   status?: React.ReactNode;
@@ -69,10 +75,18 @@ export function SettingsCardHeader({
   titleAccessory,
   description,
   status,
+  anchor,
   className,
 }: SettingsCardHeaderProps) {
   return (
-    <header className={cn("flex items-start gap-2", className)}>
+    <header
+      id={anchor}
+      className={cn(
+        "flex items-start gap-2",
+        anchor && "scroll-mt-28",
+        className,
+      )}
+    >
       <Icon
         className="text-muted-foreground mt-0.5 h-5 w-5 shrink-0"
         aria-hidden="true"

@@ -194,6 +194,7 @@ export function HealthConnectImportCard() {
   return (
     <ImportCardShell
       testId="import-card-health-connect"
+      anchor="import-health-connect"
       icon={Smartphone}
       title={t("settings.sections.export.import.healthConnect.title")}
       description={t(

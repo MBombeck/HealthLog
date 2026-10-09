@@ -48,6 +48,7 @@ export function GrantsGivenCard() {
   return (
     <SettingsCard data-slot="grants-given-card">
       <SettingsCardHeader
+        anchor="shared-by-you"
         icon={Users}
         title={t("recordSharing.given.title")}
         description={t("recordSharing.given.description")}

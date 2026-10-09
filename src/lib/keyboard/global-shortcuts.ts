@@ -9,7 +9,8 @@
  *
  *   - a key typed into a field is the field's (`isEditableTarget`);
  *   - a key held with Cmd, Ctrl or Alt belongs to the browser, the operating
- *     system or a screen reader (`blockedByModifier`), with one exception: a
+ *     system or a screen reader (`blockedByModifier`), with two exceptions:
+ *     Cmd+K / Ctrl+K, which opens the command palette, and a
  *     punctuation key the layout itself needs Alt or AltGr to type (`[` is
  *     Option+5 on a German Mac, AltGr+8 on a German PC) still counts, because
  *     for that person there is no other way to press it;
@@ -44,6 +45,7 @@ export type GoToKey = (typeof GO_TO_SHORTCUTS)[number]["key"];
 
 export type ShortcutAction =
   | { type: "go"; key: GoToKey }
+  | { type: "palette" }
   | { type: "capture" }
   | { type: "help" }
   | { type: "day"; delta: -1 | 1 };
@@ -181,6 +183,20 @@ export function createShortcutReader(timeoutMs = SEQUENCE_TIMEOUT_MS) {
     pendingSince = null;
 
     if (scope === "off") return null;
+
+    // Cmd+K (Ctrl+K off a Mac) opens the command palette: the one modifier
+    // combination that is ours, and from a field too, the way every search
+    // palette behaves. The browser's own Ctrl+K (its search bar) gives way.
+    if (
+      scope === "page" &&
+      (event.metaKey || event.ctrlKey) &&
+      !event.altKey &&
+      event.altGraph !== true &&
+      event.key.toLowerCase() === "k"
+    ) {
+      return { type: "palette" };
+    }
+
     if (isEditableTarget(event.target)) return null;
     if (blockedByModifier(event)) return null;
 
@@ -236,4 +252,18 @@ export function resolveGoTo(key: GoToKey, offer: ShortcutOffer): string | null {
   return offer.navHrefs.includes(shortcut.destination)
     ? shortcut.destination
     : null;
+}
+
+/** Whether this browser runs on an Apple platform (⌘ rather than Ctrl). */
+export function isApplePlatform(
+  nav:
+    { platform?: string; userAgent?: string } | undefined = typeof navigator ===
+  "undefined"
+    ? undefined
+    : navigator,
+): boolean {
+  if (!nav) return false;
+  return /mac|iphone|ipad|ipod/i.test(
+    `${nav.platform ?? ""} ${nav.userAgent ?? ""}`,
+  );
 }

@@ -5,6 +5,7 @@ import {
   SEQUENCE_TIMEOUT_MS,
   blockedByModifier,
   createShortcutReader,
+  isApplePlatform,
   isEditableTarget,
   resolveGoTo,
   shortcutScope,
@@ -281,5 +282,44 @@ describe("module gating", () => {
     expect(
       resolveGoTo("s", { navHrefs: [], settingsHref: "/settings/profile" }),
     ).toBe("/settings/profile");
+  });
+});
+
+describe("Cmd/Ctrl+K opens the command palette", () => {
+  it("with Cmd or Ctrl, on the page and from a field", () => {
+    const reader = createShortcutReader();
+    expect(reader.read(key("k", { metaKey: true }), "page", 0)).toEqual({
+      type: "palette",
+    });
+    expect(reader.read(key("k", { ctrlKey: true }), "page", 0)).toEqual({
+      type: "palette",
+    });
+    expect(
+      reader.read(key("K", { ctrlKey: true, target: input }), "page", 0),
+    ).toEqual({ type: "palette" });
+  });
+
+  it("not with Alt, not as a bare k, not while a dialog is open", () => {
+    const reader = createShortcutReader();
+    expect(reader.read(key("k"), "page", 0)).toBeNull();
+    expect(reader.read(key("k", { altKey: true }), "page", 0)).toBeNull();
+    expect(
+      reader.read(key("k", { metaKey: true, altKey: true }), "page", 0),
+    ).toBeNull();
+    expect(reader.read(key("k", { metaKey: true }), "off", 0)).toBeNull();
+    expect(reader.read(key("k", { metaKey: true }), "day-sheet", 0)).toBeNull();
+  });
+});
+
+describe("isApplePlatform", () => {
+  it("reads the platform and the user agent", () => {
+    expect(isApplePlatform({ platform: "MacIntel" })).toBe(true);
+    expect(
+      isApplePlatform({ userAgent: "Mozilla/5.0 (iPad; CPU OS 18_0)" }),
+    ).toBe(true);
+    expect(
+      isApplePlatform({ platform: "Win32", userAgent: "Windows NT" }),
+    ).toBe(false);
+    expect(isApplePlatform({})).toBe(false);
   });
 });

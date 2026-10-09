@@ -193,6 +193,7 @@ export function SecurityKeysCard({
   return (
     <SettingsCard>
       <SettingsCardHeader
+        anchor="security-keys"
         icon={Usb}
         title={t("settings.security.keys.title")}
         description={t("settings.security.keys.description")}

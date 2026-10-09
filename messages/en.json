@@ -12554,11 +12554,41 @@
       "body": "Its title and note will be gone."
     }
   },
+  "palette": {
+    "open": "Search…",
+    "openLabel": "Search pages, settings and actions",
+    "title": "Search",
+    "description": "Find a page, a setting, a module or an action.",
+    "placeholder": "Search pages, settings, modules…",
+    "results": "Results",
+    "noResults": "Nothing found for “{query}”.",
+    "moduleOn": "On",
+    "moduleOff": "Off",
+    "hintMove": "Move",
+    "hintOpen": "Open",
+    "hintClose": "Close",
+    "groups": {
+      "recent": "Recent",
+      "pages": "Pages",
+      "insights": "Insights",
+      "settings": "Settings",
+      "modules": "Modules",
+      "actions": "Actions"
+    },
+    "actions": {
+      "capture": "New entry",
+      "coach": "Ask the Coach",
+      "backup": "Create a backup",
+      "today": "Open today",
+      "shortcuts": "Show keyboard shortcuts"
+    }
+  },
   "shortcuts": {
     "title": "Keyboard shortcuts",
     "description": "Keys that work anywhere in the app, except while you type in a field.",
     "menuEntry": "Keyboard shortcuts",
     "then": "then",
+    "search": "Search",
     "help": "Show this list",
     "close": "Close a dialog or panel",
     "previousDay": "Previous day",

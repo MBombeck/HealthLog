@@ -116,6 +116,8 @@ export function ExportSection() {
 
 interface ExportCardShellProps {
   testId: string;
+  /** Deep-link anchor for the card (`/settings/export#<anchor>`). */
+  anchor: string;
   icon: LucideIcon;
   title: string;
   description: string;
@@ -129,6 +131,7 @@ interface ExportCardShellProps {
 
 function ExportCardShell({
   testId,
+  anchor,
   icon: Icon,
   title,
   description,
@@ -143,6 +146,7 @@ function ExportCardShell({
       className={cn("flex h-full flex-col", outerClassName)}
     >
       <SettingsCardHeader
+        anchor={anchor}
         icon={Icon}
         title={title}
         description={description}
@@ -215,6 +219,7 @@ function buildQueryString(base: Record<string, string | undefined>): string {
 
 interface CsvCardProps {
   testId: string;
+  anchor: string;
   actionTestId: string;
   icon: LucideIcon;
   titleKey: string;
@@ -225,6 +230,7 @@ interface CsvCardProps {
 
 function CsvCard({
   testId,
+  anchor,
   actionTestId,
   icon,
   titleKey,
@@ -260,6 +266,7 @@ function CsvCard({
   return (
     <ExportCardShell
       testId={testId}
+      anchor={anchor}
       icon={icon}
       title={t(titleKey)}
       description={t(descriptionKey)}
@@ -301,6 +308,7 @@ function MeasurementsCsvCard() {
   return (
     <CsvCard
       testId="export-card-measurements-csv"
+      anchor="measurements-csv"
       actionTestId="export-action-measurements-csv"
       icon={FileSpreadsheet}
       titleKey="settings.sections.export.cards.measurementsCsv.title"
@@ -346,6 +354,7 @@ function MedicationsCsvCard() {
   return (
     <ExportCardShell
       testId="export-card-medications-csv"
+      anchor="medications-csv"
       icon={Pill}
       title={t("settings.sections.export.cards.medicationsCsv.title")}
       description={t(
@@ -403,6 +412,7 @@ function MoodCsvCard() {
   return (
     <CsvCard
       testId="export-card-mood-csv"
+      anchor="mood-csv"
       actionTestId="export-action-mood-csv"
       icon={Waves}
       titleKey="settings.sections.export.cards.moodCsv.title"
@@ -483,6 +493,7 @@ function FullBackupCard() {
   return (
     <ExportCardShell
       testId="export-card-full-backup"
+      anchor="full-backup"
       icon={FileJson}
       title={t("settings.sections.export.cards.fullBackup.title")}
       description={t("settings.sections.export.cards.fullBackup.description")}

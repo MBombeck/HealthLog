@@ -101,6 +101,11 @@ an earlier fold computed from part of a day.
 - **Keyboard shortcuts.** `g` then `d`, `m`, `l`, `t`, `i`, `c` or `s` opens
   a page, `n` the add menu, `[` and `]` step the open day, and `?` (or the
   account menu) lists them; ignored while typing in a field.
+- **Command palette.** Cmd+K (Ctrl+K) or the search field in the top bar
+  finds pages, Insights pages, every Settings card by its anchor, module
+  switches and actions (new entry, the Coach, a backup, today, the
+  shortcuts), filtered by modules, AI availability, role and a shared
+  record's grant; typo-tolerant, with recent places when empty.
 
 ### Changed
 

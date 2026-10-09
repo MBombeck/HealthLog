@@ -120,6 +120,7 @@ function McpConnectionsCard() {
   return (
     <SettingsCard>
       <SettingsCardHeader
+        anchor="mcp-connections"
         icon={Link2}
         title={t("settings.mcp.connectionsTitle")}
         description={t("settings.mcp.connectionsDescription")}
@@ -229,6 +230,7 @@ function McpEnableCard() {
   return (
     <SettingsCard>
       <SettingsCardHeader
+        anchor="mcp-enable"
         icon={Plug}
         title={t("settings.mcp.enableTitle")}
         description={t("settings.mcp.enableDescription")}
@@ -358,6 +360,7 @@ function McpTokensCard() {
     <SettingsCard>
       {recentProof.dialog}
       <SettingsCardHeader
+        anchor="mcp-tokens"
         icon={Key}
         title={t("settings.mcp.tokensTitle")}
         description={t("settings.mcp.tokensDescription")}

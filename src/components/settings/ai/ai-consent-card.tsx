@@ -129,6 +129,7 @@ export function AiConsentCard({
     return (
       <SettingsCard as="section" data-slot="ai-consent">
         <SettingsCardHeader
+          anchor="ai-consent"
           icon={ShieldCheck}
           title={t("settings.ai.consent.title")}
           description={<Skeleton className="h-4 w-56" />}

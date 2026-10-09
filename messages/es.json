@@ -12554,11 +12554,41 @@
       "body": "Su título y su nota desaparecerán."
     }
   },
+  "palette": {
+    "open": "Buscar…",
+    "openLabel": "Buscar páginas, ajustes y acciones",
+    "title": "Buscar",
+    "description": "Encuentra una página, un ajuste, un módulo o una acción.",
+    "placeholder": "Buscar páginas, ajustes, módulos…",
+    "results": "Resultados",
+    "noResults": "No hay resultados para «{query}».",
+    "moduleOn": "Activado",
+    "moduleOff": "Desactivado",
+    "hintMove": "Mover",
+    "hintOpen": "Abrir",
+    "hintClose": "Cerrar",
+    "groups": {
+      "recent": "Recientes",
+      "pages": "Páginas",
+      "insights": "Insights",
+      "settings": "Ajustes",
+      "modules": "Módulos",
+      "actions": "Acciones"
+    },
+    "actions": {
+      "capture": "Nueva entrada",
+      "coach": "Preguntar al Coach",
+      "backup": "Crear una copia de seguridad",
+      "today": "Abrir hoy",
+      "shortcuts": "Mostrar atajos de teclado"
+    }
+  },
   "shortcuts": {
     "title": "Atajos de teclado",
     "description": "Teclas que funcionan en toda la aplicación, salvo mientras escribes en un campo.",
     "menuEntry": "Atajos de teclado",
     "then": "luego",
+    "search": "Buscar",
     "help": "Mostrar esta lista",
     "close": "Cerrar un diálogo o panel",
     "previousDay": "Día anterior",

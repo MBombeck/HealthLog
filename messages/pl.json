@@ -12554,11 +12554,41 @@
       "body": "Tytuł i notatka znikną."
     }
   },
+  "palette": {
+    "open": "Szukaj…",
+    "openLabel": "Szukaj stron, ustawień i akcji",
+    "title": "Szukaj",
+    "description": "Znajdź stronę, ustawienie, moduł lub akcję.",
+    "placeholder": "Szukaj stron, ustawień, modułów…",
+    "results": "Wyniki",
+    "noResults": "Brak wyników dla „{query}”.",
+    "moduleOn": "Wł.",
+    "moduleOff": "Wył.",
+    "hintMove": "Wybierz",
+    "hintOpen": "Otwórz",
+    "hintClose": "Zamknij",
+    "groups": {
+      "recent": "Ostatnie",
+      "pages": "Strony",
+      "insights": "Insights",
+      "settings": "Ustawienia",
+      "modules": "Moduły",
+      "actions": "Akcje"
+    },
+    "actions": {
+      "capture": "Nowy wpis",
+      "coach": "Zapytaj Coacha",
+      "backup": "Utwórz kopię zapasową",
+      "today": "Otwórz dzisiaj",
+      "shortcuts": "Pokaż skróty klawiszowe"
+    }
+  },
   "shortcuts": {
     "title": "Skróty klawiszowe",
     "description": "Klawisze działające w całej aplikacji, z wyjątkiem pisania w polu.",
     "menuEntry": "Skróty klawiszowe",
     "then": "potem",
+    "search": "Szukaj",
     "help": "Pokaż tę listę",
     "close": "Zamknij okno lub panel",
     "previousDay": "Poprzedni dzień",

@@ -12554,11 +12554,41 @@
       "body": "Son titre et sa note disparaîtront."
     }
   },
+  "palette": {
+    "open": "Rechercher…",
+    "openLabel": "Rechercher des pages, réglages et actions",
+    "title": "Recherche",
+    "description": "Trouver une page, un réglage, un module ou une action.",
+    "placeholder": "Rechercher des pages, réglages, modules…",
+    "results": "Résultats",
+    "noResults": "Aucun résultat pour « {query} ».",
+    "moduleOn": "Activé",
+    "moduleOff": "Désactivé",
+    "hintMove": "Naviguer",
+    "hintOpen": "Ouvrir",
+    "hintClose": "Fermer",
+    "groups": {
+      "recent": "Récents",
+      "pages": "Pages",
+      "insights": "Insights",
+      "settings": "Paramètres",
+      "modules": "Modules",
+      "actions": "Actions"
+    },
+    "actions": {
+      "capture": "Nouvelle saisie",
+      "coach": "Demander au Coach",
+      "backup": "Créer une sauvegarde",
+      "today": "Ouvrir aujourd’hui",
+      "shortcuts": "Afficher les raccourcis clavier"
+    }
+  },
   "shortcuts": {
     "title": "Raccourcis clavier",
     "description": "Des touches qui fonctionnent partout dans l’application, sauf pendant la saisie dans un champ.",
     "menuEntry": "Raccourcis clavier",
     "then": "puis",
+    "search": "Rechercher",
     "help": "Afficher cette liste",
     "close": "Fermer une boîte de dialogue ou un panneau",
     "previousDay": "Jour précédent",

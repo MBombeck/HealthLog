@@ -7,6 +7,7 @@ import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { useTranslations } from "@/lib/i18n/context";
 import {
   GO_TO_SHORTCUTS,
+  isApplePlatform,
   resolveGoTo,
   type ShortcutOffer,
 } from "@/lib/keyboard/global-shortcuts";
@@ -29,8 +30,9 @@ export interface KeyboardShortcutsDialogProps {
 interface Row {
   id: string;
   label: string;
-  /** Keys pressed one after the other. */
+  /** Keys pressed one after the other, or held together with `chord`. */
   sequence: ReadonlyArray<string>;
+  chord?: boolean;
 }
 
 function Kbd({ children }: { children: string }) {
@@ -67,7 +69,15 @@ export function KeyboardShortcutsDialog({
     ];
   });
 
+  // Rendered only while open, so the platform is the browser's.
+  const mod = isApplePlatform() ? "⌘" : "Ctrl";
   const actions: Row[] = [
+    {
+      id: "palette",
+      label: t("shortcuts.search"),
+      sequence: [mod, "K"],
+      chord: true,
+    },
     ...(canCapture
       ? [
           {
@@ -140,7 +150,7 @@ export function KeyboardShortcutsDialog({
                       <Fragment key={`${row.id}-${index}`}>
                         {index > 0 ? (
                           <span className="text-muted-foreground text-xs">
-                            {t("shortcuts.then")}
+                            {row.chord ? "+" : t("shortcuts.then")}
                           </span>
                         ) : null}
                         <Kbd>{key}</Kbd>

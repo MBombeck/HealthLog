@@ -91,6 +91,7 @@ export function AutoReadCard() {
   return (
     <SettingsCard data-slot="documents-auto-read-card">
       <SettingsCardHeader
+        anchor="auto-read"
         icon={ScanText}
         title={t("settings.ai.autoRead.title")}
         description={t("settings.ai.autoRead.subLabel")}

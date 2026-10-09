@@ -80,6 +80,7 @@ export function SecurityActivityCard({
   return (
     <SettingsCard data-slot="settings-security-activity-card">
       <SettingsCardHeader
+        anchor="security-activity"
         icon={ShieldCheck}
         title={
           <button

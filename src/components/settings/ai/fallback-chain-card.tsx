@@ -154,6 +154,7 @@ export function FallbackChainCard({
   return (
     <SettingsCard data-testid="ai-fallback-chain">
       <SettingsCardHeader
+        anchor="provider-chain"
         icon={ListOrdered}
         title={t("settings.ai.providerChain.title")}
         description={t("settings.ai.providerChain.description")}
