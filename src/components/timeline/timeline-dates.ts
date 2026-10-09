@@ -26,11 +26,6 @@ export function dayKey(day: number): string {
   return new Date(day * MS_PER_DAY).toISOString().slice(0, 10);
 }
 
-/** `YYYY-MM` of a date key. */
-export function monthOf(key: string): string {
-  return key.slice(0, 7);
-}
-
 /** First day of the month a key falls in. */
 export function startOfMonth(key: string): string {
   return `${key.slice(0, 7)}-01`;
