@@ -245,6 +245,7 @@ describe("MCP tool registry — surface", () => {
         values: [],
         events: [],
         notable: [],
+        scores: [{ score: "strain", value: 12.4, max: 21, band: null }],
         unavailable: [],
       },
     });

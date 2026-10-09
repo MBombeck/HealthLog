@@ -91,7 +91,11 @@ function rankOf(source: MeasurementSource): number {
  * stay local; that DTO change is out of scope for v1.17.1. Europe / positive-UTC
  * users (the common case) are unaffected.
  */
-function wakeDayKeyOf(d: Date, source: MeasurementSource, tz: string): string {
+export function wakeDayKeyOf(
+  d: Date,
+  source: MeasurementSource,
+  tz: string,
+): string {
   const anchor = source === "COMPUTED" ? new Date(d.getTime() + MS_PER_DAY) : d;
   return dayKeyForUserTz(anchor, tz);
 }

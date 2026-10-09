@@ -42,6 +42,7 @@ import {
   tileKeyOf,
   type DayValueTile,
 } from "./day-values-model";
+import { cycleRunningLine } from "./day-cycle-line";
 import { useDayValueFormat } from "./use-day-value-format";
 
 /**
@@ -209,19 +210,24 @@ export function DayRunning({ items }: { items: readonly DayRunningItem[] }) {
       <h3 className={DAY_SECTION_LABEL}>{t("day.groups.running")}</h3>
       <ul>
         {items.map((item) => {
-          const parts = [
-            item.sub === null ? null : dayMeta(item.kind, item.sub, t),
-            item.dayIndex !== null
-              ? item.dayCount !== null
-                ? t("day.dayOf", { n: item.dayIndex, m: item.dayCount })
-                : t("day.dayN", { n: item.dayIndex })
-              : null,
-            item.dayCount === null && item.since !== null
-              ? t("day.since", {
-                  date: fmt.dateShortSmartCalendar(item.since),
-                })
-              : null,
-          ].filter((part): part is string => !!part);
+          const cycleLine = cycleRunningLine(item, t);
+          const parts = (
+            cycleLine !== null
+              ? [cycleLine]
+              : [
+                  item.sub === null ? null : dayMeta(item.kind, item.sub, t),
+                  item.dayIndex !== null
+                    ? item.dayCount !== null
+                      ? t("day.dayOf", { n: item.dayIndex, m: item.dayCount })
+                      : t("day.dayN", { n: item.dayIndex })
+                    : null,
+                  item.dayCount === null && item.since !== null
+                    ? t("day.since", {
+                        date: fmt.dateShortSmartCalendar(item.since),
+                      })
+                    : null,
+                ]
+          ).filter((part): part is string => !!part);
           const body = (
             <>
               <span
@@ -273,7 +279,7 @@ export function DayRunning({ items }: { items: readonly DayRunningItem[] }) {
 
 /* ─── Values ──────────────────────────────────────────────────────────── */
 
-function NumberLine({
+export function NumberLine({
   value,
   band,
 }: {

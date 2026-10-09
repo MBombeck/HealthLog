@@ -26,7 +26,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { DayResponse, DaySectionKey } from "@/lib/day/contract";
-import { DAY_SECTION_KEYS } from "@/lib/day/contract";
+import { DAY_SCORE_KEYS, DAY_SECTION_KEYS } from "@/lib/day/contract";
 import { COACH_SOURCE_MEASUREMENT_TYPES } from "@/lib/ai/coach/source-measurement-types";
 import type { CoachScopeSource } from "@/lib/ai/coach/types";
 import {
@@ -65,7 +65,10 @@ vi.mock("@/lib/day/load-day", () => ({
 }));
 
 import { executeCoachTool } from "@/lib/ai/coach/tools/executor";
-import { DAY_EXCLUSIONS_BY_TOKEN } from "@/lib/ai/coach/tools/day-read";
+import {
+  DAY_EXCLUSIONS_BY_TOKEN,
+  DAY_SCORE_EXCLUSIONS_BY_TOKEN,
+} from "@/lib/ai/coach/tools/day-read";
 
 /** Tokens that cover nothing a day holds, and why. */
 const NOTHING_IN_A_DAY: Partial<Record<CoachExcludeMetric, string>> = {
@@ -112,6 +115,15 @@ function fullDay(readable: Set<string>): DayResponse {
       type,
       params: {},
     })),
+    scores: readable.has("scores")
+      ? DAY_SCORE_KEYS.map((key) => ({
+          key,
+          value: 50,
+          max: 100,
+          source: "COMPUTED",
+          band: null,
+        }))
+      : [],
     sections: {},
   };
 }
@@ -171,9 +183,18 @@ describe("get_day honours the person's Coach exclusions", () => {
         expect(values.map((v) => v.type)).not.toContain(type);
         expect(notable.map((n) => n.type)).not.toContain(type);
       }
+      const scores = (data.scores as Array<{ score: string }>).map(
+        (s) => s.score,
+      );
+      for (const score of DAY_SCORE_EXCLUSIONS_BY_TOKEN[token]) {
+        expect(scores, score).not.toContain(score);
+      }
       // What the token does not cover still arrives.
       expect(text).toContain("title-of-labs");
       expect(values.length).toBeGreaterThan(0);
+      expect(scores.length).toBe(
+        DAY_SCORE_KEYS.length - DAY_SCORE_EXCLUSIONS_BY_TOKEN[token].length,
+      );
     });
   }
 
@@ -182,5 +203,6 @@ describe("get_day honours the person's Coach exclusions", () => {
     const data = await getDay();
     expect(JSON.stringify(data)).toContain("title-of-mood");
     expect((data.values as unknown[]).length).toBe(ALL_TYPES.length);
+    expect((data.scores as unknown[]).length).toBe(DAY_SCORE_KEYS.length);
   });
 });

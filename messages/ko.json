@@ -12211,6 +12211,14 @@
     }
   },
   "day": {
+    "scoreOfMax": "/ {max}",
+    "cycleDay": "주기 {n}일째",
+    "cyclePhaseLine": {
+      "MENSTRUAL": "주기 {n}일째, 월경기",
+      "FOLLICULAR": "주기 {n}일째, 난포기",
+      "OVULATORY": "주기 {n}일째, 배란기",
+      "LUTEAL": "주기 {n}일째, 황체기"
+    },
     "previousDay": "전날",
     "nextDay": "다음 날",
     "close": "하루 닫기",
@@ -12230,6 +12238,7 @@
     "since": "{date}부터",
     "usualRange": "평소 {lo}~{hi}",
     "groups": {
+      "scores": "점수",
       "running": "그날 진행 중",
       "values": "수치",
       "happened": "있었던 일"

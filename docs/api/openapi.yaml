@@ -80952,6 +80952,7 @@ components:
               enum:
                 - values
                 - sleep
+                - scores
                 - mood
                 - assessments
                 - medications
@@ -81102,6 +81103,7 @@ components:
           enum:
             - values
             - sleep
+            - scores
             - mood
             - assessments
             - medications
@@ -81197,6 +81199,12 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DayNotable"
+        scores:
+          type: array
+          items:
+            $ref: "#/components/schemas/DayScore"
+          description: The scores the record holds for this day, in `DAY_SCORE_KEYS` order. A score with no value that day is
+            absent; an empty list means none.
         sections:
           type: object
           propertyNames:
@@ -81204,6 +81212,7 @@ components:
             enum:
               - values
               - sleep
+              - scores
               - mood
               - assessments
               - medications
@@ -81243,6 +81252,7 @@ components:
         - values
         - events
         - notable
+        - scores
         - sections
       additionalProperties: false
     DayRunningItem:
@@ -81264,6 +81274,7 @@ components:
           enum:
             - values
             - sleep
+            - scores
             - mood
             - assessments
             - medications
@@ -81420,6 +81431,7 @@ components:
           enum:
             - values
             - sleep
+            - scores
             - mood
             - assessments
             - medications
@@ -81506,6 +81518,55 @@ components:
         - kind
         - type
         - params
+      additionalProperties: false
+    DayScore:
+      type: object
+      properties:
+        key:
+          type: string
+          enum:
+            - healthScore
+            - readiness
+            - recovery
+            - sleepScore
+            - strain
+        value:
+          type: number
+          description: "The score on its own scale: whole points for a 0 to 100 score, one decimal for a device's day strain."
+        max:
+          type: integer
+          exclusiveMinimum: 0
+          maximum: 9007199254740991
+          description: "The top of the scale: 100, or 21 for a device's day strain."
+        source:
+          type: string
+          description: "`COMPUTED` for a score the server derived, else the `MeasurementSource` of the device row."
+        band:
+          anyOf:
+            - type: object
+              properties:
+                lo:
+                  type: number
+                hi:
+                  type: number
+                n:
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+              required:
+                - lo
+                - hi
+                - n
+              additionalProperties: false
+            - type: "null"
+          description: The person's own usual range of the score over the 30 days before this day, on the same scale. Null with
+            too little history.
+      required:
+        - key
+        - value
+        - max
+        - source
+        - band
       additionalProperties: false
     TimelineEnvelope:
       type: object

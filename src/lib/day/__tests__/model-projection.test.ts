@@ -83,6 +83,16 @@ const day: DayResponse = {
     },
   ],
   notable: [],
+  scores: [
+    {
+      key: "readiness",
+      value: 71,
+      max: 100,
+      source: "COMPUTED",
+      band: { lo: 60, hi: 80, n: 20 },
+    },
+    { key: "strain", value: 12.4, max: 21, source: "WHOOP", band: null },
+  ],
   sections: { cycle: { available: false, reason: "not_shared" } },
 };
 
@@ -183,5 +193,32 @@ describe("caller exclusions", () => {
     expect(text).not.toContain("WEIGHT");
     expect(projected.counts).toEqual({ values: 0, entries: 1 });
     expect(projected.unavailable.map((u) => u.section)).not.toContain("mood");
+  });
+
+  it("leaves out an excluded score and keeps the rest by name", () => {
+    const narrowed = projectDayForModel(day, [], undefined, {
+      sections: new Set(),
+      types: new Set(),
+      scores: new Set(["readiness"]),
+    });
+    expect(narrowed.scores).toEqual([
+      { score: "strain", value: 12.4, max: 21, band: null },
+    ]);
+  });
+});
+
+describe("scores", () => {
+  it("go to a model as name, number, scale and usual range", () => {
+    const projected = projectDayForModel(day, []);
+    expect(projected.scores).toEqual([
+      {
+        score: "readiness",
+        value: 71,
+        max: 100,
+        band: { lo: 60, hi: 80, n: 20 },
+      },
+      { score: "strain", value: 12.4, max: 21, band: null },
+    ]);
+    expect(JSON.stringify(projected.scores)).not.toContain("COMPUTED");
   });
 });

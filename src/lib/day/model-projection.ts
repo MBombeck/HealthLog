@@ -17,9 +17,10 @@
  *   - names a switched-off module's section as `module_disabled`, so a model
  *     says "that module is off" instead of "nothing happened";
  *   - leaves out what the caller excludes (`exclude`): the Coach passes the
- *     person's Coach exclusions as sections and measurement types, so a
- *     metric left out of every other Coach read is left out of the day too,
- *     without a word about it.
+ *     person's Coach exclusions as sections, measurement types and scores,
+ *     so a metric left out of every other Coach read is left out of the day
+ *     too, without a word about it. A score goes as its name and number,
+ *     with the scale and the person's usual range beside it.
  *
  * The remaining titles (a medication, an illness label, a symptom) pass
  * through `text`, which fences them as the person's own text.
@@ -29,6 +30,7 @@ import type { MeasurementType } from "@/generated/prisma/enums";
 import {
   MODEL_EXCLUDED_DAY_SECTIONS,
   type DayResponse,
+  type DayScoreKey,
   type DaySectionKey,
 } from "@/lib/day/contract";
 
@@ -69,6 +71,13 @@ export interface ModelDay {
   }>;
   events: ModelDayEvent[];
   notable: DayResponse["notable"];
+  /** The day's scores, by name, on their own scale. */
+  scores: Array<{
+    score: DayScoreKey;
+    value: number;
+    max: number;
+    band: { lo: number; hi: number; n: number } | null;
+  }>;
   /** Sections the reader does not get, and why. Never a model-excluded one. */
   unavailable: Array<{
     section: DaySectionKey;
@@ -80,6 +89,8 @@ export interface ModelDay {
 export interface ModelDayExclusions {
   sections: ReadonlySet<DaySectionKey>;
   types: ReadonlySet<string>;
+  /** Scores built on excluded data; none when absent. */
+  scores?: ReadonlySet<DayScoreKey>;
 }
 
 const NO_EXCLUSIONS: ModelDayExclusions = {
@@ -168,6 +179,16 @@ export function projectDayForModel(
     notable: day.notable.filter(
       (n) => n.type === null || !exclude.types.has(n.type),
     ),
+    scores: visible("scores")
+      ? day.scores
+          .filter((s) => !exclude.scores?.has(s.key))
+          .map((s) => ({
+            score: s.key,
+            value: s.value,
+            max: s.max,
+            band: s.band,
+          }))
+      : [],
     unavailable,
   };
 }

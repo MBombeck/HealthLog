@@ -120,6 +120,36 @@ test.describe("the day view", () => {
     await expect(page).toHaveURL(/\/mood$/);
   });
 
+  test("the day's scores sit below its values, each opening its own page", async ({
+    page,
+  }) => {
+    await page.goto(`/mood?day=${isoDaysAgo(3)}`);
+    await expect(panel(page)).toBeVisible();
+    const scores = page.locator('[data-slot="day-scores"]');
+    await expect(scores).toBeVisible();
+    const tiles = scores.locator('[data-slot="day-score"]');
+    await expect(tiles).toHaveCount(2);
+    await expect(
+      scores.locator('[data-slot="day-score"][data-score="healthScore"]'),
+    ).toHaveAttribute("href", "/insights");
+    await expect(
+      scores.locator('[data-slot="day-score"][data-score="strain"]'),
+    ).toHaveAttribute("href", "/insights/scores/strain");
+    // A score the day does not hold has no tile.
+    await expect(
+      scores.locator('[data-slot="day-score"][data-score="readiness"]'),
+    ).toHaveCount(0);
+    // Below the values, above what happened.
+    const order = await page
+      .locator(
+        '[data-slot="day-values"], [data-slot="day-scores"], [data-slot="day-events"]',
+      )
+      .evaluateAll((nodes) =>
+        nodes.map((node) => node.getAttribute("data-slot")),
+      );
+    expect(order).toEqual(["day-values", "day-scores", "day-events"]);
+  });
+
   test("the docked day collapses to an edge and comes back on another page", async ({
     page,
   }, testInfo) => {

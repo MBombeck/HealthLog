@@ -74,6 +74,8 @@ export const DAY_INDEX_MAX_SPAN_DAYS = 366;
  *
  *   values       readings in the local day window, canonical source per type
  *   sleep        the night that ended on this morning
+ *   scores       the day's scores (health score, readiness, recovery, sleep
+ *                score, strain), each from its own stored or computed series
  *   mood         mood entries for the date
  *   assessments  mental-health screeners taken that day
  *   medications  intakes, dose changes, pauses, course starts and ends
@@ -93,6 +95,7 @@ export const DAY_INDEX_MAX_SPAN_DAYS = 366;
 export const DAY_SECTION_KEYS = [
   "values",
   "sleep",
+  "scores",
   "mood",
   "assessments",
   "medications",
@@ -120,6 +123,40 @@ export type DaySectionKey = (typeof DAY_SECTION_KEYS)[number];
 export const MODEL_EXCLUDED_DAY_SECTIONS = [
   "lifeEvents",
 ] as const satisfies readonly DaySectionKey[];
+
+/**
+ * The scores a day can carry, in the order the view shows them. Each is
+ * present only when the record holds it for that day; a missing score is
+ * left out, never sent as a null.
+ *
+ *   healthScore  the health score as recorded on that local day
+ *   readiness    the readiness blend persisted by the nightly job for the
+ *                night that ended on this morning
+ *   recovery     a device's own recovery for that morning (WHOOP, Oura,
+ *                Polar); the computed proxy is the readiness above and is
+ *                not sent twice
+ *   sleepScore   the sleep score of the night that ended on this morning
+ *   strain       the computed strain of the day, or the device's day strain
+ *                on its own scale when no computed one exists
+ */
+export const DAY_SCORE_KEYS = [
+  "healthScore",
+  "readiness",
+  "recovery",
+  "sleepScore",
+  "strain",
+] as const;
+
+export type DayScoreKey = (typeof DAY_SCORE_KEYS)[number];
+
+/** The page each score opens on. */
+export const DAY_SCORE_HREF: Readonly<Record<DayScoreKey, string>> = {
+  healthScore: "/insights",
+  readiness: "/insights/scores/readiness",
+  recovery: "/insights/scores/recovery",
+  sleepScore: "/insights/scores/sleep",
+  strain: "/insights/scores/strain",
+};
 
 /** Why a section is missing from a day the caller can otherwise read. */
 export const DAY_SECTION_UNAVAILABLE_REASONS = [
@@ -372,6 +409,7 @@ export type DayRunningItem = DayResponse["running"][number];
 export type DayValue = DayResponse["values"][number];
 export type DayEvent = DayResponse["events"][number];
 export type DayNotable = DayResponse["notable"][number];
+export type DayScore = DayResponse["scores"][number];
 
 /** `GET /api/day/index` → `data`. */
 export type DayIndexResponse = z.infer<typeof dayIndexResponseSchema>;

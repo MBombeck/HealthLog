@@ -29,6 +29,7 @@ import {
   DAY_NOTABLE_KINDS,
   DAY_QUERY_PARAM,
   DAY_RUNNING_KINDS,
+  DAY_SCORE_KEYS,
   DAY_SECTION_KEYS,
   DAY_TOOL_NAME,
   MODEL_EXCLUDED_DAY_SECTIONS,
@@ -1033,6 +1034,16 @@ const getDayOutput: z.ZodRawShape = {
           params: z.record(z.string(), z.union([z.string(), z.number()])),
         }),
       ),
+      scores: z.array(
+        z.object({
+          score: z.enum(DAY_SCORE_KEYS),
+          value: z.number(),
+          max: z.number(),
+          band: z
+            .object({ lo: z.number(), hi: z.number(), n: z.number() })
+            .nullable(),
+        }),
+      ),
       unavailable: z.array(
         z.object({
           section: modelDaySection,
@@ -1781,7 +1792,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: DAY_TOOL_NAME,
     title: "Get one day",
     description:
-      "Fetch one local calendar day of the user's record (YYYY-MM-DD, in the user's own time zone): what ran through it (medications and courses with dose and day n, pauses, an illness with its day n, a cycle phase, a trip; day n counts from the record's own start date and is null, with `since` null, when the record holds none), the readings in that day's window with the user's usual range over the 30 days before (null with too little history), what happened on it (intakes, dose changes, symptoms, lab results, visits, vaccinations, check-ups, documents by kind, mood and screener scores, workouts), and deterministic notable observations (highest or lowest for at least three months, first reading of a kind). Notes, document names, visit reasons, practitioner names and life events are never included. `unavailable` names sections whose module is off (module_disabled). Each result carries `url`, the day in the app. Returns { present: false } with no_data, outside_window (a future date) or invalid_arguments.",
+      "Fetch one local calendar day of the user's record (YYYY-MM-DD, in the user's own time zone): what ran through it (medications and courses with dose and day n, pauses, an illness with its day n, a cycle phase with its cycle day, a trip; day n counts from the record's own start date and is null, with `since` null, when the record holds none), the readings in that day's window with the user's usual range over the 30 days before (null with too little history), what happened on it (intakes, dose changes, symptoms, lab results, visits, vaccinations, check-ups, documents by kind, mood and screener scores, workouts), the day's scores (healthScore, readiness, recovery from a device, sleepScore, strain; each a number on its own 0 to `max` scale with the usual range beside it, absent when not recorded that day), and deterministic notable observations (highest or lowest for at least three months, first reading of a kind). Notes, document names, visit reasons, practitioner names and life events are never included. `unavailable` names sections whose module is off (module_disabled). Each result carries `url`, the day in the app. Returns { present: false } with no_data, outside_window (a future date) or invalid_arguments.",
     inputShape: {
       date: z.string().describe("The local calendar date, YYYY-MM-DD."),
     },

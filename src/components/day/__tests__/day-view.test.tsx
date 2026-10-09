@@ -98,6 +98,7 @@ const DAY: DayResponse = {
       params: { since: "2025-03-01", value: 138 },
     },
   ],
+  scores: [],
   sections: {},
 };
 
@@ -338,5 +339,59 @@ describe("<DayView>", () => {
       },
     };
     expect(await render()).toContain("Some areas are not shared with you.");
+  });
+
+  it("puts the scores below the values and holds a day that has only scores", async () => {
+    const scores: DayResponse["scores"] = [
+      { key: "readiness", value: 71, max: 100, source: "COMPUTED", band: null },
+    ];
+    dayQuery = { data: { ...DAY, scores } };
+    const html = await render();
+    const values = html.indexOf('data-slot="day-values"');
+    const scoreSection = html.indexOf('data-slot="day-scores"');
+    const events = html.indexOf('data-slot="day-events"');
+    expect(values).toBeGreaterThan(-1);
+    expect(scoreSection).toBeGreaterThan(values);
+    expect(events).toBeGreaterThan(scoreSection);
+
+    dayQuery = {
+      data: {
+        ...DAY,
+        counts: { values: 0, entries: 0 },
+        running: [],
+        values: [],
+        events: [],
+        notable: [],
+        scores,
+      },
+    };
+    const only = await render();
+    expect(only).toContain('data-score="readiness"');
+    expect(only).not.toContain('data-slot="day-empty"');
+  });
+
+  it("words a running cycle as its cycle day and phase", async () => {
+    dayQuery = {
+      data: {
+        ...DAY,
+        running: [
+          {
+            kind: "cyclePhase",
+            section: "cycle",
+            id: "c1",
+            title: "cycle",
+            sub: "FOLLICULAR",
+            since: "2025-12-23",
+            until: null,
+            dayIndex: 12,
+            dayCount: null,
+            href: "/cycle",
+          },
+        ],
+      },
+    };
+    const html = await render();
+    expect(html).toContain("Cycle day 12, follicular phase");
+    expect(html).not.toContain("FOLLICULAR");
   });
 });

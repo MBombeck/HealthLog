@@ -23,6 +23,7 @@ import {
   type DayFrame,
   type SectionPart,
 } from "@/lib/day/records";
+import { DAY_SCORE_MEASUREMENT_TYPES, readDayScores } from "@/lib/day/scores";
 import { measurementTypeVisible, type DayAccess } from "@/lib/day/sections";
 import { readDayBands, shapeDayValues } from "@/lib/day/values";
 import {
@@ -74,9 +75,12 @@ export async function loadDay(args: LoadDayArgs): Promise<DayResponse> {
   const { dayStart, dayEnd } = localDayWindow(day, tz);
   const valuesReadable = access.readable.has("values");
   const sleepReadable = access.readable.has("sleep");
+  const scoresReadable = access.readable.has("scores");
 
   const typeVisible = (type: MeasurementType): boolean => {
     if (!measurementTypeVisible(type, access.modules)) return false;
+    // A stored score is shown with the scores, on the day it describes.
+    if (scoresReadable && DAY_SCORE_MEASUREMENT_TYPES.has(type)) return false;
     return type === "SLEEP_DURATION" ? sleepReadable : valuesReadable;
   };
 
@@ -90,14 +94,14 @@ export async function loadDay(args: LoadDayArgs): Promise<DayResponse> {
   };
 
   const priority =
-    valuesReadable || sleepReadable
+    valuesReadable || sleepReadable || scoresReadable
       ? await loadUserSourcePriority(recordId)
       : null;
 
   const recordSections = [...access.readable].filter(
     (section) => RECORD_SECTION_READERS[section] !== undefined,
   );
-  const [readings, parts] = await Promise.all([
+  const [readings, parts, scores] = await Promise.all([
     valuesReadable || sleepReadable
       ? resolveDayReadings(
           recordId,
@@ -117,6 +121,16 @@ export async function loadDay(args: LoadDayArgs): Promise<DayResponse> {
         )(frame),
       ),
     ),
+    scoresReadable
+      ? readDayScores({
+          userId: recordId,
+          day,
+          tz,
+          modules: access.modules,
+          priorityJson: priority,
+          floor: args.floor ?? null,
+        })
+      : Promise.resolve([]),
   ]);
 
   const presentTypes = [...readings.rowsByType.keys()];
@@ -163,6 +177,7 @@ export async function loadDay(args: LoadDayArgs): Promise<DayResponse> {
     values,
     events,
     notable: notable.map(({ kind, type, params }) => ({ kind, type, params })),
+    scores,
     sections,
   };
 }

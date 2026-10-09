@@ -12211,6 +12211,14 @@
     }
   },
   "day": {
+    "scoreOfMax": "de {max}",
+    "cycleDay": "Día {n} del ciclo",
+    "cyclePhaseLine": {
+      "MENSTRUAL": "Día {n} del ciclo, fase menstrual",
+      "FOLLICULAR": "Día {n} del ciclo, fase folicular",
+      "OVULATORY": "Día {n} del ciclo, fase ovulatoria",
+      "LUTEAL": "Día {n} del ciclo, fase lútea"
+    },
     "previousDay": "Día anterior",
     "nextDay": "Día siguiente",
     "close": "Cerrar día",
@@ -12230,6 +12238,7 @@
     "since": "desde {date}",
     "usualRange": "Habitual de {lo} a {hi}",
     "groups": {
+      "scores": "Puntuaciones",
       "running": "En curso ese día",
       "values": "Valores",
       "happened": "Qué pasó"
