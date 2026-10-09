@@ -23,6 +23,18 @@ updates:
         update-types:
           - "patch"
           - "minor"
+    ignore:
+      # zod 4.5 made `z.iso.datetime()` require seconds, so a request carrying
+      # `2026-01-01T06:15Z` that passes today would be refused with a 422 on
+      # every route that validates a timestamp, and 4.6 rewrites nullable and
+      # primitive unions in the generated JSON Schema from `anyOf` to `type`
+      # arrays, which reshapes the OpenAPI document and every MCP tool schema.
+      # Both are contract changes for the web client, the iOS app and MCP
+      # callers, not a routine bump, so the move past 4.4 gets its own change
+      # with the timestamp producers audited. Patch releases on 4.4 still
+      # arrive.
+      - dependency-name: "zod"
+        versions: [">=4.5.0"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
