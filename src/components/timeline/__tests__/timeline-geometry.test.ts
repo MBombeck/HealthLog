@@ -40,6 +40,7 @@ function layoutAt(width: number): TimelineLayout {
     window: windowFor("all", TODAY, null, tl.range),
     lanes: tl.lanes,
     series: tl.series,
+    bucket: tl.bucket,
     startMissing: "Startdatum fehlt",
     today: TODAY,
   });
@@ -345,30 +346,136 @@ describe("layoutTimeline", () => {
 });
 
 describe("layoutSeries", () => {
-  it("breaks the line across missing months instead of bridging them", () => {
-    const window = { from: "2025-10-01", to: "2026-10-31" };
-    const scale = createScale(window, 164, 1200);
-    const [bp] = layoutSeries(
-      fullTimeline().series.slice(0, 1),
-      0,
-      window,
-      scale,
-    );
-    expect(bp.path.match(/M/g)).toHaveLength(2);
+  const window = { from: "2025-10-01", to: "2026-10-31" };
+  const scale = createScale(window, 164, 1200);
+  const [bp] = layoutSeries(
+    fullTimeline().series.slice(0, 1),
+    0,
+    window,
+    scale,
+    "month",
+  );
+
+  it("keeps every month with a reading as a point, and invents none", () => {
+    expect(bp.points.map((p) => p.t)).toEqual([
+      "2025-10-01",
+      "2025-11-01",
+      "2025-12-01",
+      "2026-01-01",
+      "2026-03-01",
+      "2026-07-01",
+    ]);
+    expect(bp.points.map((p) => p.mean)).toEqual([
+      127, 128, 130, 129, 133, 131,
+    ]);
     expect(bp.latest).toBe(131);
   });
 
-  it("keeps an empty series as a row without a line", () => {
-    const window = { from: "2019-01-01", to: "2019-12-31" };
-    const scale = createScale(window, 164, 1200);
-    const [bp] = layoutSeries(
-      fullTimeline().series.slice(0, 1),
+  it("draws the run solid, bridges one missing month dashed, and breaks at three", () => {
+    const [oct, , , jan, mar, jul] = bp.points;
+    const at = (p: { x: number; y: number }) =>
+      `${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
+    // One solid run, October to January.
+    expect(bp.path.match(/M/g)).toHaveLength(1);
+    expect(bp.path.startsWith(`M${at(oct)}`)).toBe(true);
+    expect(bp.path.endsWith(`L${at(jan)}`)).toBe(true);
+    // February is missing: one dashed stroke from January to March, with no
+    // vertex between them.
+    expect(bp.bridges).toBe(`M${at(jan)}L${at(mar)}`);
+    // April to June are missing: July joins nothing.
+    expect(bp.path).not.toContain(at(jul));
+    expect(bp.bridges).not.toContain(at(jul));
+  });
+
+  it("draws a bucket of fewer than three readings hollow", () => {
+    expect(bp.points.map((p) => [p.t, p.thin])).toEqual([
+      ["2025-10-01", false],
+      ["2025-11-01", false],
+      ["2025-12-01", false],
+      ["2026-01-01", false],
+      ["2026-03-01", true],
+      ["2026-07-01", true],
+    ]);
+  });
+
+  it("bridges at most one missing quarter and four missing weeks", () => {
+    const quarter = (points: Array<[string, number]>) =>
+      layoutSeries(
+        [
+          {
+            key: "WEIGHT",
+            unit: "kg",
+            points: points.map(([t, mean]) => ({ t, mean, count: 5 })),
+          },
+        ],
+        0,
+        { from: "2020-01-01", to: "2026-12-31" },
+        createScale({ from: "2020-01-01", to: "2026-12-31" }, 164, 1200),
+        "quarter",
+      )[0];
+    // Q1, then Q3: one missing quarter, bridged.
+    expect(
+      quarter([
+        ["2024-01-01", 80],
+        ["2024-07-01", 81],
+      ]).bridges,
+    ).not.toBe("");
+    // Q1, then Q4: two missing quarters, broken; each point still drawn.
+    const broken = quarter([
+      ["2024-01-01", 80],
+      ["2024-10-01", 81],
+    ]);
+    expect(broken.bridges).toBe("");
+    expect(broken.path).toBe("");
+    expect(broken.points).toHaveLength(2);
+
+    const weeks = (second: string) =>
+      layoutSeries(
+        [
+          {
+            key: "WEIGHT",
+            unit: "kg",
+            points: [
+              { t: "2026-01-05", mean: 80, count: 3 },
+              { t: second, mean: 81, count: 3 },
+            ],
+          },
+        ],
+        0,
+        { from: "2026-01-01", to: "2026-03-31" },
+        createScale({ from: "2026-01-01", to: "2026-03-31" }, 164, 1200),
+        "week",
+      )[0];
+    // Mondays: four missing weeks bridged, five broken.
+    expect(weeks("2026-02-09").bridges).not.toBe("");
+    expect(weeks("2026-02-16").bridges).toBe("");
+  });
+
+  it("keeps a lone point visible", () => {
+    const [weight] = layoutSeries(
+      fullTimeline().series.slice(2, 3),
       0,
       window,
       scale,
+      "month",
     );
-    expect(bp.path).toBe("");
-    expect(bp.latest).toBeNull();
+    expect(weight.path).toBe("");
+    expect(weight.bridges).toBe("");
+    expect(weight.points).toHaveLength(1);
+  });
+
+  it("keeps an empty series as a row without a line", () => {
+    const early = { from: "2019-01-01", to: "2019-12-31" };
+    const [empty] = layoutSeries(
+      fullTimeline().series.slice(0, 1),
+      0,
+      early,
+      createScale(early, 164, 1200),
+      "month",
+    );
+    expect(empty.path).toBe("");
+    expect(empty.points).toEqual([]);
+    expect(empty.latest).toBeNull();
   });
 });
 

@@ -3,9 +3,8 @@
 /**
  * `/timeline` (v1.42, #613): years at a glance. Conditions, allergies,
  * medications, vaccinations, visits, documents and the person's own life
- * events in lanes, up to three neutral value lines below them, all on one
- * time axis. "Stacked means at the same time, not cause and effect" is said
- * once, in the legend, and nothing on the page draws a connection.
+ * events in lanes, up to six neutral value lines below them, all on one
+ * time axis. Nothing on the page draws a connection between them.
  *
  * The page hands off to the day view through `?day=`: "Open 3 Jan." (and
  * Enter on the chart, a double click, a chip, a chronicle row) pushes the
@@ -35,6 +34,7 @@ import {
   DAY_QUERY_PARAM,
   TIMELINE_ZOOMS,
   type LifeEventDTO,
+  type TimelineBucket,
   type TimelineLaneKey,
   type TimelineZoom,
 } from "@/lib/day/contract";
@@ -385,10 +385,14 @@ export function TimelineView() {
                   timeline={data}
                   selected={effectiveSelected}
                   today={today}
+                  seriesLabel={seriesLabel}
                   onOpenDay={openDay}
                   onEditLifeEvent={canAddLifeEvent ? editLifeEvent : undefined}
                 />
-                <Legend />
+                <Legend
+                  bucket={data.bucket}
+                  hasSeries={data.series.length > 0}
+                />
               </CardContent>
             </Card>
           </div>
@@ -436,7 +440,19 @@ export function TimelineView() {
   );
 }
 
-function Legend() {
+const LEGEND_MEAN_KEY: Readonly<Record<TimelineBucket, string>> = {
+  quarter: "timeline.legendMeanQuarter",
+  month: "timeline.legendMeanMonth",
+  week: "timeline.legendMeanWeek",
+};
+
+function Legend({
+  bucket,
+  hasSeries,
+}: {
+  bucket: TimelineBucket;
+  hasSeries: boolean;
+}) {
   const { t } = useTranslations();
   return (
     <div
@@ -457,13 +473,25 @@ function Legend() {
         />
         {t("timeline.legendEvent")}
       </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span className="bg-foreground h-0.5 w-4" aria-hidden="true" />
-        {t("timeline.legendMean")}
-      </span>
-      <span className="sm:ml-auto" data-slot="timeline-legend-causality">
-        {t("timeline.legend")}
-      </span>
+      {hasSeries && (
+        <>
+          <span
+            className="inline-flex items-center gap-1.5"
+            data-slot="timeline-legend-mean"
+            data-bucket={bucket}
+          >
+            <span className="bg-foreground h-0.5 w-4" aria-hidden="true" />
+            {t(LEGEND_MEAN_KEY[bucket])}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              className="border-foreground bg-card size-2 rounded-full border"
+              aria-hidden="true"
+            />
+            {t("timeline.legendThin")}
+          </span>
+        </>
+      )}
     </div>
   );
 }

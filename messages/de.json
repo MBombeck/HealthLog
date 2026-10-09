@@ -12280,7 +12280,6 @@
   "timeline": {
     "title": "Zeitleiste",
     "subtitle": "Was wann war, neben deinen Werten.",
-    "legend": "Untereinander heißt gleichzeitig, nicht ursächlich.",
     "standing": "Dauerhaft",
     "startMissing": "Startdatum fehlt",
     "openDay": "{date} öffnen",
@@ -12402,7 +12401,10 @@
     },
     "legendSpan": "Zeitraum",
     "legendEvent": "Ereignis",
-    "legendMean": "Monatsmittel",
+    "legendMeanQuarter": "Quartalsmittel",
+    "legendMeanMonth": "Monatsmittel",
+    "legendMeanWeek": "Wochenmittel",
+    "legendThin": "Weniger als 3 Messungen",
     "today": "Heute",
     "noDataYet": "Noch keine Daten",
     "layers": "Ebenen",
@@ -12416,20 +12418,27 @@
       "description": "Sobald es Einträge mit Datum gibt, erscheinen sie hier."
     },
     "values": {
-      "menuLabel": "Bis zu drei Werte",
+      "menuLabel": "Bis zu sechs Werte",
       "none": "Keine Werte",
       "noneInWindow": "Keine Werte in diesem Zeitraum",
       "series": {
         "BLOOD_PRESSURE_SYS": "Blutdruck sys.",
         "BLOOD_PRESSURE_DIA": "Blutdruck dia."
-      }
+      },
+      "noValue": "kein Wert",
+      "bloodPressure": "Blutdruck",
+      "readingsOne": "1 Messung",
+      "readingsFew": "Schnitt aus {count} Messungen",
+      "readingsOther": "Schnitt aus {count} Messungen"
     },
     "table": {
       "caption": "Einträge der Zeitleiste",
       "lane": "Spur",
       "entry": "Eintrag",
       "start": "Beginn",
-      "end": "Ende"
+      "end": "Ende",
+      "seriesCaption": "Mittelwerte nach Zeitraum",
+      "period": "Zeitraum"
     },
     "selection": {
       "empty": "Keine Einträge in diesem Monat",

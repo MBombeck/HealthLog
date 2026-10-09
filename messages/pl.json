@@ -12280,7 +12280,6 @@
   "timeline": {
     "title": "Oś czasu",
     "subtitle": "Co i kiedy się działo, obok Twoich wartości.",
-    "legend": "Jedno pod drugim oznacza ten sam czas, nie przyczynę i skutek.",
     "standing": "Stałe",
     "startMissing": "Brak daty rozpoczęcia",
     "openDay": "Otwórz {date}",
@@ -12402,7 +12401,10 @@
     },
     "legendSpan": "Okres",
     "legendEvent": "Zdarzenie",
-    "legendMean": "Średnia miesięczna",
+    "legendMeanQuarter": "Średnia kwartalna",
+    "legendMeanMonth": "Średnia miesięczna",
+    "legendMeanWeek": "Średnia tygodniowa",
+    "legendThin": "Mniej niż 3 pomiary",
     "today": "Dziś",
     "noDataYet": "Jeszcze brak danych",
     "layers": "Warstwy",
@@ -12416,20 +12418,27 @@
       "description": "Wpisy z datą pojawią się tutaj, gdy tylko jakieś będą."
     },
     "values": {
-      "menuLabel": "Do trzech wartości",
+      "menuLabel": "Do sześciu wartości",
       "none": "Brak wartości",
       "noneInWindow": "Brak wartości w tym okresie",
       "series": {
         "BLOOD_PRESSURE_SYS": "Ciśnienie skurczowe",
         "BLOOD_PRESSURE_DIA": "Ciśnienie rozkurczowe"
-      }
+      },
+      "noValue": "brak wartości",
+      "bloodPressure": "Ciśnienie krwi",
+      "readingsOne": "1 pomiar",
+      "readingsFew": "średnia z {count} pomiarów",
+      "readingsOther": "średnia z {count} pomiarów"
     },
     "table": {
       "caption": "Wpisy na osi czasu",
       "lane": "Ścieżka",
       "entry": "Wpis",
       "start": "Początek",
-      "end": "Koniec"
+      "end": "Koniec",
+      "seriesCaption": "Średnie według okresu",
+      "period": "Okres"
     },
     "selection": {
       "empty": "Brak wpisów w tym miesiącu",

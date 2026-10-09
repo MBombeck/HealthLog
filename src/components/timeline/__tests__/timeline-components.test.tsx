@@ -16,6 +16,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { ReadinessCard } from "../readiness-card";
 import { ReadinessInventory, VerdictMeter } from "../readiness-inventory";
 import { SelectionBar } from "../selection-bar";
+import { TimelineChart } from "../timeline-chart";
 import { TimelineChronicle } from "../timeline-chronicle";
 import { TODAY, fullTimeline, readiness } from "./timeline-fixture";
 
@@ -121,25 +122,109 @@ describe("chronicle", () => {
     );
     expect(html).toContain("129/82 mmHg · 82,6 kg");
   });
+
+  it("names a quarter once, at its newest month, with its span", () => {
+    const timeline = {
+      ...fullTimeline(),
+      bucket: "quarter" as const,
+      series: [
+        {
+          key: "WEIGHT",
+          unit: "kg",
+          points: [{ t: "2026-01-01", mean: 82.6, count: 9 }],
+        },
+      ],
+    };
+    const html = render(
+      <TimelineChronicle
+        timeline={timeline}
+        today={TODAY}
+        grouping="month"
+        selected={null}
+        onOpenDay={() => undefined}
+        onEditLifeEvent={null}
+      />,
+    );
+    expect(html.match(/data-slot="timeline-chronicle-means"/g)).toHaveLength(1);
+    expect(html).toContain("Jan bis März 2026: 82,6 kg");
+  });
 });
 
+const LABELS: Record<string, string> = {
+  BLOOD_PRESSURE_SYS: "Blutdruck sys.",
+  BLOOD_PRESSURE_DIA: "Blutdruck dia.",
+  WEIGHT: "Gewicht",
+};
+const seriesLabel = (key: string) => LABELS[key] ?? key;
+
 describe("selection bar", () => {
-  it("lists the month's entries and offers the selected day", () => {
-    const html = render(
+  const bar = (selected: string) =>
+    render(
       <SelectionBar
         timeline={fullTimeline()}
-        selected="2026-01-03"
+        selected={selected}
         today={TODAY}
+        seriesLabel={seriesLabel}
         onOpenDay={() => undefined}
       />,
     );
+
+  it("lists the month's entries and offers the selected day", () => {
+    const html = bar("2026-01-03");
     expect(html).toContain("Januar 2026");
     expect(html).toContain("Erkältung · 31. Dez. bis 8. Jan.");
     expect(html).toContain("Vitamin D (Winter) · laufend");
     expect(html).not.toContain("Bluthochdruck");
     expect(html).toContain("3. Jan. öffnen");
     expect(html).toContain('data-date="2026-01-03"');
-    expect(html).toContain("Ø 129/82 mmHg · 82,6 kg");
+  });
+
+  it("names the bucket's means with the readings behind each", () => {
+    expect(bar("2026-01-03")).toContain(
+      "Ø Januar 2026: Blutdruck 129/82 mmHg (Schnitt aus 4 Messungen) · Gewicht 82,6 kg (Schnitt aus 3 Messungen)",
+    );
+    expect(bar("2026-07-15")).toContain(
+      "Ø Juli 2026: Blutdruck sys. 131 mmHg (1 Messung) · Blutdruck dia. kein Wert · Gewicht kein Wert",
+    );
+  });
+
+  it("says a missing month has no value instead of interpolating one", () => {
+    const html = bar("2026-02-10");
+    expect(html).toContain(
+      "Ø Februar 2026: Blutdruck sys. kein Wert · Blutdruck dia. kein Wert · Gewicht kein Wert",
+    );
+    // January's 129 and March's 133 would make 131 between them.
+    expect(html).not.toMatch(/\d mmHg/);
+  });
+});
+
+describe("value table for a screen reader", () => {
+  it("lists every month between the first and the last reading, gaps as gaps", () => {
+    const html = render(
+      <TimelineChart
+        timeline={fullTimeline()}
+        window={{ from: "2025-10-01", to: "2026-10-31" }}
+        zoom="year"
+        today={TODAY}
+        selected={null}
+        hiddenLanes={new Set()}
+        seriesLabel={seriesLabel}
+        onSelect={() => undefined}
+        onOpenDay={() => undefined}
+      />,
+    );
+    const table = html.slice(html.indexOf('data-slot="timeline-series-table"'));
+    // October 2025 to July 2026: ten months, newest first.
+    expect(table.match(/data-bucket="/g)).toHaveLength(10);
+    const row = (bucket: string) => {
+      const start = table.indexOf(`data-bucket="${bucket}"`);
+      return table.slice(start, table.indexOf("</tr>", start));
+    };
+    expect(row("2026-02-01")).toContain("Februar 2026");
+    expect(row("2026-02-01").match(/kein Wert/g)).toHaveLength(3);
+    expect(row("2026-01-01")).toContain("129 mmHg, Schnitt aus 4 Messungen");
+    expect(row("2026-07-01")).toContain("131 mmHg, 1 Messung");
+    expect(row("2026-05-01")).not.toMatch(/mmHg|kg/);
   });
 });
 

@@ -10,6 +10,8 @@
  * Formatting reads the same UTC instant back with `timeZone: "UTC"`, so a
  * date never moves by a day for a reader east or west of Greenwich.
  */
+import type { TimelineBucket } from "@/lib/day/contract";
+
 const MS_PER_DAY = 86_400_000;
 
 /** Days since 1970-01-01 for a `YYYY-MM-DD` key. */
@@ -53,6 +55,38 @@ export function addMonths(key: string, months: number): string {
   target.setUTCDate(Math.min(d, lastDay));
   // eslint-disable-next-line healthlog/no-utc-day-key -- UTC by design: a calendar key held as UTC midnight, never an instant
   return target.toISOString().slice(0, 10);
+}
+
+/* ─── Series buckets ──────────────────────────────────────────────────────── */
+
+/** The first day of the bucket `key` falls in. Weeks start on Monday. */
+export function bucketStart(key: string, bucket: TimelineBucket): string {
+  if (bucket === "month") return startOfMonth(key);
+  if (bucket === "quarter") {
+    const month = Number(key.slice(5, 7));
+    const first = month - ((month - 1) % 3);
+    return `${key.slice(0, 4)}-${String(first).padStart(2, "0")}-01`;
+  }
+  const day = dayNumber(key);
+  // 1970-01-01 was a Thursday: day 4 is the first Monday.
+  return dayKey(day - ((((day - 4) % 7) + 7) % 7));
+}
+
+/** The first day after the bucket that starts on `start`. */
+export function bucketAfter(start: string, bucket: TimelineBucket): string {
+  if (bucket === "month") return addMonths(start, 1);
+  if (bucket === "quarter") return addMonths(start, 3);
+  return dayKey(dayNumber(start) + 7);
+}
+
+/**
+ * A running number for the bucket that starts on `start`: neighbouring
+ * buckets differ by one, so a difference counts the buckets between.
+ */
+export function bucketIndex(start: string, bucket: TimelineBucket): number {
+  if (bucket === "week") return Math.floor((dayNumber(start) - 4) / 7);
+  const months = Number(start.slice(0, 4)) * 12 + Number(start.slice(5, 7)) - 1;
+  return bucket === "quarter" ? Math.floor(months / 3) : months;
 }
 
 /** Every `YYYY-MM-01` from the month of `from` through the month of `to`. */
@@ -147,4 +181,28 @@ export function formatAtPrecision(
   if (precision === "YEAR") return key.slice(0, 4);
   if (precision === "MONTH") return formatMonthYearShort(key, intlLocale);
   return formatDayMonthYear(key, intlLocale);
+}
+
+/**
+ * How a series bucket reads: "Januar 2026" for a month, otherwise its first
+ * and last day for the caller's "{from} to {to}" ("Jan to März 2026",
+ * "5. Jan. to 11. Jan. 2026").
+ */
+export function formatBucket(
+  start: string,
+  bucket: TimelineBucket,
+  intlLocale: string,
+): string | { from: string; to: string } {
+  if (bucket === "month") return formatMonthYear(start, intlLocale);
+  const last = dayKey(dayNumber(bucketAfter(start, bucket)) - 1);
+  if (bucket === "quarter") {
+    return {
+      from: formatMonthShort(start, intlLocale),
+      to: formatMonthYearShort(last, intlLocale),
+    };
+  }
+  return {
+    from: formatDayMonth(start, intlLocale),
+    to: formatDayMonthYear(last, intlLocale),
+  };
 }

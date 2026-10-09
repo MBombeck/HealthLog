@@ -12280,7 +12280,6 @@
   "timeline": {
     "title": "Chronologie",
     "subtitle": "Ce qui s’est passé et quand, à côté de vos valeurs.",
-    "legend": "Superposé signifie simultané, pas cause et effet.",
     "standing": "Permanent",
     "startMissing": "Date de début manquante",
     "openDay": "Ouvrir le {date}",
@@ -12402,7 +12401,10 @@
     },
     "legendSpan": "Période",
     "legendEvent": "Événement",
-    "legendMean": "Moyenne mensuelle",
+    "legendMeanQuarter": "Moyenne trimestrielle",
+    "legendMeanMonth": "Moyenne mensuelle",
+    "legendMeanWeek": "Moyenne hebdomadaire",
+    "legendThin": "Moins de 3 mesures",
     "today": "Aujourd’hui",
     "noDataYet": "Pas encore de données",
     "layers": "Calques",
@@ -12416,20 +12418,27 @@
       "description": "Les entrées datées apparaîtront ici dès qu’il y en aura."
     },
     "values": {
-      "menuLabel": "Jusqu’à trois valeurs",
+      "menuLabel": "Jusqu’à six valeurs",
       "none": "Aucune valeur",
       "noneInWindow": "Aucune valeur sur cette période",
       "series": {
         "BLOOD_PRESSURE_SYS": "Tension systolique",
         "BLOOD_PRESSURE_DIA": "Tension diastolique"
-      }
+      },
+      "noValue": "aucune valeur",
+      "bloodPressure": "Tension artérielle",
+      "readingsOne": "1 mesure",
+      "readingsFew": "moyenne de {count} mesures",
+      "readingsOther": "moyenne de {count} mesures"
     },
     "table": {
       "caption": "Entrées de la chronologie",
       "lane": "Piste",
       "entry": "Entrée",
       "start": "Début",
-      "end": "Fin"
+      "end": "Fin",
+      "seriesCaption": "Moyennes par période",
+      "period": "Période"
     },
     "selection": {
       "empty": "Aucune entrée ce mois-ci",

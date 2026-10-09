@@ -12280,7 +12280,6 @@
   "timeline": {
     "title": "Timeline",
     "subtitle": "What happened when, beside your values.",
-    "legend": "Stacked means at the same time, not cause and effect.",
     "standing": "Ongoing",
     "startMissing": "Start date missing",
     "openDay": "Open {date}",
@@ -12402,7 +12401,10 @@
     },
     "legendSpan": "Period",
     "legendEvent": "Event",
-    "legendMean": "Monthly mean",
+    "legendMeanQuarter": "Quarterly mean",
+    "legendMeanMonth": "Monthly mean",
+    "legendMeanWeek": "Weekly mean",
+    "legendThin": "Fewer than 3 readings",
     "today": "Today",
     "noDataYet": "No data yet",
     "layers": "Layers",
@@ -12416,20 +12418,27 @@
       "description": "Dated entries appear here as soon as there are some."
     },
     "values": {
-      "menuLabel": "Up to three values",
+      "menuLabel": "Up to six values",
       "none": "No values",
       "noneInWindow": "No values in this range",
       "series": {
         "BLOOD_PRESSURE_SYS": "Blood pressure sys.",
         "BLOOD_PRESSURE_DIA": "Blood pressure dia."
-      }
+      },
+      "noValue": "no value",
+      "bloodPressure": "Blood pressure",
+      "readingsOne": "1 reading",
+      "readingsFew": "mean of {count} readings",
+      "readingsOther": "mean of {count} readings"
     },
     "table": {
       "caption": "Timeline entries",
       "lane": "Lane",
       "entry": "Entry",
       "start": "Start",
-      "end": "End"
+      "end": "End",
+      "seriesCaption": "Value means by period",
+      "period": "Period"
     },
     "selection": {
       "empty": "No entries this month",

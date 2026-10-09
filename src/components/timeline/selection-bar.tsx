@@ -2,8 +2,10 @@
 
 /**
  * The bar under the chart (v1.42, #613): the selected month, every entry
- * that touches it as a chip (each one a way into its day), the month's
- * means of the chosen values, and "Open 3 Jan." for the selected day.
+ * that touches it as a chip (each one a way into its day), the means of the
+ * chosen values in the bucket that holds the selected day (with the readings
+ * behind each, and "no value" where there is none), and "Open 3 Jan." for
+ * the selected day.
  *
  * It is also where a label the chart had to leave out is read in full, and
  * where each keyboard step on the chart is announced (`aria-live`).
@@ -23,45 +25,31 @@ import {
   startOfMonth,
 } from "./timeline-dates";
 import { itemsInMonth } from "./timeline-geometry";
-import { laneDotStyle } from "./timeline-chart";
-import { formatMonthMeans } from "./series-format";
+import { bucketText, laneDotStyle } from "./timeline-chart";
+import { bucketValues, formatLabelledMeans } from "./series-format";
 
 export interface SelectionBarProps {
   timeline: TimelineResponse;
   selected: string;
   today: string;
+  seriesLabel: (key: string) => string;
   onOpenDay: (date: string) => void;
   onEditLifeEvent?: (id: string) => void;
-}
-
-/** The month means of each series for the month of `date`. */
-export function monthMeans(
-  series: TimelineResponse["series"],
-  date: string,
-): Array<{ key: string; mean: number; unit: string | null }> {
-  const month = monthOf(date);
-  const out: Array<{ key: string; mean: number; unit: string | null }> = [];
-  for (const s of series) {
-    const inMonth = s.points.filter((p) => monthOf(p.t) === month);
-    if (inMonth.length === 0) continue;
-    const mean = inMonth.reduce((sum, p) => sum + p.mean, 0) / inMonth.length;
-    out.push({ key: s.key, mean, unit: s.unit });
-  }
-  return out;
 }
 
 export function SelectionBar({
   timeline,
   selected,
   today,
+  seriesLabel,
   onOpenDay,
   onEditLifeEvent,
 }: SelectionBarProps) {
-  const { t, locale } = useTranslations();
+  const { t, tCount, locale } = useTranslations();
   const fmt = useFormatters();
   const intl = resolveIntlLocale(locale);
   const entries = itemsInMonth(timeline.lanes, selected, today);
-  const means = monthMeans(timeline.series, selected);
+  const means = bucketValues(timeline.series, timeline.bucket, selected);
   const monthFrom = startOfMonth(selected);
   const monthTo = endOfMonth(selected);
 
@@ -134,10 +122,23 @@ export function SelectionBar({
           </button>
         );
       })}
-      {means.length > 0 && (
-        <span className="text-muted-foreground text-xs tabular-nums">
+      {means.values.length > 0 && (
+        <span
+          className="text-muted-foreground text-xs tabular-nums"
+          data-slot="timeline-selection-means"
+          data-bucket={means.start}
+        >
           {t("timeline.selection.mean", {
-            values: formatMonthMeans(means, fmt),
+            values: `${bucketText(means.start, timeline.bucket, intl, t)}: ${formatLabelledMeans(
+              means.values,
+              fmt,
+              {
+                label: seriesLabel,
+                bloodPressure: t("timeline.values.bloodPressure"),
+                noValue: t("timeline.values.noValue"),
+                readings: (n) => tCount("timeline.values.readings", n),
+              },
+            )}`,
           })}
         </span>
       )}

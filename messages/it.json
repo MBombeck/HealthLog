@@ -12280,7 +12280,6 @@
   "timeline": {
     "title": "Cronologia",
     "subtitle": "Cosa è successo e quando, accanto ai tuoi valori.",
-    "legend": "Uno sotto l’altro significa nello stesso momento, non causa ed effetto.",
     "standing": "Permanente",
     "startMissing": "Data di inizio mancante",
     "openDay": "Apri {date}",
@@ -12402,7 +12401,10 @@
     },
     "legendSpan": "Periodo",
     "legendEvent": "Evento",
-    "legendMean": "Media mensile",
+    "legendMeanQuarter": "Media trimestrale",
+    "legendMeanMonth": "Media mensile",
+    "legendMeanWeek": "Media settimanale",
+    "legendThin": "Meno di 3 misurazioni",
     "today": "Oggi",
     "noDataYet": "Ancora nessun dato",
     "layers": "Livelli",
@@ -12416,20 +12418,27 @@
       "description": "Le voci con data compariranno qui appena ce ne saranno."
     },
     "values": {
-      "menuLabel": "Fino a tre valori",
+      "menuLabel": "Fino a sei valori",
       "none": "Nessun valore",
       "noneInWindow": "Nessun valore in questo periodo",
       "series": {
         "BLOOD_PRESSURE_SYS": "Pressione sistolica",
         "BLOOD_PRESSURE_DIA": "Pressione diastolica"
-      }
+      },
+      "noValue": "nessun valore",
+      "bloodPressure": "Pressione arteriosa",
+      "readingsOne": "1 misurazione",
+      "readingsFew": "media di {count} misurazioni",
+      "readingsOther": "media di {count} misurazioni"
     },
     "table": {
       "caption": "Voci della cronologia",
       "lane": "Corsia",
       "entry": "Voce",
       "start": "Inizio",
-      "end": "Fine"
+      "end": "Fine",
+      "seriesCaption": "Medie per periodo",
+      "period": "Periodo"
     },
     "selection": {
       "empty": "Nessuna voce in questo mese",
