@@ -23467,9 +23467,11 @@ paths:
         - in: query
           name: values
           schema:
-            description: Comma-separated value series to include, as `MeasurementType` names or `MOOD`.
+            description: Comma-separated value series to include, as `MeasurementType` names or `MOOD`, at most 6. More, or an
+              unknown name, answers 422.
             type: string
-          description: Comma-separated value series to include, as `MeasurementType` names or `MOOD`.
+          description: Comma-separated value series to include, as `MeasurementType` names or `MOOD`, at most 6. More, or an
+            unknown name, answers 422.
       responses:
         "200":
           description: The timeline for the requested zoom and window.
@@ -81541,6 +81543,14 @@ components:
           items:
             $ref: "#/components/schemas/TimelineStandingItem"
           description: "Things without a start: shown once as standing."
+        bucket:
+          type: string
+          enum:
+            - quarter
+            - month
+            - week
+          description: "The span every series point averages: `quarter` for a multi-year `all`, `month` for `year` and an `all`
+            under two years, `week` for `quarter`."
         series:
           type: array
           items:
@@ -81569,6 +81579,7 @@ components:
         - range
         - lanes
         - standing
+        - bucket
         - series
         - notable
       additionalProperties: false
@@ -81683,12 +81694,6 @@ components:
           anyOf:
             - type: string
             - type: "null"
-        granularity:
-          type: string
-          enum:
-            - month
-            - week
-            - day
         points:
           type: array
           items:
@@ -81696,17 +81701,25 @@ components:
             properties:
               t:
                 type: string
-                description: A local calendar date, `YYYY-MM-DD`.
+                description: The bucket's first day.
               mean:
                 type: number
+                description: The mean of the bucket's day values, each day weighing one (a cumulative type's days are its day totals, a
+                  pulse-like type's its hourly-mean day value).
+              count:
+                type: integer
+                minimum: 1
+                maximum: 9007199254740991
+                description: Readings behind the mean. Clients draw a point from fewer than three as thin.
             required:
               - t
               - mean
+              - count
             additionalProperties: false
+          description: Buckets with at least one reading, oldest first. A bucket without one is absent, never interpolated.
       required:
         - key
         - unit
-        - granularity
         - points
       additionalProperties: false
     TimelineReadinessEnvelope:

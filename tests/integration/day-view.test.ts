@@ -837,6 +837,125 @@ describe("timeline", () => {
     expect(byKey.values.status).toBe("empty");
     expect(inventory.verdict).toBe("thin");
   });
+
+  it("averages value series per bucket, counts the readings and leaves gaps out", async () => {
+    const db = getPrismaClient();
+    const owner = await makeUser("tl-values", { timeline: true });
+    const reading = (at: string, value: number) => ({
+      userId: owner.id,
+      type: "BLOOD_PRESSURE_SYS" as const,
+      value,
+      unit: "mmHg",
+      measuredAt: new Date(at),
+    });
+    await db.measurement.createMany({
+      data: [
+        // Two readings on one January day, one on another: three readings,
+        // two days, each day weighing one.
+        reading("2026-01-10T07:00:00.000Z", 120),
+        reading("2026-01-10T19:00:00.000Z", 130),
+        reading("2026-01-20T07:00:00.000Z", 135),
+        // Nothing in February.
+        reading("2026-03-05T07:00:00.000Z", 128),
+      ],
+    });
+    await signIn(owner.id);
+
+    const { GET } = await import("@/app/api/timeline/route");
+    const timeline = await json<import("@/lib/day/contract").TimelineResponse>(
+      await call(
+        GET as Handler,
+        "GET",
+        "/api/timeline?zoom=year&to=2026-03-31&values=BLOOD_PRESSURE_SYS",
+      ),
+    );
+    expect(timeline.bucket).toBe("month");
+    expect(timeline.series).toEqual([
+      {
+        key: "BLOOD_PRESSURE_SYS",
+        unit: "mmHg",
+        points: [
+          { t: "2026-01-01", mean: 130, count: 3 },
+          { t: "2026-03-01", mean: 128, count: 1 },
+        ],
+      },
+    ]);
+
+    const weekly = await json<import("@/lib/day/contract").TimelineResponse>(
+      await call(
+        GET as Handler,
+        "GET",
+        "/api/timeline?zoom=quarter&to=2026-03-31&values=BLOOD_PRESSURE_SYS",
+      ),
+    );
+    expect(weekly.bucket).toBe("week");
+    expect(weekly.series[0].points.map((p) => [p.t, p.count])).toEqual([
+      ["2026-01-05", 2],
+      ["2026-01-19", 1],
+      ["2026-03-02", 1],
+    ]);
+
+    const six =
+      "BLOOD_PRESSURE_SYS,BLOOD_PRESSURE_DIA,WEIGHT,PULSE,BODY_FAT,MOOD";
+    expect(
+      (await call(GET as Handler, "GET", `/api/timeline?values=${six}`)).status,
+    ).toBe(200);
+    expect(
+      (
+        await call(
+          GET as Handler,
+          "GET",
+          `/api/timeline?values=${six},BLOOD_GLUCOSE`,
+        )
+      ).status,
+    ).toBe(422);
+  });
+
+  it("averages quarters over the years, live before the fold window and rolled up after it", async () => {
+    const db = getPrismaClient();
+    const owner = await makeUser("tl-quarters", { timeline: true });
+    const reading = (at: string, value: number) => ({
+      userId: owner.id,
+      type: "WEIGHT" as const,
+      value,
+      unit: "kg",
+      measuredAt: new Date(at),
+    });
+    await db.measurement.createMany({
+      data: [
+        // Before the five-year fold window: read live.
+        reading("2018-02-10T07:00:00.000Z", 90),
+        reading("2018-03-10T07:00:00.000Z", 88),
+        // Inside it: read from the rollups. January has three days,
+        // February one; the quarter's mean weighs the four days alike.
+        reading("2024-01-10T07:00:00.000Z", 80),
+        reading("2024-01-11T07:00:00.000Z", 80),
+        reading("2024-01-12T07:00:00.000Z", 80),
+        reading("2024-02-10T07:00:00.000Z", 84),
+        // Nothing from April 2024 to March 2025.
+        reading("2025-05-10T07:00:00.000Z", 79),
+      ],
+    });
+    const { recomputeUserRollups } =
+      await import("@/lib/rollups/measurement-rollups");
+    await recomputeUserRollups(owner.id, {
+      types: ["WEIGHT"],
+      from: new Date("2018-01-01T00:00:00.000Z"),
+      to: new Date(),
+    });
+    await signIn(owner.id);
+
+    const { GET } = await import("@/app/api/timeline/route");
+    const timeline = await json<import("@/lib/day/contract").TimelineResponse>(
+      await call(GET as Handler, "GET", "/api/timeline?zoom=all&values=WEIGHT"),
+    );
+    expect(timeline.bucket).toBe("quarter");
+    expect(timeline.series[0].points).toEqual([
+      { t: "2018-01-01", mean: 89, count: 2 },
+      { t: "2024-01-01", mean: 81, count: 4 },
+      { t: "2025-04-01", mean: 79, count: 1 },
+    ]);
+  });
 });
 
 describe("performance smoke", () => {

@@ -213,6 +213,22 @@ export const TIMELINE_ZOOMS = ["all", "year", "quarter"] as const;
 export type TimelineZoom = (typeof TIMELINE_ZOOMS)[number];
 
 /**
+ * The span one value-series point averages. The server picks it per zoom
+ * (`timelineBucket` in `src/lib/timeline/load-timeline.ts`): quarters for a
+ * multi-year `all`, months for `year` and a short `all`, weeks for `quarter`.
+ */
+export const TIMELINE_BUCKETS = ["quarter", "month", "week"] as const;
+
+export type TimelineBucket = (typeof TIMELINE_BUCKETS)[number];
+
+/**
+ * The most value series one request may name. Each series is its own row
+ * under the lanes, drawn in neutral ink and labelled at the left, so the cap
+ * is the chart's height, not a palette: six rows add 360 px under the lanes.
+ */
+export const TIMELINE_MAX_SERIES = 6;
+
+/**
  * The lanes, top to bottom. An empty lane is not sent. Each lane a module
  * owns is a surface (`timeline-lane:<key>`) and disappears with it.
  *

@@ -30,6 +30,15 @@ import { collapseRollupRowsBySource } from "@/lib/rollups/measurement-read";
 /** Day key → the day's value, per type. */
 export type DailyStats = Map<MeasurementType, Map<string, number>>;
 
+/** A day's value with the readings behind it (the picked source's). */
+export interface DayCell {
+  value: number;
+  count: number;
+}
+
+/** Day key → the day's value and reading count, per type. */
+export type DailyCells = Map<MeasurementType, Map<string, DayCell>>;
+
 interface StatRow {
   type: MeasurementType;
   source: MeasurementSource;
@@ -60,7 +69,22 @@ export async function readLocalDailyStats(args: {
   tz: string;
   priorityJson: unknown;
 }): Promise<DailyStats> {
-  const out: DailyStats = new Map();
+  return valuesOnly(await readLocalDailyCells(args));
+}
+
+/**
+ * {@link readLocalDailyStats} with each day's reading count beside its
+ * value: the timeline marks a mean that rests on few readings.
+ */
+export async function readLocalDailyCells(args: {
+  userId: string;
+  types: readonly MeasurementType[];
+  from: Date;
+  to: Date;
+  tz: string;
+  priorityJson: unknown;
+}): Promise<DailyCells> {
+  const out: DailyCells = new Map();
   if (args.types.length === 0 || args.from >= args.to) return out;
   const hourlyTypes = args.types.filter((t) => HOURLY_MEAN_DAY_TYPES.has(t));
   // Every value is parameter-bound; the enum casts are literal SQL. The hour
@@ -87,7 +111,17 @@ export async function readLocalDailyStats(args: {
       AND "measured_at" < ${args.to}
     GROUP BY 1, 2, 3, 4
   `;
-  return foldDailyStats(rows, args.priorityJson);
+  return foldDailyCells(rows, args.priorityJson);
+}
+
+function valuesOnly(cells: DailyCells): DailyStats {
+  const out: DailyStats = new Map();
+  for (const [type, days] of cells) {
+    const perDay = new Map<string, number>();
+    for (const [day, cell] of days) perDay.set(day, cell.value);
+    out.set(type, perDay);
+  }
+  return out;
 }
 
 /**
@@ -99,6 +133,14 @@ export function foldDailyStats(
   rows: readonly StatRow[],
   priorityJson: unknown,
 ): DailyStats {
+  return valuesOnly(foldDailyCells(rows, priorityJson));
+}
+
+/** {@link foldDailyStats} with the picked source's reading count per day. */
+export function foldDailyCells(
+  rows: readonly StatRow[],
+  priorityJson: unknown,
+): DailyCells {
   // type → day → source → hour cells
   const nested = new Map<
     MeasurementType,
@@ -114,7 +156,7 @@ export function foldDailyStats(
     cells.push({ total: Number(row.total), count: Number(row.count) });
   }
 
-  const out: DailyStats = new Map();
+  const out: DailyCells = new Map();
   for (const [type, days] of nested) {
     const cumulative = isCumulativeDaySumType(type);
     const hourly = HOURLY_MEAN_DAY_TYPES.has(type);
@@ -141,9 +183,12 @@ export function foldDailyStats(
       }
     }
     const picked = collapseRollupRowsBySource(cells, type, priorityJson);
-    const perDay = new Map<string, number>();
+    const perDay = new Map<string, DayCell>();
     for (const cell of picked) {
-      perDay.set(dateOnlyKey(cell.bucketStart), cell.value);
+      perDay.set(dateOnlyKey(cell.bucketStart), {
+        value: cell.value,
+        count: cell.count,
+      });
     }
     out.set(type, perDay);
   }

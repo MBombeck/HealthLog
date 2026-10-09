@@ -18,6 +18,8 @@ import type { MeasurementType } from "@/generated/prisma/enums";
 import {
   DAY_NOTABLE_MAX_SPAN_DAYS,
   TIMELINE_LANE_KEYS,
+  TIMELINE_MAX_SERIES,
+  type TimelineBucket,
   type TimelineItem,
   type TimelineQuery,
   type TimelineResponse,
@@ -33,12 +35,8 @@ import {
   type StandingItem,
   type TimelineAccess,
 } from "@/lib/timeline/lanes";
-import {
-  loadTimelineSeries,
-  MOOD_SERIES_KEY,
-  type SeriesGranularity,
-} from "@/lib/timeline/series";
-import { shiftDateKey, userDayKey } from "@/lib/tz/format";
+import { loadTimelineSeries, MOOD_SERIES_KEY } from "@/lib/timeline/series";
+import { daysBetweenDateKeys, shiftDateKey, userDayKey } from "@/lib/tz/format";
 
 /** The series sent when the request names none. */
 export const DEFAULT_TIMELINE_SERIES: readonly MeasurementType[] = [
@@ -47,11 +45,27 @@ export const DEFAULT_TIMELINE_SERIES: readonly MeasurementType[] = [
   "WEIGHT",
 ];
 
-const ZOOM_GRANULARITY: Readonly<Record<TimelineZoom, SeriesGranularity>> = {
-  all: "month",
-  year: "week",
-  quarter: "day",
-};
+/** An `all` window longer than this many days averages quarters. */
+const QUARTER_BUCKET_MIN_DAYS = 2 * 365;
+
+/**
+ * The span one series point averages. A point per day or per week over
+ * years drew a line of fragments wherever readings came in bursts, so the
+ * bucket grows with the window: weeks in three months (thirteen points),
+ * months in a year (twelve), quarters once `all` reaches back more than two
+ * years. An `all` window shorter than that keeps months, so a young record
+ * does not shrink to a handful of quarters.
+ */
+export function timelineBucket(
+  zoom: TimelineZoom,
+  from: string,
+  to: string,
+): TimelineBucket {
+  if (zoom === "quarter") return "week";
+  if (zoom === "year") return "month";
+  const days = daysBetweenDateKeys(from, to);
+  return days > QUARTER_BUCKET_MIN_DAYS ? "quarter" : "month";
+}
 
 const ZOOM_DAYS: Readonly<Record<Exclude<TimelineZoom, "all">, number>> = {
   year: 365,
@@ -64,7 +78,8 @@ const MEASUREMENT_TYPE_SET: ReadonlySet<string> = new Set(
 
 /**
  * The series keys a `values` parameter names, or null when one is not a
- * series this API knows (the route answers 422).
+ * series this API knows or there are more than {@link TIMELINE_MAX_SERIES}
+ * (the route answers 422).
  */
 export function parseSeriesKeys(raw: string | undefined): string[] | null {
   if (raw === undefined) return [...DEFAULT_TIMELINE_SERIES];
@@ -76,7 +91,7 @@ export function parseSeriesKeys(raw: string | undefined): string[] | null {
         .filter((k) => k.length > 0),
     ),
   ];
-  if (keys.length > 8) return null;
+  if (keys.length > TIMELINE_MAX_SERIES) return null;
   for (const key of keys) {
     if (key !== MOOD_SERIES_KEY && !MEASUREMENT_TYPE_SET.has(key)) return null;
   }
@@ -158,6 +173,7 @@ export async function loadTimeline(args: {
     shiftDateKey(to, -(DAY_NOTABLE_MAX_SPAN_DAYS - 1)) > from
       ? shiftDateKey(to, -(DAY_NOTABLE_MAX_SPAN_DAYS - 1))
       : from;
+  const bucket = timelineBucket(query.zoom, from, to);
   const [series, notable] = await Promise.all([
     loadTimelineSeries({
       userId: recordId,
@@ -165,7 +181,7 @@ export async function loadTimeline(args: {
       from,
       to,
       tz,
-      granularity: ZOOM_GRANULARITY[query.zoom],
+      bucket,
       priorityJson,
       now,
     }),
@@ -187,6 +203,7 @@ export async function loadTimeline(args: {
     range: { from, to, dataFrom },
     lanes,
     standing,
+    bucket,
     series,
     notable: notable.map(({ date, kind }) => ({ date, kind })),
   };
