@@ -45,6 +45,11 @@ import { MEASUREMENT_TYPE_LABEL_KEYS } from "@/lib/measurements/type-label-keys"
 import type { ModuleKey } from "@/lib/modules/registry";
 
 import type { ChronicleGrouping } from "./chronicle-model";
+import {
+  TIMELINE_BLOOD_PRESSURE_SERIES_KEY,
+  TIMELINE_LEGEND_MEAN_KEY,
+  TIMELINE_ZOOM_LABEL_KEY,
+} from "./label-keys";
 import { LifeEventSheet } from "./life-event-sheet";
 import { ReadinessCard } from "./readiness-card";
 import {
@@ -284,7 +289,7 @@ export function TimelineView() {
   // "Dia") lean on a column header the chart does not have.
   const seriesLabel = (key: string) =>
     key === "BLOOD_PRESSURE_SYS" || key === "BLOOD_PRESSURE_DIA"
-      ? t(`timeline.values.series.${key}`)
+      ? t(TIMELINE_BLOOD_PRESSURE_SERIES_KEY[key])
       : key === "MOOD"
         ? t("timeline.readiness.lanes.mood")
         : t(MEASUREMENT_TYPE_LABEL_KEYS[key as MeasurementType] ?? key);
@@ -309,7 +314,7 @@ export function TimelineView() {
 
   const zoomOptions = TIMELINE_ZOOMS.map((z) => ({
     value: z,
-    label: t(`timeline.zoom.${z}`),
+    label: t(TIMELINE_ZOOM_LABEL_KEY[z]),
   }));
   const groupingOptions: Array<{ value: ChronicleGrouping; label: string }> = [
     { value: "year", label: t("timeline.chronicle.years") },
@@ -544,13 +549,6 @@ export function TimelineView() {
   );
 }
 
-const LEGEND_MEAN_KEY: Readonly<Record<TimelineBucket, string>> = {
-  quarter: "timeline.legendMeanQuarter",
-  month: "timeline.legendMeanMonth",
-  week: "timeline.legendMeanWeek",
-  day: "timeline.legendMeanDay",
-};
-
 function Legend({
   bucket,
   hasSeries,
@@ -586,7 +584,7 @@ function Legend({
             data-bucket={bucket}
           >
             <span className="bg-foreground h-0.5 w-4" aria-hidden="true" />
-            {t(LEGEND_MEAN_KEY[bucket])}
+            {t(TIMELINE_LEGEND_MEAN_KEY[bucket])}
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span

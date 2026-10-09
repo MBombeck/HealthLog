@@ -42,6 +42,7 @@ import {
   type ChronicleRails,
 } from "./chronicle-model";
 import { useItemWords } from "./item-words";
+import { TIMELINE_CHRONICLE_NOTABLE_KEY } from "./label-keys";
 import {
   formatAtPrecision,
   formatDayMonth,
@@ -182,7 +183,7 @@ export function TimelineChronicle({
   } {
     if (entry.kind === "notable") {
       return {
-        title: t(`timeline.chronicle.notable.${entry.notable}`),
+        title: t(TIMELINE_CHRONICLE_NOTABLE_KEY[entry.notable]),
         meta: t("timeline.chronicle.notableMeta"),
       };
     }

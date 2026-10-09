@@ -27,6 +27,11 @@ import { useTranslations } from "@/lib/i18n/context";
 import { isCalendarDateKey } from "@/lib/tz/date-only";
 import { cn } from "@/lib/utils";
 
+import {
+  TIMELINE_READINESS_LANE_KEY,
+  TIMELINE_READINESS_STATUS_KEY,
+  TIMELINE_READINESS_VERDICT_KEY,
+} from "./label-keys";
 import { formatMonthYear } from "./timeline-dates";
 import { orderedReadinessLanes, readinessTally } from "./readiness-model";
 
@@ -68,15 +73,7 @@ export function wordKey(
 }
 
 export function laneLabel(t: Translate, key: TimelineReadinessLane["key"]) {
-  if (
-    key === "values" ||
-    key === "mood" ||
-    key === "environment" ||
-    key === "life"
-  ) {
-    return t(`timeline.readiness.lanes.${key}`);
-  }
-  return t(`timeline.lanes.${key}`);
+  return t(TIMELINE_READINESS_LANE_KEY[key]);
 }
 
 const STATUS_ICON: Record<TimelineReadinessStatus, typeof CircleCheck> = {
@@ -119,7 +116,7 @@ export function VerdictMeter({
       </div>
       <p className="text-sm">
         <span className="font-semibold">
-          {t(`timeline.readiness.verdict.${readiness.verdict}`)}
+          {t(TIMELINE_READINESS_VERDICT_KEY[readiness.verdict])}
         </span>
         {readiness.verdict === "carries" && (
           <>
@@ -178,7 +175,7 @@ export function ReadinessInventory({
           >
             <Icon
               className={cn("mt-0.5 size-4", STATUS_CLASS[lane.status])}
-              aria-label={t(`timeline.readiness.status.${lane.status}`)}
+              aria-label={t(TIMELINE_READINESS_STATUS_KEY[lane.status])}
               role="img"
             />
             <div className="min-w-0">

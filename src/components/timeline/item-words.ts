@@ -17,6 +17,12 @@ import { encounterKindText } from "@/components/encounters/encounter-labels";
 import type { TimelineItem } from "@/lib/day/contract";
 import { useTranslations } from "@/lib/i18n/context";
 
+import {
+  DOCUMENT_KIND_KEY,
+  LIFE_EVENT_CATEGORY_KEY,
+  keyOf,
+} from "./label-keys";
+
 type Translate = (
   key: string,
   params?: Record<string, string | number>,
@@ -36,10 +42,14 @@ export interface ItemWords {
 
 export type ItemWordsFn = (item: TimelineItem) => ItemWords;
 
-/** The bundle's wording of `key`, or null when the bundle has none. */
-function known(t: Translate, key: string): string | null {
-  const value = t(key);
-  return value === key ? null : value;
+/** A code worded through `map`, or null for none or a code it lacks. */
+function worded<K extends string>(
+  t: Translate,
+  map: Readonly<Record<K, string>>,
+  code: string | null,
+): string | null {
+  const key = code === null ? undefined : keyOf(map, code);
+  return key ? t(key) : null;
 }
 
 const ENCOUNTER_KIND_CODES: ReadonlySet<string> = new Set([
@@ -70,7 +80,7 @@ export function makeItemWords(
       case "lifeEvent":
         return {
           label: item.label,
-          sub: item.sub ? known(t, `lifeEvents.category.${item.sub}`) : null,
+          sub: worded(t, LIFE_EVENT_CATEGORY_KEY, item.sub),
         };
       case "travel":
         return { label: t("day.travel"), sub: null };
@@ -102,7 +112,7 @@ export function makeItemWords(
       case "document":
         return {
           label: item.label,
-          sub: item.sub ? known(t, `documents.kind.${item.sub}`) : null,
+          sub: worded(t, DOCUMENT_KIND_KEY, item.sub),
         };
       default:
         // A dose, a dose change, a name: the record's own text.

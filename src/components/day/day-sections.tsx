@@ -32,6 +32,11 @@ import {
   type DayValue,
 } from "@/lib/day/contract";
 import { visitKindWords } from "@/components/timeline/item-words";
+import {
+  DOCUMENT_KIND_KEY,
+  LIFE_EVENT_CATEGORY_KEY,
+  keyOf,
+} from "@/components/timeline/label-keys";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { MOOD_LABEL_KEYS } from "@/lib/mood/labels";
 import { cn } from "@/lib/utils";
@@ -43,6 +48,15 @@ import {
   tileKeyOf,
   type DayValueTile,
 } from "./day-values-model";
+import {
+  ALLERGY_SEVERITY_KEY,
+  ASSESSMENT_BAND_KEY,
+  ASSESSMENT_INSTRUMENT_KEY,
+  CYCLE_FLOW_KEY,
+  DAY_NOTABLE_KEY,
+  ILLNESS_IMPACT_KEY,
+  WORKOUT_SPORT_KEY,
+} from "./label-keys";
 import { useDayValueFormat } from "./use-day-value-format";
 
 /**
@@ -113,7 +127,7 @@ export function useNotableText() {
         timeZone: "UTC",
       }).format(new Date(`${since}T12:00:00.000Z`));
     }
-    return t(`day.notable.${notable.kind}`, params);
+    return t(DAY_NOTABLE_KEY[notable.kind], params);
   };
 }
 
@@ -167,12 +181,6 @@ type Translate = (
   params?: Record<string, string | number>,
 ) => string;
 
-/** The bundle's wording of `key`, or null when the bundle has none. */
-function known(t: Translate, key: string): string | null {
-  const value = t(key);
-  return value === key ? null : value;
-}
-
 /**
  * The server sends what the record holds and leaves the words to the reader's
  * language: a cycle is titled "cycle" and a trip "travel", a mood entry
@@ -206,20 +214,20 @@ export function dayTitle(kind: string, title: string, t: Translate): string {
       return t("day.event.illnessResolved", { label: title });
     case "mood": {
       const key = MOOD_LABEL_KEYS[title];
-      return (key ? known(t, key) : null) ?? t("nav.mood");
+      return key ? t(key) : t("nav.mood");
     }
-    case "assessment":
-      return (
-        known(t, `mentalHealth.instrument.${title.toLowerCase()}`) ?? title
-      );
-    case "workout":
-      return known(t, `insights.workouts.sport.${title}`) ?? title;
+    case "assessment": {
+      const key = keyOf(ASSESSMENT_INSTRUMENT_KEY, title);
+      return key ? t(key) : title;
+    }
+    case "workout": {
+      const key = keyOf(WORKOUT_SPORT_KEY, title);
+      return key ? t(key) : title;
+    }
     default:
       return title;
   }
 }
-
-const FLOW_LEVELS = new Set(["NONE", "SPOTTING", "LIGHT", "MEDIUM", "HEAVY"]);
 
 /**
  * A row's second line. Where it is a code (a category, a kind, a severity, a
@@ -234,26 +242,32 @@ export function dayMeta(
   title = "",
 ): string | null {
   switch (kind) {
-    case "cycleDayLog":
-      return FLOW_LEVELS.has(meta)
-        ? `${t("cycle.flow.label")}: ${t(`cycle.flow.${meta}`)}`
-        : null;
-    case "lifeEvent":
-      return known(t, `lifeEvents.category.${meta}`);
+    case "cycleDayLog": {
+      const key = keyOf(CYCLE_FLOW_KEY, meta);
+      return key ? `${t("cycle.flow.label")}: ${t(key)}` : null;
+    }
+    case "lifeEvent": {
+      const key = keyOf(LIFE_EVENT_CATEGORY_KEY, meta);
+      return key ? t(key) : null;
+    }
     // The mood is the title; its score says the same thing again.
     case "mood":
       return null;
     case "assessment": {
       const [score, band] = meta.split(" ");
-      const bandText = band
-        ? known(t, `mentalHealth.band.${title}.${band}`)
+      const bands = keyOf(ASSESSMENT_INSTRUMENT_KEY, title)
+        ? ASSESSMENT_BAND_KEY[title as keyof typeof ASSESSMENT_BAND_KEY]
         : null;
+      const bandKey = bands && band ? keyOf(bands, band) : undefined;
+      const bandText = bandKey ? t(bandKey) : null;
       return [score, bandText].filter(Boolean).join(" · ") || null;
     }
     case "symptom":
       return t("symptoms.intensityPill", { value: meta });
-    case "allergyOnset":
-      return known(t, `records.allergies.severity.${meta}`);
+    case "allergyOnset": {
+      const key = keyOf(ALLERGY_SEVERITY_KEY, meta);
+      return key ? t(key) : null;
+    }
     case "visit":
     case "procedure":
       return meta === "PLANNED"
@@ -262,11 +276,13 @@ export function dayMeta(
     case "vaccination":
       return t("vaccinations.series.doseN", { position: meta });
     case "illnessDayLog": {
-      const impact = known(t, `illness.impact.${meta}`);
-      return impact ? t("illness.timeline.impact", { impact }) : null;
+      const key = keyOf(ILLNESS_IMPACT_KEY, meta);
+      return key ? t("illness.timeline.impact", { impact: t(key) }) : null;
     }
-    case "document":
-      return known(t, `documents.kind.${meta}`);
+    case "document": {
+      const key = keyOf(DOCUMENT_KIND_KEY, meta);
+      return key ? t(key) : null;
+    }
     default:
       return meta;
   }

@@ -52,6 +52,7 @@ import { resolveIntlLocale } from "@/lib/format-locale";
 import { useTranslations } from "@/lib/i18n/context";
 
 import { useItemWords, type ItemWordsFn } from "./item-words";
+import { TIMELINE_LANE_LABEL_KEY } from "./label-keys";
 import {
   bucketAfter,
   bucketStart,
@@ -423,7 +424,7 @@ function ChartBody({
               fontWeight={500}
               fill="var(--foreground)"
             >
-              {fitText(t(`timeline.lanes.${lane.key}`), scale.x0 - 30, 13)}
+              {fitText(t(TIMELINE_LANE_LABEL_KEY[lane.key]), scale.x0 - 30, 13)}
             </text>
             {lane.spans.map((span) => (
               <SpanMark
@@ -899,7 +900,7 @@ function TimelineTable({
       <tbody>
         {rows.map(({ lane, item }) => (
           <tr key={`${lane}-${item.id}`}>
-            <td>{t(`timeline.lanes.${lane}`)}</td>
+            <td>{t(TIMELINE_LANE_LABEL_KEY[lane])}</td>
             <td>
               {[
                 words(item).label,
