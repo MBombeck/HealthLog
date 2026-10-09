@@ -50,9 +50,11 @@ function templateCalls(): Map<string, number> {
 
 describe("template message keys", () => {
   it("finds the one sanctioned call, so the matcher is live", () => {
-    expect(
-      templateCalls().get("src/components/timeline/readiness-inventory.tsx"),
-    ).toBe(1);
+    const calls = templateCalls();
+    expect(calls.size).toBeGreaterThanOrEqual(1);
+    expect(calls.get("src/components/timeline/readiness-inventory.tsx")).toBe(
+      1,
+    );
   });
 
   it("are not used in the timeline or the day view", () => {
