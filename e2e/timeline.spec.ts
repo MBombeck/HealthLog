@@ -258,14 +258,22 @@ test("value lines: quarterly means, gaps kept, short ones bridged, up to six lin
     for (const stroke of marks) expect(stroke).toBe(colour);
   }
   // The menu marks each chosen line with the same colour.
-  await page.locator('[data-slot="timeline-values-trigger"]').click();
-  const dots = await page
-    .locator(
-      '[data-slot="timeline-values-option"][aria-checked="true"] [data-slot="timeline-values-dot"]',
-    )
-    .evaluateAll((els) =>
-      els.map((el) => getComputedStyle(el).backgroundColor),
-    );
+  const trigger = page.locator('[data-slot="timeline-values-trigger"]');
+  await expect(async () => {
+    if ((await trigger.getAttribute("data-state")) !== "open") {
+      await trigger.click();
+    }
+    await expect(trigger).toHaveAttribute("data-state", "open", {
+      timeout: 1_000,
+    });
+  }).toPass();
+  const chosenDots = page.locator(
+    '[data-slot="timeline-values-option"][aria-checked="true"] [data-slot="timeline-values-dot"]',
+  );
+  await expect(chosenDots).toHaveCount(6);
+  const dots = await chosenDots.evaluateAll((els) =>
+    els.map((el) => getComputedStyle(el).backgroundColor),
+  );
   expect(new Set(dots)).toEqual(new Set(colours.map((c) => c.colour)));
   await page.keyboard.press("Escape");
 });
