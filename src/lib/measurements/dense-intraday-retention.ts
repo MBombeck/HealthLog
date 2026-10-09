@@ -53,6 +53,7 @@
 import {
   holdAccountAgainstRestore,
   holdAccountFoldLock,
+  FOLD_TRANSACTION_OPTIONS,
 } from "@/lib/export/restore-lock";
 import type {
   MeasurementSource,
@@ -80,10 +81,13 @@ import { localDayWindow } from "@/lib/tz/local-day";
 import {
   absorbIntoFold,
   foldConstituentHorizon,
-  loadFoldLeftovers,
+  foldWindowVerdict,
+  hasFoldRepairRun,
+  loadFoldTombstones,
   loadLiveSamples,
   meanOf,
   type FoldConstituent,
+  type FoldLeftover,
 } from "./fold-constituents";
 
 /**
@@ -709,12 +713,14 @@ export async function runDenseIntradayRetention(
             // time.
             await holdAccountFoldLock(tx, userId);
             // An hour that already has a live hourly row is never re-minted
-            // from the samples in hand. Inside the horizon, with fold
-            // leftovers for the hour, it gets the mean over every sample of
+            // from the samples in hand. Inside the horizon, before the fold
+            // repair has been through the account, with fold leftovers for
+            // the hour and no tombstone in it that may be a person's deletion
+            // (`fold-constituents.ts`), it gets the mean over every sample of
             // the hour (live + leftovers) and the live samples are kept as
             // leftovers (`absorbIntoFold`), so the repair and any later pass
             // compute the same mean. Otherwise the stored mean was taken from
-            // samples that are no longer all in the table, and the hour is
+            // samples that are not provably all in the table, and the hour is
             // left exactly as it is, its live samples included: a mean of
             // part of the hour must not replace it (see `refoldStoredDay` in
             // `consolidate-daily-mean.ts`).
@@ -737,9 +743,16 @@ export async function runDenseIntradayRetention(
             );
             // Read under the fold lock: the repair may have taken some of the
             // samples meanwhile.
-            let leftovers: FoldConstituent[] = [];
+            let leftovers: FoldLeftover[] = [];
+            let ambiguous: FoldConstituent[] = [];
             let liveIds = new Set(sourceRowIds);
-            if (liveHourly.size > 0 && withinHorizon) {
+            // After the repair the purge may have removed leftovers inside
+            // the horizon; read under the fold lock, which the purge takes.
+            const refoldable =
+              liveHourly.size > 0 &&
+              withinHorizon &&
+              !(await hasFoldRepairRun(tx, userId));
+            if (refoldable) {
               const window = {
                 userId,
                 type,
@@ -750,17 +763,24 @@ export async function runDenseIntradayRetention(
               liveIds = new Set(
                 (await loadLiveSamples(tx, window)).map((row) => row.id),
               );
-              leftovers = await loadFoldLeftovers(tx, {
+              const tombstones = await loadFoldTombstones(tx, {
                 ...window,
                 foldedAfterMs,
               });
+              leftovers = tombstones.leftovers;
+              ambiguous = tombstones.ambiguous;
             }
-            const leftoversByHour = new Map<number, FoldConstituent[]>();
+            const leftoversByHour = new Map<number, FoldLeftover[]>();
             for (const row of leftovers) {
               const hour = hourOfDayForUserTz(row.measuredAt, tz);
               const slot = leftoversByHour.get(hour) ?? [];
               slot.push(row);
               leftoversByHour.set(hour, slot);
+            }
+            const ambiguousByHour = new Map<number, number>();
+            for (const row of ambiguous) {
+              const hour = hourOfDayForUserTz(row.measuredAt, tz);
+              ambiguousByHour.set(hour, (ambiguousByHour.get(hour) ?? 0) + 1);
             }
 
             const slots: HourlySlot[] = [];
@@ -770,13 +790,22 @@ export async function runDenseIntradayRetention(
               const slotId = hourlyStatsExternalId(hkIdentifier, dateKey, hour);
               let value = meanBucketValue(hourRows);
               if (liveHourly.has(slotId)) {
-                const earlier = leftoversByHour.get(hour) ?? [];
-                if (!withinHorizon || earlier.length === 0) {
+                if (!refoldable) {
                   hoursLeftAsStored += 1;
                   continue;
                 }
+                const earlier = leftoversByHour.get(hour) ?? [];
                 const live = hourRows.filter((row) => liveIds.has(row.id));
                 if (live.length === 0) continue;
+                const verdict = foldWindowVerdict({
+                  leftovers: earlier,
+                  ambiguous: ambiguousByHour.get(hour) ?? 0,
+                  live: live.length,
+                });
+                if (verdict !== "recompute") {
+                  hoursLeftAsStored += 1;
+                  continue;
+                }
                 value = meanOf([
                   ...live.map((row) => row.value),
                   ...earlier.map((row) => row.value),
@@ -852,12 +881,14 @@ export async function runDenseIntradayRetention(
             // The day's raw samples, for the derived resting figure: the rows
             // in hand for a day folded here for the first time; for a day
             // folded before, the live rows plus the leftovers, but only when
-            // every hour of it could be recomputed.
+            // every hour of it could be recomputed and no tombstone of the
+            // day may be a person's deletion.
             if (!dayAlreadyFolded && liveHourly.size === 0) {
               wholeDay = dayRows;
             } else if (
-              withinHorizon &&
+              refoldable &&
               leftovers.length > 0 &&
+              ambiguous.length === 0 &&
               hoursLeftAsStored === 0
             ) {
               wholeDay = [
@@ -865,7 +896,7 @@ export async function runDenseIntradayRetention(
                 ...leftovers,
               ];
             }
-          });
+          }, FOLD_TRANSACTION_OPTIONS);
           return {
             removed,
             retiredDaily,

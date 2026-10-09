@@ -143,8 +143,10 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   // with the mean over every sample, and those it corrected. Counts only.
   "means_checked",
   "means_corrected",
-  // Windows before the horizon it left as stored, and live samples it took
-  // into a checked mean.
+  // Windows it left as stored because a tombstone in them may be a person's
+  // deletion, windows before the horizon it left as stored, and live samples
+  // it took into a checked mean.
+  "means_left_ambiguous",
   "means_samples_absorbed",
   "means_skipped_beyond_horizon",
   "mean_rows_soft_deleted",

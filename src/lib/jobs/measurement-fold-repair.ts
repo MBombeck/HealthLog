@@ -26,20 +26,25 @@
  * Per account, per folded type and source, day by day in `measuredAt` order,
  * over the local days that ended before the fold boundary (`foldBoundary`; a
  * day the fold has not finished is the regular fold's to complete):
- *   - the scan finds the days with fold leftovers (`fold-constituents.ts`; a
- *     person's deletions are left out); a day without any has nothing to
- *     repair and is passed over;
+ *   - the scan finds the days with a tombstone that is certainly a fold's
+ *     (`isCertainFoldLeftover`); a day without one has nothing to repair and
+ *     is passed over;
  *   - inside the day's transaction, under the fold lock, the day's live raw
- *     samples and its fold leftovers are read again;
- *   - for each hour (dense) or the day (mean) with a live `stats:` row and at
- *     least one fold leftover, the mean over every sample is compared with the
- *     stored value, and only a different value is written. A window without
- *     leftovers is left alone: its samples in hand are not all of it;
+ *     samples and its tombstones are read again and classified
+ *     (`classifyFoldTombstones`);
+ *   - for each hour (dense) or the day (mean) with a live `stats:` row, the
+ *     mean over every sample is compared with the stored value, and only a
+ *     different value is written, but only for a window the record shows was
+ *     taken in two parts (`foldWindowVerdict`). A window one run took whole
+ *     already holds the mean of all of it; a window with a tombstone that may
+ *     be a person's deletion, or without any leftover, is left as it is,
+ *     because its samples in hand are not provably all of it;
  *   - the live samples of every window it checked are soft-deleted as fold
  *     leftovers (`absorbIntoFold`): they are now part of the stored mean, and
  *     a second run then computes the same mean from the same samples;
  *   - for an Apple Health heart-rate day, the derived resting row is
- *     recomputed from the whole day the same way, when one exists.
+ *     recomputed from the whole day the same way, when one exists and the day
+ *     holds no ambiguous tombstone.
  *
  * Concurrency. The day transaction takes the restore lock and then the fold
  * lock (`restore-lock.ts`), which the daily-mean consolidation and the dense
@@ -60,8 +65,9 @@
  * purge run as it finishes.
  *
  * Reported per run: one outcome per account (`reportJobRun`) and, per type,
- * how many windows were checked, corrected and left beyond the horizon, and
- * how many live samples were taken into a checked mean. Counts only, never a
+ * how many windows were checked, corrected, left beyond the horizon and left
+ * because a tombstone in them may be a person's deletion, and how many live
+ * samples were taken into a checked mean. Counts only, never a
  * value.
  *
  * The queue name MUST be registered in `allQueues` in
@@ -79,6 +85,7 @@ import type {
 import { prisma as defaultPrisma } from "@/lib/db";
 import {
   AccountRestoreInProgressError,
+  FOLD_TRANSACTION_OPTIONS,
   holdAccountAgainstRestore,
   holdAccountFoldLock,
 } from "@/lib/export/restore-lock";
@@ -119,8 +126,9 @@ import {
 import {
   absorbIntoFold,
   foldConstituentHorizon,
-  isFoldLeftover,
-  loadFoldLeftovers,
+  foldWindowVerdict,
+  isCertainFoldLeftover,
+  loadFoldTombstones,
   loadLiveSamples,
   meanDiffers,
   meanOf,
@@ -187,7 +195,10 @@ export interface MeasurementFoldRepairPayload {
 
 /** Per-type counts. Never a value. */
 export interface FoldRepairTypeCounts {
-  /** Hours or days with a live `stats:` row and fold leftovers. */
+  /**
+   * Hours or days with a live `stats:` row that the record shows were taken
+   * in two parts, and so were recomputed.
+   */
   windowsChecked: number;
   /** Of those, the ones whose stored mean was corrected. */
   windowsCorrected: number;
@@ -198,6 +209,11 @@ export interface FoldRepairTypeCounts {
    * they are (see the header).
    */
   windowsSkippedBeyondHorizon: number;
+  /**
+   * Hours or days left as stored because a tombstone in them may be a
+   * person's deletion (see `fold-constituents.ts`).
+   */
+  windowsLeftAmbiguous: number;
   /** Live samples taken into a checked mean and kept as fold leftovers. */
   samplesAbsorbed: number;
 }
@@ -209,6 +225,7 @@ export function emptyFoldRepairCounts(): FoldRepairTypeCounts {
     windowsCorrected: 0,
     restingCorrected: 0,
     windowsSkippedBeyondHorizon: 0,
+    windowsLeftAmbiguous: 0,
     samplesAbsorbed: 0,
   };
 }
@@ -341,7 +358,7 @@ export async function repairFoldedMeans(
         return result;
       }
       const leftovers = dayRows.filter((row) =>
-        isFoldLeftover(row, step.foldedAfterMs),
+        isCertainFoldLeftover(row, step.foldedAfterMs),
       );
       if (leftovers.length === 0) continue;
       const window = localDayWindow(dateKey, tz);
@@ -428,6 +445,7 @@ async function repairDay(
   let corrected = 0;
   let resting = 0;
   let absorbed = 0;
+  let ambiguousWindows = 0;
   await prisma.$transaction(async (tx) => {
     // First, before any reading is touched: see `restore-lock.ts`.
     await holdAccountAgainstRestore(tx, userId);
@@ -441,32 +459,43 @@ async function repairDay(
       to: window.dayEnd,
     };
     const live = await loadLiveSamples(tx, span);
-    const leftovers = await loadFoldLeftovers(tx, {
+    const { leftovers, ambiguous } = await loadFoldTombstones(tx, {
       ...span,
       foldedAfterMs: step.foldedAfterMs,
     });
     if (leftovers.length === 0) return;
 
-    // Window id → its samples. Only a window with a fold leftover is
-    // checked: one without has no record of what its stored mean was taken
-    // from beyond the rows in hand.
+    // Window id → its samples, and what the record says about how it was
+    // folded (`foldWindowVerdict`).
     const byWindow = new Map<
       string,
-      { values: number[]; liveIds: string[]; leftovers: number }
+      {
+        values: number[];
+        liveIds: string[];
+        leftovers: { deletedAt: Date }[];
+        ambiguous: number;
+      }
     >();
-    const add = (row: FoldConstituent, isLive: boolean) => {
+    const entryFor = (row: { measuredAt: Date }) => {
       const id = windowId(step, hk, dateKey, row, tz);
       let entry = byWindow.get(id);
       if (!entry) {
-        entry = { values: [], liveIds: [], leftovers: 0 };
+        entry = { values: [], liveIds: [], leftovers: [], ambiguous: 0 };
         byWindow.set(id, entry);
       }
-      entry.values.push(row.value);
-      if (isLive) entry.liveIds.push(row.id);
-      else entry.leftovers += 1;
+      return entry;
     };
-    for (const row of live) add(row, true);
-    for (const row of leftovers) add(row, false);
+    for (const row of live) {
+      const entry = entryFor(row);
+      entry.values.push(row.value);
+      entry.liveIds.push(row.id);
+    }
+    for (const row of leftovers) {
+      const entry = entryFor(row);
+      entry.values.push(row.value);
+      entry.leftovers.push(row);
+    }
+    for (const row of ambiguous) entryFor(row).ambiguous += 1;
 
     const stored = await tx.measurement.findMany({
       where: {
@@ -475,7 +504,7 @@ async function repairDay(
         source: step.source,
         externalId: {
           in: [...byWindow.entries()]
-            .filter(([, entry]) => entry.leftovers > 0)
+            .filter(([, entry]) => entry.leftovers.length > 0)
             .map(([id]) => id),
         },
         deletedAt: null,
@@ -486,6 +515,13 @@ async function repairDay(
     for (const row of stored) {
       const entry = row.externalId ? byWindow.get(row.externalId) : undefined;
       if (!entry) continue;
+      const verdict = foldWindowVerdict({
+        leftovers: entry.leftovers,
+        ambiguous: entry.ambiguous,
+        live: entry.liveIds.length,
+      });
+      if (verdict === "ambiguous") ambiguousWindows += 1;
+      if (verdict !== "recompute") continue;
       checked += 1;
       takeIds.push(...entry.liveIds);
       if (entry.liveIds.length > 0 && step.grain === "day") {
@@ -502,7 +538,9 @@ async function repairDay(
     }
     absorbed = await absorbIntoFold(tx, takeIds);
 
-    if (restingExternalId) {
+    // The resting figure is taken from the whole day, so only a day with no
+    // tombstone that may be a person's deletion has all of it in hand.
+    if (restingExternalId && ambiguous.length === 0) {
       const restingRow = await tx.measurement.findFirst({
         where: {
           userId,
@@ -515,7 +553,7 @@ async function repairDay(
       });
       const derived = restingRow
         ? deriveDailyRestingFromPulse(
-            [...live, ...leftovers].map((row) => ({
+            [...live, ...leftovers].map((row: FoldConstituent) => ({
               id: row.id,
               type: step.type,
               value: row.value,
@@ -532,10 +570,11 @@ async function repairDay(
         resting += 1;
       }
     }
-  });
+  }, FOLD_TRANSACTION_OPTIONS);
   counts.windowsChecked += checked;
   counts.windowsCorrected += corrected;
   counts.restingCorrected += resting;
+  counts.windowsLeftAmbiguous += ambiguousWindows;
   counts.samplesAbsorbed += absorbed;
 
   // A daily mean is the only live row of its day once its samples are taken
@@ -583,6 +622,7 @@ export async function handleMeasurementFoldRepair(
       corrected: 0,
       resting: 0,
       skipped: 0,
+      ambiguous: 0,
       absorbed: 0,
       completed: 0,
     };
@@ -617,11 +657,13 @@ export async function handleMeasurementFoldRepair(
         sum.windowsCorrected += counts.windowsCorrected;
         sum.restingCorrected += counts.restingCorrected;
         sum.windowsSkippedBeyondHorizon += counts.windowsSkippedBeyondHorizon;
+        sum.windowsLeftAmbiguous += counts.windowsLeftAmbiguous;
         sum.samplesAbsorbed += counts.samplesAbsorbed;
         totals.checked += counts.windowsChecked;
         totals.corrected += counts.windowsCorrected;
         totals.resting += counts.restingCorrected;
         totals.skipped += counts.windowsSkippedBeyondHorizon;
+        totals.ambiguous += counts.windowsLeftAmbiguous;
         totals.absorbed += counts.samplesAbsorbed;
       }
 
@@ -683,6 +725,7 @@ export async function handleMeasurementFoldRepair(
     evt.addMeta("fold_repair_means_corrected", totals.corrected);
     evt.addMeta("fold_repair_resting_corrected", totals.resting);
     evt.addMeta("fold_repair_skipped_beyond_horizon", totals.skipped);
+    evt.addMeta("fold_repair_left_ambiguous", totals.ambiguous);
     evt.addMeta("fold_repair_samples_absorbed", totals.absorbed);
 
     return jobDone({
@@ -690,6 +733,7 @@ export async function handleMeasurementFoldRepair(
       means_corrected: totals.corrected,
       resting_corrected: totals.resting,
       means_skipped_beyond_horizon: totals.skipped,
+      means_left_ambiguous: totals.ambiguous,
       means_samples_absorbed: totals.absorbed,
       accounts_completed: totals.completed,
       duration_ms: Date.now() - startedAt,

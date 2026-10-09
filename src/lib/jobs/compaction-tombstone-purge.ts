@@ -41,12 +41,18 @@
  * part of the day (`measurement-fold-repair.ts`). The purge therefore leaves
  * an account alone until the repair has been through it (a
  * `MeasurementFoldRepair` row), and the boot sends no run while no account
- * has one. The repair queues a run as it finishes an account.
+ * has one. The repair queues a run as it finishes an account. It deletes
+ * class-A tombstones whatever their age, so from then on the leftovers inside
+ * the horizon of `fold-constituents.ts` are no longer all there: the folds'
+ * re-fold of a stored window reads the marker and leaves such an account's
+ * means as stored, and each account's delete takes the fold lock so it never
+ * lands between a re-fold's reads.
  */
 import { createHash } from "node:crypto";
 import type { Job } from "pg-boss";
 
 import type { MeasurementType, PrismaClient } from "@/generated/prisma/client";
+import { holdAccountFoldLock } from "@/lib/export/restore-lock";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { jobBudget } from "@/lib/jobs/job-budget";
 import { jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
@@ -243,7 +249,12 @@ export async function purgeCompactionTombstones(
       }
       return ready.splice(0, take);
     },
-    deleteIds: async (tx, ids) => {
+    deleteIds: async (tx, ids, userId) => {
+      // A re-fold reads an account's live samples and its leftovers under the
+      // fold lock, so it never sees the leftovers half gone; it reads the
+      // repair marker under the same lock and stays off them once the repair
+      // has run (`fold-constituents.ts`).
+      await holdAccountFoldLock(tx, userId);
       // Re-checked at delete time: a row a restore wrote back, or one a
       // person resurrected since the scan, is not a tombstone any more.
       const result = await tx.measurement.deleteMany({

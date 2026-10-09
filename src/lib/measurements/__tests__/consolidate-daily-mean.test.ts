@@ -115,6 +115,8 @@ describe("consolidateDailyMean — drain flow (mocked Prisma)", () => {
         findFirst: txFindFirst,
         findMany: txFindMany,
       },
+      // The fold repair has not been through the account.
+      measurementFoldRepair: { findUnique: vi.fn().mockResolvedValue(null) },
     };
     return {
       mock: {
@@ -308,6 +310,8 @@ describe("consolidateDailyMean — canonical-slot collision (second unique index
         findFirst: txFindFirst,
         findMany: txFindMany,
       },
+      // The fold repair has not been through the account.
+      measurementFoldRepair: { findUnique: vi.fn().mockResolvedValue(null) },
     };
     return {
       mock: {
