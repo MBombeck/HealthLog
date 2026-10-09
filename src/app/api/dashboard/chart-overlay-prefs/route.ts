@@ -97,39 +97,41 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     return returnAllZodIssues(parsed.error, 422);
   }
 
-  // Read-modify-write inside a Serializable transaction so two
-  // concurrent toggles (e.g. user opens two tabs and flips overlays
-  // on different charts) can't drop one another's update by reading
-  // the same layout snapshot and clobbering each other on write.
+  // Read-modify-write under a row lock, so two concurrent toggles (two
+  // tabs, two charts flipped in quick succession) can neither drop one
+  // another's update nor fail. `FOR UPDATE` queues every writer for this
+  // account behind the one holding the row, and the read happens through
+  // the same `tx`, after the lock, so it sees the previous writer's commit.
+  // A Serializable transaction used to guard this instead: it kept the
+  // updates from clobbering each other by aborting all but one of them
+  // with a serialization failure, which surfaced as a 500.
   // Resolver normalises legacy / missing fields, so layouts saved
   // before v1.4.18 pick up the new field with default-empty prefs
   // without a one-off migration.
-  await prisma.$transaction(
-    async (tx) => {
-      const row = await tx.user.findUnique({
-        where: { id: user.id },
-        select: { dashboardWidgetsJson: true },
-      });
+  await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM users WHERE id = ${user.id} FOR UPDATE`;
+    const row = await tx.user.findUnique({
+      where: { id: user.id },
+      select: { dashboardWidgetsJson: true },
+    });
 
-      const current = resolveDashboardLayout(row?.dashboardWidgetsJson);
-      const next: DashboardLayout = {
-        ...current,
-        chartOverlayPrefs: {
-          ...(current.chartOverlayPrefs ?? {}),
-          [parsed.data.chartKey]: parsed.data.prefs,
-        },
-      };
-      const normalized = serializeDashboardLayout(next);
+    const current = resolveDashboardLayout(row?.dashboardWidgetsJson);
+    const next: DashboardLayout = {
+      ...current,
+      chartOverlayPrefs: {
+        ...(current.chartOverlayPrefs ?? {}),
+        [parsed.data.chartKey]: parsed.data.prefs,
+      },
+    };
+    const normalized = serializeDashboardLayout(next);
 
-      await tx.user.update({
-        where: { id: user.id },
-        data: {
-          dashboardWidgetsJson: toJson(normalized),
-        },
-      });
-    },
-    { isolationLevel: "Serializable" },
-  );
+    await tx.user.update({
+      where: { id: user.id },
+      data: {
+        dashboardWidgetsJson: toJson(normalized),
+      },
+    });
+  });
 
   // The partial-update path mutates the same `User.dashboardWidgetsJson`
   // blob the `/api/dashboard/widgets` GET reads from. Bust the cache so
