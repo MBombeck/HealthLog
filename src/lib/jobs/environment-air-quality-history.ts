@@ -16,8 +16,16 @@
  * ceiling stopped it, it sends its own follow-up half a minute later. A run
  * the budget stopped sends none: the next nightly discovery resumes it, which
  * is what spreads a long history over several days. The module gate and the
- * air-quality switches are re-read on every run, so switching either off
- * ends the chain.
+ * air-quality switches are re-read before every range, so switching either
+ * off ends the run and the chain.
+ *
+ * A run the feed refused a request in (429, 5xx, network) ends with status
+ * `error`: it reports a failed job and sends no follow-up, and the sends
+ * carry `retryLimit: 0`, so pg-boss does not retry it straight into the
+ * same refusal either. The next nightly discovery tries again.
+ *
+ * The follow-up carries the days with entries the run read
+ * (`entryDays`), so a chain scans the entry tables once.
  *
  * The queue name MUST be registered in `allQueues` in
  * `src/lib/jobs/reminder/register-maintenance.ts`, or the sends silently
@@ -37,7 +45,9 @@ import {
 import { isAirQualityOperatorDisabled } from "@/lib/environment/open-meteo-air-quality";
 import {
   readAirQualityHistoryState,
+  readEntryDaysSnapshot,
   runAirQualityHistory,
+  type EntryDaysSnapshot,
 } from "@/lib/environment/air-quality-history";
 import { workerLog } from "./reminder/shared";
 
@@ -59,7 +69,15 @@ export interface EnvironmentAqHistoryPayload {
   /** Absent on the discovery tick. */
   userId?: string;
   continuation?: number;
+  /** The previous run's entry days, on a follow-up only. */
+  entryDays?: EntryDaysSnapshot;
 }
+
+/**
+ * No pg-boss retry: a run fails when the feed refused it, and an immediate
+ * retry would only ask the same feed again. The next discovery is the retry.
+ */
+const AQ_HISTORY_SEND_OPTIONS = { retryLimit: 0 } as const;
 
 function singletonKey(userId: string): string {
   return `environment-aq-history:${userId}`;
@@ -80,6 +98,7 @@ export async function enqueueAirQualityHistory(
     ENVIRONMENT_AQ_HISTORY_QUEUE,
     { userId } satisfies EnvironmentAqHistoryPayload,
     {
+      ...AQ_HISTORY_SEND_OPTIONS,
       singletonKey: singletonKey(userId),
       ...(startAfterSeconds > 0 ? { startAfter: startAfterSeconds } : {}),
     },
@@ -149,6 +168,7 @@ export async function discoverAirQualityHistory(
       ENVIRONMENT_AQ_HISTORY_QUEUE,
       { userId: candidate.id } satisfies EnvironmentAqHistoryPayload,
       {
+        ...AQ_HISTORY_SEND_OPTIONS,
         singletonKey: singletonKey(candidate.id),
         ...(startAfterSeconds > 0 ? { startAfter: startAfterSeconds } : {}),
       },
@@ -203,7 +223,9 @@ export async function handleEnvironmentAqHistory(
     return jobDone({ skipped: "environment_module_disabled" });
   }
 
-  const result = await runAirQualityHistory(userId);
+  const result = await runAirQualityHistory(userId, {
+    entryDays: readEntryDaysSnapshot(payload.entryDays),
+  });
   const continuation = payload.continuation ?? 0;
   let continued = false;
   if (
@@ -216,8 +238,10 @@ export async function handleEnvironmentAqHistory(
       {
         userId,
         continuation: continuation + 1,
+        ...(result.entryDays ? { entryDays: result.entryDays } : {}),
       } satisfies EnvironmentAqHistoryPayload,
       {
+        ...AQ_HISTORY_SEND_OPTIONS,
         singletonKey: singletonKey(userId),
         startAfter: AQ_HISTORY_CONTINUATION_DELAY_SECONDS,
       },
@@ -228,13 +252,18 @@ export async function handleEnvironmentAqHistory(
     "info",
     `[environment-aq-history] user=${userId} status=${result.status} filled=${result.filled} done=${result.done}/${result.total} fetches=${result.fetches}${continued ? " continued" : ""}`,
   );
-  // Every range failed at the feed: say so, so the failing-jobs card sees a
+  // The feed refused a request: say so, so the failing-jobs card sees a
   // feed that keeps refusing. A budget stop is not a failure: nothing was
   // sent past the ceiling, and the next discovery resumes where it stopped.
   if (result.status === "error") {
-    return jobFailed("air-quality history: every range failed", undefined, {
-      fetches: result.fetches,
-    });
+    return jobFailed(
+      "air-quality history: the feed refused a request",
+      undefined,
+      {
+        fetches: result.fetches,
+        days_stored: result.filled,
+      },
+    );
   }
   return jobDone({
     outcome: result.status,

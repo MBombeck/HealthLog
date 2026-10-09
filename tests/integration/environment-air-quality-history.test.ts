@@ -21,8 +21,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   AIR_QUALITY_HISTORY_ACCOUNT_DAY_CALLS,
+  AIR_QUALITY_HISTORY_CEILING,
   runAirQualityHistory,
 } from "@/lib/environment/air-quality-history";
+import { reserveOpenMeteoCalls } from "@/lib/environment/request-budget";
 import { openLocation, sealLocation } from "@/lib/environment/location-cipher";
 import { handleEnvironmentAqHistory } from "@/lib/jobs/environment-air-quality-history";
 import { getPrismaClient, truncateAllTables } from "./setup";
@@ -49,8 +51,19 @@ function daysBetween(start: string, end: string): string[] {
   return out;
 }
 
+interface StubOptions {
+  /** HTTP status the archive answers with instead of data. */
+  archiveStatus?: number;
+  /** HTTP status the air-quality API answers with instead of data. */
+  airStatus?: number;
+  /** Days the archive leaves out of its answer. */
+  omitArchiveDays?: readonly string[];
+  /** Runs before every air-quality answer. */
+  onAir?: () => Promise<void>;
+}
+
 /** Answers both feeds with a full day of values for every requested day. */
-function openMeteoStub() {
+function openMeteoStub(opts: StubOptions = {}) {
   return vi.fn(async (input: unknown) => {
     const url = new URL(String(input));
     const days = daysBetween(
@@ -58,6 +71,8 @@ function openMeteoStub() {
       url.searchParams.get("end_date")!,
     );
     if (url.pathname === "/v1/air-quality") {
+      await opts.onAir?.();
+      if (opts.airStatus) return new Response("", { status: opts.airStatus });
       const variables = url.searchParams.get("hourly")!.split(",");
       const time = days.flatMap((d) =>
         Array.from(
@@ -69,11 +84,15 @@ function openMeteoStub() {
       for (const v of variables) hourly[v] = time.map(() => 12);
       return Response.json({ hourly });
     }
-    const daily: Record<string, unknown> = { time: days };
-    for (const field of url.searchParams.get("daily")!.split(",")) {
-      daily[field] = days.map(() => 5);
+    if (opts.archiveStatus) {
+      return new Response("", { status: opts.archiveStatus });
     }
-    const time = days.flatMap((d) =>
+    const answered = days.filter((d) => !opts.omitArchiveDays?.includes(d));
+    const daily: Record<string, unknown> = { time: answered };
+    for (const field of url.searchParams.get("daily")!.split(",")) {
+      daily[field] = answered.map(() => 5);
+    }
+    const time = answered.flatMap((d) =>
       Array.from(
         { length: 24 },
         (_, h) => `${d}T${String(h).padStart(2, "0")}:00`,
@@ -192,6 +211,22 @@ afterEach(() => {
 
 function requests() {
   return fetchSpy.mock.calls.map(([input]) => new URL(String(input)));
+}
+
+function useStub(opts: StubOptions) {
+  fetchSpy = openMeteoStub(opts);
+  vi.stubGlobal("fetch", fetchSpy);
+}
+
+/** `[path, start_date]` of every request sent, in order. */
+function sentRanges() {
+  return requests().map((u) => [u.pathname, u.searchParams.get("start_date")]);
+}
+
+async function rowOn(day: string) {
+  return getPrismaClient().environmentContext.findUnique({
+    where: { userId_date: { userId: OWNER, date: day } },
+  });
 }
 
 describe("air-quality history backfill", () => {
@@ -364,5 +399,191 @@ describe("air-quality history backfill", () => {
     sends.length = 0;
     await handleEnvironmentAqHistory(boss as never, {});
     expect(sends).toEqual([]);
+  });
+});
+
+describe("air-quality history: placing, failing and stopping", () => {
+  it("places no day at a home stored without an effective date, as the nightly fetch does", async () => {
+    await getPrismaClient().user.update({
+      where: { id: OWNER },
+      data: { homeSince: null },
+    });
+    const result = await runAirQualityHistory(OWNER, { now: NOW });
+    // The two 2020 trip days, the 2024 trip day, the day with a row and the
+    // day already done; the home day without a row is not placed anywhere.
+    expect(result).toMatchObject({ status: "complete", total: 5, done: 5 });
+    expect(await rowOn("2025-09-10")).toBeNull();
+    expect(sentRanges().map(([, start]) => start)).not.toContain("2025-09-10");
+  });
+
+  it("stops at the first refused archive request and sends no air-quality request for it", async () => {
+    useStub({ archiveStatus: 503 });
+    const result = await runAirQualityHistory(OWNER, { now: NOW });
+    expect(result).toMatchObject({ status: "error", filled: 0, fetches: 1 });
+    expect(sentRanges()).toEqual([["/v1/archive", "2025-09-10"]]);
+  });
+
+  it("stops at the first refused air-quality request and keeps the weather it already paid for", async () => {
+    useStub({ airStatus: 429 });
+    const result = await runAirQualityHistory(OWNER, { now: NOW });
+    expect(result).toMatchObject({ status: "error", filled: 0, fetches: 2 });
+    expect(sentRanges()).toEqual([
+      ["/v1/archive", "2025-09-10"],
+      ["/v1/air-quality", "2025-09-10"],
+    ]);
+    // The weather row is stored, without air quality.
+    expect(await rowOn("2025-09-10")).toMatchObject({
+      tempMax: 5,
+      pm25Mean: null,
+      aqFetchedAt: null,
+    });
+
+    // The next run asks for that day's air quality only.
+    useStub({});
+    const next = await runAirQualityHistory(OWNER, { now: NOW });
+    expect(next.status).toBe("complete");
+    expect(sentRanges().filter(([, start]) => start === "2025-09-10")).toEqual([
+      ["/v1/air-quality", "2025-09-10"],
+    ]);
+    expect(await rowOn("2025-09-10")).toMatchObject({
+      tempMax: 5,
+      pm25Mean: 12,
+    });
+  });
+
+  it("sends no follow-up and no retry after a refused request", async () => {
+    useStub({ archiveStatus: 503 });
+    const sends: Array<{ data: unknown; options: unknown }> = [];
+    const boss = {
+      send: vi.fn(async (_name: string, data: unknown, options: unknown) => {
+        sends.push({ data, options });
+        return "job-id";
+      }),
+    };
+    const outcome = await handleEnvironmentAqHistory(boss as never, {
+      userId: OWNER,
+    });
+    expect(outcome.ok).toBe(false);
+    expect(sends).toEqual([]);
+  });
+
+  it("creates no row for a day the archive answer leaves out", async () => {
+    useStub({ omitArchiveDays: ["2020-03-05"] });
+    const result = await runAirQualityHistory(OWNER, { now: NOW });
+    expect(result).toMatchObject({ status: "progress", remaining: 1 });
+    expect(await rowOn("2020-03-05")).toBeNull();
+    expect(await rowOn("2020-03-01")).toMatchObject({ pm25Mean: 12 });
+  });
+
+  it.each([
+    [
+      "the account's air quality",
+      () =>
+        getPrismaClient()
+          .user.update({
+            where: { id: OWNER },
+            data: { environmentAirQualityEnabled: false },
+          })
+          .then(() => undefined),
+    ],
+    [
+      "the environment module",
+      () =>
+        getPrismaClient()
+          .user.update({
+            where: { id: OWNER },
+            data: { modulePreferencesJson: { environment: false } },
+          })
+          .then(() => undefined),
+    ],
+    [
+      "the operator switch",
+      async () => {
+        vi.stubEnv("ENVIRONMENT_AIR_QUALITY_DISABLED", "true");
+      },
+    ],
+  ])("stops between two ranges once %s is switched off", async (_, off) => {
+    let first = true;
+    useStub({
+      onAir: async () => {
+        if (first) await off();
+        first = false;
+      },
+    });
+    const result = await runAirQualityHistory(OWNER, { now: NOW });
+    expect(result.status).toBe("inactive");
+    expect(
+      requests().filter((u) => u.pathname === "/v1/air-quality"),
+    ).toHaveLength(1);
+  });
+
+  it("holds the history's ceiling under concurrent reservations", async () => {
+    const prisma = getPrismaClient();
+    const key = `open-meteo-budget:account:${OWNER}:day`;
+    await prisma.rateLimit.create({
+      data: {
+        key,
+        count: (AIR_QUALITY_HISTORY_ACCOUNT_DAY_CALLS - 1) * 100,
+        resetAt: new Date(Date.now() + 3_600_000),
+      },
+    });
+    const admitted = await Promise.all(
+      Array.from({ length: 6 }, () =>
+        reserveOpenMeteoCalls(0.5, OWNER, AIR_QUALITY_HISTORY_CEILING),
+      ),
+    );
+    expect(admitted.filter(Boolean)).toHaveLength(2);
+    const bucket = await prisma.rateLimit.findUniqueOrThrow({ where: { key } });
+    expect(bucket.count).toBe(AIR_QUALITY_HISTORY_ACCOUNT_DAY_CALLS * 100);
+  });
+
+  it("reads the days with entries once per chain and hands them to the follow-up", async () => {
+    // Nine more home days, each more than two weeks apart: more ranges than
+    // one run works through, so the run sends a follow-up.
+    for (let i = 0; i < 9; i++) {
+      await measurementOn(
+        new Date(Date.parse("2025-01-10T00:00:00Z") + i * 20 * 86_400_000)
+          .toISOString()
+          .slice(0, 10),
+      );
+    }
+    const sends: Array<{ data: Record<string, unknown>; options: unknown }> =
+      [];
+    const boss = {
+      send: vi.fn(
+        async (
+          _name: string,
+          data: Record<string, unknown>,
+          options: unknown,
+        ) => {
+          sends.push({ data, options });
+          return "job-id";
+        },
+      ),
+    };
+    const outcome = await handleEnvironmentAqHistory(boss as never, {
+      userId: OWNER,
+    });
+    expect(outcome.ok).toBe(true);
+    expect(sends).toHaveLength(1);
+    const followUp = sends[0]!.data as {
+      userId: string;
+      continuation: number;
+      entryDays: { timezone: string; cutoff: string; days: string[] };
+    };
+    expect(followUp.entryDays.timezone).toBe("Europe/Berlin");
+    // A failed run is not retried straight into the same refusal.
+    expect(sends[0]!.options).toMatchObject({ retryLimit: 0 });
+    expect(followUp.entryDays.days).toContain("2025-01-10");
+
+    // An entry added after the chain read its days is left to the next
+    // chain: the follow-up does not scan the entry tables again.
+    await measurementOn("2025-11-20");
+    fetchSpy.mockClear();
+    await handleEnvironmentAqHistory(boss as never, followUp);
+    expect(await rowOn("2025-11-20")).toBeNull();
+    // A fresh chain reads it.
+    const fresh = await runAirQualityHistory(OWNER);
+    expect(fresh.entryDays!.days).toContain("2025-11-20");
   });
 });

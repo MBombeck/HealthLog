@@ -115,15 +115,53 @@ export function admitWeight(
 }
 
 /**
+ * A lower ceiling a caller holds itself to inside the budget: a share of each
+ * instance window, and a number of calls inside the account's daily share.
+ * The air-quality history backfill uses one so the nightly fetch and
+ * on-demand requests keep their room. The ceiling is checked against
+ * everything the windows hold, not only against the caller's own calls, and
+ * the request is charged to the windows as usual.
+ */
+export interface BudgetCeiling {
+  /** Share of each instance window the request may fill up to (0..1). */
+  instanceShare: number;
+  /** Calls the account's daily window may hold after the request. */
+  accountDayCalls: number;
+}
+
+/**
+ * The windows with their limits lowered to `ceiling`. Only the limits
+ * change, so the buckets written are the same as without a ceiling. Pure;
+ * exported for tests.
+ */
+export function windowsUnderCeiling(
+  windows: readonly BudgetWindow[],
+  ceiling: BudgetCeiling | undefined,
+): readonly BudgetWindow[] {
+  if (!ceiling) return windows;
+  return windows.map((w) => ({
+    ...w,
+    limit:
+      w.name === "account-day"
+        ? Math.min(w.limit, ceiling.accountDayCalls)
+        : w.limit * ceiling.instanceShare,
+  }));
+}
+
+/**
  * Ask the budget for one request of `weight` calls. Returns true and charges
  * every window when it fits, false (charging nothing) when any window is
  * full. With `accountId`, the account's own daily share is checked and
  * charged as well (`OPEN_METEO_ACCOUNT_DAY_SHARE`); requests made for no
  * particular account (the geocoder) are bound by the instance windows only.
+ * With `ceiling`, the request is admitted only under that lower ceiling, and
+ * the check runs under the same lock as the charge, so two processes cannot
+ * both read room that only one of them gets.
  */
 export async function reserveOpenMeteoCalls(
   weight: number,
   accountId?: string,
+  ceiling?: BudgetCeiling,
 ): Promise<boolean> {
   const weightCenti = Math.max(1, Math.ceil(weight * CENTI));
   const windows: readonly BudgetWindow[] = accountId
@@ -150,7 +188,12 @@ export async function reserveOpenMeteoCalls(
       const name = nameOfKey.get(row.key);
       if (name) buckets.set(name, { count: row.count, resetAt: row.resetAt });
     }
-    const decision = admitWeight(buckets, weightCenti, new Date(), windows);
+    const decision = admitWeight(
+      buckets,
+      weightCenti,
+      new Date(),
+      windowsUnderCeiling(windows, ceiling),
+    );
     if (!decision.admitted) return false;
     for (const [name, bucket] of decision.next) {
       const key = keyOf(name);
@@ -170,40 +213,4 @@ export class OpenMeteoBudgetExhaustedError extends Error {
     super("open-meteo request budget exhausted");
     this.name = "OpenMeteoBudgetExhaustedError";
   }
-}
-
-/** Calls already charged to each live window, by window name. */
-export type BudgetUsage = Partial<Record<BudgetWindow["name"], number>>;
-
-/**
- * Read how much of each window is in use, in calls, without charging
- * anything. A window never written or already reset reads as absent (zero).
- * With `accountId` the account's daily share is read as well. Used by the
- * air-quality history backfill, which holds itself under a ceiling of its own
- * so the nightly fetch and on-demand requests keep their room.
- */
-export async function readOpenMeteoBudgetUsage(
-  accountId?: string,
-  now: Date = new Date(),
-): Promise<BudgetUsage> {
-  const keys = new Map<string, BudgetWindow["name"]>(
-    OPEN_METEO_BUDGET_WINDOWS.map((w) => [
-      `${BUCKET_PREFIX}:${w.name}`,
-      w.name,
-    ]),
-  );
-  if (accountId) {
-    keys.set(`${BUCKET_PREFIX}:account:${accountId}:day`, "account-day");
-  }
-  const rows = await prisma.rateLimit.findMany({
-    where: { key: { in: [...keys.keys()] } },
-    select: { key: true, count: true, resetAt: true },
-  });
-  const usage: BudgetUsage = {};
-  for (const row of rows) {
-    const name = keys.get(row.key);
-    if (!name || row.resetAt.getTime() <= now.getTime()) continue;
-    usage[name] = row.count / CENTI;
-  }
-  return usage;
 }
