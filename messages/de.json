@@ -2851,6 +2851,7 @@
       "errorCredentialExpired": "Deine Verbindung zum KI-Anbieter ist abgelaufen. Stelle sie in den Einstellungen wieder her, damit der Coach weiterläuft.",
       "tagline": "Persönlicher Gesundheitscoach, auf deine Daten gestützt.",
       "newChat": "Neuer Chat",
+      "newConversation": "Neue Unterhaltung",
       "docScope": {
         "badge": "Dokument",
         "chattingAbout": "Chat über: {title}",
@@ -3092,21 +3093,7 @@
         "driver": "{note}"
       },
       "scope": {
-        "prefix": "Der Coach ist schon bei {metric}",
-        "tap": "Zum Fragen tippen",
-        "question": "Erkläre mir diese Kennzahl — worauf sollte ich achten?"
-      },
-      "seeded": {
-        "prefix": "Heute einen Blick wert: {signal}",
-        "signal": {
-          "readiness": "Bereitschaft",
-          "recovery": "Erholung"
-        },
-        "question": {
-          "readiness": "Meine Bereitschaft ist heute auffällig — woran liegt das?",
-          "recovery": "Meine Erholung hat sich verändert — was steckt dahinter?"
-        },
-        "dismiss": "Ausblenden"
+        "prefix": "Der Coach ist schon bei {metric}"
       },
       "settings": "Einstellungen",
       "history": {
@@ -8371,9 +8358,6 @@
       "enabledToast": "Proaktive Coach-Hinweise aktiviert.",
       "disabledToast": "Proaktive Coach-Hinweise deaktiviert.",
       "saveError": "Speichern fehlgeschlagen. Bitte später erneut versuchen.",
-      "suggestionsLabel": "Beispielvorschläge",
-      "suggestionsDesc": "Zeigt auf dem Coach-Bildschirm gelegentlich eine fertige Beispielfrage.",
-      "suggestionsAria": "Beispiel-Coach-Vorschläge umschalten",
       "aiComposedLabel": "Den Coach den Anstoß formulieren lassen",
       "aiComposedDesc": "Wenn ein Anbieter verfügbar ist, formuliert das Modell den proaktiven Anstoß statt der festen Vorlage. Standardmäßig aus.",
       "aiComposedAria": "KI-formulierten proaktiven Anstoß umschalten"

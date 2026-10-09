@@ -2851,6 +2851,7 @@
       "errorCredentialExpired": "AI 제공자 연결이 만료됐어요. 코치를 계속 쓰려면 설정에서 다시 연결해 주세요.",
       "tagline": "내 데이터에 기반한 개인 건강 코치.",
       "newChat": "새 대화",
+      "newConversation": "새 대화",
       "docScope": {
         "badge": "문서",
         "chattingAbout": "대화 중인 문서: {title}",
@@ -3092,21 +3093,7 @@
         "driver": "{note}"
       },
       "scope": {
-        "prefix": "코치가 이미 보고 있어요: {metric}",
-        "tap": "탭해서 물어보기",
-        "question": "이 지표를 설명해 주세요 — 눈여겨볼 게 있나요?"
-      },
-      "seeded": {
-        "prefix": "오늘 살펴볼 만한 것: {signal}",
-        "signal": {
-          "readiness": "준비도",
-          "recovery": "회복"
-        },
-        "question": {
-          "readiness": "오늘 준비도가 평소와 달라요 — 무엇 때문일까요?",
-          "recovery": "회복 상태가 달라졌어요 — 이유가 뭘까요?"
-        },
-        "dismiss": "닫기"
+        "prefix": "코치가 이미 보고 있어요: {metric}"
       },
       "settings": "설정",
       "history": {
@@ -8371,9 +8358,6 @@
       "enabledToast": "능동 코치 알림을 켰어요.",
       "disabledToast": "능동 코치 알림을 껐어요.",
       "saveError": "저장하지 못했어요. 나중에 다시 시도해 주세요.",
-      "suggestionsLabel": "예시 질문",
-      "suggestionsDesc": "코치 화면에 미리 준비된 예시 질문을 가끔 보여줘요.",
-      "suggestionsAria": "코치 예시 질문 켜고 끄기",
       "aiComposedLabel": "코치가 알림 문구 작성",
       "aiComposedDesc": "제공자를 쓸 수 있으면 고정 템플릿 대신 모델이 알림 문구를 써요. 기본값은 꺼짐이에요.",
       "aiComposedAria": "AI가 쓴 능동 알림 켜고 끄기"

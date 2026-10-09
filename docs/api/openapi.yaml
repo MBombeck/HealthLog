@@ -11624,30 +11624,6 @@ paths:
         "403": *a11
         "422": *a4
         "429": *a5
-  /api/insights/coach/seeded-question:
-    get:
-      tags:
-        - Insights
-      summary: Today's suggested Coach opener
-      description: "Resolves today's single most notable derived wellness signal into a tappable opener for the Coach's
-        blank-chat hero, using the same confidence-gated detector the daily briefing uses. The selection happens
-        SERVER-side and the client renders it rather than recomputing. `signal: null` is the ordinary answer and means
-        the hero keeps its neutral greeting — never a fabricated opener. Two different causes produce that null and are
-        indistinguishable on the wire: nothing crossed the notability gate, or the account has turned proactive
-        suggestions off, in which case the detector does not run at all. The opener exists only to open the Coach, so it
-        is served only while the `coach` AI capability is available; otherwise the answer is the same neutral `signal:
-        null` and `ai` says why. Never refused for an AI reason. Shared analytics-read budget. Cookie or Bearer auth;
-        not delegable."
-      responses:
-        "200":
-          description: The opener, or the neutral null.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CoachSeededQuestionEnvelope"
-        "401": *a1
-        "422": *a4
-        "429": *a5
   /api/insights/narrative:
     get:
       tags:
@@ -27376,8 +27352,6 @@ components:
               enum:
                 - weekly
                 - biweekly
-            ambientSuggestions:
-              type: boolean
             nudgeAiComposed:
               type: boolean
         measurementReminder:
@@ -60734,57 +60708,6 @@ components:
       description: The two server-authoritative lines a metric sub-page renders above its chart. Pure compute over the
         baseline and correlation engines — no provider call, no cache table — so web and native decode the same resolved
         DTO.
-    CoachSeededQuestionEnvelope:
-      type: object
-      properties:
-        data:
-          $ref: "#/components/schemas/CoachSeededQuestion"
-        error:
-          type: "null"
-        meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
-      required:
-        - data
-        - error
-      additionalProperties: false
-    CoachSeededQuestion:
-      type: object
-      properties:
-        signal:
-          anyOf:
-            - type: object
-              properties:
-                sourceMetric:
-                  type: string
-                  description: Sentinel id the client keys its localised copy on (`readiness` / `recovery`).
-                score:
-                  type: number
-                  description: The latest 0..100 score.
-                band:
-                  type: string
-                  description: "`yellow` or `red`. Green never surfaces — a good day is not notable."
-              required:
-                - sourceMetric
-                - score
-                - band
-              additionalProperties: false
-            - type: "null"
-          description: Null whenever nothing crossed the detector's confidence and notability gate, AND whenever the account has
-            turned proactive suggestions off, AND whenever the `coach` capability is unavailable (then `ai` says why) —
-            all mean the hero keeps its neutral greeting rather than showing a fabricated opener.
-        ai:
-          description: The `coach` capability the opener exists for.
-          $ref: "#/components/schemas/AiCapabilityState"
-      required:
-        - signal
-        - ai
-      additionalProperties: false
-      description: Today's single most notable derived wellness signal, resolved server-side into a tappable opener for the
-        Coach's blank-chat hero. The client renders the resolved DTO and never recomputes the selection.
     NarrativeEnvelope:
       type: object
       properties:

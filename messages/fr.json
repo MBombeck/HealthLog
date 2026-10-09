@@ -2851,6 +2851,7 @@
       "errorCredentialExpired": "Ta connexion au fournisseur d'IA a expiré. Reconnecte-la dans les Réglages pour que le Coach continue de fonctionner.",
       "tagline": "Coach personnel de santé, ancré sur tes données.",
       "newChat": "Nouvelle conversation",
+      "newConversation": "Nouvelle conversation",
       "docScope": {
         "badge": "Document",
         "chattingAbout": "Discussion sur : {title}",
@@ -3092,21 +3093,7 @@
         "driver": "{note}"
       },
       "scope": {
-        "prefix": "Le Coach est déjà sur {metric}",
-        "tap": "Touche pour demander",
-        "question": "Explique-moi cette mesure — y a-t-il quelque chose à surveiller ?"
-      },
-      "seeded": {
-        "prefix": "À regarder aujourd'hui : {signal}",
-        "signal": {
-          "readiness": "disponibilité",
-          "recovery": "récupération"
-        },
-        "question": {
-          "readiness": "Ma disponibilité est inhabituelle aujourd'hui — qu'est-ce qui l'explique ?",
-          "recovery": "Ma récupération a changé — qu'est-ce qui se cache derrière ?"
-        },
-        "dismiss": "Ignorer"
+        "prefix": "Le Coach est déjà sur {metric}"
       },
       "settings": "Paramètres",
       "history": {
@@ -8371,9 +8358,6 @@
       "enabledToast": "Rappels proactifs du Coach activés.",
       "disabledToast": "Rappels proactifs du Coach désactivés.",
       "saveError": "Impossible d'enregistrer. Veuillez réessayer plus tard.",
-      "suggestionsLabel": "Suggestions d'exemples",
-      "suggestionsDesc": "Affiche de temps en temps une question d'exemple prête à l'emploi sur l'écran du Coach.",
-      "suggestionsAria": "Activer ou désactiver les suggestions d'exemples du Coach",
       "aiComposedLabel": "Laisser le Coach rédiger le message",
       "aiComposedDesc": "Quand un fournisseur est disponible, le message proactif est rédigé par le modèle plutôt que par le modèle de texte fixe. Désactivé par défaut.",
       "aiComposedAria": "Activer ou désactiver le message proactif rédigé par l'IA"

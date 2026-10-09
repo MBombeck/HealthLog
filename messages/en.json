@@ -2851,6 +2851,7 @@
       "errorCredentialExpired": "Your AI provider connection has expired. Reconnect it in Settings to keep the Coach running.",
       "tagline": "Personal health coach, grounded in your data.",
       "newChat": "New chat",
+      "newConversation": "New conversation",
       "docScope": {
         "badge": "Document",
         "chattingAbout": "Chatting about: {title}",
@@ -3092,21 +3093,7 @@
         "driver": "{note}"
       },
       "scope": {
-        "prefix": "The Coach is already on {metric}",
-        "tap": "Tap to ask",
-        "question": "Walk me through this metric — anything I should watch?"
-      },
-      "seeded": {
-        "prefix": "Worth a look today: {signal}",
-        "signal": {
-          "readiness": "readiness",
-          "recovery": "recovery"
-        },
-        "question": {
-          "readiness": "My readiness is off today — what's driving it?",
-          "recovery": "My recovery shifted — what's behind it?"
-        },
-        "dismiss": "Dismiss"
+        "prefix": "The Coach is already on {metric}"
       },
       "settings": "Settings",
       "history": {
@@ -8371,9 +8358,6 @@
       "enabledToast": "Proactive Coach nudges enabled.",
       "disabledToast": "Proactive Coach nudges disabled.",
       "saveError": "Could not save. Please try again later.",
-      "suggestionsLabel": "Example suggestions",
-      "suggestionsDesc": "Show the occasional ready-made example question on the Coach screen.",
-      "suggestionsAria": "Toggle example Coach suggestions",
       "aiComposedLabel": "Let the Coach phrase the nudge",
       "aiComposedDesc": "When a provider is available, the proactive nudge is written by the model instead of the fixed template. Off by default.",
       "aiComposedAria": "Toggle AI-composed proactive nudge"

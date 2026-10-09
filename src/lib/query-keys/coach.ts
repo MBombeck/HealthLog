@@ -77,12 +77,6 @@ export const coachKeys = {
       "trail",
     ] as const,
   /**
-   * v1.21.2 (A3) — today's most notable derived signal, resolved into the
-   * Coach hero's pre-seeded relevance opener
-   * (`GET /api/insights/coach/seeded-question`).
-   */
-  coachSeededQuestion: () => ["coach-seeded-question"] as const,
-  /**
    * v1.22 (B2/B6) — the user's Coach episodic reminders (`GET /api/coach/
    * reminders`). The optional `status` arg keys the in-app tile read
    * (`due,surfaced`) separately from the full ledger list so the two never

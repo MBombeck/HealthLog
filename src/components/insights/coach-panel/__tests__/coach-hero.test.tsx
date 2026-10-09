@@ -31,12 +31,17 @@ describe("<CoachHero>", () => {
     expect(html).toContain("Frage mich etwas zu deinen Daten");
   });
 
-  it("does not render starter-question suggestion chips", () => {
-    // v1.18.10 (W4) — the two starter chips below the composer were
-    // removed; the hero is greeting + composer only.
-    const html = render(<CoachHero composer={null} />);
+  it("leaves nothing under the composer", () => {
+    // No starter chips, no seeded opener, no scope pill: the empty
+    // conversation is the greeting and the field.
+    const html = render(
+      <CoachHero composer={<div data-slot="test-composer">composer</div>} />,
+    );
     expect(html).not.toContain('data-slot="coach-hero-chips"');
-    expect(html).not.toContain('data-slot="coach-hero-chip"');
+    expect(html).not.toContain('data-slot="coach-hero-scope-hint"');
+    expect(html).not.toContain("coach-scope-hint");
+    const afterComposer = html.split('data-slot="test-composer"')[1] ?? "";
+    expect(afterComposer.replace(/<\/div>|composer|>/g, "")).toBe("");
   });
 });
 

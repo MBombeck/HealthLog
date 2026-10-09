@@ -2851,6 +2851,7 @@
       "errorCredentialExpired": "La connessione al provider di IA è scaduta. Riconnettila nelle Impostazioni per mantenere attivo il Coach.",
       "tagline": "Coach personale di salute, basato sui tuoi dati.",
       "newChat": "Nuova chat",
+      "newConversation": "Nuova conversazione",
       "docScope": {
         "badge": "Documento",
         "chattingAbout": "Stai parlando di: {title}",
@@ -3092,21 +3093,7 @@
         "driver": "{note}"
       },
       "scope": {
-        "prefix": "Il Coach è già su {metric}",
-        "tap": "Tocca per chiedere",
-        "question": "Spiegami questo parametro — c'è qualcosa da tenere d'occhio?"
-      },
-      "seeded": {
-        "prefix": "Oggi vale uno sguardo: {signal}",
-        "signal": {
-          "readiness": "prontezza",
-          "recovery": "recupero"
-        },
-        "question": {
-          "readiness": "La mia prontezza è anomala oggi — da cosa dipende?",
-          "recovery": "Il mio recupero è cambiato — cosa c'è dietro?"
-        },
-        "dismiss": "Ignora"
+        "prefix": "Il Coach è già su {metric}"
       },
       "settings": "Impostazioni",
       "history": {
@@ -8371,9 +8358,6 @@
       "enabledToast": "Avvisi proattivi del Coach attivati.",
       "disabledToast": "Avvisi proattivi del Coach disattivati.",
       "saveError": "Impossibile salvare. Riprova più tardi.",
-      "suggestionsLabel": "Suggerimenti di esempio",
-      "suggestionsDesc": "Mostra di tanto in tanto una domanda di esempio pronta all'uso nella schermata del Coach.",
-      "suggestionsAria": "Attiva o disattiva i suggerimenti di esempio del Coach",
       "aiComposedLabel": "Lascia che sia il Coach a formulare il promemoria",
       "aiComposedDesc": "Quando è disponibile un provider, il promemoria proattivo viene scritto dal modello anziché dal modello di testo fisso. Disattivato per impostazione predefinita.",
       "aiComposedAria": "Attiva o disattiva il promemoria proattivo scritto dall'IA"

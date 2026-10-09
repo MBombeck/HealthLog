@@ -7,18 +7,17 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Paperclip, Plus, Sparkles } from "lucide-react";
+import { Paperclip, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
+import { DAY_QUERY_PARAM } from "@/lib/day/contract";
 import { queryKeys } from "@/lib/query-keys";
 import { randomId } from "@/lib/random-id";
 import { apiDelete, apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
 import type { CoachFollowUp, CoachScope } from "@/lib/ai/coach/types";
 import type { CoachLaunchScope } from "@/lib/insights/coach-launch-context";
-import type { CoachSeededQuestionDTO } from "@/app/api/insights/coach/seeded-question/route";
 import type { InboundDocumentDetailDto } from "@/lib/validations/inbound-documents";
 import { MAX_COACH_ATTACHMENTS } from "@/lib/validations/inbound-documents";
 import { useModuleEnabled } from "@/hooks/use-module-enabled";
@@ -30,7 +29,6 @@ import {
 
 import { CoachDrawerBody } from "./coach-drawer-body";
 import { CoachHero } from "./coach-hero";
-import { ScopeHintBadge } from "./scope-hint-badge";
 import { CoachInput } from "./coach-input";
 import {
   GuidedQuestionBubble,
@@ -53,12 +51,12 @@ import { CoachSettingsOverlay } from "./coach-settings-overlay";
 import { CoachTopBarTrail } from "./coach-top-bar-trail";
 import { ConversationsPanel } from "./conversations-panel";
 import { MobileRailTray } from "./mobile-rail-tray";
+import { NewChatFab } from "./new-chat-fab";
 import { SelfContextAdoptOffer } from "./self-context-adopt-offer";
 import { SourcesRail } from "./sources-rail";
 import { AttachmentPills, type AttachmentPillItem } from "./attachment-pills";
 import { AttachmentPicker } from "./attachment-picker";
 import { useResettableValue } from "./use-resettable-value";
-import { useCoachAmbientSuggestionsEnabled } from "@/hooks/use-coach-ambient-suggestions";
 import {
   useAttachCoachDocument,
   useCoachConversation,
@@ -125,19 +123,6 @@ export function dropInvalidStagedAttachments(
   isErrorByIndex: boolean[],
 ): string[] {
   return pendingAttachmentIds.filter((_, i) => isErrorByIndex[i] === true);
-}
-
-/**
- * v1.21.4 (C2) — the localStorage key that records the seeded "worth a look"
- * opener as dismissed for a given LOCAL calendar day. Date-stamped so the
- * dismissal resets at midnight: a new day mints a new key the flag has not
- * been written under yet, and the opener returns.
- */
-function seededDismissStorageKey(now: Date = new Date()): string {
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `coach-seeded-dismissed:${year}-${month}-${day}`;
 }
 
 export interface CoachConversationProps {
@@ -269,10 +254,18 @@ export interface CoachConversationProps {
  * `useSearchParams` in step with it) so a reload lands on the same thread
  * without a server round trip or a new history entry per switch.
  */
-function coachPageHref(conversationId: string | null): string {
-  return conversationId
+export function coachPageHref(
+  conversationId: string | null,
+  search = "",
+): string {
+  const base = conversationId
     ? `/coach?c=${encodeURIComponent(conversationId)}`
     : "/coach";
+  // An open day stays open: the day docked beside the conversation is the
+  // URL's `?day=`, and switching conversations must not close it.
+  const day = new URLSearchParams(search).get(DAY_QUERY_PARAM);
+  if (!day) return base;
+  return `${base}${conversationId ? "&" : "?"}${DAY_QUERY_PARAM}=${encodeURIComponent(day)}`;
 }
 
 export function CoachConversation({
@@ -372,7 +365,7 @@ export function CoachConversation({
   // a shared tab) lands on it. The drawer has no URL of its own.
   function syncPageUrl(conversationId: string | null) {
     if (surface !== "page" || typeof window === "undefined") return;
-    const href = coachPageHref(conversationId);
+    const href = coachPageHref(conversationId, window.location.search);
     if (window.location.pathname + window.location.search === href) return;
     window.history.replaceState(window.history.state, "", href);
   }
@@ -973,62 +966,16 @@ export function CoachConversation({
     pendingQuestions.length === 0 &&
     !pendingAdopt;
 
-  // v1.21.2 (A2 + A3) — the visible scope/opener affordance for the hero.
-  //
-  // A2 (scoped launch): the Coach was opened narrowed to a metric. Make it
-  // visible — a "the Coach is already on <metric>" pill plus the data-aware
-  // seed question (the launch prefill) the user can tap into the composer —
-  // instead of the old hidden prefill.
-  //
-  // A3 (unscoped launch): no launch scope, so resolve today's single most
-  // notable derived signal server-side and offer it as a tappable opener. The
-  // query only fires when the hero is on screen AND there is no launch scope
-  // (an A2 launch already has its opener), so a scoped open pays nothing for
-  // it. When the server returns no signal the hint is null and the neutral
-  // greeting stands — never a fabricated opener.
+  // Something to leave: a stored conversation or a turn on its way.
+  const threadStarted =
+    currentConversationId !== null ||
+    send.isStreaming ||
+    !!send.optimisticUser ||
+    !!send.streaming.content;
+
+  // The launch scope, for the drawer's sources rail: a conversation opened
+  // from a metric surface names the metric there until its first turn.
   const a2Metric = launchScope?.metric ?? null;
-  // v1.21.4 (C2) — once the user dismisses today's seeded opener it stays gone
-  // for the rest of the local calendar day; the fetch is skipped too, so a
-  // dismissed day costs nothing. SSR-safe lazy init guards `window`.
-  const [seededDismissedToday, setSeededDismissedToday] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      return window.localStorage.getItem(seededDismissStorageKey()) === "1";
-    } catch {
-      return false;
-    }
-  });
-  // v1.25.0 — the per-user opt-out for proactive ambient suggestions gates the
-  // seeded opener (and skips its fetch when off). The A2 launch scope below is
-  // NOT ambient — it reflects how the chat was opened — so it stays unaffected.
-  const ambientSuggestionsEnabled = useCoachAmbientSuggestionsEnabled();
-  const seededEnabled =
-    heroActive &&
-    a2Metric === null &&
-    !seededDismissedToday &&
-    ambientSuggestionsEnabled;
-  const { data: seeded } = useQuery({
-    queryKey: queryKeys.coachSeededQuestion(),
-    queryFn: async () =>
-      apiGet<CoachSeededQuestionDTO>("/api/insights/coach/seeded-question"),
-    enabled: seededEnabled,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  function seedComposer(question: string) {
-    setInputValue(question);
-  }
-
-  function dismissSeeded() {
-    setSeededDismissedToday(true);
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(seededDismissStorageKey(), "1");
-    } catch {
-      // Storage can throw (private mode / quota); the in-memory flag still
-      // hides the opener for this session.
-    }
-  }
 
   // `t()` returns the key string itself when a key is missing, so the only
   // reliable "is this key defined" signal is `t(key) !== key`.
@@ -1037,10 +984,9 @@ export function CoachConversation({
     return resolved === key ? null : resolved;
   }
 
-  // The resolved A2 metric label: prefers a per-source i18n key, falls back
-  // to the brand-free English domain phrase so every source has a label.
-  // Hoisted so both the hero hint (page) and the sources rail (drawer) read
-  // the same string. Null when the launch carried no metric.
+  // The resolved metric label: prefers a per-source i18n key, falls back to
+  // the brand-free English domain phrase so every source has a label. Null
+  // when the launch carried no metric.
   const a2LabelKey = scopeSourceMetricLabelKey(a2Metric);
   const a2MetricLabel = a2Metric
     ? (tOrNull(`insights.coach.scope.metric.${a2Metric}`) ??
@@ -1048,51 +994,6 @@ export function CoachConversation({
       metricScopeLabelFallback(a2Metric) ??
       a2Metric)
     : null;
-
-  let scopeHint: React.ReactNode = null;
-  if (fenced) {
-    // v1.29.x (S7) — a fenced conversation has NO health snapshot to scope, so
-    // the A2/A3 "the Coach is already on <metric>" openers are suppressed. The
-    // honest fencing banner (below) is the only chrome the fenced hero shows.
-    scopeHint = null;
-  } else if (a2Metric && a2MetricLabel) {
-    // A2 — the launch prefill IS the data-aware opener; fall back to the
-    // generic per-metric question when the launch carried no prefill.
-    const seedQuestion =
-      (prefill ?? "").trim() || t("insights.coach.scope.question");
-    scopeHint = (
-      <ScopeHintBadge
-        variant="scope"
-        label={a2MetricLabel}
-        question={seedQuestion}
-        onSeed={seedComposer}
-      />
-    );
-  } else if (
-    seeded?.signal &&
-    !seededDismissedToday &&
-    ambientSuggestionsEnabled
-  ) {
-    // A3 — the notable derived signal. The label + opener are keyed on the
-    // signal's sourceMetric (`readiness` / `recovery`); an unknown sentinel
-    // (future detector additions) skips the opener rather than guessing.
-    const sentinel = seeded.signal.sourceMetric;
-    const signalLabel = tOrNull(`insights.coach.seeded.signal.${sentinel}`);
-    const signalQuestion = tOrNull(
-      `insights.coach.seeded.question.${sentinel}`,
-    );
-    if (signalLabel && signalQuestion) {
-      scopeHint = (
-        <ScopeHintBadge
-          variant="seeded"
-          label={signalLabel}
-          question={signalQuestion}
-          onSeed={seedComposer}
-          onDismiss={dismissSeeded}
-        />
-      );
-    }
-  }
 
   // v1.18.11 (W11) — the docked composer column: the quiet adopt offer and
   // the guided-questions entry card stack above the live composer. Shared by
@@ -1218,7 +1119,7 @@ export function CoachConversation({
           />
           {!heroActive ? <h1 className="sr-only">{title}</h1> : null}
           {heroActive ? (
-            <CoachHero composer={composerNode} scopeHint={scopeHint} />
+            <CoachHero composer={composerNode} />
           ) : (
             <>
               <div className="flex min-h-0 flex-1 flex-col">
@@ -1234,9 +1135,10 @@ export function CoachConversation({
               </div>
               <div
                 data-slot="coach-page-composer"
-                className="shrink-0 px-4 pt-2 pb-3 sm:px-6 sm:pb-4"
+                className="@container/composer relative shrink-0 px-4 pt-2 pb-3 sm:px-6 sm:pb-4"
               >
                 <div className="mx-auto w-full max-w-2xl">{composerStack}</div>
+                <NewChatFab onNewChat={handleNewChat} />
               </div>
             </>
           )}
@@ -1300,18 +1202,6 @@ export function CoachConversation({
             <p className="text-muted-foreground truncate text-xs">{tagline}</p>
           )}
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={handleNewChat}
-          data-slot="coach-new-chat"
-          aria-label={t("insights.coach.newChat")}
-          title={t("insights.coach.newChat")}
-          className="text-muted-foreground hover:text-foreground size-11 shrink-0"
-        >
-          <Plus className="size-4" aria-hidden="true" />
-        </Button>
         {/* The same quick settings the page's panel opens: model and what
             the Coach may read. Everything else stays in Settings → AI. */}
         <CoachSettingsOverlay
@@ -1342,6 +1232,11 @@ export function CoachConversation({
           />
         }
         composer={composerStack}
+        // New conversation floats in the conversation itself, once there is
+        // one to leave.
+        newChat={
+          threadStarted ? <NewChatFab onNewChat={handleNewChat} /> : null
+        }
         onHistoryClick={onRequestFullView ?? (() => setHistoryTrayOpen(true))}
         onOpenSourcesTray={() => setSourcesTrayOpen(true)}
       />

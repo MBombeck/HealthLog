@@ -2851,6 +2851,7 @@
       "errorCredentialExpired": "Połączenie z dostawcą AI wygasło. Połącz je ponownie w Ustawieniach, aby Coach działał dalej.",
       "tagline": "Osobisty coach zdrowia, oparty na twoich danych.",
       "newChat": "Nowa rozmowa",
+      "newConversation": "Nowa rozmowa",
       "docScope": {
         "badge": "Dokument",
         "chattingAbout": "Rozmowa o: {title}",
@@ -3092,21 +3093,7 @@
         "driver": "{note}"
       },
       "scope": {
-        "prefix": "Coach jest już przy {metric}",
-        "tap": "Dotknij, aby zapytać",
-        "question": "Wytłumacz mi tę wartość — na co powinienem zwrócić uwagę?"
-      },
-      "seeded": {
-        "prefix": "Dziś warto rzucić okiem: {signal}",
-        "signal": {
-          "readiness": "gotowość",
-          "recovery": "regeneracja"
-        },
-        "question": {
-          "readiness": "Moja gotowość jest dziś nietypowa — z czego to wynika?",
-          "recovery": "Moja regeneracja się zmieniła — co za tym stoi?"
-        },
-        "dismiss": "Odrzuć"
+        "prefix": "Coach jest już przy {metric}"
       },
       "settings": "Ustawienia",
       "history": {
@@ -8371,9 +8358,6 @@
       "enabledToast": "Proaktywne podpowiedzi Coacha włączone.",
       "disabledToast": "Proaktywne podpowiedzi Coacha wyłączone.",
       "saveError": "Nie udało się zapisać. Spróbuj ponownie później.",
-      "suggestionsLabel": "Przykładowe sugestie",
-      "suggestionsDesc": "Czasami pokazuje gotowe przykładowe pytanie na ekranie Coacha.",
-      "suggestionsAria": "Przełącz przykładowe sugestie Coacha",
       "aiComposedLabel": "Pozwól Coachowi sformułować przypomnienie",
       "aiComposedDesc": "Gdy dostawca jest dostępny, proaktywne przypomnienie tworzy model zamiast stałego szablonu. Domyślnie wyłączone.",
       "aiComposedAria": "Przełącz proaktywne przypomnienie tworzone przez SI"

@@ -42,6 +42,8 @@ import { useTranslations } from "@/lib/i18n/context";
 export interface CoachDrawerBodyProps {
   thread: React.ReactNode;
   composer: React.ReactNode;
+  /** The New conversation button, floating above the composer. */
+  newChat?: React.ReactNode;
   /**
    * Inline conversation list (page surface only). When set, it renders
    * as a collapsible left column on lg+ and the history button collapses
@@ -67,6 +69,7 @@ export interface CoachDrawerBodyProps {
 export function CoachDrawerBody({
   thread,
   composer,
+  newChat,
   historyRail,
   historyOpen = false,
   onToggleHistory,
@@ -234,9 +237,10 @@ export function CoachDrawerBody({
         {/* Composer pinned to the bottom. */}
         <div
           data-slot="coach-drawer-composer"
-          className="border-border/70 flex flex-col gap-2 border-t p-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] sm:p-4 sm:pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]"
+          className="border-border/70 @container/composer relative flex flex-col gap-2 border-t p-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] sm:p-4 sm:pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]"
         >
           {composer}
+          {newChat}
         </div>
       </main>
     </div>

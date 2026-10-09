@@ -2851,6 +2851,7 @@
       "errorCredentialExpired": "Tu conexión con el proveedor de IA ha caducado. Vuelve a conectarla en Ajustes para que el Coach siga funcionando.",
       "tagline": "Coach personal de salud, apoyado en tus datos.",
       "newChat": "Nueva conversación",
+      "newConversation": "Nueva conversación",
       "docScope": {
         "badge": "Documento",
         "chattingAbout": "Hablando sobre: {title}",
@@ -3092,21 +3093,7 @@
         "driver": "{note}"
       },
       "scope": {
-        "prefix": "El Coach ya está en {metric}",
-        "tap": "Toca para preguntar",
-        "question": "Explícame esta métrica — ¿hay algo que deba vigilar?"
-      },
-      "seeded": {
-        "prefix": "Hoy merece un vistazo: {signal}",
-        "signal": {
-          "readiness": "disposición",
-          "recovery": "recuperación"
-        },
-        "question": {
-          "readiness": "Mi disposición está rara hoy — ¿a qué se debe?",
-          "recovery": "Mi recuperación ha cambiado — ¿qué hay detrás?"
-        },
-        "dismiss": "Descartar"
+        "prefix": "El Coach ya está en {metric}"
       },
       "settings": "Ajustes",
       "history": {
@@ -8371,9 +8358,6 @@
       "enabledToast": "Avisos proactivos del Coach activados.",
       "disabledToast": "Avisos proactivos del Coach desactivados.",
       "saveError": "No se pudo guardar. Inténtalo de nuevo más tarde.",
-      "suggestionsLabel": "Sugerencias de ejemplo",
-      "suggestionsDesc": "Muestra de vez en cuando una pregunta de ejemplo en la pantalla del Coach.",
-      "suggestionsAria": "Activar o desactivar las sugerencias de ejemplo del Coach",
       "aiComposedLabel": "Deja que el Coach redacte el aviso",
       "aiComposedDesc": "Cuando hay un proveedor disponible, el aviso proactivo lo redacta el modelo en lugar de la plantilla fija. Desactivado por defecto.",
       "aiComposedAria": "Activar o desactivar el aviso proactivo redactado por IA"
