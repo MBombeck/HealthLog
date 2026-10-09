@@ -6,7 +6,7 @@
  * one render, so a key that only one zoom or one bucket reaches is reached
  * here too.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -90,7 +90,6 @@ async function renderView(
     search.set("to", "2026-01-31");
   }
   timeline = { ...fullTimeline(), zoom, bucket };
-  const { TimelineView } = await import("../timeline-view");
   return textOf(
     renderToStaticMarkup(
       <QueryClientProvider client={new QueryClient()}>
@@ -101,6 +100,14 @@ async function renderView(
     ),
   );
 }
+
+let TimelineView: typeof import("../timeline-view").TimelineView;
+
+// The page's module graph is large; load it once, outside the per-test
+// timeout, so a busy machine does not time out the first render.
+beforeAll(async () => {
+  ({ TimelineView } = await import("../timeline-view"));
+}, 60_000);
 
 beforeEach(() => {
   search = new URLSearchParams();
