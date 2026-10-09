@@ -12295,7 +12295,8 @@
     "zoom": {
       "all": "All",
       "year": "12 months",
-      "quarter": "3 months"
+      "quarter": "3 months",
+      "range": "Range"
     },
     "lanes": {
       "life": "Life",
@@ -12450,10 +12451,13 @@
       "period": "Period"
     },
     "selection": {
-      "empty": "No entries this month",
+      "empty": "No entries in this period",
       "ongoing": "ongoing",
       "range": "{from} to {to}",
-      "mean": "Ø {values}"
+      "mean": "Ø {values}",
+      "week": "Week of {date}",
+      "hintClick": "Click a point in time to see it here",
+      "hintTap": "Tap a point in time to see it here"
     },
     "chronicle": {
       "months": "Months",
@@ -12475,7 +12479,15 @@
     },
     "standingAllergiesOne": "{count} allergy",
     "standingAllergiesFew": "{count} allergies",
-    "standingAllergiesOther": "{count} allergies"
+    "standingAllergiesOther": "{count} allergies",
+    "legendMeanDay": "Daily mean",
+    "range": {
+      "from": "From",
+      "to": "To",
+      "label": "Chosen range",
+      "open": "Choose a range",
+      "clear": "Show everything"
+    }
   },
   "lifeEvents": {
     "title": "Life event",

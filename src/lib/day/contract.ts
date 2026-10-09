@@ -211,17 +211,29 @@ export type DayNotableKind = (typeof DAY_NOTABLE_KINDS)[number];
 
 /* ─── Timeline ────────────────────────────────────────────────────────────── */
 
-/** Zoom levels. `all` bundles hardest: no symptoms, no single intakes. */
-export const TIMELINE_ZOOMS = ["all", "year", "quarter"] as const;
+/**
+ * Zoom levels. `all` bundles hardest: no symptoms, no single intakes.
+ * `range` is a stretch the person chose, named by `from` and `to` (both
+ * required, at most {@link TIMELINE_RANGE_MAX_DAYS} days).
+ */
+export const TIMELINE_ZOOMS = ["all", "year", "quarter", "range"] as const;
 
 export type TimelineZoom = (typeof TIMELINE_ZOOMS)[number];
 
 /**
  * The span one value-series point averages. The server picks it per zoom
  * (`timelineBucket` in `src/lib/timeline/load-timeline.ts`): quarters for a
- * multi-year `all`, months for `year` and a short `all`, weeks for `quarter`.
+ * multi-year `all`, months for `year` and a short `all`, weeks for `quarter`,
+ * and for a `range` by its length, down to single days under six weeks.
  */
-export const TIMELINE_BUCKETS = ["quarter", "month", "week"] as const;
+export const TIMELINE_BUCKETS = ["quarter", "month", "week", "day"] as const;
+
+/**
+ * The longest `range` the timeline answers: fifteen years. Longer than any
+ * fixed zoom reads, and the series of such a window come from the rollup
+ * tier in quarters, so the cost stays that of an `all` view.
+ */
+export const TIMELINE_RANGE_MAX_DAYS = 15 * 366;
 
 export type TimelineBucket = (typeof TIMELINE_BUCKETS)[number];
 

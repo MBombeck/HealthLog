@@ -7,7 +7,8 @@
  * read only the window.
  *
  * Windows by zoom, when the request names none: `quarter` the last 91 days,
- * `year` the last 365, `all` from the earliest date the record carries. The
+ * `year` the last 365, `all` from the earliest date the record carries. A
+ * `range` always names its own (the query schema requires both ends). The
  * notable days of an `all` window are computed over its last three years at
  * most: an extreme is "the highest for at least three months", and older
  * history is what the comparison reads, not what it marks.
@@ -49,6 +50,29 @@ export const DEFAULT_TIMELINE_SERIES: readonly MeasurementType[] = [
 const QUARTER_BUCKET_MIN_DAYS = 2 * 365;
 
 /**
+ * The bucket for a chosen range, by its length: about the point count the
+ * fixed zooms draw (a dozen to a few dozen), never one point per reading.
+ * Two years and more average quarters (eight and up), four months and more
+ * months (four to twenty-four), six weeks and more weeks (six to
+ * seventeen), and anything shorter single days (at most six weeks of them).
+ */
+export const RANGE_BUCKET_MIN_DAYS: Readonly<
+  Record<Exclude<TimelineBucket, "day">, number>
+> = {
+  quarter: 2 * 365,
+  month: 120,
+  week: 42,
+};
+
+export function rangeBucket(from: string, to: string): TimelineBucket {
+  const days = daysBetweenDateKeys(from, to) + 1;
+  if (days >= RANGE_BUCKET_MIN_DAYS.quarter) return "quarter";
+  if (days >= RANGE_BUCKET_MIN_DAYS.month) return "month";
+  if (days >= RANGE_BUCKET_MIN_DAYS.week) return "week";
+  return "day";
+}
+
+/**
  * The span one series point averages. A point per day or per week over
  * years drew a line of fragments wherever readings came in bursts, so the
  * bucket grows with the window: weeks in three months (thirteen points),
@@ -61,13 +85,16 @@ export function timelineBucket(
   from: string,
   to: string,
 ): TimelineBucket {
+  if (zoom === "range") return rangeBucket(from, to);
   if (zoom === "quarter") return "week";
   if (zoom === "year") return "month";
   const days = daysBetweenDateKeys(from, to);
   return days > QUARTER_BUCKET_MIN_DAYS ? "quarter" : "month";
 }
 
-const ZOOM_DAYS: Readonly<Record<Exclude<TimelineZoom, "all">, number>> = {
+const ZOOM_DAYS: Readonly<
+  Record<Exclude<TimelineZoom, "all" | "range">, number>
+> = {
   year: 365,
   quarter: 91,
 };
@@ -144,7 +171,7 @@ export async function loadTimeline(args: {
   const to = query.to ?? today;
   const from =
     query.from ??
-    (query.zoom === "all"
+    (query.zoom === "all" || query.zoom === "range"
       ? dataFrom !== null && dataFrom < to
         ? dataFrom
         : shiftDateKey(to, -364)

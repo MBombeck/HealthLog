@@ -7,8 +7,8 @@ import { aiBlockAvailable, serveAiBlock } from "./setup/ai-capabilities";
 
 /**
  * The Coach page frame: the conversations panel on the right, its toggle in
- * the top bar, the settings gear in the panel header, and New chat at the
- * panel's bottom right.
+ * the top bar, the settings gear in the panel header, and New chat opening
+ * that header row.
  *
  * Contracts under test, at 1440, 1280 and 390 px:
  *
@@ -20,7 +20,8 @@ import { aiBlockAvailable, serveAiBlock } from "./setup/ai-capabilities";
  *      top bar ends at its left edge and the panel's header border is the
  *      top bar's. The toggle is the bar's last item, within 16 px of its
  *      right edge, open and shut; shut, no pixel of the panel shows and the
- *      bar runs to the window's edge. New chat is a round 48 px plus.
+ *      bar runs to the window's edge. New chat is the header row's first
+ *      control, left of the title, and never overlaps the list.
  *   2. Escape inside the docked panel closes it and returns focus to the
  *      toggle.
  *   3. A row's menu renames by keyboard (Escape cancels without closing the
@@ -31,8 +32,8 @@ import { aiBlockAvailable, serveAiBlock } from "./setup/ai-capabilities";
  *      can see" and drops the param from the URL.
  *   5. axe finds nothing on the open panel or the open settings, in the
  *      light and the dark theme.
- *   6. At 390 px the panel is a dialog sheet with New chat 16 px from the
- *      right edge (24 px in the docked panel); Escape closes it and focus returns to the toggle. The gear
+ *   6. At 390 px the panel is a dialog sheet with New chat first in its
+ *      header and the title beside it; Escape closes it and focus returns to the toggle. The gear
  *      opens a bottom sheet that closes on Escape back to the gear. Nothing
  *      scrolls sideways.
  *
@@ -316,19 +317,38 @@ async function expectToggleAtBarEnd(page: Page) {
   expect(at.gap).toBeLessThanOrEqual(16);
 }
 
-/** New chat: a round 48 px button with the plus glyph. */
-async function expectFab(page: Page) {
-  const fab = panel(page).locator('[data-slot="coach-panel-new-chat"]');
-  const box = (await fab.boundingBox())!;
-  expect([Math.round(box.width), Math.round(box.height)]).toEqual([48, 48]);
+/**
+ * New chat opens the panel header: the row's first control, left of the
+ * title, a plus glyph with an accessible name. It sits above the list, so no
+ * row ever slides under it.
+ */
+async function expectNewChatInHeader(scope: Locator) {
+  const header = scope.locator(
+    '[data-slot="coach-conversations-panel-header"]',
+  );
+  const button = header.locator('[data-slot="coach-panel-new-chat"]');
+  await expect(button).toHaveCount(1);
+  await expect(button.locator("svg.lucide-plus")).toHaveCount(1);
+  await expect(button).toHaveAttribute("aria-label", "New chat");
+  const order = await header.evaluate((el) => {
+    const first = el.firstElementChild as HTMLElement;
+    const heading = el.querySelector("h2") as HTMLElement;
+    return {
+      first: first.dataset.slot,
+      buttonRight: first.getBoundingClientRect().right,
+      headingLeft: heading.getBoundingClientRect().left,
+    };
+  });
+  expect(order.first).toBe("coach-panel-new-chat");
+  expect(order.buttonRight).toBeLessThanOrEqual(order.headingLeft);
+  const buttonBox = (await button.boundingBox())!;
+  const listBox = (await scope
+    .locator('[data-slot="coach-history-list"]')
+    .boundingBox())!;
   expect(
-    await fab.evaluate((el) =>
-      parseFloat(getComputedStyle(el).borderTopLeftRadius),
-    ),
-    "round",
-  ).toBeGreaterThanOrEqual(24);
-  await expect(fab.locator("svg.lucide-plus")).toHaveCount(1);
-  await expect(fab).toHaveAttribute("aria-label", "New chat");
+    buttonBox.y + buttonBox.height,
+    "the button ends above the list",
+  ).toBeLessThanOrEqual(listBox.y);
 }
 
 /** Rendered heights of the docked panel's header buttons and first row. */
@@ -341,6 +361,7 @@ async function panelControlHeights(page: Page) {
         .boundingBox())!.height,
     );
   return {
+    newChat: await height("coach-panel-new-chat"),
     plans: await height("coach-panel-plans"),
     gear: await height("coach-settings"),
     row: await height("coach-history-select"),
@@ -439,7 +460,7 @@ test.describe("Coach page frame", () => {
       await expectPanelFlush(page, width, 900);
       // Open, the toggle is the top bar's last item, against the panel.
       await expectToggleAtBarEnd(page);
-      await expectFab(page);
+      await expectNewChatInHeader(panel(page));
       // The bar says where the reader is: the page, then the conversation.
       await expect(
         page.locator('[data-slot="coach-top-bar-trail"]'),
@@ -505,6 +526,7 @@ test.describe("Coach page frame", () => {
     await mockCoach(page);
     await openCoach(page);
     expect(await panelControlHeights(page)).toEqual({
+      newChat: 28,
       plans: 28,
       gear: 28,
       row: 36,
@@ -524,6 +546,7 @@ test.describe("Coach page frame", () => {
       await openCoach(page);
       await expect(panel(page)).toHaveAttribute("data-state", "open");
       expect(await panelControlHeights(page)).toEqual({
+        newChat: 44,
         plans: 44,
         gear: 44,
         row: 44,
@@ -552,18 +575,8 @@ test.describe("Coach page frame", () => {
     await expect(page).toHaveURL(/\/coach\?c=frame-sleep$/);
     await expect(rows.nth(1)).toHaveAttribute("aria-current", "true");
 
-    const fab = panel(page).locator('[data-slot="coach-panel-new-chat"]');
-    const fabBox = (await fab.boundingBox())!;
-    const asideBox = (await panel(page).boundingBox())!;
-    // 24 px in from the panel's corner from `md`, 16 px on a phone.
-    expect(asideBox.x + asideBox.width - (fabBox.x + fabBox.width)).toBeCloseTo(
-      24,
-      0,
-    );
-    expect(
-      asideBox.y + asideBox.height - (fabBox.y + fabBox.height),
-    ).toBeCloseTo(24, 0);
-    await fab.click();
+    const newChat = panel(page).locator('[data-slot="coach-panel-new-chat"]');
+    await newChat.click();
     await expect(page).toHaveURL(/\/coach$/);
     await expect(
       page.locator('[data-slot="coach-input-textarea"]'),
@@ -715,6 +728,7 @@ test.describe("Coach page frame", () => {
         new RegExp(`(^|\\s)${theme}(\\s|$)`),
       );
       await expect(panel(page)).toHaveAttribute("data-state", "open");
+      await shot(page, testInfo, `coach-frame-1440-${theme}`);
 
       const scan = async (selector: string, label: string) => {
         const result = await new AxeBuilder({ page })
@@ -788,16 +802,15 @@ test.describe("Coach page frame", () => {
     const sheet = page.getByRole("dialog", { name: "Conversations" });
     await expect(sheet).toBeVisible();
     await expect(toggle(page)).toHaveAttribute("aria-expanded", "true");
-    const fab = sheet.locator('[data-slot="coach-panel-new-chat"]');
-    // Measured once the sheet has slid in.
-    await expect
-      .poll(async () => {
-        const box = (await fab.boundingBox())!;
-        return Math.round(390 - (box.x + box.width));
-      })
-      .toBe(16);
-    expect((await fab.boundingBox())!.width).toBe(48);
-    await expect(fab.locator("svg.lucide-plus")).toHaveCount(1);
+    await expectNewChatInHeader(sheet);
+    // The title keeps its whole word beside four header controls.
+    const title = sheet.locator(
+      '[data-slot="coach-conversations-panel-header"] h2',
+    );
+    expect(
+      await title.evaluate((el) => el.scrollWidth <= el.clientWidth),
+      "the sheet title is not truncated",
+    ).toBe(true);
     await shot(page, testInfo, "coach-frame-390-panel");
 
     await page.keyboard.press("Escape");

@@ -127,6 +127,21 @@ test("the timeline hands the selected day to the day view through ?day=", async 
   expect(asked.length).toBeGreaterThan(0);
   expect(asked.length).toBeLessThanOrEqual(6);
 
+  // Before anyone picks a day the bar opens on the newest bucket it has
+  // something for, says so in its head, and says how to pick another.
+  const bar = page.locator('[data-slot="timeline-selection-bar"]');
+  await expect(bar).toHaveAttribute("data-bucket", "quarter");
+  await expect(bar).toHaveAttribute(
+    "data-period-from",
+    /^\d{4}-(01|04|07|10)-01$/,
+  );
+  await expect(
+    page.locator('[data-slot="timeline-selection-empty"]'),
+  ).toHaveCount(0);
+  await expect(
+    page.locator('[data-slot="timeline-selection-hint"]'),
+  ).toBeVisible();
+
   // The keyboard: one step back and Enter opens that day.
   const before = await page
     .locator('[data-slot="timeline-selection"]')
@@ -137,6 +152,10 @@ test("the timeline hands the selected day to the day view through ?day=", async 
     .locator('[data-slot="timeline-selection"]')
     .getAttribute("data-date");
   expect(after).not.toBe(before);
+  // A day is picked now: the hint has done its job.
+  await expect(
+    page.locator('[data-slot="timeline-selection-hint"]'),
+  ).toHaveCount(0);
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(new RegExp(`[?&]day=${after}`));
 
@@ -220,6 +239,113 @@ test("value lines: quarterly means, gaps kept, short ones bridged, up to six lin
     .poll(() => log.timelineQueries.at(-1)?.get("values")?.split(",").length)
     .toBe(6);
   await expect(page.locator("svg [data-series]")).toHaveCount(6);
+  // Each line in its own colour, and every mark of a line in that colour.
+  const colours = await page
+    .locator("svg [data-series]")
+    .evaluateAll((groups) =>
+      groups.map((g) => ({
+        colour: getComputedStyle(g).color,
+        marks: [
+          ...g.querySelectorAll(
+            '[data-slot="timeline-series-line"], [data-slot="timeline-series-swatch"]',
+          ),
+        ].map((m) => getComputedStyle(m).stroke),
+      })),
+    );
+  expect(new Set(colours.map((c) => c.colour)).size).toBe(6);
+  for (const { colour, marks } of colours) {
+    expect(marks.length).toBeGreaterThan(0);
+    for (const stroke of marks) expect(stroke).toBe(colour);
+  }
+  // The menu marks each chosen line with the same colour.
+  const trigger = page.locator('[data-slot="timeline-values-trigger"]');
+  await expect(async () => {
+    if ((await trigger.getAttribute("data-state")) !== "open") {
+      await trigger.click();
+    }
+    await expect(trigger).toHaveAttribute("data-state", "open", {
+      timeout: 1_000,
+    });
+  }).toPass();
+  const chosenDots = page.locator(
+    '[data-slot="timeline-values-option"][aria-checked="true"] [data-slot="timeline-values-dot"]',
+  );
+  await expect(chosenDots).toHaveCount(6);
+  const dots = await chosenDots.evaluateAll((els) =>
+    els.map((el) => getComputedStyle(el).backgroundColor),
+  );
+  expect(new Set(dots)).toEqual(new Set(colours.map((c) => c.colour)));
+  await page.keyboard.press("Escape");
+});
+
+/** `days` calendar days before `key`. */
+function daysBefore(key: string, days: number): string {
+  const [y, m, d] = key.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d - days)).toISOString().slice(0, 10);
+}
+
+test("a chosen range lives in the URL: reload keeps it, Back returns to it", async ({
+  page,
+}) => {
+  await setTimelineModuleOn(page);
+  const log = await mockTimeline(page, "full", TODAY);
+  await page.goto("/timeline");
+  const chart = page.locator('[data-slot="timeline-chart"]');
+  await expect(chart).toBeVisible({ timeout: 20_000 });
+  const desktop = page.locator('[data-slot="timeline-desktop"]');
+  const zoom = (value: string) =>
+    page.locator(`[data-slot="timeline-zoom"] [data-value="${value}"]`);
+
+  // Choosing "Range" starts from what is on screen and writes it down.
+  await zoom("range").click();
+  await expect(page).toHaveURL(
+    /[?&]zoom=range&from=\d{4}-\d{2}-\d{2}&to=\d{4}-\d{2}-\d{2}/,
+  );
+  const fields = desktop.locator('[data-slot="timeline-range"]');
+  await expect(fields).toBeVisible();
+
+  // Three weeks: daily means, the bar headed by one day.
+  const from = daysBefore(TODAY, 20);
+  const start = desktop.locator('[data-testid="timeline-range-from"]');
+  await page.goto(`/timeline?zoom=range&from=${from}&to=${TODAY}`);
+  await expect(fields).toHaveAttribute("data-from", from, { timeout: 20_000 });
+  await expect(fields).toHaveAttribute("data-to", TODAY);
+  await expect(zoom("range")).toHaveAttribute("aria-checked", "true");
+  await expect(
+    page.locator('[data-slot="timeline-legend-mean"]'),
+  ).toHaveAttribute("data-bucket", "day");
+  await expect(
+    page.locator('[data-slot="timeline-selection-bar"]'),
+  ).toHaveAttribute("data-bucket", "day");
+  const asked = log.timelineQueries.at(-1)!;
+  expect(asked.get("zoom")).toBe("range");
+  expect(asked.get("from")).toBe(from);
+  expect(asked.get("to")).toBe(TODAY);
+
+  // A reload keeps it.
+  await page.reload();
+  await expect(fields).toHaveAttribute("data-from", from, { timeout: 20_000 });
+
+  // A fixed zoom replaces it; Back brings it back.
+  await zoom("year").click();
+  await expect(page).toHaveURL(/[?&]zoom=year$/);
+  await expect(fields).toHaveCount(0);
+  await page.goBack();
+  await expect(page).toHaveURL(new RegExp(`zoom=range&from=${from}`));
+  await expect(fields).toHaveAttribute("data-from", from);
+
+  // Typing a start moves the range and the URL with it.
+  const later = daysBefore(TODAY, 10);
+  await start.fill(later);
+  await start.press("Enter");
+  await expect(page).toHaveURL(new RegExp(`from=${later}&to=${TODAY}`));
+
+  // A parameter it cannot read opens the whole record.
+  await page.goto("/timeline?zoom=range&from=nonsense&to=2026-01-01");
+  await expect(zoom("all")).toHaveAttribute("aria-checked", "true", {
+    timeout: 20_000,
+  });
+  await expect(fields).toHaveCount(0);
 });
 
 async function setTimelineModuleOn(page: Page) {
@@ -292,6 +418,10 @@ test("on a phone the chronicle replaces the chart and opens a day per row", asyn
   expect(buckets.length).toBeGreaterThan(0);
   expect(new Set(buckets).size).toBe(buckets.length);
   for (const b of buckets) expect(b).toMatch(/^\d{4}-(01|04|07|10)-01$/);
+  // Each mean carries its line's colour dot.
+  await expect(
+    means.first().locator('[data-slot="timeline-series-dot"]').first(),
+  ).toBeVisible();
 
   await page
     .locator(

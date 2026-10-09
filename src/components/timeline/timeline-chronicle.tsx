@@ -30,7 +30,7 @@ import {
 import { Card } from "@/components/ui/card";
 import type { TimelineItemKind, TimelineResponse } from "@/lib/day/contract";
 import { resolveIntlLocale } from "@/lib/format-locale";
-import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
 import {
@@ -48,8 +48,12 @@ import {
   formatMonthYear,
 } from "./timeline-dates";
 import { LANE_COLOR } from "./timeline-geometry";
-import { bucketText, laneDotStyle } from "./timeline-chart";
-import { chronicleMeans, formatMeans } from "./series-format";
+import { MeanPartsLine, bucketText, laneDotStyle } from "./timeline-chart";
+import {
+  chronicleMeans,
+  meanParts,
+  type SeriesValueFormat,
+} from "./series-format";
 
 const KIND_ICON: Partial<Record<TimelineItemKind, LucideIcon>> = {
   lifeEvent: Flag,
@@ -125,6 +129,8 @@ export function TimelineChronicle({
   today,
   grouping,
   selected,
+  seriesColor,
+  seriesFormat,
   onOpenDay,
   onEditLifeEvent,
 }: {
@@ -132,11 +138,14 @@ export function TimelineChronicle({
   today: string;
   grouping: ChronicleGrouping;
   selected: string | null;
+  /** The colour of each value line, as on the chart (`series-colors.ts`). */
+  seriesColor: (key: string) => string;
+  /** How a value reads (`useSeriesValueFormat`). */
+  seriesFormat: SeriesValueFormat;
   onOpenDay: (date: string) => void;
   onEditLifeEvent: ((id: string) => void) | null;
 }) {
   const { t, tCount, locale } = useTranslations();
-  const fmt = useFormatters();
   const intl = resolveIntlLocale(locale);
   const [standingOpen, setStandingOpen] = useState(true);
   const chips = standingChips(timeline);
@@ -255,9 +264,9 @@ export function TimelineChronicle({
           }
           if (row.type === "header") {
             const bucketMeans = means.get(row.group);
-            const line = bucketMeans
-              ? formatMeans(bucketMeans.values, fmt)
-              : "";
+            const parts = bucketMeans
+              ? meanParts(bucketMeans.values, seriesFormat)
+              : [];
             return (
               <li
                 key={`h-${row.group}`}
@@ -269,15 +278,16 @@ export function TimelineChronicle({
                 <h3 className="text-sm font-semibold">
                   {groupLabel(row.group)}
                 </h3>
-                {bucketMeans && line && (
+                {bucketMeans && parts.length > 0 && (
                   <span
                     className="text-muted-foreground text-xs tabular-nums"
                     data-slot="timeline-chronicle-means"
                     data-bucket={bucketMeans.start}
                   >
                     {timeline.bucket === "month"
-                      ? line
-                      : `${bucketText(bucketMeans.start, timeline.bucket, intl, t)}: ${line}`}
+                      ? null
+                      : `${bucketText(bucketMeans.start, timeline.bucket, intl, t)}: `}
+                    <MeanPartsLine parts={parts} seriesColor={seriesColor} />
                   </span>
                 )}
               </li>

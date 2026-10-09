@@ -27,11 +27,14 @@ export function ValueSeriesMenu({
   options,
   selected,
   label,
+  color,
   onChange,
 }: {
   options: readonly string[];
   selected: readonly string[];
   label: (key: string) => string;
+  /** A chosen line's colour, shown as a dot beside its name. */
+  color: (key: string) => string;
   onChange: (next: string[]) => void;
 }) {
   const { t } = useTranslations();
@@ -72,6 +75,14 @@ export function ValueSeriesMenu({
                 )
               }
             >
+              {/* The dot is the line's colour on the chart; an unchosen
+                  value has no line yet, so its place stays empty. */}
+              <span
+                data-slot="timeline-values-dot"
+                className="size-2 shrink-0 rounded-full"
+                style={checked ? { background: color(key) } : undefined}
+                aria-hidden="true"
+              />
               {label(key)}
             </DropdownMenuCheckboxItem>
           );

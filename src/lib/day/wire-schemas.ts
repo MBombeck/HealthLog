@@ -28,6 +28,7 @@ import {
   TIMELINE_READINESS_KEYS,
   TIMELINE_READINESS_STATUSES,
   TIMELINE_READINESS_VERDICTS,
+  TIMELINE_RANGE_MAX_DAYS,
   TIMELINE_ZOOMS,
 } from "./contract";
 
@@ -266,17 +267,43 @@ export const dayNotableResponseSchema = z
 
 /* ─── GET /api/timeline ───────────────────────────────────────────────────── */
 
-export const timelineQuerySchema = z.object({
-  zoom: z.enum(TIMELINE_ZOOMS).default("all"),
-  from: dateKeySchema.optional(),
-  to: dateKeySchema.optional(),
-  values: z
-    .string()
-    .optional()
-    .describe(
-      "Comma-separated value series to include, as `MeasurementType` names or `MOOD`, at most 6. More, or an unknown name, answers 422.",
-    ),
-});
+export const timelineQuerySchema = z
+  .object({
+    zoom: z
+      .enum(TIMELINE_ZOOMS)
+      .default("all")
+      .describe(
+        "`range` is a chosen stretch: it requires `from` and `to`, at most 15 years apart, and its value series average quarters, months, weeks or days by its length.",
+      ),
+    from: dateKeySchema.optional(),
+    to: dateKeySchema.optional(),
+    values: z
+      .string()
+      .optional()
+      .describe(
+        "Comma-separated value series to include, as `MeasurementType` names or `MOOD`, at most 6. More, or an unknown name, answers 422.",
+      ),
+  })
+  .refine((q) => q.zoom !== "range" || (q.from && q.to), {
+    message: "`range` needs both `from` and `to`",
+    path: ["from"],
+  })
+  .refine(
+    (q) =>
+      q.zoom !== "range" ||
+      !q.from ||
+      !q.to ||
+      // Both ends as the same instant of their calendar day, so the
+      // difference counts calendar days whatever the process zone.
+      (dateOnlyAtNoonUtc(q.to).getTime() -
+        dateOnlyAtNoonUtc(q.from).getTime()) /
+        86_400_000 <
+        TIMELINE_RANGE_MAX_DAYS,
+    {
+      message: `A range spans at most ${TIMELINE_RANGE_MAX_DAYS} days`,
+      path: ["to"],
+    },
+  );
 
 const timelineItem = z
   .object({
@@ -357,7 +384,7 @@ export const timelineResponseSchema = z
     bucket: z
       .enum(TIMELINE_BUCKETS)
       .describe(
-        "The span every series point averages: `quarter` for a multi-year `all`, `month` for `year` and an `all` under two years, `week` for `quarter`.",
+        "The span every series point averages: `quarter` for a multi-year `all`, `month` for `year` and an `all` under two years, `week` for `quarter`, and for a `range` by its length: `quarter` from two years, `month` from 120 days, `week` from 42 days, `day` below.",
       ),
     series: z.array(timelineSeries),
     notable: z.array(

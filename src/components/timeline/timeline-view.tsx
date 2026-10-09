@@ -3,7 +3,8 @@
 /**
  * `/timeline` (v1.42, #613): years at a glance. Conditions, allergies,
  * medications, vaccinations, visits, documents and the person's own life
- * events in lanes, up to six neutral value lines below them, all on one
+ * events in lanes, up to six value lines below them, each in its own
+ * colour (`series-colors.ts`), all on one
  * time axis. Nothing on the page draws a connection between them.
  *
  * The page hands off to the day view through `?day=`: "Open 3 Jan." (and
@@ -18,7 +19,7 @@
  */
 import { useMemo, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Plus } from "lucide-react";
+import { CalendarRange, Plus } from "lucide-react";
 
 import { openDay as openDayLayer } from "@/components/day/day-layer-controller";
 import { parseDayParam } from "@/components/day/day-url";
@@ -52,11 +53,20 @@ import {
 } from "./readiness-model";
 import { TimelineReadinessSheet } from "./readiness-sheet";
 import { Segmented } from "./segmented";
+import { SERIES_FALLBACK_COLOR, assignSeriesColors } from "./series-colors";
+import { useSeriesValueFormat } from "./use-series-value-format";
 import { SelectionBar } from "./selection-bar";
 import { TimelineChart } from "./timeline-chart";
 import { TimelineChronicle } from "./timeline-chronicle";
-import { todayKeyIn } from "./timeline-dates";
-import { LANE_ORDER, windowFor } from "./timeline-geometry";
+import { dayKey, dayNumber, todayKeyIn } from "./timeline-dates";
+import { RangeFields } from "./range-fields";
+import {
+  clampRange,
+  parseTimelineUrl,
+  timelineSearch,
+  type TimelineRange,
+} from "./timeline-url";
+import { LANE_ORDER, latestDataDate, windowFor } from "./timeline-geometry";
 import {
   LayersMenu,
   MAX_VALUE_SERIES,
@@ -106,24 +116,6 @@ export const DEFAULT_VALUES = [
 const VALUES_KEY = "healthlog.timeline.values";
 const HIDDEN_LANES_KEY = "healthlog.timeline.hiddenLanes";
 
-/** The latest dated entry on or before today, to select on arrival. */
-function latestEntryDate(
-  lanes: ReadonlyArray<{
-    items: ReadonlyArray<{ start: string; end: string | null }>;
-  }>,
-  today: string,
-): string | null {
-  let best: string | null = null;
-  for (const lane of lanes) {
-    for (const item of lane.items) {
-      for (const d of [item.start, item.end]) {
-        if (d && d <= today && (!best || d > best)) best = d;
-      }
-    }
-  }
-  return best;
-}
-
 export function TimelineView() {
   const { t } = useTranslations();
   const { user } = useAuth();
@@ -135,7 +127,12 @@ export function TimelineView() {
   // Life events are written in one's own record only (owner-only routes).
   const canAddLifeEvent = !caps.inSharedRecord;
 
-  const [zoom, setZoom] = useState<TimelineZoom>(dayParam ? "quarter" : "all");
+  // The zoom and a chosen range live in the URL (`timeline-url.ts`), so Back
+  // and a bookmark return to them. Without a `zoom`, an incoming `?day=`
+  // opens three months around that day and anything else the whole record.
+  const urlState = parseTimelineUrl(searchParams, today);
+  const zoom: TimelineZoom = urlState.zoom ?? (dayParam ? "quarter" : "all");
+  const range = zoom === "range" ? urlState.range : null;
   const [grouping, setGrouping] = useState<ChronicleGrouping>("month");
   // The selection follows `?day=` (Back, Forward, the day panel's previous
   // and next) and otherwise the last click or key. A pick remembers the
@@ -185,13 +182,26 @@ export function TimelineView() {
         .slice(0, MAX_VALUE_SERIES),
     [storedValues, valueOptions],
   );
+  // One colour per chosen line, shared by the chart, the selection bar, the
+  // menu and the phone chronicle; contested colours go by the menu's order.
+  const seriesColors = useMemo(
+    () => assignSeriesColors(values, VALUE_OPTIONS),
+    [values],
+  );
+  const seriesFormat = useSeriesValueFormat();
+  const seriesColor = (key: string) =>
+    seriesColors.get(key) ?? SERIES_FALLBACK_COLOR;
   const hidden = useMemo(
     () => new Set(hiddenList as TimelineLaneKey[]),
     [hiddenList],
   );
 
   const requestWindow =
-    zoom === "all" ? null : windowFor(zoom, today, selected ?? dayParam);
+    zoom === "all"
+      ? null
+      : zoom === "range"
+        ? range
+        : windowFor(zoom, today, selected ?? dayParam);
   const timeline = useTimeline(
     zoom,
     requestWindow?.from ?? null,
@@ -223,8 +233,37 @@ export function TimelineView() {
   }
 
   const data = timeline.data;
+  // A pick outside a newly chosen range no longer counts as one.
+  const chosen =
+    selected !== null &&
+    (!requestWindow ||
+      (selected >= requestWindow.from && selected <= requestWindow.to))
+      ? selected
+      : null;
+  // Before anyone picks a day, the newest bucket the bar has something for,
+  // inside the window that was asked for.
   const effectiveSelected =
-    selected ?? (data ? latestEntryDate(data.lanes, today) : null) ?? today;
+    chosen ??
+    (data ? latestDataDate(data, today, requestWindow ?? data.range) : null) ??
+    (range ? range.to : today);
+
+  function navigate(nextZoom: TimelineZoom, nextRange: TimelineRange | null) {
+    const search = timelineSearch(window.location.search, nextZoom, nextRange);
+    window.history.pushState(null, "", `${pathname}${search}`);
+  }
+
+  function setZoom(next: TimelineZoom) {
+    if (next !== "range") {
+      navigate(next, null);
+      return;
+    }
+    // A new range starts as what is on screen, up to today.
+    const shown = window_ ?? {
+      from: dayKey(dayNumber(today) - 29),
+      to: today,
+    };
+    navigate("range", clampRange(shown, today, data?.range.dataFrom ?? null));
+  }
 
   // The shell's day layer owns `?day=` and its history entries; this only
   // asks it to open the day, and keeps the selection on it.
@@ -255,7 +294,7 @@ export function TimelineView() {
         zoom,
         today,
         effectiveSelected,
-        zoom === "all" ? data.range : null,
+        zoom === "all" || zoom === "range" ? data.range : null,
       )
     : null;
   const presentLanes = (data?.lanes ?? [])
@@ -293,6 +332,29 @@ export function TimelineView() {
       <span className="hidden sm:inline">{t("lifeEvents.add")}</span>
     </Button>
   ) : null;
+
+  // The chosen range's fields, under the zoom; on a phone with a way back to
+  // the whole record, since the phone has no zoom control to switch with.
+  const rangeControls =
+    zoom === "range" && range ? (
+      <div className="flex flex-wrap items-end gap-3">
+        <RangeFields
+          range={range}
+          today={today}
+          dataFrom={data?.range.dataFrom ?? null}
+          onChange={(next) => navigate("range", next)}
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          className="min-h-11 sm:min-h-10 md:hidden"
+          onClick={() => setZoom("all")}
+          data-slot="timeline-range-clear"
+        >
+          {t("timeline.range.clear")}
+        </Button>
+      </div>
+    ) : null;
 
   const layers = (iconOnly: boolean) => (
     <LayersMenu
@@ -337,6 +399,25 @@ export function TimelineView() {
           description={t("timeline.loadFailed")}
           onRetry={() => void timeline.refetch()}
         />
+      ) : zoom === "range" && (isEmpty || !data || !window_) ? (
+        // A chosen stretch with nothing in it: the fields stay, so the next
+        // choice is one step away.
+        <div className="space-y-4" data-slot="timeline-range-empty">
+          {rangeControls}
+          <EmptyState
+            title={t("timeline.selection.empty")}
+            action={
+              <Button
+                variant="outline"
+                size="sm"
+                className="min-h-11 sm:min-h-9"
+                onClick={() => setZoom("all")}
+              >
+                {t("timeline.range.clear")}
+              </Button>
+            }
+          />
+        </div>
       ) : isEmpty || !data || !window_ ? (
         <EmptyState
           title={t("timeline.empty.title")}
@@ -363,11 +444,13 @@ export function TimelineView() {
                   options={valueOptions}
                   selected={values}
                   label={seriesLabel}
+                  color={seriesColor}
                   onChange={setStoredValues}
                 />
                 {layers(false)}
               </div>
             </div>
+            {rangeControls}
             <Card className="md:gap-4">
               <CardContent className="space-y-4">
                 <TimelineChart
@@ -378,14 +461,19 @@ export function TimelineView() {
                   selected={effectiveSelected}
                   hiddenLanes={hidden}
                   seriesLabel={seriesLabel}
+                  seriesColor={seriesColor}
+                  seriesFormat={seriesFormat}
                   onSelect={setSelected}
                   onOpenDay={openDay}
                 />
                 <SelectionBar
                   timeline={data}
                   selected={effectiveSelected}
+                  showHint={chosen === null}
                   today={today}
                   seriesLabel={seriesLabel}
+                  seriesColor={seriesColor}
+                  seriesFormat={seriesFormat}
                   onOpenDay={openDay}
                   onEditLifeEvent={canAddLifeEvent ? editLifeEvent : undefined}
                 />
@@ -407,8 +495,22 @@ export function TimelineView() {
                 label={t("timeline.chronicle.groupingLabel")}
                 slot="timeline-grouping"
               />
-              {layers(true)}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={zoom === "range" ? "secondary" : "outline"}
+                  size="icon"
+                  className="size-11"
+                  aria-label={t("timeline.range.open")}
+                  aria-pressed={zoom === "range"}
+                  onClick={() => setZoom(zoom === "range" ? "all" : "range")}
+                  data-slot="timeline-range-toggle"
+                >
+                  <CalendarRange className="size-4" aria-hidden="true" />
+                </Button>
+                {layers(true)}
+              </div>
             </div>
+            {rangeControls}
             <TimelineChronicle
               timeline={{
                 ...data,
@@ -417,6 +519,8 @@ export function TimelineView() {
               today={today}
               grouping={grouping}
               selected={dayParam}
+              seriesColor={seriesColor}
+              seriesFormat={seriesFormat}
               onOpenDay={openDay}
               onEditLifeEvent={canAddLifeEvent ? editLifeEvent : null}
             />
@@ -444,6 +548,7 @@ const LEGEND_MEAN_KEY: Readonly<Record<TimelineBucket, string>> = {
   quarter: "timeline.legendMeanQuarter",
   month: "timeline.legendMeanMonth",
   week: "timeline.legendMeanWeek",
+  day: "timeline.legendMeanDay",
 };
 
 function Legend({

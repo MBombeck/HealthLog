@@ -61,6 +61,7 @@ export function addMonths(key: string, months: number): string {
 
 /** The first day of the bucket `key` falls in. Weeks start on Monday. */
 export function bucketStart(key: string, bucket: TimelineBucket): string {
+  if (bucket === "day") return key;
   if (bucket === "month") return startOfMonth(key);
   if (bucket === "quarter") {
     const month = Number(key.slice(5, 7));
@@ -74,6 +75,7 @@ export function bucketStart(key: string, bucket: TimelineBucket): string {
 
 /** The first day after the bucket that starts on `start`. */
 export function bucketAfter(start: string, bucket: TimelineBucket): string {
+  if (bucket === "day") return dayKey(dayNumber(start) + 1);
   if (bucket === "month") return addMonths(start, 1);
   if (bucket === "quarter") return addMonths(start, 3);
   return dayKey(dayNumber(start) + 7);
@@ -84,6 +86,7 @@ export function bucketAfter(start: string, bucket: TimelineBucket): string {
  * buckets differ by one, so a difference counts the buckets between.
  */
 export function bucketIndex(start: string, bucket: TimelineBucket): number {
+  if (bucket === "day") return dayNumber(start);
   if (bucket === "week") return Math.floor((dayNumber(start) - 4) / 7);
   const months = Number(start.slice(0, 4)) * 12 + Number(start.slice(5, 7)) - 1;
   return bucket === "quarter" ? Math.floor(months / 3) : months;
@@ -158,6 +161,18 @@ export function formatDayMonthYear(key: string, intlLocale: string): string {
   });
 }
 
+/** "3. Januar 2026". */
+export function formatDayMonthYearLong(
+  key: string,
+  intlLocale: string,
+): string {
+  return format(key, intlLocale, {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 /** "Jan". Axis labels. */
 export function formatMonthShort(key: string, intlLocale: string): string {
   return format(key, intlLocale, { month: "short" });
@@ -193,6 +208,7 @@ export function formatBucket(
   bucket: TimelineBucket,
   intlLocale: string,
 ): string | { from: string; to: string } {
+  if (bucket === "day") return formatDayMonthYear(start, intlLocale);
   if (bucket === "month") return formatMonthYear(start, intlLocale);
   const last = dayKey(dayNumber(bucketAfter(start, bucket)) - 1);
   if (bucket === "quarter") {

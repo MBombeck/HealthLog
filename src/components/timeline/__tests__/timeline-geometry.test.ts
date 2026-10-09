@@ -13,7 +13,8 @@ import {
   fitText,
   gridTicks,
   itemLabel,
-  itemsInMonth,
+  itemsInPeriod,
+  latestDataDate,
   layoutLane,
   layoutSeries,
   layoutTimeline,
@@ -512,7 +513,12 @@ describe("interaction", () => {
   });
 
   it("names what happens, starts, ends or runs through the month, not the backdrop", () => {
-    const entries = itemsInMonth(fullTimeline().lanes, "2026-01-03", TODAY);
+    const entries = itemsInPeriod(
+      fullTimeline().lanes,
+      "2026-01-01",
+      "2026-01-31",
+      TODAY,
+    );
     const ids = entries.map((e) => e.item.id);
     expect(ids).toEqual(["ill-5", "course-3", "v-4"]);
     // The winter course neither starts nor ends in January: it runs through.
@@ -522,7 +528,50 @@ describe("interaction", () => {
     expect(ids).not.toContain("ill-chronic");
     expect(ids).not.toContain("al-1");
     // An open period that starts in the month is named.
-    const march2019 = itemsInMonth(fullTimeline().lanes, "2019-03-15", TODAY);
+    const march2019 = itemsInPeriod(
+      fullTimeline().lanes,
+      "2019-03-01",
+      "2019-03-31",
+      TODAY,
+    );
     expect(march2019.map((e) => e.item.id)).toContain("ill-chronic");
+  });
+
+  it("selects the newest bucket the bar has something for, never a document-only one", () => {
+    const timeline = fullTimeline();
+    const all = timeline.range;
+    // The newest value (July's systolic mean) beats the older entries.
+    expect(latestDataDate(timeline, TODAY, all)).toBe("2026-07-01");
+    // A later document does not count: the bar does not list documents,
+    // so selecting its month would open on "No entries".
+    const withDocument = {
+      ...timeline,
+      lanes: timeline.lanes.map((lane) =>
+        lane.key === "documents"
+          ? {
+              ...lane,
+              items: [
+                ...lane.items,
+                item({ id: "doc-late", kind: "document", start: "2026-08-20" }),
+              ],
+            }
+          : lane,
+      ),
+    };
+    expect(latestDataDate(withDocument, TODAY, all)).toBe("2026-07-01");
+    expect(
+      latestDataDate(withDocument, TODAY, {
+        from: "2026-08-01",
+        to: "2026-10-31",
+      }),
+    ).toBeNull();
+    // Inside a window, a closed period running past its end counts up to
+    // the window's last day, and whatever is selected the bar names it.
+    const window = { from: "2025-11-01", to: "2026-01-31" };
+    const day = latestDataDate(timeline, TODAY, window)!;
+    expect(day).toBe("2026-01-31");
+    expect(
+      itemsInPeriod(timeline.lanes, "2026-01-01", "2026-01-31", TODAY).length,
+    ).toBeGreaterThan(0);
   });
 });

@@ -61,6 +61,7 @@ export const MOOD_SERIES_KEY = "MOOD";
 
 /** The bucket a local day belongs to, named by its first day. */
 export function bucketKey(day: string, bucket: TimelineBucket): string {
+  if (bucket === "day") return day;
   if (bucket === "month") return `${day.slice(0, 7)}-01`;
   if (bucket === "quarter") {
     const month = Number(day.slice(5, 7));
@@ -110,7 +111,7 @@ export interface RolledMonth {
  */
 export function foldMonths(
   months: readonly RolledMonth[],
-  bucket: Exclude<TimelineBucket, "week">,
+  bucket: Exclude<TimelineBucket, "week" | "day">,
 ): SeriesPoint[] {
   const buckets = new Map<
     string,
@@ -230,7 +231,13 @@ async function measurementSeries(args: {
   const start = startOfLocalDayKey(args.from, args.tz);
   const end = startOfLocalDayKey(shiftDateKey(args.to, 1), args.tz);
   let points: SeriesPoint[];
-  if (args.bucket !== "week" && readsRollups(args.from, args.to)) {
+  // Weeks and days never read the rollups: their windows are short (a
+  // `day` range is under six weeks), and the rollups cut at UTC midnight.
+  if (
+    args.bucket !== "week" &&
+    args.bucket !== "day" &&
+    readsRollups(args.from, args.to)
+  ) {
     const bucket = args.bucket;
     // The fold boundary rounded up to a bucket start, so no bucket is half
     // live and half rolled up.
