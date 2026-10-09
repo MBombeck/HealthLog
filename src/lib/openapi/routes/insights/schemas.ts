@@ -2747,38 +2747,6 @@ export const coachReadStripResponse = z
       "The two server-authoritative lines a metric sub-page renders above its chart. Pure compute over the baseline and correlation engines — no provider call, no cache table — so web and native decode the same resolved DTO.",
   });
 
-// ── Coach seeded opener (`/api/insights/coach/seeded-question`) ───────
-
-export const coachSeededQuestionResponse = z
-  .object({
-    signal: z
-      .object({
-        sourceMetric: z
-          .string()
-          .describe(
-            "Sentinel id the client keys its localised copy on (`readiness` / `recovery`).",
-          ),
-        score: z.number().describe("The latest 0..100 score."),
-        band: z
-          .string()
-          .describe(
-            "`yellow` or `red`. Green never surfaces — a good day is not notable.",
-          ),
-      })
-      .nullable()
-      .describe(
-        "Null whenever nothing crossed the detector's confidence and notability gate, AND whenever the account has turned proactive suggestions off, AND whenever the `coach` capability is unavailable (then `ai` says why) — all mean the hero keeps its neutral greeting rather than showing a fabricated opener.",
-      ),
-    ai: aiCapabilityState.describe(
-      "The `coach` capability the opener exists for.",
-    ),
-  })
-  .meta({
-    id: "CoachSeededQuestion",
-    description:
-      "Today's single most notable derived wellness signal, resolved server-side into a tappable opener for the Coach's blank-chat hero. The client renders the resolved DTO and never recomputes the selection.",
-  });
-
 // ── Period narrative (`/api/insights/narrative`) ──────────────────────
 
 export const narrativeQuery = z

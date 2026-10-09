@@ -427,7 +427,7 @@ test.describe("document vault — AI assist + content search", () => {
     // The PDF is refused locally (tesseract reads images only) — the error
     // shows and the server suggest route is never called.
     await expect(
-      sheet.getByText("Local OCR reads images only — not this file."),
+      sheet.getByText("Local OCR reads images only, not this file."),
     ).toBeVisible();
     await page.waitForTimeout(300);
     expect(suggestCalls).toBe(0);

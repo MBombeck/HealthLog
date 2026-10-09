@@ -198,8 +198,8 @@ export function DocumentCard({
           </DayLinkStated>
         ) : (
           date
-        )}{" "}
-        · {size}
+        )}
+        , {size}
       </p>
       {showFilename ? (
         // Filename on its OWN muted line so it never clips the date/size

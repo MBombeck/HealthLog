@@ -34,7 +34,6 @@ interface CoachPrefsShape {
   nudgeVitals: boolean;
   nudgeRoutine: boolean;
   nudgeFrequency: "weekly" | "biweekly";
-  ambientSuggestions: boolean;
   nudgeAiComposed: boolean;
 }
 
@@ -51,7 +50,6 @@ const COACH_PREF_DEFAULTS: CoachPrefsShape = {
   nudgeVitals: true,
   nudgeRoutine: true,
   nudgeFrequency: "weekly",
-  ambientSuggestions: true,
   nudgeAiComposed: false,
 };
 
@@ -306,28 +304,6 @@ export function CoachNudgeCard({
           </div>
         </div>
       )}
-      {/* v1.25.0 — proactive ambient SUGGESTIONS opt-out. Independent of the
-          push-nudge master switch above (a user can keep nudges but silence
-          the example prompts), so it sits outside the `enabled` gate and rides
-          the same `coach` prefs blob. */}
-      <div className="border-border/60 flex min-h-11 items-center justify-between gap-3 border-t pt-4">
-        <div className="min-w-0">
-          <p className="text-sm">
-            {t("notifications.coachNudge.suggestionsLabel")}
-          </p>
-          <p className="text-muted-foreground text-xs">
-            {t("notifications.coachNudge.suggestionsDesc")}
-          </p>
-        </div>
-        <Switch
-          checked={resolved.ambientSuggestions}
-          onCheckedChange={(next) =>
-            patchCoach({ ambientSuggestions: next }, null)
-          }
-          disabled={!isAuthenticated || saving}
-          aria-label={t("notifications.coachNudge.suggestionsAria")}
-        />
-      </div>
       {msg && (
         <p
           role="status"

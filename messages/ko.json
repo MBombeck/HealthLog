@@ -242,7 +242,7 @@
     "colExpected": "예정",
     "colComplianceRate": "순응률",
     "moodTitle": "기분 추이",
-    "moodSummary": "평균: {avg} / 5.0 · 기록: {count}건 · 범위: {min}–{max}",
+    "moodSummary": "평균 {avg} / 5.0, 기록 {count}건, 범위 {min}–{max}",
     "colMood": "기분",
     "colCount": "횟수",
     "colShare": "비율",
@@ -579,8 +579,8 @@
     "sleepShort": "수면",
     "stepsShort": "걸음 수",
     "vo2MaxShort": "VO₂ max",
-    "bpInTargetWindow90": "목표 내 혈압 · 90일",
-    "bpInTargetWindowDynamic": "목표 내 혈압 · {days}일",
+    "bpInTargetWindow90": "목표 내 혈압 (90일)",
+    "bpInTargetWindowDynamic": "목표 내 혈압 ({days}일)",
     "bpInTargetCollecting": "데이터 모으는 중",
     "medications": "복약",
     "quickAddMeasurement": "측정 기록",
@@ -1336,7 +1336,7 @@
     "complianceInfoLabel": "복약 순응도란?",
     "lastIntake": "마지막 복용:",
     "nextIntake": "다음 복용:",
-    "nextIntakeOverdue": "시간 지남 · {time} — 지금도 복용할 수 있어요",
+    "nextIntakeOverdue": "{time}부터 지남, 지금도 복용할 수 있어요",
     "dayStreak": "일 연속 기록",
     "dayStreakOne": "일 연속 기록",
     "cycleDueToday": "오늘 예정",
@@ -1737,7 +1737,7 @@
       "empty": "아직 증량 단계가 기록되지 않았어요. 날짜가 있는 용량 변경을 추가하면 계획을 그려 줘요.",
       "youAreHere": "현재 위치",
       "doseStep": "{dose} {unit}",
-      "plannedFor": "예정 · {date}"
+      "plannedFor": "{date} 예정"
     },
     "injectionSiteBodyOutlineAriaLabel": "신체 윤곽",
     "injectionSitePickerAriaLabel": "주사 부위 선택기",
@@ -1788,7 +1788,7 @@
     "intakeHistoryStatusSkipped": "건너뜀",
     "intakeHistorySortByTaken": "복용 시각순 정렬",
     "intakeHistorySortByScheduled": "예정 시각순 정렬",
-    "intakeHistoryPageInfo": "{page}/{total}페이지 · {count}개 기록",
+    "intakeHistoryPageInfo": "{page}/{total}페이지, 기록 {count}개",
     "intakeHistoryPrev": "이전",
     "intakeHistoryNext": "다음",
     "glp1": {
@@ -1888,7 +1888,7 @@
         "markAsTaken": "복용함으로 표시",
         "markAsSkipped": "건너뜀으로 표시",
         "adHocTag": "일정 외",
-        "takenDetail": "예정 {planned} · 복용 {taken}",
+        "takenDetail": "예정 {planned}, 복용 {taken}",
         "doseTaken": "용량: {dose}",
         "status": {
           "taken_on_time": "정시",
@@ -2594,26 +2594,26 @@
         "ENV_POLLEN_MAX": "꽃가루"
       },
       "daily": {
-        "high": "{behaviour} 수치가 높은 날에는 다음 날 {outcome} 수치가 {direction} 경향이 있어요 — 원인이 아니라 지켜볼 만한 패턴이에요.",
-        "moderate": "지금까지의 근거로는 {behaviour} 수치가 높은 날에 다음 날 {outcome} 수치가 {direction} 것처럼 보여요 — 원인이 아니라 지켜볼 만한 패턴이에요.",
-        "faint": "{behaviour} 수치가 높은 날에 다음 날 {outcome} 수치가 {direction} 아주 희미한 기미만 보여요 — 기대기엔 너무 작고, 원인은 더더욱 아니에요."
+        "high": "{behaviour} 수치가 높은 날에는 다음 날 {outcome} 수치가 {direction} 경향이 있어요. 원인이 아니라 지켜볼 만한 패턴이에요.",
+        "moderate": "지금까지의 근거로는 {behaviour} 수치가 높은 날에 다음 날 {outcome} 수치가 {direction} 것처럼 보여요. 원인이 아니라 지켜볼 만한 패턴이에요.",
+        "faint": "{behaviour} 수치가 높은 날에 다음 날 {outcome} 수치가 {direction} 아주 희미한 기미만 보여요. 기대기엔 너무 작고, 원인은 더더욱 아니에요."
       },
       "lab": {
-        "default": "{lab} 측정값이 높은 시기에는 같은 기간의 {outcome} 수치도 {direction} 편이에요 — 원인이 아니라 임상의와 함께 지켜볼 만한 연관이에요.",
-        "faint": "{lab} 측정값이 높은 시기에 같은 기간의 {outcome} 수치가 {direction} 아주 희미한 기미만 보여요 — 기대기엔 너무 작고, 원인은 아니지만 임상의에게 이야기해 볼 만한 연관이에요."
+        "default": "{lab} 측정값이 높은 시기에는 같은 기간의 {outcome} 수치도 {direction} 편이에요. 원인이 아니라 임상의와 함께 지켜볼 만한 연관이에요.",
+        "faint": "{lab} 측정값이 높은 시기에 같은 기간의 {outcome} 수치가 {direction} 아주 희미한 기미만 보여요. 기대기엔 너무 작고 원인도 아니지만, 임상의에게 이야기해 볼 만해요."
       },
       "hypothesis": {
         "bpCompliance": {
-          "support": "복약 순응도가 높은 날에 수축기 측정값이 낮은 편이에요 — 지켜볼 만한 패턴이에요.",
-          "surprising": "기록에서는 순응도와 수축기 혈압이 같은 방향으로 움직여요 — 뜻밖이에요. 무언가 조정하기 전에 의사와 상의해 주세요.",
+          "support": "복약 순응도가 높은 날에 수축기 측정값이 낮은 편이에요. 지켜볼 만한 패턴이에요.",
+          "surprising": "기록에서는 순응도와 수축기 혈압이 같은 방향으로 움직여요. 뜻밖이에요. 무언가 조정하기 전에 의사와 상의해 주세요.",
           "none": "이 기간에는 순응도와 수축기 혈압이 뚜렷하게 함께 움직이지 않아요."
         },
         "moodPulse": {
-          "support": "기분이 낮은 날에 안정 시 맥박이 높은 편이에요 — 지켜볼 만한 패턴이에요.",
-          "surprising": "기록에서는 기분이 좋은 날에 안정 시 맥박도 높은 편이에요 — 뜻밖이에요.",
+          "support": "기분이 낮은 날에 안정 시 맥박이 높은 편이에요. 지켜볼 만한 패턴이에요.",
+          "surprising": "기록에서는 기분이 좋은 날에 안정 시 맥박도 높은 편이에요. 뜻밖이에요.",
           "none": "이 기간에는 기분과 안정 시 맥박이 뚜렷하게 함께 움직이지 않아요."
         },
-        "weightWeekday": "{weekday} 체중이 다른 요일 평균보다 {delta}kg {direction} 편이에요 — 지켜볼 만한 패턴이에요."
+        "weightWeekday": "{weekday} 체중이 다른 요일 평균보다 {delta}kg {direction} 편이에요. 지켜볼 만한 패턴이에요."
       },
       "dailySameDay": {
         "high": "당일과 전날의 {behaviour}이(가) 높을수록 내 데이터에서는 {outcome}이(가) {direction} 경향이 있습니다. 지켜볼 만한 패턴이지 원인은 아닙니다.",
@@ -2730,7 +2730,7 @@
       "referenceSleep": "하룻밤 최소 {low}분, 더 자는 건 감점하지 않아요",
       "referenceAdiposity": "허리-키 비율 {high} 미만",
       "referenceHba1c": "HbA1c {low}~{high}%",
-      "referenceDetail": "{label} · {source} · {kind} · {low}~{high}",
+      "referenceDetail": "{label}: {low}~{high} ({kind}, {source})",
       "openBound": "제한 없음",
       "laboratoryReferenceSource": "검사 기관 참고 범위",
       "personalTargetSource": "개인 목표",
@@ -2824,7 +2824,7 @@
       "experimentCta": "7일 실험 해보기",
       "experimentTooltip": "곧 제공돼요",
       "emptyTitle": "이 관계를 보려면 데이터가 더 필요해요",
-      "sourceChip": "짝지은 측정값 {n}개 기준 · {window}",
+      "sourceChip": "짝지은 측정값 {n}개 기준 ({window})",
       "sourceWindowLast30": "최근 30일",
       "confidenceHigh": "신뢰도 높음",
       "confidenceModerate": "신뢰도 보통",
@@ -3003,23 +3003,23 @@
       "cluster": {
         "cardio": {
           "label": "심혈관",
-          "hint": "혈압 · 맥박 · 심박변이도 · 안정 시와 보행 심박수"
+          "hint": "혈압, 맥박, 심박변이도, 안정 시와 보행 심박수"
         },
         "body": {
           "label": "체성분",
-          "hint": "체중 · 체지방 · 근육 · BMI"
+          "hint": "체중, 체지방, 근육, BMI"
         },
         "activity": {
           "label": "활동",
-          "hint": "걸음 수 · 에너지 · 거리 · 최대산소섭취량"
+          "hint": "걸음 수, 에너지, 거리, 최대산소섭취량"
         },
         "workouts": {
           "label": "운동",
-          "hint": "러닝 · 라이딩 · 세션"
+          "hint": "러닝, 라이딩, 세션"
         },
         "sleep": {
           "label": "수면",
-          "hint": "수면 시간 · 단계"
+          "hint": "수면 시간과 단계"
         },
         "mood": {
           "label": "기분",
@@ -3027,19 +3027,19 @@
         },
         "glucose": {
           "label": "혈당",
-          "hint": "공복 · 식후 측정값"
+          "hint": "공복 및 식후 측정값"
         },
         "medication": {
           "label": "복약",
-          "hint": "복약 순응도 · GLP-1 맥락"
+          "hint": "복약 순응도와 GLP-1 맥락"
         },
         "mobility": {
           "label": "이동성과 보행",
-          "hint": "안정성 · 비대칭 · 보행"
+          "hint": "안정성, 비대칭, 보행"
         },
         "environment": {
           "label": "환경",
-          "hint": "소음 · 햇빛 · 피부 온도"
+          "hint": "소음, 햇빛, 피부 온도"
         }
       },
       "settingsClustersLabel": "코치가 보는 데이터",
@@ -3092,21 +3092,7 @@
         "driver": "{note}"
       },
       "scope": {
-        "prefix": "코치가 이미 보고 있어요: {metric}",
-        "tap": "탭해서 물어보기",
-        "question": "이 지표를 설명해 주세요 — 눈여겨볼 게 있나요?"
-      },
-      "seeded": {
-        "prefix": "오늘 살펴볼 만한 것: {signal}",
-        "signal": {
-          "readiness": "준비도",
-          "recovery": "회복"
-        },
-        "question": {
-          "readiness": "오늘 준비도가 평소와 달라요 — 무엇 때문일까요?",
-          "recovery": "회복 상태가 달라졌어요 — 이유가 뭘까요?"
-        },
-        "dismiss": "닫기"
+        "prefix": "코치가 이미 보고 있어요: {metric}"
       },
       "settings": "설정",
       "history": {
@@ -3227,9 +3213,9 @@
           "cap": "단계가 많아 이제 정리하는 중",
           "noProgress": "새 데이터가 없어 정리하는 중"
         },
-        "thoughtProcessOne": "사고 과정 · {count}단계",
-        "thoughtProcessFew": "사고 과정 · {count}단계",
-        "thoughtProcessOther": "사고 과정 · {count}단계",
+        "thoughtProcessOne": "사고 과정 ({count}단계)",
+        "thoughtProcessFew": "사고 과정 ({count}단계)",
+        "thoughtProcessOther": "사고 과정 ({count}단계)",
         "awaitingAnswer": "답변이 필요해요"
       },
       "memory": {
@@ -3269,7 +3255,8 @@
         "capped": "(관리자가 제한함)",
         "disabled": "관리자가 깊은 생각을 꺼 두었어요."
       },
-      "memoryLink": "기억 ({count})"
+      "memoryLink": "기억 ({count})",
+      "newConversation": "새 대화"
     },
     "relativeJustNow": "방금",
     "relativeMinutesAgoOne": "{count}분 전",
@@ -4062,7 +4049,7 @@
       "distributionDaysUnit": "일",
       "weekdayTitle": "요일별 평균",
       "weekdayNoData": "데이터 없음",
-      "weekdayBestWorst": "가장 좋은 요일: {best} · 가장 힘든 요일: {worst}",
+      "weekdayBestWorst": "가장 좋은 요일: {best}, 가장 힘든 요일: {worst}",
       "tagsTitle": "태그와 유발 요인",
       "tagAvgMood": "태그가 있는 날의 평균 기분",
       "correlationsTitle": "기분과 다른 지표",
@@ -4078,7 +4065,7 @@
         "strengthModerate": "보통",
         "strengthWeak": "약함",
         "strengthNone": "없음",
-        "source": "짝지은 {n}일 · r = {r}",
+        "source": "짝지은 {n}일, r = {r}",
         "sourceLabel": "계산 방법",
         "emptyTitle": "아직 짝지을 데이터가 부족해요",
         "emptyDescription": "같은 날에 기분과 이 지표를 함께 기록하면 상관관계를 볼 수 있어요.",
@@ -4137,7 +4124,7 @@
       "crosstab": {
         "title": "태그와 건강 지표",
         "description": "각 활동을 태그한 날과 그렇지 않은 날에 건강 지표가 어떻게 다른지 보여줘요.",
-        "pairLabel": "{tag} · {metric}",
+        "pairLabel": "{tag} 있는 날의 {metric}",
         "metricActiveEnergy": "활동 에너지",
         "metricSleepDuration": "수면",
         "metricNextDayRecovery": "다음 날 회복도",
@@ -4154,7 +4141,7 @@
       "factorCrosstab": {
         "title": "직접 평가한 요인과 생체 지표",
         "description": "각 요인을 낮게 평가한 날과 높게 평가한 날에 생체 지표가 어떻게 다른지 보여줘요.",
-        "pairLabel": "{factor} · {metric}",
+        "pairLabel": "{factor} 있는 날의 {metric}",
         "metricSleepDuration": "수면",
         "metricSteps": "걸음 수",
         "metricRestingHeartRate": "안정 시 심박수",
@@ -4180,7 +4167,7 @@
         "moodDown": "{factor} 값이 높으면 다음 날 기분은 낮은 편이에요.",
         "outcomeUp": "기분이 좋으면 다음 날 {factor} 값도 높은 편이에요.",
         "outcomeDown": "기분이 좋으면 다음 날 {factor} 값은 낮은 편이에요.",
-        "stat": "짝지은 {n}일 · r = {r} · q = {q}",
+        "stat": "짝지은 {n}일, r = {r}, q = {q}",
         "statLabel": "계산 방법",
         "explainerLabel": "계산 방법"
       },
@@ -4224,11 +4211,11 @@
     },
     "derived": {
       "coverage": {
-        "summary": "입력 {required}개 중 {present}개 · {percent}%",
+        "summary": "입력 {required}개 중 {present}개 ({percent}%)",
         "ratioLabel": "{present}/{required}",
         "historyDays": "최근 기록 {count}일 기준",
         "missing": "더 정확해지려면 기록해 보세요: {list}",
-        "summaryLabelled": "{label} · {percent}%"
+        "summaryLabelled": "{label} ({percent}%)"
       },
       "scoreRing": {
         "aria": "점수 100점 만점에 {score}점, {band}",
@@ -4246,7 +4233,7 @@
         "inputsLabel": "입력값",
         "noInputs": "아직 이 값을 뒷받침한 입력값이 없어요.",
         "methodLabel": "방법",
-        "window": "최근 {days}일 기준 · {source} 데이터",
+        "window": "최근 {days}일간의 {source} 데이터 기준",
         "asOf": "{date} 기준",
         "standardLink": "기준: {name}"
       },
@@ -4288,7 +4275,7 @@
       "anatomy": {
         "outOf": "/100",
         "contributorsLabel": "구성 요소",
-        "contributorValue": "{value} · 가중치 {weight}%",
+        "contributorValue": "{value}, 가중치 {weight}%",
         "contributorMissing": "데이터 없음",
         "insufficient": "아직 점수를 낼 데이터가 부족해요. 계속 기록하면 여기에 표시돼요."
       },
@@ -5452,7 +5439,7 @@
           "title": "동기화된 영양 섭취",
           "description": "최근 {days}일간 Apple Health에서 동기화한 하루 합계예요.",
           "empty": "아직 동기화된 영양 데이터가 없어요.",
-          "latest": "{date} · {amount} {unit}",
+          "latest": "{date}에 {amount} {unit}",
           "daysWithData": "{days}일 중 {count}일",
           "moduleHint": "동기화는 영양 섭취 모듈에서 조절해요.",
           "moduleHintLink": "모듈 관리",
@@ -5521,7 +5508,7 @@
             "dropHint": "또는 눌러서 파일 선택",
             "fileInputLabel": "Apple Health export.zip 파일 선택",
             "choose": "파일 선택",
-            "idempotencyNote": "같은 보관 파일을 다시 올리면 병합돼요 — 중복이 생기지 않아요. 큰 파일은 백그라운드에서 처리해요.",
+            "idempotencyNote": "같은 보관 파일을 다시 올리면 병합돼요. 중복은 생기지 않아요. 큰 파일은 백그라운드에서 처리해요.",
             "uploading": "올리는 중…",
             "uploadFailed": "올리지 못했어요. 다시 시도해 주세요.",
             "rateLimited": "업로드가 너무 잦아요. 잠시 뒤에 다시 시도해 주세요.",
@@ -5530,7 +5517,7 @@
             "failureInterrupted": "불러오기가 끝나기 전에 중단됐어요. 보통 서버 재시작이나 메모리 부족 때문이에요. 데이터는 안전하니 내보내기 파일을 다시 올려 주세요.",
             "failureInsufficientMemory": "이 크기의 보관 파일을 처리하기엔 서버 메모리 한도가 낮아요. 서버 운영자에게 Node.js 힙 한도(NODE_OPTIONS=--max-old-space-size)를 올려 달라고 한 뒤 내보내기 파일을 다시 올려 주세요.",
             "rowsImported": "지금까지 {count}개 행을 불러왔어요",
-            "doneSummary": "완료 — {read}개 중 {imported}개 기록을 불러왔고, 진료 기록 {skipped}개는 건너뛰었어요.",
+            "doneSummary": "완료: {read}개 중 {imported}개 기록을 불러왔고, 진료 기록 {skipped}개는 건너뛰었어요.",
             "doneNothing": "그 보관 파일에서 불러온 게 없어요: {read}개 중 0개만 들어왔어요.",
             "writtenByHealthLogOne": "HealthLog가 직접 건강 앱에 기록한 {count}개 항목은 이미 데이터에 있으므로 제외했습니다.",
             "writtenByHealthLogOther": "HealthLog가 직접 건강 앱에 기록한 {count}개 항목은 이미 데이터에 있으므로 제외했습니다.",
@@ -5543,12 +5530,12 @@
               "parsing": "내보내기 파일 읽는 중…",
               "upserting": "기록 불러오는 중…"
             },
-            "skipUnsupported": "{count}개 샘플을 건너뛰었어요 — HealthLog가 불러오지 않는 데이터 유형이에요.",
+            "skipUnsupported": "{count}개 샘플을 건너뛰었어요. HealthLog가 불러오지 않는 데이터 유형이에요.",
             "skipRefused": "{count}개 샘플을 쓰지 못했어요 (읽을 수 없거나, 범위를 벗어났거나, 저장에 실패했어요).",
             "skipBreakdown": "자세히 보기 ({count}개 유형)",
             "skipBreakdownMore": "+ {count}개 유형 더",
             "cycleSummary": "생리 주기 샘플 {samples}개를 {days}일치 기록으로 합쳤어요.",
-            "cycleModuleOff": "생리 주기 샘플 {count}개를 건너뛰었어요 — 이 계정은 주기 기록이 꺼져 있어요.",
+            "cycleModuleOff": "이 계정은 주기 기록이 꺼져 있어서 생리 주기 샘플 {count}개를 건너뛰었어요.",
             "cycleDaysFailed": "생리 주기 {count}일치를 쓰지 못했어요: {reason}"
           },
           "json": {
@@ -5633,8 +5620,8 @@
             "failed": "불러오지 못했어요. 아무것도 저장되지 않았어요.",
             "columnsHeading": "각 열의 역할",
             "jsonOnly": "JSON 전용",
-            "previewLine": "읽은 행: {rows} · 불러올 행: {queued} · 거부된 행: {refused}",
-            "submittedLine": "읽은 행: {rows} · 불러오기 대기: {queued}",
+            "previewLine": "읽은 행 {rows}개, 불러올 행 {queued}개, 거부된 행 {refused}개",
+            "submittedLine": "읽은 행 {rows}개, 불러오기 대기 {queued}개",
             "unmatched": "기록에서 일치하는 약이 없어요: {names}",
             "ambiguous": "약이 둘 이상 일치해요: {names}",
             "mirrored": "다른 앱에서 미러링한 약이라 복용을 추가할 수 없어요: {names}",
@@ -5799,19 +5786,20 @@
         "storedDays": "날씨 {count}일치를 저장했어요.",
         "home": {
           "title": "기본 위치",
-          "description": "도시 단위의 대략적인 위치예요 — 정밀한 이동 경로는 저장하지 않아요. 설정한 날짜부터, 위치 기간이 적용되지 않는 날에는 이곳의 날씨와 일조 시간을 가져와요.",
+          "description": "도시 단위의 대략적인 위치예요. 정밀한 이동 경로는 저장하지 않아요. 설정한 날짜부터, 위치 기간이 적용되지 않는 날에는 이곳의 날씨와 일조 시간을 가져와요.",
           "current": "현재: {label}",
           "none": "아직 설정한 기본 위치가 없어요.",
           "since": "{date}부터 날씨를 기록해요. 그 이전 날짜는 위치 기간을 추가하기 전까지 비어 있어요."
         },
         "travel": {
           "title": "위치 기간",
-          "description": "장소와 기간을 추가하세요 — 여행일 수도, 지난 기록의 한 구간일 수도 있어요. 해당 기간에는 기본 위치 대신 이 위치가 쓰여서 실제로 있던 곳의 날씨가 반영돼요. 지난 기록을 바로잡는 방법이에요.",
+          "description": "장소와 기간을 추가하세요. 여행일 수도, 지난 기록의 한 구간일 수도 있어요. 해당 기간에는 기본 위치 대신 이 위치가 쓰여서 실제로 있던 곳의 날씨가 반영돼요. 지난 기록을 바로잡는 방법이에요.",
           "none": "아직 위치 기간이 없어요.",
           "add": "{label} 추가",
           "remove": "위치 기간 삭제",
           "removeConfirmTitle": "이 여행을 삭제할까요?",
-          "removeConfirmBody": "그 기간에 측정한 값은 기록에 그대로 남고, 여행 항목만 사라져요."
+          "removeConfirmBody": "그 기간에 측정한 값은 기록에 그대로 남고, 여행 항목만 사라져요.",
+          "range": "{start}~{end}"
         },
         "backfill": {
           "title": "지난 날짜 채우기",
@@ -5820,8 +5808,8 @@
         },
         "noResults": "일치하는 장소가 없어요.",
         "fetchFailedOne": "마지막 백그라운드 날씨 업데이트가 실패했어요 ({when}).",
-        "fetchFailedFew": "최근 백그라운드 날씨 업데이트 {count}번이 실패했어요 — 마지막은 {when}.",
-        "fetchFailedOther": "최근 백그라운드 날씨 업데이트 {count}번이 실패했어요 — 마지막은 {when}.",
+        "fetchFailedFew": "최근 백그라운드 날씨 업데이트 {count}번이 실패했어요. 마지막 실패: {when}.",
+        "fetchFailedOther": "최근 백그라운드 날씨 업데이트 {count}번이 실패했어요. 마지막 실패: {when}.",
         "airQuality": {
           "title": "대기질과 꽃가루",
           "description": "Open-Meteo를 통해 CAMS 모델에서 가져온 내 위치의 일별 대기질, 꽃가루, 자외선 정보입니다.",
@@ -6520,7 +6508,7 @@
     },
     "integrationFreshness": {
       "title": "받은 데이터",
-      "summary": "데이터 유형 {count}개 · 최신 {relative}",
+      "summary": "데이터 유형 {count}개, 최신 {relative}",
       "quiet": "{count}개 잠잠",
       "workouts": "운동"
     },
@@ -7079,14 +7067,14 @@
         "title": "동기화 진행 상황",
         "receivedLabel": "받은 기록 수",
         "oldestLabel": "받아온 가장 오래된 측정값",
-        "flowing": "최근 1시간 안에 데이터가 들어왔어요 — iPhone 앱이 계속 보내는 중이에요.",
-        "waiting": "iPhone 앱이 데이터를 더 보내기를 기다리는 중이에요. 앱이 열려 있거나 iOS가 백그라운드 시간을 줄 때 전송이 이어져요 — 처음 대량으로 채워 넣는 동안 잠잠한 구간이 생기는 건 정상이고 오류가 아니에요."
+        "flowing": "최근 1시간 안에 데이터가 들어왔어요. iPhone 앱이 계속 보내는 중이에요.",
+        "waiting": "iPhone 앱이 데이터를 더 보내기를 기다리는 중이에요. 앱이 열려 있거나 iOS가 백그라운드 시간을 줄 때 전송이 이어져요. 처음 대량으로 채워 넣는 동안 잠잠한 구간이 생기는 건 정상이고 오류가 아니에요."
       },
       "delivery": {
         "title": "전송",
         "lastTriggerLabel": "마지막 동기화 도착",
         "lastBackgroundLabel": "마지막 백그라운드 동기화",
-        "backgroundNever": "없음 — 지금까지 모든 동기화가 앱이 열린 상태에서 들어왔어요",
+        "backgroundNever": "없음: 지금까지 모든 동기화가 앱이 열린 상태에서 들어왔어요",
         "noSyncYet": "아직 도착한 동기화가 없어서 여기 보여줄 내용이 없어요.",
         "trigger": {
           "foreground": "앱이 열린 상태에서",
@@ -8086,19 +8074,19 @@
         "description": "하루 동안 모든 약을 제때 복용해요."
       },
       "compliance801": {
-        "title": "복약 순응도 80% · 1일",
+        "title": "1일간 복약 순응도 80%",
         "description": "30일 복약 순응도 80% 이상을 1일 유지해요."
       },
       "bmiGreen1": {
-        "title": "BMI 정상 · 1일",
+        "title": "1일간 BMI 정상",
         "description": "BMI를 1일 동안 정상 범위로 유지해요."
       },
       "bpGreen1": {
-        "title": "혈압 정상 · 1일",
+        "title": "1일간 혈압 정상",
         "description": "혈압을 1일 동안 정상 범위로 유지해요."
       },
       "pulseGreen1": {
-        "title": "맥박 정상 · 1일",
+        "title": "1일간 맥박 정상",
         "description": "안정 시 맥박을 1일 동안 정상 범위로 유지해요."
       },
       "onTimePerfect7": {
@@ -8106,19 +8094,19 @@
         "description": "7일 연속으로 모든 약을 제때 복용해요."
       },
       "compliance807": {
-        "title": "복약 순응도 80% · 7일",
+        "title": "7일간 복약 순응도 80%",
         "description": "30일 복약 순응도 80% 이상을 7일 연속 유지해요."
       },
       "bmiGreen7": {
-        "title": "BMI 정상 · 7일",
+        "title": "7일간 BMI 정상",
         "description": "BMI를 7일 연속 정상 범위로 유지해요."
       },
       "bpGreen7": {
-        "title": "혈압 정상 · 7일",
+        "title": "7일간 혈압 정상",
         "description": "혈압을 7일 연속 정상 범위로 유지해요."
       },
       "pulseGreen7": {
-        "title": "맥박 정상 · 7일",
+        "title": "7일간 맥박 정상",
         "description": "안정 시 맥박을 7일 연속 정상 범위로 유지해요."
       },
       "onTimePerfect30": {
@@ -8126,19 +8114,19 @@
         "description": "30일 연속으로 모든 약을 제때 복용해요."
       },
       "compliance8030": {
-        "title": "복약 순응도 80% · 30일",
+        "title": "30일간 복약 순응도 80%",
         "description": "30일 복약 순응도 80% 이상을 30일 연속 유지해요."
       },
       "bmiGreen30": {
-        "title": "BMI 정상 · 30일",
+        "title": "30일간 BMI 정상",
         "description": "BMI를 30일 연속 정상 범위로 유지해요."
       },
       "bpGreen30": {
-        "title": "혈압 정상 · 30일",
+        "title": "30일간 혈압 정상",
         "description": "혈압을 30일 연속 정상 범위로 유지해요."
       },
       "pulseGreen30": {
-        "title": "맥박 정상 · 30일",
+        "title": "30일간 맥박 정상",
         "description": "안정 시 맥박을 30일 연속 정상 범위로 유지해요."
       },
       "onTimePerfect180": {
@@ -8146,19 +8134,19 @@
         "description": "180일 연속으로 모든 약을 제때 복용해요."
       },
       "compliance80180": {
-        "title": "복약 순응도 80% · 180일",
+        "title": "180일간 복약 순응도 80%",
         "description": "30일 복약 순응도 80% 이상을 180일 연속 유지해요."
       },
       "bmiGreen180": {
-        "title": "BMI 정상 · 180일",
+        "title": "180일간 BMI 정상",
         "description": "BMI를 180일 연속 정상 범위로 유지해요."
       },
       "bpGreen180": {
-        "title": "혈압 정상 · 180일",
+        "title": "180일간 혈압 정상",
         "description": "혈압을 180일 연속 정상 범위로 유지해요."
       },
       "pulseGreen180": {
-        "title": "맥박 정상 · 180일",
+        "title": "180일간 맥박 정상",
         "description": "안정 시 맥박을 180일 연속 정상 범위로 유지해요."
       },
       "onTimePerfect360": {
@@ -8166,19 +8154,19 @@
         "description": "360일 연속으로 모든 약을 제때 복용해요."
       },
       "compliance80360": {
-        "title": "복약 순응도 80% · 360일",
+        "title": "360일간 복약 순응도 80%",
         "description": "30일 복약 순응도 80% 이상을 360일 연속 유지해요."
       },
       "bmiGreen360": {
-        "title": "BMI 정상 · 360일",
+        "title": "360일간 BMI 정상",
         "description": "BMI를 360일 연속 정상 범위로 유지해요."
       },
       "bpGreen360": {
-        "title": "혈압 정상 · 360일",
+        "title": "360일간 혈압 정상",
         "description": "혈압을 360일 연속 정상 범위로 유지해요."
       },
       "pulseGreen360": {
-        "title": "맥박 정상 · 360일",
+        "title": "360일간 맥박 정상",
         "description": "안정 시 맥박을 360일 연속 정상 범위로 유지해요."
       },
       "moodFirst": {
@@ -8262,15 +8250,15 @@
         "description": "앱 언어를 한 번 이상 바꿨어요."
       },
       "missFree7": {
-        "title": "복용 누락 없음 · 7일",
+        "title": "7일간 복용 누락 없음",
         "description": "7일 연속으로 복용을 한 번도 놓치지 않아요."
       },
       "missFree30": {
-        "title": "복용 누락 없음 · 30일",
+        "title": "30일간 복용 누락 없음",
         "description": "30일 연속으로 복용을 한 번도 놓치지 않아요."
       },
       "missFree90": {
-        "title": "복용 누락 없음 · 90일",
+        "title": "90일간 복용 누락 없음",
         "description": "90일 연속으로 복용을 한 번도 놓치지 않아요."
       },
       "measurementWeeks4": {
@@ -8282,7 +8270,7 @@
         "description": "자기 보고 항목 네 가지를 모두 채웠어요 — 코치가 상황을 알아요."
       },
       "sleepLog7": {
-        "title": "수면 기록 · 7일",
+        "title": "7일간 수면 기록",
         "description": "7일 연속으로 수면 데이터를 기록해요."
       }
     },
@@ -8372,9 +8360,6 @@
       "enabledToast": "능동 코치 알림을 켰어요.",
       "disabledToast": "능동 코치 알림을 껐어요.",
       "saveError": "저장하지 못했어요. 나중에 다시 시도해 주세요.",
-      "suggestionsLabel": "예시 질문",
-      "suggestionsDesc": "코치 화면에 미리 준비된 예시 질문을 가끔 보여줘요.",
-      "suggestionsAria": "코치 예시 질문 켜고 끄기",
       "aiComposedLabel": "코치가 알림 문구 작성",
       "aiComposedDesc": "제공자를 쓸 수 있으면 고정 템플릿 대신 모델이 알림 문구를 써요. 기본값은 꺼짐이에요.",
       "aiComposedAria": "AI가 쓴 능동 알림 켜고 끄기"
@@ -8792,7 +8777,7 @@
       },
       "crosstab": {
         "description": "내 데이터를 기준으로, 각 측정값이 황체기와 난포기에서 어떻게 다른지 비교했어요.",
-        "pairLabel": "{metric} · 황체기와 난포기 비교",
+        "pairLabel": "{metric}: 황체기와 난포기 비교",
         "detail": "황체기 {lutealAvg}{unit} ({lutealDays}일), 난포기 {follicularAvg}{unit} ({follicularDays}일).",
         "metricRestingHeartRate": "안정 시 심박수",
         "metricHrv": "심박변이도",
@@ -9012,7 +8997,7 @@
       "temperatureSection": "체온 및 배란",
       "intimacySection": "성관계 및 피임",
       "testsSection": "검사",
-      "phaseDayHeader": "{day}일째 · {phase}",
+      "phaseDayHeader": "{day}일째, {phase}",
       "bbtHint": "아침에 일어나기 전, 가장 먼저 재 주세요.",
       "titleForDate": "{date} 기록",
       "descriptionToday": "오늘. 생리량, 증상, 메모예요.",
@@ -9189,10 +9174,10 @@
       "VISCERAL_FAT": "내장지방",
       "BODY_MASS_INDEX": "체질량지수(BMI)",
       "WAIST_CIRCUMFERENCE": "허리둘레",
-      "PHQ9_SCORE": "PHQ-9 · 기분",
-      "GAD7_SCORE": "GAD-7 · 걱정",
-      "WHO5_SCORE": "WHO-5 · 웰빙",
-      "SCI_SCORE": "SCI · 수면"
+      "PHQ9_SCORE": "PHQ-9 (기분)",
+      "GAD7_SCORE": "GAD-7 (걱정)",
+      "WHO5_SCORE": "WHO-5 (웰빙)",
+      "SCI_SCORE": "SCI (수면)"
     },
     "typeGroups": {
       "vitals": "활력징후",
@@ -10289,10 +10274,10 @@
     "saved": "저장됨",
     "error": "문제가 생겼어요. 다시 시도해 주세요.",
     "instrument": {
-      "phq9": "PHQ-9 · 기분",
-      "gad7": "GAD-7 · 걱정",
-      "who5": "WHO-5 · 웰빙",
-      "sci": "SCI · 수면"
+      "phq9": "PHQ-9 (기분)",
+      "gad7": "GAD-7 (걱정)",
+      "who5": "WHO-5 (웰빙)",
+      "sci": "SCI (수면)"
     },
     "instrumentSub": {
       "phq9": "우울 선별, 9문항",
@@ -10760,7 +10745,7 @@
   },
   "documents": {
     "title": "문서",
-    "subtitle": "모든 소견서·리포트·영상을 한곳에서 검색해요 — 저장할 때 암호화돼요.",
+    "subtitle": "모든 소견서, 리포트, 영상을 한곳에서 검색해요. 저장할 때 암호화돼요.",
     "pageUpload": "업로드",
     "ownerOnlyUpload": "문서는 기록 소유자만 추가할 수 있습니다.",
     "kind": {
@@ -10802,15 +10787,15 @@
     },
     "error": {
       "fileTooLarge": "이 파일은 {maxSize} 제한보다 커요.",
-      "quotaExceeded": "저장 공간이 가득 찼어요 — {quota} 중 {used} 사용 중이에요.",
+      "quotaExceeded": "저장 공간이 가득 찼어요. {quota} 중 {used} 사용 중이에요.",
       "unsupportedType": "지원하지 않는 파일 형식이에요.",
       "purged": "이 문서는 완전히 삭제되어 복구할 수 없어요.",
       "duplicateExists": "같은 문서가 이미 저장돼 있어요.",
-      "rateLimited": "지금은 업로드가 너무 많아요 — 몇 분 뒤에 다시 시도해 주세요.",
+      "rateLimited": "지금은 업로드가 너무 많아요. 몇 분 뒤에 다시 시도해 주세요.",
       "generic": "업로드하지 못했어요. 다시 시도해 주세요."
     },
     "toast": {
-      "duplicate": "이미 저장돼 있어요 — 기존 문서를 표시해요.",
+      "duplicate": "이미 저장돼 있어요. 기존 문서를 표시해요.",
       "deleted": "문서를 삭제했어요",
       "restoreFailed": "문서를 복구하지 못했어요."
     },
@@ -10833,7 +10818,7 @@
     },
     "empty": {
       "title": "문서 보관함이 비어 있어요",
-      "description": "의사 소견서, 검사 리포트, 영상, 처방전, 예방접종 기록을 암호화해 보관하고 종류·질환·연도로 검색해요.",
+      "description": "의사 소견서, 검사 리포트, 영상, 처방전, 예방접종 기록을 암호화해 보관하고 종류, 질환, 연도별로 검색해요.",
       "action": "첫 문서 올리기",
       "noMatchesTitle": "일치하는 문서 없음",
       "noMatchesDescription": "현재 검색·필터에 맞는 문서가 없어요."
@@ -10873,9 +10858,9 @@
       "linkCondition": "연결",
       "noConditions": "질환에 연결되지 않음",
       "previewUnavailable": "이 파일 형식은 미리보기를 지원하지 않아요",
-      "uploadedMeta": "추가 {date} · {size}",
+      "uploadedMeta": "{date} 추가, {size}",
       "importedFrom": "{system}에서 가져옴",
-      "importedFromWithId": "{system}에서 가져옴 · ID {id}",
+      "importedFromWithId": "{system}에서 가져옴, ID {id}",
       "sourceOther": "다른 시스템",
       "share": "공유",
       "labValuesLink": "검사 수치 {count}개 보기",
@@ -10942,7 +10927,7 @@
       "errorNotIndexed": "문서를 먼저 읽은 뒤에 추출해 주세요.",
       "errorLocalOcrDisabled": "AI 설정에서 로컬 OCR을 먼저 켜 주세요.",
       "errorProvider": "이 작업에 쓸 AI 제공자가 설정돼 있지 않아요.",
-      "errorTextImageOnly": "로컬 OCR은 이미지만 읽어요 — 이 파일은 읽을 수 없어요.",
+      "errorTextImageOnly": "로컬 OCR은 이미지만 읽어요. 이 파일은 읽을 수 없어요.",
       "errorConsent": "AI로 문서를 읽으려면 먼저 동의가 필요합니다.",
       "errorUnavailable": "지금 여기에서는 AI로 문서를 읽을 수 없습니다."
     },
@@ -11245,14 +11230,14 @@
       }
     },
     "hydration": {
-      "referenceMeta": "권장 섭취량 {value} {unit}/일 · EFSA"
+      "referenceMeta": "권장 섭취량 {value} {unit}/일 (EFSA)"
     },
     "caffeine": {
-      "ceilingMeta": "안전 상한 {value} {unit}/일 · EFSA"
+      "ceilingMeta": "안전 상한 {value} {unit}/일 (EFSA)"
     },
     "micronutrients": {
       "title": "비타민·미네랄",
-      "rowMeta": "{window}일 중 {days}일 · 기준 {value} {unit} (EFSA)",
+      "rowMeta": "{window}일 중 {days}일, 기준 {value} {unit} (EFSA)",
       "rowMetaNoRef": "{window}일 중 {days}일",
       "footer": "이 기간에 데이터가 있는 미량영양소는 추적 중인 {total}개 중 {tracked}개예요.",
       "emptyTitle": "아직 동기화된 미량영양소 데이터가 없어요",
@@ -11267,7 +11252,7 @@
     },
     "push": {
       "title": "아침 브리핑",
-      "bodyProvisional": "{line} · 어젯밤 수면은 아직 들어오지 않았어요."
+      "bodyProvisional": "{line}\n어젯밤 수면은 아직 들어오지 않았어요."
     },
     "item": {
       "doseWindow": {
@@ -11974,7 +11959,7 @@
       "both": "양쪽",
       "none": "지정 안 함"
     },
-    "bodySiteWithSide": "{site} · {side}",
+    "bodySiteWithSide": "{site} ({side})",
     "sectionTitle": "진료",
     "sectionDescription": "병원 방문과 잡아 둔 예약을 한곳에서 봐요.",
     "add": "진료",
@@ -12236,7 +12221,6 @@
     "loadFailed": "이 날을 불러오지 못했어요.",
     "dayOf": "{m}일 중 {n}일째",
     "dayN": "{n}일째",
-    "since": "{date}부터",
     "usualRange": "평소 {lo}~{hi}",
     "groups": {
       "scores": "점수",
@@ -12264,11 +12248,11 @@
     "description": "이 날에 대한 모든 기록이에요.",
     "openDocument": "문서 열기",
     "previousReading": "이전, {date}",
-    "rugLegend": "축 아래 점: 기록이 있는 날 · 고리: 눈에 띄는 날",
+    "rugLegend": "축 아래 점은 기록이 있는 날을, 고리는 눈에 띄는 날을 표시해요.",
     "sheetExpand": "전체 높이로 펼치기",
     "sheetShrink": "줄이기",
     "usualLabel": "직전 30일",
-    "valuesLegend": "점: 이 날 · 막대: 직전 30일",
+    "valuesLegend": "점은 이 날, 막대는 직전 30일",
     "valuesAllOne": "모든 수치",
     "valuesAllFew": "수치 {count}개 모두",
     "valuesAllOther": "수치 {count}개 모두",
@@ -12302,7 +12286,13 @@
       "resumed": "{label} 다시 시작",
       "illnessBegan": "{label} 시작",
       "illnessResolved": "{label} 나음"
-    }
+    },
+    "pickDate": "날짜 선택",
+    "pickerTitle": "날짜로 이동",
+    "today": "오늘",
+    "hasEntries": "기록 있음",
+    "dayNSince": "{n}일째, {date}부터",
+    "sinceDate": "{date}부터"
   },
   "timeline": {
     "title": "타임라인",
@@ -12376,9 +12366,9 @@
         "vaccinationsOne": "예방접종 {count}건",
         "vaccinationsFew": "예방접종 {count}건",
         "vaccinationsOther": "예방접종 {count}건",
-        "visitsOne": "진료 {count}건 · 시술 {procedures}건",
-        "visitsFew": "진료 {count}건 · 시술 {procedures}건",
-        "visitsOther": "진료 {count}건 · 시술 {procedures}건",
+        "visitsOne": "진료 {count}건, 시술 {procedures}건",
+        "visitsFew": "진료 {count}건, 시술 {procedures}건",
+        "visitsOther": "진료 {count}건, 시술 {procedures}건",
         "visitsPlannedOne": "예정된 진료만 {count}건",
         "visitsPlannedFew": "예정된 진료만 {count}건",
         "visitsPlannedOther": "예정된 진료만 {count}건",

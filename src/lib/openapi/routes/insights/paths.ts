@@ -60,7 +60,6 @@ import {
   insightsGeneratePostResponse,
   coachReadQuery,
   coachReadStripResponse,
-  coachSeededQuestionResponse,
   narrativeQuery,
   narrativeResponse,
   glp1TimelineQuery,
@@ -391,28 +390,6 @@ export const insightsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(
                 coachReadStripResponse,
                 "CoachReadStripEnvelope",
-              ),
-            },
-          },
-        },
-        ...stdResponses,
-      },
-    },
-  },
-  "/api/insights/coach/seeded-question": {
-    get: {
-      tags: ["Insights"],
-      summary: "Today's suggested Coach opener",
-      description:
-        "Resolves today's single most notable derived wellness signal into a tappable opener for the Coach's blank-chat hero, using the same confidence-gated detector the daily briefing uses. The selection happens SERVER-side and the client renders it rather than recomputing. `signal: null` is the ordinary answer and means the hero keeps its neutral greeting — never a fabricated opener. Two different causes produce that null and are indistinguishable on the wire: nothing crossed the notability gate, or the account has turned proactive suggestions off, in which case the detector does not run at all. The opener exists only to open the Coach, so it is served only while the `coach` AI capability is available; otherwise the answer is the same neutral `signal: null` and `ai` says why. Never refused for an AI reason. Shared analytics-read budget. Cookie or Bearer auth; not delegable.",
-      responses: {
-        "200": {
-          description: "The opener, or the neutral null.",
-          content: {
-            "application/json": {
-              schema: dataEnvelope(
-                coachSeededQuestionResponse,
-                "CoachSeededQuestionEnvelope",
               ),
             },
           },

@@ -209,7 +209,7 @@ function DoseRow({
               </span>
             ) : null}
             {showIdentity && identity ? (
-              <span className="text-muted-foreground">· {identity}</span>
+              <span className="text-muted-foreground">{identity}</span>
             ) : null}
           </div>
           <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">

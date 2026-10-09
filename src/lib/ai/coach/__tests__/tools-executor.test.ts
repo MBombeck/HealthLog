@@ -345,7 +345,7 @@ describe("executeCoachTool", () => {
           lagDays: 1,
           n: 42,
           r: 0.31,
-          note: "Higher time in daylight tends to go with higher next-day sleep duration in your data — a pattern worth watching, not a cause.",
+          note: "Higher time in daylight tends to go with higher next-day sleep duration in your data. It is a pattern to watch, not a cause.",
         },
       ],
       coincident: {

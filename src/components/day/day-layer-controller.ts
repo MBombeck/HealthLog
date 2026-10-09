@@ -158,6 +158,15 @@ export function openDay(date: DateKey, options: OpenDayOptions = {}): void {
 /** Move the open day by `delta` calendar days, without a new history entry. */
 export function stepDay(from: DateKey, delta: number): DateKey {
   const next = shiftDateKey(from, delta);
+  jumpDay(next);
+  return next;
+}
+
+/**
+ * Swap the open day for `next` (a day picked from the header's calendar),
+ * the way a step does: no new history entry, so one Back still leaves.
+ */
+export function jumpDay(next: DateKey): void {
   memory.focus = null;
   emit();
   const { pathname, search } = currentLocation();
@@ -169,7 +178,27 @@ export function stepDay(from: DateKey, delta: number): DateKey {
     "",
     withDayHref(pathname, search, next),
   );
-  return next;
+}
+
+/**
+ * Set while the docked day collapses to make room for another panel (the
+ * Coach's conversations below 1600 px): focus then stays with the control
+ * that asked for the room instead of moving to the day's edge.
+ */
+let yielding = false;
+
+/** Collapse the docked day to its edge for a neighbouring panel. */
+export function yieldDay(): void {
+  yielding = true;
+  memory.trigger = null;
+  closeDay();
+}
+
+/** Read and clear the flag `yieldDay` set. */
+export function takeDayYield(): boolean {
+  const was = yielding;
+  yielding = false;
+  return was;
 }
 
 /**

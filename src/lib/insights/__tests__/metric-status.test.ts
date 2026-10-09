@@ -457,7 +457,7 @@ describe("generateMetricStatus — generation path", () => {
     vi.mocked(getRelevantCorrelationsForMetric).mockResolvedValueOnce([
       {
         interpretation:
-          "Higher time in daylight tends to go with lower next-day resting heart rate in your data — a pattern worth watching, not a cause.",
+          "Higher time in daylight tends to go with lower next-day resting heart rate in your data. It is a pattern to watch, not a cause.",
         n: 35,
         r: -0.46,
       },

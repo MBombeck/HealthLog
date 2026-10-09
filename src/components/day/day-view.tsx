@@ -30,6 +30,7 @@ import { resolveIntlLocale } from "@/lib/format-locale";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
+import { DayDatePicker } from "./day-date-picker";
 import type { DayFocus } from "./day-layer-controller";
 import {
   DayEvents,
@@ -77,6 +78,8 @@ export interface DayViewProps {
   shell: "docked" | "sheet" | "bottom";
   onClose: () => void;
   onStep: (delta: number) => void;
+  /** Open another day, picked from the header's calendar. */
+  onPick: (date: DateKey) => void;
   /** The heading element: an `h2`, or the sheet primitive's title. */
   Title: ComponentType<{
     id?: string;
@@ -114,6 +117,7 @@ export function DayView({
   shell,
   onClose,
   onStep,
+  onPick,
   Title,
   titleId,
   titleRef,
@@ -178,7 +182,7 @@ export function DayView({
     ? [
         tCount("day.countValues", data.counts.values),
         tCount("day.countEntries", data.counts.entries),
-      ].join(" · ")
+      ].join(", ")
     : null;
   const compact = shell === "bottom";
   const closeLabel = shell === "docked" ? t("day.hidePanel") : t("day.close");
@@ -230,14 +234,24 @@ export function DayView({
           tabIndex={-1}
           className="min-w-0 flex-1 truncate px-1 text-base leading-snug font-semibold focus-visible:outline-none"
         >
-          {compact ? (
-            <>
-              <span aria-hidden="true">{shortLabel(date)}</span>
-              <span className="sr-only">{longLabel(date)}</span>
-            </>
-          ) : (
-            longLabel(date)
-          )}
+          {/* The date is the way to any other day: a calendar opens from
+              it, so the header needs no icon of its own. */}
+          <DayDatePicker
+            date={date}
+            today={today}
+            onPick={onPick}
+            variant={compact ? "sheet" : "popover"}
+            label={
+              compact ? (
+                <>
+                  <span aria-hidden="true">{shortLabel(date)}</span>
+                  <span className="sr-only">{longLabel(date)}</span>
+                </>
+              ) : (
+                longLabel(date)
+              )
+            }
+          />
         </Title>
         <Button
           type="button"
@@ -291,7 +305,7 @@ export function DayView({
           className="text-muted-foreground -mb-3 text-xs tabular-nums"
           data-slot="day-meta"
         >
-          {meta ?? <span className="invisible">·</span>}
+          {meta ?? <span className="invisible">0</span>}
         </p>
         {focus ? (
           <div className="space-y-2.5">
@@ -321,7 +335,7 @@ export function DayView({
           </p>
         ) : (
           <>
-            <DayRunning items={data.running} />
+            <DayRunning items={data.running} date={date} />
             {data.values.length > 0 ? (
               <div className="space-y-2.5">
                 <DayValues values={data.values} focusTypes={focusTypes} />

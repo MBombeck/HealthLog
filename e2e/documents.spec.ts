@@ -771,7 +771,7 @@ test.describe("document vault", () => {
 
     await uploadViaPicker(page, `${marker}-copy.pdf`, bytes);
     await expect(
-      page.getByText("Already stored — highlighting the existing document."),
+      page.getByText("Already stored. The existing document is highlighted."),
     ).toBeVisible();
     // One row, not two — the copy never landed.
     await expect(openButton(page, `${marker}-copy.pdf`)).not.toBeVisible();

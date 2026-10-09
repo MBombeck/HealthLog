@@ -869,7 +869,7 @@ export function DocumentDetailSheet({
                   {doc.filename ?? title}
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  {t("documents.detail.previewUnavailable")} ·{" "}
+                  {t("documents.detail.previewUnavailable")},{" "}
                   {formatBytes(doc.byteSize, locale)}
                 </p>
                 <DocumentDownloadButton
@@ -1185,8 +1185,15 @@ export function DocumentDetailSheet({
                   date: format.date(doc.createdAt),
                   size: formatBytes(doc.byteSize, locale),
                 })}
-                {doc.filename ? ` · ${doc.filename}` : ""}
               </p>
+              {doc.filename ? (
+                <p
+                  className="text-muted-foreground truncate text-xs"
+                  title={doc.filename}
+                >
+                  {doc.filename}
+                </p>
+              ) : null}
 
               {/* Where an imported document came from (#1038). Meta, so
                   muted like the line above; the id is what the person looks

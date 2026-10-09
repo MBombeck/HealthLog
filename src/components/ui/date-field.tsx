@@ -315,7 +315,7 @@ function resolveOrder(
  * Map the app locale → the date-fns locale so the calendar's month / weekday
  * names match the UI language. Defaults to enUS for anything unmapped.
  */
-function resolveDateFnsLocale(
+export function resolveDateFnsLocale(
   locale: ReturnType<typeof useTranslations>["locale"],
 ): DateFnsLocale {
   switch (locale) {

@@ -401,9 +401,14 @@ export function EnvironmentSection() {
                   key={tr.id}
                   className="flex items-center justify-between gap-2 p-2"
                 >
-                  <span className="text-sm">
-                    {tr.label} · {fmt.dateShortSmartCalendar(tr.startDate)} –{" "}
-                    {fmt.dateShortSmartCalendar(tr.endDate)}
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm">{tr.label}</span>
+                    <span className="text-muted-foreground block text-xs">
+                      {t("settings.sections.environment.travel.range", {
+                        start: fmt.dateShortSmartCalendar(tr.startDate),
+                        end: fmt.dateShortSmartCalendar(tr.endDate),
+                      })}
+                    </span>
                   </span>
                   <ConfirmButton
                     slot="travel-remove"

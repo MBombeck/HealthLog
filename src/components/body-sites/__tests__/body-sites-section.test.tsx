@@ -154,7 +154,7 @@ describe("<BodySitesSection>", () => {
     });
     expect(html).toContain("Procedures and visits");
     expect(html).toContain("Arthroscopy");
-    expect(html).toContain("Knee · Left");
+    expect(html).toContain("Knee (Left)");
     expect(html).toContain('href="/documents?doc=d1"');
     expect(html).toContain("MRI knee report");
     expect(html).toContain("Conditions");

@@ -157,8 +157,8 @@ describe("buildCoachReadStrip — the pattern line speaks the reader's language"
     // A sentence that is different but wrong is still a broken page.
     expect(note).toBe(
       "Wenn die Symptomstärke höher liegt, scheint die Schlafdauer am " +
-        "Folgetag nach bisheriger Datenlage eher niedriger auszufallen — ein " +
-        "Muster, das Beachtung verdient, keine Ursache.",
+        "Folgetag nach bisheriger Datenlage eher niedriger auszufallen. Das ist " +
+        "ein Muster, das Beachtung verdient, keine Ursache.",
     );
   });
 
@@ -170,8 +170,8 @@ describe("buildCoachReadStrip — the pattern line speaks the reader's language"
     expect(strip.driver).not.toBeNull();
     expect(strip.driver!.note).toBe(
       "Higher symptom severity looks like it goes with lower next-day sleep " +
-        "duration in your data, on the evidence so far — a pattern worth " +
-        "watching, not a cause.",
+        "duration in your data, on the evidence so far. It is a pattern " +
+        "to watch, not a cause.",
     );
   });
 

@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Page, TestInfo } from "@playwright/test";
 
 import { mockDay } from "./setup/day-mock";
 import { expect, test } from "./setup/test";
@@ -26,12 +26,26 @@ import { MOBILE_ROUTES_ANALYTE } from "./setup/mobile-routes-fixture";
  *   - the dashboard's today area offers no door; its charts below do.
  *
  * Stable data attributes only: `day-panel` (+ `data-shell`), `day-link`,
+ * the header's `day-date-button` and its `day-date-picker` (days keyed by
+ * `data-date-key`, dotted by `data-entries`, and `day-date-today`),
  * `chart-plot[data-day-links]`, `chart-tooltip-open-day`, `day-prev` /
  * `day-next` / `day-close`, and the collapsed edge `day-rail` (+ `data-day`)
  * with its `day-expand`.
  */
 
 const panel = (page: Page) => page.locator('[data-slot="day-panel"]');
+
+async function shot(page: Page, testInfo: TestInfo, name: string) {
+  const path = testInfo.outputPath(`${name}.png`);
+  await page.screenshot({ path });
+  await testInfo.attach(name, { path, contentType: "image/png" });
+  const dir = process.env.DAY_SHOTS_DIR;
+  if (dir) {
+    await page.screenshot({
+      path: `${dir}/${name}-${testInfo.project.name}.png`,
+    });
+  }
+}
 
 function isoDaysAgo(days: number): string {
   const d = new Date(Date.now() - days * 86_400_000);
@@ -187,6 +201,81 @@ test.describe("the day view", () => {
     await expect(page).toHaveURL(new RegExp(`/labs\\?day=${day}$`));
     await expect(panel(page).locator("h2").first()).toBeFocused();
     await expect(rail).toHaveCount(0);
+  });
+
+  test("the date opens a calendar; a picked day opens, Today goes to today", async ({
+    page,
+  }, testInfo) => {
+    const desktop = testInfo.project.name === "chromium-desktop";
+    // The days of the month that hold anything carry a dot.
+    await mockDay(page, { index: "full" });
+    const day = isoDaysAgo(5);
+    await page.goto(`/mood?day=${day}`);
+    await expect(panel(page)).toHaveAttribute(
+      "data-shell",
+      desktop ? "docked" : "bottom",
+    );
+    const date = panel(page).locator('[data-slot="day-date-button"]');
+    const picker = page.locator('[data-slot="day-date-picker"]');
+    // The date stays one line in the header, the arrows beside it.
+    await expect(date).toHaveAttribute("aria-expanded", "false");
+    await expect(panel(page).locator('[data-slot="day-prev"]')).toBeVisible();
+    await shot(page, testInfo, "day-date-closed");
+
+    await date.click();
+    await expect(picker).toBeVisible();
+    await expect(date).toHaveAttribute("aria-expanded", "true");
+    await expect(picker.locator(`[data-date-key="${day}"]`)).toHaveAttribute(
+      "data-selected-single",
+      "true",
+    );
+    await expect(picker.locator('[data-entries="true"]').first()).toBeVisible();
+    // Nothing past today can be picked.
+    const tomorrow = picker.locator(`[data-date-key="${isoDaysAgo(-2)}"]`);
+    if ((await tomorrow.count()) > 0) await expect(tomorrow).toBeDisabled();
+    await shot(page, testInfo, "day-date-open");
+
+    // Another day of the same month: the 1st, or the 2nd when the open day
+    // is the 1st itself.
+    const first = `${day.slice(0, 8)}01`;
+    const target = first === day ? isoDaysAgo(4) : first;
+    const start = await page.evaluate(() => window.history.length);
+    await picker.locator(`[data-date-key="${target}"]`).click();
+    await expect(picker).toHaveCount(0);
+    await expect(page.locator('[data-slot="day-view"]')).toHaveAttribute(
+      "data-day",
+      target,
+    );
+    await expect(page).toHaveURL(new RegExp(`[?&]day=${target}`));
+    // Like a step: no new history entry, and focus back on the date.
+    expect(await page.evaluate(() => window.history.length)).toBe(start);
+    await expect(date).toBeFocused();
+
+    // The keyboard: Enter opens, Escape closes the calendar only.
+    await page.keyboard.press("Enter");
+    await expect(picker).toBeVisible();
+    // The calendar has the keyboard before Escape is pressed.
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            document.activeElement?.closest(
+              '[role="dialog"]:not([data-slot="day-panel"])',
+            ) != null,
+        ),
+      )
+      .toBe(true);
+    await page.keyboard.press("Escape");
+    await expect(picker).toHaveCount(0);
+    await expect(panel(page)).toBeVisible();
+    await expect(date).toBeFocused();
+
+    // Today.
+    await page.keyboard.press("Space");
+    await expect(picker).toBeVisible();
+    await picker.locator('[data-slot="day-date-today"]').click();
+    await expect(picker).toHaveCount(0);
+    await expect(panel(page).locator('[data-slot="day-next"]')).toBeDisabled();
   });
 
   test("a sheet closes for good and leaves no edge behind", async ({

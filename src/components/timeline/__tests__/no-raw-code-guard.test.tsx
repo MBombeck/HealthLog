@@ -513,7 +513,9 @@ describe.each<Locale>(["de", "en"])("the day view in %s", (locale) => {
   });
 
   it("words every code under Running that day", () => {
-    const text = textOf(render(<DayRunning items={everyRunning()} />, locale));
+    const text = textOf(
+      render(<DayRunning items={everyRunning()} date="2026-03-12" />, locale),
+    );
     expect(rawCodes(text)).toEqual([]);
   });
 });
