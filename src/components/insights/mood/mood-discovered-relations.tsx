@@ -50,6 +50,8 @@ export interface CorrelationDiscoveryResponse {
   pairsTested: number;
   fdrQ: number;
   minPairs: number;
+  /** v1.42 — the record had findings before the seasonal adjustment. */
+  findingsBeforeSeasonalAdjustment?: boolean;
 }
 
 /** Map a discovery channel key to its localized measurement-type label. */

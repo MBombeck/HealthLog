@@ -2554,7 +2554,9 @@
       "dismissError": "Nie udało się odrzucić tego wzorca.",
       "restoreError": "Nie udało się przywrócić tego wzorca.",
       "loadError": "Nie udało się wczytać wzorców.",
-      "empty": "Żaden aktualny wzorzec nie przekroczył progu dowodów."
+      "empty": "Żaden aktualny wzorzec nie przekroczył progu dowodów.",
+      "seasonalNote": "Od wersji 1.42 HealthLog usuwa porę roku i długoterminowy trend, zanim porówna wartości. Zobaczysz mniej zależności, ale te, które zostały, są pewniejsze. Wiele wcześniejszych wzorców wynikało po prostu z kalendarza.",
+      "seasonalNoteDismiss": "Zamknij uwagę"
     },
     "correlation": {
       "direction": {

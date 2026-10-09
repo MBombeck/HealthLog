@@ -2554,7 +2554,9 @@
       "dismissError": "Impossible d’ignorer ce schéma.",
       "restoreError": "Impossible de restaurer ce schéma.",
       "loadError": "Impossible de charger les schémas.",
-      "empty": "Aucun schéma actuel n’a franchi le seuil de preuve."
+      "empty": "Aucun schéma actuel n’a franchi le seuil de preuve.",
+      "seasonalNote": "Depuis la version 1.42, HealthLog retire la saison et la tendance de fond avant de comparer les valeurs. Vous verrez moins de liens, mais ceux qui restent sont plus solides. Beaucoup des schémas d’avant n’étaient que le calendrier.",
+      "seasonalNoteDismiss": "Fermer la remarque"
     },
     "correlation": {
       "direction": {

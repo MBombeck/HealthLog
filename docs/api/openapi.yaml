@@ -62559,11 +62559,17 @@ components:
           description: v1.22 — labs ↔ outcome associations (each draw vs the contemporaneous outcome window-mean), FDR-controlled;
             absent-degrading on sparse draws.
           $ref: "#/components/schemas/LabCorrelationResult"
+        findingsBeforeSeasonalAdjustment:
+          type: boolean
+          description: v1.42 — true when the record held a discovery finding before the engine began removing trend and season
+            from both series. Drives a one-time explanation of why fewer pairs surface; false for every account created
+            since.
       required:
         - discovered
         - pairsTested
         - fdrQ
         - minPairs
+        - findingsBeforeSeasonalAdjustment
       additionalProperties: false
       description: v1.10.0 — FDR-controlled correlation discovery over a curated behaviour × outcome matrix, lagged behaviour
         → next-day outcome. Only statistically-defensible pairs surface; descriptive, never causal.

@@ -36,6 +36,7 @@ import {
 } from "@/lib/insights/correlation-discovery";
 import {
   decisionForEvidence,
+  hadFindingsBeforeSeasonalAdjustment,
   PATTERN_FAMILIES,
   syncAcceptedPatterns,
 } from "@/lib/insights/correlation-patterns";
@@ -131,17 +132,23 @@ async function buildCorrelationsResponse(
   //
   // v1.22 — lab draws (for the labs ↔ outcome pass) fetch alongside; they feed
   // a different pass over a different grain, so they are not matrix channels.
-  const [matrix, labDraws] = await Promise.all([
-    assembleDiscoveryMatrix(userId, {
-      tz,
-      since,
-      fetchMode: "tiered",
-      modules,
-    }),
-    isSurfaceVisible("correlation:LAB_DRAWS", modules)
-      ? fetchLabDraws(userId, tz, since)
-      : Promise.resolve([]),
-  ]);
+  //
+  // The earlier-findings probe is one indexed lookup on the pattern store; it
+  // tells the client whether this record had findings under the engine before
+  // the seasonal adjustment, which is what earns the one-time explanation.
+  const [matrix, labDraws, findingsBeforeSeasonalAdjustment] =
+    await Promise.all([
+      assembleDiscoveryMatrix(userId, {
+        tz,
+        since,
+        fetchMode: "tiered",
+        modules,
+      }),
+      isSurfaceVisible("correlation:LAB_DRAWS", modules)
+        ? fetchLabDraws(userId, tz, since)
+        : Promise.resolve([]),
+      hadFindingsBeforeSeasonalAdjustment(userId),
+    ]);
   const { series, diagnostics } = matrix;
 
   const result = discoverCorrelations(series, { locale });
@@ -246,5 +253,6 @@ async function buildCorrelationsResponse(
     discovered,
     emerging: emergingWithDecisions,
     labCorrelations,
+    findingsBeforeSeasonalAdjustment,
   };
 }
