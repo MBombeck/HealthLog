@@ -12448,10 +12448,13 @@
       "period": "기간"
     },
     "selection": {
-      "empty": "이번 달 기록 없음",
+      "empty": "이 기간에는 항목이 없습니다",
       "ongoing": "진행 중",
       "range": "{from}~{to}",
-      "mean": "Ø {values}"
+      "mean": "Ø {values}",
+      "week": "{date} 주",
+      "hintClick": "시점을 클릭하면 여기에 표시됩니다",
+      "hintTap": "시점을 탭하면 여기에 표시됩니다"
     },
     "chronicle": {
       "months": "월",

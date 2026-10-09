@@ -49,7 +49,7 @@ import type {
   TimelineZoom,
 } from "@/lib/day/contract";
 import { resolveIntlLocale } from "@/lib/format-locale";
-import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { useTranslations } from "@/lib/i18n/context";
 
 import {
   bucketAfter,
@@ -76,7 +76,14 @@ import {
   type PlacedSpan,
   type TimeWindow,
 } from "./timeline-geometry";
-import { formatSeriesValue } from "./series-format";
+import {
+  formatSeriesValue,
+  type MeanPart,
+  type SeriesValueFormat,
+} from "./series-format";
+
+/** Where a value line's name and latest value start, right of its swatch. */
+const SERIES_TEXT_X = 16;
 
 export const LANE_ICON: Readonly<Record<TimelineLaneKey, LucideIcon>> = {
   life: Flag,
@@ -98,6 +105,10 @@ export interface TimelineChartProps {
   selected: string | null;
   hiddenLanes: ReadonlySet<TimelineLaneKey>;
   seriesLabel: (key: string) => string;
+  /** The colour of a value line (`series-colors.ts`), as a token string. */
+  seriesColor: (key: string) => string;
+  /** How a value reads (`useSeriesValueFormat`). */
+  seriesFormat: SeriesValueFormat;
   onSelect: (date: string) => void;
   onOpenDay: (date: string) => void;
 }
@@ -129,11 +140,13 @@ export function TimelineChart({
   selected,
   hiddenLanes,
   seriesLabel,
+  seriesColor,
+  seriesFormat,
   onSelect,
   onOpenDay,
 }: TimelineChartProps) {
   const { t, locale } = useTranslations();
-  const fmt = useFormatters();
+  const fmt = seriesFormat;
   const intl = resolveIntlLocale(locale);
   const { ref, width } = useElementWidth<HTMLDivElement>();
 
@@ -235,6 +248,7 @@ export function TimelineChart({
               dataFrom={timeline.range.dataFrom}
               bucket={timeline.bucket}
               seriesLabel={seriesLabel}
+              seriesColor={seriesColor}
               intl={intl}
               t={t}
               fmt={fmt}
@@ -253,6 +267,7 @@ export function TimelineChart({
         timeline={timeline}
         window={window}
         seriesLabel={seriesLabel}
+        fmt={fmt}
         intl={intl}
       />
     </div>
@@ -268,9 +283,10 @@ interface ChartBodyProps {
   dataFrom: string | null;
   bucket: TimelineBucket;
   seriesLabel: (key: string) => string;
+  seriesColor: (key: string) => string;
   intl: string;
   t: ReturnType<typeof useTranslations>["t"];
-  fmt: ReturnType<typeof useFormatters>;
+  fmt: SeriesValueFormat;
 }
 
 function ChartBody({
@@ -282,11 +298,11 @@ function ChartBody({
   dataFrom,
   bucket,
   seriesLabel,
+  seriesColor,
   intl,
   t,
   fmt,
 }: ChartBodyProps) {
-  const { tCount } = useTranslations();
   const { scale, height, width } = layout;
   const todayInWindow = today >= window.from && today <= window.to;
   const todayX = scale.xMid(today);
@@ -303,7 +319,12 @@ function ChartBody({
     dataFrom && dataFrom > window.from && dataFrom <= window.to
       ? scale.x(dataFrom)
       : null;
-  const seriesTop = layout.seriesTop;
+  // The bucket that holds the selected day: its point on every line is
+  // ringed in the line's colour, so the selection reads on each scale.
+  const selectedBucket =
+    selected && selected >= window.from && selected <= window.to
+      ? bucketStart(selected, bucket)
+      : null;
 
   return (
     <g fontFamily="inherit">
@@ -434,81 +455,20 @@ function ChartBody({
         );
       })}
 
-      {/* Value lines: neutral, one scale each, never coloured by meaning. */}
-      {layout.series.length > 0 && (
-        <line
-          x1={0}
-          x2={width}
-          y1={seriesTop - 18}
-          y2={seriesTop - 18}
-          stroke="var(--border)"
-        />
-      )}
-      {layout.series.map((series) => (
-        <g key={series.key} data-series={series.key}>
-          <text
-            x={0}
-            y={series.top + 12}
-            fontSize={13}
-            fontWeight={500}
-            fill="var(--foreground)"
-          >
-            {fitText(seriesLabel(series.key), scale.x0 - 12, 13)}
-          </text>
-          <text
-            x={0}
-            y={series.top + 30}
-            fontSize={12}
-            fill="var(--muted-foreground)"
-          >
-            {series.latest === null
-              ? t("timeline.values.noneInWindow")
-              : formatSeriesValue(series.key, series.latest, series.unit, fmt)}
-          </text>
-          {series.path && (
-            <path
-              d={series.path}
-              fill="none"
-              stroke="var(--foreground)"
-              strokeWidth={1.6}
-              strokeOpacity={0.85}
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
-          )}
-          {series.bridges && (
-            <path
-              d={series.bridges}
-              data-slot="timeline-series-bridge"
-              fill="none"
-              stroke="var(--foreground)"
-              strokeWidth={1.2}
-              strokeOpacity={0.6}
-              strokeDasharray="3 3"
-              strokeLinecap="round"
-            />
-          )}
-          {series.points.map((point) => (
-            <circle
-              key={point.t}
-              data-slot="timeline-series-point"
-              data-t={point.t}
-              data-count={point.count}
-              data-thin={point.thin ? "true" : "false"}
-              cx={point.x}
-              cy={point.y}
-              r={point.thin ? 2.75 : 2.5}
-              fill={point.thin ? "var(--card)" : "var(--foreground)"}
-              stroke="var(--foreground)"
-              strokeWidth={point.thin ? 1.4 : 0}
-            >
-              <title>
-                {`${bucketText(point.t, bucket, intl, t)}: ${formatSeriesValue(series.key, point.mean, series.unit, fmt)}, ${tCount("timeline.values.readings", point.count)}`}
-              </title>
-            </circle>
-          ))}
-        </g>
-      ))}
+      {/* Value lines: one scale each, each in its own colour (the colour
+          its type carries in the measurement list). The colour names the
+          line, never a judgement of its values. */}
+      <SeriesLines
+        layout={layout}
+        width={width}
+        selectedBucket={selectedBucket}
+        bucket={bucket}
+        seriesLabel={seriesLabel}
+        seriesColor={seriesColor}
+        intl={intl}
+        t={t}
+        fmt={fmt}
+      />
 
       {/* Today. */}
       {todayInWindow && (
@@ -556,6 +516,157 @@ function ChartBody({
         </g>
       )}
     </g>
+  );
+}
+
+/**
+ * The value lines under the lanes, each in its own colour: the swatch beside
+ * the name, the line, the dashed bridge over a gap, the points (hollow where
+ * a mean rests on one or two readings) and the ring on the selected bucket.
+ * Every mark of a line inherits one `color` from its group, so they cannot
+ * drift apart.
+ */
+export function SeriesLines({
+  layout,
+  width,
+  selectedBucket,
+  bucket,
+  seriesLabel,
+  seriesColor,
+  intl,
+  t,
+  fmt,
+}: {
+  layout: NonNullable<ReturnType<typeof layoutTimeline>>;
+  width: number;
+  selectedBucket: string | null;
+  bucket: TimelineBucket;
+  seriesLabel: (key: string) => string;
+  seriesColor: (key: string) => string;
+  intl: string;
+  t: ReturnType<typeof useTranslations>["t"];
+  fmt: SeriesValueFormat;
+}) {
+  const { tCount } = useTranslations();
+  const { scale, seriesTop } = layout;
+  return (
+    <>
+      {layout.series.length > 0 && (
+        <line
+          x1={0}
+          x2={width}
+          y1={seriesTop - 18}
+          y2={seriesTop - 18}
+          stroke="var(--border)"
+        />
+      )}
+      {layout.series.map((series) => {
+        const color = seriesColor(series.key);
+        return (
+          <g
+            key={series.key}
+            data-series={series.key}
+            data-color={color}
+            color={color}
+          >
+            <line
+              data-slot="timeline-series-swatch"
+              x1={1.5}
+              x2={10.5}
+              y1={series.top + 8}
+              y2={series.top + 8}
+              stroke="currentColor"
+              strokeWidth={3}
+              strokeLinecap="round"
+            />
+            <text
+              x={SERIES_TEXT_X}
+              y={series.top + 12}
+              fontSize={13}
+              fontWeight={500}
+              fill="var(--foreground)"
+            >
+              {fitText(
+                seriesLabel(series.key),
+                scale.x0 - 12 - SERIES_TEXT_X,
+                13,
+              )}
+            </text>
+            <text
+              x={SERIES_TEXT_X}
+              y={series.top + 30}
+              fontSize={12}
+              fill="var(--muted-foreground)"
+            >
+              {series.latest === null
+                ? t("timeline.values.noneInWindow")
+                : formatSeriesValue(
+                    series.key,
+                    series.latest,
+                    series.unit,
+                    fmt,
+                  )}
+            </text>
+            {series.path && (
+              <path
+                d={series.path}
+                data-slot="timeline-series-line"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.8}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+            )}
+            {series.bridges && (
+              <path
+                d={series.bridges}
+                data-slot="timeline-series-bridge"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.2}
+                strokeOpacity={0.7}
+                strokeDasharray="3 3"
+                strokeLinecap="round"
+              />
+            )}
+            {series.points.map((point) => (
+              <circle
+                key={point.t}
+                data-slot="timeline-series-point"
+                data-t={point.t}
+                data-count={point.count}
+                data-thin={point.thin ? "true" : "false"}
+                cx={point.x}
+                cy={point.y}
+                r={point.thin ? 2.75 : 2.5}
+                fill={point.thin ? "var(--card)" : "currentColor"}
+                stroke="currentColor"
+                strokeWidth={point.thin ? 1.4 : 0}
+              >
+                <title>
+                  {`${seriesLabel(series.key)}, ${bucketText(point.t, bucket, intl, t)}: ${formatSeriesValue(series.key, point.mean, series.unit, fmt)}, ${tCount("timeline.values.readings", point.count)}`}
+                </title>
+              </circle>
+            ))}
+            {series.points
+              .filter((point) => point.t === selectedBucket)
+              .map((point) => (
+                <circle
+                  key={`selected-${point.t}`}
+                  data-slot="timeline-series-selected"
+                  cx={point.x}
+                  cy={point.y}
+                  r={5}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                />
+              ))}
+          </g>
+        );
+      })}
+    </>
   );
 }
 
@@ -821,15 +932,16 @@ function SeriesTable({
   timeline,
   window,
   seriesLabel,
+  fmt,
   intl,
 }: {
   timeline: TimelineResponse;
   window: { from: string; to: string };
   seriesLabel: (key: string) => string;
+  fmt: SeriesValueFormat;
   intl: string;
 }) {
   const { t, tCount } = useTranslations();
-  const fmt = useFormatters();
   const { bucket, series } = timeline;
   const inWindow = (start: string) =>
     start <= window.to && bucketAfter(start, bucket) > window.from;
@@ -881,6 +993,31 @@ function SeriesTable({
       </tbody>
     </table>
   );
+}
+
+/**
+ * A means line with each value marked by its line's colour: "● 129/82 mmHg
+ * · ● 82,6 kg". The dot is decoration; the text reads the same without it.
+ */
+export function MeanPartsLine({
+  parts,
+  seriesColor,
+}: {
+  parts: readonly MeanPart[];
+  seriesColor: (key: string) => string;
+}) {
+  return parts.map((part, i) => (
+    <span key={part.key} data-series={part.key}>
+      {i > 0 ? " · " : null}
+      <span
+        data-slot="timeline-series-dot"
+        className="mr-1 inline-block size-2 rounded-full align-middle"
+        style={{ background: seriesColor(part.key) }}
+        aria-hidden="true"
+      />
+      {part.text}
+    </span>
+  ));
 }
 
 /** Inline style for a lane colour dot in HTML (chips, chronicle rails). */

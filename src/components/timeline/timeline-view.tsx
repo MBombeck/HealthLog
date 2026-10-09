@@ -3,7 +3,8 @@
 /**
  * `/timeline` (v1.42, #613): years at a glance. Conditions, allergies,
  * medications, vaccinations, visits, documents and the person's own life
- * events in lanes, up to six neutral value lines below them, all on one
+ * events in lanes, up to six value lines below them, each in its own
+ * colour (`series-colors.ts`), all on one
  * time axis. Nothing on the page draws a connection between them.
  *
  * The page hands off to the day view through `?day=`: "Open 3 Jan." (and
@@ -52,11 +53,13 @@ import {
 } from "./readiness-model";
 import { TimelineReadinessSheet } from "./readiness-sheet";
 import { Segmented } from "./segmented";
+import { SERIES_FALLBACK_COLOR, assignSeriesColors } from "./series-colors";
+import { useSeriesValueFormat } from "./use-series-value-format";
 import { SelectionBar } from "./selection-bar";
 import { TimelineChart } from "./timeline-chart";
 import { TimelineChronicle } from "./timeline-chronicle";
 import { todayKeyIn } from "./timeline-dates";
-import { LANE_ORDER, windowFor } from "./timeline-geometry";
+import { LANE_ORDER, latestDataDate, windowFor } from "./timeline-geometry";
 import {
   LayersMenu,
   MAX_VALUE_SERIES,
@@ -105,24 +108,6 @@ export const DEFAULT_VALUES = [
 
 const VALUES_KEY = "healthlog.timeline.values";
 const HIDDEN_LANES_KEY = "healthlog.timeline.hiddenLanes";
-
-/** The latest dated entry on or before today, to select on arrival. */
-function latestEntryDate(
-  lanes: ReadonlyArray<{
-    items: ReadonlyArray<{ start: string; end: string | null }>;
-  }>,
-  today: string,
-): string | null {
-  let best: string | null = null;
-  for (const lane of lanes) {
-    for (const item of lane.items) {
-      for (const d of [item.start, item.end]) {
-        if (d && d <= today && (!best || d > best)) best = d;
-      }
-    }
-  }
-  return best;
-}
 
 export function TimelineView() {
   const { t } = useTranslations();
@@ -185,6 +170,15 @@ export function TimelineView() {
         .slice(0, MAX_VALUE_SERIES),
     [storedValues, valueOptions],
   );
+  // One colour per chosen line, shared by the chart, the selection bar, the
+  // menu and the phone chronicle; contested colours go by the menu's order.
+  const seriesColors = useMemo(
+    () => assignSeriesColors(values, VALUE_OPTIONS),
+    [values],
+  );
+  const seriesFormat = useSeriesValueFormat();
+  const seriesColor = (key: string) =>
+    seriesColors.get(key) ?? SERIES_FALLBACK_COLOR;
   const hidden = useMemo(
     () => new Set(hiddenList as TimelineLaneKey[]),
     [hiddenList],
@@ -223,8 +217,12 @@ export function TimelineView() {
   }
 
   const data = timeline.data;
+  // Before anyone picks a day, the newest bucket the bar has something for,
+  // inside the window that was asked for.
   const effectiveSelected =
-    selected ?? (data ? latestEntryDate(data.lanes, today) : null) ?? today;
+    selected ??
+    (data ? latestDataDate(data, today, requestWindow ?? data.range) : null) ??
+    today;
 
   // The shell's day layer owns `?day=` and its history entries; this only
   // asks it to open the day, and keeps the selection on it.
@@ -363,6 +361,7 @@ export function TimelineView() {
                   options={valueOptions}
                   selected={values}
                   label={seriesLabel}
+                  color={seriesColor}
                   onChange={setStoredValues}
                 />
                 {layers(false)}
@@ -378,14 +377,19 @@ export function TimelineView() {
                   selected={effectiveSelected}
                   hiddenLanes={hidden}
                   seriesLabel={seriesLabel}
+                  seriesColor={seriesColor}
+                  seriesFormat={seriesFormat}
                   onSelect={setSelected}
                   onOpenDay={openDay}
                 />
                 <SelectionBar
                   timeline={data}
                   selected={effectiveSelected}
+                  showHint={selected === null}
                   today={today}
                   seriesLabel={seriesLabel}
+                  seriesColor={seriesColor}
+                  seriesFormat={seriesFormat}
                   onOpenDay={openDay}
                   onEditLifeEvent={canAddLifeEvent ? editLifeEvent : undefined}
                 />
@@ -417,6 +421,8 @@ export function TimelineView() {
               today={today}
               grouping={grouping}
               selected={dayParam}
+              seriesColor={seriesColor}
+              seriesFormat={seriesFormat}
               onOpenDay={openDay}
               onEditLifeEvent={canAddLifeEvent ? editLifeEvent : null}
             />

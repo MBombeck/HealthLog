@@ -12448,10 +12448,13 @@
       "period": "Zeitraum"
     },
     "selection": {
-      "empty": "Keine Einträge in diesem Monat",
+      "empty": "Keine Einträge in diesem Zeitraum",
       "ongoing": "laufend",
       "range": "{from} bis {to}",
-      "mean": "Ø {values}"
+      "mean": "Ø {values}",
+      "week": "Woche vom {date}",
+      "hintClick": "Klicke auf einen Zeitpunkt, um ihn hier zu sehen",
+      "hintTap": "Tippe auf einen Zeitpunkt, um ihn hier zu sehen"
     },
     "chronicle": {
       "months": "Monate",

@@ -12448,10 +12448,13 @@
       "period": "Période"
     },
     "selection": {
-      "empty": "Aucune entrée ce mois-ci",
+      "empty": "Aucune entrée sur cette période",
       "ongoing": "en cours",
       "range": "{from} au {to}",
-      "mean": "Ø {values}"
+      "mean": "Ø {values}",
+      "week": "Semaine du {date}",
+      "hintClick": "Cliquez sur un moment pour le voir ici",
+      "hintTap": "Touchez un moment pour le voir ici"
     },
     "chronicle": {
       "months": "Mois",

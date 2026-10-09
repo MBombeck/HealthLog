@@ -1,49 +1,46 @@
 /**
- * How a value line's number reads (v1.42, #613): whole numbers for pressure,
- * pulse and counts, one decimal for the rest, sleep in hours. The unit is the
- * server's, already in the person's display unit.
+ * How a value line's number reads (v1.42, #613). The server sends each
+ * series in its stored, canonical unit (minutes for sleep, kilograms for
+ * weight); the person's unit preference and the duration spelling are
+ * applied here, through the same formatter the day view uses
+ * (`useSeriesValueFormat`), so a night reads "9 h 16 min" on both pages.
  */
 import type { TimelineBucket, TimelineResponse } from "@/lib/day/contract";
 import type { Formatters } from "@/lib/format-locale";
 
 import { addMonths, bucketAfter, bucketStart } from "./timeline-dates";
 
-const WHOLE_NUMBER_KEYS: ReadonlySet<string> = new Set([
-  "BLOOD_PRESSURE_SYS",
-  "BLOOD_PRESSURE_DIA",
-  "PULSE",
-  "RESTING_HEART_RATE",
-  "HEART_RATE_VARIABILITY",
-  "ACTIVITY_STEPS",
-]);
-
-export function formatSeriesNumber(
-  key: string,
-  value: number,
-  unit: string | null,
-  fmt: Pick<Formatters, "number">,
-): { value: string; unit: string | null } {
-  if (key === "SLEEP_DURATION" && unit === "min") {
-    return { value: fmt.number(value / 60, 1), unit: "h" };
-  }
-  // Glucose arrives in the person's display unit: whole numbers in the
-  // hundreds, one decimal for single digits.
-  const digits =
-    WHOLE_NUMBER_KEYS.has(key) || (key === "BLOOD_GLUCOSE" && value >= 30)
-      ? 0
-      : 1;
-  return { value: fmt.number(value, digits), unit };
+/** How one series value reads: the number, and the unit beside it. */
+export interface SeriesValueFormat {
+  /** "82,6", "129", or a duration that carries its own unit ("9 h 16 min"). */
+  number: (key: string, value: number, unit: string | null) => string;
+  /** The unit beside the number, or "" when the number carries its own. */
+  unit: (key: string, unit: string | null) => string;
 }
 
-/** "129 mmHg", "82,6 kg", "7,4 h". */
+/**
+ * The format for a series without a measurement type behind it (mood, a
+ * score without a unit): one decimal, no unit.
+ */
+export function plainSeriesFormat(
+  fmt: Pick<Formatters, "number">,
+): SeriesValueFormat {
+  return {
+    number: (_key, value) => fmt.number(value, 1),
+    unit: (_key, unit) => unit ?? "",
+  };
+}
+
+/** "129 mmHg", "82,6 kg", "9 h 16 min". */
 export function formatSeriesValue(
   key: string,
   value: number,
   unit: string | null,
-  fmt: Pick<Formatters, "number">,
+  format: SeriesValueFormat,
 ): string {
-  const out = formatSeriesNumber(key, value, unit, fmt);
-  return out.unit ? `${out.value} ${out.unit}` : out.value;
+  const number = format.number(key, value, unit);
+  const shown = format.unit(key, unit);
+  return shown ? `${number} ${shown}` : number;
 }
 
 /** One series in one bucket: its mean, or nothing when it has no reading. */
@@ -116,49 +113,69 @@ export function chronicleMeans(
   return out;
 }
 
-/**
- * The means in one short line: systolic and diastolic fold into
- * "129/82 mmHg", the rest follow as "82,6 kg". Series without a value are
- * left out; the line is for a glance, the selection bar names the gaps.
- */
-export function formatMeans(
-  means: readonly BucketValue[],
-  fmt: Pick<Formatters, "number">,
+/** Systolic over diastolic, one unit: "129/82 mmHg". */
+function pressure(
+  sys: BucketValue,
+  dia: BucketValue,
+  format: SeriesValueFormat,
 ): string {
+  const unit = format.unit(sys.key, sys.unit);
+  return `${format.number(sys.key, sys.mean!, sys.unit)}/${format.number(dia.key, dia.mean!, dia.unit)}${unit ? ` ${unit}` : ""}`;
+}
+
+/** One value of a means line, with the series whose colour marks it. */
+export interface MeanPart {
+  key: string;
+  text: string;
+}
+
+/**
+ * The means of one bucket for a glance: systolic and diastolic fold into
+ * "129/82 mmHg" (marked as systolic), the rest follow as "82,6 kg". Series
+ * without a value are left out; the selection bar names the gaps.
+ */
+export function meanParts(
+  means: readonly BucketValue[],
+  format: SeriesValueFormat,
+): MeanPart[] {
   const present = means.filter(
     (m): m is BucketValue & { mean: number } => m.mean !== null,
   );
   const sys = present.find((m) => m.key === "BLOOD_PRESSURE_SYS");
   const dia = present.find((m) => m.key === "BLOOD_PRESSURE_DIA");
-  const parts: string[] = [];
+  const parts: MeanPart[] = [];
   for (const m of present) {
     if (sys && dia && m.key === "BLOOD_PRESSURE_DIA") continue;
     if (sys && dia && m.key === "BLOOD_PRESSURE_SYS") {
-      parts.push(
-        `${fmt.number(sys.mean, 0)}/${fmt.number(dia.mean, 0)}${sys.unit ? ` ${sys.unit}` : ""}`,
-      );
+      parts.push({
+        key: m.key,
+        text: pressure(sys, dia, format),
+      });
       continue;
     }
-    parts.push(formatSeriesValue(m.key, m.mean, m.unit, fmt));
+    parts.push({
+      key: m.key,
+      text: formatSeriesValue(m.key, m.mean, m.unit, format),
+    });
   }
-  return parts.join(" · ");
+  return parts;
 }
 
 /**
  * The means of one bucket with their names, readings and gaps, for the
- * selection bar: "Blood pressure 129/82 mmHg (mean of 4 readings) · Weight
- * no value". Systolic and diastolic fold when both have a value.
+ * selection bar: "Blood pressure 129/82 mmHg (mean of 4 readings)", then
+ * "Weight no value". Systolic and diastolic fold when both have a value.
  */
-export function formatLabelledMeans(
+export function labelledMeanParts(
   means: readonly BucketValue[],
-  fmt: Pick<Formatters, "number">,
+  format: SeriesValueFormat,
   words: {
     label: (key: string) => string;
     bloodPressure: string;
     noValue: string;
     readings: (count: number) => string;
   },
-): string {
+): MeanPart[] {
   const sys = means.find(
     (m) => m.key === "BLOOD_PRESSURE_SYS" && m.mean !== null,
   );
@@ -166,20 +183,23 @@ export function formatLabelledMeans(
     (m) => m.key === "BLOOD_PRESSURE_DIA" && m.mean !== null,
   );
   const fold = sys && dia;
-  const parts: string[] = [];
+  const parts: MeanPart[] = [];
   for (const m of means) {
     if (fold && m.key === "BLOOD_PRESSURE_DIA") continue;
     if (fold && m.key === "BLOOD_PRESSURE_SYS") {
-      parts.push(
-        `${words.bloodPressure} ${fmt.number(sys.mean!, 0)}/${fmt.number(dia.mean!, 0)}${sys.unit ? ` ${sys.unit}` : ""} (${words.readings(sys.count ?? 0)})`,
-      );
+      parts.push({
+        key: m.key,
+        text: `${words.bloodPressure} ${pressure(sys, dia!, format)} (${words.readings(sys.count ?? 0)})`,
+      });
       continue;
     }
-    parts.push(
-      m.mean === null
-        ? `${words.label(m.key)} ${words.noValue}`
-        : `${words.label(m.key)} ${formatSeriesValue(m.key, m.mean, m.unit, fmt)} (${words.readings(m.count ?? 0)})`,
-    );
+    parts.push({
+      key: m.key,
+      text:
+        m.mean === null
+          ? `${words.label(m.key)} ${words.noValue}`
+          : `${words.label(m.key)} ${formatSeriesValue(m.key, m.mean, m.unit, format)} (${words.readings(m.count ?? 0)})`,
+    });
   }
-  return parts.join(" · ");
+  return parts;
 }

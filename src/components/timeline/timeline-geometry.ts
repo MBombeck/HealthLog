@@ -929,20 +929,20 @@ export function stepSelection(
 }
 
 /**
- * What the selection bar names for the month of `selected`: everything that
- * happens, starts or ends in it, and every closed period that runs through
- * it. A period that has been open since before the month (a chronic
- * condition, a standing medication, an allergy) is the backdrop of every
- * month and is left out, as are documents, which the day lists with their
- * visit. Lane order kept.
+ * What the selection bar names for the period `[from, to]` (the bucket that
+ * holds the selected day): everything that happens, starts or ends in it,
+ * and every closed period that runs through it. A period that has been open
+ * since before the period (a chronic condition, a standing medication, an
+ * allergy) is the backdrop of every period and is left out, as are
+ * documents, which the day lists with their visit. Lane order kept. The
+ * same rule holds for a week, a month and a quarter.
  */
-export function itemsInMonth(
+export function itemsInPeriod(
   lanes: readonly TimelineLane[],
-  selected: string,
+  from: string,
+  to: string,
   today: string,
 ): Array<{ lane: TimelineLaneKey; item: TimelineItem; through: boolean }> {
-  const from = startOfMonth(selected);
-  const to = endOfMonth(selected);
   const out: Array<{
     lane: TimelineLaneKey;
     item: TimelineItem;
@@ -962,4 +962,46 @@ export function itemsInMonth(
     }
   }
   return out;
+}
+
+/**
+ * The day to select before anyone has picked one: the latest day inside
+ * `window` (and not after today) that the selection bar has something for,
+ * so the bar opens on the newest bucket with data, never on an empty one.
+ * A lane entry counts on the last day `itemsInPeriod` would name it (an open
+ * period on its start, a closed one on its end); a value line counts on the
+ * first day of its newest bucket. Null when the window holds nothing.
+ */
+export function latestDataDate(
+  timeline: {
+    lanes: readonly TimelineLane[];
+    series: readonly TimelineSeries[];
+  },
+  today: string,
+  window: TimeWindow,
+): string | null {
+  const last = window.to < today ? window.to : today;
+  let best: string | null = null;
+  const consider = (day: string) => {
+    if (day < window.from || day > last) return;
+    if (!best || day > best) best = day;
+  };
+  for (const lane of timeline.lanes) {
+    if (lane.key === "documents") continue;
+    for (const item of lane.items) {
+      if (item.start > last) continue;
+      if (item.open) {
+        consider(item.start);
+        continue;
+      }
+      const end = item.end ?? item.start;
+      // A closed period still running past the window's end is named in
+      // every bucket up to it; its last named day here is the window's end.
+      consider(end > last ? last : end);
+    }
+  }
+  for (const series of timeline.series) {
+    for (const point of series.points) consider(point.t);
+  }
+  return best;
 }

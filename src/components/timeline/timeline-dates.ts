@@ -158,6 +158,18 @@ export function formatDayMonthYear(key: string, intlLocale: string): string {
   });
 }
 
+/** "3. Januar 2026". */
+export function formatDayMonthYearLong(
+  key: string,
+  intlLocale: string,
+): string {
+  return format(key, intlLocale, {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 /** "Jan". Axis labels. */
 export function formatMonthShort(key: string, intlLocale: string): string {
   return format(key, intlLocale, { month: "short" });

@@ -134,5 +134,5 @@ export function useDayValueFormat() {
     [labelFor, number, unitFor],
   );
 
-  return { labelFor, formatTile };
+  return { labelFor, formatTile, number, unitFor };
 }
