@@ -152,7 +152,7 @@ export function IllnessSection({
               : null,
             t(`illness.type.${episode.type}`),
             t(`illness.lifecycle.${episode.lifecycle}`),
-            `${fmtDate(episode.onsetAt)} – ${
+            `${fmtDate(episode.onsetAt)}–${
               episode.resolvedAt
                 ? fmtDate(episode.resolvedAt)
                 : t("doctorReport.illnessOngoing")

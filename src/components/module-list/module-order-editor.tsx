@@ -180,7 +180,7 @@ function SortableRow({
         type="button"
         {...attributes}
         {...listeners}
-        aria-label={`${labels.dragHandle} — ${item.name}`}
+        aria-label={`${labels.dragHandle}: ${item.name}`}
         aria-describedby={dragHintId}
         title={labels.dragHandle}
         data-slot="module-drag-handle"
@@ -205,7 +205,7 @@ function SortableRow({
         className="size-11 sm:size-9"
         onClick={() => onMove(item.id, -1)}
         disabled={index === 0}
-        aria-label={`${labels.moveUp} — ${item.name}`}
+        aria-label={`${labels.moveUp}: ${item.name}`}
       >
         <ArrowUp className="h-4 w-4" />
       </Button>
@@ -216,7 +216,7 @@ function SortableRow({
         className="size-11 sm:size-9"
         onClick={() => onMove(item.id, 1)}
         disabled={index === total - 1}
-        aria-label={`${labels.moveDown} — ${item.name}`}
+        aria-label={`${labels.moveDown}: ${item.name}`}
       >
         <ArrowDown className="h-4 w-4" />
       </Button>

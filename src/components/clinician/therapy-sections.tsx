@@ -206,7 +206,7 @@ export function DoseLogSection({
       {shown.map((dose, index) => (
         <StatRow
           key={`${dose.medicationName}-${dose.effectiveAt}-${index}`}
-          label={`${fmtDateTime(dose.effectiveAt)} — ${dose.medicationName}`}
+          label={`${fmtDateTime(dose.effectiveAt)}: ${dose.medicationName}`}
           value={
             (dose.status === "completed"
               ? t("doctorReport.colTaken")

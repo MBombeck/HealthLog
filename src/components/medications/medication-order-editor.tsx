@@ -355,7 +355,7 @@ function SortableMedicationRow({
         type="button"
         {...attributes}
         {...listeners}
-        aria-label={`${labels.dragHandle} — ${medication.name}`}
+        aria-label={`${labels.dragHandle}: ${medication.name}`}
         aria-describedby={dragHintId}
         title={labels.dragHandle}
         disabled={disabled}
@@ -380,7 +380,7 @@ function SortableMedicationRow({
         className="size-11 sm:size-9"
         onClick={() => onMove(medication.id, -1)}
         disabled={index === 0 || disabled}
-        aria-label={`${labels.moveUp} — ${medication.name}`}
+        aria-label={`${labels.moveUp}: ${medication.name}`}
       >
         <ArrowUp className="h-4 w-4" />
       </Button>
@@ -391,7 +391,7 @@ function SortableMedicationRow({
         className="size-11 sm:size-9"
         onClick={() => onMove(medication.id, 1)}
         disabled={index === total - 1 || disabled}
-        aria-label={`${labels.moveDown} — ${medication.name}`}
+        aria-label={`${labels.moveDown}: ${medication.name}`}
       >
         <ArrowDown className="h-4 w-4" />
       </Button>

@@ -301,7 +301,7 @@ async function postEncounter(request: NextRequest): Promise<Response> {
   }
   if (created === "contradictory-reminder") {
     return apiError(
-      "A planned visit cannot also close a checkup — it has not happened yet",
+      "A planned visit cannot also close a checkup. It has not happened yet",
       422,
       { errorCode: "encounter.reminder-conflict" },
     );

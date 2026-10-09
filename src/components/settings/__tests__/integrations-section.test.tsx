@@ -233,7 +233,7 @@ describe("IntegrationsSection — single-status-display contract (A5)", () => {
   // The pill flips to `data-state="parked"` and the resume banner
   // renders with the reconnect CTA. The legacy `error` reconnect text
   // (red) must NOT appear because the user-facing copy is the lighter
-  // "Paused — reconnect" string, not "Error — reconnect".
+  // "Paused: reconnect" string, not "Error — reconnect".
   it("Withings parked state surfaces the parked pill + resume CTA", () => {
     setIntegrationStatus({
       threshold: 3,
@@ -256,7 +256,7 @@ describe("IntegrationsSection — single-status-display contract (A5)", () => {
     const html = render();
     expect(html).toContain('data-state="parked"');
     expect(html).toContain("Paused");
-    expect(html).toContain("Paused — reconnect");
+    expect(html).toContain("Paused: reconnect");
     expect(html).toContain('data-testid="withings-parked-banner"');
     expect(html).toContain('data-testid="withings-resume-button"');
     // The lastError is surfaced under the pill so the operator sees

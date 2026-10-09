@@ -140,5 +140,5 @@ export function formatDateRange(
     minute: "2-digit",
     ...hourCycleOptions(timeFormat),
   });
-  return `${dateFmt.format(start)} · ${timeFmt.format(start)} – ${timeFmt.format(end)}`;
+  return `${dateFmt.format(start)}, ${timeFmt.format(start)}–${timeFmt.format(end)}`;
 }

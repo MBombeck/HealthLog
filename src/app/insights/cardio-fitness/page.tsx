@@ -27,7 +27,7 @@ export default function InsightsCardioFitnessPage() {
       statIcon={Gauge}
       emptyStateIcon={<Gauge className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any cardio-fitness (VO₂ max) data yet — what does this metric tell me about my health, and how do I improve it?"
+      coachPrefill="I haven't logged any cardio-fitness (VO₂ max) data yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

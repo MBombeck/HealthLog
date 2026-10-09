@@ -105,7 +105,7 @@ describe("<InjectionSitePicker>", () => {
 
     // Exactly one site is recommended → exactly one composed label.
     const composed =
-      html.match(/aria-label="[^"]*— recommended next site"/g) ?? [];
+      html.match(/aria-label="[^"]*: recommended next site"/g) ?? [];
     expect(composed.length).toBe(1);
   });
 
@@ -153,7 +153,7 @@ describe("<InjectionSitePicker>", () => {
     // empty history the recommender lands on ABDOMEN_LEFT, so its label
     // folds in the "recommended next site" cue.
     expect(html).toContain(
-      'aria-label="Abdomen, lower left — recommended next site"',
+      'aria-label="Abdomen, lower left: recommended next site"',
     );
     expect(html).toContain('aria-label="Abdomen, lower right"');
     expect(html).toContain('aria-label="Abdomen, upper left"');
@@ -173,7 +173,7 @@ describe("<InjectionSitePicker>", () => {
     );
 
     expect(html).toContain(
-      'aria-label="Bauch, unten links — empfohlene nächste Stelle"',
+      'aria-label="Bauch, unten links: empfohlene nächste Stelle"',
     );
     expect(html).toContain('aria-label="Bauch, unten rechts"');
     expect(html).toContain('aria-label="Bauch, oben links"');

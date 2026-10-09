@@ -132,7 +132,7 @@ export default function InsightsMoodPageClient() {
               <Link href="/mood">{t("insights.emptyState.mood.cta")}</Link>
             </Button>
           }
-          coachPrefill="I haven't logged any mood entries yet — why does mood tracking matter, and how should I start?"
+          coachPrefill="I haven't logged any mood entries yet. Why does mood tracking matter, and how should I start?"
         />
       </SubPageShell>
     );

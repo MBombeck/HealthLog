@@ -54,14 +54,14 @@ describe("<OfflineBanner>", () => {
     // the honest thing.
     const en = loadMessages("en");
     expect(en.offlineBanner.message).toBe(
-      "No connection — changes can't be saved until you're back online.",
+      "No connection: changes can't be saved until you're back online.",
     );
   });
 
   it("ships the DE copy for `offlineBanner.message`", () => {
     const de = loadMessages("de");
     expect(de.offlineBanner.message).toBe(
-      "Keine Verbindung — Änderungen können erst gespeichert werden, wenn du wieder online bist.",
+      "Keine Verbindung: Änderungen können erst gespeichert werden, wenn du wieder online bist.",
     );
   });
 

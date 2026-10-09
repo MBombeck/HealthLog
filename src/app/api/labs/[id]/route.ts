@@ -172,14 +172,14 @@ export const PUT = apiHandler(
     const rowIsQualitative = existing.valueText !== null;
     if (rowIsQualitative && d.value !== undefined) {
       return apiError(
-        "This is a qualitative reading — edit its result text, not a numeric value",
+        "This is a qualitative reading. Edit its result text, not a numeric value",
         422,
         { errorCode: "labs.update.qualitativeExpected" },
       );
     }
     if (!rowIsQualitative && d.valueText !== undefined) {
       return apiError(
-        "This is a numeric reading — edit its value, not a qualitative result",
+        "This is a numeric reading. Edit its value, not a qualitative result",
         422,
         { errorCode: "labs.update.numericExpected" },
       );

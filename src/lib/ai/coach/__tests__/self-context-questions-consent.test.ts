@@ -130,7 +130,7 @@ describe("deriveClarifyingQuestions — included sections", () => {
     );
 
     expect(out.questions).toEqual([
-      "Want to tell the Coach a bit about yourself — routines, goals, context?",
+      "Want to tell the Coach a bit about yourself: routines, goals, context?",
     ]);
     expect(providerMocks.hasAnyConfiguredProvider).not.toHaveBeenCalled();
     expect(buildCoachSnapshot).not.toHaveBeenCalled();

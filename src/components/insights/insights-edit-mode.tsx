@@ -476,7 +476,7 @@ function SortableSectionRow({
           type="button"
           {...attributes}
           {...listeners}
-          aria-label={`${labels.dragHandle} — ${title}`}
+          aria-label={`${labels.dragHandle}: ${title}`}
           title={labels.dragHandle}
           disabled={disabled}
           data-slot="insights-edit-section-handle"
@@ -507,7 +507,7 @@ function SortableSectionRow({
         <EyeToggle
           visible={section.visible}
           disabled={disabled || gatedOff}
-          label={`${section.visible ? labels.hide : labels.show} — ${title}`}
+          label={`${section.visible ? labels.hide : labels.show}: ${title}`}
           onClick={() => onToggle(section.id, !section.visible)}
           slot="insights-edit-section-eye"
         />

@@ -3,14 +3,18 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * No middle-dot separator in visible strings.
+ * No middle-dot or dash separator in visible strings.
  *
  * A value like "Added {date} · {size}" or "Weight · body fat · muscle" reads
- * as a list of fragments rather than as the app's plain voice. Facts are
- * joined with a comma, a colon or a real phrase instead. This guard walks
- * every bundle under `messages/` and fails on any string that contains a
- * space, U+00B7 and a space. A middle dot inside a unit ("mL/(kg·min)") has
- * no surrounding spaces and is not matched.
+ * as a list of fragments rather than as the app's plain voice, and so does
+ * "{what} — tomorrow" or "Could not save — try again": the dash stands in
+ * for a comma, a colon or a full stop the sentence should have said. Facts
+ * are joined with a comma, a colon or a real phrase instead. This guard
+ * walks every bundle under `messages/` and fails on any string that contains
+ * a space, then U+00B7 (middle dot), U+2014 (em dash) or U+2013 (en dash),
+ * then a space. A middle dot inside a unit ("mL/(kg·min)") and a range
+ * ("70–100 mmHg", "{start}–{end}") have no surrounding spaces and are not
+ * matched: an unspaced en dash is how a range is written, not a pause.
  *
  * A key that genuinely needs the pattern goes into `ALLOWED` with the reason
  * written next to it. An allowed key that no longer contains the pattern
@@ -18,7 +22,10 @@ import { join } from "node:path";
  */
 
 const MESSAGES_DIR = join(__dirname, "../../messages");
-const SEPARATOR = " · ";
+const SEPARATORS = [" · ", " — ", " – "] as const;
+
+const hasSeparator = (value: string) =>
+  SEPARATORS.some((separator) => value.includes(separator));
 
 /** Key path -> why the separator is right there. Empty by intent. */
 const ALLOWED: Record<string, string> = {};
@@ -41,7 +48,7 @@ const bundles = readdirSync(MESSAGES_DIR)
   .filter((file) => file.endsWith(".json"))
   .sort();
 
-describe("message bundles carry no ' · ' separator", () => {
+describe("message bundles carry no ' · ', ' — ' or ' – ' separator", () => {
   it("finds the bundles", () => {
     expect(bundles.length).toBeGreaterThanOrEqual(7);
   });
@@ -57,10 +64,10 @@ describe("message bundles carry no ' · ' separator", () => {
       expect(values.size).toBeGreaterThan(1000);
     });
 
-    it(`${file} has no dot separator outside the allowlist`, () => {
+    it(`${file} has no dot or dash separator outside the allowlist`, () => {
       const offenders = [...values]
         .filter(
-          ([key, value]) => value.includes(SEPARATOR) && !(key in ALLOWED),
+          ([key, value]) => hasSeparator(value) && !(key in ALLOWED),
         )
         .map(([key, value]) => `${key} = ${JSON.stringify(value)}`);
       expect(offenders).toEqual([]);
@@ -68,7 +75,7 @@ describe("message bundles carry no ' · ' separator", () => {
 
     it(`${file} has no stale allowlist entry`, () => {
       const stale = Object.keys(ALLOWED).filter(
-        (key) => !(values.get(key) ?? "").includes(SEPARATOR),
+        (key) => !hasSeparator(values.get(key) ?? ""),
       );
       expect(stale).toEqual([]);
     });

@@ -24,7 +24,7 @@ export default function InsightsMagermassePage() {
       color="var(--chart-1)"
       emptyStateIcon={<Scale className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any lean body mass yet — what does this metric tell me about my health, and how do I improve it?"
+      coachPrefill="I haven't logged any lean body mass yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

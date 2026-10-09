@@ -877,7 +877,7 @@ function SortableWidgetRow({
         type="button"
         {...attributes}
         {...listeners}
-        aria-label={`${labels.dragHandle} — ${labels.widgetLabel}`}
+        aria-label={`${labels.dragHandle}: ${labels.widgetLabel}`}
         // v1.4.47 W4 — `aria-describedby` is set after `{...attributes}`
         // so our shared hint paragraph wins over dnd-kit's own announcer
         // hookup. The announcer still fires on drag-start / drag-over /
@@ -907,7 +907,7 @@ function SortableWidgetRow({
         <Switch
           checked={tileChecked}
           onCheckedChange={(v) => onToggleTile(widget.id, v)}
-          aria-label={`${labels.widgetLabel} — ${labels.tileColumn}`}
+          aria-label={`${labels.widgetLabel}: ${labels.tileColumn}`}
           disabled={disabled}
           data-slot="widget-tile-switch"
         />
@@ -916,7 +916,7 @@ function SortableWidgetRow({
         <Switch
           checked={widget.visible}
           onCheckedChange={(v) => onToggleChart(widget.id, v)}
-          aria-label={`${labels.widgetLabel} — ${labels.chartColumn}`}
+          aria-label={`${labels.widgetLabel}: ${labels.chartColumn}`}
           disabled={disabled}
           data-slot="widget-chart-switch"
         />
@@ -989,7 +989,7 @@ function StaticWidgetRow({
         <Switch
           checked={tileChecked}
           onCheckedChange={(v) => onToggleTile(widget.id, v)}
-          aria-label={`${labels.widgetLabel} — ${labels.tileColumn}`}
+          aria-label={`${labels.widgetLabel}: ${labels.tileColumn}`}
           disabled={disabled}
           data-slot="widget-tile-switch"
         />
@@ -998,7 +998,7 @@ function StaticWidgetRow({
         <Switch
           checked={widget.visible}
           onCheckedChange={(v) => onToggleChart(widget.id, v)}
-          aria-label={`${labels.widgetLabel} — ${labels.chartColumn}`}
+          aria-label={`${labels.widgetLabel}: ${labels.chartColumn}`}
           disabled={disabled}
           data-slot="widget-chart-switch"
         />

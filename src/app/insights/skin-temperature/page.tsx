@@ -32,7 +32,7 @@ export default function InsightsHauttemperaturPage() {
       color="var(--chart-5)"
       emptyStateIcon={<Thermometer className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any skin temperature yet — what does this metric tell me about my health, and how do I improve it?"
+      coachPrefill="I haven't logged any skin temperature yet. What does this metric tell me about my health, and how do I improve it?"
       afterChart={
         <ConnectedDeviceScoreTile
           type="BODY_TEMPERATURE_DEVIATION"

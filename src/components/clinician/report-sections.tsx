@@ -357,7 +357,7 @@ export function MedicationsSection({
         return (
           <Fragment key={med.id}>
             <StatRow
-              label={med.dose ? `${med.name} — ${med.dose}` : med.name}
+              label={med.dose ? `${med.name} ${med.dose}` : med.name}
               value={
                 rate
                   ? t("clinicianView.adherence", { rate })

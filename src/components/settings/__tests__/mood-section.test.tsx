@@ -190,9 +190,9 @@ describe("<MoodSection> — SSR smoke", () => {
     const groupRows = html.match(/data-slot="mood-group-row"/g);
     expect(groupRows?.length ?? 0).toBe(2);
     // One kebab per CUSTOM group row; the seeded row carries none.
-    const kebabs = html.match(/More options — Garten/g);
+    const kebabs = html.match(/More options: Garten/g);
     expect(kebabs?.length ?? 0).toBeGreaterThanOrEqual(1);
-    expect(html).not.toContain("More options — Feelings");
+    expect(html).not.toContain("More options: Feelings");
   });
 
   it("renders custom tags by decrypted label, never the raw key", () => {
@@ -206,7 +206,7 @@ describe("<MoodSection> — SSR smoke", () => {
     expect(html).toMatch(
       /data-slot="mood-tag-manage-row"[^>]*data-hidden="true"/,
     );
-    expect(html).toContain("Show tag — stressed");
+    expect(html).toContain("Show tag: stressed");
   });
 
   it("surfaces the usage count badge", () => {
@@ -219,7 +219,7 @@ describe("<MoodSection> — SSR smoke", () => {
     expect(html).toContain('data-slot="mood-archived-row"');
     expect(html).toContain("Altes Tag");
     expect(html).toContain("Restore");
-    expect(html).toContain("Delete permanently — Altes Tag");
+    expect(html).toContain("Delete permanently: Altes Tag");
     // The active custom tag must NOT appear in the archived card.
     const archivedCard = html.slice(
       html.indexOf('data-slot="mood-archived-tags-card"'),

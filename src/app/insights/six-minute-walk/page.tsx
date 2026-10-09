@@ -25,7 +25,7 @@ export default function InsightsSixMinuteWalkPage() {
       yAxisUnit="m"
       emptyStateIcon={<Footprints className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any six-minute-walk data yet — what does this metric tell me about my health, and how do I improve it?"
+      coachPrefill="I haven't logged any six-minute-walk data yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

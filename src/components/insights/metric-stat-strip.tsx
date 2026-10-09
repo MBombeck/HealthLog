@@ -316,7 +316,7 @@ export function MetricStatStrip({
       role="group"
       aria-label={
         seriesLabel
-          ? `${t("insights.subPage.stats.label")} — ${seriesLabel}`
+          ? `${t("insights.subPage.stats.label")}: ${seriesLabel}`
           : t("insights.subPage.stats.label")
       }
       className="gap-2 py-3 md:py-4"

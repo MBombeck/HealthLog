@@ -818,7 +818,7 @@ describe("buildDailyDigest — coach check-in (S3)", () => {
       t,
     );
     expect(checkin(d)?.body).toBe(
-      "It's been about a week since you set this plan — keep it, adjust it, or let it go. No pressure either way.",
+      "It's been about a week since you set this plan. Keep it, adjust it, or let it go. No pressure either way.",
     );
   });
 
@@ -1293,7 +1293,7 @@ describe("buildDailyDigest — ecg_new_recording (S10)", () => {
     );
     const item = ecgItem(d);
     expect(item?.body).toBe(
-      "Your device recorded a new ECG — it's ready to view.",
+      "Your device recorded a new ECG. It's ready to view.",
     );
   });
 
@@ -1469,7 +1469,7 @@ describe("buildDailyDigest — due check-ups and today's visits hold their place
     );
     const visits = d.worthALook.filter((i) => i.kind === "upcoming_visit");
     expect(visits).toHaveLength(1);
-    expect(visits[0].body).toBe("Dr. Weiss, Dentist — today");
+    expect(visits[0].body).toBe("Dr. Weiss, Dentist today");
   });
 
   it("says tomorrow and the day after by calendar day", () => {
@@ -1479,14 +1479,14 @@ describe("buildDailyDigest — due check-ups and today's visits hold their place
     );
     expect(
       tomorrow.worthALook.find((i) => i.kind === "upcoming_visit")?.body,
-    ).toBe("Dr. Weiss — tomorrow");
+    ).toBe("Dr. Weiss tomorrow");
     const later = buildDailyDigest(
       input({ upcomingVisits: [visit({ dayOffset: 2 })] }),
       t,
     );
     expect(
       later.worthALook.find((i) => i.kind === "upcoming_visit")?.body,
-    ).toBe("Dr. Weiss — the day after tomorrow");
+    ).toBe("Dr. Weiss the day after tomorrow");
   });
 
   it("shows today's visits and the next day's as two items", () => {
@@ -1504,7 +1504,7 @@ describe("buildDailyDigest — due check-ups and today's visits hold their place
       d.worthALook
         .filter((i) => i.kind === "upcoming_visit")
         .map((i) => i.body),
-    ).toEqual(["Dr. Weiss — today", "Dentist — tomorrow"]);
+    ).toEqual(["Dr. Weiss today", "Dentist tomorrow"]);
   });
 });
 

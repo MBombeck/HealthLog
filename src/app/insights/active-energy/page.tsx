@@ -27,7 +27,7 @@ export default function InsightsActiveEnergyPage() {
       yAxisUnit="kcal"
       emptyStateIcon={<Flame className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any active energy yet — what's a reasonable daily target, and how does it compare to total calories?"
+      coachPrefill="I haven't logged any active energy yet. What's a reasonable daily target, and how does it compare to total calories?"
     />
   );
 }

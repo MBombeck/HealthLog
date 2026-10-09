@@ -149,7 +149,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   );
   if (okRows.length > MAX_ROWS) {
     return apiError(
-      `CSV has ${okRows.length} valid rows — the limit is ${MAX_ROWS} per import`,
+      `CSV has ${okRows.length} valid rows. The limit is ${MAX_ROWS} per import`,
       422,
     );
   }

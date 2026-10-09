@@ -1240,7 +1240,7 @@ exports[`coach chat golden transcripts > 04 inbound refusal on a new conversatio
     },
     {
       "call": "appendMessage",
-      "content": "I noticed wording that tries to override my instructions. I am the HealthLog Coach and only summarise your own health data — please rephrase your question in those terms.",
+      "content": "I noticed wording that tries to override my instructions. I am the HealthLog Coach and only summarise your own health data. Please rephrase your question in those terms.",
       "metricSource": {
         "metrics": [
           "general",
@@ -1256,7 +1256,7 @@ exports[`coach chat golden transcripts > 04 inbound refusal on a new conversatio
   "contentType": "text/event-stream; charset=utf-8",
   "frames": [
     {
-      "token": "I noticed wording that tries to override my instructions. I am the HealthLog Coach and only summarise your own health data — please rephrase your question in those terms.",
+      "token": "I noticed wording that tries to override my instructions. I am the HealthLog Coach and only summarise your own health data. Please rephrase your question in those terms.",
       "type": "token",
     },
     {
@@ -1302,7 +1302,7 @@ exports[`coach chat golden transcripts > 05 replay injection in a stored user tu
     },
     {
       "call": "appendMessage",
-      "content": "I noticed wording that tries to override my instructions. I am the HealthLog Coach and only summarise your own health data — please rephrase your question in those terms.",
+      "content": "I noticed wording that tries to override my instructions. I am the HealthLog Coach and only summarise your own health data. Please rephrase your question in those terms.",
       "metricSource": {
         "metrics": [
           "general",
@@ -1318,7 +1318,7 @@ exports[`coach chat golden transcripts > 05 replay injection in a stored user tu
   "contentType": "text/event-stream; charset=utf-8",
   "frames": [
     {
-      "token": "I noticed wording that tries to override my instructions. I am the HealthLog Coach and only summarise your own health data — please rephrase your question in those terms.",
+      "token": "I noticed wording that tries to override my instructions. I am the HealthLog Coach and only summarise your own health data. Please rephrase your question in those terms.",
       "type": "token",
     },
     {

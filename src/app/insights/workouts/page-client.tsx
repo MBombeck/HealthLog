@@ -132,7 +132,7 @@ export default function InsightsWorkoutsPageClient() {
               </Button>
             ) : null
           }
-          coachPrefill="I haven't logged any workouts yet — why does tracking them matter, and what should I focus on first?"
+          coachPrefill="I haven't logged any workouts yet. Why does tracking them matter, and what should I focus on first?"
         />
       ) : (
         <>

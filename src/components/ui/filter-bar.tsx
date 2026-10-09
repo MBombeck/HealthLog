@@ -229,7 +229,7 @@ export function FilterBarDateRange({
   const fmt = useFormatters();
   const active = from !== "" || to !== "";
   const display = active
-    ? `${from ? fmt.dateShortSmart(from) : "…"} – ${to ? fmt.dateShortSmart(to) : "…"}`
+    ? `${from ? fmt.dateShortSmart(from) : "…"}–${to ? fmt.dateShortSmart(to) : "…"}`
     : null;
   const clear = () => {
     onFromChange("");
@@ -326,7 +326,7 @@ export function FilterBarNumberRange({
   toLabel: string;
 }) {
   const active = min !== "" || max !== "";
-  const display = active ? `${min || "…"} – ${max || "…"}` : null;
+  const display = active ? `${min || "…"}–${max || "…"}` : null;
   const clear = () => {
     onMinChange("");
     onMaxChange("");

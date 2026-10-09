@@ -105,7 +105,7 @@ describe("IntegrationStatusPill", () => {
       <IntegrationStatusPill state="parked" lastSyncAt={null} />,
     );
     expect(html).toContain("Paused");
-    expect(html).toContain("Paused — reconnect");
+    expect(html).toContain("Paused: reconnect");
     expect(html).toContain('data-state="parked"');
   });
 
@@ -115,7 +115,7 @@ describe("IntegrationStatusPill", () => {
       "de",
     );
     expect(html).toContain("Pausiert");
-    expect(html).toContain("Pausiert — neu verbinden");
+    expect(html).toContain("Pausiert: neu verbinden");
   });
 
   // The three states the server verdict added. `stale` and `stalled` both

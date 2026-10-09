@@ -216,7 +216,7 @@ export function ScheduleHistoryTimeline({
                         local day (issue #490 audit). */}
                     <p className="text-muted-foreground text-xs tabular-nums">
                       {fmt.date(revision.validFrom)}
-                      {" – "}
+                      {"–"}
                       {fmt.date(revision.validUntil)}
                     </p>
                   </div>
