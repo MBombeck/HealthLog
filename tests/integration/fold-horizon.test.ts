@@ -234,6 +234,7 @@ describe("fold repair horizon", () => {
       windowsCorrected: 1,
       restingCorrected: 0,
       windowsSkippedBeyondHorizon: 1,
+      windowsLeftAmbiguous: 0,
       samplesAbsorbed: 1,
     });
     expect(
@@ -271,6 +272,7 @@ describe("fold repair horizon", () => {
       windowsCorrected: 0,
       restingCorrected: 0,
       windowsSkippedBeyondHorizon: 1,
+      windowsLeftAmbiguous: 0,
       samplesAbsorbed: 0,
     });
     expect(

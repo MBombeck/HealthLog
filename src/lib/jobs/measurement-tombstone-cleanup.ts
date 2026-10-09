@@ -53,8 +53,16 @@ export interface TombstonePurgeOptions {
   prisma: PrismaClient;
   /** Up to `take` expired tombstones, none of them owned by `skipUserIds`. */
   findRows: (take: number, skipUserIds: string[]) => Promise<TombstoneRow[]>;
-  /** Remove exactly those ids inside `tx`; returns the rows removed. */
-  deleteIds: (tx: Prisma.TransactionClient, ids: string[]) => Promise<number>;
+  /**
+   * Remove exactly those ids of `userId` inside `tx`; returns the rows
+   * removed. Runs after the restore lock, so a caller that needs a further
+   * per-account lock takes it here.
+   */
+  deleteIds: (
+    tx: Prisma.TransactionClient,
+    ids: string[],
+    userId: string,
+  ) => Promise<number>;
   batchSize?: number;
   maxBatches?: number;
   /**
@@ -124,7 +132,7 @@ export async function purgeTombstonesByAccount({
         deleted += await prisma.$transaction(
           async (tx) => {
             await holdAccountAgainstRestore(tx, userId);
-            return deleteIds(tx, ids);
+            return deleteIds(tx, ids, userId);
           },
           // A full batch of one account is one statement over thousands of
           // rows; the interactive default of five seconds is too tight for

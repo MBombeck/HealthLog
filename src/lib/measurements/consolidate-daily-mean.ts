@@ -32,7 +32,8 @@
  *      that already has a live daily row gets the mean over every sample of
  *      the day, its fold leftovers included (`fold-constituents.ts`), but
  *      only inside the tombstone horizon, where those are provably all of
- *      them; any other such day keeps its stored mean and its live rows
+ *      them, and only until the one-time fold repair has been through the
+ *      account; any other such day keeps its stored mean and its live rows
  *      (`refoldStoredDay`).
  *      Because mean types are NOT in `CUMULATIVE_HK_TYPES`, the daily
  *      read path averages over the single stats row (count = 1) and
@@ -52,6 +53,7 @@
  * `step-consolidation` boot-time converging-backfill pattern.
  */
 import {
+  FOLD_TRANSACTION_OPTIONS,
   holdAccountAgainstRestore,
   holdAccountFoldLock,
 } from "@/lib/export/restore-lock";
@@ -78,7 +80,9 @@ import { localDayWindow } from "@/lib/tz/local-day";
 import {
   absorbIntoFold,
   foldConstituentHorizon,
-  loadFoldLeftovers,
+  foldWindowVerdict,
+  hasFoldRepairRun,
+  loadFoldTombstones,
   loadLiveSamples,
   meanDiffers,
   meanOf,
@@ -235,11 +239,15 @@ async function nextFreeInstant(
  * guard existed.
  *
  * The stored mean is replaced only by the mean over every sample of the day,
- * and only when the samples present are provably all of them: the day starts
- * at or after the horizon of `fold-constituents.ts` (inside it no fold
- * tombstone has been purged) and the fold left tombstones for it. The live
- * samples it takes are then soft-deleted as fold leftovers, so the one-time
- * repair and any later pass compute the same mean from the same samples.
+ * and only when the samples present are provably all of them: the fold
+ * repair has not been through the account yet (after it, the
+ * compaction-tombstone purge may have removed leftovers inside the horizon),
+ * the day starts at or after the horizon of `fold-constituents.ts` (inside it
+ * the retention cleanup has purged no fold tombstone), the fold left
+ * tombstones for it, and none of the day's tombstones may be a person's
+ * deletion. The live samples it takes are then soft-deleted as fold
+ * leftovers, so the one-time repair and any later pass compute the same mean
+ * from the same samples.
  *
  * Otherwise the stored mean was taken from samples that are no longer all in
  * the table, and the live rows may be a re-upload of some of them or a
@@ -274,11 +282,21 @@ async function refoldStoredDay(
     from: dayStart,
     to: dayEnd,
   };
-  // Read under the fold lock: the repair may have taken them meanwhile.
+  // Read under the fold lock, as the purge takes it too: the repair may have
+  // taken the samples meanwhile, and finished the account.
+  if (await hasFoldRepairRun(tx, userId)) return { kind: "left-as-stored" };
   const live = await loadLiveSamples(tx, window);
   if (live.length === 0) return { kind: "written", sourceRowsRemoved: 0 };
-  const leftovers = await loadFoldLeftovers(tx, { ...window, foldedAfterMs });
-  if (leftovers.length === 0) return { kind: "left-as-stored" };
+  const { leftovers, ambiguous } = await loadFoldTombstones(tx, {
+    ...window,
+    foldedAfterMs,
+  });
+  const verdict = foldWindowVerdict({
+    leftovers,
+    ambiguous: ambiguous.length,
+    live: live.length,
+  });
+  if (verdict !== "recompute") return { kind: "left-as-stored" };
   const mean = meanOf([...live, ...leftovers].map((row) => row.value));
   if (meanDiffers(stored.value, mean)) {
     await tx.measurement.update({
@@ -505,7 +523,7 @@ export async function consolidateDailyMean(
           where: { id: { in: sourceRowIds }, deletedAt: null },
         });
         outcome = { kind: "written", sourceRowsRemoved: del.count };
-      });
+      }, FOLD_TRANSACTION_OPTIONS);
       if (outcome.kind === "left-as-stored") return outcome;
 
       // T3 — recompute the affected (user, type, day) rollup buckets after

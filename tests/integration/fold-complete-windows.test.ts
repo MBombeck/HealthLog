@@ -476,8 +476,16 @@ async function seedPartialFolds(userId: string) {
       tomb("ws2", "WALKING_SPEED", 1, "2026-09-18T10:00:00.000Z", run1),
       tomb("ws3", "WALKING_SPEED", 2, "2026-09-18T20:00:00.000Z", run2),
       tomb("ws4", "WALKING_SPEED", 2, "2026-09-18T22:00:00.000Z", run2),
-      // A person deleted this one: not part of the mean.
-      tomb("ws5", "WALKING_SPEED", 9, "2026-09-18T23:00:00.000Z", run2, 2),
+      // A person deleted this one the morning after: not part of the mean.
+      // Younger than the fold threshold when deleted, so never a fold's.
+      tomb(
+        "ws5",
+        "WALKING_SPEED",
+        9,
+        "2026-09-18T23:00:00.000Z",
+        new Date("2026-09-19T08:00:00.000Z"),
+        2,
+      ),
       tomb("ok1", "WALKING_SPEED", 3, "2026-09-17T08:00:00.000Z", run1),
       tomb("ok2", "WALKING_SPEED", 3, "2026-09-17T20:00:00.000Z", run1),
       tomb(
@@ -529,11 +537,13 @@ describe("fold repair", () => {
 
     const first = await repairFoldedMeans(prisma, "repair");
     expect(first.status).toBe("completed");
+    // The right day was folded in one run and is not even recomputed.
     expect(first.byType.WALKING_SPEED).toEqual({
-      windowsChecked: 2,
+      windowsChecked: 1,
       windowsCorrected: 1,
       restingCorrected: 0,
       windowsSkippedBeyondHorizon: 0,
+      windowsLeftAmbiguous: 0,
       samplesAbsorbed: 0,
     });
     expect(first.byType.HEART_RATE_VARIABILITY).toEqual({
@@ -541,6 +551,7 @@ describe("fold repair", () => {
       windowsCorrected: 1,
       restingCorrected: 0,
       windowsSkippedBeyondHorizon: 0,
+      windowsLeftAmbiguous: 0,
       samplesAbsorbed: 0,
     });
     expect(
