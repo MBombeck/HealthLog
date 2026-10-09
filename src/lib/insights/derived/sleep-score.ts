@@ -429,6 +429,14 @@ export interface SleepScoreOpts {
    * user's stored zone (the production path); pass explicitly in tests.
    */
   tz?: string;
+  /**
+   * The exclusive upper end of the read. A reader asking about a past night
+   * passes the end of that day so a later night cannot become "the most
+   * recent" one; omitted, every row from the window start on is read.
+   */
+  until?: Date;
+  /** The record's source priority, when the caller already holds it. */
+  priorityJson?: unknown;
 }
 
 /**
@@ -451,7 +459,10 @@ export async function computeSleepScore(
   // The canonical writer-dedup ladder needs the user's source priority — read
   // it alongside so a multi-source night collapses to the SAME writer the
   // dashboard / hypnogram pick.
-  const priorityJson = await loadUserSourcePriority(userId);
+  const priorityJson =
+    opts.priorityJson !== undefined
+      ? opts.priorityJson
+      : await loadUserSourcePriority(userId);
   const inputs = ["SLEEP_DURATION"];
   const required = 1;
   const since = new Date(now.getTime() - windowDays * MS_PER_DAY);
@@ -461,7 +472,7 @@ export async function computeSleepScore(
       userId,
       type: "SLEEP_DURATION" satisfies MeasurementType,
       deletedAt: null,
-      measuredAt: { gte: since },
+      measuredAt: { gte: since, ...(opts.until ? { lt: opts.until } : {}) },
     },
     orderBy: { measuredAt: "asc" },
     // `source` + `deviceType` feed the canonical writer-dedup so a multi-source

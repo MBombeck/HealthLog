@@ -38,6 +38,7 @@ import {
   DayRunning,
   DayValues,
 } from "./day-sections";
+import { DayScores } from "./day-scores";
 import { curateDayValues, tileKeyOf } from "./day-values-model";
 import { shiftDateKey } from "./day-url";
 import { useDay, usePrefetchDay } from "./use-day";
@@ -168,7 +169,8 @@ export function DayView({
     data !== undefined &&
     data.values.length === 0 &&
     data.events.length === 0 &&
-    data.running.length === 0;
+    data.running.length === 0 &&
+    (data.scores ?? []).length === 0;
   const notShared = data
     ? Object.values(data.sections).some((s) => s?.reason === "not_shared")
     : false;
@@ -336,6 +338,7 @@ export function DayView({
                 withMetric
               />
             )}
+            <DayScores scores={data.scores ?? []} />
             <DayEvents events={data.events} />
           </>
         )}

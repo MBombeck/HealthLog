@@ -24,7 +24,7 @@ import { resolveModuleMap } from "@/lib/modules/gate";
 import { moduleForMeasurementType } from "@/lib/modules/measurement-scope";
 import type { ModuleKey } from "@/lib/modules/registry";
 import { surfaceModule } from "@/lib/modules/surface";
-import type { ShareDomain } from "@/lib/sharing/scope";
+import { ENTIRE_RECORD, type ShareScope } from "@/lib/sharing/scope";
 
 /**
  * The sharing domain each section belongs to, or `null` for rows no delegate
@@ -37,12 +37,20 @@ import type { ShareDomain } from "@/lib/sharing/scope";
  * environment rows, are owner-only in v1.42: their routes take no delegate
  * at any level, so no share (a `profile` one, a legacy whole-record one, or
  * MANAGE) shows them here either.
+ *
+ * The scores are `record`: each one is a composite read across sections
+ * (the readiness blend folds in mood, the health score labs, medications and
+ * mood beside the readings), and the routes that serve them declare the
+ * whole record or admit no delegate at all. A grant scoped to some sections
+ * never reaches them, so a scoped delegate sees `not_shared`; a grant over
+ * the whole record does.
  */
 export const DAY_SECTION_SHARE_DOMAIN: Readonly<
-  Record<DaySectionKey, ShareDomain | null>
+  Record<DaySectionKey, ShareScope | null>
 > = Object.freeze({
   values: "measurements",
   sleep: "measurements",
+  scores: ENTIRE_RECORD,
   mood: "mind",
   assessments: "mind",
   medications: "medications",
@@ -81,13 +89,14 @@ export interface DayAccess {
  * Resolve the readable sections from the module switches and the grant.
  *
  * `domainVisible` is the predicate `actingDomainVisibility` returns: always
- * true on the owner's own record, the grant's sections otherwise. `owner` is
+ * true on the owner's own record, the grant's sections otherwise, and
+ * `record` only for a grant over the whole record. `owner` is
  * true only when the caller reads their own record (no grant); it opens the
  * sections that map to no sharing domain.
  */
 export function resolveDayAccessFrom(args: {
   modules: Readonly<Record<ModuleKey, boolean>>;
-  domainVisible: (domain: ShareDomain) => boolean;
+  domainVisible: (domain: ShareScope) => boolean;
   owner: boolean;
 }): DayAccess {
   const readable = new Set<DaySectionKey>();
@@ -110,7 +119,7 @@ export function resolveDayAccessFrom(args: {
 /** {@link resolveDayAccessFrom} with the module map read for the record. */
 export async function resolveDayAccess(args: {
   recordId: string;
-  domainVisible: (domain: ShareDomain) => boolean;
+  domainVisible: (domain: ShareScope) => boolean;
   owner: boolean;
 }): Promise<DayAccess> {
   const modules = await resolveModuleMap(args.recordId);

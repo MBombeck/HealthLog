@@ -59,6 +59,16 @@ function dayFixture(date: string) {
       },
     ],
     notable: [],
+    scores: [
+      {
+        key: "healthScore",
+        value: 74,
+        max: 100,
+        source: "COMPUTED",
+        band: { lo: 66, hi: 78, n: 30 },
+      },
+      { key: "strain", value: 12.4, max: 21, source: "WHOOP", band: null },
+    ],
     sections: {},
   };
 }

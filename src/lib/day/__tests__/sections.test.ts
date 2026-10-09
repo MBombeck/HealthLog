@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 
 import { DAY_SECTION_KEYS } from "@/lib/day/contract";
 import { MODULE_KEYS, type ModuleKey } from "@/lib/modules/registry";
-import { SHARE_DOMAINS } from "@/lib/sharing/scope";
+import { ENTIRE_RECORD, SHARE_DOMAINS } from "@/lib/sharing/scope";
 
 import {
   DAY_SECTION_SHARE_DOMAIN,
@@ -90,10 +90,34 @@ describe("day access", () => {
   it("maps every section to a real sharing domain or to the owner", () => {
     for (const section of DAY_SECTION_KEYS) {
       const domain = DAY_SECTION_SHARE_DOMAIN[section];
-      if (domain !== null) expect(SHARE_DOMAINS).toContain(domain);
+      if (domain !== null && domain !== ENTIRE_RECORD) {
+        expect(SHARE_DOMAINS).toContain(domain);
+      }
     }
     // Owner-only in v1.42: no share level reaches them.
     expect(DAY_SECTION_SHARE_DOMAIN.lifeEvents).toBeNull();
+    // Composites across sections: only a grant over the whole record.
+    expect(DAY_SECTION_SHARE_DOMAIN.scores).toBe(ENTIRE_RECORD);
+  });
+
+  it("names the scores as not shared under a scoped grant, even one ticking every section", () => {
+    const access = resolveDayAccessFrom({
+      modules: ALL_ON,
+      domainVisible: (d) => d !== ENTIRE_RECORD,
+      owner: false,
+    });
+    expect(access.readable.has("scores")).toBe(false);
+    expect(access.notShared).toContain("scores");
+    expect(access.readable.has("values")).toBe(true);
+  });
+
+  it("opens the scores under a grant over the whole record", () => {
+    const access = resolveDayAccessFrom({
+      modules: ALL_ON,
+      domainVisible: () => true,
+      owner: false,
+    });
+    expect(access.readable.has("scores")).toBe(true);
   });
 
   it("narrows readings type by type through their own module", () => {

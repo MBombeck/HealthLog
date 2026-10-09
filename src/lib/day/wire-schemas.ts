@@ -16,6 +16,7 @@ import {
   DAY_INDEX_MAX_SPAN_DAYS,
   DAY_NOTABLE_KINDS,
   DAY_RUNNING_KINDS,
+  DAY_SCORE_KEYS,
   DAY_SECTION_KEYS,
   DAY_SECTION_UNAVAILABLE_REASONS,
   LIFE_EVENT_CATEGORIES,
@@ -144,6 +145,37 @@ const dayEvent = z
   })
   .meta({ id: "DayEvent" });
 
+const dayScore = z
+  .object({
+    key: z.enum(DAY_SCORE_KEYS),
+    value: z
+      .number()
+      .describe(
+        "The score on its own scale: whole points for a 0 to 100 score, one decimal for a device's day strain.",
+      ),
+    max: z
+      .number()
+      .int()
+      .positive()
+      .describe("The top of the scale: 100, or 21 for a device's day strain."),
+    source: z
+      .string()
+      .describe(
+        "`COMPUTED` for a score the server derived, else the `MeasurementSource` of the device row.",
+      ),
+    band: z
+      .object({
+        lo: z.number(),
+        hi: z.number(),
+        n: z.number().int().nonnegative(),
+      })
+      .nullable()
+      .describe(
+        "The person's own usual range of the score over the 30 days before this day, on the same scale. Null with too little history.",
+      ),
+  })
+  .meta({ id: "DayScore" });
+
 const dayNotable = z
   .object({
     kind: z.enum(DAY_NOTABLE_KINDS),
@@ -164,6 +196,11 @@ export const dayResponseSchema = z
     values: z.array(dayValue),
     events: z.array(dayEvent),
     notable: z.array(dayNotable),
+    scores: z
+      .array(dayScore)
+      .describe(
+        "The scores the record holds for this day, in `DAY_SCORE_KEYS` order. A score with no value that day is absent; an empty list means none.",
+      ),
     sections: z
       .partialRecord(
         daySectionKey,

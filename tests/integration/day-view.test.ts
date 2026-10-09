@@ -1032,6 +1032,331 @@ describe("timeline", () => {
   });
 });
 
+describe("scores", () => {
+  const DAY = "2026-03-10";
+  const shift = (key: string, days: number) =>
+    new Date(Date.parse(`${key}T12:00:00.000Z`) + days * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+
+  /** Ten days of every score up to and including `DAY`. */
+  async function seedScores(userId: string) {
+    const db = getPrismaClient();
+    for (let i = 10; i >= 0; i -= 1) {
+      const key = shift(DAY, -i);
+      await db.healthScoreRecord.create({
+        data: {
+          userId,
+          dayKey: key,
+          timezone: "Europe/Berlin",
+          composite: i === 0 ? 74 : 68 + (i % 3),
+          band: "green",
+          scoreVersion: 1,
+          composition: ["sleep"],
+          pillarScores: { sleep: 70 },
+          inputFingerprint: "a".repeat(64),
+        },
+      });
+      // The nightly proxy is stamped at noon UTC of the day that ended.
+      await db.measurement.create({
+        data: {
+          userId,
+          type: "RECOVERY_SCORE",
+          value: i === 0 ? 63 : 70 + (i % 4),
+          unit: "score",
+          source: "COMPUTED",
+          measuredAt: new Date(`${shift(key, -1)}T12:00:00.000Z`),
+        },
+      });
+      await db.measurement.create({
+        data: {
+          userId,
+          type: "STRAIN_SCORE",
+          value: i === 0 ? 41 : 30 + (i % 5),
+          unit: "score",
+          source: "COMPUTED",
+          measuredAt: new Date(`${key}T12:00:00.000Z`),
+        },
+      });
+      await db.measurement.create({
+        data: {
+          userId,
+          type: "SLEEP_DURATION",
+          value: 420 + (i % 3) * 15,
+          unit: "min",
+          sleepStage: "ASLEEP",
+          source: "APPLE_HEALTH",
+          measuredAt: new Date(`${key}T05:00:00.000Z`),
+        },
+      });
+    }
+    await db.measurement.create({
+      data: {
+        userId,
+        type: "RECOVERY_SCORE",
+        value: 55,
+        unit: "score",
+        source: "WHOOP",
+        measuredAt: new Date(`${DAY}T06:30:00.000Z`),
+      },
+    });
+  }
+
+  it("shows every score the day holds, on the day it describes", async () => {
+    const owner = await makeUser("scores-all");
+    await seedScores(owner.id);
+    await signIn(owner.id);
+    const day = await json<Day>(await getDay(DAY));
+    expect(day.scores.map((s) => s.key)).toEqual([
+      "healthScore",
+      "readiness",
+      "recovery",
+      "sleepScore",
+      "strain",
+    ]);
+    const by = Object.fromEntries(day.scores.map((s) => [s.key, s]));
+    expect(by.healthScore).toMatchObject({ value: 74, max: 100 });
+    // The proxy stamped on the 9th is the readiness of the 10th.
+    expect(by.readiness).toMatchObject({ value: 63, source: "COMPUTED" });
+    expect(by.recovery).toMatchObject({ value: 55, source: "WHOOP" });
+    expect(by.strain).toMatchObject({ value: 41, max: 100 });
+    expect(by.sleepScore?.value).toBeGreaterThan(0);
+    expect(by.readiness?.band).not.toBeNull();
+    expect(by.healthScore?.band?.n).toBe(10);
+    // A stored score is not also a reading of the day it is stamped on.
+    expect(
+      day.values.filter((v) =>
+        ["RECOVERY_SCORE", "STRAIN_SCORE", "DAY_STRAIN"].includes(v.type),
+      ),
+    ).toEqual([]);
+  });
+
+  it("shows a device's day strain alone, on its own scale", async () => {
+    const db = getPrismaClient();
+    const owner = await makeUser("scores-device");
+    await db.measurement.create({
+      data: {
+        userId: owner.id,
+        type: "DAY_STRAIN",
+        value: 12.44,
+        unit: "score",
+        source: "WHOOP",
+        measuredAt: new Date(`${DAY}T07:00:00.000Z`),
+      },
+    });
+    await signIn(owner.id);
+    const day = await json<Day>(await getDay(DAY));
+    expect(day.scores).toEqual([
+      { key: "strain", value: 12.4, max: 21, source: "WHOOP", band: null },
+    ]);
+    expect(day.values).toEqual([]);
+  });
+
+  it("sends no scores for a day without any", async () => {
+    const db = getPrismaClient();
+    const owner = await makeUser("scores-none");
+    await db.measurement.create({
+      data: {
+        userId: owner.id,
+        type: "WEIGHT",
+        value: 80,
+        unit: "kg",
+        measuredAt: new Date(`${DAY}T06:00:00.000Z`),
+      },
+    });
+    await signIn(owner.id);
+    const day = await json<Day>(await getDay(DAY));
+    expect(day.scores).toEqual([]);
+    expect(day.sections.scores).toBeUndefined();
+  });
+
+  it("names the scores as not shared under a scoped grant and opens them to a whole-record one", async () => {
+    const owner = await makeUser("scores-share");
+    await seedScores(owner.id);
+    const scoped = await makeUser("scores-scoped");
+    await shareWith(owner.id, scoped.id, ["measurements"]);
+    const narrow = await json<Day>(await getDay(DAY));
+    expect(narrow.scores).toEqual([]);
+    expect(narrow.sections.scores).toEqual({
+      available: false,
+      reason: "not_shared",
+    });
+    // The stored rows stay readings for a reader who may see them.
+    expect(narrow.values.some((v) => v.type === "RECOVERY_SCORE")).toBe(true);
+
+    const full = await makeUser("scores-full");
+    await shareWith(owner.id, full.id, null);
+    const wide = await json<Day>(await getDay(DAY));
+    expect(wide.scores.length).toBe(5);
+    expect(wide.sections.scores).toBeUndefined();
+  });
+
+  it("leaves out the scores of a switched-off module", async () => {
+    const owner = await makeUser("scores-mod", {
+      recovery: false,
+      sleep: false,
+    });
+    await seedScores(owner.id);
+    await signIn(owner.id);
+    const day = await json<Day>(await getDay(DAY));
+    expect(day.scores.map((s) => s.key)).toEqual(["healthScore"]);
+    expect(day.sections).toEqual({});
+  });
+
+  it("reaches the model as names and numbers", async () => {
+    const owner = await makeUser("scores-model");
+    await seedScores(owner.id);
+    const { readDayForTool } = await import("@/lib/ai/coach/tools/day-read");
+    const { UNBOUNDED_REACH } = await import("@/lib/ai/coach/history-reach");
+    const result = await readDayForTool({
+      userId: owner.id,
+      date: DAY,
+      reach: UNBOUNDED_REACH,
+      loadExcluded: async () => new Set(["sleep"]),
+    });
+    expect(result.present).toBe(true);
+    if (!result.present) return;
+    expect(result.data.scores.map((s) => s.score)).toEqual(["strain"]);
+    expect(Object.keys(result.data.scores[0]!).sort()).toEqual([
+      "band",
+      "max",
+      "score",
+      "value",
+    ]);
+  });
+
+  it("measures what the scores add to the day", async () => {
+    const owner = await makeUser("scores-cost");
+    await seedScores(owner.id);
+    const { loadDay } = await import("@/lib/day/load-day");
+    const { resolveDayAccess } = await import("@/lib/day/sections");
+    const access = await resolveDayAccess({
+      recordId: owner.id,
+      domainVisible: () => true,
+      owner: true,
+    });
+    const without = {
+      ...access,
+      readable: new Set([...access.readable].filter((s) => s !== "scores")),
+    };
+    const time = async (a: typeof access) => {
+      const runs: number[] = [];
+      for (let i = 0; i < 7; i += 1) {
+        const t0 = performance.now();
+        await loadDay({ recordId: owner.id, day: DAY, access: a });
+        runs.push(performance.now() - t0);
+      }
+      return runs.sort((x, y) => x - y)[3]!;
+    };
+    await time(access);
+    const base = await time(without);
+    const full = await time(access);
+    // The scores' own reads, alone and in sequence: what they cost even
+    // where nothing runs beside them.
+    const { readDayScores } = await import("@/lib/day/scores");
+    const alone: number[] = [];
+    for (let i = 0; i < 7; i += 1) {
+      const t0 = performance.now();
+      await readDayScores({
+        userId: owner.id,
+        day: DAY,
+        tz: "Europe/Berlin",
+        modules: access.modules,
+        priorityJson: null,
+      });
+      alone.push(performance.now() - t0);
+    }
+    const scoresAlone = alone.sort((x, y) => x - y)[3]!;
+    process.stdout.write(
+      `[day scores] median loadDay ${base.toFixed(1)} ms without scores, ${full.toFixed(1)} ms with (+${(full - base).toFixed(1)} ms); score reads alone ${scoresAlone.toFixed(1)} ms\n`,
+    );
+    expect(scoresAlone).toBeLessThan(150);
+    expect(full - base).toBeLessThan(150);
+  });
+});
+
+describe("cycle", () => {
+  async function cycleUser(label: string) {
+    const db = getPrismaClient();
+    const owner = await makeUser(label);
+    await db.cycleProfile.create({
+      data: { userId: owner.id, cycleTrackingEnabled: true },
+    });
+    return owner;
+  }
+
+  it("states the cycle day and phase of a day inside a closed cycle", async () => {
+    const db = getPrismaClient();
+    const owner = await cycleUser("cycle-closed");
+    await db.menstrualCycle.create({
+      data: {
+        userId: owner.id,
+        startDate: "2026-02-20",
+        endDate: "2026-03-19",
+        periodEndDate: "2026-02-24",
+        tz: "Europe/Berlin",
+      },
+    });
+    await db.menstrualCycle.create({
+      data: { userId: owner.id, startDate: "2026-03-20", tz: "Europe/Berlin" },
+    });
+    await signIn(owner.id);
+    const day = await json<Day>(await getDay("2026-03-01"));
+    const cycle = day.running.find((r) => r.kind === "cyclePhase");
+    expect(cycle).toMatchObject({
+      dayIndex: 10,
+      sub: "FOLLICULAR",
+      since: "2026-02-20",
+      until: "2026-03-19",
+      dayCount: 28,
+    });
+    const late = await json<Day>(await getDay("2026-03-15"));
+    expect(late.running.find((r) => r.kind === "cyclePhase")?.sub).toBe(
+      "LUTEAL",
+    );
+  });
+
+  it("counts the open cycle and stops once it runs past the grace window", async () => {
+    const db = getPrismaClient();
+    const owner = await cycleUser("cycle-open");
+    await db.menstrualCycle.create({
+      data: { userId: owner.id, startDate: "2026-01-02", tz: "Europe/Berlin" },
+    });
+    // A forecast row never stands in for a logged cycle.
+    await db.menstrualCycle.create({
+      data: {
+        userId: owner.id,
+        startDate: "2025-12-01",
+        isPredicted: true,
+        tz: "Europe/Berlin",
+      },
+    });
+    await signIn(owner.id);
+    const inside = await json<Day>(await getDay("2026-01-04"));
+    expect(inside.running.find((r) => r.kind === "cyclePhase")).toMatchObject({
+      dayIndex: 3,
+      sub: "MENSTRUAL",
+      until: null,
+    });
+    const before = await json<Day>(await getDay("2025-12-10"));
+    expect(before.running.some((r) => r.kind === "cyclePhase")).toBe(false);
+    // Months later with nothing logged: no "day 90".
+    const stale = await json<Day>(await getDay("2026-04-15"));
+    expect(stale.running.some((r) => r.kind === "cyclePhase")).toBe(false);
+  });
+
+  it("shows no cycle to an account without cycle tracking", async () => {
+    const db = getPrismaClient();
+    const owner = await makeUser("cycle-off");
+    await db.menstrualCycle.create({
+      data: { userId: owner.id, startDate: "2026-03-01", tz: "Europe/Berlin" },
+    });
+    await signIn(owner.id);
+    const day = await json<Day>(await getDay("2026-03-05"));
+    expect(day.running.some((r) => r.kind === "cyclePhase")).toBe(false);
+  });
+});
+
 describe("performance smoke", () => {
   it("loads a dense day in well under a second", async () => {
     const db = getPrismaClient();

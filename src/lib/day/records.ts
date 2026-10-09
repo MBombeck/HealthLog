@@ -33,6 +33,9 @@ import { listTargetsBySource } from "@/lib/links/link-service";
 import { getEvent } from "@/lib/logging/context";
 import { lastDayCovered } from "@/lib/life-events/dates";
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
+import { phaseForDate } from "@/lib/cycle/engine-adapter";
+import { LUTEAL_DEFAULT } from "@/lib/cycle/types";
+import { resolveCycleDay } from "@/lib/cycle/verdict";
 import { effectiveMoodTz } from "@/lib/mood/date-key";
 import { dateOnlyKey, dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
 import { daysBetweenDateKeys, shiftDateKey, userDayKey } from "@/lib/tz/format";
@@ -870,39 +873,103 @@ async function workoutsPart(frame: DayFrame): Promise<SectionPart> {
   };
 }
 
+/**
+ * The cycle a day falls in, with its cycle day and phase.
+ *
+ * Only logged cycles count; a forecast row says nothing about a day that
+ * has passed. The day belongs to the latest logged start at or before it,
+ * and the cycle closes on the next logged start. The count is
+ * `resolveCycleDay`'s, the one the cycle ring and the mood context use, so
+ * an open cycle stops counting past the typical length plus the grace
+ * window instead of reading "day 90" for an account that stopped logging.
+ * The phase is `phaseForDate`'s, the one the calendar and the Coach show,
+ * with the open cycle running to the cached forecast. `sub` carries the
+ * phase code; the client words it.
+ */
 async function cyclePart(frame: DayFrame): Promise<SectionPart> {
-  const [cycles, logs] = await Promise.all([
-    prisma.menstrualCycle.findMany({
-      where: {
-        userId: frame.userId,
-        deletedAt: null,
-        isPredicted: false,
-        absorbedIntoId: null,
-        startDate: { lte: frame.day },
-        OR: [{ endDate: null }, { endDate: { gte: frame.day } }],
-      },
-      select: { id: true, startDate: true, endDate: true },
+  const logged = {
+    userId: frame.userId,
+    deletedAt: null,
+    isPredicted: false,
+    absorbedIntoId: null,
+  };
+  const cycleFields = {
+    id: true,
+    startDate: true,
+    endDate: true,
+    periodEndDate: true,
+    ovulationDate: true,
+  } as const;
+  const [current, next, logs, profile, prediction] = await Promise.all([
+    prisma.menstrualCycle.findFirst({
+      where: { ...logged, startDate: { lte: frame.day } },
+      select: cycleFields,
       orderBy: { startDate: "desc" },
-      take: 1,
+    }),
+    prisma.menstrualCycle.findFirst({
+      where: { ...logged, startDate: { gt: frame.day } },
+      select: cycleFields,
+      orderBy: { startDate: "asc" },
     }),
     prisma.cycleDayLog.findMany({
       where: { userId: frame.userId, date: frame.day, deletedAt: null },
       select: { id: true, flow: true },
     }),
+    prisma.cycleProfile.findUnique({
+      where: { userId: frame.userId },
+      select: {
+        typicalCycleLength: true,
+        typicalPeriodLength: true,
+        lutealPhaseLength: true,
+      },
+    }),
+    prisma.cyclePrediction.findUnique({
+      where: { userId: frame.userId },
+      select: { nextPeriodStart: true },
+    }),
   ]);
-  return {
-    running: cycles.map((cycle) =>
-      running(frame, {
+
+  const running: DayRunningItem[] = [];
+  if (current) {
+    const today = userDayKey(new Date(), frame.tz);
+    const starts = next
+      ? [current.startDate, next.startDate]
+      : [current.startDate];
+    const dayOfCycle = resolveCycleDay(
+      frame.day,
+      starts,
+      today,
+      profile ?? undefined,
+    );
+    if (dayOfCycle !== null) {
+      const { phase } = phaseForDate(
+        frame.day,
+        next ? [current, next] : [current],
+        next ? null : (prediction?.nextPeriodStart ?? null),
+        profile?.lutealPhaseLength ?? LUTEAL_DEFAULT,
+        today,
+      );
+      const until = next ? shiftDateKey(next.startDate, -1) : null;
+      running.push({
         kind: "cyclePhase",
         section: "cycle",
-        id: cycle.id,
+        id: current.id,
         title: "cycle",
-        sub: null,
-        since: cycle.startDate,
-        until: cycle.endDate,
+        sub: phase,
+        since: current.startDate,
+        until,
+        dayIndex: dayOfCycle,
+        dayCount:
+          until === null
+            ? null
+            : daysBetweenDateKeys(current.startDate, until) + 1,
         href: "/cycle",
-      }),
-    ),
+      });
+    }
+  }
+
+  return {
+    running,
     events: logs.map((log) =>
       event({
         at: null,

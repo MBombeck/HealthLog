@@ -20,6 +20,7 @@
  */
 import {
   MODEL_EXCLUDED_DAY_SECTIONS,
+  type DayScoreKey,
   type DaySectionKey,
 } from "@/lib/day/contract";
 import { loadDay } from "@/lib/day/load-day";
@@ -77,6 +78,31 @@ export const DAY_EXCLUSIONS_BY_TOKEN: Readonly<
 };
 
 /**
+ * The day's scores each Coach exclusion token takes out with it: a score is
+ * built from the excluded data, so its number would carry what the person
+ * kept from the Coach. The readiness blend (and a device's recovery, built
+ * on the same night) reads resting pulse, HRV, sleep and mood; the sleep
+ * score reads sleep; strain reads the heart rate. The health score is a
+ * composite over the whole record, so every token takes it out. Typed as a
+ * full record, so a new token does not compile without an entry.
+ */
+export const DAY_SCORE_EXCLUSIONS_BY_TOKEN: Readonly<
+  Record<CoachExcludeMetric, readonly DayScoreKey[]>
+> = {
+  bp: ["healthScore"],
+  weight: ["healthScore"],
+  pulse: ["healthScore", "strain"],
+  mood: ["healthScore", "readiness", "recovery"],
+  compliance: ["healthScore"],
+  hrv: ["healthScore", "readiness", "recovery"],
+  sleep: ["healthScore", "readiness", "recovery", "sleepScore"],
+  resting_hr: ["healthScore", "readiness", "recovery"],
+  steps: ["healthScore"],
+  medications: ["healthScore"],
+  anthropometrics: ["healthScore"],
+};
+
+/**
  * Further sections for the sources a switched-off module adds to the
  * exclusions (`coachExclusions`). The module's own sections are already
  * absent through the module gate; this keeps the two in step.
@@ -97,7 +123,13 @@ export function dayExclusionsFor(
 ): ModelDayExclusions {
   const sections = new Set<DaySectionKey>();
   const types = new Set<string>();
+  const scores = new Set<DayScoreKey>();
   for (const token of excluded) {
+    for (const score of DAY_SCORE_EXCLUSIONS_BY_TOKEN[
+      token as CoachExcludeMetric
+    ] ?? []) {
+      scores.add(score);
+    }
     for (const section of DAY_EXCLUSIONS_BY_TOKEN[
       token as CoachExcludeMetric
     ] ?? []) {
@@ -118,7 +150,7 @@ export function dayExclusionsFor(
       }
     }
   }
-  return { sections, types };
+  return { sections, types, scores };
 }
 
 export async function readDayForTool(args: {
@@ -180,7 +212,8 @@ export async function readDayForTool(args: {
   if (
     data.values.length === 0 &&
     data.events.length === 0 &&
-    data.running.length === 0
+    data.running.length === 0 &&
+    data.scores.length === 0
   ) {
     return { present: false, reason: "no_data" };
   }
