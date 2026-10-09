@@ -7,8 +7,11 @@
  * value that changes with the zoom says why: it is the mean of a different
  * stretch. Then every entry that touches the bucket as a chip (each one a
  * way into its day), the means of the chosen values with the readings behind
- * each ("no value" where there is none), and "Open 3 Jan." for the selected
- * day. Until someone picks a day, a short line says how to.
+ * each ("no value" where there is none; the readings behind a mean are a
+ * hover and a screen-reader detail, not a second line). The day itself opens
+ * from a chip, from Enter on the chart or a double click; a separate "Open
+ * 3 Jan." link sat apart from everything else and is gone. Until someone
+ * picks a day, a short line says how to.
  *
  * It is also where a label the chart had to leave out is read in full, and
  * where each keyboard step on the chart is announced (`aria-live`).
@@ -19,8 +22,6 @@
  * medication is one entry however many of its items touch the bucket
  * (`medicationPeriodItem`).
  */
-import { ArrowRight } from "lucide-react";
-
 import type { TimelineResponse } from "@/lib/day/contract";
 import { resolveIntlLocale } from "@/lib/format-locale";
 import { useTranslations } from "@/lib/i18n/context";
@@ -147,9 +148,19 @@ export function SelectionBar({
                 to: at(item.end),
               })
             : at(item.start);
-        const { label, sub } = words(item);
+        const { label, sub, tag } = words(item);
         const name = [label, sub].filter(Boolean).join(" ");
         const text = `${name}, ${when}`;
+        // A life event's category is a chip of its own inside the entry,
+        // never run on after its title.
+        const category = tag ? (
+          <span
+            data-slot="timeline-selection-tag"
+            className="border-border text-muted-foreground rounded-full border px-1.5 leading-4"
+          >
+            {tag}
+          </span>
+        ) : null;
         const editable = item.kind === "lifeEvent" && onEditLifeEvent;
         if (!canOpenDay && !editable) {
           return (
@@ -163,6 +174,7 @@ export function SelectionBar({
                 aria-hidden="true"
               />
               {text}
+              {category}
             </span>
           );
         }
@@ -183,6 +195,7 @@ export function SelectionBar({
               aria-hidden="true"
             />
             {text}
+            {category}
           </button>
         );
       })}
@@ -205,16 +218,6 @@ export function SelectionBar({
           {meanAfter}
         </span>
       )}
-      <button
-        type="button"
-        data-slot="timeline-open-day"
-        data-date={selected}
-        onClick={() => onOpenDay(selected)}
-        className="text-foreground hover:bg-accent focus-visible:ring-ring/50 ml-auto inline-flex min-h-11 items-center gap-1 rounded-md px-2 text-sm font-medium outline-none focus-visible:ring-2 sm:min-h-8"
-      >
-        {t("timeline.openDay", { date: formatDayMonth(selected, intl) })}
-        <ArrowRight className="size-4" aria-hidden="true" />
-      </button>
     </div>
   );
 }

@@ -41,6 +41,7 @@ import {
 } from "@/components/timeline/label-keys";
 import { resolveIntlLocale } from "@/lib/format-locale";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { metricPageHref } from "@/lib/insights/metric-page";
 import { MOOD_LABEL_KEYS } from "@/lib/mood/labels";
 import { cn } from "@/lib/utils";
 
@@ -439,16 +440,11 @@ function ValueTile({
   const shown = formatTile(tile);
   // The line plots the first row: systolic for a blood pressure.
   const lead = tile.values[0];
-  return (
-    <li
-      data-slot="day-value"
-      data-type={tile.key}
-      data-selected={selected ? "true" : undefined}
-      className={cn(
-        "bg-muted/60 flex min-w-0 flex-col rounded-lg px-3 py-2.5",
-        selected && "ring-foreground ring-[1.5px] ring-inset",
-      )}
-    >
+  // Like a score tile, a value tile leads to its metric's page; a kind
+  // without a page of its own stays a plain tile.
+  const href = metricPageHref(tile.key);
+  const body = (
+    <>
       <span className="text-muted-foreground truncate text-xs">
         {shown.label}
       </span>
@@ -480,6 +476,33 @@ function ValueTile({
           ) : null}
         </>
       ) : null}
+    </>
+  );
+  const frame = cn(
+    "bg-muted/60 flex min-h-11 min-w-0 flex-col rounded-lg px-3 py-2.5",
+    selected && "ring-foreground ring-[1.5px] ring-inset",
+  );
+  return (
+    <li
+      data-slot="day-value"
+      data-type={tile.key}
+      data-selected={selected ? "true" : undefined}
+      className="flex min-w-0"
+    >
+      {href ? (
+        <Link
+          href={href}
+          data-slot="day-value-link"
+          className={cn(
+            frame,
+            "hover:bg-muted focus-visible:ring-ring/50 w-full transition-colors focus-visible:ring-[3px] focus-visible:outline-none",
+          )}
+        >
+          {body}
+        </Link>
+      ) : (
+        <div className={cn(frame, "w-full")}>{body}</div>
+      )}
     </li>
   );
 }
@@ -585,11 +608,16 @@ export function DayEvents({ events }: { events: readonly DayEvent[] }) {
               data-slot="day-event"
               data-kind={event.kind}
               className={cn(
-                "relative grid grid-cols-[2.75rem_1.25rem_minmax(0,1fr)_1rem] items-start gap-x-2.5 py-2.5",
+                // The time column fits "08:10 AM" and "오전 08:10" on one
+                // line; the time itself never wraps.
+                "relative grid grid-cols-[3.75rem_1.25rem_minmax(0,1fr)_1rem] items-start gap-x-2.5 py-2.5",
                 event.href && "hover:bg-muted/40 rounded-md",
               )}
             >
-              <span className="text-muted-foreground text-xs leading-5 tabular-nums">
+              <span
+                data-slot="day-event-time"
+                className="text-muted-foreground text-xs leading-5 whitespace-nowrap tabular-nums"
+              >
                 {event.at ? fmt.time(event.at) : ""}
               </span>
               <Icon

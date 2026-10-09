@@ -239,6 +239,57 @@ export class LineOccupancy {
     this.add(line, a, b);
     return true;
   }
+
+  /**
+   * How far right a text starting at `a` may run on `line`: up to `margin`
+   * before the next thing there. `a` itself when `a` is already too close to
+   * something, Infinity when nothing lies to its right.
+   */
+  room(line: string, a: number, margin = LABEL_MARGIN): number {
+    let limit = Infinity;
+    for (const [c, d] of this.lines.get(line) ?? []) {
+      if (a < d + margin && a > c - margin) return a;
+      if (c - margin >= a) limit = Math.min(limit, c - margin);
+    }
+    return limit;
+  }
+}
+
+/** Air between a label and the next mark or label to its right. */
+export const NEIGHBOUR_GAP = 12;
+
+/** A label cut shorter than this many characters is left out instead. */
+export const MIN_LABEL_CHARS = 6;
+
+/**
+ * Put `text` on `line` from `a`: whole when it keeps {@link NEIGHBOUR_GAP}
+ * from the next thing to its right and `margin` from everything else, else
+ * cut with an ellipsis to the room before that next thing, else not at all
+ * (when even {@link MIN_LABEL_CHARS} characters would not fit). Returns the
+ * text placed, or null.
+ */
+export function placeText(
+  occ: LineOccupancy,
+  line: string,
+  a: number,
+  text: string,
+  right: number,
+  margin = LABEL_MARGIN,
+): string | null {
+  if (!occ.fits(line, a, a, margin)) return null;
+  const room = Math.min(right, occ.room(line, a, NEIGHBOUR_GAP));
+  const width = estimateTextWidth(text);
+  if (a + width <= room && occ.fits(line, a, a + width, margin)) {
+    occ.add(line, a, a + width);
+    return text;
+  }
+  const available = room - a;
+  if (available < estimateTextWidth("x".repeat(MIN_LABEL_CHARS))) return null;
+  const cut = fitText(text, available);
+  const cutWidth = estimateTextWidth(cut);
+  if (!occ.fits(line, a, a + cutWidth, margin)) return null;
+  occ.add(line, a, a + cutWidth);
+  return cut;
 }
 
 /**
@@ -281,6 +332,32 @@ export function wrapToWidth(
     }
   }
   return lines;
+}
+
+/**
+ * A value line's name in the label column: one line when it fits, else two,
+ * the second cut with an ellipsis if even two do not hold it. "Blood
+ * pressure sys." read "Blood pressure sy…" on one line; on two it reads whole
+ * in every bundle, and the value under it moves down one line.
+ */
+export function seriesNameLines(
+  text: string,
+  maxWidth: number,
+  fontPx = LABEL_FONT_PX,
+): string[] {
+  if (estimateTextWidth(text, fontPx) <= maxWidth) return [text];
+  const words = text.split(/\s+/);
+  let first = "";
+  let i = 0;
+  for (; i < words.length; i++) {
+    const next = first ? `${first} ${words[i]}` : words[i];
+    if (estimateTextWidth(next, fontPx) > maxWidth) break;
+    first = next;
+  }
+  // A first word longer than the column: one cut line, as before.
+  if (first === "") return [fitText(text, maxWidth, fontPx)];
+  const rest = words.slice(i).join(" ");
+  return rest ? [first, fitText(rest, maxWidth, fontPx)] : [first];
 }
 
 /* ─── Grid ────────────────────────────────────────────────────────────────── */
@@ -712,13 +789,14 @@ function placeMedicationLabels(
       s.segment?.first && !s.item.startKnown ? UNKNOWN_START_LEAD : 0;
     const arrow = s.item.open && (s.segment?.last ?? true) ? 7 : 0;
     occ.add(line(s.row, "on"), s.xStart - lead, s.xEnd + arrow);
+    // A name above the bar ends before the bar's own arrow head.
+    if (arrow) occ.add(line(s.row, "above"), s.xEnd - 2, s.xEnd + 9);
   }
   for (const p of points) {
     const half = GLYPH_HALF_WIDTH[p.shape];
     occ.add(line(p.row, "on"), p.x - half, p.x + half);
   }
   const labels: PlacedLabel[] = [];
-  const fits = (a: number, b: number) => a >= scale.x0 && b <= scale.x1 - 2;
   const place = (
     id: string,
     row: number,
@@ -728,13 +806,19 @@ function placeMedicationLabels(
     text: string,
     margin = LABEL_MARGIN,
   ) => {
-    const b = a + estimateTextWidth(text);
-    if (!fits(a, b) || !occ.tryAdd(line(row, where), a, b, margin)) {
-      return false;
-    }
+    if (a < scale.x0) return false;
+    const placed = placeText(
+      occ,
+      line(row, where),
+      a,
+      text,
+      scale.x1 - 2,
+      margin,
+    );
+    if (placed === null) return false;
     labels.push({
       itemId: id,
-      text,
+      text: placed,
       x: a,
       y: where === "above" ? y - 7 : y + 4,
       strong: false,
@@ -835,8 +919,10 @@ function placeLabels(
   const line = (row: number, where: "on" | "above") => `${row}:${where}`;
   for (const s of spans) {
     const lead = s.item.startKnown ? 0 : UNKNOWN_START_LEAD;
-    // An open period ends in a small arrow head past its last day.
+    // An open period ends in a small arrow head past its last day; a name
+    // above the bar keeps clear of it too.
     occ.add(line(s.row, "on"), s.xStart - lead, s.xEnd + (s.item.open ? 7 : 0));
+    if (s.item.open) occ.add(line(s.row, "above"), s.xEnd - 2, s.xEnd + 9);
   }
   for (const p of points) {
     const half = GLYPH_HALF_WIDTH[p.shape];
@@ -853,10 +939,16 @@ function placeLabels(
 
   const aboveLabel = (s: PlacedSpan, text: string) => {
     const a = s.xStart + (s.clippedLeft ? 26 : 2);
-    const b = a + estimateTextWidth(text);
-    if (!fitsCard(a, b)) return false;
-    if (!occ.tryAdd(line(s.row, "above"), a, b)) return false;
-    labels.push({ itemId: s.item.id, text, x: a, y: s.y - 7, strong: false });
+    if (a < scale.x0) return false;
+    const placed = placeText(occ, line(s.row, "above"), a, text, scale.x1 - 2);
+    if (placed === null) return false;
+    labels.push({
+      itemId: s.item.id,
+      text: placed,
+      x: a,
+      y: s.y - 7,
+      strong: false,
+    });
     return true;
   };
   const rightLabel = (
@@ -868,13 +960,20 @@ function placeLabels(
     strong: boolean,
   ) => {
     const a = x;
-    const b = a + estimateTextWidth(text);
-    if (!fitsCard(a, b)) return false;
+    if (a < scale.x0) return false;
     // The label already keeps its own distance from the mark it names, so a
-    // smaller margin here; the full margin still separates it from the next
-    // mark because that mark's own box is wider than this gap.
-    if (!occ.tryAdd(line(row, "on"), a, b, BESIDE_MARGIN)) return false;
-    labels.push({ itemId: id, text, x: a, y: y + 4, strong });
+    // smaller margin behind it; ahead of it, it keeps a full gap from the
+    // next mark, or is cut short, or left out.
+    const placed = placeText(
+      occ,
+      line(row, "on"),
+      a,
+      text,
+      scale.x1 - 2,
+      BESIDE_MARGIN,
+    );
+    if (placed === null) return false;
+    labels.push({ itemId: id, text: placed, x: a, y: y + 4, strong });
     return true;
   };
 

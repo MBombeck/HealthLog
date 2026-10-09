@@ -191,7 +191,7 @@ export function TimelineChronicle({
       };
     }
     const { item, role } = entry;
-    const { label, sub } = words(item);
+    const { label, sub, tag } = words(item);
     if (role === "end") {
       // A pause that ends is the medication taken up again, not ended.
       return {
@@ -204,7 +204,11 @@ export function TimelineChronicle({
           : null,
       };
     }
-    const meta = [sub, item.startKnown ? null : t("timeline.startUnknown")]
+    // A life event's category sits on the muted line under its title.
+    const meta = [
+      sub ?? tag ?? null,
+      item.startKnown ? null : t("timeline.startUnknown"),
+    ]
       .filter(Boolean)
       .join(", ");
     return { title: label, meta: meta || null };

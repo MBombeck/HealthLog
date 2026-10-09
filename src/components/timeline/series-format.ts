@@ -126,7 +126,13 @@ function pressure(
 /** One value of a means line, with the series whose colour marks it. */
 export interface MeanPart {
   key: string;
+  /** What is read at a glance: the name and the value. */
   text: string;
+  /**
+   * What stands behind it ("mean of 19 readings"): a hover, a screen reader
+   * and a long press reach it, the line does not show it.
+   */
+  detail?: string;
 }
 
 /**
@@ -189,7 +195,8 @@ export function labelledMeanParts(
     if (fold && m.key === "BLOOD_PRESSURE_SYS") {
       parts.push({
         key: m.key,
-        text: `${words.bloodPressure} ${pressure(sys, dia!, format)} (${words.readings(sys.count ?? 0)})`,
+        text: `${words.bloodPressure} ${pressure(sys, dia!, format)}`,
+        detail: words.readings(sys.count ?? 0),
       });
       continue;
     }
@@ -198,7 +205,8 @@ export function labelledMeanParts(
       text:
         m.mean === null
           ? `${words.label(m.key)} ${words.noValue}`
-          : `${words.label(m.key)} ${formatSeriesValue(m.key, m.mean, m.unit, format)} (${words.readings(m.count ?? 0)})`,
+          : `${words.label(m.key)} ${formatSeriesValue(m.key, m.mean, m.unit, format)}`,
+      ...(m.mean === null ? {} : { detail: words.readings(m.count ?? 0) }),
     });
   }
   return parts;

@@ -266,6 +266,26 @@ describe("<DayView>", () => {
     expect(weightTile.split("</li>")[0]).not.toContain("day-number-line");
   });
 
+  it("leads each value tile with a page of its own to that page", async () => {
+    const html = await render();
+    expect(html).toMatch(
+      /data-type="WEIGHT"[^>]*>\s*<a[^>]*href="\/insights\/weight"[^>]*data-slot="day-value-link"|data-type="WEIGHT"[^>]*><a[^>]*href="\/insights\/weight"/,
+    );
+    expect(html).toMatch(
+      /data-type="BLOOD_PRESSURE"[^>]*><a[^>]*href="\/insights\/blood-pressure"/,
+    );
+    // A 44 px target and a visible focus ring, like every other link here.
+    expect(html).toMatch(/data-slot="day-value-link"[^>]*min-h-11/);
+    expect(html).toMatch(/data-slot="day-value-link"[^>]*focus-visible:ring/);
+  });
+
+  it("keeps an event's time on one line", async () => {
+    const html = await render();
+    const times = html.match(/data-slot="day-event-time"[^>]*>/g) ?? [];
+    expect(times.length).toBeGreaterThan(0);
+    for (const tag of times) expect(tag).toContain("whitespace-nowrap");
+  });
+
   it("lists what happened, each entry linking to its source", async () => {
     const html = await render();
     expect(html).toContain("What happened");

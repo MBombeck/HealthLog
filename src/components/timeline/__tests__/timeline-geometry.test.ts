@@ -7,6 +7,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  LineOccupancy,
+  NEIGHBOUR_GAP,
+  placeText,
+  seriesNameLines,
   createScale,
   dateAtPointer,
   estimateTextWidth,
@@ -408,7 +412,10 @@ describe("layoutLane", () => {
     ]);
     for (const label of layout.labels) {
       const point = layout.points.find((p) => p.item.id === label.itemId)!;
-      expect(label.x).toBeGreaterThan(point.x + 7);
+      // Right of the glyph, or left of it when the next mark is too near.
+      const right = label.x > point.x + 7;
+      const left = label.x + estimateTextWidth(label.text) < point.x - 7;
+      expect(right || left).toBe(true);
       expect(label.strong).toBe(true);
     }
   });
@@ -734,5 +741,110 @@ describe("interaction", () => {
     expect(
       itemsInPeriod(timeline.lanes, "2026-01-01", "2026-01-31", TODAY).length,
     ).toBeGreaterThan(0);
+  });
+});
+
+describe("label room (v1.42 final)", () => {
+  it("puts a long value-line name on two lines instead of cutting it", () => {
+    const width = 164 - 12 - 16;
+    expect(seriesNameLines("Gewicht", width, 13)).toEqual(["Gewicht"]);
+    const lines = seriesNameLines("Blood pressure sys.", width, 13);
+    expect(lines).toEqual(["Blood pressure", "sys."]);
+    for (const line of lines) {
+      expect(estimateTextWidth(line, 13)).toBeLessThanOrEqual(width);
+    }
+    // Two lines are the most; the second is cut when even two do not hold it.
+    const long = seriesNameLines(
+      "Walking heart rate average over the whole day",
+      width,
+      13,
+    );
+    expect(long).toHaveLength(2);
+    expect(long[1].endsWith("…")).toBe(true);
+  });
+
+  it("keeps a gap before the next mark, cuts a name short, or leaves it out", () => {
+    const occ = new LineOccupancy();
+    occ.add("0:on", 200, 210);
+    // Whole: ends a full gap before the mark at 200.
+    expect(placeText(occ, "0:on", 100, "abcd", 1000)).toBe("abcd");
+    const occ2 = new LineOccupancy();
+    occ2.add("0:on", 200, 210);
+    const cut = placeText(occ2, "0:on", 100, "a long label that runs on", 1000);
+    expect(cut?.endsWith("…")).toBe(true);
+    expect(100 + estimateTextWidth(cut!)).toBeLessThanOrEqual(
+      200 - NEIGHBOUR_GAP,
+    );
+    // No room for even a few characters: no label at all.
+    const occ3 = new LineOccupancy();
+    occ3.add("0:on", 120, 130);
+    expect(placeText(occ3, "0:on", 100, "a long label", 1000)).toBeNull();
+  });
+
+  it("keeps a medication's name above its bar clear of the bar's arrow", () => {
+    const window = { from: "2026-07-11", to: "2026-10-09" };
+    const scale = createScale(window, 164, 700);
+    const lane = layoutLane(
+      {
+        lane: {
+          key: "medications",
+          items: [
+            item({
+              id: "mg",
+              group: "mg",
+              kind: "medication",
+              // Started late in the window: a short bar near today.
+              start: "2026-09-20",
+              open: true,
+              startKnown: false,
+              label: "Magnesium",
+              sub: "400mg",
+            }),
+          ],
+        },
+        top: 0,
+      },
+      window,
+      scale,
+      { words: WORDS, startMissing: "Startdatum fehlt", today: "2026-10-09" },
+    );
+    const bar = lane.spans[0];
+    expect(lane.labels.length).toBeGreaterThan(0);
+    for (const label of lane.labels) {
+      const right = label.x + estimateTextWidth(label.text);
+      // Above the bar it ends before the arrow head; beside it, it starts
+      // after it.
+      if (label.y < bar.y) expect(right).toBeLessThanOrEqual(bar.xEnd - 2);
+      else expect(label.x >= bar.xEnd + 7 || right <= bar.xStart).toBe(true);
+    }
+  });
+
+  it("never lets two names of one lane line overlap or crowd each other", () => {
+    for (const width of [390, 700, 1100, 1600]) {
+      const layout = layoutAt(width);
+      for (const lane of layout.lanes) {
+        const byLine = new Map<number, ReturnType<typeof boxes>>();
+        for (const box of boxes(lane)) {
+          const list = byLine.get(box.y) ?? [];
+          list.push(box);
+          byLine.set(box.y, list);
+        }
+        for (const list of byLine.values()) {
+          list.sort((p, q) => p.a - q.a);
+          for (let i = 1; i < list.length; i++) {
+            expect(list[i].a).toBeGreaterThanOrEqual(list[i - 1].b);
+          }
+        }
+      }
+    }
+  });
+
+  it("names a life event without its category glued on", () => {
+    const life = fullTimeline().lanes.find((l) => l.key === "life")!;
+    for (const entry of life.items) {
+      const words = WORDS(entry);
+      expect(words.sub).toBeNull();
+      expect(itemLine(entry, WORDS, "")).toBe(entry.label);
+    }
   });
 });

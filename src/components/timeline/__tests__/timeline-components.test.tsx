@@ -19,7 +19,12 @@ import { ReadinessInventory, VerdictMeter } from "../readiness-inventory";
 import { SelectionBar, bucketTitle } from "../selection-bar";
 import { assignSeriesColors } from "../series-colors";
 import type { SeriesValueFormat } from "../series-format";
-import { MeanPartsLine, SeriesLines, TimelineChart } from "../timeline-chart";
+import {
+  MeanPartsLine,
+  SeriesLines,
+  SeriesNameLinks,
+  TimelineChart,
+} from "../timeline-chart";
 import { TimelineChronicle } from "../timeline-chronicle";
 import { layoutTimeline } from "../timeline-geometry";
 import { useSeriesValueFormat } from "../use-series-value-format";
@@ -311,7 +316,7 @@ const bar = (selected: string, timeline = fullTimeline(), showHint = false) =>
   );
 
 describe("selection bar", () => {
-  it("lists the month's entries and offers the selected day", () => {
+  it("lists the month's entries, and no separate link to open the day", () => {
     const html = bar("2026-01-03");
     expect(html).toContain("Januar 2026");
     expect(html).toContain("Erkältung, 31. Dez. bis 8. Jan.");
@@ -320,8 +325,10 @@ describe("selection bar", () => {
     expect(html).toContain("Vitamin D (Winter), 1. Nov. bis 31. März");
     expect(html).not.toContain("laufend");
     expect(html).not.toContain("Bluthochdruck");
-    expect(html).toContain("3. Jan. öffnen");
-    expect(html).toContain('data-date="2026-01-03"');
+    // The day opens from its chips and the chart; the lone "Open 3 Jan."
+    // link at the end of the bar is gone.
+    expect(html).not.toContain("3. Jan. öffnen");
+    expect(html).not.toContain('data-slot="timeline-open-day"');
   });
 
   it("names a pause as a pause", () => {
@@ -329,12 +336,25 @@ describe("selection bar", () => {
     expect(html).toContain("Ramipril pausiert, 1. Juni bis 11. Juni");
   });
 
-  it("names the bucket's means with the readings behind each", () => {
-    expect(text(bar("2026-01-03"))).toContain(
-      "Ø Blutdruck 129/82 mmHg (Schnitt aus 4 Messungen), Gewicht 82,6 kg (Schnitt aus 3 Messungen)",
+  it("names the bucket's means, the readings behind each as a hover and for a screen reader", () => {
+    const html = bar("2026-01-03");
+    // What the line shows: the name and the value, nothing more.
+    const visible = text(
+      html.replace(
+        /<span[^>]*data-slot="timeline-mean-detail"[^>]*>[^<]*<\/span>/g,
+        "",
+      ),
+    );
+    expect(visible).toContain("Ø Blutdruck 129/82 mmHg, Gewicht 82,6 kg");
+    expect(visible).not.toContain("Schnitt aus");
+    // The readings: a title on the value, and the same words read aloud.
+    expect(html).toContain('title="Schnitt aus 4 Messungen"');
+    expect(html).toContain('title="Schnitt aus 3 Messungen"');
+    expect(text(html)).toContain(
+      "Ø Blutdruck 129/82 mmHg, Schnitt aus 4 Messungen, Gewicht 82,6 kg, Schnitt aus 3 Messungen",
     );
     expect(text(bar("2026-07-15"))).toContain(
-      "Ø Blutdruck sys. 131 mmHg (1 Messung), Blutdruck dia. kein Wert, Gewicht kein Wert",
+      "Ø Blutdruck sys. 131 mmHg, 1 Messung, Blutdruck dia. kein Wert, Gewicht kein Wert",
     );
   });
 
@@ -437,7 +457,7 @@ describe("selection bar head and hint", () => {
       ],
     };
     const html = text(bar("2026-01-03", timeline));
-    expect(html).toContain("9 Std. 16 Min. (Schnitt aus 31 Messungen)");
+    expect(html).toContain("9 Std. 16 Min., Schnitt aus 31 Messungen");
     expect(html).not.toContain("556");
   });
 });
@@ -550,5 +570,34 @@ describe("life events in the capture picker", () => {
     expect(
       visibleCaptureKinds(delegate, CAPTURE_KIND_ORDER, { timeline: true }),
     ).not.toContain("lifeEvent");
+  });
+});
+
+describe("value-line names", () => {
+  it("lead to their metric's page, with a 44 px target, and none for a kind without one", () => {
+    const tl = fullTimeline();
+    const layout = layoutTimeline({
+      width: 1200,
+      window: { from: "2025-10-01", to: "2026-10-31" },
+      lanes: tl.lanes,
+      series: [...tl.series, { key: "NOT_A_TYPE", unit: null, points: [] }],
+      bucket: tl.bucket,
+      words: wordsIn("de"),
+      startMissing: "?",
+      today: TODAY,
+    });
+    const html = render(
+      <SeriesNameLinks layout={layout} seriesLabel={(k) => `name ${k}`} />,
+    );
+    expect(html).toMatch(
+      /data-slot="timeline-series-link"[^>]*data-series="WEIGHT"|href="\/insights\/weight"[^>]*data-slot="timeline-series-link"/,
+    );
+    expect(html).toContain('href="/insights/weight"');
+    expect(html).toContain('href="/insights/blood-pressure"');
+    expect(html).toContain('aria-label="name WEIGHT"');
+    expect(html).not.toContain('data-series="NOT_A_TYPE"');
+    for (const height of html.match(/height:(\d+)px/g) ?? []) {
+      expect(Number(height.replace(/\D/g, ""))).toBeGreaterThanOrEqual(44);
+    }
   });
 });
