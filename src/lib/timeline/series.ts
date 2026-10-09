@@ -20,7 +20,13 @@
  *
  * Every value is the mean of the bucket's days, each day weighing one (a
  * cumulative type's days are its day totals, a pulse-like type's day is the
- * mean of its hourly means, `daily-stats.ts`), matching the charts. Each
+ * mean of its hourly means, `daily-stats.ts`), matching the charts. Sleep is
+ * the exception to both sources: it is stored one row per stage, so a day
+ * mean or a rolled-up month would average stage fragments (and count an
+ * in-bed row beside the stages inside it). Its value is the night's time
+ * asleep as the sleep page reads it (`reconstructSleepNights`), one per
+ * night keyed by its wake day, and a bucket's mean is the mean of its
+ * nights. Each
  * point carries the readings behind it, so the chart can mark a mean that
  * rests on one or two. A bucket without a reading is not sent, and a series
  * without a point is not sent. `MOOD` is the mood score, read from the
@@ -28,6 +34,7 @@
  */
 import type { MeasurementType } from "@/generated/prisma/enums";
 
+import { reconstructSleepNights } from "@/lib/analytics/sleep-night";
 import { caches, cached } from "@/lib/cache/server-cache";
 import { readLocalDailyCells, type DayCell } from "@/lib/day/daily-stats";
 import type { TimelineBucket, TimelineSeries } from "@/lib/day/contract";
@@ -218,6 +225,93 @@ function readsRollups(from: string, to: string): boolean {
   return days >= LIVE_WINDOW_MAX_DAYS;
 }
 
+/** Sleep is read a year of stage rows at a time, so no read holds more. */
+const SLEEP_CHUNK_DAYS = 366;
+
+/**
+ * Margin read around each chunk, so a night that crosses the chunk's edge is
+ * read whole in the chunk its wake day belongs to and not cut in two.
+ */
+const SLEEP_CHUNK_MARGIN_MS = 24 * 3_600_000;
+
+/**
+ * Time asleep per night for the nights that woke in `[from, to]` (local
+ * day keys), each a cell of one reading. The stage rows are read a year at
+ * a time and folded into nights before the next year is read, so a decade
+ * of nights never sits in memory as rows at once.
+ */
+export async function readNightCells(args: {
+  userId: string;
+  from: string;
+  to: string;
+  tz: string;
+  priorityJson: unknown;
+}): Promise<Map<string, DayCell>> {
+  const out = new Map<string, DayCell>();
+  for (
+    let chunkFrom = args.from;
+    chunkFrom <= args.to;
+    chunkFrom = shiftDateKey(chunkFrom, SLEEP_CHUNK_DAYS)
+  ) {
+    const next = shiftDateKey(chunkFrom, SLEEP_CHUNK_DAYS);
+    const chunkTo = next > args.to ? args.to : shiftDateKey(next, -1);
+    const start = startOfLocalDayKey(chunkFrom, args.tz);
+    const end = startOfLocalDayKey(shiftDateKey(chunkTo, 1), args.tz);
+    const rows = await prisma.measurement.findMany({
+      where: {
+        userId: args.userId,
+        type: "SLEEP_DURATION",
+        deletedAt: null,
+        measuredAt: {
+          gte: new Date(start.getTime() - SLEEP_CHUNK_MARGIN_MS),
+          lt: new Date(end.getTime() + SLEEP_CHUNK_MARGIN_MS),
+        },
+      },
+      orderBy: { measuredAt: "asc" },
+      select: {
+        value: true,
+        measuredAt: true,
+        sleepStage: true,
+        source: true,
+        deviceType: true,
+      },
+    });
+    for (const night of reconstructSleepNights(
+      rows,
+      args.tz,
+      args.priorityJson,
+    )) {
+      if (night.night < chunkFrom || night.night > chunkTo) continue;
+      if (night.asleepMinutes <= 0) continue;
+      out.set(night.night, { value: night.asleepMinutes, count: 1 });
+    }
+  }
+  return out;
+}
+
+/** The sleep series: the mean time asleep of each bucket's nights. */
+async function sleepPoints(args: {
+  userId: string;
+  from: string;
+  to: string;
+  tz: string;
+  bucket: TimelineBucket;
+  priorityJson: unknown;
+}): Promise<SeriesPoint[]> {
+  const read = async () => foldDays(await readNightCells(args), args.bucket);
+  if (!readsRollups(args.from, args.to)) return read();
+  // A long window is cached under the record's prefix: every measurement
+  // write marks it stale with the rest of the analytics bucket.
+  const key = `${args.userId}|timeline-sleep|${args.bucket}|${args.tz}|${args.from}|${args.to}`;
+  return cached(
+    caches.analytics,
+    key,
+    read,
+    undefined,
+    PRE_FOLD_TTL_MS,
+  ) as Promise<SeriesPoint[]>;
+}
+
 async function measurementSeries(args: {
   userId: string;
   type: MeasurementType;
@@ -231,9 +325,12 @@ async function measurementSeries(args: {
   const start = startOfLocalDayKey(args.from, args.tz);
   const end = startOfLocalDayKey(shiftDateKey(args.to, 1), args.tz);
   let points: SeriesPoint[];
-  // Weeks and days never read the rollups: their windows are short (a
-  // `day` range is under six weeks), and the rollups cut at UTC midnight.
-  if (
+  // Sleep reads its nights at every length. Weeks and days never read the
+  // rollups: their windows are short (a `day` range is under six weeks), and
+  // the rollups cut at UTC midnight.
+  if (args.type === "SLEEP_DURATION") {
+    points = await sleepPoints(args);
+  } else if (
     args.bucket !== "week" &&
     args.bucket !== "day" &&
     readsRollups(args.from, args.to)
