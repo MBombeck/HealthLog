@@ -149,11 +149,7 @@ export function HistoryRail({
       <div
         ref={setListNode}
         data-slot="coach-history-list"
-        className={cn(
-          // `pb-20` keeps the last row clear of the panel's floating New
-          // chat button; it pads this list's own scroll area, not `main`.
-          "-mx-1 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-1 pb-20",
-        )}
+        className="-mx-1 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-1"
       >
         {isLoading && visible.length === 0 ? (
           <p

@@ -46,8 +46,9 @@ import { useDeleteCoachConversationWithUndo } from "./use-coach";
  * and the top bar runs to the window's edge. The toggle is the last item of
  * the top bar, so it sits against the open panel and at the window's edge
  * when the panel is shut. The panel header carries the title, a link to
- * Plans, the settings gear and, in the sheet, a close button. The round New
- * chat button sits at the panel's bottom right.
+ * Plans, the settings gear and, in the sheet, a close button. New chat
+ * opens the header row, left of the title: a fixed control that never sits
+ * over the list, so the last conversation needs no reserve below it.
  *
  * Keyboard: Escape closes the docked panel when focus is inside it and
  * nothing inside (a row menu, the rename field, the settings popover) has
@@ -214,13 +215,41 @@ export function ConversationsPanel({
       // app (`shell-safe-area` in `auth-shell.tsx`).
       // Docked, the row is the top bar's band (height and bottom border
       // from `SHELL_HEADER_BAND`), so the two borders draw one line.
+      // Touch: 44 px buttons already carry their own air, so the row packs
+      // them tighter to leave the title room at 390 px.
       className={cn(
-        "flex shrink-0 items-center gap-2",
+        "flex shrink-0 items-center gap-1 pointer-fine:gap-2",
         inSheet
           ? "border-border border-b p-3"
           : cn("border-sidebar-border px-3", SHELL_HEADER_BAND),
       )}
     >
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              onNewChat();
+              afterPick();
+            }}
+            data-slot="coach-panel-new-chat"
+            aria-label={t("insights.coach.newChat")}
+            // The panel's one action, so the primary wash marks it apart
+            // from the muted utility buttons on the right.
+            className={cn(
+              PANEL_HEADER_BUTTON,
+              "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary",
+            )}
+          >
+            <Plus className={PANEL_HEADER_ICON} aria-hidden="true" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          {t("insights.coach.newChat")}
+        </TooltipContent>
+      </Tooltip>
       {inSheet ? (
         <SheetTitle className="min-w-0 flex-1 truncate text-lg leading-tight font-semibold">
           {t("insights.coach.historyTitle")}
@@ -287,28 +316,6 @@ export function ConversationsPanel({
         onUndoDeleteActive={(id) => onSelect(id)}
         className="min-h-0 flex-1"
       />
-      {/* New chat: a round filled button floating at the panel's bottom
-          right; the list pads its own scroll area so the last row clears it. */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            type="button"
-            size="icon"
-            onClick={() => {
-              onNewChat();
-              afterPick();
-            }}
-            data-slot="coach-panel-new-chat"
-            aria-label={t("insights.coach.newChat")}
-            className="absolute right-4 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] size-12 rounded-full shadow-lg md:right-6 md:bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))]"
-          >
-            <Plus className="size-6" aria-hidden="true" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="left">
-          {t("insights.coach.newChat")}
-        </TooltipContent>
-      </Tooltip>
     </>
   );
 
