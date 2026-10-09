@@ -30,6 +30,20 @@ const hasSeparator = (value: string) =>
 /** Key path -> why the separator is right there. Empty by intent. */
 const ALLOWED: Record<string, string> = {};
 
+/**
+ * Subtrees whose wording is not ours to change. The questionnaire items are
+ * the licensed, validated text of PHQ-9, GAD-7 and the other instruments in
+ * each language; a dash there is part of the instrument (PHQ-9 item 6 reads
+ * "Feeling bad about yourself — or that you are a failure ..."), and
+ * rewording it would change what the score measures.
+ */
+const EXEMPT_PREFIXES: Record<string, string> = {
+  "mentalHealth.items.": "validated questionnaire wording, verbatim",
+};
+
+const isExempt = (key: string) =>
+  Object.keys(EXEMPT_PREFIXES).some((prefix) => key.startsWith(prefix));
+
 function flatten(
   obj: unknown,
   prefix: string,
@@ -66,7 +80,10 @@ describe("message bundles carry no ' · ', ' — ' or ' – ' separator", () => 
 
     it(`${file} has no dot or dash separator outside the allowlist`, () => {
       const offenders = [...values]
-        .filter(([key, value]) => hasSeparator(value) && !(key in ALLOWED))
+        .filter(
+          ([key, value]) =>
+            hasSeparator(value) && !(key in ALLOWED) && !isExempt(key),
+        )
         .map(([key, value]) => `${key} = ${JSON.stringify(value)}`);
       expect(offenders).toEqual([]);
     });
