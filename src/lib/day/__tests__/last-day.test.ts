@@ -7,7 +7,9 @@ import { describe, expect, it } from "vitest";
 import {
   clearLastDay,
   LAST_DAY_STORAGE_KEY,
+  readDayOpen,
   readLastDay,
+  writeDayClosed,
   writeLastDay,
 } from "../last-day";
 
@@ -71,5 +73,34 @@ describe("last day", () => {
     expect(readLastDay("u1:own", throwing)).toBeNull();
     expect(() => writeLastDay("u1:own", "2026-10-05", throwing)).not.toThrow();
     expect(() => clearLastDay(throwing)).not.toThrow();
+  });
+});
+
+describe("a day left open", () => {
+  it("is open once opened, and stays open until the person folds it", () => {
+    const storage = memoryStorage();
+    expect(readDayOpen("u1:own", storage)).toBe(false);
+    writeLastDay("u1:own", "2026-10-05", storage);
+    expect(readDayOpen("u1:own", storage)).toBe(true);
+    writeDayClosed("u1:own", storage);
+    expect(readDayOpen("u1:own", storage)).toBe(false);
+    // The day itself is kept for the edge.
+    expect(readLastDay("u1:own", storage)).toBe("2026-10-05");
+    // Opening it again opens it again.
+    writeLastDay("u1:own", "2026-10-05", storage);
+    expect(readDayOpen("u1:own", storage)).toBe(true);
+  });
+
+  it("is never open for another account, an older value or a refusing store", () => {
+    const storage = memoryStorage();
+    writeLastDay("u1:own", "2026-10-05", storage);
+    expect(readDayOpen("u2:own", storage)).toBe(false);
+    storage.map.set(
+      LAST_DAY_STORAGE_KEY,
+      JSON.stringify({ owner: "u1:own", day: "2026-10-05" }),
+    );
+    expect(readDayOpen("u1:own", storage)).toBe(false);
+    expect(readDayOpen("u1:own", throwing)).toBe(false);
+    expect(() => writeDayClosed("u1:own", throwing)).not.toThrow();
   });
 });

@@ -25,6 +25,7 @@ import {
   SeriesNameLinks,
   TimelineChart,
 } from "../timeline-chart";
+import { SeriesPointTips, tipLeft } from "../series-point-tips";
 import { TimelineChronicle } from "../timeline-chronicle";
 import { layoutTimeline } from "../timeline-geometry";
 import { useSeriesValueFormat } from "../use-series-value-format";
@@ -484,10 +485,8 @@ describe("value line colours", () => {
               layout={layout()}
               width={900}
               selectedBucket="2026-01-01"
-              bucket="month"
               seriesLabel={seriesLabel}
               seriesColor={seriesColor}
-              intl="de-DE"
               t={(key) => key}
               fmt={format}
             />
@@ -599,5 +598,64 @@ describe("value-line names", () => {
     for (const height of html.match(/height:(\d+)px/g) ?? []) {
       expect(Number(height.replace(/\D/g, ""))).toBeGreaterThanOrEqual(44);
     }
+  });
+});
+
+describe("a value line's point, on its own", () => {
+  const layout = () =>
+    layoutTimeline({
+      width: 900,
+      window: { from: "2025-10-01", to: "2026-10-31" },
+      lanes: [],
+      series: fullTimeline().series,
+      bucket: "month",
+      words: wordsIn(),
+      startMissing: "",
+      today: TODAY,
+    });
+
+  it("gives every point a 24 px target named by its line alone, one tab stop per line", () => {
+    const html = render(
+      <WithFormat
+        build={(format) => (
+          <SeriesPointTips
+            layout={layout()}
+            today={TODAY}
+            seriesLabel={seriesLabel}
+            seriesColor={seriesColor}
+            fmt={format}
+            bucketLabel={(t) => `Monat ${t}`}
+            onSelect={() => undefined}
+            onOpenDay={() => undefined}
+          />
+        )}
+      />,
+    );
+    const targets =
+      html.match(/<button[^>]*data-slot="timeline-point-target"[^>]*>/g) ?? [];
+    const points = layout().series.reduce((n, s) => n + s.points.length, 0);
+    expect(targets).toHaveLength(points);
+    for (const tag of targets) {
+      expect(tag).toContain("width:24px");
+      expect(tag).toContain("height:24px");
+    }
+    // One stop per line: the newest point of each.
+    const stops = targets.filter((tag) => tag.includes('tabindex="0"'));
+    expect(stops).toHaveLength(layout().series.length);
+    // A point names its line, its stretch, its value and its readings, and
+    // nothing of the other lines.
+    const weight = targets.find((tag) => tag.includes('data-series="WEIGHT"'))!;
+    expect(weight).toMatch(
+      /aria-label="[^"]*Monat 2026-01-01[^"]*82,6[^"]*3 Messungen"/,
+    );
+    expect(weight).not.toContain("Blutdruck");
+    // Nothing shows until a point is pointed at.
+    expect(html).not.toContain('data-slot="timeline-point-tip"');
+  });
+
+  it("keeps the card inside the chart's width", () => {
+    expect(tipLeft(450, 200, 900)).toBe(350);
+    expect(tipLeft(20, 200, 900)).toBe(0);
+    expect(tipLeft(890, 200, 900)).toBe(700);
   });
 });

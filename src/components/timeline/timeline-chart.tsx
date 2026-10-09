@@ -24,6 +24,7 @@
  */
 import { metricPageHref } from "@/lib/insights/metric-page";
 import Link from "next/link";
+import { SeriesPointTips } from "./series-point-tips";
 import {
   useEffect,
   useMemo,
@@ -269,7 +270,21 @@ export function TimelineChart({
           <div className="h-64" />
         )}
         {layout ? (
-          <SeriesNameLinks layout={layout} seriesLabel={seriesLabel} />
+          <>
+            <SeriesNameLinks layout={layout} seriesLabel={seriesLabel} />
+            <SeriesPointTips
+              layout={layout}
+              today={today}
+              seriesLabel={seriesLabel}
+              seriesColor={seriesColor}
+              fmt={fmt}
+              bucketLabel={(start) =>
+                bucketText(start, timeline.bucket, intl, t)
+              }
+              onSelect={onSelect}
+              onOpenDay={onOpenDay}
+            />
+          </>
         ) : null}
       </div>
       <TimelineTable
@@ -507,10 +522,8 @@ function ChartBody({
         layout={layout}
         width={width}
         selectedBucket={selectedBucket}
-        bucket={bucket}
         seriesLabel={seriesLabel}
         seriesColor={seriesColor}
-        intl={intl}
         t={t}
         fmt={fmt}
       />
@@ -602,24 +615,19 @@ export function SeriesLines({
   layout,
   width,
   selectedBucket,
-  bucket,
   seriesLabel,
   seriesColor,
-  intl,
   t,
   fmt,
 }: {
   layout: NonNullable<ReturnType<typeof layoutTimeline>>;
   width: number;
   selectedBucket: string | null;
-  bucket: TimelineBucket;
   seriesLabel: (key: string) => string;
   seriesColor: (key: string) => string;
-  intl: string;
   t: ReturnType<typeof useTranslations>["t"];
   fmt: SeriesValueFormat;
 }) {
-  const { tCount } = useTranslations();
   const { scale, seriesTop } = layout;
   const nameLines = (key: string) =>
     seriesNameLines(seriesLabel(key), scale.x0 - 12 - SERIES_TEXT_X, 13);
@@ -718,11 +726,7 @@ export function SeriesLines({
                 fill={point.thin ? "var(--card)" : "currentColor"}
                 stroke="currentColor"
                 strokeWidth={point.thin ? 1.4 : 0}
-              >
-                <title>
-                  {`${seriesLabel(series.key)}, ${bucketText(point.t, bucket, intl, t)}: ${formatSeriesValue(series.key, point.mean, series.unit, fmt)}, ${tCount("timeline.values.readings", point.count)}`}
-                </title>
-              </circle>
+              />
             ))}
             {series.points
               .filter((point) => point.t === selectedBucket)
@@ -983,31 +987,37 @@ function TimelineTable({
     )
     .sort((a, b) => dayNumber(b.item.start) - dayNumber(a.item.start));
   return (
-    <table className="sr-only" data-slot="timeline-table">
-      <caption>{t("timeline.table.caption")}</caption>
-      <thead>
-        <tr>
-          <th scope="col">{t("timeline.table.lane")}</th>
-          <th scope="col">{t("timeline.table.entry")}</th>
-          <th scope="col">{t("timeline.table.start")}</th>
-          <th scope="col">{t("timeline.table.end")}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map(({ lane, item }) => (
-          <tr key={`${lane}-${item.id}`}>
-            <td>{t(TIMELINE_LANE_LABEL_KEY[lane])}</td>
-            <td>{itemLine(item, words, t("timeline.startUnknown"))}</td>
-            <td>{formatAtPrecision(item.start, item.precision, intl)}</td>
-            <td>
-              {!item.open && isSpan(item) && item.end
-                ? formatAtPrecision(item.end, item.precision, intl)
-                : ""}
-            </td>
+    // The table is hidden by a wrapper, never by `sr-only` on the table
+    // itself: `overflow: hidden` does not apply to a table box, so a
+    // visually hidden table still laid out its rows at full height under
+    // the page and made `<main>` scroll past its last card into nothing.
+    <div className="sr-only" data-slot="timeline-table-frame">
+      <table data-slot="timeline-table">
+        <caption>{t("timeline.table.caption")}</caption>
+        <thead>
+          <tr>
+            <th scope="col">{t("timeline.table.lane")}</th>
+            <th scope="col">{t("timeline.table.entry")}</th>
+            <th scope="col">{t("timeline.table.start")}</th>
+            <th scope="col">{t("timeline.table.end")}</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map(({ lane, item }) => (
+            <tr key={`${lane}-${item.id}`}>
+              <td>{t(TIMELINE_LANE_LABEL_KEY[lane])}</td>
+              <td>{itemLine(item, words, t("timeline.startUnknown"))}</td>
+              <td>{formatAtPrecision(item.start, item.precision, intl)}</td>
+              <td>
+                {!item.open && isSpan(item) && item.end
+                  ? formatAtPrecision(item.end, item.precision, intl)
+                  : ""}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -1063,36 +1073,42 @@ function SeriesTable({
     series.map((s) => [s.key, new Map(s.points.map((p) => [p.t, p]))]),
   );
   return (
-    <table className="sr-only" data-slot="timeline-series-table">
-      <caption>{t("timeline.table.seriesCaption")}</caption>
-      <thead>
-        <tr>
-          <th scope="col">{t("timeline.table.period")}</th>
-          {series.map((s) => (
-            <th key={s.key} scope="col">
-              {seriesLabel(s.key)}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.reverse().map((start) => (
-          <tr key={start} data-bucket={start}>
-            <th scope="row">{bucketText(start, bucket, intl, t)}</th>
-            {series.map((s) => {
-              const point = byKey.get(s.key)?.get(start);
-              return (
-                <td key={s.key}>
-                  {point
-                    ? `${formatSeriesValue(s.key, point.mean, s.unit, fmt)}, ${tCount("timeline.values.readings", point.count)}`
-                    : t("timeline.values.noValue")}
-                </td>
-              );
-            })}
+    // The table is hidden by a wrapper, never by `sr-only` on the table
+    // itself: `overflow: hidden` does not apply to a table box, so a
+    // visually hidden table still laid out its rows at full height under
+    // the page and made `<main>` scroll past its last card into nothing.
+    <div className="sr-only" data-slot="timeline-series-table-frame">
+      <table data-slot="timeline-series-table">
+        <caption>{t("timeline.table.seriesCaption")}</caption>
+        <thead>
+          <tr>
+            <th scope="col">{t("timeline.table.period")}</th>
+            {series.map((s) => (
+              <th key={s.key} scope="col">
+                {seriesLabel(s.key)}
+              </th>
+            ))}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.reverse().map((start) => (
+            <tr key={start} data-bucket={start}>
+              <th scope="row">{bucketText(start, bucket, intl, t)}</th>
+              {series.map((s) => {
+                const point = byKey.get(s.key)?.get(start);
+                return (
+                  <td key={s.key}>
+                    {point
+                      ? `${formatSeriesValue(s.key, point.mean, s.unit, fmt)}, ${tCount("timeline.values.readings", point.count)}`
+                      : t("timeline.values.noValue")}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
