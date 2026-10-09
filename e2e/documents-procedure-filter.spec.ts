@@ -89,7 +89,7 @@ test.describe("document vault — procedure filter", () => {
     const knee = menu.getByRole("menuitemcheckbox", {
       name: /Knee arthroscopy/,
     });
-    await expect(knee).toContainText("Knee · Left");
+    await expect(knee).toContainText("Knee (Left)");
     await expect(
       menu.getByRole("menuitemcheckbox", { name: /Appendectomy/ }),
     ).toBeVisible();

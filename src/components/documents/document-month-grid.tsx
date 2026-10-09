@@ -16,7 +16,7 @@ import { DocumentCard } from "./document-card";
 
 /** Measured grid width → tiles per row. */
 export function columnsForWidth(width: number): number {
-  if (width >= 1100) return 4;
+  if (width >= 1000) return 4;
   if (width >= 760) return 3;
   if (width >= 330) return 2;
   return 1;

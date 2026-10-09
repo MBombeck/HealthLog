@@ -62,6 +62,9 @@ describe("columnsForWidth", () => {
     expect(columnsForWidth(1024 - 48)).toBe(3);
     // 1440 viewport: the shell caps the container at 1280 minus its gutters.
     expect(columnsForWidth(1280 - 48)).toBe(4);
+    // 1440 with the sidebar and the day strip docked: about 1 040 px left,
+    // still four tiles of about 240 px.
+    expect(columnsForWidth(1040)).toBe(4);
   });
 
   it("never asks for a fifth column", () => {

@@ -68,8 +68,17 @@ function renderBar(): string {
   );
 }
 
-/** The text a reader sees, tags dropped. */
-const textOf = (html: string) => html.replace(/<[^>]*>/g, "");
+/** The text a reader sees, tags dropped (a character walk, not a regex). */
+function textOf(html: string): string {
+  let out = "";
+  let inTag = false;
+  for (const ch of html) {
+    if (ch === "<") inTag = true;
+    else if (ch === ">") inTag = false;
+    else if (!inTag) out += ch;
+  }
+  return out;
+}
 
 describe("lab day in the selection bar", () => {
   it("sets the count apart from the analyte names", () => {
