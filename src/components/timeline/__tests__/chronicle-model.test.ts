@@ -256,3 +256,18 @@ describe("standingChips", () => {
     );
   });
 });
+
+describe("notable lines", () => {
+  it("lists one line per kind on a day, however many metrics share it", () => {
+    const tl = fullTimeline();
+    tl.notable = [
+      { date: "2026-08-30", kind: "firstValue" },
+      { date: "2026-08-30", kind: "firstValue" },
+      { date: "2026-08-30", kind: "extremeHigh" },
+    ] as typeof tl.notable;
+    const lines = chronicleEntries(tl, TODAY).filter(
+      (e) => e.kind === "notable" && e.date === "2026-08-30",
+    );
+    expect(lines).toHaveLength(2);
+  });
+});

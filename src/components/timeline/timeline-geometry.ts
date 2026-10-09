@@ -242,14 +242,15 @@ export class LineOccupancy {
 
   /**
    * How far right a text starting at `a` may run on `line`: up to `margin`
-   * before the next thing there. `a` itself when `a` is already too close to
-   * something, Infinity when nothing lies to its right.
+   * before the next thing that starts to its right. `a` itself when `a` lies
+   * inside something, Infinity when nothing lies to its right. What ends
+   * before `a` (the mark the text names) is the caller's `fits` to judge.
    */
   room(line: string, a: number, margin = LABEL_MARGIN): number {
     let limit = Infinity;
     for (const [c, d] of this.lines.get(line) ?? []) {
-      if (a < d + margin && a > c - margin) return a;
-      if (c - margin >= a) limit = Math.min(limit, c - margin);
+      if (c <= a && a < d) return a;
+      if (c > a) limit = Math.min(limit, c - margin);
     }
     return limit;
   }
@@ -260,6 +261,23 @@ export const NEIGHBOUR_GAP = 12;
 
 /** A label cut shorter than this many characters is left out instead. */
 export const MIN_LABEL_CHARS = 6;
+
+/**
+ * A name on one row's line and a name above the next row's bar sit a few
+ * pixels apart vertically: the two lines share a band. Whatever is placed on
+ * one is written into the other too, so the two never stack two names over
+ * each other ("Moved into a bigger flat" over "Away").
+ */
+export function shareBand(
+  occ: LineOccupancy,
+  row: number,
+  where: "on" | "above",
+  a: number,
+  b: number,
+): void {
+  if (where === "on") occ.add(`${row + 1}:above`, a, b);
+  else if (row > 0) occ.add(`${row - 1}:on`, a, b);
+}
 
 /**
  * Put `text` on `line` from `a`: whole when it keeps {@link NEIGHBOUR_GAP}
@@ -816,6 +834,7 @@ function placeMedicationLabels(
       margin,
     );
     if (placed === null) return false;
+    shareBand(occ, row, where, a, a + estimateTextWidth(placed));
     labels.push({
       itemId: id,
       text: placed,
@@ -942,6 +961,7 @@ function placeLabels(
     if (a < scale.x0) return false;
     const placed = placeText(occ, line(s.row, "above"), a, text, scale.x1 - 2);
     if (placed === null) return false;
+    shareBand(occ, s.row, "above", a, a + estimateTextWidth(placed));
     labels.push({
       itemId: s.item.id,
       text: placed,
@@ -973,6 +993,7 @@ function placeLabels(
       BESIDE_MARGIN,
     );
     if (placed === null) return false;
+    shareBand(occ, row, "on", a, a + estimateTextWidth(placed));
     labels.push({ itemId: id, text: placed, x: a, y: y + 4, strong });
     return true;
   };
@@ -989,6 +1010,7 @@ function placeLabels(
     const a = b - estimateTextWidth(text);
     if (!fitsCard(a, b)) return false;
     if (!occ.tryAdd(line(row, "on"), a, b, BESIDE_MARGIN)) return false;
+    shareBand(occ, row, "on", a, b);
     labels.push({ itemId: id, text, x: a, y: y + 4, strong });
     return true;
   };

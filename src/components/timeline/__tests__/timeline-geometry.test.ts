@@ -763,6 +763,12 @@ describe("label room (v1.42 final)", () => {
     expect(long[1].endsWith("…")).toBe(true);
   });
 
+  it("names a closed period right of its own bar when nothing follows it", () => {
+    const occ = new LineOccupancy();
+    occ.add("1:on", 100, 200);
+    expect(placeText(occ, "1:on", 206, "Away", 1000, 4)).toBe("Away");
+  });
+
   it("keeps a gap before the next mark, cuts a name short, or leaves it out", () => {
     const occ = new LineOccupancy();
     occ.add("0:on", 200, 210);
@@ -819,20 +825,20 @@ describe("label room (v1.42 final)", () => {
     }
   });
 
-  it("never lets two names of one lane line overlap or crowd each other", () => {
+  it("never lets two names of one band overlap, on a row or across two", () => {
     for (const width of [390, 700, 1100, 1600]) {
       const layout = layoutAt(width);
       for (const lane of layout.lanes) {
-        const byLine = new Map<number, ReturnType<typeof boxes>>();
-        for (const box of boxes(lane)) {
-          const list = byLine.get(box.y) ?? [];
-          list.push(box);
-          byLine.set(box.y, list);
-        }
-        for (const list of byLine.values()) {
-          list.sort((p, q) => p.a - q.a);
-          for (let i = 1; i < list.length; i++) {
-            expect(list[i].a).toBeGreaterThanOrEqual(list[i - 1].b);
+        // Two names closer than a text line apart vertically share a band
+        // (a row's names and the names above the next row's bars): they
+        // must not overlap sideways either.
+        const all = boxes(lane);
+        for (let i = 0; i < all.length; i++) {
+          for (let j = i + 1; j < all.length; j++) {
+            const p = all[i];
+            const q = all[j];
+            if (Math.abs(p.y - q.y) >= 12) continue;
+            expect(p.b <= q.a || q.b <= p.a).toBe(true);
           }
         }
       }

@@ -211,7 +211,13 @@ export function chronicleEntries(
       }
     }
   }
+  // One line per kind of notable on a day: two metrics seen for the first
+  // time on one day are one "First value" line, not two identical ones.
+  const notables = new Set<string>();
   for (const n of timeline.notable) {
+    const key = `${n.date}:${n.kind}`;
+    if (notables.has(key)) continue;
+    notables.add(key);
     out.push({ kind: "notable", date: n.date, notable: n.kind });
   }
   const laneRank = (e: ChronicleEntry) =>
