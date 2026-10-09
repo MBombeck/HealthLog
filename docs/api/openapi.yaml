@@ -12346,6 +12346,56 @@ paths:
         "403": *a11
         "422": *a4
         "429": *a5
+  /api/insights/score-history:
+    get:
+      tags:
+        - Insights
+      summary: A score's daily history
+      description: "v1.42 — the daily course of the health score, readiness or the sleep score over a trailing window, one
+        point per local day, for the history chart on the score's page. Each point is the value the day view shows for
+        that day: the stored health-score day, the nightly readiness blend filed on its wake day, the sleep score of the
+        night that ended that morning. The health score's points carry `seamBreak` where the recipe changed, and the
+        chart draws no line across it. `band` is the usual range behind the newest point. Readiness is gated on the
+        `recovery` module and the sleep score on `sleep` (403 `module.disabled`); the health score is core. Pure reads,
+        no AI. Delegable at MANAGE level over the whole record. Additive. Cookie or Bearer auth."
+      parameters:
+        - in: query
+          name: score
+          schema:
+            type: string
+            enum:
+              - HEALTH_SCORE
+              - READINESS
+              - SLEEP_SCORE
+            description: The score to chart. `HEALTH_SCORE` reads the stored day scores, `READINESS` the nightly readiness blend,
+              `SLEEP_SCORE` the per-night sleep score. The nightly recovery, stress and strain scores are stored
+              measurements and chart through the measurement series instead.
+          required: true
+          description: The score to chart. `HEALTH_SCORE` reads the stored day scores, `READINESS` the nightly readiness blend,
+            `SLEEP_SCORE` the per-night sleep score. The nightly recovery, stress and strain scores are stored
+            measurements and chart through the measurement series instead.
+        - in: query
+          name: days
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 3650
+            description: Trailing window in local calendar days ending today (1–3650). The web chart sends 7, 30, 90, or 3650 for
+              its "All" tab. Out of range is a 422, never a silent clamp.
+          required: true
+          description: Trailing window in local calendar days ending today (1–3650). The web chart sends 7, 30, 90, or 3650 for
+            its "All" tab. Out of range is a 422, never a silent clamp.
+      responses:
+        "200":
+          description: The score's daily points and usual range.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScoreHistoryResponseEnvelope"
+        "401": *a1
+        "403": *a11
+        "422": *a4
+        "429": *a5
   /api/insights/glp1-plateau:
     get:
       tags:
@@ -32504,6 +32554,12 @@ components:
             - painNrs
             - waistCircumference
             - waistToHeight
+            - scoreHealth
+            - scoreReadiness
+            - scoreRecovery
+            - scoreSleep
+            - scoreStress
+            - scoreStrain
           description: Which chart's overlays are being written. Closed enum.
         prefs:
           type: object
@@ -32683,6 +32739,12 @@ components:
               - painNrs
               - waistCircumference
               - waistToHeight
+              - scoreHealth
+              - scoreReadiness
+              - scoreRecovery
+              - scoreSleep
+              - scoreStress
+              - scoreStrain
           additionalProperties:
             type: object
             properties:
@@ -61988,6 +62050,93 @@ components:
       description: Batched derived-metric values. One request resolves the whole dashboard grid (the wellness scores + the
         derived re-frames + one baseline per vital) instead of N concurrent single-metric requests sharing the Prisma
         pool. Pure compute over the rollup tier — no LLM, no narrative, no cache table.
+    ScoreHistoryResponseEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ScoreHistoryResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    ScoreHistoryResponse:
+      type: object
+      properties:
+        score:
+          type: string
+          enum:
+            - HEALTH_SCORE
+            - READINESS
+            - SLEEP_SCORE
+        days:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: The window the request asked for.
+        points:
+          type: array
+          items:
+            type: object
+            properties:
+              day:
+                type: string
+                description: The local calendar day the value describes, `YYYY-MM-DD`; the day the day view opens for it.
+              value:
+                type: integer
+                minimum: 0
+                maximum: 100
+              seamBreak:
+                type: boolean
+                description: "True on the first day scored under a different recipe (what counts, or the algorithm version) than the day
+                  before. Draw no line from the previous point to this one: the values either side are averages of
+                  different things. Only the health score has seams; never true on the first point."
+            required:
+              - day
+              - value
+              - seamBreak
+            additionalProperties: false
+          description: One point per day that has a value, oldest first. A day without one is absent, never zero.
+        band:
+          anyOf:
+            - type: object
+              properties:
+                lo:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                hi:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                n:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                  description: Days the range was formed from.
+              required:
+                - lo
+                - hi
+                - n
+              additionalProperties: false
+            - type: "null"
+          description: "The person's usual range behind the newest point: median and scaled MAD of the values in the 30 days
+            before it, from its own side of the last seam. Null with fewer than seven such days. Describes, does not
+            grade."
+      required:
+        - score
+        - days
+        - points
+        - band
+      additionalProperties: false
+      description: One score's daily course over a trailing window, for a history chart with a day per point.
     InsightsGlp1PlateauResponseEnvelope:
       type: object
       properties:
@@ -76044,6 +76193,12 @@ components:
               - painNrs
               - waistCircumference
               - waistToHeight
+              - scoreHealth
+              - scoreReadiness
+              - scoreRecovery
+              - scoreSleep
+              - scoreStress
+              - scoreStrain
           additionalProperties:
             type: object
             properties:
@@ -76295,6 +76450,12 @@ components:
               - painNrs
               - waistCircumference
               - waistToHeight
+              - scoreHealth
+              - scoreReadiness
+              - scoreRecovery
+              - scoreSleep
+              - scoreStress
+              - scoreStrain
           additionalProperties:
             type: object
             properties:

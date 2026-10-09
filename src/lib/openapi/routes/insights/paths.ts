@@ -66,6 +66,8 @@ import {
   glp1TimelineResponse,
   intradayPulseQuery,
   intradayPulseResponse,
+  scoreHistoryQuery,
+  scoreHistoryResponse,
 } from "./schemas";
 import { recommendationFeedbackRequestSchema } from "@/lib/validations/recommendation-feedback";
 
@@ -821,6 +823,32 @@ export const insightsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(
                 derivedBatchResponse,
                 "DerivedBatchResponseEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/insights/score-history": {
+    get: {
+      tags: ["Insights"],
+      summary: "A score's daily history",
+      description:
+        "v1.42 — the daily course of the health score, readiness or the sleep score over a trailing window, one point per local day, for the history chart on the score's page. Each point is the value the day view shows for that day: the stored health-score day, the nightly readiness blend filed on its wake day, the sleep score of the night that ended that morning. The health score's points carry `seamBreak` where the recipe changed, and the chart draws no line across it. `band` is the usual range behind the newest point. Readiness is gated on the `recovery` module and the sleep score on `sleep` (403 `module.disabled`); the health score is core. Pure reads, no AI. Delegable at MANAGE level over the whole record. Additive. Cookie or Bearer auth.",
+      requestParams: {
+        query: scoreHistoryQuery,
+      },
+      responses: {
+        ...recordRefusal(),
+        "200": {
+          description: "The score's daily points and usual range.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                scoreHistoryResponse,
+                "ScoreHistoryResponseEnvelope",
               ),
             },
           },

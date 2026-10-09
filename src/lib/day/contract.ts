@@ -151,7 +151,7 @@ export type DayScoreKey = (typeof DAY_SCORE_KEYS)[number];
 
 /** The page each score opens on. */
 export const DAY_SCORE_HREF: Readonly<Record<DayScoreKey, string>> = {
-  healthScore: "/insights",
+  healthScore: "/insights/health-score",
   readiness: "/insights/scores/readiness",
   recovery: "/insights/scores/recovery",
   sleepScore: "/insights/scores/sleep",

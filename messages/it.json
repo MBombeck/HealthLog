@@ -2765,7 +2765,8 @@
       "coverage": {
         "recommendedMet": "Copre i tre ambiti consigliati dal punteggio",
         "areas": "{present} ambiti di salute su {required}"
-      }
+      },
+      "historyLink": "Andamento"
     },
     "dailyBriefing": {
       "title": "Briefing del giorno",
@@ -4747,6 +4748,13 @@
     },
     "medicationsEmpty": {
       "coachPrefill": "Non ho ancora aggiunto farmaci: cosa dovrei sapere prima di iniziare a monitorare qui l’aderenza?"
+    },
+    "scoreHistory": {
+      "healthTitle": "Andamento del punteggio di salute",
+      "healthDescription": "Il tuo punteggio di salute giorno per giorno, come veniva mostrato ogni giorno.",
+      "emptyDescription": "In questo periodo non è ancora stato registrato alcun punteggio.",
+      "usualRange": "In ombra: il tuo intervallo abituale, da {lo} a {hi}.",
+      "seam": "La linea si interrompe dove è cambiato ciò che conta per il punteggio."
     }
   },
   "thresholds": {

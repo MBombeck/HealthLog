@@ -2765,7 +2765,8 @@
       "coverage": {
         "recommendedMet": "Deckt die drei Felder ab, die der Score empfiehlt",
         "areas": "{present} von {required} Feldern der Gesundheit"
-      }
+      },
+      "historyLink": "Verlauf"
     },
     "dailyBriefing": {
       "title": "Tagesbriefing",
@@ -4747,6 +4748,13 @@
     },
     "medicationsEmpty": {
       "coachPrefill": "Ich habe noch keine Medikamente angelegt. Was sollte ich wissen, bevor ich hier anfange, meine Therapietreue zu verfolgen?"
+    },
+    "scoreHistory": {
+      "healthTitle": "Verlauf des Gesundheitsscores",
+      "healthDescription": "Dein Gesundheitsscore Tag für Tag, so wie er an jedem Tag angezeigt wurde.",
+      "emptyDescription": "In diesem Zeitraum wurde noch kein Score erfasst.",
+      "usualRange": "Schattiert: dein üblicher Bereich, {lo} bis {hi}.",
+      "seam": "Die Linie bricht dort ab, wo sich geändert hat, was in den Score einfließt."
     }
   },
   "thresholds": {

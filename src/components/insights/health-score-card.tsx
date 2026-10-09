@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, ChevronDown, RotateCw } from "lucide-react";
+import { AlertTriangle, ChevronDown, History, RotateCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { InfoPopover } from "@/components/ui/info-popover";
@@ -431,14 +431,25 @@ export function HealthScoreCard({
         >
           {t("insights.healthScore.label")}
         </p>
-        {report.delta != null && report.delta > 0 ? (
-          <span
-            data-slot="health-score-card-delta-chip"
-            className="bg-success/15 text-success shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums"
+        <div className="flex shrink-0 items-center gap-2">
+          {report.delta != null && report.delta > 0 ? (
+            <span
+              data-slot="health-score-card-delta-chip"
+              className="bg-success/15 text-success shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums"
+            >
+              +{report.delta}
+            </span>
+          ) : null}
+          {/* v1.42 — the way to the score's course over time. */}
+          <Link
+            href="/insights/health-score"
+            data-slot="health-score-history-link"
+            className="text-foreground/80 hover:text-foreground focus-visible:ring-ring/50 -my-3 inline-flex items-center gap-1 rounded-md py-3 text-xs underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:outline-none"
           >
-            +{report.delta}
-          </span>
-        ) : null}
+            <History className="size-3.5" aria-hidden="true" />
+            {t("insights.healthScore.historyLink")}
+          </Link>
+        </div>
       </div>
 
       {/* 2 — the number. The reason the panel exists. */}

@@ -2765,7 +2765,8 @@
       "coverage": {
         "recommendedMet": "Cubre los tres ámbitos que la puntuación recomienda",
         "areas": "{present} de {required} ámbitos de salud"
-      }
+      },
+      "historyLink": "Evolución"
     },
     "dailyBriefing": {
       "title": "Resumen del día",
@@ -4747,6 +4748,13 @@
     },
     "medicationsEmpty": {
       "coachPrefill": "Todavía no he añadido medicamentos: ¿qué debería saber antes de empezar a seguir aquí la adherencia?"
+    },
+    "scoreHistory": {
+      "healthTitle": "Evolución de la puntuación de salud",
+      "healthDescription": "Tu puntuación de salud día a día, tal como se mostró cada día.",
+      "emptyDescription": "Todavía no hay ninguna puntuación registrada en este periodo.",
+      "usualRange": "Sombreado: tu rango habitual, de {lo} a {hi}.",
+      "seam": "La línea se interrumpe donde cambió lo que cuenta para la puntuación."
     }
   },
   "thresholds": {

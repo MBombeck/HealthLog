@@ -3,40 +3,46 @@
 import dynamic from "next/dynamic";
 import { History } from "lucide-react";
 
+import { ChartSkeleton } from "@/components/charts/chart-skeleton";
 import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";
-import { TileHeader } from "@/components/insights/tile-header";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
+import type { ChartOverlayKey } from "@/lib/dashboard-layout";
 import { useTranslations } from "@/lib/i18n/context";
+import { importWithRetry } from "@/lib/retry-import";
 import { RING_GRADIENT, type RingHue } from "./ring-hues";
 
 /**
- * v1.42 — a score's course over time on its detail page, directly under the
- * score card.
+ * v1.42 — a score's course over time on its page, directly under the score
+ * card.
  *
  * The three nightly scores (recovery, stress, strain) are stored readings, so
- * they get the full metric chart every measured page carries: the 7 / 30 / 90
- * / All switch, the tooltip, and each day opening its day view. The two
- * composites (sleep score, readiness) are computed rather than stored, so the
- * course they carry on their value is drawn as a compact line over its window.
+ * they get the full metric chart every measured page carries. The health
+ * score, readiness and the sleep score are not stored as readings; their
+ * daily course comes from the score-history route and draws in
+ * `<ScoreTrendChart>`. Both offer the same range tabs (7 / 30 / 90 / All),
+ * remembered per score page, and open each day from its point.
  */
 
-const DeltaSparkline = dynamic(
+/** The health score, readiness and sleep score history, loaded with Recharts. */
+export const ScoreTrendChartDynamic = dynamic(
   () =>
-    import("@/components/charts/chart-runtime").then((mod) => ({
-      default: mod.DeltaSparkline,
-    })),
-  { ssr: false, loading: () => null },
+    importWithRetry(() => import("@/components/charts/chart-runtime")).then(
+      (mod) => ({ default: mod.ScoreTrendChart }),
+    ),
+  { ssr: false, loading: () => <ChartSkeleton dayLinks dataTable /> },
 );
 
 export function ScoreHistoryChart({
   type,
   hue,
+  chartKey,
 }: {
   /** The stored measurement type the score is written as — or, for a strain
    *  score served from the device, the device's own `DAY_STRAIN`. */
   type: "RECOVERY_SCORE" | "STRESS_SCORE" | "STRAIN_SCORE" | "DAY_STRAIN";
   hue: RingHue;
+  /** The slot the range tab is remembered under. */
+  chartKey: ChartOverlayKey;
 }) {
   const { t } = useTranslations();
   const { user } = useAuth();
@@ -49,44 +55,10 @@ export function ScoreHistoryChart({
         colors={[RING_GRADIENT[hue][1]]}
         unit={t("insights.deviceScore.unitScore")}
         userTimezone={user?.timezone}
+        chartKey={chartKey}
+        overlayControls={false}
         dayLinks
       />
     </div>
-  );
-}
-
-export function ScoreHistoryCard({
-  series,
-  windowDays,
-  hue,
-}: {
-  series: number[];
-  windowDays: number;
-  hue: RingHue;
-}) {
-  const { t } = useTranslations();
-  return (
-    <Card data-slot="score-history-card" className="gap-2 py-3 md:py-4">
-      <CardHeader>
-        <TileHeader
-          icon={History}
-          title={t("insights.derived.scores.historyTitle")}
-          right={
-            <span className="text-muted-foreground text-xs">
-              {t("insights.derived.scores.historyWindow", { days: windowDays })}
-            </span>
-          }
-        />
-      </CardHeader>
-      <CardContent>
-        <div className="h-24 w-full" aria-hidden="true">
-          <DeltaSparkline
-            data={series.map((v, i) => ({ i, v }))}
-            strokeVar={RING_GRADIENT[hue][1]}
-            domain={[0, 100]}
-          />
-        </div>
-      </CardContent>
-    </Card>
   );
 }

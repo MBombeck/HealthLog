@@ -328,6 +328,14 @@ export const CHART_OVERLAY_KEYS = [
   "painNrs",
   "waistCircumference",
   "waistToHeight",
+  // v1.42 — the score pages' history charts. Each remembers only its range
+  // tab (the charts mount no overlay dropdown), one slot per score page.
+  "scoreHealth",
+  "scoreReadiness",
+  "scoreRecovery",
+  "scoreSleep",
+  "scoreStress",
+  "scoreStrain",
 ] as const;
 export type ChartOverlayKey = (typeof CHART_OVERLAY_KEYS)[number];
 

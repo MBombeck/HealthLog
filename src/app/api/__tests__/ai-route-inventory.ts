@@ -210,6 +210,8 @@ export const DATA_ROUTES: Readonly<Record<string, string>> = {
   "src/app/api/insights/ecg/[id]/route.ts": "One device recording's waveform.",
   "src/app/api/insights/rhythm-events/route.ts":
     "The device's own flagged events, verbatim.",
+  "src/app/api/insights/score-history/route.ts":
+    "A score's stored or computed daily values; no model text.",
   "src/app/api/insights/cards/route.ts":
     "Rule alerts from the threshold engine; `provider` is `rules`.",
   "src/app/api/insights/correlations/route.ts":

@@ -2765,7 +2765,8 @@
       "coverage": {
         "recommendedMet": "Couvre les trois domaines recommandés par le score",
         "areas": "{present} domaines de santé sur {required}"
-      }
+      },
+      "historyLink": "Évolution"
     },
     "dailyBriefing": {
       "title": "Briefing du jour",
@@ -4747,6 +4748,13 @@
     },
     "medicationsEmpty": {
       "coachPrefill": "Je n’ai encore ajouté aucun médicament. Que dois-je savoir avant de suivre ici l’observance ?"
+    },
+    "scoreHistory": {
+      "healthTitle": "Évolution du score de santé",
+      "healthDescription": "Ton score de santé jour après jour, tel qu’il s’affichait chaque jour.",
+      "emptyDescription": "Aucun score n’a encore été enregistré sur cette période.",
+      "usualRange": "En grisé : ta plage habituelle, de {lo} à {hi}.",
+      "seam": "La ligne s’interrompt là où ce qui compte pour le score a changé."
     }
   },
   "thresholds": {
