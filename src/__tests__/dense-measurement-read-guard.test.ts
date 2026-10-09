@@ -81,6 +81,8 @@ const DENSE_TYPES: ReadonlySet<string> = new Set([
  * list, keyed `<file>::<type expression>`, with why each stays bounded.
  */
 const ALLOWED: Record<string, string> = {
+  "lib/analytics/summaries-slice.ts::(shorthand)":
+    "one hourly-mean type (pulse) over one local day, the latest: the same rows the day view reads for that day, bounded by a day, not by the sampling history",
   "lib/insights/comprehensive-generate.ts::(shorthand)":
     'Only reached for SLEEP_DURATION (guarded by `type === "SLEEP_DURATION"`); a few stage rows per night.',
   "lib/insights/derived/vascular-age.ts::VASCULAR_AGE_TYPE":
