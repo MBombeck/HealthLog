@@ -23449,11 +23449,16 @@ paths:
           name: zoom
           schema:
             default: all
+            description: "`range` is a chosen stretch: it requires `from` and `to`, at most 15 years apart, and its value series
+              average quarters, months, weeks or days by its length."
             type: string
             enum:
               - all
               - year
               - quarter
+              - range
+          description: "`range` is a chosen stretch: it requires `from` and `to`, at most 15 years apart, and its value series
+            average quarters, months, weeks or days by its length."
         - in: query
           name: from
           schema:
@@ -81511,6 +81516,7 @@ components:
             - all
             - year
             - quarter
+            - range
         range:
           type: object
           properties:
@@ -81567,8 +81573,10 @@ components:
             - quarter
             - month
             - week
+            - day
           description: "The span every series point averages: `quarter` for a multi-year `all`, `month` for `year` and an `all`
-            under two years, `week` for `quarter`."
+            under two years, `week` for `quarter`, and for a `range` by its length: `quarter` from two years, `month`
+            from 120 days, `week` from 42 days, `day` below."
         series:
           type: array
           items:

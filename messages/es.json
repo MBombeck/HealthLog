@@ -12293,7 +12293,8 @@
     "zoom": {
       "all": "Todo",
       "year": "12 meses",
-      "quarter": "3 meses"
+      "quarter": "3 meses",
+      "range": "Periodo"
     },
     "lanes": {
       "life": "Vida",
@@ -12476,7 +12477,15 @@
     },
     "standingAllergiesOne": "{count} alergia",
     "standingAllergiesFew": "{count} alergias",
-    "standingAllergiesOther": "{count} alergias"
+    "standingAllergiesOther": "{count} alergias",
+    "legendMeanDay": "Media diaria",
+    "range": {
+      "from": "Desde",
+      "to": "Hasta",
+      "label": "Periodo elegido",
+      "open": "Elegir un periodo",
+      "clear": "Mostrar todo"
+    }
   },
   "lifeEvents": {
     "title": "Acontecimiento vital",

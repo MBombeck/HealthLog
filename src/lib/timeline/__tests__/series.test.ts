@@ -3,7 +3,12 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { overlaps, parseSeriesKeys, timelineBucket } from "../load-timeline";
+import {
+  overlaps,
+  parseSeriesKeys,
+  rangeBucket,
+  timelineBucket,
+} from "../load-timeline";
 import { coveredWeeks, READINESS_WEEKS } from "../readiness";
 import { bucketKey, foldDays, foldMonths } from "../series";
 
@@ -71,6 +76,24 @@ describe("buckets", () => {
     expect(timelineBucket("year", "2025-04-01", "2026-03-31")).toBe("month");
     expect(timelineBucket("all", "2025-01-01", "2026-03-31")).toBe("month");
     expect(timelineBucket("all", "2019-01-01", "2026-03-31")).toBe("quarter");
+  });
+
+  it("picks a chosen range's bucket by its length, down to days", () => {
+    // Two years and more: quarters.
+    expect(rangeBucket("2024-03-31", "2026-03-30")).toBe("quarter");
+    expect(rangeBucket("2024-04-01", "2026-03-30")).toBe("month");
+    // Four months (120 days) and more: months.
+    expect(rangeBucket("2026-01-01", "2026-04-30")).toBe("month");
+    expect(rangeBucket("2026-01-02", "2026-04-30")).toBe("week");
+    // Six weeks and more: weeks.
+    expect(rangeBucket("2026-03-01", "2026-04-11")).toBe("week");
+    expect(rangeBucket("2026-03-02", "2026-04-11")).toBe("day");
+    expect(rangeBucket("2026-03-01", "2026-03-01")).toBe("day");
+    expect(timelineBucket("range", "2026-03-01", "2026-03-14")).toBe("day");
+  });
+
+  it("names a day bucket by the day itself", () => {
+    expect(bucketKey("2026-03-05", "day")).toBe("2026-03-05");
   });
 });
 

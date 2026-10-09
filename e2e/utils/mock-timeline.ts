@@ -46,10 +46,25 @@ function rng(seed: number) {
   };
 }
 
-type Bucket = "quarter" | "month" | "week";
+type Bucket = "quarter" | "month" | "week" | "day";
 
 /** The bucket the server picks for a zoom (`timelineBucket`). */
-export function bucketFor(zoom: string): Bucket {
+export function bucketFor(
+  zoom: string,
+  from?: string | null,
+  to?: string | null,
+): Bucket {
+  if (zoom === "range" && from && to) {
+    // `rangeBucket`: by the range's length in days.
+    const days = dayNum(to) - dayNum(from) + 1;
+    return days >= 730
+      ? "quarter"
+      : days >= 120
+        ? "month"
+        : days >= 42
+          ? "week"
+          : "day";
+  }
   return zoom === "quarter" ? "week" : zoom === "year" ? "month" : "quarter";
 }
 
@@ -65,6 +80,10 @@ function dayStr(n: number): string {
 /** Bucket starts from the one holding `from` to the one holding `to`. */
 function bucketStarts(from: string, to: string, bucket: Bucket): string[] {
   const out: string[] = [];
+  if (bucket === "day") {
+    for (let d = dayNum(from); d <= dayNum(to); d++) out.push(dayStr(d));
+    return out;
+  }
   if (bucket === "week") {
     const n = dayNum(from);
     // 1970-01-01 was a Thursday: day 4 is the first Monday.
@@ -742,14 +761,21 @@ export async function mockTimeline(
       .split(",")
       .filter(Boolean);
     const zoom = url.searchParams.get("zoom") ?? "all";
-    const bucket = bucketFor(zoom);
+    const from = url.searchParams.get("from");
+    const to = url.searchParams.get("to");
+    const bucket = bucketFor(zoom, from, to);
     const dataFrom = state === "full" ? "2019-01-01" : "2024-05-01";
+    // A chosen range answers its own window, as the server does.
+    const chosen = zoom === "range" && from && to;
     const all =
-      bucket === body.bucket ? body.series : series(dataFrom, today, bucket);
+      !chosen && bucket === body.bucket
+        ? body.series
+        : series(chosen ? from : dataFrom, chosen ? to : today, bucket);
     return json(route, 200, {
       ...body,
       zoom,
       bucket,
+      ...(chosen ? { range: { from, to, dataFrom } } : {}),
       // Any other value the menu offers answers a flat line of its own.
       series: values.map(
         (key) =>

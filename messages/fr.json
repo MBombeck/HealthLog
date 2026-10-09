@@ -12293,7 +12293,8 @@
     "zoom": {
       "all": "Tout",
       "year": "12 mois",
-      "quarter": "3 mois"
+      "quarter": "3 mois",
+      "range": "Période"
     },
     "lanes": {
       "life": "Vie",
@@ -12476,7 +12477,15 @@
     },
     "standingAllergiesOne": "{count} allergie",
     "standingAllergiesFew": "{count} allergies",
-    "standingAllergiesOther": "{count} allergies"
+    "standingAllergiesOther": "{count} allergies",
+    "legendMeanDay": "Moyenne journalière",
+    "range": {
+      "from": "Du",
+      "to": "Au",
+      "label": "Période choisie",
+      "open": "Choisir une période",
+      "clear": "Tout afficher"
+    }
   },
   "lifeEvents": {
     "title": "Événement de vie",

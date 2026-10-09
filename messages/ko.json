@@ -12293,7 +12293,8 @@
     "zoom": {
       "all": "전체",
       "year": "12개월",
-      "quarter": "3개월"
+      "quarter": "3개월",
+      "range": "기간"
     },
     "lanes": {
       "life": "삶",
@@ -12476,7 +12477,15 @@
     },
     "standingAllergiesOne": "알레르기 {count}개",
     "standingAllergiesFew": "알레르기 {count}개",
-    "standingAllergiesOther": "알레르기 {count}개"
+    "standingAllergiesOther": "알레르기 {count}개",
+    "legendMeanDay": "일 평균",
+    "range": {
+      "from": "시작",
+      "to": "종료",
+      "label": "선택한 기간",
+      "open": "기간 선택",
+      "clear": "전체 보기"
+    }
   },
   "lifeEvents": {
     "title": "삶의 사건",

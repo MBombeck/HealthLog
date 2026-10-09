@@ -932,6 +932,43 @@ describe("timeline", () => {
       ["2026-03-02", 1],
     ]);
 
+    // A chosen range under six weeks averages single days; the two
+    // readings of 10 January stay one day.
+    const daily = await json<import("@/lib/day/contract").TimelineResponse>(
+      await call(
+        GET as Handler,
+        "GET",
+        "/api/timeline?zoom=range&from=2026-01-05&to=2026-01-25&values=BLOOD_PRESSURE_SYS",
+      ),
+    );
+    expect(daily.zoom).toBe("range");
+    expect(daily.bucket).toBe("day");
+    expect(daily.range).toMatchObject({ from: "2026-01-05", to: "2026-01-25" });
+    expect(daily.series[0].points).toEqual([
+      { t: "2026-01-10", mean: 125, count: 2 },
+      { t: "2026-01-20", mean: 135, count: 1 },
+    ]);
+    // Four months and more: months, as the fixed zooms draw them.
+    const monthly = await json<import("@/lib/day/contract").TimelineResponse>(
+      await call(
+        GET as Handler,
+        "GET",
+        "/api/timeline?zoom=range&from=2025-12-01&to=2026-03-31&values=BLOOD_PRESSURE_SYS",
+      ),
+    );
+    expect(monthly.bucket).toBe("month");
+    // A range needs both ends, and spans fifteen years at most.
+    for (const query of [
+      "zoom=range",
+      "zoom=range&from=2026-01-01",
+      "zoom=range&from=2000-01-01&to=2026-01-01",
+    ]) {
+      expect(
+        (await call(GET as Handler, "GET", `/api/timeline?${query}`)).status,
+        query,
+      ).toBe(422);
+    }
+
     const six =
       "BLOOD_PRESSURE_SYS,BLOOD_PRESSURE_DIA,WEIGHT,PULSE,BODY_FAT,MOOD";
     expect(

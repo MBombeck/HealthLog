@@ -728,6 +728,7 @@ test.describe("Coach page frame", () => {
         new RegExp(`(^|\\s)${theme}(\\s|$)`),
       );
       await expect(panel(page)).toHaveAttribute("data-state", "open");
+      await shot(page, testInfo, `coach-frame-1440-${theme}`);
 
       const scan = async (selector: string, label: string) => {
         const result = await new AxeBuilder({ page })

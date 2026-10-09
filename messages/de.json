@@ -12293,7 +12293,8 @@
     "zoom": {
       "all": "Alles",
       "year": "12 Monate",
-      "quarter": "3 Monate"
+      "quarter": "3 Monate",
+      "range": "Zeitraum"
     },
     "lanes": {
       "life": "Leben",
@@ -12476,7 +12477,15 @@
     },
     "standingAllergiesOne": "{count} Allergie",
     "standingAllergiesFew": "{count} Allergien",
-    "standingAllergiesOther": "{count} Allergien"
+    "standingAllergiesOther": "{count} Allergien",
+    "legendMeanDay": "Tagesmittel",
+    "range": {
+      "from": "Von",
+      "to": "Bis",
+      "label": "Gewählter Zeitraum",
+      "open": "Zeitraum wählen",
+      "clear": "Alles zeigen"
+    }
   },
   "lifeEvents": {
     "title": "Lebensereignis",

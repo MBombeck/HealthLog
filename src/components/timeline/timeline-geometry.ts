@@ -121,7 +121,7 @@ export interface TimeWindow {
  * fallback before an answer is the current and the previous year. `year` and
  * `quarter` are 12 and 3 whole months that keep `anchor` (the selected day)
  * in view, end no later than the month of `today`, and so never open onto an
- * empty future.
+ * empty future. `range` is exactly the chosen stretch (`serverRange`).
  */
 export function windowFor(
   zoom: TimelineZoom,
@@ -129,7 +129,7 @@ export function windowFor(
   anchor: string | null,
   serverRange?: { from: string; to: string } | null,
 ): TimeWindow {
-  if (zoom === "all") {
+  if (zoom === "all" || zoom === "range") {
     if (serverRange) return { from: serverRange.from, to: serverRange.to };
     const year = Number(today.slice(0, 4));
     return { from: `${year - 1}-01-01`, to: `${year}-12-31` };
@@ -144,6 +144,23 @@ export function windowFor(
     from: addMonths(capped, -(months - 1)),
     to: endOfMonth(capped),
   };
+}
+
+/**
+ * How a window draws its grid and steps its selection: a chosen range
+ * borrows the fixed zoom nearest its length (years for two years and more,
+ * months from four months, days below), so a range never needs a grid of
+ * its own.
+ */
+export function zoomShape(
+  zoom: TimelineZoom,
+  window: TimeWindow,
+): Exclude<TimelineZoom, "range"> {
+  if (zoom !== "range") return zoom;
+  const days = dayNumber(window.to) - dayNumber(window.from) + 1;
+  if (days >= 2 * 365) return "all";
+  if (days >= 120) return "year";
+  return "quarter";
 }
 
 /** A linear map from calendar days to x, over `[from, to + 1 day)`. */
@@ -281,7 +298,7 @@ export interface GridFormat {
  */
 export function gridTicks(
   window: TimeWindow,
-  zoom: TimelineZoom,
+  zoom: Exclude<TimelineZoom, "range">,
   scale: Scale,
   fmt: GridFormat,
 ): GridTick[] {
@@ -735,6 +752,11 @@ export const MAX_BRIDGED_GAP: Readonly<Record<TimelineBucket, number>> = {
   quarter: 1,
   month: 2,
   week: 4,
+  // Days come only with a chosen range under six weeks. Three missing days
+  // (points four days apart) bridge a weekend away or a forgotten cuff;
+  // a longer silence in a window that short is a break worth seeing, and
+  // the bridge stays well under a third of even a two-week range.
+  day: 3,
 };
 
 /**
@@ -915,7 +937,7 @@ export function dateAtPointer(
 export function stepSelection(
   current: string,
   direction: -1 | 1,
-  zoom: TimelineZoom,
+  zoom: Exclude<TimelineZoom, "range">,
   today: string,
   floor: string,
 ): string {

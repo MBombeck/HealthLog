@@ -72,6 +72,7 @@ import {
   wrapToWidth,
   layoutTimeline,
   stepSelection,
+  zoomShape,
   type PlacedPoint,
   type PlacedSpan,
   type TimeWindow,
@@ -171,14 +172,15 @@ export function TimelineChart({
   );
 
   const floor = timeline.range.dataFrom ?? window.from;
+  const shape = zoomShape(zoom, window);
 
   function handleKey(event: KeyboardEvent<HTMLDivElement>) {
     const current = selected ?? today;
     let next: string | null = null;
     if (event.key === "ArrowLeft")
-      next = stepSelection(current, -1, zoom, today, floor);
+      next = stepSelection(current, -1, shape, today, floor);
     else if (event.key === "ArrowRight")
-      next = stepSelection(current, 1, zoom, today, floor);
+      next = stepSelection(current, 1, shape, today, floor);
     else if (event.key === "Home") next = floor;
     else if (event.key === "End") next = today;
     else if (event.key === "Enter" || event.key === " ") {
@@ -242,7 +244,7 @@ export function TimelineChart({
             <ChartBody
               layout={layout}
               window={window}
-              zoom={zoom}
+              zoom={shape}
               today={today}
               selected={selected}
               dataFrom={timeline.range.dataFrom}
@@ -277,7 +279,7 @@ export function TimelineChart({
 interface ChartBodyProps {
   layout: NonNullable<ReturnType<typeof layoutTimeline>>;
   window: TimeWindow;
-  zoom: TimelineZoom;
+  zoom: Exclude<TimelineZoom, "range">;
   today: string;
   selected: string | null;
   dataFrom: string | null;

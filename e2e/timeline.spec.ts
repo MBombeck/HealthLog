@@ -270,6 +270,76 @@ test("value lines: quarterly means, gaps kept, short ones bridged, up to six lin
   await page.keyboard.press("Escape");
 });
 
+/** `days` calendar days before `key`. */
+function daysBefore(key: string, days: number): string {
+  const [y, m, d] = key.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d - days)).toISOString().slice(0, 10);
+}
+
+test("a chosen range lives in the URL: reload keeps it, Back returns to it", async ({
+  page,
+}) => {
+  await setTimelineModuleOn(page);
+  const log = await mockTimeline(page, "full", TODAY);
+  await page.goto("/timeline");
+  const chart = page.locator('[data-slot="timeline-chart"]');
+  await expect(chart).toBeVisible({ timeout: 20_000 });
+  const desktop = page.locator('[data-slot="timeline-desktop"]');
+  const zoom = (value: string) =>
+    page.locator(`[data-slot="timeline-zoom"] [data-value="${value}"]`);
+
+  // Choosing "Range" starts from what is on screen and writes it down.
+  await zoom("range").click();
+  await expect(page).toHaveURL(
+    /[?&]zoom=range&from=\d{4}-\d{2}-\d{2}&to=\d{4}-\d{2}-\d{2}/,
+  );
+  const fields = desktop.locator('[data-slot="timeline-range"]');
+  await expect(fields).toBeVisible();
+
+  // Three weeks: daily means, the bar headed by one day.
+  const from = daysBefore(TODAY, 20);
+  const start = desktop.locator('[data-testid="timeline-range-from"]');
+  await page.goto(`/timeline?zoom=range&from=${from}&to=${TODAY}`);
+  await expect(fields).toHaveAttribute("data-from", from, { timeout: 20_000 });
+  await expect(fields).toHaveAttribute("data-to", TODAY);
+  await expect(zoom("range")).toHaveAttribute("aria-checked", "true");
+  await expect(
+    page.locator('[data-slot="timeline-legend-mean"]'),
+  ).toHaveAttribute("data-bucket", "day");
+  await expect(
+    page.locator('[data-slot="timeline-selection-bar"]'),
+  ).toHaveAttribute("data-bucket", "day");
+  const asked = log.timelineQueries.at(-1)!;
+  expect(asked.get("zoom")).toBe("range");
+  expect(asked.get("from")).toBe(from);
+  expect(asked.get("to")).toBe(TODAY);
+
+  // A reload keeps it.
+  await page.reload();
+  await expect(fields).toHaveAttribute("data-from", from, { timeout: 20_000 });
+
+  // A fixed zoom replaces it; Back brings it back.
+  await zoom("year").click();
+  await expect(page).toHaveURL(/[?&]zoom=year$/);
+  await expect(fields).toHaveCount(0);
+  await page.goBack();
+  await expect(page).toHaveURL(new RegExp(`zoom=range&from=${from}`));
+  await expect(fields).toHaveAttribute("data-from", from);
+
+  // Typing a start moves the range and the URL with it.
+  const later = daysBefore(TODAY, 10);
+  await start.fill(later);
+  await start.press("Enter");
+  await expect(page).toHaveURL(new RegExp(`from=${later}&to=${TODAY}`));
+
+  // A parameter it cannot read opens the whole record.
+  await page.goto("/timeline?zoom=range&from=nonsense&to=2026-01-01");
+  await expect(zoom("all")).toHaveAttribute("aria-checked", "true", {
+    timeout: 20_000,
+  });
+  await expect(fields).toHaveCount(0);
+});
+
 async function setTimelineModuleOn(page: Page) {
   await page.goto("/settings/modules");
   await setTimelineModule(page, true);

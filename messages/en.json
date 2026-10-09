@@ -12293,7 +12293,8 @@
     "zoom": {
       "all": "All",
       "year": "12 months",
-      "quarter": "3 months"
+      "quarter": "3 months",
+      "range": "Range"
     },
     "lanes": {
       "life": "Life",
@@ -12476,7 +12477,15 @@
     },
     "standingAllergiesOne": "{count} allergy",
     "standingAllergiesFew": "{count} allergies",
-    "standingAllergiesOther": "{count} allergies"
+    "standingAllergiesOther": "{count} allergies",
+    "legendMeanDay": "Daily mean",
+    "range": {
+      "from": "From",
+      "to": "To",
+      "label": "Chosen range",
+      "open": "Choose a range",
+      "clear": "Show everything"
+    }
   },
   "lifeEvents": {
     "title": "Life event",

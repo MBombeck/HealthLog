@@ -207,7 +207,7 @@ export function SelectionBar({
 
 /**
  * The bucket by name, in full: "July to September 2026", "September 2026",
- * "Week of 22 September 2026".
+ * "Week of 22 September 2026", "22 September 2026".
  */
 export function bucketTitle(
   start: string,
@@ -215,6 +215,7 @@ export function bucketTitle(
   intl: string,
   t: ReturnType<typeof useTranslations>["t"],
 ): string {
+  if (bucket === "day") return formatDayMonthYearLong(start, intl);
   if (bucket === "month") return formatMonthYear(start, intl);
   if (bucket === "quarter") {
     const last = dayKey(dayNumber(bucketAfter(start, bucket)) - 1);
