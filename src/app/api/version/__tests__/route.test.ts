@@ -9,8 +9,6 @@ const resolveGeoProviderHostMock = vi.fn(() => "ipwho.is");
 vi.mock("@/lib/geo", () => ({
   offlineGeoReady: () => offlineGeoReadyMock(),
   resolveGeoProviderHost: () => resolveGeoProviderHostMock(),
-  geoLookupMode: () => (offlineGeoReadyMock() ? "offline" : "online"),
-  geoProviderChosen: () => false,
 }));
 
 import { GET } from "../route";
@@ -107,5 +105,24 @@ describe("GET /api/version", () => {
     const response = await (GET as unknown as () => Promise<Response>)();
     const body = (await response.json()) as VersionEnvelope;
     expect(body.data.geoProviderHost).toBe("ip-api.com");
+  });
+
+  it("keeps the finer geo state off the public answer", async () => {
+    // Lookup mode and whether the operator chose the provider are admin-only
+    // (`/api/admin/status`); the public route would only add a way to tell
+    // instances apart.
+    const response = await (GET as unknown as () => Promise<Response>)();
+    const body = (await response.json()) as { data: Record<string, unknown> };
+    expect(Object.keys(body.data).sort()).toEqual([
+      "buildSha",
+      "builtAt",
+      "changelog",
+      "docs",
+      "geoProviderHost",
+      "license",
+      "offlineGeoEnabled",
+      "repository",
+      "version",
+    ]);
   });
 });

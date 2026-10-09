@@ -1,11 +1,6 @@
 import { apiHandler } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
-import {
-  geoLookupMode,
-  geoProviderChosen,
-  offlineGeoReady,
-  resolveGeoProviderHost,
-} from "@/lib/geo";
+import { offlineGeoReady, resolveGeoProviderHost } from "@/lib/geo";
 import packageJson from "../../../../package.json";
 
 // v1.4.27 R5 — `offlineGeoEnabled` reads from the same source the geo
@@ -41,7 +36,10 @@ export const dynamic = "force-dynamic";
  * `geoProviderHost` (the host of `IP_GEO_LOOKUP_URL`, default
  * `ipwho.is`) and the resolver emits a one-shot admin notification on
  * first use. `geoProviderHost` lets the admin status surface name the
- * real provider instead of assuming the default.
+ * real provider instead of assuming the default. Both were public before
+ * v1.42 and stay so for existing readers; the finer geo state (lookup mode,
+ * whether the operator chose the provider) is admin-only and lives on
+ * `/api/admin/status`, so it adds nothing to tell instances apart by.
  */
 export const GET = apiHandler(async () => {
   // v1.4.43 B11 — prefer the build-arg-injected env var so the runtime
@@ -69,7 +67,5 @@ export const GET = apiHandler(async () => {
     docs: "https://docs.healthlog.dev",
     offlineGeoEnabled,
     geoProviderHost,
-    geoLookup: geoLookupMode(),
-    geoProviderChosen: geoProviderChosen(),
   });
 });

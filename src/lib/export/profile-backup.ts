@@ -506,10 +506,15 @@ export async function buildProfileBackupSection(
       ...(disasterRecovery
         ? {
             id: pattern.id,
-            createdAt: pattern.createdAt.toISOString(),
             updatedAt: pattern.updatedAt.toISOString(),
           }
         : {}),
+      // Carried in every export, not only DR: when a finding was first made
+      // is part of what it means. The correlation surface reads it to tell a
+      // finding of the earlier engine from one of the seasonally adjusted
+      // engine, and a restore that reset it to the restore day would drop
+      // that note for good.
+      createdAt: pattern.createdAt.toISOString(),
       canonicalKey: pattern.canonicalKey,
       family: pattern.family,
       factorKey: pattern.factorKey,
@@ -945,9 +950,11 @@ export async function restoreProfileData(
         dismissedEvidenceHash: pattern.dismissedEvidenceHash,
         dismissedEffectSize: pattern.dismissedEffectSize,
         dismissedSampleSize: pattern.dismissedSampleSize,
-        ...(pattern.createdAt
-          ? { createdAt: new Date(pattern.createdAt) }
-          : {}),
+        // A file from before portable exports carried `createdAt` falls back
+        // to the last computation, the latest instant the finding certainly
+        // existed: still earlier than this restore, which is what keeps a
+        // finding of the earlier engine counted as one.
+        createdAt: new Date(pattern.createdAt ?? pattern.lastComputedAt),
         ...(pattern.updatedAt
           ? { updatedAt: new Date(pattern.updatedAt) }
           : {}),

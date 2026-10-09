@@ -26,18 +26,12 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { useTranslations } from "@/lib/i18n/context";
-import {
-  geoLookupState,
-  StatusItem,
-  usePublicVersion,
-  useSystemStatus,
-} from "./_shared";
+import { geoLookupState, StatusItem, useSystemStatus } from "./_shared";
 import { useKeyBackupStatus } from "./use-key-backup-status";
 
 export function SystemStatusSummary() {
   const { t } = useTranslations();
   const { data: status, isError, refetch } = useSystemStatus();
-  const { data: version } = usePublicVersion();
   const { data: keyBackup } = useKeyBackupStatus();
 
   return (
@@ -92,30 +86,27 @@ export function SystemStatusSummary() {
             />
           )}
           {/* v1.4.27 R5 — surface the offline-geo state so the maintainer
-              spots the missing MAXMIND_LICENSE_KEY without crawling logs.
-              The field is undefined on legacy responses; the row only
-              renders when /api/version answers the new shape. */}
-          {version?.offlineGeoEnabled !== undefined && (
-            <StatusItem
-              icon={Globe}
-              label={t("admin.overview.snapshotOfflineGeo")}
-              value={
-                {
-                  offline: t("admin.overview.snapshotOfflineGeoOn"),
-                  off: t("admin.offlineGeoOff"),
-                  chosen: t("admin.offlineGeoChosen", {
-                    host: version.geoProviderHost ?? "ipwho.is",
-                  }),
-                  default: t("admin.overview.snapshotOfflineGeoOff", {
-                    host: version.geoProviderHost ?? "ipwho.is",
-                  }),
-                }[geoLookupState(version)]
-              }
-              tone={
-                geoLookupState(version) === "default" ? "warning" : "success"
-              }
-            />
-          )}
+              spots the missing GeoLite2 databases without crawling logs.
+              Read from the admin status, not the public /api/version. */}
+          <StatusItem
+            icon={Globe}
+            label={t("admin.overview.snapshotOfflineGeo")}
+            value={
+              {
+                offline: t("admin.overview.snapshotOfflineGeoOn"),
+                off: t("admin.offlineGeoOff"),
+                chosen: t("admin.offlineGeoChosen", {
+                  host: status.geo.providerHost,
+                }),
+                default: t("admin.overview.snapshotOfflineGeoOff", {
+                  host: status.geo.providerHost,
+                }),
+              }[geoLookupState(status.geo)]
+            }
+            tone={
+              geoLookupState(status.geo) === "default" ? "warning" : "success"
+            }
+          />
         </div>
       ) : isError ? (
         <QueryErrorRow

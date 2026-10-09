@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { prisma } from "@/lib/db";
+import { getEvent } from "@/lib/logging/context";
 
 export const PATTERN_FAMILIES = {
   discoveryRetrospective: "DISCOVERY_RETROSPECTIVE",
@@ -140,6 +141,12 @@ export async function syncAcceptedPatterns(args: {
   }));
   const keys = prepared.map((item) => item.canonicalKey);
 
+  // The earlier-engine cutoff has to exist before the new engine writes its
+  // first discovery pattern, or that pattern would count as an earlier one.
+  if (DISCOVERY_FAMILIES.includes(args.family)) {
+    await stampSeasonalEngineStart();
+  }
+
   return prisma.$transaction(async (tx) => {
     const existing = await tx.correlationPattern.findMany({
       where: { userId: args.userId, canonicalKey: { in: keys } },
@@ -252,33 +259,78 @@ export function decisionForEvidence(
 }
 
 /**
- * The day the discovery engine started correlating seasonally adjusted
- * residuals with an effective-sample-size p-value (v1.42). Before it, two
- * series that merely shared the season or a long trend surfaced as a
- * finding, so an account with history usually sees fewer pairs afterwards.
+ * The discovery engine correlates seasonally adjusted residuals with an
+ * effective-sample-size p-value since v1.42. Before it, two series that
+ * merely shared the season or a long trend surfaced as a finding, so an
+ * account with history usually sees fewer pairs afterwards.
+ *
+ * Where that change took effect is an instance fact, not a calendar date: an
+ * instance keeps writing earlier-engine findings until it runs the new build.
+ * The first discovery sync of the new engine stamps
+ * `AppSettings.correlationSeasonalEngineSince`, before it writes anything, and
+ * the cutoff below reads that stamp. Stamped once per instance; the process
+ * remembers it so later syncs skip the write.
  */
-export const SEASONAL_ADJUSTMENT_SINCE = new Date("2026-10-08T00:00:00.000Z");
+const DISCOVERY_FAMILIES: readonly PatternFamily[] = [
+  PATTERN_FAMILIES.discoveryRetrospective,
+  PATTERN_FAMILIES.discoveryRecent,
+];
+
+let seasonalEngineStamped = false;
+
+/**
+ * Record that the seasonally adjusted engine is running here, unless already
+ * recorded. Best effort: a failed stamp leaves the marker unset, which counts
+ * every pattern as an earlier finding (the note shows once more than it
+ * should), never the reverse.
+ */
+export async function stampSeasonalEngineStart(
+  now: Date = new Date(),
+): Promise<void> {
+  if (seasonalEngineStamped) return;
+  try {
+    await prisma.appSettings.upsert({
+      where: { id: "singleton" },
+      create: { id: "singleton", correlationSeasonalEngineSince: now },
+      update: {},
+    });
+    await prisma.appSettings.updateMany({
+      where: { id: "singleton", correlationSeasonalEngineSince: null },
+      data: { correlationSeasonalEngineSince: now },
+    });
+    seasonalEngineStamped = true;
+  } catch {
+    getEvent()?.addWarning("correlation seasonal engine stamp failed");
+  }
+}
+
+/** Test seam: forget that this process already stamped the marker. */
+export function resetSeasonalEngineStampForTests(): void {
+  seasonalEngineStamped = false;
+}
 
 /**
  * Whether the record held a discovery finding under the earlier engine: a
- * stored discovery pattern first written before {@link SEASONAL_ADJUSTMENT_SINCE}.
- * A dismissed pattern counts, it was a finding. An account created after the
- * change can never qualify, so the one-time explanation on the correlation
- * surface reaches only the people whose list actually changed.
+ * stored discovery pattern created before the instance's seasonal-engine
+ * stamp, or any stored discovery pattern while there is no stamp yet. A
+ * dismissed pattern counts, it was a finding. An account whose first finding
+ * came from the new engine never qualifies, so the one-time explanation on
+ * the correlation surface reaches only the people whose list actually
+ * changed.
  */
 export async function hadFindingsBeforeSeasonalAdjustment(
   userId: string,
 ): Promise<boolean> {
+  const settings = await prisma.appSettings.findUnique({
+    where: { id: "singleton" },
+    select: { correlationSeasonalEngineSince: true },
+  });
+  const since = settings?.correlationSeasonalEngineSince ?? null;
   const row = await prisma.correlationPattern.findFirst({
     where: {
       userId,
-      family: {
-        in: [
-          PATTERN_FAMILIES.discoveryRetrospective,
-          PATTERN_FAMILIES.discoveryRecent,
-        ],
-      },
-      createdAt: { lt: SEASONAL_ADJUSTMENT_SINCE },
+      family: { in: [...DISCOVERY_FAMILIES] },
+      ...(since ? { createdAt: { lt: since } } : {}),
     },
     select: { id: true },
   });
