@@ -8,12 +8,12 @@ import {
   numberLinePositions,
 } from "../day-values-model";
 
-function value(type: string, v = 1): DayValue {
+function value(type: string, v = 1, at = "2026-01-03T07:12:00.000Z"): DayValue {
   return {
     type,
     value: v,
     unit: "x",
-    at: "2026-01-03T07:12:00.000Z",
+    at,
     source: "MANUAL",
     band: null,
   };
@@ -28,6 +28,30 @@ describe("curateDayValues", () => {
     expect(curated).toHaveLength(1);
     expect(curated[0]!.key).toBe("BLOOD_PRESSURE");
     expect(curated[0]!.values.map((v) => v.value)).toEqual([138, 88]);
+  });
+
+  it("shows two blood pressure readings of a day as their mean, not four numbers", () => {
+    const { curated } = curateDayValues([
+      value("BLOOD_PRESSURE_SYS", 127, "2026-01-03T07:00:00.000Z"),
+      value("BLOOD_PRESSURE_DIA", 86, "2026-01-03T07:00:00.000Z"),
+      value("BLOOD_PRESSURE_SYS", 135, "2026-01-03T19:00:00.000Z"),
+      value("BLOOD_PRESSURE_DIA", 87, "2026-01-03T19:00:00.000Z"),
+    ]);
+    expect(curated).toHaveLength(1);
+    const tile = curated[0]!;
+    expect(tile.values.map((v) => v.type)).toEqual([
+      "BLOOD_PRESSURE_SYS",
+      "BLOOD_PRESSURE_DIA",
+    ]);
+    expect(tile.values.map((v) => v.value)).toEqual([131, 86.5]);
+    expect(tile.values[0]!.at).toBe("2026-01-03T19:00:00.000Z");
+    expect(tile.readings).toBe(2);
+  });
+
+  it("keeps a single reading as it is", () => {
+    const { curated } = curateDayValues([value("WEIGHT", 80.4)]);
+    expect(curated[0]!.values.map((v) => v.value)).toEqual([80.4]);
+    expect(curated[0]!.readings).toBe(1);
   });
 
   it("shows eight tiles in reading order and keeps the rest for All", () => {

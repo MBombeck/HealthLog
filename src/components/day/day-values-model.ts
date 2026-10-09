@@ -2,9 +2,12 @@
  * Which of a day's values the view shows first, and how they pair up.
  *
  * Pure, so the curation can be pinned without rendering. The server sends one
- * row per type (canonical source, band already decided); this only orders the
- * rows and folds the two halves of a blood pressure into one tile, because a
- * reading of 138 over 88 is one thing to a person, not two.
+ * row per reading for the types taken a few times a day (weight, blood
+ * pressure, glucose) and one row per type otherwise, with the band already
+ * decided. This orders the tiles, folds the two halves of a blood pressure
+ * into one, because a reading of 138 over 88 is one thing to a person, not
+ * two, and shows several readings of one type as their mean. The single
+ * readings stay in the day's list of entries.
  */
 import type { DayValue } from "@/lib/day/contract";
 
@@ -35,8 +38,42 @@ export const VALUE_PRIORITY: readonly string[] = [
 export interface DayValueTile {
   /** Stable key: the first type, `BLOOD_PRESSURE` for the pair. */
   key: string;
-  /** The rows the tile shows, systolic before diastolic for the pair. */
+  /**
+   * The rows the tile shows, one per type, systolic before diastolic for the
+   * pair. A type read more than once that day is its mean.
+   */
   values: DayValue[];
+  /** How many readings the tile stands for; above 1 the value is a mean. */
+  readings: number;
+}
+
+/**
+ * One row per type: several readings of a type become their mean, at the
+ * time of the last. The band is the type's, so any reading's will do.
+ */
+function meanPerType(rows: readonly DayValue[]): {
+  values: DayValue[];
+  readings: number;
+} {
+  const byType = new Map<string, DayValue[]>();
+  for (const row of rows) {
+    const list = byType.get(row.type) ?? [];
+    list.push(row);
+    byType.set(row.type, list);
+  }
+  let readings = 0;
+  const values: DayValue[] = [];
+  for (const list of byType.values()) {
+    readings = Math.max(readings, list.length);
+    if (list.length === 1) {
+      values.push(list[0]!);
+      continue;
+    }
+    const last = list.reduce((a, b) => (b.at > a.at ? b : a));
+    const mean = list.reduce((sum, r) => sum + r.value, 0) / list.length;
+    values.push({ ...last, value: mean });
+  }
+  return { values, readings };
 }
 
 /** The tile key a type belongs to. */
@@ -54,12 +91,16 @@ export function curateDayValues(
   values: readonly DayValue[],
   focusTypes: readonly string[] = [],
 ): { curated: DayValueTile[]; rest: DayValueTile[] } {
-  const tiles = new Map<string, DayValueTile>();
+  const grouped = new Map<string, DayValue[]>();
   for (const value of values) {
     const key = tileKeyOf(value.type);
-    const tile = tiles.get(key) ?? { key, values: [] };
-    tile.values.push(value);
-    tiles.set(key, tile);
+    const rows = grouped.get(key) ?? [];
+    rows.push(value);
+    grouped.set(key, rows);
+  }
+  const tiles = new Map<string, DayValueTile>();
+  for (const [key, rows] of grouped) {
+    tiles.set(key, { key, ...meanPerType(rows) });
   }
   for (const tile of tiles.values()) {
     if (tile.key === "BLOOD_PRESSURE") {

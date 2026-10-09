@@ -164,6 +164,7 @@ export function SinceLastVisit({
           band: null,
         },
       ],
+      readings: 1,
     });
     return `${label} ${shown.value}${shown.unit ? ` ${shown.unit}` : ""}`;
   };

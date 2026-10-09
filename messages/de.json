@@ -12260,6 +12260,9 @@
     "countEntriesOne": "1 Eintrag",
     "countEntriesFew": "{count} Einträge",
     "countEntriesOther": "{count} Einträge",
+    "meanOfReadingsOne": "Schnitt aus 1 Messung",
+    "meanOfReadingsFew": "Schnitt aus {count} Messungen",
+    "meanOfReadingsOther": "Schnitt aus {count} Messungen",
     "sinceLastVisit": {
       "title": "Seit dem letzten Besuch am {date}",
       "countOne": "1 Eintrag",

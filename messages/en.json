@@ -12260,6 +12260,9 @@
     "countEntriesOne": "1 entry",
     "countEntriesFew": "{count} entries",
     "countEntriesOther": "{count} entries",
+    "meanOfReadingsOne": "Average of 1 reading",
+    "meanOfReadingsFew": "Average of {count} readings",
+    "meanOfReadingsOther": "Average of {count} readings",
     "sinceLastVisit": {
       "title": "Since the last visit on {date}",
       "countOne": "1 entry",

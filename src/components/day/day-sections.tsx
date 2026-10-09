@@ -302,7 +302,7 @@ function ValueTile({
   tile: DayValueTile;
   selected: boolean;
 }) {
-  const { t } = useTranslations();
+  const { t, tCount } = useTranslations();
   const { formatTile } = useDayValueFormat();
   const shown = formatTile(tile);
   // The line plots the first row: systolic for a blood pressure.
@@ -328,6 +328,14 @@ function ValueTile({
           </span>
         ) : null}
       </span>
+      {tile.readings > 1 ? (
+        <span
+          data-slot="day-value-mean"
+          className="text-muted-foreground truncate text-xs"
+        >
+          {tCount("day.meanOfReadings", tile.readings)}
+        </span>
+      ) : null}
       {lead?.band ? (
         <>
           <NumberLine value={lead.value} band={lead.band} />

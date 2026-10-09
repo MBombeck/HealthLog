@@ -12260,6 +12260,9 @@
     "countEntriesOne": "기록 1개",
     "countEntriesFew": "기록 {count}개",
     "countEntriesOther": "기록 {count}개",
+    "meanOfReadingsOne": "측정 1회 평균",
+    "meanOfReadingsFew": "측정 {count}회 평균",
+    "meanOfReadingsOther": "측정 {count}회 평균",
     "sinceLastVisit": {
       "title": "{date} 마지막 방문 이후",
       "countOne": "기록 1개",

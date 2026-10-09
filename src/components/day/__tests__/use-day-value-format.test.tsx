@@ -34,6 +34,7 @@ function Probe({
   const shown = formatTile({
     key: type,
     values: [{ type, value, unit, at: "", source: "", band: null }],
+    readings: 1,
   });
   return (
     <span>
