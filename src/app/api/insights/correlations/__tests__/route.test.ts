@@ -70,6 +70,7 @@ vi.mock("@/lib/insights/correlation-patterns", () => ({
   },
   syncAcceptedPatterns: vi.fn().mockResolvedValue(new Map()),
   decisionForEvidence: vi.fn().mockReturnValue(null),
+  hadFindingsBeforeSeasonalAdjustment: vi.fn().mockResolvedValue(false),
 }));
 
 vi.mock("next/headers", () => ({
@@ -88,7 +89,10 @@ import { requireModuleEnabled, resolveModuleMap } from "@/lib/modules/gate";
 import { apiError } from "@/lib/api-response";
 import { checkAnalyticsReadRateLimit } from "@/lib/rate-limit";
 import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
-import { syncAcceptedPatterns } from "@/lib/insights/correlation-patterns";
+import {
+  hadFindingsBeforeSeasonalAdjustment,
+  syncAcceptedPatterns,
+} from "@/lib/insights/correlation-patterns";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -155,6 +159,7 @@ beforeEach(() => {
   ).mockResolvedValue([]);
   vi.mocked(prisma.customMetric.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.symptomDefinition.findMany).mockResolvedValue([] as never);
+  vi.mocked(hadFindingsBeforeSeasonalAdjustment).mockResolvedValue(false);
 });
 
 const callGet = GET as unknown as (req: NextRequest) => Promise<Response>;
@@ -179,6 +184,18 @@ describe("GET /api/insights/correlations", () => {
     expect(body.data.discovered).toEqual([]);
     expect(body.data.pairsTested).toBe(0);
     expect(body.data.fdrQ).toBeGreaterThan(0);
+  });
+
+  it("reports whether the record had findings before the seasonal adjustment", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(hadFindingsBeforeSeasonalAdjustment).mockResolvedValue(true);
+    const res = await callGet(makeReq());
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: { findingsBeforeSeasonalAdjustment: boolean };
+    };
+    expect(body.data.findingsBeforeSeasonalAdjustment).toBe(true);
+    expect(hadFindingsBeforeSeasonalAdjustment).toHaveBeenCalledWith("user-1");
   });
 
   it("serves a cache hit without re-running the discovery reads or the pattern-sync writes", async () => {

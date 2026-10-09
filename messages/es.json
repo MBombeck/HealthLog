@@ -2554,7 +2554,9 @@
       "dismissError": "No se pudo descartar este patrón.",
       "restoreError": "No se pudo restaurar este patrón.",
       "loadError": "No se pudieron cargar los patrones.",
-      "empty": "Ningún patrón actual superó el umbral de evidencia."
+      "empty": "Ningún patrón actual superó el umbral de evidencia.",
+      "seasonalNote": "Desde la versión 1.42, HealthLog descuenta la estación del año y la tendencia a largo plazo antes de comparar valores. Verás menos relaciones, pero las que quedan son más sólidas. Muchos de los patrones anteriores eran solo el calendario.",
+      "seasonalNoteDismiss": "Cerrar aviso"
     },
     "correlation": {
       "direction": {

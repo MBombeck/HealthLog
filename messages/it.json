@@ -2554,7 +2554,9 @@
       "dismissError": "Impossibile ignorare questo schema.",
       "restoreError": "Impossibile ripristinare questo schema.",
       "loadError": "Impossibile caricare gli schemi.",
-      "empty": "Nessuno schema attuale ha superato la soglia di evidenza."
+      "empty": "Nessuno schema attuale ha superato la soglia di evidenza.",
+      "seasonalNote": "Dalla versione 1.42 HealthLog toglie stagione e tendenza di lungo periodo prima di confrontare i valori. Vedrai meno relazioni, ma quelle rimaste reggono meglio. Molti degli schemi di prima erano solo il calendario.",
+      "seasonalNoteDismiss": "Chiudi l’avviso"
     },
     "correlation": {
       "direction": {

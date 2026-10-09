@@ -2554,7 +2554,9 @@
       "dismissError": "Dieses Muster konnte nicht ausgeblendet werden.",
       "restoreError": "Dieses Muster konnte nicht wiederhergestellt werden.",
       "loadError": "Muster konnten nicht geladen werden.",
-      "empty": "Kein aktuelles Muster hat die Evidenzschwelle erreicht."
+      "empty": "Kein aktuelles Muster hat die Evidenzschwelle erreicht.",
+      "seasonalNote": "Seit Version 1.42 rechnet HealthLog Jahreszeit und Langzeittrend heraus, bevor es Werte vergleicht. Du siehst dadurch weniger Zusammenhänge, aber die verbliebenen halten besser. Viele der früheren Muster waren der Kalender.",
+      "seasonalNoteDismiss": "Hinweis schließen"
     },
     "correlation": {
       "direction": {

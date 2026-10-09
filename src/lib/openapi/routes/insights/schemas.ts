@@ -691,6 +691,11 @@ export const correlationDiscoveryResponse = z
       .describe(
         "v1.22 — labs ↔ outcome associations (each draw vs the contemporaneous outcome window-mean), FDR-controlled; absent-degrading on sparse draws.",
       ),
+    findingsBeforeSeasonalAdjustment: z
+      .boolean()
+      .describe(
+        "v1.42 — true when the record held a discovery finding before the engine began removing trend and season from both series. Drives a one-time explanation of why fewer pairs surface; false for every account created since.",
+      ),
   })
   .meta({
     id: "CorrelationDiscoveryResponse",

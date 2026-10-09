@@ -2554,7 +2554,9 @@
       "dismissError": "이 패턴을 숨기지 못했어요.",
       "restoreError": "이 패턴을 다시 표시하지 못했어요.",
       "loadError": "패턴을 불러오지 못했어요.",
-      "empty": "근거 기준선을 넘은 패턴이 아직 없어요."
+      "empty": "근거 기준선을 넘은 패턴이 아직 없어요.",
+      "seasonalNote": "버전 1.42부터 HealthLog는 값을 비교하기 전에 계절과 장기 추세를 먼저 걸러 냅니다. 보이는 관계는 줄어들지만, 남은 관계는 더 믿을 만합니다. 예전에 보이던 패턴 중 상당수는 그저 달력이었습니다.",
+      "seasonalNoteDismiss": "안내 닫기"
     },
     "correlation": {
       "direction": {

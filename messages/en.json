@@ -2554,7 +2554,9 @@
       "dismissError": "Could not dismiss this pattern.",
       "restoreError": "Could not restore this pattern.",
       "loadError": "Patterns could not be loaded.",
-      "empty": "No current pattern cleared the evidence threshold."
+      "empty": "No current pattern cleared the evidence threshold.",
+      "seasonalNote": "Since version 1.42, HealthLog removes season and long-term trend before it compares values. You see fewer relationships, but the ones that remain hold up better. Many of the earlier patterns were just the calendar.",
+      "seasonalNoteDismiss": "Dismiss note"
     },
     "correlation": {
       "direction": {

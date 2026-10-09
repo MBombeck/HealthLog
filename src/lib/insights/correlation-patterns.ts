@@ -250,3 +250,37 @@ export function decisionForEvidence(
     ) ?? null
   );
 }
+
+/**
+ * The day the discovery engine started correlating seasonally adjusted
+ * residuals with an effective-sample-size p-value (v1.42). Before it, two
+ * series that merely shared the season or a long trend surfaced as a
+ * finding, so an account with history usually sees fewer pairs afterwards.
+ */
+export const SEASONAL_ADJUSTMENT_SINCE = new Date("2026-10-08T00:00:00.000Z");
+
+/**
+ * Whether the record held a discovery finding under the earlier engine: a
+ * stored discovery pattern first written before {@link SEASONAL_ADJUSTMENT_SINCE}.
+ * A dismissed pattern counts, it was a finding. An account created after the
+ * change can never qualify, so the one-time explanation on the correlation
+ * surface reaches only the people whose list actually changed.
+ */
+export async function hadFindingsBeforeSeasonalAdjustment(
+  userId: string,
+): Promise<boolean> {
+  const row = await prisma.correlationPattern.findFirst({
+    where: {
+      userId,
+      family: {
+        in: [
+          PATTERN_FAMILIES.discoveryRetrospective,
+          PATTERN_FAMILIES.discoveryRecent,
+        ],
+      },
+      createdAt: { lt: SEASONAL_ADJUSTMENT_SINCE },
+    },
+    select: { id: true },
+  });
+  return row !== null;
+}
