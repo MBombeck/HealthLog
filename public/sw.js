@@ -230,8 +230,9 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Locale-catalog boot script — cache-first. The URL is versioned
-  // (`/i18n/<locale>?v=<build>`) and served immutable, so cache-first is
+  // Locale-catalog boot script — cache-first. The URL is versioned by the
+  // catalogs' content hash (`/i18n/<locale>?v=<hash>`, `next.config.ts`),
+  // so a changed catalog is a new URL and cache-first is
   // correct and keeps the catalog available on an offline relaunch (the
   // cached shell HTML references the same versioned URL it was rendered
   // with). Carries no user data — same public strings as the repository's
