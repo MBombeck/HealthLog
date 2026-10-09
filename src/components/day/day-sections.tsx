@@ -589,6 +589,13 @@ const EVENT_ICON: Record<DayEventKind, LucideIcon> = {
   lifeEvent: Flag,
 };
 
+/**
+ * Event kinds whose meta is the dose taken. It reads as part of the name,
+ * "Ramipril 5 mg", as under Running that day, not as a second line of its
+ * own under the name.
+ */
+const DOSE_META_EVENT_KINDS: ReadonlySet<DayEventKind> = new Set(["intake"]);
+
 export function DayEvents({ events }: { events: readonly DayEvent[] }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
@@ -599,9 +606,14 @@ export function DayEvents({ events }: { events: readonly DayEvent[] }) {
       <ul className="divide-border divide-y">
         {events.map((event) => {
           const Icon = EVENT_ICON[event.kind];
-          const meta = event.meta
-            ? dayMeta(event.kind, event.meta, t, event.title)
-            : null;
+          const doseInName =
+            !!event.meta && DOSE_META_EVENT_KINDS.has(event.kind);
+          const title = dayTitle(event.kind, event.title, t);
+          const name = doseInName ? `${title} ${event.meta}` : title;
+          const meta =
+            event.meta && !doseInName
+              ? dayMeta(event.kind, event.meta, t, event.title)
+              : null;
           return (
             <li
               key={`${event.kind}-${event.id}`}
@@ -633,12 +645,10 @@ export function DayEvents({ events }: { events: readonly DayEvent[] }) {
                     data-slot="day-event-link"
                     className="focus-visible:ring-ring/50 block text-sm leading-5 font-medium after:absolute after:inset-0 after:rounded-md after:content-[''] focus-visible:outline-none focus-visible:after:ring-[3px] focus-visible:after:ring-inherit"
                   >
-                    {dayTitle(event.kind, event.title, t)}
+                    {name}
                   </Link>
                 ) : (
-                  <p className="text-sm leading-5 font-medium">
-                    {dayTitle(event.kind, event.title, t)}
-                  </p>
+                  <p className="text-sm leading-5 font-medium">{name}</p>
                 )}
                 {meta ? (
                   <p className="text-muted-foreground mt-0.5 text-xs">{meta}</p>

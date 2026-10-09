@@ -39,9 +39,10 @@ export interface ItemWords {
   /** Its second line (a dose, a count), or null when none. */
   sub: string | null;
   /**
-   * A category set apart from the name (a life event's "Home"): shown as a
-   * chip or on its own muted line, never run on after the name, where
-   * "Moved into a bigger flat Home" read as one title.
+   * A category or a count set apart from the name (a life event's "Home", a
+   * lab day's "5 lab values"): shown as a chip, on its own muted line or in
+   * brackets, never run on after the name, where "Moved into a bigger flat
+   * Home" and "Hemoglobin, LDL 5 lab values" read as one title.
    */
   tag?: string | null;
 }
@@ -108,9 +109,11 @@ export function makeItemWords(
       }
       case "labDay": {
         const count = Number(item.sub);
+        // The label lists analyte names; the count is set apart from them.
         return {
           label: item.label,
-          sub:
+          sub: null,
+          tag:
             Number.isInteger(count) && count > 0
               ? tCount("timeline.item.labValues", count)
               : null,
@@ -130,17 +133,22 @@ export function makeItemWords(
 
 /**
  * The line an item reads as: its label, its second line (a dose change's
- * dose is drawn as its own mark, so it is left out here) and the
- * unknown-start note in brackets: "Ramipril 5 mg (start unknown)". The
- * parts are set apart by a space, never by a separator glyph.
+ * dose is drawn as its own mark, so it is left out here), its tag and the
+ * unknown-start note in brackets: "Ramipril 5 mg (start unknown)",
+ * "Hemoglobin, LDL (5 lab values)". The parts are set apart by a space,
+ * never by a separator glyph.
  */
 export function itemLine(
   item: TimelineItem,
   words: ItemWordsFn,
   startMissing: string,
 ): string {
-  const { label, sub } = words(item);
-  const base = [label, item.kind === "doseChange" ? null : sub]
+  const { label, sub, tag } = words(item);
+  const base = [
+    label,
+    item.kind === "doseChange" ? null : sub,
+    tag ? `(${tag})` : null,
+  ]
     .filter(Boolean)
     .join(" ");
   return item.startKnown || !startMissing ? base : `${base} (${startMissing})`;

@@ -875,8 +875,8 @@ export function PointMark({
   intl: string;
 }) {
   const { x, y, item, shape } = point;
-  const { label, sub } = useItemWords()(item);
-  const title = `${[label, sub].filter(Boolean).join(" ")}: ${formatAtPrecision(item.start, item.precision, intl)}`;
+  const { label, sub, tag } = useItemWords()(item);
+  const title = `${[label, sub, tag ? `(${tag})` : null].filter(Boolean).join(" ")}: ${formatAtPrecision(item.start, item.precision, intl)}`;
   let glyph: React.ReactNode;
   switch (shape) {
     case "diamond":

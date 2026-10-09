@@ -151,8 +151,8 @@ export function SelectionBar({
         const { label, sub, tag } = words(item);
         const name = [label, sub].filter(Boolean).join(" ");
         const text = `${name}, ${when}`;
-        // A life event's category is a chip of its own inside the entry,
-        // never run on after its title.
+        // A life event's category and a lab day's count are a chip of
+        // their own inside the entry, never run on after its title.
         const category = tag ? (
           <span
             data-slot="timeline-selection-tag"
