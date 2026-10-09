@@ -702,7 +702,8 @@
       "body": "Sans copie de la clé, tes données ne peuvent pas être récupérées après une réinstallation. Ça prend une minute.",
       "action": "Ouvrir l'étape"
     },
-    "quickAddSymptom": "Noter un symptôme"
+    "quickAddSymptom": "Noter un symptôme",
+    "todayCardVisible": "Afficher la carte du haut"
   },
   "measurements": {
     "title": "Mesures",

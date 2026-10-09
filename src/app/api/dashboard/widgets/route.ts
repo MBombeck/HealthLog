@@ -170,6 +170,10 @@ const layoutSchema = z.object({
   // Same preserve-when-absent contract as `comparisonBaseline`; the
   // resolver drops unknown stored values back to "score" on read.
   hero: z.enum(HERO_PRIMARY_CONTENTS).optional(),
+  // v1.42 — whether the dashboard shows its top card. Same additive,
+  // preserve-when-absent contract as `hero`; the default (shown) is omitted
+  // from storage.
+  todayCardVisible: z.boolean().optional(),
   // v1.32.16 (issue #581) — the optimistic-concurrency base token used to
   // live here. v1.32.21 (R5a) moved it to the shared `takeBaseToken` helper,
   // which strips it BEFORE this parse: the token is transport, not a layout
@@ -503,6 +507,8 @@ export const DELETE = apiHandler(async () => {
         ...existingLayout,
         widgets: DEFAULT_DASHBOARD_LAYOUT.widgets,
         enabledHeroItemKinds: DEFAULT_DASHBOARD_LAYOUT.enabledHeroItemKinds,
+        // A reset brings a hidden top card back.
+        todayCardVisible: DEFAULT_DASHBOARD_LAYOUT.todayCardVisible,
       });
 
       const updated = await tx.user.update({

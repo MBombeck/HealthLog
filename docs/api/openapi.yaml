@@ -32820,6 +32820,11 @@ components:
           enum:
             - score
             - reminders
+        todayCardVisible:
+          description: v1.42 — whether the dashboard shows its top card (the Today card above the tiles). Missing resolves to
+            `true`; only an explicit `false` hides it. The stored default is omitted. A layout reset (DELETE) shows it
+            again. Additive.
+          type: boolean
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
@@ -76275,6 +76280,11 @@ components:
           enum:
             - score
             - reminders
+        todayCardVisible:
+          description: v1.42 — whether the dashboard shows its top card (the Today card above the tiles). Missing resolves to
+            `true`; only an explicit `false` hides it. The stored default is omitted. A layout reset (DELETE) shows it
+            again. Additive.
+          type: boolean
         updatedAt:
           description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
             `baseUpdatedAt` on the next write. Opaque."
@@ -76532,6 +76542,11 @@ components:
           enum:
             - score
             - reminders
+        todayCardVisible:
+          description: v1.42 — whether the dashboard shows its top card (the Today card above the tiles). Missing resolves to
+            `true`; only an explicit `false` hides it. The stored default is omitted. A layout reset (DELETE) shows it
+            again. Additive.
+          type: boolean
         updatedAt:
           description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
             `baseUpdatedAt` on the next write. Opaque."

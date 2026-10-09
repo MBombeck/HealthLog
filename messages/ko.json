@@ -702,7 +702,8 @@
       "body": "키 사본이 없으면 다시 설치한 뒤 데이터를 복구할 수 없습니다. 1분이면 됩니다.",
       "action": "단계 열기"
     },
-    "quickAddSymptom": "증상 기록"
+    "quickAddSymptom": "증상 기록",
+    "todayCardVisible": "상단 카드 표시"
   },
   "measurements": {
     "title": "측정",

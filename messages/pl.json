@@ -702,7 +702,8 @@
       "body": "Bez kopii klucza Twoich danych nie da się odzyskać po ponownej instalacji. To zajmie minutę.",
       "action": "Otwórz krok"
     },
-    "quickAddSymptom": "Zapisz objaw"
+    "quickAddSymptom": "Zapisz objaw",
+    "todayCardVisible": "Pokaż górną kartę"
   },
   "measurements": {
     "title": "Pomiary",

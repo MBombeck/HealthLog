@@ -702,7 +702,8 @@
       "body": "Without a copy of the key, your data cannot be recovered after a reinstall. It takes a minute.",
       "action": "Open the step"
     },
-    "quickAddSymptom": "Log symptom"
+    "quickAddSymptom": "Log symptom",
+    "todayCardVisible": "Show the top card"
   },
   "measurements": {
     "title": "Measurements",

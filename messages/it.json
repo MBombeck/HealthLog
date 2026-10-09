@@ -702,7 +702,8 @@
       "body": "Senza una copia della chiave, i tuoi dati non si possono recuperare dopo una reinstallazione. Ci vuole un minuto.",
       "action": "Apri il passaggio"
     },
-    "quickAddSymptom": "Registra sintomo"
+    "quickAddSymptom": "Registra sintomo",
+    "todayCardVisible": "Mostra la scheda in alto"
   },
   "measurements": {
     "title": "Misurazioni",

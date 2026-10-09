@@ -621,3 +621,44 @@ describe("<DashboardLayoutSection> — hero content", () => {
     expect(html).toContain("Notification settings are managed separately.");
   });
 });
+
+describe("<DashboardLayoutSection> — the top card switch", () => {
+  function control(html: string): string {
+    const match = html.match(/<button[^>]*data-slot="today-card-switch"[^>]*>/);
+    expect(match).not.toBeNull();
+    return match![0];
+  }
+
+  it("offers one labelled switch, on by default", () => {
+    const html = render(<DashboardLayoutSection id="dashboard-layout" />);
+    expect(html.match(/data-slot="today-card-switch"/g)).toHaveLength(1);
+    expect(control(html)).toContain('data-state="checked"');
+    const id = control(html).match(/id="([^"]+)"/)![1];
+    expect(html).toContain(`for="${id}"`);
+    expect(html).toContain("Show the top card");
+    expect(html).toContain("Using default layout");
+  });
+
+  it("reads a layout that predates the field as shown", () => {
+    const legacy: DashboardLayout = { ...DEFAULT_DASHBOARD_LAYOUT };
+    delete legacy.todayCardVisible;
+    queryState.layout = legacy;
+    const html = render(<DashboardLayoutSection id="dashboard-layout" />);
+    expect(control(html)).toContain('data-state="checked"');
+  });
+
+  it("shows a hidden top card as off, and as a customised layout", () => {
+    queryState.layout = {
+      ...DEFAULT_DASHBOARD_LAYOUT,
+      todayCardVisible: false,
+    };
+    const html = render(<DashboardLayoutSection id="dashboard-layout" />);
+    expect(control(html)).toContain('data-state="unchecked"');
+    expect(html).toContain("Custom layout active");
+  });
+
+  it("labels it in German", () => {
+    const html = render(<DashboardLayoutSection id="dashboard-layout" />, "de");
+    expect(html).toContain("Obere Karte anzeigen");
+  });
+});

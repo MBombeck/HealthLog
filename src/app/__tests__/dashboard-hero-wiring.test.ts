@@ -42,6 +42,17 @@ describe("dashboard hero — page wiring", () => {
     );
   });
 
+  it("hides the top card, its skeleton and its error card only on an explicit false", () => {
+    // One gate in front of the whole three-way branch, so switching the card
+    // off leaves no reserve and no retry card where it stood.
+    const gate = src.indexOf("layout.todayCardVisible === false ? null :");
+    expect(gate).toBeGreaterThan(-1);
+    const hero = src.indexOf("<TodayHero", gate);
+    const skeleton = src.indexOf("<TodayHeroSkeleton", gate);
+    expect(hero).toBeGreaterThan(gate);
+    expect(skeleton).toBeGreaterThan(hero);
+  });
+
   it("no longer references the retired legacy hero", () => {
     expect(src).not.toContain("DashboardHero");
     expect(src).not.toContain("DashboardHeroSkeleton");

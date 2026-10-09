@@ -702,7 +702,8 @@
       "body": "Ohne eine Kopie des Schlüssels lassen sich deine Daten nach einer Neuinstallation nicht wiederherstellen. Es dauert eine Minute.",
       "action": "Zum Schritt"
     },
-    "quickAddSymptom": "Symptom erfassen"
+    "quickAddSymptom": "Symptom erfassen",
+    "todayCardVisible": "Obere Karte anzeigen"
   },
   "measurements": {
     "title": "Messungen",

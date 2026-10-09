@@ -702,7 +702,8 @@
       "body": "Sin una copia de la clave, tus datos no se pueden recuperar tras una reinstalación. Es cuestión de un minuto.",
       "action": "Abrir el paso"
     },
-    "quickAddSymptom": "Registrar síntoma"
+    "quickAddSymptom": "Registrar síntoma",
+    "todayCardVisible": "Mostrar la tarjeta superior"
   },
   "measurements": {
     "title": "Mediciones",

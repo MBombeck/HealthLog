@@ -251,6 +251,19 @@ describe("admitAccountSettings", () => {
     expect(coachReasoningLevel(parseCoachPrefs(restored))).toBe("high");
   });
 
+  it("restores a hidden dashboard top card with the rest of the layout", () => {
+    const layout = {
+      version: 1,
+      widgets: [{ id: "weight", visible: true, tileVisible: true, order: 0 }],
+      todayCardVisible: false,
+    };
+    const restored = admitAccountSettings(
+      JSON.parse(JSON.stringify({ dashboardWidgetsJson: layout })),
+      ctx,
+    ).data.dashboardWidgetsJson;
+    expect(restored).toEqual(layout);
+  });
+
   it("writes a database null for a JSON setting the file clears", () => {
     expect(
       admitAccountSettings({ dashboardWidgetsJson: null }, ctx).data
