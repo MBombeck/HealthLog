@@ -9,6 +9,11 @@ import {
   readFailingQueues,
 } from "@/lib/jobs/job-failures";
 import { readFileSync } from "node:fs";
+import {
+  geoLookupMode,
+  geoProviderChosen,
+  resolveGeoProviderHost,
+} from "@/lib/geo";
 
 // Build timestamp (set at build time via next.config)
 const BUILD_TIME = process.env.BUILD_TIMESTAMP || new Date().toISOString();
@@ -108,6 +113,13 @@ export const GET = apiHandler(async () => {
           }
         : null,
       webPush: webPushConfigured ? { configured: true } : null,
+    },
+    // How login IPs are placed on this host. Admin-only: the public
+    // `/api/version` keeps just `offlineGeoEnabled` and `geoProviderHost`.
+    geo: {
+      lookup: geoLookupMode(),
+      providerChosen: geoProviderChosen(),
+      providerHost: resolveGeoProviderHost(),
     },
   });
 });

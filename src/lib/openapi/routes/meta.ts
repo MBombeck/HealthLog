@@ -239,16 +239,6 @@ const versionResponse = z
       .describe(
         "Host of the online geolocation provider the fallback would use, so an operator surface names the real one instead of assuming the default.",
       ),
-    geoLookup: z
-      .enum(["offline", "online", "off"])
-      .describe(
-        "How login IPs are placed (since v1.42): `offline` from the GeoLite2 databases, `online` by the provider above, `off` not at all (`IP_GEO_LOOKUP_DISABLED`).",
-      ),
-    geoProviderChosen: z
-      .boolean()
-      .describe(
-        "The operator named the online provider in `IP_GEO_LOOKUP_URL` (since v1.42). False while the default is in use.",
-      ),
   })
   .meta({
     id: "VersionResponse",

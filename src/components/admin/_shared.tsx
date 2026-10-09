@@ -81,6 +81,8 @@ export interface SystemStatus {
     glitchtip: { configured: boolean; enabled: boolean } | null;
     webPush: { configured: boolean } | null;
   };
+  /** Login-IP geolocation state (admin-only since v1.42). */
+  geo: AdminGeoStatus;
 }
 
 export interface AdminSettings {
@@ -590,10 +592,16 @@ export interface PublicVersion {
   // offline tier is absent (host of IP_GEO_LOOKUP_URL, default ipwho.is).
   // Optional so legacy /api/version responses still satisfy the shape.
   geoProviderHost?: string;
-  /** v1.42 — `offline`, `online` or `off` (IP_GEO_LOOKUP_DISABLED). */
-  geoLookup?: "offline" | "online" | "off";
-  /** v1.42 — the operator named the provider in IP_GEO_LOOKUP_URL. */
-  geoProviderChosen?: boolean;
+}
+
+/** How login IPs are placed on this host, as `/api/admin/status` reports it. */
+export interface AdminGeoStatus {
+  /** `offline`, `online` or `off` (IP_GEO_LOOKUP_DISABLED). */
+  lookup: "offline" | "online" | "off";
+  /** The operator named the provider in IP_GEO_LOOKUP_URL. */
+  providerChosen: boolean;
+  /** Host of the online provider (IP_GEO_LOOKUP_URL, default ipwho.is). */
+  providerHost: string;
 }
 
 /**
@@ -602,15 +610,15 @@ export interface PublicVersion {
  * warns, because it sends every login IP to a third party nobody chose.
  */
 export function geoLookupState(
-  version: PublicVersion,
+  geo: AdminGeoStatus,
 ): "offline" | "off" | "chosen" | "default" {
-  if (version.offlineGeoEnabled) return "offline";
-  if (version.geoLookup === "off") return "off";
-  return version.geoProviderChosen ? "chosen" : "default";
+  if (geo.lookup === "offline") return "offline";
+  if (geo.lookup === "off") return "off";
+  return geo.providerChosen ? "chosen" : "default";
 }
 
-/** Shared `/api/version` reader — the system-status section + overview
- * summary both surface app version / build SHA / offline-geo state. */
+/** Shared `/api/version` reader for the version tile (version, build SHA,
+ * update check). The geo state comes from `/api/admin/status`. */
 export function usePublicVersion() {
   return useQuery({
     queryKey: queryKeys.publicVersion(),
