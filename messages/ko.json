@@ -12554,6 +12554,52 @@
       "body": "제목과 메모가 사라져요."
     }
   },
+  "palette": {
+    "open": "검색…",
+    "openLabel": "페이지, 설정, 작업 검색",
+    "title": "검색",
+    "description": "페이지, 설정, 모듈 또는 작업을 찾습니다.",
+    "placeholder": "페이지, 설정, 모듈 검색…",
+    "results": "결과",
+    "noResults": "“{query}”에 대한 결과가 없습니다.",
+    "moduleOn": "켜짐",
+    "moduleOff": "꺼짐",
+    "hintMove": "이동",
+    "hintOpen": "열기",
+    "hintClose": "닫기",
+    "groups": {
+      "recent": "최근",
+      "pages": "페이지",
+      "insights": "인사이트",
+      "settings": "설정",
+      "modules": "모듈",
+      "actions": "작업"
+    },
+    "actions": {
+      "capture": "새 항목",
+      "coach": "코치에게 묻기",
+      "backup": "백업 만들기",
+      "today": "오늘 열기",
+      "shortcuts": "키보드 단축키 보기"
+    }
+  },
+  "shortcuts": {
+    "title": "키보드 단축키",
+    "description": "입력란에 입력하는 중이 아니면 앱 어디에서나 작동하는 키입니다.",
+    "menuEntry": "키보드 단축키",
+    "then": "다음",
+    "search": "검색",
+    "help": "이 목록 보기",
+    "close": "대화 상자나 패널 닫기",
+    "previousDay": "이전 날",
+    "nextDay": "다음 날",
+    "dayHint": "하루가 열려 있을 때.",
+    "groups": {
+      "navigation": "탐색",
+      "actions": "작업",
+      "day": "하루"
+    }
+  },
   "aboutPage": {
     "eyebrow": "정보",
     "title": "HealthLog 정보",

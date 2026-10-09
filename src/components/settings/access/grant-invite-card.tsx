@@ -162,6 +162,7 @@ export function GrantInviteCard() {
   return (
     <SettingsCard data-slot="grant-invite-card">
       <SettingsCardHeader
+        anchor="share-invite"
         icon={UserPlus}
         title={t("recordSharing.invite.title")}
         description={t("recordSharing.invite.description")}

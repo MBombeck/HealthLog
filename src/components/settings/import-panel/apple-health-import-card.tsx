@@ -396,6 +396,7 @@ export function AppleHealthImportCard() {
   return (
     <ImportCardShell
       testId="import-card-apple-health"
+      anchor="import-apple-health"
       icon={Upload}
       title={t("settings.sections.export.import.appleHealth.title")}
       description={t("settings.sections.export.import.appleHealth.description")}

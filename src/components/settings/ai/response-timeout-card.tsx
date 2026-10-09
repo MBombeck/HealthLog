@@ -105,6 +105,7 @@ export function ResponseTimeoutCard({
   return (
     <SettingsCard as="form" onSubmit={submit} noValidate>
       <SettingsCardHeader
+        anchor="response-timeout"
         icon={Timer}
         title={t("settings.ai.responseTimeoutHeading")}
       />

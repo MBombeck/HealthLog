@@ -34,51 +34,20 @@
  */
 
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import {
-  Activity,
-  Award,
-  Blocks,
-  Brain,
-  CalendarHeart,
-  Droplet,
-  CloudSun,
-  Dumbbell,
-  FileScan,
-  FileText,
-  History,
-  MessageCircleHeart,
-  Leaf,
-  Moon,
-  Plug,
-  Pill,
-  Smile,
-  Sparkles,
-  Syringe,
-  TestTube,
-  Thermometer,
-  type LucideIcon,
-} from "lucide-react";
+import { Blocks } from "lucide-react";
 
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
+import { MODULE_ICONS } from "@/components/settings/module-icons";
 import { ModuleToggleRow } from "@/components/settings/module-toggle-row";
 import { TimelineReadinessSheet } from "@/components/timeline/readiness-sheet.lazy";
 import { useAuth } from "@/hooks/use-auth";
 import { useAiCapability } from "@/hooks/use-ai-capability";
+import {
+  useModuleEnabledState,
+  useModuleToggle,
+} from "@/hooks/use-module-toggle";
 import { useTranslations } from "@/lib/i18n/context";
-import { apiPatch } from "@/lib/api/api-fetch";
-import {
-  readUpdatedAtToken,
-  withBaseToken,
-  isConflict,
-} from "@/lib/api/optimistic-token";
-import {
-  aiInputDependentKeys,
-  invalidateKeys,
-  queryKeys,
-} from "@/lib/query-keys";
 import {
   MODULE_REGISTRY,
   isCodeDisabledModule,
@@ -86,129 +55,23 @@ import {
   type ModuleKey,
 } from "@/lib/modules/registry";
 
-/** Shape of the `/api/auth/me/modules` PATCH response (resolved map + token). */
-type ModulesPatchResult = {
-  modules: Partial<Record<ModuleKey, boolean>>;
-  updatedAt?: string;
-};
-
-/** Neutral Lucide glyph per toggleable module. */
-const MODULE_ICONS: Record<ModuleKey, LucideIcon> = {
-  cycle: CalendarHeart,
-  mood: Smile,
-  sleep: Moon,
-  glucose: Droplet,
-  workouts: Dumbbell,
-  recovery: Activity,
-  labs: TestTube,
-  illness: Thermometer,
-  achievements: Award,
-  coach: MessageCircleHeart,
-  insights: Sparkles,
-  // v1.18.1 (D3) — medications graduated from CORE to a toggleable module.
-  medications: Pill,
-  doctorReport: FileText,
-  // v1.25.0 — the environmental-context module (opt-in weather/daylight feed).
-  environment: CloudSun,
-  // v1.22.0 — the remote MCP endpoint (opt-in connectivity module).
-  mcp: Plug,
-  // v1.25.0 (W-DOCS-IN) — inbound clinical documents (opt-in).
-  inboundDocuments: FileScan,
-  // v1.25.0 — opt-in mental-health screeners (PHQ-9 / GAD-7).
-  mentalHealth: Brain,
-  // v1.28 — opt-in micronutrient-intake sync (Apple Health day totals).
-  nutrients: Leaf,
-  // v1.38.0 — the immunization log.
-  vaccinations: Syringe,
-  // v1.42 — the life timeline (opt-in).
-  timeline: History,
-};
-
 export function ModulesSection() {
   const { t } = useTranslations();
   const { user } = useAuth();
   const coach = useAiCapability("coach");
-  const queryClient = useQueryClient();
   // v1.42 (#613) — switching the timeline on opens its readiness inventory:
   // an honest look at what it can already show, with one link per gap,
   // before the person goes there. It blocks nothing.
   const [readinessOpen, setReadinessOpen] = useState(false);
 
-  const modules = user?.modules ?? {};
   const moduleAvailability = user?.moduleAvailability ?? {};
 
-  const toggle = useMutation({
-    // Factory-routed; the in-repo eslint rule forbids a bare literal here.
-    mutationKey: queryKeys.modulesPrefs(),
-    mutationFn: async (vars: { key: ModuleKey; enabled: boolean }) => {
-      // The delegated modules keep a single source of truth: their switch
-      // drives the canonical column, not the `modulePreferencesJson`
-      // allowlist (the gate ignores the blob for these two keys). Reuse the
-      // existing per-column endpoints rather than inventing a new one.
-      const delegate = moduleDelegatesTo(vars.key);
-      if (delegate === "coach") {
-        // The stored column is `disableCoach` — the inverse of "on".
-        return apiPatch("/api/auth/me/disable-coach", {
-          disableCoach: !vars.enabled,
-        });
-      }
-      if (delegate === "cycle") {
-        // `enabled` maps straight onto `cycleTrackingEnabled`.
-        return apiPatch("/api/auth/me/cycle-prefs", { enabled: vars.enabled });
-      }
-      // DISABLED allowlist: send only the single key the user flipped.
-      //
-      // v1.32.22 (R5b) — echo the optimistic-concurrency token so an
-      // interleaved modules PATCH (another tab, the iOS client) 409s instead of
-      // clobbering. The token rides on `User.updatedAt`; the module map itself
-      // rides on `/auth/me`, and no dedicated GET populates the token, so it is
-      // seeded from each write response below and read back here at mutate
-      // time. The first write of a session is tokenless — the server's
-      // backward-compatible unconditional arm.
-      const result = await apiPatch<ModulesPatchResult>(
-        "/api/auth/me/modules",
-        withBaseToken(
-          { [vars.key]: vars.enabled },
-          readUpdatedAtToken(queryClient, queryKeys.modulesPrefs()),
-        ),
-      );
-      queryClient.setQueryData<{ updatedAt?: string }>(
-        queryKeys.modulesPrefs(),
-        { updatedAt: result.updatedAt },
-      );
-      return result;
-    },
-    onSuccess: (_data, vars) => {
-      // Re-gate every surface that reads the module map off /auth/me: nav,
-      // Insights pills, dashboard tiles, quick-add, search. The two delegated
-      // keys also feed dedicated settings surfaces, so evict their reads too
-      // (mirrors the canonical Coach / cycle cards' own invalidation).
-      // The module map is also an input of the AI capability answer.
-      void invalidateKeys(queryClient, aiInputDependentKeys);
-      if (moduleDelegatesTo(vars.key) === "cycle") {
-        void queryClient.invalidateQueries({
-          queryKey: queryKeys.cyclePrefs(),
-        });
-        void queryClient.invalidateQueries({ queryKey: queryKeys.cycle() });
-      }
-      toast.success(t("settings.sections.modules.saved"));
+  const toggle = useModuleToggle({
+    onToggled: (vars) => {
       if (vars.key === "timeline" && vars.enabled) setReadinessOpen(true);
     },
-    onError: (err) => {
-      // v1.32.22 (R5b) — instant-write disposition: a 409 means the module map
-      // advanced since this switch was based (another tab / the iOS client
-      // wrote in between). Drop the now-stale seeded token and refetch /auth/me
-      // so the switch snaps back to server truth, then nudge — nothing was
-      // clobbered. A retry re-seeds a fresh token from its own response.
-      if (isConflict(err)) {
-        queryClient.removeQueries({ queryKey: queryKeys.modulesPrefs() });
-        void queryClient.invalidateQueries({ queryKey: queryKeys.authMe() });
-        toast.message(t("common.conflictReloaded"));
-        return;
-      }
-      toast.error(t("settings.sections.modules.error"));
-    },
   });
+  const isEnabled = useModuleEnabledState();
 
   // v1.18.6 (W9) — the visible heading + subtitle now come from the shared
   // `<SettingsSectionFrame>` (the former muted-`<p>` intro folded into the
@@ -233,19 +96,9 @@ export function ModulesSection() {
             const def = MODULE_REGISTRY[key];
             const delegate = moduleDelegatesTo(key);
 
-            // Enabled-state per key. Delegated modules read their canonical
-            // per-user state, NOT the `modulePreferencesJson` allowlist the
-            // gate ignores for them: coach ← `!disableCoach`, cycle ← the
-            // resolved `cycleTrackingEnabled`. Every other module is
-            // default-on unless explicitly `false`.
-            let enabled: boolean;
-            if (delegate === "coach") {
-              enabled = !(user?.disableCoach ?? false);
-            } else if (delegate === "cycle") {
-              enabled = user?.cycleTrackingEnabled ?? false;
-            } else {
-              enabled = modules[key] !== false;
-            }
+            // Enabled-state per key: delegated modules read their canonical
+            // per-user state (see `useModuleEnabledState`).
+            const enabled = isEnabled(key);
 
             // Operator precedence. A per-user toggle can never re-enable a
             // module the operator turned off server-wide, so the switch goes

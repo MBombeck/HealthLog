@@ -95,6 +95,7 @@ export function PasswordCard() {
           used to break through the card's right border on a narrow phone. */}
       <SettingsCard data-slot="settings-password-card">
         <SettingsCardHeader
+          anchor="password"
           icon={Shield}
           title={t("settings.passwordTitle")}
           description={t("settings.changePasswordDescription")}

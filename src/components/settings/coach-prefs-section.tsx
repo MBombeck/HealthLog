@@ -154,6 +154,7 @@ export function CoachPrefsSection({ isAuthenticated }: CoachPrefsSectionProps) {
   return (
     <SettingsCard data-slot="coach-prefs-section">
       <SettingsCardHeader
+        anchor="coach-preferences"
         icon={SlidersHorizontal}
         title={t("insights.coach.settingsTitle")}
         description={t("insights.coach.settingsDescription")}

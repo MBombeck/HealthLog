@@ -383,7 +383,11 @@ export function AccountSection() {
     // spinner (reference: admin/coach-feedback-section).
     return (
       <SettingsCard>
-        <SettingsCardHeader icon={User} title={t("settings.profile")} />
+        <SettingsCardHeader
+          anchor="profile"
+          icon={User}
+          title={t("settings.profile")}
+        />
         <div className="flex items-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
           <span className="text-muted-foreground text-sm">
@@ -714,6 +718,7 @@ export function DisplayPreferencesCard({
   return (
     <SettingsCard data-testid="settings-display-card">
       <SettingsCardHeader
+        anchor="display"
         icon={Languages}
         title={t("settings.displayCard.title")}
         description={t("settings.displayCard.description")}

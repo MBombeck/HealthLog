@@ -212,6 +212,7 @@ export function DoseHistoryImportCard() {
   return (
     <ImportCardShell
       testId="import-card-dose-history"
+      anchor="import-dose-history"
       icon={PillBottle}
       title={t("settings.sections.export.import.doseHistory.title")}
       description={t("settings.sections.export.import.doseHistory.description")}

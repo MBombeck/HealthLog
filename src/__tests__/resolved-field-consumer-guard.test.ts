@@ -144,8 +144,8 @@ const RULES: ResolvedFieldRule[] = [
     allow: {
       "src/components/settings/ai/disable-coach-card.tsx":
         "the Activate-Coach switch: it edits the stored opt-out, so its checked state is that value",
-      "src/components/settings/modules-section.tsx":
-        "the module toggle row for the Coach: its checked state is the stored opt-out it writes",
+      "src/hooks/use-module-toggle.ts":
+        "the module switch for the Coach (Settings hub and command palette): its checked state is the stored opt-out it writes",
       "src/components/settings/managed-record-settings-section.tsx":
         "the managed record's own settings form: the field's default is the record's stored opt-out",
       "src/hooks/use-auth.ts":
@@ -169,6 +169,8 @@ const RULES: ResolvedFieldRule[] = [
     allow: {
       "src/components/settings/modules-section.tsx":
         "the Modules hub: it shows the operator-off state of each toggle row, which is what `moduleAvailability` is published for",
+      "src/components/command-palette/use-palette-index.ts":
+        "the command palette's module switches: like the Modules hub it leaves out a switch the operator turned off, which is what `moduleAvailability` is published for",
       "src/hooks/use-auth.ts":
         "the `/me` payload normaliser: types and coerces the field, decides nothing",
     },

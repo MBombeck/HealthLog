@@ -86,6 +86,7 @@ function MeasurementTokensCard() {
       endpoint="/api/tokens/measurements"
       icon={Upload}
       slot="settings-measurements-token-created"
+      anchor="measurements-token"
       copy={{
         title: t("settings.measurementsToken.title"),
         description: t("settings.measurementsToken.description"),
@@ -110,6 +111,7 @@ function WorkoutTokensCard() {
       endpoint="/api/tokens/workouts"
       icon={Activity}
       slot="settings-workouts-token-created"
+      anchor="workouts-token"
       copy={{
         title: t("settings.workoutsToken.title"),
         description: t("settings.workoutsToken.description"),
@@ -134,6 +136,7 @@ function DocumentTokensCard() {
       endpoint="/api/tokens/documents"
       icon={FileUp}
       slot="settings-documents-token-created"
+      anchor="documents-token"
       copy={{
         title: t("settings.documentsToken.title"),
         description: t("settings.documentsToken.description"),
@@ -151,8 +154,11 @@ function IngestTokenCard({
   endpoint,
   icon,
   slot,
+  anchor,
   copy,
 }: {
+  /** Deep-link anchor for the card (`/settings/api#<anchor>`). */
+  anchor: string;
   endpoint:
     | "/api/tokens/measurements"
     | "/api/tokens/workouts"
@@ -232,6 +238,7 @@ function IngestTokenCard({
     <SettingsCard>
       {recentProof.dialog}
       <SettingsCardHeader
+        anchor={anchor}
         icon={icon}
         title={copy.title}
         description={copy.description}
@@ -347,6 +354,7 @@ function ApiEndpointsCard() {
   return (
     <SettingsCard>
       <SettingsCardHeader
+        anchor="api-endpoints"
         icon={Key}
         title={t("settings.apiEndpointsTitle")}
         description={t("settings.apiEndpointsDescription")}
@@ -469,6 +477,7 @@ function ApiTokensCard() {
   return (
     <SettingsCard>
       <SettingsCardHeader
+        anchor="api-tokens"
         icon={Key}
         title={t("settings.apiTokens")}
         description={t("settings.apiTokensDescription")}

@@ -128,6 +128,7 @@ export function NotificationStatusCard() {
     return (
       <SettingsCard>
         <SettingsCardHeader
+          anchor="delivery-status"
           icon={Bell}
           title={t("settings.notificationStatus.title")}
           description={t("settings.notificationStatus.description")}

@@ -298,6 +298,7 @@ export function EnvironmentSection() {
       {/* Home location */}
       <SettingsCard>
         <SettingsCardHeader
+          anchor="home-location"
           icon={MapPin}
           title={t("settings.sections.environment.home.title")}
         />
@@ -387,6 +388,7 @@ export function EnvironmentSection() {
       {/* Travel overrides */}
       <SettingsCard>
         <SettingsCardHeader
+          anchor="travel"
           icon={Plane}
           title={t("settings.sections.environment.travel.title")}
         />
@@ -540,6 +542,7 @@ export function EnvironmentSection() {
       {/* Backfill */}
       <SettingsCard>
         <SettingsCardHeader
+          anchor="weather-backfill"
           icon={CloudSun}
           title={t("settings.sections.environment.backfill.title")}
         />
@@ -614,6 +617,7 @@ export function EnvironmentSection() {
       {data && (
         <SettingsCard data-testid="environment-air-quality">
           <SettingsCardHeader
+            anchor="air-quality"
             icon={Wind}
             title={t("settings.sections.environment.airQuality.title")}
             status={

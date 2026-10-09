@@ -46,6 +46,7 @@ export function RecordActivityCard() {
   return (
     <SettingsCard data-slot="record-activity-card">
       <SettingsCardHeader
+        anchor="record-activity"
         icon={History}
         title={t("recordSharing.activity.title")}
         description={t("recordSharing.activity.description")}

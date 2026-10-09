@@ -9,6 +9,7 @@ import {
   Shield,
   Sun,
 } from "lucide-react";
+import { CommandPaletteTrigger } from "@/components/command-palette/command-palette-trigger";
 import { AccountSwitcherMenuItems } from "@/components/layout/account-switcher-menu";
 import {
   isSettingsUtilityDestination,
@@ -89,7 +90,9 @@ export function TopBar() {
       // sidebar logo band reads too, so the two borders draw one
       // continuous line. Never restate a height here.
       className={cn(
-        "bg-card/80 border-border sticky top-0 z-40 flex items-center justify-between px-4 backdrop-blur-md md:px-6",
+        // `@container/topbar`: the search control sizes to the bar's own
+        // width, which a docked side panel narrows without the window moving.
+        "bg-card/80 border-border @container/topbar sticky top-0 z-40 flex items-center justify-between px-4 backdrop-blur-md md:px-6",
         SHELL_HEADER_BAND,
       )}
       // The status-bar inset of the installed app is the shell's
@@ -109,6 +112,11 @@ export function TopBar() {
           trail); otherwise an empty spacer. User controls are in the
           sidebar. */}
       <TopBarContextOutlet className="shell-desktop:flex hidden min-w-0 flex-1 items-center" />
+
+      {/* v1.42 — the command palette's door, on every signed-in page: a
+          search-field button where the bar has room, a magnifier where it
+          has not (and on a phone). `ml-auto` keeps it at the trailing end. */}
+      <CommandPaletteTrigger />
 
       {/* Page-owned actions (the Coach's conversations toggle). `ml-auto`
           keeps them at the trailing edge, right before the mobile avatar

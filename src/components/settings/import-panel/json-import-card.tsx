@@ -128,6 +128,7 @@ export function JsonImportCard() {
   return (
     <ImportCardShell
       testId="import-card-json"
+      anchor="import-json"
       icon={FileJson}
       title={t("settings.sections.export.import.json.title")}
       description={t("settings.sections.export.import.json.description")}

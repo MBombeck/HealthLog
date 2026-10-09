@@ -12554,6 +12554,52 @@
       "body": "Titolo e nota non ci saranno più."
     }
   },
+  "palette": {
+    "open": "Cerca…",
+    "openLabel": "Cerca pagine, impostazioni e azioni",
+    "title": "Cerca",
+    "description": "Trova una pagina, un’impostazione, un modulo o un’azione.",
+    "placeholder": "Cerca pagine, impostazioni, moduli…",
+    "results": "Risultati",
+    "noResults": "Nessun risultato per «{query}».",
+    "moduleOn": "Attivo",
+    "moduleOff": "Disattivo",
+    "hintMove": "Sposta",
+    "hintOpen": "Apri",
+    "hintClose": "Chiudi",
+    "groups": {
+      "recent": "Recenti",
+      "pages": "Pagine",
+      "insights": "Insights",
+      "settings": "Impostazioni",
+      "modules": "Moduli",
+      "actions": "Azioni"
+    },
+    "actions": {
+      "capture": "Nuova voce",
+      "coach": "Chiedi al Coach",
+      "backup": "Crea un backup",
+      "today": "Apri oggi",
+      "shortcuts": "Mostra scorciatoie da tastiera"
+    }
+  },
+  "shortcuts": {
+    "title": "Scorciatoie da tastiera",
+    "description": "Tasti che funzionano ovunque nell’app, tranne mentre scrivi in un campo.",
+    "menuEntry": "Scorciatoie da tastiera",
+    "then": "poi",
+    "search": "Cerca",
+    "help": "Mostra questo elenco",
+    "close": "Chiudi una finestra o un pannello",
+    "previousDay": "Giorno precedente",
+    "nextDay": "Giorno successivo",
+    "dayHint": "Quando un giorno è aperto.",
+    "groups": {
+      "navigation": "Navigazione",
+      "actions": "Azioni",
+      "day": "Giorno"
+    }
+  },
   "aboutPage": {
     "eyebrow": "Informazioni",
     "title": "Informazioni su HealthLog",

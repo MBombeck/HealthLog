@@ -382,7 +382,6 @@ const PINNED_AFFORDANCES: Record<
     "text-success": 4,
     "toast.success": 2,
   },
-  "src/components/settings/modules-section.tsx": { "toast.success": 1 },
   "src/components/settings/notification-status-card.tsx": {
     CheckCircle2: 2,
     "text-success": 1,
