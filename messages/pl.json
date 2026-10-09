@@ -12298,7 +12298,7 @@
     "title": "Oś czasu",
     "subtitle": "Co i kiedy się działo, obok Twoich wartości.",
     "standing": "Stałe",
-    "startMissing": "Brak daty rozpoczęcia",
+    "startUnknown": "początek nieznany",
     "openDay": "Otwórz {date}",
     "zoom": {
       "all": "Wszystko",
@@ -12423,6 +12423,7 @@
     "legendMeanMonth": "Średnia miesięczna",
     "legendMeanWeek": "Średnia tygodniowa",
     "legendThin": "Mniej niż 3 pomiary",
+    "legendGap": "Krótka przerwa bez pomiarów",
     "today": "Dziś",
     "noDataYet": "Jeszcze brak danych",
     "layers": "Warstwy",
@@ -12436,8 +12437,8 @@
       "description": "Wpisy z datą pojawią się tutaj, gdy tylko jakieś będą."
     },
     "values": {
-      "menuLabel": "Do sześciu wartości",
-      "none": "Brak wartości",
+      "menuTitle": "Wartości pod ścieżkami",
+      "trigger": "Wartości ({count})",
       "noneInWindow": "Brak wartości w tym okresie",
       "series": {
         "BLOOD_PRESSURE_SYS": "Ciśnienie skurczowe",
@@ -12460,7 +12461,7 @@
     },
     "selection": {
       "empty": "Brak wpisów w tym okresie",
-      "ongoing": "trwa",
+      "since": "od {date}",
       "range": "od {from} do {to}",
       "mean": "Ø {values}",
       "week": "Tydzień od {date}",
@@ -12471,8 +12472,8 @@
       "months": "Miesiące",
       "years": "Lata",
       "groupingLabel": "Grupowanie",
-      "gap": "Od {from} do {to} · brak wpisów",
-      "gapSingle": "{period} · brak wpisów",
+      "empty": "Brak wpisów od {from} do {to}",
+      "emptySingle": "Brak wpisów: {period}",
       "ended": "Koniec: {label}",
       "afterDaysOne": "po 1 dniu",
       "afterDaysFew": "po {count} dniach",
@@ -12494,7 +12495,8 @@
       "to": "Do",
       "label": "Wybrany zakres",
       "open": "Wybierz zakres",
-      "clear": "Pokaż wszystko"
+      "clear": "Pokaż wszystko",
+      "apply": "Zastosuj"
     },
     "item": {
       "labValuesOne": "1 wynik badania",

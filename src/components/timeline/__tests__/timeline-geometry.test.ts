@@ -198,16 +198,156 @@ describe("layoutLane", () => {
     expect(layout.rows).toBe(2);
   });
 
-  it("lays a dose change and a pause over the medication they belong to", () => {
+  it("draws one row per medication: its dose changes cut the bar, its pause is a gap in it", () => {
     const lane = fullTimeline().lanes.find((l) => l.key === "medications")!;
     const layout = layoutLane({ lane, top: 0 }, window, scale, opts);
-    const host = layout.spans.find((s) => s.item.id === "med-1")!;
-    expect(layout.points.find((p) => p.item.id === "dose-1")?.row).toBe(
-      host.row,
+    // Ramipril, Ibuprofen and the winter Vitamin D: three medications,
+    // three rows, though the lane holds seven items.
+    expect(layout.rows).toBe(3);
+    const rowOf = (id: string) =>
+      new Set(
+        [...layout.spans, ...layout.points]
+          .filter((m) => m.item.id === id)
+          .map((m) => m.row),
+      );
+    // Ramipril's bar is cut at its dose change into two pieces, each
+    // carrying its own dose, on one row with its pause.
+    const ramipril = layout.spans.filter(
+      (s) => s.item.id === "med-1" && !s.pause,
     );
+    expect(ramipril.map((s) => s.segment?.dose)).toEqual([null, "5 mg"]);
+    expect(ramipril.map((s) => s.segment?.change?.id ?? null)).toEqual([
+      null,
+      "dose-1",
+    ]);
+    expect(ramipril[0].xEnd).toBeLessThan(ramipril[1].xStart);
     const pause = layout.spans.find((s) => s.item.id === "pause-1")!;
     expect(pause.pause).toBe(true);
-    expect(pause.row).toBe(host.row);
+    expect([...rowOf("med-1")]).toEqual([pause.row]);
+    // The dose change is no mark of its own any more: it is the cut.
+    expect(layout.points.some((p) => p.item.id === "dose-1")).toBe(false);
+    // Three winter courses of one medication share one row.
+    const vitamin = new Set([
+      ...rowOf("course-1"),
+      ...rowOf("course-2"),
+      ...rowOf("course-3"),
+    ]);
+    expect(vitamin.size).toBe(1);
+    expect(vitamin.has(pause.row)).toBe(false);
+  });
+
+  it("names the dose of a piece that runs into the window, set by a change before it", () => {
+    const lane = fullTimeline().lanes.find((l) => l.key === "medications")!;
+    const year = { from: "2024-01-01", to: "2024-12-31" };
+    const layout = layoutLane(
+      { lane, top: 0 },
+      year,
+      createScale(year, 164, 1200),
+      opts,
+    );
+    // Ramipril's first piece ended in 2020 and is not drawn; the piece in
+    // the window carries the dose of the 2020 change, outside the window.
+    const ramipril = layout.spans.filter(
+      (s) => s.item.id === "med-1" && !s.pause,
+    );
+    expect(ramipril.map((s) => s.segment?.dose)).toEqual(["5 mg"]);
+    expect(ramipril[0].clippedLeft).toBe(true);
+    expect(layout.labels.map((l) => l.text)).toContain("Ramipril 5 mg");
+    // Ibuprofen (2022) has nothing in 2024: no row for it.
+    expect(layout.spans.some((s) => s.item.id === "med-2")).toBe(false);
+    expect(layout.rows).toBe(2);
+    // The 2021 pause lies outside the window and is not drawn at its edge.
+    expect(layout.spans.some((s) => s.item.id === "pause-1")).toBe(false);
+  });
+
+  it("does not draw a medication twice when it has a course", () => {
+    // One medication sent as its own span, a course and two dose changes:
+    // the Mounjaro case, once two bars on two rows.
+    const items = [
+      item({
+        id: "mj",
+        group: "mj",
+        kind: "medication",
+        start: "2025-01-06",
+        open: true,
+        label: "Mounjaro",
+        sub: "7,5 mg",
+      }),
+      item({
+        id: "mj-course",
+        group: "mj",
+        kind: "course",
+        start: "2025-01-06",
+        open: true,
+        label: "Mounjaro",
+      }),
+      item({
+        id: "mj-25",
+        group: "mj",
+        kind: "doseChange",
+        start: "2025-01-06",
+        label: "Mounjaro",
+        sub: "2,5 mg",
+      }),
+      item({
+        id: "mj-5",
+        group: "mj",
+        kind: "doseChange",
+        start: "2025-03-03",
+        label: "Mounjaro",
+        sub: "5 mg",
+      }),
+      item({
+        id: "mj-75",
+        group: "mj",
+        kind: "doseChange",
+        start: "2025-06-02",
+        label: "Mounjaro",
+        sub: "7,5 mg",
+      }),
+      item({
+        id: "mj-pause",
+        group: "mj",
+        kind: "pause",
+        start: "2025-08-01",
+        end: "2025-08-20",
+        label: "Mounjaro",
+      }),
+    ];
+    const wide = createScale(
+      { from: "2025-01-01", to: "2025-12-31" },
+      164,
+      1400,
+    );
+    const layout = layoutLane(
+      { lane: { key: "medications", items }, top: 0 },
+      { from: "2025-01-01", to: "2025-12-31" },
+      wide,
+      { ...opts, today: "2025-12-31" },
+    );
+    expect(layout.rows).toBe(1);
+    const pieces = layout.spans.filter((s) => !s.pause);
+    expect(pieces.every((s) => s.item.id === "mj-course")).toBe(true);
+    expect(pieces.map((s) => s.segment?.dose)).toEqual([
+      "2,5 mg",
+      "5 mg",
+      "7,5 mg",
+    ]);
+    // Only the last piece runs on; only the first could carry a lead-in.
+    expect(pieces.map((s) => s.segment?.last)).toEqual([false, false, true]);
+    expect(pieces.map((s) => s.segment?.first)).toEqual([true, false, false]);
+    // The name stands once, with the first dose; the later doses above
+    // where they begin.
+    expect(layout.labels.map((l) => l.text)).toEqual([
+      "Mounjaro 2,5 mg",
+      "5 mg",
+      "7,5 mg",
+      "Mounjaro pausiert",
+    ]);
+    const pause = layout.spans.find((s) => s.pause)!;
+    expect(pause.row).toBe(0);
+    expect(pause.xStart).toBeGreaterThan(pieces[2].xStart);
+    expect(pause.xEnd).toBeLessThan(pieces[2].xEnd);
   });
 
   it("labels a pause as a pause, above the medication it interrupts", () => {
@@ -247,7 +387,7 @@ describe("layoutLane", () => {
       sub: "5 mg",
     });
     expect(itemLine(unknown, WORDS, "Startdatum fehlt")).toBe(
-      "Ramipril · 5 mg · Startdatum fehlt",
+      "Ramipril 5 mg (Startdatum fehlt)",
     );
     const layout = layoutLane(
       { lane: { key: "medications", items: [unknown] }, top: 0 },
@@ -540,9 +680,10 @@ describe("interaction", () => {
       TODAY,
     );
     const ids = entries.map((e) => e.item.id);
-    expect(ids).toEqual(["ill-5", "course-3", "v-4"]);
+    // The winter course is named by its medication, once.
+    expect(ids).toEqual(["ill-5", "vit-d", "v-4"]);
     // The winter course neither starts nor ends in January: it runs through.
-    expect(entries.find((e) => e.item.id === "course-3")?.through).toBe(true);
+    expect(entries.find((e) => e.item.id === "vit-d")?.through).toBe(true);
     expect(entries.find((e) => e.item.id === "ill-5")?.through).toBe(false);
     // Open since 2019 and 2018: the backdrop of every month, left out.
     expect(ids).not.toContain("ill-chronic");

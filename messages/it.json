@@ -12298,7 +12298,7 @@
     "title": "Cronologia",
     "subtitle": "Cosa è successo e quando, accanto ai tuoi valori.",
     "standing": "Permanente",
-    "startMissing": "Data di inizio mancante",
+    "startUnknown": "inizio sconosciuto",
     "openDay": "Apri {date}",
     "zoom": {
       "all": "Tutto",
@@ -12423,6 +12423,7 @@
     "legendMeanMonth": "Media mensile",
     "legendMeanWeek": "Media settimanale",
     "legendThin": "Meno di 3 misurazioni",
+    "legendGap": "Breve pausa senza misurazioni",
     "today": "Oggi",
     "noDataYet": "Ancora nessun dato",
     "layers": "Livelli",
@@ -12436,8 +12437,8 @@
       "description": "Le voci con data compariranno qui appena ce ne saranno."
     },
     "values": {
-      "menuLabel": "Fino a sei valori",
-      "none": "Nessun valore",
+      "menuTitle": "Valori sotto le corsie",
+      "trigger": "Valori ({count})",
       "noneInWindow": "Nessun valore in questo periodo",
       "series": {
         "BLOOD_PRESSURE_SYS": "Pressione sistolica",
@@ -12460,7 +12461,7 @@
     },
     "selection": {
       "empty": "Nessuna voce in questo periodo",
-      "ongoing": "in corso",
+      "since": "dal {date}",
       "range": "dal {from} al {to}",
       "mean": "Ø {values}",
       "week": "Settimana del {date}",
@@ -12471,8 +12472,8 @@
       "months": "Mesi",
       "years": "Anni",
       "groupingLabel": "Raggruppamento",
-      "gap": "Da {from} a {to} · nessuna voce",
-      "gapSingle": "{period} · nessuna voce",
+      "empty": "Nessuna voce da {from} a {to}",
+      "emptySingle": "{period}: nessuna voce",
       "ended": "Fine: {label}",
       "afterDaysOne": "dopo 1 giorno",
       "afterDaysFew": "dopo {count} giorni",
@@ -12494,7 +12495,8 @@
       "to": "Al",
       "label": "Periodo scelto",
       "open": "Scegli un periodo",
-      "clear": "Mostra tutto"
+      "clear": "Mostra tutto",
+      "apply": "Applica"
     },
     "item": {
       "labValuesOne": "1 valore di laboratorio",

@@ -9,6 +9,8 @@
  * the sheets' discard guard reads any checked radio as the person's input,
  * and a precision that starts on "Day" is a default, not an answer.
  */
+import { Fragment, type ReactElement, type ReactNode } from "react";
+
 import { useRovingRadioGroup } from "@/hooks/use-roving-radio-group";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +28,7 @@ export function Segmented<T extends string>({
   className,
   stretch = false,
   asToggleButtons = false,
+  wrapOption,
 }: {
   options: ReadonlyArray<SegmentedOption<T>>;
   value: T;
@@ -35,6 +38,11 @@ export function Segmented<T extends string>({
   className?: string;
   stretch?: boolean;
   asToggleButtons?: boolean;
+  /**
+   * Wraps one segment's button, for a popover anchored to it (the range
+   * segment). Returns the button itself for every other segment.
+   */
+  wrapOption?: (value: T, button: ReactElement) => ReactNode;
 }) {
   const selectedIndex = options.findIndex((o) => o.value === value);
   const { getRadioProps } = useRovingRadioGroup({
@@ -55,7 +63,7 @@ export function Segmented<T extends string>({
     >
       {options.map((option, index) => {
         const checked = option.value === value;
-        return (
+        const button = (
           <button
             key={option.value}
             type="button"
@@ -78,6 +86,13 @@ export function Segmented<T extends string>({
           >
             {option.label}
           </button>
+        );
+        return wrapOption ? (
+          <Fragment key={option.value}>
+            {wrapOption(option.value, button)}
+          </Fragment>
+        ) : (
+          button
         );
       })}
     </div>

@@ -2,8 +2,12 @@
 
 /**
  * The two menus above the chart (v1.42, #613): which value lines run under
- * the lanes (at most six, the server's cap), and which lanes show, with the way back into
- * the readiness inventory ("Data coverage").
+ * the lanes, and which lanes show, with the way back into the readiness
+ * inventory ("Data coverage").
+ *
+ * The value menu is one compact button, "Values (3)". The chosen lines are
+ * not listed again beside it: each one is a named row under the lanes, and
+ * the menu marks it with its colour.
  */
 import { ChartLine, ChevronDown, Layers } from "lucide-react";
 
@@ -17,13 +21,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { TIMELINE_MAX_SERIES, type TimelineLaneKey } from "@/lib/day/contract";
+import type { TimelineLaneKey } from "@/lib/day/contract";
 import { useTranslations } from "@/lib/i18n/context";
 
 import { TIMELINE_LANE_LABEL_KEY } from "./label-keys";
-
-/** The most value lines the chart runs under its lanes. */
-export const MAX_VALUE_SERIES = TIMELINE_MAX_SERIES;
 
 export function ValueSeriesMenu({
   options,
@@ -40,34 +41,33 @@ export function ValueSeriesMenu({
   onChange: (next: string[]) => void;
 }) {
   const { t } = useTranslations();
-  const summary =
-    selected.length > 0
-      ? selected.map(label).join(", ")
-      : t("timeline.values.none");
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
           size="sm"
-          className="min-h-11 max-w-full sm:min-h-9"
+          className="min-h-11 sm:min-h-9"
           data-slot="timeline-values-trigger"
+          data-count={selected.length}
         >
           <ChartLine className="size-4" aria-hidden="true" />
-          <span className="truncate">{summary}</span>
+          {t("timeline.values.trigger", { count: selected.length })}
           <ChevronDown className="size-4" aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
-        <DropdownMenuLabel>{t("timeline.values.menuLabel")}</DropdownMenuLabel>
+      <DropdownMenuContent
+        align="end"
+        className="w-64"
+        data-slot="timeline-values-menu"
+      >
+        <DropdownMenuLabel>{t("timeline.values.menuTitle")}</DropdownMenuLabel>
         {options.map((key) => {
           const checked = selected.includes(key);
-          const full = !checked && selected.length >= MAX_VALUE_SERIES;
           return (
             <DropdownMenuCheckboxItem
               key={key}
               checked={checked}
-              disabled={full}
               data-slot="timeline-values-option"
               data-key={key}
               onSelect={(event) => event.preventDefault()}

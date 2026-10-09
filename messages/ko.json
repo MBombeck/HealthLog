@@ -12298,7 +12298,7 @@
     "title": "타임라인",
     "subtitle": "언제 무엇이 있었는지, 내 수치와 나란히.",
     "standing": "지속",
-    "startMissing": "시작일 없음",
+    "startUnknown": "시작일 미상",
     "openDay": "{date} 열기",
     "zoom": {
       "all": "전체",
@@ -12423,6 +12423,7 @@
     "legendMeanMonth": "월평균",
     "legendMeanWeek": "주간 평균",
     "legendThin": "측정 3회 미만",
+    "legendGap": "측정 없는 짧은 공백",
     "today": "오늘",
     "noDataYet": "아직 데이터 없음",
     "layers": "레이어",
@@ -12436,8 +12437,8 @@
       "description": "날짜가 있는 기록이 생기면 여기에 나타나요."
     },
     "values": {
-      "menuLabel": "최대 여섯 가지 수치",
-      "none": "수치 없음",
+      "menuTitle": "레인 아래 수치",
+      "trigger": "수치 ({count})",
       "noneInWindow": "이 기간에 수치 없음",
       "series": {
         "BLOOD_PRESSURE_SYS": "수축기 혈압",
@@ -12460,7 +12461,7 @@
     },
     "selection": {
       "empty": "이 기간에는 항목이 없습니다",
-      "ongoing": "진행 중",
+      "since": "{date}부터",
       "range": "{from}~{to}",
       "mean": "Ø {values}",
       "week": "{date} 주",
@@ -12471,8 +12472,8 @@
       "months": "월",
       "years": "연도",
       "groupingLabel": "묶기",
-      "gap": "{from}~{to} · 기록 없음",
-      "gapSingle": "{period} · 기록 없음",
+      "empty": "{from}~{to} 기록 없음",
+      "emptySingle": "{period} 기록 없음",
       "ended": "{label} 끝남",
       "afterDaysOne": "{count}일 후",
       "afterDaysFew": "{count}일 후",
@@ -12494,7 +12495,8 @@
       "to": "종료",
       "label": "선택한 기간",
       "open": "기간 선택",
-      "clear": "전체 보기"
+      "clear": "전체 보기",
+      "apply": "적용"
     },
     "item": {
       "labValuesOne": "검사 수치 {count}개",

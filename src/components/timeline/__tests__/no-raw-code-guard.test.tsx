@@ -12,6 +12,10 @@
  * running items and its events) and asserts that the visible text holds no
  * upper-case code and no sentinel. A new kind or a new code that is not
  * worded fails here instead of on a screenshot.
+ *
+ * The timeline's surfaces also hold no middle dot: an entry's parts stand
+ * apart by a space, a comma or a line of their own, never by "·" (the beta
+ * read "Ramipril resumed · after 11 days" as one run-on line).
  */
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -87,6 +91,9 @@ function WithFormat({
 }) {
   return <>{build(useSeriesValueFormat())}</>;
 }
+
+/** The separator glyph the timeline no longer joins anything with. */
+const MIDDLE_DOT = "\u00b7";
 
 /** Every day of September 2026, one per item, so one month holds them all. */
 let nextDay = 1;
@@ -174,6 +181,7 @@ function everyKind(): TimelineResponse {
         items: [
           item({
             id: "med",
+            group: "med",
             kind: "medication",
             start: "2026-09-01",
             open: true,
@@ -182,6 +190,7 @@ function everyKind(): TimelineResponse {
           }),
           item({
             id: "course",
+            group: "vit-d",
             kind: "course",
             start: "2026-09-05",
             end: "2026-09-25",
@@ -189,6 +198,7 @@ function everyKind(): TimelineResponse {
           }),
           item({
             id: "dose",
+            group: "med",
             kind: "doseChange",
             start: "2026-09-10",
             label: "Ramipril",
@@ -196,6 +206,7 @@ function everyKind(): TimelineResponse {
           }),
           item({
             id: "pause",
+            group: "med",
             kind: "pause",
             start: "2026-09-14",
             end: "2026-09-24",
@@ -243,6 +254,7 @@ function everyKind(): TimelineResponse {
     ],
     standing: [],
     series: [],
+    availableSeries: [],
     notable: [],
   };
   // The fixture itself must reach every kind, or the guard proves less.
@@ -278,6 +290,7 @@ describe.each<Locale>(["de", "en"])("the timeline in %s", (locale) => {
       ),
     );
     expect(rawCodes(text)).toEqual([]);
+    expect(text).not.toContain(MIDDLE_DOT);
   });
 
   it("words every code in the selection bar", () => {
@@ -301,6 +314,7 @@ describe.each<Locale>(["de", "en"])("the timeline in %s", (locale) => {
     );
     expect(text).toContain(locale === "de" ? "5 Laborwerte" : "5 lab values");
     expect(rawCodes(text)).toEqual([]);
+    expect(text).not.toContain(MIDDLE_DOT);
   });
 
   it("words every code in the screen-reader table", () => {
@@ -326,6 +340,7 @@ describe.each<Locale>(["de", "en"])("the timeline in %s", (locale) => {
     );
     const table = html.slice(html.indexOf('data-slot="timeline-table"'));
     expect(rawCodes(textOf(table))).toEqual([]);
+    expect(textOf(html)).not.toContain(MIDDLE_DOT);
   });
 
   it("words every code in the lane labels and their hover titles", () => {
@@ -342,6 +357,7 @@ describe.each<Locale>(["de", "en"])("the timeline in %s", (locale) => {
     const labels = layout.lanes.flatMap((l) => l.labels.map((x) => x.text));
     expect(labels.length).toBeGreaterThan(10);
     expect(rawCodes(labels.join("\n"))).toEqual([]);
+    expect(labels.join("\n")).not.toContain(MIDDLE_DOT);
 
     const titles = textOf(
       render(
@@ -375,6 +391,7 @@ describe.each<Locale>(["de", "en"])("the timeline in %s", (locale) => {
     expect(rawCodes(titles.replace(/timeline\.selection\.\w+/g, ""))).toEqual(
       [],
     );
+    expect(titles).not.toContain(MIDDLE_DOT);
   });
 });
 

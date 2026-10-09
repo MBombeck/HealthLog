@@ -12298,7 +12298,7 @@
     "title": "Chronologie",
     "subtitle": "Ce qui s’est passé et quand, à côté de vos valeurs.",
     "standing": "Permanent",
-    "startMissing": "Date de début manquante",
+    "startUnknown": "début inconnu",
     "openDay": "Ouvrir le {date}",
     "zoom": {
       "all": "Tout",
@@ -12423,6 +12423,7 @@
     "legendMeanMonth": "Moyenne mensuelle",
     "legendMeanWeek": "Moyenne hebdomadaire",
     "legendThin": "Moins de 3 mesures",
+    "legendGap": "Courte période sans mesures",
     "today": "Aujourd’hui",
     "noDataYet": "Pas encore de données",
     "layers": "Calques",
@@ -12436,8 +12437,8 @@
       "description": "Les entrées datées apparaîtront ici dès qu’il y en aura."
     },
     "values": {
-      "menuLabel": "Jusqu’à six valeurs",
-      "none": "Aucune valeur",
+      "menuTitle": "Valeurs sous les lignes",
+      "trigger": "Valeurs ({count})",
       "noneInWindow": "Aucune valeur sur cette période",
       "series": {
         "BLOOD_PRESSURE_SYS": "Tension systolique",
@@ -12460,7 +12461,7 @@
     },
     "selection": {
       "empty": "Aucune entrée sur cette période",
-      "ongoing": "en cours",
+      "since": "depuis le {date}",
       "range": "{from} au {to}",
       "mean": "Ø {values}",
       "week": "Semaine du {date}",
@@ -12471,8 +12472,8 @@
       "months": "Mois",
       "years": "Années",
       "groupingLabel": "Regroupement",
-      "gap": "{from} à {to} · aucune entrée",
-      "gapSingle": "{period} · aucune entrée",
+      "empty": "Aucune entrée de {from} à {to}",
+      "emptySingle": "Aucune entrée en {period}",
       "ended": "Fin : {label}",
       "afterDaysOne": "après 1 jour",
       "afterDaysFew": "après {count} jours",
@@ -12494,7 +12495,8 @@
       "to": "Au",
       "label": "Période choisie",
       "open": "Choisir une période",
-      "clear": "Tout afficher"
+      "clear": "Tout afficher",
+      "apply": "Appliquer"
     },
     "item": {
       "labValuesOne": "1 valeur de laboratoire",

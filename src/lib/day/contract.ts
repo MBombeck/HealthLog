@@ -238,20 +238,15 @@ export const TIMELINE_RANGE_MAX_DAYS = 15 * 366;
 export type TimelineBucket = (typeof TIMELINE_BUCKETS)[number];
 
 /**
- * The most value series one request may name. Each series is its own row
- * under the lanes, drawn in neutral ink and labelled at the left, so the cap
- * is the chart's height, not a palette: six rows add 360 px under the lanes.
- */
-export const TIMELINE_MAX_SERIES = 6;
-
-/**
  * The lanes, top to bottom. An empty lane is not sent. Each lane a module
  * owns is a surface (`timeline-lane:<key>`) and disappears with it.
  *
  *   life         life events, and travel periods from the environment module
  *   illness      episodes, chronic conditions as open lines
  *   allergies    allergies with an onset; the rest are `standing`
- *   medications  medications and courses, dose marks, pauses as gaps
+ *   medications  medications and courses, dose marks, pauses as gaps; every
+ *                item of one medication carries its id as `group`, and a
+ *                client draws a group on one row
  *   vaccinations doses
  *   visits       visits and procedures
  *   labs         days with results

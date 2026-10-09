@@ -1,7 +1,7 @@
 /**
  * A made-up record for the timeline tests: a chronic condition and several
- * episodes, two allergies, a standing medication with a dose change, a winter
- * course three years running, a medication whose start is unknown, visits
+ * episodes, two allergies, a standing medication with a dose change and a
+ * pause, a winter course three years running (one medication, one row), a medication whose start is unknown, visits
  * with two procedures, documents, vaccinations and three life events. All
  * data invented.
  */
@@ -35,6 +35,7 @@ export function item(
     label: over.id,
     sub: null,
     href: null,
+    group: null,
     ...over,
   };
 }
@@ -142,6 +143,7 @@ export function fullTimeline(): TimelineResponse {
         items: [
           item({
             id: "med-1",
+            group: "med-1",
             kind: "medication",
             start: "2019-04-02",
             open: true,
@@ -150,6 +152,7 @@ export function fullTimeline(): TimelineResponse {
           }),
           item({
             id: "dose-1",
+            group: "med-1",
             kind: "doseChange",
             start: "2020-08-12",
             label: "Ramipril",
@@ -157,6 +160,7 @@ export function fullTimeline(): TimelineResponse {
           }),
           item({
             id: "med-2",
+            group: "med-2",
             kind: "medication",
             start: "2022-11-03",
             end: "2022-12-10",
@@ -164,6 +168,7 @@ export function fullTimeline(): TimelineResponse {
           }),
           item({
             id: "course-1",
+            group: "vit-d",
             kind: "course",
             start: "2023-11-01",
             end: "2024-03-31",
@@ -171,6 +176,7 @@ export function fullTimeline(): TimelineResponse {
           }),
           item({
             id: "course-2",
+            group: "vit-d",
             kind: "course",
             start: "2024-11-01",
             end: "2025-03-31",
@@ -178,6 +184,7 @@ export function fullTimeline(): TimelineResponse {
           }),
           item({
             id: "course-3",
+            group: "vit-d",
             kind: "course",
             start: "2025-11-01",
             end: "2026-03-31",
@@ -185,6 +192,7 @@ export function fullTimeline(): TimelineResponse {
           }),
           item({
             id: "pause-1",
+            group: "med-1",
             kind: "pause",
             start: "2021-06-01",
             end: "2021-06-11",
@@ -275,6 +283,7 @@ export function fullTimeline(): TimelineResponse {
         points: [{ t: "2026-01-01", mean: 82.6, count: 3 }],
       },
     ],
+    availableSeries: ["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA", "WEIGHT"],
     notable: [{ date: "2026-01-04", kind: "extremeHigh" }],
   };
 }

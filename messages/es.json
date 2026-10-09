@@ -12298,7 +12298,7 @@
     "title": "Cronología",
     "subtitle": "Qué pasó y cuándo, junto a tus valores.",
     "standing": "Permanente",
-    "startMissing": "Falta la fecha de inicio",
+    "startUnknown": "inicio desconocido",
     "openDay": "Abrir {date}",
     "zoom": {
       "all": "Todo",
@@ -12423,6 +12423,7 @@
     "legendMeanMonth": "Media mensual",
     "legendMeanWeek": "Media semanal",
     "legendThin": "Menos de 3 mediciones",
+    "legendGap": "Hueco corto sin mediciones",
     "today": "Hoy",
     "noDataYet": "Aún sin datos",
     "layers": "Capas",
@@ -12436,8 +12437,8 @@
       "description": "Las entradas con fecha aparecerán aquí en cuanto haya alguna."
     },
     "values": {
-      "menuLabel": "Hasta seis valores",
-      "none": "Sin valores",
+      "menuTitle": "Valores bajo los carriles",
+      "trigger": "Valores ({count})",
       "noneInWindow": "Sin valores en este periodo",
       "series": {
         "BLOOD_PRESSURE_SYS": "Presión sistólica",
@@ -12460,7 +12461,7 @@
     },
     "selection": {
       "empty": "No hay entradas en este periodo",
-      "ongoing": "en curso",
+      "since": "desde {date}",
       "range": "{from} a {to}",
       "mean": "Ø {values}",
       "week": "Semana del {date}",
@@ -12471,8 +12472,8 @@
       "months": "Meses",
       "years": "Años",
       "groupingLabel": "Agrupación",
-      "gap": "{from} a {to} · sin entradas",
-      "gapSingle": "{period} · sin entradas",
+      "empty": "Sin entradas de {from} a {to}",
+      "emptySingle": "Sin entradas en {period}",
       "ended": "Fin: {label}",
       "afterDaysOne": "después de 1 día",
       "afterDaysFew": "después de {count} días",
@@ -12494,7 +12495,8 @@
       "to": "Hasta",
       "label": "Periodo elegido",
       "open": "Elegir un periodo",
-      "clear": "Mostrar todo"
+      "clear": "Mostrar todo",
+      "apply": "Aplicar"
     },
     "item": {
       "labValuesOne": "1 valor de laboratorio",

@@ -121,17 +121,29 @@ describe("window", () => {
     expect(parseSeriesKeys("WEIGHT,DROP TABLE")).toBeNull();
   });
 
-  it("accepts up to six series and refuses a seventh", () => {
-    const six = [
+  it("has no cap on the count: every known series, each once", () => {
+    const many = [
       "BLOOD_PRESSURE_SYS",
       "BLOOD_PRESSURE_DIA",
       "WEIGHT",
       "PULSE",
       "MOOD",
       "BODY_FAT",
+      "BLOOD_GLUCOSE",
+      "SLEEP_DURATION",
+      "ACTIVITY_STEPS",
+      "RESTING_HEART_RATE",
+      "HEART_RATE_VARIABILITY",
+      "OXYGEN_SATURATION",
+      "BODY_TEMPERATURE",
+      "VO2_MAX",
+      "RESPIRATORY_RATE",
     ];
-    expect(parseSeriesKeys(six.join(","))).toEqual(six);
-    expect(parseSeriesKeys([...six, "BLOOD_GLUCOSE"].join(","))).toBeNull();
+    expect(parseSeriesKeys(many.join(","))).toEqual(many);
+    // A name given twice counts once, so the list is bounded by the names
+    // that exist.
+    expect(parseSeriesKeys([...many, ...many].join(","))).toEqual(many);
+    expect(parseSeriesKeys([...many, "NOPE"].join(","))).toBeNull();
   });
 });
 

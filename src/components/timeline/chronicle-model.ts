@@ -9,9 +9,14 @@
  * runs for a while and ends (an episode, a winter course) is drawn as a thin
  * rail beside the rows it spans.
  *
- * Empty stretches are said out loud: "April to August 2025 · no entries"
- * rather than months silently skipped, so a gap reads as a gap and not as a
- * list that forgot something.
+ * Empty stretches are said out loud: "No entries from April to August
+ * 2025" rather than months silently skipped, so a gap reads as a gap and not
+ * as a list that forgot something.
+ *
+ * A medication is listed once per thing that happened to it
+ * (`medicationListItems`): its start with the dose taken then, each later
+ * dose change, each pause and its end, and its end. A course and the
+ * medication it belongs to never both start on the same row.
  */
 import type {
   DayNotableKind,
@@ -27,6 +32,7 @@ import {
   monthsBetween,
   startOfMonth,
 } from "./timeline-dates";
+import { groupKey, medicationListItems } from "./medication-rows";
 import { LANE_ORDER, isSpan } from "./timeline-geometry";
 
 export type ChronicleGrouping = "month" | "year";
@@ -71,6 +77,13 @@ export interface StandingChip {
   count: number;
 }
 
+/** A lane's items as a list shows them: a medication's once per event. */
+function listItems(lane: TimelineLane): readonly TimelineItem[] {
+  return lane.key === "medications"
+    ? medicationListItems(lane.items)
+    : lane.items;
+}
+
 /** The group a date belongs to: `YYYY-MM-01` or `YYYY-01-01`. */
 export function groupOf(date: string, grouping: ChronicleGrouping): string {
   return grouping === "month"
@@ -100,7 +113,8 @@ function groupsBetween(
 /**
  * The Ongoing block: what has no start (`standing`) and every period still
  * open, each period named by `label` (`item-words.ts`, so a running pause
- * reads as paused). Allergies fold into one chip when there is more than one.
+ * reads as paused). A medication is one chip, its running pause before its
+ * running course. Allergies fold into one chip when there is more than one.
  */
 export function standingChips(
   timeline: Pick<TimelineResponse, "lanes" | "standing">,
@@ -116,9 +130,20 @@ export function standingChips(
   for (const key of LANE_ORDER) {
     if (key === "life" || key === "cycle") continue;
     const lane = timeline.lanes.find((l) => l.key === key);
-    for (const item of lane?.items ?? []) {
-      if (item.open)
-        push({ lane: key, id: item.id, label: label(item), count: 1 });
+    const open = (lane?.items ?? []).filter((item) => item.open);
+    const shown = new Set<string>();
+    // A pause first: a medication on pause reads as paused, not as taken.
+    const ordered =
+      key === "medications"
+        ? [...open].sort(
+            (a, b) => Number(b.kind === "pause") - Number(a.kind === "pause"),
+          )
+        : open;
+    for (const item of ordered) {
+      const id = key === "medications" ? groupKey(item) : item.id;
+      if (shown.has(id)) continue;
+      shown.add(id);
+      push({ lane: key, id, label: label(item), count: 1 });
     }
   }
   const ordered = chips.sort(
@@ -143,7 +168,7 @@ export function chronicleEntries(
 ): ChronicleEntry[] {
   const out: ChronicleEntry[] = [];
   for (const lane of timeline.lanes) {
-    for (const item of lane.items) {
+    for (const item of listItems(lane)) {
       if (!isSpan(item)) {
         out.push({
           kind: "item",
@@ -196,7 +221,7 @@ function railSpans(lanes: readonly TimelineLane[]) {
   const out: Array<{ lane: RailLane; start: string; end: string }> = [];
   for (const lane of lanes) {
     if (!(RAIL_LANES as readonly string[]).includes(lane.key)) continue;
-    for (const item of lane.items) {
+    for (const item of listItems(lane)) {
       if (item.open || !item.end || item.end === item.start) continue;
       out.push({
         lane: lane.key as RailLane,

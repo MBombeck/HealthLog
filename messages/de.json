@@ -12298,7 +12298,7 @@
     "title": "Zeitleiste",
     "subtitle": "Was wann war, neben deinen Werten.",
     "standing": "Dauerhaft",
-    "startMissing": "Startdatum fehlt",
+    "startUnknown": "Beginn unbekannt",
     "openDay": "{date} öffnen",
     "zoom": {
       "all": "Alles",
@@ -12423,6 +12423,7 @@
     "legendMeanMonth": "Monatsmittel",
     "legendMeanWeek": "Wochenmittel",
     "legendThin": "Weniger als 3 Messungen",
+    "legendGap": "Kurze Lücke ohne Messungen",
     "today": "Heute",
     "noDataYet": "Noch keine Daten",
     "layers": "Ebenen",
@@ -12436,8 +12437,8 @@
       "description": "Sobald es Einträge mit Datum gibt, erscheinen sie hier."
     },
     "values": {
-      "menuLabel": "Bis zu sechs Werte",
-      "none": "Keine Werte",
+      "menuTitle": "Werte unter den Spuren",
+      "trigger": "Werte ({count})",
       "noneInWindow": "Keine Werte in diesem Zeitraum",
       "series": {
         "BLOOD_PRESSURE_SYS": "Blutdruck sys.",
@@ -12460,7 +12461,7 @@
     },
     "selection": {
       "empty": "Keine Einträge in diesem Zeitraum",
-      "ongoing": "laufend",
+      "since": "seit {date}",
       "range": "{from} bis {to}",
       "mean": "Ø {values}",
       "week": "Woche vom {date}",
@@ -12471,8 +12472,8 @@
       "months": "Monate",
       "years": "Jahre",
       "groupingLabel": "Gruppierung",
-      "gap": "{from} bis {to} · keine Einträge",
-      "gapSingle": "{period} · keine Einträge",
+      "empty": "Keine Einträge von {from} bis {to}",
+      "emptySingle": "{period}: keine Einträge",
       "ended": "{label} vorbei",
       "afterDaysOne": "nach einem Tag",
       "afterDaysFew": "nach {count} Tagen",
@@ -12494,7 +12495,8 @@
       "to": "Bis",
       "label": "Gewählter Zeitraum",
       "open": "Zeitraum wählen",
-      "clear": "Alles zeigen"
+      "clear": "Alles zeigen",
+      "apply": "Übernehmen"
     },
     "item": {
       "labValuesOne": "1 Laborwert",

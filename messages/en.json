@@ -12298,7 +12298,7 @@
     "title": "Timeline",
     "subtitle": "What happened when, beside your values.",
     "standing": "Ongoing",
-    "startMissing": "Start date missing",
+    "startUnknown": "start unknown",
     "openDay": "Open {date}",
     "zoom": {
       "all": "All",
@@ -12423,6 +12423,7 @@
     "legendMeanMonth": "Monthly mean",
     "legendMeanWeek": "Weekly mean",
     "legendThin": "Fewer than 3 readings",
+    "legendGap": "Short gap without measurements",
     "today": "Today",
     "noDataYet": "No data yet",
     "layers": "Layers",
@@ -12436,8 +12437,8 @@
       "description": "Dated entries appear here as soon as there are some."
     },
     "values": {
-      "menuLabel": "Up to six values",
-      "none": "No values",
+      "menuTitle": "Values under the lanes",
+      "trigger": "Values ({count})",
       "noneInWindow": "No values in this range",
       "series": {
         "BLOOD_PRESSURE_SYS": "Blood pressure sys.",
@@ -12460,7 +12461,7 @@
     },
     "selection": {
       "empty": "No entries in this period",
-      "ongoing": "ongoing",
+      "since": "since {date}",
       "range": "{from} to {to}",
       "mean": "Ø {values}",
       "week": "Week of {date}",
@@ -12471,8 +12472,8 @@
       "months": "Months",
       "years": "Years",
       "groupingLabel": "Grouping",
-      "gap": "{from} to {to} · no entries",
-      "gapSingle": "{period} · no entries",
+      "empty": "No entries from {from} to {to}",
+      "emptySingle": "No entries in {period}",
       "ended": "{label} ended",
       "afterDaysOne": "after 1 day",
       "afterDaysFew": "after {count} days",
@@ -12494,7 +12495,8 @@
       "to": "To",
       "label": "Chosen range",
       "open": "Choose a range",
-      "clear": "Show everything"
+      "clear": "Show everything",
+      "apply": "Apply"
     },
     "item": {
       "labValuesOne": "1 lab value",

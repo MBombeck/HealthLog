@@ -168,13 +168,16 @@ export function TimelineChronicle({
     grouping === "month" ? formatMonthYear(group, intl) : group.slice(0, 4);
   const gapLabel = (from: string, to: string) => {
     if (from === to)
-      return t("timeline.chronicle.gapSingle", { period: groupLabel(from) });
+      return t("timeline.chronicle.emptySingle", { period: groupLabel(from) });
     const sameYear = from.slice(0, 4) === to.slice(0, 4);
     const fromText =
       grouping === "month" && sameYear
         ? formatMonthLong(from, intl)
         : groupLabel(from);
-    return t("timeline.chronicle.gap", { from: fromText, to: groupLabel(to) });
+    return t("timeline.chronicle.empty", {
+      from: fromText,
+      to: groupLabel(to),
+    });
   };
 
   function entryText(entry: ChronicleEntry): {
@@ -201,9 +204,9 @@ export function TimelineChronicle({
           : null,
       };
     }
-    const meta = [sub, item.startKnown ? null : t("timeline.startMissing")]
+    const meta = [sub, item.startKnown ? null : t("timeline.startUnknown")]
       .filter(Boolean)
-      .join(" · ");
+      .join(", ");
     return { title: label, meta: meta || null };
   }
 

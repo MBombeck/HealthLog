@@ -19,7 +19,6 @@ import type { MeasurementType } from "@/generated/prisma/enums";
 import {
   DAY_NOTABLE_MAX_SPAN_DAYS,
   TIMELINE_LANE_KEYS,
-  TIMELINE_MAX_SERIES,
   type TimelineBucket,
   type TimelineItem,
   type TimelineQuery,
@@ -29,6 +28,7 @@ import {
 import { loadNotableRange } from "@/lib/day/notable";
 import { measurementTypeVisible } from "@/lib/day/sections";
 import { prisma } from "@/lib/db";
+import { listLiveMeasurementTypes } from "@/lib/measurements/live-types";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import {
   LANE_READERS,
@@ -38,6 +38,7 @@ import {
 } from "@/lib/timeline/lanes";
 import { loadTimelineSeries, MOOD_SERIES_KEY } from "@/lib/timeline/series";
 import { daysBetweenDateKeys, shiftDateKey, userDayKey } from "@/lib/tz/format";
+import { EVENT_MEASUREMENT_TYPES } from "@/lib/validations/measurement";
 
 /** The series sent when the request names none. */
 export const DEFAULT_TIMELINE_SERIES: readonly MeasurementType[] = [
@@ -105,8 +106,9 @@ const MEASUREMENT_TYPE_SET: ReadonlySet<string> = new Set(
 
 /**
  * The series keys a `values` parameter names, or null when one is not a
- * series this API knows or there are more than {@link TIMELINE_MAX_SERIES}
- * (the route answers 422).
+ * series this API knows (the route answers 422). There is no cap on the
+ * count: a name given twice counts once, so the list never grows past the
+ * names that exist, and each series is its own row under the lanes.
  */
 export function parseSeriesKeys(raw: string | undefined): string[] | null {
   if (raw === undefined) return [...DEFAULT_TIMELINE_SERIES];
@@ -118,11 +120,45 @@ export function parseSeriesKeys(raw: string | undefined): string[] | null {
         .filter((k) => k.length > 0),
     ),
   ];
-  if (keys.length > TIMELINE_MAX_SERIES) return null;
   for (const key of keys) {
     if (key !== MOOD_SERIES_KEY && !MEASUREMENT_TYPE_SET.has(key)) return null;
   }
   return keys;
+}
+
+/**
+ * Every series the record can show, whatever the window: the measurement
+ * types with live readings the caller may see, events left out (they are
+ * occurrences, not values a mean can be taken of), and the mood score when
+ * it is visible and has an entry. Measurement types come in the enum's
+ * order, mood last.
+ */
+export async function loadAvailableSeries(args: {
+  recordId: string;
+  access: TimelineAccess;
+}): Promise<string[]> {
+  const { recordId, access } = args;
+  const moodVisible =
+    access.modules.mood !== false && access.domainVisible("mind");
+  const [types, mood] = await Promise.all([
+    access.domainVisible("measurements")
+      ? listLiveMeasurementTypes(recordId)
+      : Promise.resolve([] as MeasurementType[]),
+    moodVisible
+      ? prisma.moodEntry.findFirst({
+          where: { userId: recordId, deletedAt: null },
+          select: { id: true },
+        })
+      : Promise.resolve(null),
+  ]);
+  return [
+    ...types.filter(
+      (type) =>
+        !EVENT_MEASUREMENT_TYPES.has(type) &&
+        measurementTypeVisible(type, access.modules),
+    ),
+    ...(mood ? [MOOD_SERIES_KEY] : []),
+  ];
 }
 
 /** Whether an item touches `[from, to]`. An open span runs up to today. */
@@ -201,7 +237,7 @@ export async function loadTimeline(args: {
       ? shiftDateKey(to, -(DAY_NOTABLE_MAX_SPAN_DAYS - 1))
       : from;
   const bucket = timelineBucket(query.zoom, from, to);
-  const [series, notable] = await Promise.all([
+  const [series, notable, availableSeries] = await Promise.all([
     loadTimelineSeries({
       userId: recordId,
       keys: seriesKeys,
@@ -223,6 +259,7 @@ export async function loadTimeline(args: {
           gaps: false,
         })
       : Promise.resolve([]),
+    loadAvailableSeries({ recordId, access }),
   ]);
 
   return {
@@ -232,6 +269,7 @@ export async function loadTimeline(args: {
     standing,
     bucket,
     series,
+    availableSeries,
     notable: notable.map(({ date, kind }) => ({ date, kind })),
   };
 }

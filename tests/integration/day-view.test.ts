@@ -969,20 +969,180 @@ describe("timeline", () => {
       ).toBe(422);
     }
 
-    const six =
-      "BLOOD_PRESSURE_SYS,BLOOD_PRESSURE_DIA,WEIGHT,PULSE,BODY_FAT,MOOD";
+    // No cap on the count: seven, and an unknown name still refused.
+    const seven =
+      "BLOOD_PRESSURE_SYS,BLOOD_PRESSURE_DIA,WEIGHT,PULSE,BODY_FAT,MOOD,BLOOD_GLUCOSE";
     expect(
-      (await call(GET as Handler, "GET", `/api/timeline?values=${six}`)).status,
+      (await call(GET as Handler, "GET", `/api/timeline?values=${seven}`))
+        .status,
     ).toBe(200);
     expect(
-      (
-        await call(
-          GET as Handler,
-          "GET",
-          `/api/timeline?values=${six},BLOOD_GLUCOSE`,
-        )
-      ).status,
+      (await call(GET as Handler, "GET", `/api/timeline?values=${seven},NOPE`))
+        .status,
     ).toBe(422);
+  });
+
+  it("tags every item of one medication with its id, so it draws on one row", async () => {
+    const db = getPrismaClient();
+    const owner = await makeUser("tl-group", { timeline: true });
+    const med = await db.medication.create({
+      data: {
+        userId: owner.id,
+        name: "Mounjaro",
+        dose: "7.5 mg",
+        startsOn: dayKeyAsUtcMidnight("2026-01-05"),
+      },
+    });
+    const other = await db.medication.create({
+      data: {
+        userId: owner.id,
+        name: "Ramipril",
+        dose: "5 mg",
+        startsOn: dayKeyAsUtcMidnight("2025-06-01"),
+      },
+    });
+    await db.medicationCourse.create({
+      data: {
+        userId: owner.id,
+        medicationId: med.id,
+        startsOn: dayKeyAsUtcMidnight("2026-01-05"),
+      },
+    });
+    await db.medicationDoseChange.createMany({
+      data: [
+        {
+          medicationId: med.id,
+          effectiveFrom: new Date("2026-01-05T08:00:00.000Z"),
+          doseValue: 2.5,
+          doseUnit: "mg",
+        },
+        {
+          medicationId: med.id,
+          effectiveFrom: new Date("2026-02-02T08:00:00.000Z"),
+          doseValue: 5,
+          doseUnit: "mg",
+        },
+      ],
+    });
+    await db.medicationPauseEra.create({
+      data: {
+        userId: owner.id,
+        medicationId: med.id,
+        pausedAt: new Date("2026-03-01T08:00:00.000Z"),
+        resumedAt: new Date("2026-03-10T08:00:00.000Z"),
+      },
+    });
+    await signIn(owner.id);
+
+    const { GET } = await import("@/app/api/timeline/route");
+    const timeline = await json<import("@/lib/day/contract").TimelineResponse>(
+      await call(
+        GET as Handler,
+        "GET",
+        "/api/timeline?zoom=year&to=2026-03-31",
+      ),
+    );
+    const items = timeline.lanes.find((l) => l.key === "medications")!.items;
+    const byGroup = new Map<string | null, string[]>();
+    for (const i of items) {
+      byGroup.set(i.group, [...(byGroup.get(i.group) ?? []), i.kind]);
+    }
+    // Six items, two medications: Mounjaro's own span, its course, its
+    // two dose changes and its pause all carry its id.
+    expect(items).toHaveLength(6);
+    expect([...byGroup.keys()].sort()).toEqual([med.id, other.id].sort());
+    expect(byGroup.get(med.id)!.sort()).toEqual(
+      ["course", "doseChange", "doseChange", "medication", "pause"].sort(),
+    );
+    expect(byGroup.get(other.id)).toEqual(["medication"]);
+    expect(
+      items.find((i) => i.kind === "doseChange" && i.start === "2026-02-02"),
+    ).toMatchObject({ label: "Mounjaro", sub: "5 mg", group: med.id });
+  });
+
+  it("offers every value series the record has, and answers fifteen at once", async () => {
+    const db = getPrismaClient();
+    const owner = await makeUser("tl-many", {
+      timeline: true,
+      mood: true,
+      glucose: true,
+      recovery: true,
+    });
+    const types = [
+      "BLOOD_PRESSURE_SYS",
+      "BLOOD_PRESSURE_DIA",
+      "WEIGHT",
+      "PULSE",
+      "BODY_FAT",
+      "BLOOD_GLUCOSE",
+      "ACTIVITY_STEPS",
+      "OXYGEN_SATURATION",
+      "HEART_RATE_VARIABILITY",
+      "BODY_TEMPERATURE",
+      "VO2_MAX",
+      "RESPIRATORY_RATE",
+      "MUSCLE_MASS",
+      "BONE_MASS",
+    ] as const;
+    // A reading a day for a year, every type: about five thousand rows.
+    const rows = [];
+    for (const [i, type] of types.entries()) {
+      for (let d = 0; d < 365; d++) {
+        const at = new Date(Date.UTC(2025, 3, 1 + d, 7, i));
+        rows.push({
+          userId: owner.id,
+          type,
+          value: 50 + (d % 30) + i,
+          unit: "x",
+          measuredAt: at,
+        });
+      }
+    }
+    await db.measurement.createMany({ data: rows });
+    // An event type is an occurrence, not a value: never offered.
+    await db.measurement.create({
+      data: {
+        userId: owner.id,
+        type: "HIGH_HEART_RATE_EVENT",
+        value: 1,
+        unit: "count",
+        measuredAt: new Date("2026-01-10T07:00:00.000Z"),
+      },
+    });
+    await db.moodEntry.create({
+      data: {
+        userId: owner.id,
+        date: "2026-01-10",
+        score: 4,
+        mood: "GUT",
+        moodLoggedAt: new Date("2026-01-10T19:00:00.000Z"),
+      },
+    });
+    await signIn(owner.id);
+
+    const { GET } = await import("@/app/api/timeline/route");
+    const values = [...types, "MOOD"].join(",");
+    expect(values.split(",")).toHaveLength(15);
+    const started = performance.now();
+    const res = await call(
+      GET as Handler,
+      "GET",
+      `/api/timeline?zoom=year&to=2026-03-31&values=${values}`,
+    );
+    const took = performance.now() - started;
+    const timeline =
+      await json<import("@/lib/day/contract").TimelineResponse>(res);
+    expect(timeline.series).toHaveLength(15);
+    expect(timeline.series.every((s) => s.points.length > 0)).toBe(true);
+    expect(timeline.availableSeries).toEqual(
+      expect.arrayContaining([...types, "MOOD"]),
+    );
+    expect(timeline.availableSeries).toHaveLength(15);
+    expect(timeline.availableSeries).not.toContain("HIGH_HEART_RATE_EVENT");
+    // Fifteen series over a year of daily readings answer in about a tenth
+    // of a second against the test database; the bound is generous so a
+    // slow runner does not fail it, and still catches a read gone quadratic.
+    expect(took).toBeLessThan(5_000);
   });
 
   it("averages quarters over the years, live before the fold window and rolled up after it", async () => {

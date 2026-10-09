@@ -28,6 +28,13 @@ import type {
 
 import { itemLine, type ItemWordsFn } from "./item-words";
 import {
+  doseSegments,
+  medicationGroups,
+  medicationPeriodItem,
+  strayDoses,
+  type MedicationGroup,
+} from "./medication-rows";
+import {
   addMonths,
   bucketAfter,
   bucketIndex,
@@ -401,7 +408,6 @@ const POINT_SHAPE: Partial<Record<TimelineItemKind, PointShape>> = {
   procedure: "square",
   labDay: "ring",
   document: "tick",
-  doseChange: "doseMark",
 };
 
 export interface PlacedSpan {
@@ -414,6 +420,21 @@ export interface PlacedSpan {
   clippedLeft: boolean;
   /** A pause, drawn as an outlined gap over the period it interrupts. */
   pause: boolean;
+  /**
+   * One dose's piece of a medication's stretch (`medication-rows.ts`): the
+   * dose it carries, the dose change it begins with, and whether it is the
+   * stretch's first or last piece (only the first draws an unknown start,
+   * only the last an open end).
+   */
+  segment?: {
+    /** The piece's first and last day; `end` null while it runs on. */
+    start: string;
+    end: string | null;
+    dose: string | null;
+    change: TimelineItem | null;
+    first: boolean;
+    last: boolean;
+  };
 }
 
 export interface PlacedPoint {
@@ -463,8 +484,9 @@ interface LaneInput {
 
 /**
  * Lay out one lane: rows for the periods (first row that is free), points on
- * their own row above them, pauses and dose marks over the medication they
- * belong to, then the labels in priority order through one occupancy map.
+ * their own row above them, then the labels in priority order through one
+ * occupancy map. The medications lane is laid out per medication
+ * ({@link layoutMedicationLane}).
  */
 export function layoutLane(
   { lane, top }: LaneInput,
@@ -477,16 +499,20 @@ export function layoutLane(
     today: string;
   },
 ): LaneLayout {
+  if (lane.key === "medications") {
+    return layoutMedicationLane(
+      lane.key,
+      top,
+      lane.items,
+      window,
+      scale,
+      options,
+    );
+  }
   const visible = lane.items.filter((item) => inWindow(item, window));
-  const pointItems = visible.filter(
-    (item) => !isSpan(item) && item.kind !== "doseChange",
-  );
-  const doseItems = visible.filter((item) => item.kind === "doseChange");
-  const pauseItems = visible.filter(
-    (item) => item.kind === "pause" && isSpan(item),
-  );
+  const pointItems = visible.filter((item) => !isSpan(item));
   const spanItems = visible
-    .filter((item) => isSpan(item) && item.kind !== "pause")
+    .filter((item) => isSpan(item))
     .sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0));
 
   // Points take the first row(s); procedures sit on a second point row so
@@ -529,29 +555,6 @@ export function layoutLane(
     });
   }
 
-  // Pauses lie over the period they interrupt; one without a host gets a row.
-  for (const item of pauseItems) {
-    const xStart = Math.max(scale.x0, scale.x(item.start));
-    const xEnd = Math.min(
-      scale.x1,
-      item.end ? scale.x(dayNumber(item.end) + 1) : todayX,
-    );
-    const host = spans.find(
-      (s) => !s.pause && s.xStart <= xStart && s.xEnd >= xStart,
-    );
-    const row = host ? host.row : pointRows + rowEnds.length;
-    if (!host) rowEnds.push(xEnd);
-    spans.push({
-      item,
-      row,
-      y: rowY(row),
-      xStart,
-      xEnd: Math.max(xStart + 4, xEnd),
-      clippedLeft: false,
-      pause: true,
-    });
-  }
-
   const points: PlacedPoint[] = [];
   for (const item of pointItems) {
     const row = item.kind === "procedure" ? procedureRow : 0;
@@ -562,14 +565,6 @@ export function layoutLane(
       x: scale.xMid(item.start),
       shape: POINT_SHAPE[item.kind] ?? "dot",
     });
-  }
-  // Dose marks sit on the medication line that runs through their date.
-  for (const item of doseItems) {
-    const x = scale.xMid(item.start);
-    const host = spans.find((s) => !s.pause && s.xStart <= x && s.xEnd >= x);
-    const row = host ? host.row : pointRows;
-    if (!host && rowEnds.length === 0) rowEnds.push(x);
-    points.push({ item, row, y: rowY(row), x, shape: "doseMark" });
   }
 
   const rows = Math.max(1, pointRows + rowEnds.length);
@@ -585,12 +580,249 @@ export function layoutLane(
   return { key: lane.key, top, height, rows, spans, points, labels };
 }
 
+/** Air between two dose pieces of one bar, so the cut reads as a cut. */
+const SEGMENT_GAP = 1.5;
+
+/**
+ * The medications lane: one row per medication (`medication-rows.ts`),
+ * oldest first, for every medication with something inside the window.
+ * Each stretch it was taken is drawn in pieces, one per dose, a pause lies
+ * over the stretch as a gap, a one-time medication is a point and a dose
+ * change outside every stretch keeps its own mark.
+ *
+ * A medication is grouped from all its items, not only the ones inside the
+ * window: the dose of a piece that runs into the window was set by a dose
+ * change that may lie before it.
+ */
+function layoutMedicationLane(
+  key: TimelineLaneKey,
+  top: number,
+  items: readonly TimelineItem[],
+  window: TimeWindow,
+  scale: Scale,
+  options: { words: ItemWordsFn; startMissing: string; today: string },
+): LaneLayout {
+  const groups = medicationGroups(items).filter((group) =>
+    [...group.periods, ...group.points, ...group.pauses, ...group.doses].some(
+      (item) => inWindow(item, window),
+    ),
+  );
+  const rowY = (row: number) => top + LANE_PAD_TOP + row * ROW_HEIGHT;
+  const todayX = scale.x(dayNumber(options.today) + 1);
+  const endX = (end: string | null) =>
+    Math.min(scale.x1, end ? scale.x(dayNumber(end) + 1) : todayX);
+
+  const spans: PlacedSpan[] = [];
+  const points: PlacedPoint[] = [];
+  groups.forEach((group, row) => {
+    const y = rowY(row);
+    for (const period of group.periods) {
+      const pieces = doseSegments(group, period);
+      pieces.forEach((piece, i) => {
+        const rawStart = scale.x(piece.start);
+        const rawEnd = endX(piece.end);
+        if (rawStart >= scale.x1 || rawEnd <= scale.x0) return;
+        const xStart = Math.max(scale.x0, rawStart) + (i > 0 ? SEGMENT_GAP : 0);
+        spans.push({
+          item: period,
+          row,
+          y,
+          xStart,
+          xEnd: Math.min(scale.x1, Math.max(xStart + 4, rawEnd)),
+          clippedLeft: rawStart < scale.x0,
+          pause: false,
+          segment: {
+            start: piece.start,
+            end: piece.end,
+            dose: piece.dose,
+            change: piece.change,
+            first: piece.first,
+            last: piece.last,
+          },
+        });
+      });
+    }
+    for (const pause of group.pauses) {
+      if (!isSpan(pause) || !inWindow(pause, window)) continue;
+      const xStart = Math.max(scale.x0, scale.x(pause.start));
+      spans.push({
+        item: pause,
+        row,
+        y,
+        xStart,
+        xEnd: Math.max(xStart + 4, endX(pause.end)),
+        clippedLeft: false,
+        pause: true,
+      });
+    }
+    for (const point of group.points) {
+      if (!inWindow(point, window)) continue;
+      points.push({
+        item: point,
+        row,
+        y,
+        x: scale.xMid(point.start),
+        shape: "dot",
+      });
+    }
+    for (const dose of strayDoses(group)) {
+      if (!inWindow(dose, window)) continue;
+      points.push({
+        item: dose,
+        row,
+        y,
+        x: scale.xMid(dose.start),
+        shape: "doseMark",
+      });
+    }
+  });
+
+  const rows = Math.max(1, groups.length);
+  const height = LANE_PAD_TOP + (rows - 1) * ROW_HEIGHT + LANE_PAD_BOTTOM;
+  const labels = placeMedicationLabels(
+    groups,
+    spans,
+    points,
+    scale,
+    options.words,
+    options.startMissing,
+  );
+  return { key, top, height, rows, spans, points, labels };
+}
+
+/**
+ * A medication's labels: its name once per row, with the dose of the piece
+ * it stands over ("Mounjaro 2.5 mg"), above the first piece, else right of
+ * the last, else left of the first; then the dose of every later piece above
+ * where it begins ("5 mg"), then pauses and stray dose marks, each only
+ * where it fits.
+ */
+function placeMedicationLabels(
+  groups: readonly MedicationGroup[],
+  spans: readonly PlacedSpan[],
+  points: readonly PlacedPoint[],
+  scale: Scale,
+  words: ItemWordsFn,
+  startMissing: string,
+): PlacedLabel[] {
+  const occ = new LineOccupancy();
+  const line = (row: number, where: "on" | "above") => `${row}:${where}`;
+  for (const s of spans) {
+    const lead =
+      s.segment?.first && !s.item.startKnown ? UNKNOWN_START_LEAD : 0;
+    const arrow = s.item.open && (s.segment?.last ?? true) ? 7 : 0;
+    occ.add(line(s.row, "on"), s.xStart - lead, s.xEnd + arrow);
+  }
+  for (const p of points) {
+    const half = GLYPH_HALF_WIDTH[p.shape];
+    occ.add(line(p.row, "on"), p.x - half, p.x + half);
+  }
+  const labels: PlacedLabel[] = [];
+  const fits = (a: number, b: number) => a >= scale.x0 && b <= scale.x1 - 2;
+  const place = (
+    id: string,
+    row: number,
+    where: "on" | "above",
+    a: number,
+    y: number,
+    text: string,
+    margin = LABEL_MARGIN,
+  ) => {
+    const b = a + estimateTextWidth(text);
+    if (!fits(a, b) || !occ.tryAdd(line(row, where), a, b, margin)) {
+      return false;
+    }
+    labels.push({
+      itemId: id,
+      text,
+      x: a,
+      y: where === "above" ? y - 7 : y + 4,
+      strong: false,
+    });
+    return true;
+  };
+
+  groups.forEach((group, row) => {
+    const pieces = spans.filter((s) => s.row === row && !s.pause);
+    const marks = points.filter((p) => p.row === row);
+    const first = pieces[0];
+    if (first) {
+      const named = itemLine(
+        { ...first.item, label: group.label, sub: first.segment?.dose ?? null },
+        words,
+        startMissing,
+      );
+      const last = pieces[pieces.length - 1];
+      const a = first.xStart + (first.clippedLeft ? 26 : 2);
+      const placed =
+        place(first.item.id, row, "above", a, first.y, named) ||
+        place(
+          first.item.id,
+          row,
+          "on",
+          last.xEnd + 6 + (last.item.open ? 7 : 0),
+          last.y,
+          named,
+          BESIDE_MARGIN,
+        ) ||
+        place(
+          first.item.id,
+          row,
+          "on",
+          first.xStart - 6 - estimateTextWidth(named),
+          first.y,
+          named,
+          BESIDE_MARGIN,
+        );
+      // A later stretch that starts over with a dose of its own says so.
+      let shown = placed ? (first.segment?.dose ?? null) : null;
+      for (const piece of pieces.slice(1)) {
+        const dose = piece.segment?.dose ?? null;
+        if (!dose || dose === shown) continue;
+        if (place(piece.item.id, row, "above", piece.xStart + 2, piece.y, dose))
+          shown = dose;
+      }
+    } else if (marks[0]) {
+      const mark = marks[0];
+      const named = itemLine(
+        { ...mark.item, label: group.label },
+        words,
+        startMissing,
+      );
+      place(
+        mark.item.id,
+        row,
+        "on",
+        mark.x + GLYPH_HALF_WIDTH[mark.shape] + BESIDE_MARGIN + 1,
+        mark.y,
+        named,
+        BESIDE_MARGIN,
+      );
+    }
+    for (const pause of spans.filter((s) => s.row === row && s.pause)) {
+      place(
+        pause.item.id,
+        row,
+        "above",
+        pause.xStart + 2,
+        pause.y,
+        words(pause.item).label,
+      );
+    }
+    for (const mark of marks.filter((p) => p.shape === "doseMark")) {
+      const dose = words(mark.item).sub;
+      if (dose) place(mark.item.id, row, "above", mark.x + 2, mark.y, dose);
+    }
+  });
+  return labels;
+}
+
 /**
  * Labels through one occupancy map per text line. Bars and point glyphs are
  * registered first as obstacles, so a label never covers a mark either.
  *
  * Priority: open periods (they define the lane), life events, procedures,
- * closed periods from the longest down, dose marks.
+ * closed periods from the longest down.
  */
 function placeLabels(
   spans: PlacedSpan[],
@@ -607,7 +839,6 @@ function placeLabels(
     occ.add(line(s.row, "on"), s.xStart - lead, s.xEnd + (s.item.open ? 7 : 0));
   }
   for (const p of points) {
-    if (p.shape === "doseMark") continue;
     const half = GLYPH_HALF_WIDTH[p.shape];
     occ.add(line(p.row, "on"), p.x - half, p.x + half);
   }
@@ -615,11 +846,10 @@ function placeLabels(
   const labels: PlacedLabel[] = [];
   const fitsCard = (a: number, b: number) => a >= scale.x0 && b <= scale.x1 - 2;
 
-  const openSpans = spans.filter((s) => s.item.open && !s.pause);
+  const openSpans = spans.filter((s) => s.item.open);
   const closedSpans = spans
-    .filter((s) => !s.item.open && !s.pause)
+    .filter((s) => !s.item.open)
     .sort((a, b) => b.xEnd - b.xStart - (a.xEnd - a.xStart));
-  const pausesWithLabel = spans.filter((s) => s.pause);
 
   const aboveLabel = (s: PlacedSpan, text: string) => {
     const a = s.xStart + (s.clippedLeft ? 26 : 2);
@@ -695,16 +925,6 @@ function placeLabels(
       aboveLabel(s, text) ||
       leftLabel(s.item.id, s.row, s.xStart - 6, s.y, text, strong);
     if (placed) shownOnRow.add(rowKey);
-  }
-  for (const s of pausesWithLabel) aboveLabel(s, words(s.item).label);
-  for (const p of points.filter((p) => p.shape === "doseMark")) {
-    const dose = words(p.item);
-    const text = dose.sub ?? dose.label;
-    const a = p.x + 2;
-    const b = a + estimateTextWidth(text);
-    if (fitsCard(a, b) && occ.tryAdd(line(p.row, "above"), a, b)) {
-      labels.push({ itemId: p.item.id, text, x: a, y: p.y - 7, strong: false });
-    }
   }
   // A labelled point with no room left is simply drawn without its name.
   return labels;
@@ -928,8 +1148,10 @@ export function dateAtPointer(
         x >= s.xStart - 2 &&
         x <= s.xEnd + 2
       ) {
-        const startInside = s.item.start >= layout.scale.dayAt(layout.scale.x0);
-        return startInside ? s.item.start : layout.scale.dayAt(x);
+        // A dose's piece of a bar selects the day that dose began.
+        const start = s.segment?.change?.start ?? s.item.start;
+        const startInside = start >= layout.scale.dayAt(layout.scale.x0);
+        return startInside ? start : layout.scale.dayAt(x);
       }
     }
   }
@@ -963,7 +1185,10 @@ export function stepSelection(
  * since before the period (a chronic condition, a standing medication, an
  * allergy) is the backdrop of every period and is left out, as are
  * documents, which the day lists with their visit. Lane order kept. The
- * same rule holds for a week, a month and a quarter.
+ * same rule holds for a week, a month and a quarter. A medication is one
+ * entry however many of its items touch the period
+ * (`medicationPeriodItem`), so a course and its medication never read as
+ * two.
  */
 export function itemsInPeriod(
   lanes: readonly TimelineLane[],
@@ -980,6 +1205,19 @@ export function itemsInPeriod(
     if (key === "documents") continue;
     const lane = lanes.find((l) => l.key === key);
     if (!lane) continue;
+    if (key === "medications") {
+      for (const group of medicationGroups(lane.items)) {
+        const item = medicationPeriodItem(group, from, to, today);
+        if (!item) continue;
+        const end = item.open ? today : (item.end ?? item.start);
+        out.push({
+          lane: key,
+          item,
+          through: item.start < from && !item.open && end > to,
+        });
+      }
+      continue;
+    }
     for (const item of lane.items) {
       const end = item.open ? today : (item.end ?? item.start);
       if (item.start > to || end < from) continue;

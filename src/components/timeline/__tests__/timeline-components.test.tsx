@@ -156,7 +156,7 @@ describe("chronicle", () => {
         )}
       />,
     );
-    expect(html).toContain("April bis Oktober 2026 · keine Einträge");
+    expect(html).toContain("Keine Einträge von April bis Oktober 2026");
     expect(html).toContain("Dauerhaft");
     expect(html).toContain("2 Allergien");
     expect(html).toContain("Erkältung vorbei");
@@ -209,7 +209,7 @@ describe("chronicle", () => {
         )}
       />,
     );
-    expect(text(html)).toContain("129/82 mmHg · 82,6 kg");
+    expect(text(html)).toContain("129/82 mmHg, 82,6 kg");
   });
 
   it("names a quarter once, at its newest month, with its span", () => {
@@ -275,8 +275,11 @@ describe("selection bar", () => {
   it("lists the month's entries and offers the selected day", () => {
     const html = bar("2026-01-03");
     expect(html).toContain("Januar 2026");
-    expect(html).toContain("Erkältung · 31. Dez. bis 8. Jan.");
-    expect(html).toContain("Vitamin D (Winter) · laufend");
+    expect(html).toContain("Erkältung, 31. Dez. bis 8. Jan.");
+    // A closed course that runs through the month reads its own days; no
+    // "ongoing" word stands for them.
+    expect(html).toContain("Vitamin D (Winter), 1. Nov. bis 31. März");
+    expect(html).not.toContain("laufend");
     expect(html).not.toContain("Bluthochdruck");
     expect(html).toContain("3. Jan. öffnen");
     expect(html).toContain('data-date="2026-01-03"');
@@ -284,22 +287,22 @@ describe("selection bar", () => {
 
   it("names a pause as a pause", () => {
     const html = text(bar("2021-06-05"));
-    expect(html).toContain("Ramipril pausiert · 1. Juni bis 11. Juni");
+    expect(html).toContain("Ramipril pausiert, 1. Juni bis 11. Juni");
   });
 
   it("names the bucket's means with the readings behind each", () => {
     expect(text(bar("2026-01-03"))).toContain(
-      "Ø Blutdruck 129/82 mmHg (Schnitt aus 4 Messungen) · Gewicht 82,6 kg (Schnitt aus 3 Messungen)",
+      "Ø Blutdruck 129/82 mmHg (Schnitt aus 4 Messungen), Gewicht 82,6 kg (Schnitt aus 3 Messungen)",
     );
     expect(text(bar("2026-07-15"))).toContain(
-      "Ø Blutdruck sys. 131 mmHg (1 Messung) · Blutdruck dia. kein Wert · Gewicht kein Wert",
+      "Ø Blutdruck sys. 131 mmHg (1 Messung), Blutdruck dia. kein Wert, Gewicht kein Wert",
     );
   });
 
   it("says a missing month has no value instead of interpolating one", () => {
     const html = bar("2026-02-10");
     expect(text(html)).toContain(
-      "Ø Blutdruck sys. kein Wert · Blutdruck dia. kein Wert · Gewicht kein Wert",
+      "Ø Blutdruck sys. kein Wert, Blutdruck dia. kein Wert, Gewicht kein Wert",
     );
     // January's 129 and March's 133 would make 131 between them.
     expect(html).not.toMatch(/\d mmHg/);
@@ -361,7 +364,7 @@ describe("selection bar head and hint", () => {
     expect(html).toContain('data-period-from="2026-01-01"');
     expect(html).toContain('data-period-to="2026-03-31"');
     expect(text(html)).toContain("Januar bis März 2026");
-    expect(text(html)).toContain("Erkältung · 31. Dez. bis 8. Jan.");
+    expect(text(html)).toContain("Erkältung, 31. Dez. bis 8. Jan.");
   });
 
   it("calls a bucket empty only when it holds neither an entry nor a value", () => {
@@ -481,11 +484,14 @@ describe("value line colours", () => {
     );
     for (const key of ["BLOOD_PRESSURE_SYS", "WEIGHT"]) {
       const part = html.slice(html.indexOf(`data-series="${key}"`));
-      expect(part.slice(0, part.indexOf("</span>"))).toContain(
+      const dot = part.slice(part.indexOf('data-slot="timeline-series-dot"'));
+      expect(dot.slice(0, dot.indexOf(">"))).toContain(
         `style="background:${seriesColor(key)}"`,
       );
     }
-    expect(text(html)).toBe("129/82 mmHg · 82,6 kg");
+    // Apart by space on screen, a comma for a screen reader; never a dot.
+    expect(text(html)).toBe("129/82 mmHg, 82,6 kg");
+    expect(html).toContain('class="sr-only">, </span>');
   });
 });
 

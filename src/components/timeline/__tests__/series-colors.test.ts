@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  SERIES_FALLBACK_COLOR,
   SERIES_PALETTE,
   assignSeriesColors,
   preferredSeriesColor,
@@ -10,7 +9,8 @@ import { VALUE_OPTIONS } from "../timeline-view";
 
 /**
  * A value line takes the colour its type carries in the measurement list,
- * and no two chosen lines ever share one.
+ * no two of the first five chosen lines share one, and from the sixth on
+ * the five data tokens repeat in palette order.
  */
 describe("assignSeriesColors", () => {
   it("gives a type on its own the colour it has in the list", () => {
@@ -26,18 +26,18 @@ describe("assignSeriesColors", () => {
     }
   });
 
-  it("only ever hands out data tokens, and the foreground once they run out", () => {
+  it("only ever hands out data tokens", () => {
     for (const key of VALUE_OPTIONS) {
       const own = preferredSeriesColor(key);
       if (own) expect(SERIES_PALETTE).toContain(own);
     }
   });
 
-  it("never repeats a colour among six chosen lines", () => {
-    // Every six-line choice from the selector's options.
+  it("never repeats a colour among five chosen lines", () => {
+    // Every five-line choice from the selector's options.
     const options = [...VALUE_OPTIONS];
     const pick = (from: number, chosen: string[]): string[][] =>
-      chosen.length === 6
+      chosen.length === 5
         ? [chosen]
         : options
             .slice(from)
@@ -46,11 +46,28 @@ describe("assignSeriesColors", () => {
     expect(choices.length).toBeGreaterThan(100);
     for (const keys of choices) {
       const colours = assignSeriesColors(keys, VALUE_OPTIONS);
-      expect(colours.size).toBe(6);
-      expect(new Set(colours.values()).size).toBe(6);
-      for (const colour of colours.values()) {
-        expect([...SERIES_PALETTE, SERIES_FALLBACK_COLOR]).toContain(colour);
-      }
+      expect(colours.size).toBe(5);
+      expect(new Set(colours.values()).size).toBe(5);
+    }
+  });
+
+  it("repeats the five data tokens in order past the fifth line, never the foreground", () => {
+    const keys = [
+      ...VALUE_OPTIONS,
+      "BODY_TEMPERATURE",
+      "VO2_MAX",
+      "OXYGEN_SATURATION",
+      "RESPIRATORY_RATE",
+    ];
+    expect(keys.length).toBe(15);
+    const colours = assignSeriesColors(keys, keys);
+    expect(colours.size).toBe(15);
+    const used = [...colours.values()];
+    for (const colour of used) expect(SERIES_PALETTE).toContain(colour);
+    // Every token is used before any is used again, and none more than
+    // three times across fifteen lines.
+    for (const token of SERIES_PALETTE) {
+      expect(used.filter((c) => c === token).length).toBe(3);
     }
   });
 

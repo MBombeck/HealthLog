@@ -290,7 +290,7 @@ export const timelineQuerySchema = z
       .string()
       .optional()
       .describe(
-        "Comma-separated value series to include, as `MeasurementType` names or `MOOD`, at most 6. More, or an unknown name, answers 422.",
+        "Comma-separated value series to include, as `MeasurementType` names or `MOOD`. A name given twice counts once, so the list is bounded by the names that exist; an unknown name answers 422.",
       ),
   })
   .refine((q) => q.zoom !== "range" || (q.from && q.to), {
@@ -339,6 +339,12 @@ const timelineItem = z
         "The second line, by kind: a code for a life event (its category), a visit or procedure (its encounter kind) and a document (its kind); the analyte count for a lab day; the dose as text for a medication or a dose change. The client words every code.",
       ),
     href: z.string().nullable(),
+    group: z
+      .string()
+      .nullable()
+      .describe(
+        "Items that belong to one thing share a group and are drawn on one row: a medication's own span, its courses, its dose changes and its pauses all carry the medication's id. Null for an item that stands alone.",
+      ),
   })
   .meta({ id: "TimelineItem" });
 
@@ -405,6 +411,11 @@ export const timelineResponseSchema = z
         "The span every series point averages: `quarter` for a multi-year `all`, `month` for `year` and an `all` under two years, `week` for `quarter`, and for a `range` by its length: `quarter` from two years, `month` from 120 days, `week` from 42 days, `day` below.",
       ),
     series: z.array(timelineSeries),
+    availableSeries: z
+      .array(z.string())
+      .describe(
+        "Every value series this record can show, whatever the window: the `MeasurementType` names with live readings that the caller may see (events excluded), and `MOOD` when the mood score is visible and has entries. Each may be named in `values`.",
+      ),
     notable: z.array(
       z.object({ date: dateKeySchema, kind: z.enum(DAY_NOTABLE_KINDS) }),
     ),
