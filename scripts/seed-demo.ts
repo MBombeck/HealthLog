@@ -2697,7 +2697,7 @@ async function seed() {
     // written as the nightly fetch would leave them (no feed is called).
     // Seasonal shapes for a city in the south-west: mild winters, warm
     // summers, alder and birch in spring, grass into July, mugwort and
-    // ragweed late in summer, a little ragweed into October.
+    // ragweed from late summer well into October.
     const sealedHome = sealDemoLocation(DEMO_HOME);
     const sealedHoliday = sealDemoLocation(DEMO_HOLIDAY_PLACE);
     const envRows: unknown[][] = [];
@@ -2813,7 +2813,7 @@ async function seed() {
         pollen(128, 215, 85),
         away ? 0 : pollen(195, 255, 28),
         0,
-        away ? 0 : pollen(215, 290, 34),
+        away ? 0 : pollen(220, 305, 45),
         "cams_europe",
         24,
         fetchedAt,
