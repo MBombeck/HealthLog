@@ -291,9 +291,9 @@ test.describe("the dashboard and the list of all values", () => {
       })
       .toBeLessThanOrEqual(panelBox.x);
 
-    // Collapsed, the day keeps a narrow edge; the launcher stays clear of it.
+    // Folded, the day keeps its strip; the launcher stays clear of it.
     await page.locator('[data-slot="day-close"]').click();
-    const edge = (await page.locator('[data-slot="day-rail"]').boundingBox())!;
+    const edge = (await page.locator('[data-slot="day-strip"]').boundingBox())!;
     await expect
       .poll(async () => {
         const b = (await fab.boundingBox())!;

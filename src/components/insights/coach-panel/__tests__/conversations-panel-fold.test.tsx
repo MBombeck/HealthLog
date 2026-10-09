@@ -67,10 +67,11 @@ describe("the folded list", () => {
     "utf8",
   );
 
-  it("keeps an edge with its button, and sits left of the day", () => {
-    expect(source).toContain('data-slot="coach-panel-rail"');
-    expect(source).toContain('data-slot="coach-panel-expand"');
-    expect(source).toContain('dockedOpen ? "w-72" : "w-12"');
+  it("slides to nothing, keeps its own strip, and sits left of the day", () => {
+    expect(source).toContain('slot="coach-panel-strip"');
+    expect(source).toContain("order={1}");
+    expect(source).toContain('dockedOpen ? "w-72" : "w-0"');
+    expect(source).toContain("DOCK_SLIDE");
     expect(source).toMatch(/order-1/);
   });
 

@@ -13,15 +13,17 @@ import { mockDay } from "./setup/day-mock";
  *
  * Contracts under test, at 1920, 1440, 1280 and 390 px:
  *
- *   1. From 1280 px the panel docks beside the thread, open on a first visit,
- *      and the reading column (thread and composer) is exactly as wide with
- *      the panel open as folded. Folded, the panel keeps a 48 px edge whose
- *      button (in the place of the open panel's fold control) opens it
- *      again; the choice survives a reload. The panel is flush with the
- *      viewport's right edge and runs from the top of the window to the
- *      bottom; the top bar ends at its left edge and the panel's header
- *      border is the top bar's. Focus moves between the fold control and
- *      the edge's button, and Escape inside the open panel folds it.
+ *   1. From 1280 px the panel docks beside the thread, open on a first visit.
+ *      From 1440 px the reading column (thread and composer) is exactly as
+ *      wide with the panel open as folded; at 1280 the two strips leave the
+ *      open column below its cap, so folding widens it up to the cap. Its 40 px strip stays at the right edge,
+ *      left of the day's, open or not, and never moves: a click opens the
+ *      panel left of the strips, a second click shuts it; the choice
+ *      survives a reload. The panel is flush with the strips and runs from
+ *      the top of the window to the bottom; the top bar ends at its left
+ *      edge and the panel's header border is the top bar's. Focus moves
+ *      between the fold control and the strip, and Escape inside the open
+ *      panel folds it.
  *   2. New conversation is a round 56 px button in the conversation column,
  *      never over the panel, never over the composer's field, and absent
  *      from the panel's header.
@@ -216,7 +218,10 @@ async function mockCoach(page: Page): Promise<CoachMock> {
 const toggle = (page: Page) => page.locator('[data-slot="coach-panel-toggle"]');
 const collapse = (page: Page) =>
   page.locator('[data-slot="coach-panel-collapse"]');
-const expand = (page: Page) => page.locator('[data-slot="coach-panel-expand"]');
+const expand = (page: Page) =>
+  page.locator('[data-slot="coach-panel-strip-toggle"]');
+const strip = (page: Page) => page.locator('[data-slot="coach-panel-strip"]');
+const dayStrip = (page: Page) => page.locator('[data-slot="day-strip"]');
 const fab = (page: Page) => page.locator('[data-slot="coach-new-chat-fab"]');
 const dayPanel = (page: Page) => page.locator('[data-slot="day-panel"]');
 const panel = (page: Page) =>
@@ -247,50 +252,72 @@ async function expectNoSidewaysScroll(page: Page) {
 }
 
 /**
- * The docked panel is flush with the window: its right edge is the
- * viewport's (no scrollbar gutter beside it), it runs from the top of the
- * window to the bottom, the top bar ends at its left edge, its header row's
- * bottom border is the top bar's, and its own border is the left one only.
+ * The docked panel is flush with its strips: the conversations' strip sits
+ * right of the panel and the day's right of that, against the viewport's
+ * right edge (no scrollbar gutter beside them). The panel runs from the top
+ * of the window to the bottom, the top bar ends at its left edge, an open
+ * panel's header row has the top bar's bottom border, and its own border
+ * is the left one only. Both strips start below the top bar's band.
  */
 async function expectPanelFlush(page: Page, width: number, height: number) {
   const geometry = await page.evaluate(() => {
-    const aside = document.querySelector(
+    const box = (selector: string) =>
+      document.querySelector(selector)?.getBoundingClientRect() ?? null;
+    const outer = document.querySelector(
       '[data-slot="coach-conversations-panel"]',
     )!;
-    const inner = aside.firstElementChild as HTMLElement;
-    // Open, the header row; folded, the edge's band.
-    const header =
-      aside.querySelector('[data-slot="coach-conversations-panel-header"]') ??
-      aside.querySelector('[data-slot="coach-panel-expand"]')!.parentElement!;
-    const bar = document.querySelector('[data-slot="top-bar"]')!;
+    const inner = outer.querySelector("aside");
+    const style = inner ? getComputedStyle(inner) : null;
     const main = document.getElementById("main-content")!;
-    const style = getComputedStyle(inner);
-    const box = aside.getBoundingClientRect();
-    const barBox = bar.getBoundingClientRect();
+    const panel = outer.getBoundingClientRect();
     return {
-      right: box.right,
-      top: box.top,
-      bottom: box.bottom,
-      left: box.left,
-      headerBottom: header.getBoundingClientRect().bottom,
-      barBottom: barBox.bottom,
-      barRight: barBox.right,
+      panel: {
+        left: panel.left,
+        right: panel.right,
+        top: panel.top,
+        bottom: panel.bottom,
+      },
+      header:
+        box('[data-slot="coach-conversations-panel-header"]')?.bottom ?? null,
+      bar: box('[data-slot="top-bar"]')!,
+      list: box('[data-slot="coach-panel-strip"]')!,
+      listButton: box('[data-slot="coach-panel-strip-toggle"]')!,
+      day: box('[data-slot="day-strip"]')!,
+      dayDock: box("#day-docked-panel")!,
       gutter: main.offsetWidth - main.clientWidth,
-      borders: [
-        style.borderTopWidth,
-        style.borderRightWidth,
-        style.borderBottomWidth,
-        style.borderLeftWidth,
-      ],
+      borders: style
+        ? [
+            style.borderTopWidth,
+            style.borderRightWidth,
+            style.borderBottomWidth,
+            style.borderLeftWidth,
+          ]
+        : null,
     };
   });
-  expect(geometry.right).toBe(width);
-  expect(geometry.top).toBe(0);
-  expect(geometry.bottom).toBe(height);
-  expect(geometry.barRight).toBe(geometry.left);
-  expect(geometry.headerBottom).toBe(geometry.barBottom);
+  expect(geometry.day.right).toBe(width);
+  expect(geometry.list.right).toBe(geometry.day.left);
+  expect(Math.round(geometry.list.width)).toBe(40);
+  expect(Math.round(geometry.day.width)).toBe(40);
+  // Conversations, then the day (open or slid to nothing), then the strips.
+  expect(geometry.panel.right).toBe(geometry.dayDock.left);
+  expect(geometry.dayDock.right).toBe(geometry.list.left);
+  expect(geometry.panel.top).toBe(0);
+  expect(geometry.panel.bottom).toBe(height);
+  expect(geometry.bar.right).toBe(geometry.panel.left);
+  // The strips start below the band; the palette's corner stays the bar's.
+  expect(geometry.listButton.top).toBe(geometry.bar.bottom);
+  if (geometry.header !== null) {
+    expect(geometry.header).toBe(geometry.bar.bottom);
+    expect(geometry.borders).toEqual(["0px", "0px", "0px", "1px"]);
+  }
   expect(geometry.gutter).toBe(0);
-  expect(geometry.borders).toEqual(["0px", "0px", "0px", "1px"]);
+}
+
+/** Where a strip stands on screen. */
+async function stripBox(locator: Locator) {
+  const box = (await locator.boundingBox())!;
+  return { x: Math.round(box.x), width: Math.round(box.width) };
 }
 
 /**
@@ -430,7 +457,10 @@ test.describe("Coach page frame", () => {
         "coach-conversations-panel",
       );
       const open = await columnWidths(page);
-      expect(open.thread).toBeCloseTo(672, 0);
+      // The full 672 px column at 1440; at 1280 the two strips take 80 px
+      // of it and the column stays well above the 560 px floor.
+      if (width === 1440) expect(open.thread).toBeCloseTo(672, 0);
+      else expect(open.thread).toBeGreaterThanOrEqual(560);
       expect(Math.abs(open.composer - open.thread)).toBeLessThanOrEqual(1);
       // The panel sits right of the column, never over it.
       const aside = (await panel(page).boundingBox())!;
@@ -444,11 +474,16 @@ test.describe("Coach page frame", () => {
       await expectNoSidewaysScroll(page);
       await shot(page, testInfo, `coach-frame-${width}-open`);
 
-      // Folded: a 48 px edge stays, its button takes the focus, and the
-      // top bar ends at the edge.
+      // The strip stands still through a fold and an open.
+      const stripOpen = await stripBox(strip(page));
+      await expect(expand(page)).toHaveAttribute("aria-expanded", "true");
+
+      // Folded: the panel slides to nothing, the strip takes the focus, and
+      // the top bar ends at the strips.
       await collapse(page).click();
       await expect(panel(page)).toHaveAttribute("data-state", "closed");
-      await waitForWidth(panel(page), 48);
+      await waitForWidth(panel(page), 0);
+      expect(await stripBox(strip(page))).toEqual(stripOpen);
       await expect(expand(page)).toBeFocused();
       await expect(expand(page)).toHaveAttribute("aria-expanded", "false");
       await expect(expand(page)).toHaveAttribute(
@@ -460,8 +495,15 @@ test.describe("Coach page frame", () => {
       ).toHaveCount(0);
       await expectPanelFlush(page, width, 900);
       const closed = await columnWidths(page);
-      expect(Math.abs(closed.thread - open.thread)).toBeLessThanOrEqual(1);
-      expect(Math.abs(closed.composer - open.composer)).toBeLessThanOrEqual(1);
+      if (width === 1440) {
+        expect(Math.abs(closed.thread - open.thread)).toBeLessThanOrEqual(1);
+      } else {
+        // At 1280 the strips leave the open column below its 672 px cap, so
+        // folding the list gives the column back what it lacked, and no more.
+        expect(closed.thread).toBeGreaterThanOrEqual(open.thread);
+        expect(closed.thread).toBeLessThanOrEqual(672 + 1);
+      }
+      expect(Math.abs(closed.composer - closed.thread)).toBeLessThanOrEqual(1);
       await expectNewChatFab(page);
       await expectNoSidewaysScroll(page);
       await shot(page, testInfo, `coach-frame-${width}-closed`);
@@ -470,8 +512,18 @@ test.describe("Coach page frame", () => {
       await openCoach(page);
       await expect(panel(page)).toHaveAttribute("data-state", "closed");
 
+      // A click on the strip opens it, a second click shuts it, and the
+      // strip does not move either time.
+      await expand(page).click();
+      await expect(panel(page)).toHaveAttribute("data-state", "open");
+      expect(await stripBox(strip(page))).toEqual(stripOpen);
+      await expand(page).click();
+      await expect(panel(page)).toHaveAttribute("data-state", "closed");
+      await expect(expand(page)).toBeFocused();
+      expect(await stripBox(strip(page))).toEqual(stripOpen);
+
       // Opened from the keyboard, focus lands on the fold control; Escape
-      // from inside folds it again and focus goes back to the edge.
+      // from inside folds it again and focus goes back to the strip.
       await expand(page).focus();
       await page.keyboard.press("Enter");
       await expect(panel(page)).toHaveAttribute("data-state", "open");
@@ -500,15 +552,17 @@ test.describe("Coach page frame", () => {
       page.locator('[data-slot="coach-message-thread"]').getByText(ANSWER),
     ).toBeVisible({ timeout: 15_000 });
 
-    // The day opens docked, right of the conversations, which fold to
-    // their edge for it.
+    // The day opens docked, left of the strips, and the conversations
+    // close for it; both strips stay.
     await expect(dayPanel(page)).toHaveAttribute("data-shell", "docked");
     await expect(panel(page)).toHaveAttribute("data-state", "closed");
-    await waitForWidth(panel(page), 48);
-    const rail = (await panel(page).boundingBox())!;
+    await waitForWidth(panel(page), 0);
     const dayBox = (await dayPanel(page).boundingBox())!;
-    expect(rail.x + rail.width).toBeLessThanOrEqual(dayBox.x + 1);
-    expect(Math.round(dayBox.x + dayBox.width)).toBe(1440);
+    const listStrip = (await strip(page).boundingBox())!;
+    expect(Math.round(dayBox.x + dayBox.width)).toBe(Math.round(listStrip.x));
+    expect(Math.round(listStrip.x + listStrip.width)).toBe(1400);
+    await expect(dayStrip(page)).toHaveAttribute("data-state", "open");
+    await expectPanelFlush(page, 1440, 900);
     await expectNewChatFab(page);
     expect(
       (await page.locator('[data-slot="coach-page-main"]').boundingBox())!
@@ -517,30 +571,28 @@ test.describe("Coach page frame", () => {
     await expectNoSidewaysScroll(page);
     await shot(page, testInfo, "coach-frame-1440-day");
 
-    // Opening the conversations folds the day to its edge; focus goes to
-    // the conversations' fold control, the day is out of the URL, and the
-    // conversation stays the same.
+    // Opening the conversations closes the day; its strip keeps the day,
+    // focus goes to the conversations' fold control, the day is out of the
+    // URL, and the conversation stays the same.
     await expand(page).click();
     await expect(panel(page)).toHaveAttribute("data-state", "open");
     await expect(dayPanel(page)).toHaveCount(0);
-    await expect(page.locator('[data-slot="day-rail"]')).toHaveAttribute(
-      "data-day",
-      day,
-    );
+    await expect(dayStrip(page)).toHaveAttribute("data-day", day);
+    await expect(dayStrip(page)).toHaveAttribute("data-state", "closed");
     await expect(collapse(page)).toBeFocused();
     await expect(page).toHaveURL(/\/coach\?c=frame-bp$/);
     await expectNewChatFab(page);
     await shot(page, testInfo, "coach-frame-1440-list");
 
-    // And back: the day's edge opens the day, the conversations fold.
-    await page.locator('[data-slot="day-expand"]').click();
+    // And back: the day's strip opens the day, the conversations close.
+    await page.locator('[data-slot="day-strip-toggle"]').click();
     await expect(dayPanel(page)).toHaveAttribute("data-shell", "docked");
     await expect(panel(page)).toHaveAttribute("data-state", "closed");
     await expect(page).toHaveURL(new RegExp(`c=frame-bp&day=${day}$`));
 
     // Switching conversations keeps the day open.
     await expand(page).click();
-    await page.locator('[data-slot="day-expand"]').click();
+    await page.locator('[data-slot="day-strip-toggle"]').click();
     await expect(dayPanel(page)).toBeVisible();
     await fab(page).click();
     await expect(page).toHaveURL(new RegExp(`/coach\\?day=${day}$`));
@@ -565,6 +617,7 @@ test.describe("Coach page frame", () => {
     const list = (await panel(page).boundingBox())!;
     const dayBox = (await dayPanel(page).boundingBox())!;
     expect(list.x + list.width).toBeLessThanOrEqual(dayBox.x + 1);
+    await expectPanelFlush(page, 1920, 1000);
     expect(
       (await page.locator('[data-slot="coach-page-main"]').boundingBox())!
         .width,

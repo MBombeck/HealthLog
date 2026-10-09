@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   Suspense,
@@ -12,11 +13,17 @@ import {
   useSyncExternalStore,
 } from "react";
 
-import { PanelRightOpen } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 
+import {
+  DOCK_SLIDE,
+  DOCK_SLIDE_MS,
+  DockStrip,
+  ShellStrip,
+  useLingering,
+} from "@/components/layout/shell-dock";
 import { ShellSidePanel } from "@/components/layout/shell-side-panel";
 import { SHELL_HEADER_BAND } from "@/components/layout/shell-metrics";
-import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -48,13 +55,14 @@ import {
   takeDayYield,
   useDayFocus,
 } from "./day-layer-controller";
-import { parseDayParam, shiftDateKey, withDayHref } from "./day-url";
 import {
-  DayView,
-  PANEL_TOGGLE,
-  PANEL_TOGGLE_ICON,
-  useLongDayLabel,
-} from "./day-view";
+  parseDayParam,
+  shiftDateKey,
+  stripDayOf,
+  withDayHref,
+} from "./day-url";
+import { useLongDayLabel } from "./day-label";
+import type { DayViewProps } from "./day-view";
 import { usePrefetchDay } from "./use-day";
 import { useTodayKey } from "./use-today-key";
 
@@ -67,10 +75,12 @@ import { useTodayKey } from "./use-today-key";
  *   - from 1280 px, a column docked beside the page, the same place and the
  *     same breakpoint as the Coach's conversations panel. Not modal: the
  *     chart beside it stays usable, and another point swaps the day. It is a
- *     landmark (`complementary`) named by the date. It collapses like a
- *     sidebar instead of going away: hidden, a narrow edge stays on the
- *     right with a button that brings the last day back, on this page or any
- *     other (`last-day.ts` remembers it per browser and account).
+ *     landmark (`complementary`) named by the date. Its strip stays at the
+ *     right edge of the window whether the day is open or not
+ *     (`shell-dock.tsx`): it names the day and opens or closes it, on this
+ *     page or any other (`last-day.ts` remembers the day per browser and
+ *     account; with nothing remembered the strip holds today). The column
+ *     slides open and shut left of the strip the way the conversations do.
  *   - from 768 px, a sheet from the right, modal.
  *   - on a phone, a sheet from the bottom at a bit over half the height, so
  *     the chart stays in view above it; dragging the handle up (or tapping
@@ -78,14 +88,36 @@ import { useTodayKey } from "./use-today-key";
  *
  * On `/coach` the day docks too, right of the Coach's conversations: page,
  * conversations, day. Below 1600 px only one of the two is open at a time;
- * opening the day folds the conversations to their edge, and opening the
- * conversations folds the day to its edge (`yieldDay`).
+ * opening the day closes the conversations, and opening the conversations
+ * closes the day (`yieldDay`).
  *
  * The parameter is the state. A date that is not a calendar date, or lies in
  * the future, is removed from the URL without a word. Collapsing the docked
  * day removes the parameter like closing does; only the remembered date
  * stays, and expanding opens it again.
  */
+export const DAY_PANEL_ID = "day-docked-panel";
+
+/**
+ * The day's content loads when a day first opens (or when the pointer
+ * reaches the strip), not with the shell: the scores, the calendar and the
+ * sections are no part of a page until a day is open. Until it arrives the
+ * frame shows its header band and nothing else.
+ */
+const loadDayView = () => import("./day-view").then((m) => m.DayView);
+function preloadDayView() {
+  void loadDayView();
+}
+const DayView = dynamic(loadDayView, {
+  ssr: false,
+  loading: () => (
+    <div
+      data-slot="day-view-loading"
+      className={cn(SHELL_HEADER_BAND, "border-border shrink-0")}
+    />
+  ),
+});
+
 export function DayLayerMount() {
   // `useSearchParams` suspends a statically rendered route until the client
   // has the URL; the boundary keeps that from blanking the page around it.
@@ -205,19 +237,48 @@ function DayLayer() {
   const shortLabel = useLongDayLabel("short");
   const { t } = useTranslations();
   const titleId = useId();
-  const titleRef = useRef<HTMLHeadingElement>(null);
+  const titleRef = useRef<HTMLHeadingElement | null>(null);
+  // Focus asked for before the day's content had loaded: the heading takes
+  // it the moment it mounts.
+  const titleFocusPending = useRef(false);
+  const attachTitle = useCallback((el: HTMLHeadingElement | null) => {
+    titleRef.current = el;
+    if (el && titleFocusPending.current) {
+      titleFocusPending.current = false;
+      el.focus({ preventScroll: true });
+    }
+  }, []);
+  const focusTitle = useCallback(() => {
+    const el = titleRef.current;
+    if (el) el.focus({ preventScroll: true });
+    else titleFocusPending.current = true;
+  }, []);
   const panelRef = useRef<HTMLElement>(null);
-  const expandRef = useRef<HTMLButtonElement>(null);
-  // Set by the collapse control: focus then lands on the control that
-  // brings the day back, in the same place, as a sidebar's toggle does.
+  const stripRef = useRef<HTMLButtonElement>(null);
+  // Set by a fold (the header's control, the strip): focus then lands on the
+  // strip, which brings the day back from the same place.
   const collapsing = useRef(false);
 
-  // The collapsed edge: the docked frame only, and only with a day to bring
-  // back that is still a day the layer would open.
+  // The remembered day, while the docked day is shut, if it is still a day
+  // the layer would open.
   const railDay =
     shell === "docked" && date === null && lastDay !== null
       ? parseDayParam(lastDay, today)
       : null;
+  // A page change drops `?day=` before the new page puts the remembered day
+  // back (below); a day left open stays open through that gap instead of
+  // sliding shut and open again.
+  const heldOpen = shell === "docked" && date === null && leftOpen;
+  const dockedDay =
+    shell === "docked" ? (date ?? (heldOpen ? railDay : null)) : null;
+  // The docked column keeps painting the day it showed while it slides shut.
+  const shownDay = useLingering(dockedDay);
+  // No slide on arrival: a day restored with the page is simply there.
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setSettled(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   const collapse = useCallback(() => {
     collapsing.current = true;
@@ -253,7 +314,7 @@ function DayLayer() {
       // (on the arrow the person pressed), and so does a day restored on a
       // new page.
       if (before === null && shell === "docked" && !restoring.current) {
-        titleRef.current?.focus({ preventScroll: true });
+        focusTitle();
       }
       restoring.current = false;
       return;
@@ -272,7 +333,7 @@ function DayLayer() {
         collapsing.current = false;
         return;
       }
-      const rail = expandRef.current;
+      const rail = stripRef.current;
       if (collapsing.current && rail) {
         takeDayTrigger();
         rail.focus({ preventScroll: true });
@@ -281,7 +342,7 @@ function DayLayer() {
       }
     }
     collapsing.current = false;
-  }, [date, shell, owner]);
+  }, [date, shell, owner, focusTitle]);
 
   const onStep = useCallback(
     (delta: number) => {
@@ -347,71 +408,13 @@ function DayLayer() {
     </p>
   );
 
-  if (date === null) {
-    if (railDay === null) return live;
-    const label = t("day.showPanel", { date: longLabel(railDay) });
-    const expand = () =>
-      openDay(railDay, { trigger: expandRef.current ?? undefined });
-    return (
-      <>
-        {live}
-        <ShellSidePanel>
-          <div
-            data-slot="day-rail"
-            data-day={railDay}
-            className="bg-card text-card-foreground border-border order-2 flex h-full w-12 shrink-0 flex-col border-l"
-          >
-            {/* The top bar's band, so the two bottom borders draw one line;
-                the control sits where the open day keeps its own. */}
-            <div
-              className={cn(
-                SHELL_HEADER_BAND,
-                "border-border flex shrink-0 items-center justify-center",
-              )}
-            >
-              <Button
-                ref={expandRef}
-                type="button"
-                variant="ghost"
-                size="icon"
-                data-slot="day-expand"
-                aria-expanded={false}
-                aria-label={label}
-                title={label}
-                onClick={expand}
-                className={PANEL_TOGGLE}
-              >
-                <PanelRightOpen
-                  className={cn(PANEL_TOGGLE_ICON, "-scale-x-100")}
-                  aria-hidden="true"
-                />
-              </Button>
-            </div>
-            {/* The rest of the edge takes a click too and names the day it
-                holds; the keyboard has the button above. */}
-            <button
-              type="button"
-              tabIndex={-1}
-              aria-hidden="true"
-              onClick={expand}
-              className="hover:bg-muted/60 text-muted-foreground flex min-h-0 flex-1 cursor-pointer flex-col items-center justify-start pt-4 text-xs transition-colors"
-            >
-              <span className="[writing-mode:vertical-rl]">
-                {shortLabel(railDay)}
-              </span>
-            </button>
-          </div>
-        </ShellSidePanel>
-      </>
-    );
-  }
-
   const view = (
-    Title: Parameters<typeof DayView>[0]["Title"],
-    extra?: Partial<Parameters<typeof DayView>[0]>,
+    shown: DateKey,
+    Title: DayViewProps["Title"],
+    extra?: Partial<DayViewProps>,
   ) => (
     <DayView
-      date={date}
+      date={shown}
       today={today}
       focus={focus}
       shell={shell}
@@ -420,36 +423,82 @@ function DayLayer() {
       onPick={onPick}
       Title={Title}
       titleId={titleId}
-      titleRef={titleRef}
+      titleRef={attachTitle}
       {...extra}
     />
   );
 
   if (shell === "docked") {
+    // What the strip holds: the open day, else the remembered one, else today.
+    const stripDay = stripDayOf(date, railDay, today);
+    const open = dockedDay !== null;
+    const toggle = () => {
+      if (open) {
+        collapse();
+        return;
+      }
+      openDay(stripDay, { trigger: stripRef.current ?? undefined });
+    };
     return (
       <>
         {live}
         <ShellSidePanel>
-          <aside
-            ref={panelRef}
-            aria-labelledby={titleId}
-            data-slot="day-panel"
-            data-shell="docked"
-            // A short fade, not a slide: the column takes its width at once
-            // (the page beside it reflows in the same frame either way), so
-            // only its content eases in. None under reduced motion.
-            className="bg-card text-card-foreground border-border motion-safe:animate-in motion-safe:fade-in-0 order-2 flex h-full w-105 shrink-0 flex-col border-l motion-safe:duration-150"
+          <div
+            id={DAY_PANEL_ID}
+            data-slot="day-dock"
+            data-state={open ? "open" : "closed"}
+            className={cn(
+              DOCK_SLIDE,
+              "order-2",
+              open ? "w-105" : "w-0",
+              !settled && "transition-none",
+            )}
           >
-            {view(DockedTitle, {
-              // No status-bar inset here: the docked column sits inside
-              // the app shell, which takes it (`shell-safe-area`).
-              headerClassName: cn(SHELL_HEADER_BAND, "border-border"),
-            })}
-          </aside>
+            {shownDay !== null ? (
+              <aside
+                ref={panelRef}
+                aria-labelledby={titleId}
+                data-slot="day-panel"
+                data-shell="docked"
+                data-state={open ? "open" : "closing"}
+                // Sliding shut, it paints the day it showed and takes no
+                // input.
+                inert={!open}
+                className="bg-card text-card-foreground border-border absolute inset-y-0 left-0 flex w-105 flex-col border-l"
+              >
+                {view(shownDay, DockedTitle, {
+                  // No status-bar inset here: the docked column sits inside
+                  // the app shell, which takes it (`shell-safe-area`).
+                  headerClassName: cn(SHELL_HEADER_BAND, "border-border"),
+                })}
+              </aside>
+            ) : null}
+          </div>
         </ShellSidePanel>
+        <ShellStrip>
+          <DockStrip
+            ref={stripRef}
+            slot="day-strip"
+            order={2}
+            controls={DAY_PANEL_ID}
+            expanded={open}
+            label={shortLabel(stripDay)}
+            actionLabel={
+              open
+                ? t("day.hidePanel")
+                : t("day.showPanel", { date: longLabel(stripDay) })
+            }
+            icon={CalendarDays}
+            onToggle={toggle}
+            onPreload={preloadDayView}
+            data={{ "data-day": stripDay }}
+          />
+        </ShellStrip>
       </>
     );
   }
+
+  if (date === null) return live;
 
   return (
     <>
@@ -457,9 +506,9 @@ function DayLayer() {
       <DaySheet
         shell={shell}
         panelRef={panelRef}
-        titleRef={titleRef}
+        focusTitle={focusTitle}
         onDismiss={closeByPerson}
-        render={(extra) => view(SheetTitle, extra)}
+        render={(extra) => view(date, SheetTitle, extra)}
       />
     </>
   );
@@ -472,10 +521,13 @@ function DayLayer() {
  * and there the chart the person clicked slid away under the pointer by the
  * height the reflow added above it. Measured after layout, so where the
  * browser already anchored, the correction is zero and nothing moves twice.
+ * The column slides, so the page reflows on every frame of the slide; the
+ * correction follows it frame by frame until the slide has run.
  */
 function useKeepAnchorInView(active: boolean) {
   const anchor = useRef<{ el: HTMLElement; top: number } | null>(null);
   const wasActive = useRef(false);
+  const frame = useRef(0);
 
   // Before paint, so the corrected position is the first one drawn.
   useLayoutEffect(() => {
@@ -491,14 +543,27 @@ function useKeepAnchorInView(active: boolean) {
           ? { el: opened.el, top: opened.top }
           : null;
     }
-    const a = anchor.current;
-    if (a && a.el.isConnected) {
-      const delta = a.el.getBoundingClientRect().top - a.top;
-      if (Math.abs(delta) > 1) main.scrollTop += delta;
-      a.top = a.el.getBoundingClientRect().top;
-    }
+    const held = anchor.current;
     if (!active) anchor.current = null;
+    if (!held) return;
+    const correct = () => {
+      if (!held.el.isConnected) return;
+      const delta = held.el.getBoundingClientRect().top - held.top;
+      if (Math.abs(delta) > 1) main.scrollTop += delta;
+      held.top = held.el.getBoundingClientRect().top;
+    };
+    correct();
+    cancelAnimationFrame(frame.current);
+    const until = performance.now() + DOCK_SLIDE_MS + 50;
+    const tick = () => {
+      correct();
+      if (performance.now() < until)
+        frame.current = requestAnimationFrame(tick);
+    };
+    frame.current = requestAnimationFrame(tick);
   }, [active]);
+
+  useEffect(() => () => cancelAnimationFrame(frame.current), []);
 
   // While the column is open, the page may scroll; the anchor follows.
   useEffect(() => {
@@ -552,16 +617,17 @@ function returnFocus(fallback?: HTMLElement | null) {
 function DaySheet({
   shell,
   panelRef,
-  titleRef,
+  focusTitle,
   onDismiss,
   render,
 }: {
   shell: "sheet" | "bottom";
   panelRef: React.RefObject<HTMLElement | null>;
-  titleRef: React.RefObject<HTMLHeadingElement | null>;
+  /** Focus the day's heading, now or as soon as it has loaded. */
+  focusTitle: () => void;
   /** The person closed the sheet (a swipe down, Escape, the overlay). */
   onDismiss: () => void;
-  render: (extra: Partial<Parameters<typeof DayView>[0]>) => React.ReactNode;
+  render: (extra: Partial<DayViewProps>) => React.ReactNode;
 }) {
   const { t } = useTranslations();
   const [full, setFull] = useState(false);
@@ -625,7 +691,7 @@ function DaySheet({
         data-full={bottom && full ? "true" : undefined}
         onOpenAutoFocus={(event) => {
           event.preventDefault();
-          titleRef.current?.focus({ preventScroll: true });
+          focusTitle();
         }}
         onCloseAutoFocus={(event) => {
           event.preventDefault();

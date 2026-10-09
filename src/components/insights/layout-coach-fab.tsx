@@ -256,14 +256,13 @@ export function LayoutCoachFab() {
           // the offset ring draws a clear halo around the circle.
           "focus-visible:ring-offset-background focus-visible:ring-offset-2",
           "transition-[opacity,right] duration-150 motion-reduce:transition-none",
-          // v1.42 — while a day is docked on the right (from 1280 px), the
+          // v1.42 — from 1280 px the day's 2.5 rem strip stays at the right
+          // edge; the launcher stays clear of it. While the day is open, the
           // launcher moves left with the page's own edge, so it stays over
           // the page and never over the day's footer actions. The `:has()`
-          // gate keys off the docked panel's slot, like the yields below.
-          "[body:has([data-slot=day-panel][data-shell=docked])_&]:right-[calc(26.25rem+2rem)]",
-          // Collapsed, the day keeps a 3 rem edge on the right; the launcher
-          // stays clear of it the same way.
-          "[body:has([data-slot=day-rail])_&]:right-[calc(3rem+2rem)]",
+          // gates key off the strip's state, so exactly one of them holds.
+          "[body:has([data-slot=day-strip][data-state=closed])_&]:right-[calc(2.5rem+2rem)]",
+          "[body:has([data-slot=day-strip][data-state=open])_&]:right-[calc(26.25rem+2.5rem+2rem)]",
           // Yield to the data-list selection bar: its delete action lands
           // in the same lower-right band, and the destructive control
           // wins. The `:has()` gate keys off the bar's `data-slot`.

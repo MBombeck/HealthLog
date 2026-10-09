@@ -29,6 +29,7 @@ import { CommandPaletteMount } from "@/components/command-palette/command-palett
 import { DemoBanner } from "./demo-banner";
 import { OfflineBanner } from "./offline-banner";
 import { SharedRecordBanner } from "./shared-record-banner";
+import { ShellStripOutlet } from "./shell-dock";
 import { ShellSidePanelOutlet } from "./shell-side-panel";
 import { SharedRecordUnavailable } from "./shared-record-unavailable";
 import {
@@ -540,6 +541,9 @@ export function AuthShell({
               bottom, and the top bar ends at its left edge. Empty and out of
               the row on every other page. */}
           <ShellSidePanelOutlet className="flex min-h-0 shrink-0 empty:hidden" />
+          {/* The docked panels' strips, right of the panels: one per panel,
+              always shown from 1280 px (`shell-dock.tsx`). */}
+          <ShellStripOutlet className="flex min-h-0 shrink-0 empty:hidden" />
           <BottomNav />
         </div>
       </div>

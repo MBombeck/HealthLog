@@ -61,7 +61,7 @@ function VerbLabel({ children }: { children: string }) {
   // Icon-only again while a day is docked: the bar then shares the width
   // with the day panel and the labelled row would no longer fit one line.
   return (
-    <span className="hidden lg:inline [body:has([data-slot=day-panel][data-shell=docked])_&]:hidden">
+    <span className="hidden lg:inline [body:has([data-slot=day-strip][data-state=open])_&]:hidden">
       {children}
     </span>
   );
@@ -116,10 +116,11 @@ export function DocumentBulkBar({
           // the bar shows, which is the shell's call, not a width's: a phone
           // held sideways is wider than `md` and still has the bar.
           "bg-card border-border shell-desktop:bottom-6 fixed bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)] left-1/2 z-40 -translate-x-1/2",
-          // v1.42 — while a day is docked on the right, the bar sits against
-          // the page's right edge instead of the window's centre, clear of the
-          // day's footer actions and of an expanded sidebar.
-          "[body:has([data-slot=day-panel][data-shell=docked])_&]:right-[calc(26.25rem+1rem)] [body:has([data-slot=day-panel][data-shell=docked])_&]:left-auto [body:has([data-slot=day-panel][data-shell=docked])_&]:max-w-[calc(100vw-44.25rem)] [body:has([data-slot=day-panel][data-shell=docked])_&]:translate-x-0",
+          // v1.42 — while a day is docked on the right (its strip open), the
+          // bar sits against the page's right edge instead of the window's
+          // centre, clear of the day's footer actions, its strip and an
+          // expanded sidebar.
+          "[body:has([data-slot=day-strip][data-state=open])_&]:right-[calc(26.25rem+2.5rem+1rem)] [body:has([data-slot=day-strip][data-state=open])_&]:left-auto [body:has([data-slot=day-strip][data-state=open])_&]:max-w-[calc(100vw-46.75rem)] [body:has([data-slot=day-strip][data-state=open])_&]:translate-x-0",
           "flex w-[calc(100%-2rem)] max-w-3xl flex-col gap-2 rounded-xl border p-3 shadow-lg",
         )}
       >

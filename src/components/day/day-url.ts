@@ -55,6 +55,19 @@ export function parseDayParam(
   return isOpenableDay(raw, todayKey) ? raw : null;
 }
 
+/**
+ * The day the docked day's strip holds: the open day, else the remembered
+ * one while the layer would still open it, else today. The strip always
+ * names a day, so it always has something to open.
+ */
+export function stripDayOf(
+  open: DateKey | null,
+  remembered: string | null,
+  todayKey: DateKey,
+): DateKey {
+  return open ?? parseDayParam(remembered, todayKey) ?? todayKey;
+}
+
 /** `key` moved by `delta` calendar days. */
 export function shiftDateKey(key: DateKey, delta: number): DateKey {
   const anchor = new Date(`${key}T12:00:00.000Z`);

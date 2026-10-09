@@ -2,7 +2,13 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { PanelRightClose, PanelRightOpen, Target, X } from "lucide-react";
+import {
+  MessagesSquare,
+  PanelRightClose,
+  PanelRightOpen,
+  Target,
+  X,
+} from "lucide-react";
 
 import { useOpenDay, yieldDay } from "@/components/day/day-layer-controller";
 import { Button } from "@/components/ui/button";
@@ -13,6 +19,12 @@ import {
   SheetDescription,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  DOCK_SLIDE,
+  DockStrip,
+  ShellStrip,
+  useLingering,
+} from "@/components/layout/shell-dock";
 import { ShellSidePanel } from "@/components/layout/shell-side-panel";
 import { SHELL_HEADER_BAND } from "@/components/layout/shell-metrics";
 import { TopBarActions } from "@/components/layout/top-bar-actions";
@@ -43,25 +55,27 @@ import { useDeleteCoachConversationWithUndo } from "./use-coach";
  * Docked, the panel is a column of the shell beside the content column
  * (top bar and page): it runs the full height of the window, and the top bar
  * ends at its left edge. The panel's header row is the top bar's band, so
- * the two bottom borders draw one line. It folds like the day beside it: the
- * header's first control folds it to a narrow edge, and the edge's button
- * (in the same place) opens it again. Folded, the edge names the list.
+ * the two bottom borders draw one line. Its strip stays at the right edge of
+ * the window, left of the day's (`shell-dock.tsx`), open or not: a click
+ * on the strip opens the panel left of the strips and a second click shuts
+ * it; the header's first control shuts it too. The panel slides open and
+ * shut (a 200 ms width transition, none under reduced motion).
  * The header carries the title, a link to Plans, the settings gear and, in
  * the sheet, a close button. New conversation is not here: it floats in the
  * conversation itself (`NewChatFab`).
  *
  * The day docks right of the panel on this page too (page, conversations,
  * day). Below 1600 px only one of the two is open: a day opening folds the
- * list to its edge without touching the remembered choice, and opening the
- * list folds the day to its edge (`yieldDay`). From 1600 px both stay open.
+ * list without touching the remembered choice, and opening the list closes
+ * the day (`yieldDay`). From 1600 px both stay open.
  *
  * Below 1280 px the panel is a sheet, opened from the toggle at the end of
  * the top bar.
  *
  * Keyboard: Escape folds the docked panel when focus is inside it and
  * nothing inside (a row menu, the rename field, the settings popover) has
- * already claimed the key; focus moves to the edge's button, and opening
- * from there lands on the fold control. In the sheet Radix owns Escape, the
+ * already claimed the key; focus moves to the strip, and opening from the
+ * strip lands on the fold control. In the sheet Radix owns Escape, the
  * focus trap and the return.
  */
 export const COACH_PANEL_ID = "coach-conversations-panel";
@@ -119,6 +133,17 @@ export function listYields(state: {
     state.dayOpen &&
     (state.dayOpened || state.narrowed)
   );
+}
+
+/**
+ * Whether opening the docked list closes an open day: below 1600 px only one
+ * of the two is open, and the one the person just opened wins.
+ */
+export function dayYields(state: {
+  fitsBoth: boolean;
+  dayOpen: boolean;
+}): boolean {
+  return !state.fitsBoth && state.dayOpen;
 }
 
 /**
@@ -263,6 +288,8 @@ export function ConversationsPanel({
   const expanded = docked ? dockedOpen : sheetOpen;
   const collapseRef = useRef<HTMLButtonElement>(null);
   const expandRef = useRef<HTMLButtonElement>(null);
+  // The list keeps painting while it slides shut.
+  const shownOpen = useLingering(docked && dockedOpen ? true : null) ?? false;
   // Where focus goes once the docked panel has folded or opened.
   const focusAfter = useRef<"collapse" | "expand" | null>(null);
   useEffect(() => {
@@ -282,7 +309,7 @@ export function ConversationsPanel({
     setRevealed(false);
     setOpen(true);
     // Below 1600 px the day makes room: it folds to its edge.
-    if (!fitsBoth && openDay !== null) yieldDay();
+    if (dayYields({ fitsBoth, dayOpen: openDay !== null })) yieldDay();
   }
 
   function collapseDocked() {
@@ -425,89 +452,65 @@ export function ConversationsPanel({
       )}
 
       {docked ? (
-        <ShellSidePanel>
-          <aside
-            id={COACH_PANEL_ID}
-            aria-label={t("insights.coach.historyTitle")}
-            data-slot="coach-conversations-panel"
-            data-state={dockedOpen ? "open" : "closed"}
-            onKeyDown={(event) => {
-              if (
-                !dockedOpen ||
-                event.key !== "Escape" ||
-                event.defaultPrevented
-              ) {
-                return;
+        <>
+          <ShellSidePanel>
+            <div
+              id={COACH_PANEL_ID}
+              data-slot="coach-conversations-panel"
+              data-state={dockedOpen ? "open" : "closed"}
+              onKeyDown={(event) => {
+                if (
+                  !dockedOpen ||
+                  event.key !== "Escape" ||
+                  event.defaultPrevented
+                ) {
+                  return;
+                }
+                event.preventDefault();
+                collapseDocked();
+              }}
+              className={cn(
+                // A column of the shell's content row (`ShellSidePanel`), so
+                // it runs from the top of the window to the bottom beside the
+                // top bar, left of a docked day (`order-1`, the day is
+                // `order-2`). The width slides between the open column and
+                // nothing; the content keeps 18rem, pinned left, so it slides
+                // instead of squeezing (`DOCK_SLIDE`).
+                DOCK_SLIDE,
+                "bg-sidebar text-sidebar-foreground order-1",
+                dockedOpen ? "w-72" : "w-0",
+              )}
+            >
+              {shownOpen ? (
+                <aside
+                  aria-label={t("insights.coach.historyTitle")}
+                  // Sliding shut, it paints the list and takes no input.
+                  inert={!dockedOpen}
+                  className="border-sidebar-border absolute inset-y-0 left-0 flex w-72 flex-col border-l"
+                >
+                  {body(false)}
+                </aside>
+              ) : null}
+            </div>
+          </ShellSidePanel>
+          <ShellStrip>
+            <DockStrip
+              ref={expandRef}
+              slot="coach-panel-strip"
+              order={1}
+              controls={COACH_PANEL_ID}
+              expanded={dockedOpen}
+              label={t("insights.coach.historyTitle")}
+              actionLabel={
+                dockedOpen
+                  ? t("insights.coach.frame.hidePanel")
+                  : t("insights.coach.frame.showPanel")
               }
-              event.preventDefault();
-              collapseDocked();
-            }}
-            className={cn(
-              // A column of the shell's content row (`ShellSidePanel`), so it
-              // runs from the top of the window to the bottom beside the top
-              // bar, left of a docked day (`order-1`, the day is `order-2`).
-              // The width animates between the open column and the folded
-              // edge; the open column keeps 18rem and is pinned to the
-              // panel's left edge, so it slides instead of squeezing.
-              "bg-sidebar text-sidebar-foreground relative order-1 h-full shrink-0 overflow-hidden",
-              "transition-[width] duration-200 ease-linear motion-reduce:transition-none",
-              dockedOpen ? "w-72" : "w-12",
-            )}
-          >
-            {dockedOpen ? (
-              <div className="border-sidebar-border absolute inset-y-0 left-0 flex w-72 flex-col border-l">
-                {body(false)}
-              </div>
-            ) : (
-              <div
-                data-slot="coach-panel-rail"
-                className="border-sidebar-border absolute inset-y-0 left-0 flex w-12 flex-col border-l"
-              >
-                {/* The top bar's band, so the bottom borders draw one line;
-                    the button sits where the open panel keeps its fold
-                    control. */}
-                <div
-                  className={cn(
-                    SHELL_HEADER_BAND,
-                    "border-sidebar-border flex shrink-0 items-center justify-center",
-                  )}
-                >
-                  <Button
-                    ref={expandRef}
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={expandDocked}
-                    data-slot="coach-panel-expand"
-                    aria-controls={COACH_PANEL_ID}
-                    aria-expanded={false}
-                    aria-label={t("insights.coach.frame.showPanel")}
-                    title={t("insights.coach.frame.showPanel")}
-                    className={PANEL_HEADER_BUTTON}
-                  >
-                    <PanelRightOpen
-                      className={cn(PANEL_HEADER_ICON, "-scale-x-100")}
-                      aria-hidden="true"
-                    />
-                  </Button>
-                </div>
-                {/* The rest of the edge takes a click too and names the
-                    list; the keyboard has the button above. */}
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  aria-hidden="true"
-                  onClick={expandDocked}
-                  className="hover:bg-sidebar-accent text-muted-foreground flex min-h-0 flex-1 cursor-pointer flex-col items-center justify-start pt-4 text-xs transition-colors"
-                >
-                  <span className="[writing-mode:vertical-rl]">
-                    {t("insights.coach.historyTitle")}
-                  </span>
-                </button>
-              </div>
-            )}
-          </aside>
-        </ShellSidePanel>
+              icon={MessagesSquare}
+              onToggle={dockedOpen ? collapseDocked : expandDocked}
+            />
+          </ShellStrip>
+        </>
       ) : (
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetContent
