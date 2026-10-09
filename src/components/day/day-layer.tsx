@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   Suspense,
   useCallback,
@@ -37,11 +37,13 @@ import { cn } from "@/lib/utils";
 
 import {
   closeDay,
+  jumpDay,
   openDay,
   peekDayTriggerAt,
   publishOpenDay,
   stepDay,
   takeDayTrigger,
+  takeDayYield,
   useDayFocus,
 } from "./day-layer-controller";
 import { parseDayParam, shiftDateKey, withDayHref } from "./day-url";
@@ -72,8 +74,10 @@ import { useTodayKey } from "./use-today-key";
  *     the chart stays in view above it; dragging the handle up (or tapping
  *     it) takes it to full height, dragging it down closes it.
  *
- * On `/coach` the conversations panel already holds the side column, and
- * there is never more than one docked panel: the day opens as a sheet there.
+ * On `/coach` the day docks too, right of the Coach's conversations: page,
+ * conversations, day. Below 1600 px only one of the two is open at a time;
+ * opening the day folds the conversations to their edge, and opening the
+ * conversations folds the day to its edge (`yieldDay`).
  *
  * The parameter is the state. A date that is not a calendar date, or lies in
  * the future, is removed from the URL without a word. Collapsing the docked
@@ -121,7 +125,6 @@ function modalSurfaceOpen(): boolean {
 
 function DayLayer() {
   const searchParams = useSearchParams();
-  const pathname = usePathname();
   const today = useTodayKey();
   const raw = searchParams.get(DAY_QUERY_PARAM);
   const date = parseDayParam(raw, today);
@@ -157,7 +160,7 @@ function DayLayer() {
   const phone = useIsMobile();
   const shell: "docked" | "sheet" | "bottom" = phone
     ? "bottom"
-    : wide && !pathname.startsWith("/coach")
+    : wide
       ? "docked"
       : "sheet";
 
@@ -206,6 +209,11 @@ function DayLayer() {
       return;
     }
     if (before !== null && shell === "docked") {
+      // Collapsed for a neighbouring panel: focus stays where it was.
+      if (takeDayYield()) {
+        collapsing.current = false;
+        return;
+      }
       const rail = expandRef.current;
       if (collapsing.current && rail) {
         takeDayTrigger();
@@ -224,6 +232,14 @@ function DayLayer() {
       stepDay(date, delta);
     },
     [date, today],
+  );
+
+  const onPick = useCallback(
+    (next: DateKey) => {
+      if (next > today) return;
+      jumpDay(next);
+    },
+    [today],
   );
 
   // Keyboard: Escape closes the docked column (a sheet's own Escape is the
@@ -285,7 +301,7 @@ function DayLayer() {
           <div
             data-slot="day-rail"
             data-day={railDay}
-            className="bg-card text-card-foreground border-border flex h-full w-12 shrink-0 flex-col border-l"
+            className="bg-card text-card-foreground border-border order-2 flex h-full w-12 shrink-0 flex-col border-l"
           >
             {/* The top bar's band, so the two bottom borders draw one line;
                 the control sits where the open day keeps its own. */}
@@ -343,6 +359,7 @@ function DayLayer() {
       shell={shell}
       onClose={shell === "docked" ? collapse : closeDay}
       onStep={onStep}
+      onPick={onPick}
       Title={Title}
       titleId={titleId}
       titleRef={titleRef}
@@ -363,7 +380,7 @@ function DayLayer() {
             // A short fade, not a slide: the column takes its width at once
             // (the page beside it reflows in the same frame either way), so
             // only its content eases in. None under reduced motion.
-            className="bg-card text-card-foreground border-border motion-safe:animate-in motion-safe:fade-in-0 flex h-full w-105 shrink-0 flex-col border-l motion-safe:duration-150"
+            className="bg-card text-card-foreground border-border motion-safe:animate-in motion-safe:fade-in-0 order-2 flex h-full w-105 shrink-0 flex-col border-l motion-safe:duration-150"
           >
             {view(DockedTitle, {
               // No status-bar inset here: the docked column sits inside

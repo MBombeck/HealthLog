@@ -109,6 +109,7 @@ let canWrite = true;
 vi.mock("../use-day", () => ({
   useDay: () => ({ ...dayQuery, refetch: () => undefined }),
   usePrefetchDay: () => () => undefined,
+  useDayIndex: () => ({ data: undefined }),
 }));
 vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
 vi.mock("@/hooks/use-auth", () => ({
@@ -160,6 +161,7 @@ async function render(
         shell={props.shell ?? "docked"}
         onClose={() => undefined}
         onStep={() => undefined}
+        onPick={() => undefined}
         Title={(p) => <h2 {...p} />}
         titleId="t"
       />
@@ -179,7 +181,7 @@ describe("<DayView>", () => {
   it("names the day and counts what it holds", async () => {
     const html = await render();
     expect(html).toContain("Saturday, January 3, 2026");
-    expect(html).toContain("3 values · 2 entries");
+    expect(html).toContain("3 values, 2 entries");
   });
 
   it("lists what ran through the day with its running count", async () => {
