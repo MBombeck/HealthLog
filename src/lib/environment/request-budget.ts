@@ -171,3 +171,39 @@ export class OpenMeteoBudgetExhaustedError extends Error {
     this.name = "OpenMeteoBudgetExhaustedError";
   }
 }
+
+/** Calls already charged to each live window, by window name. */
+export type BudgetUsage = Partial<Record<BudgetWindow["name"], number>>;
+
+/**
+ * Read how much of each window is in use, in calls, without charging
+ * anything. A window never written or already reset reads as absent (zero).
+ * With `accountId` the account's daily share is read as well. Used by the
+ * air-quality history backfill, which holds itself under a ceiling of its own
+ * so the nightly fetch and on-demand requests keep their room.
+ */
+export async function readOpenMeteoBudgetUsage(
+  accountId?: string,
+  now: Date = new Date(),
+): Promise<BudgetUsage> {
+  const keys = new Map<string, BudgetWindow["name"]>(
+    OPEN_METEO_BUDGET_WINDOWS.map((w) => [
+      `${BUCKET_PREFIX}:${w.name}`,
+      w.name,
+    ]),
+  );
+  if (accountId) {
+    keys.set(`${BUCKET_PREFIX}:account:${accountId}:day`, "account-day");
+  }
+  const rows = await prisma.rateLimit.findMany({
+    where: { key: { in: [...keys.keys()] } },
+    select: { key: true, count: true, resetAt: true },
+  });
+  const usage: BudgetUsage = {};
+  for (const row of rows) {
+    const name = keys.get(row.key);
+    if (!name || row.resetAt.getTime() <= now.getTime()) continue;
+    usage[name] = row.count / CENTI;
+  }
+  return usage;
+}

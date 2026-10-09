@@ -89,7 +89,25 @@ describe("GET /api/documents/inbound/layout", () => {
     const res = await callGet();
     expect(res.status).toBe(200);
     expect((await res.json()).data).toEqual(DEFAULT_DOCUMENTS_LAYOUT);
+    expect(DEFAULT_DOCUMENTS_LAYOUT).toEqual({
+      version: 1,
+      view: "cards",
+      arrangement: "flow",
+    });
     expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it("keeps a saved stacked arrangement although the default is flow", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      documentsLayoutJson: {
+        version: 1,
+        view: "cards",
+        arrangement: "stacked",
+      },
+    } as never);
+
+    const res = await callGet();
+    expect((await res.json()).data.arrangement).toBe("stacked");
   });
 
   it("serves the stored choice, repairing an unknown value field by field", async () => {
@@ -101,7 +119,7 @@ describe("GET /api/documents/inbound/layout", () => {
     expect((await res.json()).data).toEqual({
       version: 1,
       view: "list",
-      arrangement: "stacked",
+      arrangement: "flow",
     });
   });
 
@@ -143,6 +161,23 @@ describe("PUT /api/documents/inbound/layout", () => {
       version: 1,
       view: "list",
       arrangement: "flow",
+    });
+  });
+
+  it("stores only the chosen field, so the untouched one keeps following the default", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      documentsLayoutJson: null,
+    } as never);
+
+    const res = await put({ version: 1, view: "list" });
+    expect((await res.json()).data).toEqual({
+      version: 1,
+      view: "list",
+      arrangement: "flow",
+    });
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: "user-1" },
+      data: { documentsLayoutJson: { version: 1, view: "list" } },
     });
   });
 

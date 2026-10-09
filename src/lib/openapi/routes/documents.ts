@@ -62,7 +62,7 @@ const documentsLayoutSchema = z
     arrangement: z
       .enum(DOCUMENTS_LAYOUT_ARRANGEMENTS)
       .describe(
-        '`stacked` gives every month its own block; `flow` runs the documents across the full width and wraps, with month names inline. Default "stacked".',
+        '`stacked` gives every month its own block; `flow` runs the documents across the full width and wraps, with month names inline. Default "flow"; an account that never chose keeps following the default.',
       ),
   })
   .meta({

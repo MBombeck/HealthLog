@@ -5829,6 +5829,8 @@
           "operatorDisabled": "이 서버에서는 대기질 기능이 꺼져 있습니다.",
           "coverage": "대기질 데이터가 있는 날 {count}일",
           "pollenEuropeOnly": "꽃가루 데이터는 유럽만 제공됩니다.",
+          "historyProgress": "대기질 과거 데이터 채우는 중: {total}일 중 {done}일",
+          "historyComplete": "출처가 제공하는 기록이 있는 이전 날짜 모두에 대기질이 채워졌습니다({total}일). 그보다 오래된 날짜는 비어 있습니다.",
           "attribution": "데이터 출처와 라이선스",
           "saveError": "설정을 저장하지 못했습니다.",
           "latest": "가장 최근 날짜 ({date})",

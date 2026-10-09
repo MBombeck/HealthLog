@@ -92,6 +92,13 @@ interface EnvironmentOverview {
     days: number;
     latestDate: string | null;
     domain: string | null;
+    /** The history backfill's progress; null before its first run. */
+    history: {
+      total: number;
+      done: number;
+      complete: boolean;
+      checkedAt: string;
+    } | null;
   };
   /** v1.42 — the newest stored day; `airQuality` null while off/unfetched. */
   latestDay: {
@@ -638,6 +645,26 @@ export function EnvironmentSection() {
                   ? ` ${t("settings.sections.environment.airQuality.pollenEuropeOnly")}`
                   : ""}
               </p>
+              {data.airQuality.history && data.airQuality.history.total > 0 && (
+                <p
+                  className="text-muted-foreground text-xs"
+                  data-testid="environment-aq-history"
+                  data-complete={data.airQuality.history.complete}
+                >
+                  {data.airQuality.history.complete
+                    ? t(
+                        "settings.sections.environment.airQuality.historyComplete",
+                        { total: data.airQuality.history.total },
+                      )
+                    : t(
+                        "settings.sections.environment.airQuality.historyProgress",
+                        {
+                          done: data.airQuality.history.done,
+                          total: data.airQuality.history.total,
+                        },
+                      )}
+                </p>
+              )}
               {data.latestDay?.airQuality && (
                 <div className="space-y-2">
                   <p className="text-sm font-medium">

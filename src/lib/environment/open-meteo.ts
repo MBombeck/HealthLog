@@ -149,6 +149,17 @@ const HOURLY_FIELDS = HOURLY_FIELD_LIST.join(",");
 const ARCHIVE_VARIABLE_COUNT =
   DAILY_FIELD_LIST.length + HOURLY_FIELD_LIST.length;
 
+/** The request weight of one archive request over a day range, in calls. */
+export function archiveRequestWeight(
+  startDate: string,
+  endDate: string,
+): number {
+  return openMeteoCallWeight(
+    ARCHIVE_VARIABLE_COUNT,
+    enumerateDayCount(startDate, endDate),
+  );
+}
+
 /** Per-day aggregation accumulator for the hourly-only fields. */
 interface HourlyDayAgg {
   pressures: number[];
@@ -269,10 +280,7 @@ export async function fetchDailyEnvironment(
   },
   budget: { accountId?: string } = {},
 ): Promise<DailyEnvironmentObservation[]> {
-  const weight = openMeteoCallWeight(
-    ARCHIVE_VARIABLE_COUNT,
-    enumerateDayCount(args.startDate, args.endDate),
-  );
+  const weight = archiveRequestWeight(args.startDate, args.endDate);
   if (!(await reserveOpenMeteoCalls(weight, budget.accountId))) {
     throw new OpenMeteoBudgetExhaustedError();
   }

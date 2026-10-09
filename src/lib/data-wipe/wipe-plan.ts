@@ -378,6 +378,7 @@ export const USER_RESET = {
   homeSince: null,
   homeLocationEncrypted: null,
   environmentAirQualityEnabled: true,
+  environmentAqHistoryJson: Prisma.DbNull,
 
   // Derived AI output cached on the row
   insightsPrivacyMode: "aggregated",

@@ -45,6 +45,18 @@ an earlier fold computed from part of a day.
   highest pollen join the correlation channels. An account switch under
   Location & weather (on by default), attributions beside the values, and a
   dashboard chip on a day with high pollen, a warm night or very poor air.
+- **Air quality for the past.** A background job fills air quality, pollen
+  and UV for earlier local days with an entry: after the update, when the
+  home is set and when air quality is switched on. A day inside a location
+  period is fetched at that place, a day from the home's effective date on
+  at the home; a day before it with no period stays empty rather than
+  borrowing a place the person was not at. The source reaches back to 2013
+  in Europe and to August 2022 elsewhere, pollen from 2021 in Europe only;
+  older days stay empty. Nearby days share one
+  request of up to 90 days, a run holds itself to 300 of the account's 400
+  daily calls and half of each instance window, and a long history spreads
+  over several nights. Location & weather shows the progress (migration
+  0391).
 - **`get_environment` and `get_day`** for the Coach and MCP.
   `get_environment` is module-gated and carries no coordinate or place name;
   `get_day` leaves out life events, notes and document names and honours
@@ -77,8 +89,10 @@ an earlier fold computed from part of a day.
   when each type last arrived, by which trigger (including the new
   `manual` for Sync all) and when it last brought a new value
   (migration 0384).
-- **Documents layout.** Preview cards or a compact list, months stacked or
-  flowing, per account (migration 0388).
+- **Documents layout.** Preview cards or a compact list, months flowing
+  side by side (the default) or stacked, per account (migration 0388). Only
+  a field the person picked is stored, so an untouched one follows the
+  default.
 - **Measurement maintenance.** An admin card and
   `POST /api/admin/maintenance/measurements` run `VACUUM (ANALYZE)` and a
   `REINDEX INDEX CONCURRENTLY` per index, largest first.
@@ -180,7 +194,8 @@ All changes are additive.
   `lastNewSampleAt` per type.
 - The sync feed lists only deletions a person makes, not those of the
   condensing step.
-- `GET /api/environment` adds `airQuality`, `latestDay` and `attributions`.
+- `GET /api/environment` adds `airQuality` (with `history`, the progress of
+  the past-days backfill), `latestDay` and `attributions`.
 - `GET`/`PUT /api/auth/me/source-priority` add `inUse`.
 - A dose for a record-only medication is refused with 422
   `medication.intake.notTracked`; failed passkey sign-ins answer with

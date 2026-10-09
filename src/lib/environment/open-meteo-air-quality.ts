@@ -22,14 +22,20 @@
  *
  * ## Coverage, and why a missing value is null and never zero
  *
- * The feed starts on 2013-01-01; pollen, UV, dust and aerosol depth only from
- * about mid 2022, and pollen only in Europe. A value the feed did not cover is
- * stored as null. A chunk that ends before {@link AIR_QUALITY_FULL_FEED_FROM}
- * asks only for the eight pollutant and index variables, which the feed has
- * for that era; that keeps the request weight at 1.0 instead of 1.7 per ten
- * variables. A day before {@link AIR_QUALITY_EARLIEST_DAY} cannot be fetched
- * at all and is returned as uncoverable (every value null, no hours), so the
- * nightly gap fill does not ask for it again.
+ * What the feed serves (open-meteo.com/en/docs/air-quality-api, checked
+ * against the live API in v1.42): inside Europe the CAMS European reanalysis
+ * reaches back to 2013-01-01 and the forecast takes over from October 2023;
+ * outside Europe only CAMS global exists, from 2022-08-01. Pollen is Europe
+ * only and present from 2021 (in season); UV and aerosol depth come from CAMS
+ * global, so from 2022-08-01. A value the feed did not cover is stored as
+ * null. The variables asked for follow the era of a chunk's last day
+ * ({@link variablesForChunk}): the eight pollutant and index variables before
+ * {@link AIR_QUALITY_POLLEN_FROM}, plus pollen and dust until
+ * {@link AIR_QUALITY_GLOBAL_FROM}, everything after, which keeps the
+ * request weight down where the extra variables would come back empty. A day
+ * before the first day the feed serves at the location
+ * ({@link earliestAirQualityDay}) is not requested at all and is returned as
+ * uncoverable (every value null, no hours), so nobody asks for it again.
  *
  * ## Daily rules (a local day of hourly values)
  *
@@ -90,13 +96,15 @@ export function isAirQualityActive(accountEnabled: boolean): boolean {
   return accountEnabled && !isAirQualityOperatorDisabled();
 }
 
-/** The first day the feed serves. */
+/** The first day the feed serves (the CAMS European reanalysis). */
 export const AIR_QUALITY_EARLIEST_DAY = "2013-01-01";
 /**
- * From about here the feed carries pollen, UV, dust and aerosol depth. A
- * chunk ending before it asks for the pollutant and index variables only.
+ * The first day CAMS global serves, the only model outside Europe, and so the
+ * first day with every variable (UV and aerosol depth come from it).
  */
-export const AIR_QUALITY_FULL_FEED_FROM = "2022-06-01";
+export const AIR_QUALITY_GLOBAL_FROM = "2022-08-01";
+/** From here the European feed carries pollen (and dust). */
+export const AIR_QUALITY_POLLEN_FROM = "2021-01-01";
 /** Days per request: bounds the response (about 300 KB) and the heap. */
 export const AIR_QUALITY_CHUNK_DAYS = 90;
 
@@ -112,11 +120,9 @@ const POLLUTANT_VARIABLES = [
   "us_aqi",
 ] as const;
 
-/** The nine variables the feed fills only from about mid 2022. */
-const RECENT_VARIABLES = [
-  "uv_index",
+/** The seven variables the European feed fills from 2021. */
+const POLLEN_ERA_VARIABLES = [
   "dust",
-  "aerosol_optical_depth",
   "alder_pollen",
   "birch_pollen",
   "grass_pollen",
@@ -125,13 +131,23 @@ const RECENT_VARIABLES = [
   "ragweed_pollen",
 ] as const;
 
+/** The two variables that come from CAMS global, so from August 2022. */
+const GLOBAL_ERA_VARIABLES = ["uv_index", "aerosol_optical_depth"] as const;
+
 type HourlyVariable =
-  (typeof POLLUTANT_VARIABLES)[number] | (typeof RECENT_VARIABLES)[number];
+  | (typeof POLLUTANT_VARIABLES)[number]
+  | (typeof POLLEN_ERA_VARIABLES)[number]
+  | (typeof GLOBAL_ERA_VARIABLES)[number];
+
+const POLLEN_ERA_REQUEST: readonly HourlyVariable[] = [
+  ...POLLUTANT_VARIABLES,
+  ...POLLEN_ERA_VARIABLES,
+];
 
 /** All 17 hourly variables, in request order. */
 export const AIR_QUALITY_VARIABLES: readonly HourlyVariable[] = [
-  ...POLLUTANT_VARIABLES,
-  ...RECENT_VARIABLES,
+  ...POLLEN_ERA_REQUEST,
+  ...GLOBAL_ERA_VARIABLES,
 ];
 
 /** One stored day's air-quality part, as the feed produced it. */
@@ -209,6 +225,16 @@ export function uvIndexMax(byHour: readonly (number | null)[]): number | null {
 /** Whether a coarse location lies inside the CAMS Europe model domain. */
 export function insideCamsEurope(lat: number, lon: number): boolean {
   return lat >= 30 && lat <= 72 && lon >= -25 && lon <= 45;
+}
+
+/**
+ * The first day the feed has air quality for at a coarse location: 2013
+ * inside the CAMS Europe domain, August 2022 (CAMS global) outside it.
+ */
+export function earliestAirQualityDay(lat: number, lon: number): string {
+  return insideCamsEurope(lat, lon)
+    ? AIR_QUALITY_EARLIEST_DAY
+    : AIR_QUALITY_GLOBAL_FROM;
 }
 
 /**
@@ -326,11 +352,22 @@ export function chunkDays(
   return chunks;
 }
 
-/** The variables a chunk asks for: the pollutant set alone before the full era. */
+/** The variables a chunk asks for, by the era of its last day. */
 export function variablesForChunk(endDate: string): readonly HourlyVariable[] {
-  return endDate < AIR_QUALITY_FULL_FEED_FROM
-    ? POLLUTANT_VARIABLES
-    : AIR_QUALITY_VARIABLES;
+  if (endDate < AIR_QUALITY_POLLEN_FROM) return POLLUTANT_VARIABLES;
+  if (endDate < AIR_QUALITY_GLOBAL_FROM) return POLLEN_ERA_REQUEST;
+  return AIR_QUALITY_VARIABLES;
+}
+
+/** The request weight of one chunk, in calls (`openMeteoCallWeight`). */
+export function airQualityChunkWeight(
+  startDate: string,
+  endDate: string,
+): number {
+  return openMeteoCallWeight(
+    variablesForChunk(endDate).length,
+    enumerateDayCount(startDate, endDate),
+  );
 }
 
 /** Why a fetch stopped before its last chunk. */
@@ -361,27 +398,23 @@ export async function fetchDailyAirQuality(
   budget: { accountId?: string } = {},
 ): Promise<AirQualityFetchResult> {
   const days: DailyAirQualityObservation[] = [];
-  // Days before the feed's first day are answered here, without a request.
+  // Days before the feed's first day at this location are answered here,
+  // without a request.
+  const earliest = earliestAirQualityDay(args.lat, args.lon);
   for (
     let day = args.startDate;
-    day <= args.endDate && day < AIR_QUALITY_EARLIEST_DAY;
+    day <= args.endDate && day < earliest;
     day = shiftDateKey(day, 1)
   ) {
     days.push(uncoverableDay(day));
   }
-  const start =
-    args.startDate < AIR_QUALITY_EARLIEST_DAY
-      ? AIR_QUALITY_EARLIEST_DAY
-      : args.startDate;
+  const start = args.startDate < earliest ? earliest : args.startDate;
   if (start > args.endDate) return { days, stopped: null };
 
   const chunks = chunkDays(start, args.endDate).reverse();
   for (const chunk of chunks) {
     const variables = variablesForChunk(chunk.endDate);
-    const weight = openMeteoCallWeight(
-      variables.length,
-      enumerateDayCount(chunk.startDate, chunk.endDate),
-    );
+    const weight = airQualityChunkWeight(chunk.startDate, chunk.endDate);
     if (!(await reserveOpenMeteoCalls(weight, budget.accountId))) {
       return { days, stopped: "budget" };
     }

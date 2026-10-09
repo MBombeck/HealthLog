@@ -10,9 +10,10 @@
  *   and wrap, with each month's name riding inline as a small marker that does
  *   not break the run.
  *
- * Null / missing column = the defaults below (cards, stacked — the vault as it
- * has always looked). The GET endpoint never lazy-writes, so the column only
- * carries data once the user has changed one of the two. Mirrors
+ * Null / missing column = the defaults below (cards, flowing months). The GET
+ * endpoint never lazy-writes, and the PUT stores only the fields the user has
+ * actually chosen, so a default that changes later reaches every account that
+ * never picked that field, while a saved choice stays. Mirrors
  * `medication-list-layout.ts`: tolerant resolver on read, normaliser on write,
  * preserve-when-absent PUT (see the route).
  */
@@ -33,7 +34,7 @@ export interface DocumentsLayout {
 export const DEFAULT_DOCUMENTS_LAYOUT: DocumentsLayout = {
   version: 1,
   view: "cards",
-  arrangement: "stacked",
+  arrangement: "flow",
 };
 
 function isView(value: unknown): value is DocumentsLayoutView {
@@ -66,5 +67,24 @@ export function resolveDocumentsLayout(raw: unknown): DocumentsLayout {
     arrangement: isArrangement(blob.arrangement)
       ? blob.arrangement
       : DEFAULT_DOCUMENTS_LAYOUT.arrangement,
+  };
+}
+
+/**
+ * The fields a stored blob explicitly carries, each validated. Unknown or
+ * malformed values drop out, so the default fills them on read. The PUT
+ * merges into this rather than into the resolved layout, which keeps an
+ * untouched field following the default instead of freezing today's value.
+ */
+export function storedDocumentsLayoutChoices(
+  raw: unknown,
+): Partial<Pick<DocumentsLayout, "view" | "arrangement">> {
+  if (raw === null || raw === undefined || typeof raw !== "object") return {};
+  const blob = raw as { view?: unknown; arrangement?: unknown };
+  return {
+    ...(isView(blob.view) ? { view: blob.view } : {}),
+    ...(isArrangement(blob.arrangement)
+      ? { arrangement: blob.arrangement }
+      : {}),
   };
 }

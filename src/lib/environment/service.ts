@@ -56,14 +56,14 @@ export const ENVIRONMENT_LOOKBACK_DAYS = 7;
 export const ENVIRONMENT_MAX_BACKFILL_DAYS = 730;
 
 /** A coarse resolved location for a given day. */
-interface ResolvedLocation {
+export interface ResolvedLocation {
   lat: number;
   lon: number;
   label: string;
   source: EnvironmentLocationSource;
 }
 
-interface HomeLocation {
+export interface HomeLocation {
   lat: number;
   lon: number;
   label: string;
@@ -72,7 +72,7 @@ interface HomeLocation {
   since: string | null;
 }
 
-interface TravelOverride {
+export interface TravelOverride {
   startDate: string;
   endDate: string;
   lat: number;
@@ -164,7 +164,7 @@ export interface FetchAndStoreResult {
 }
 
 /** The user columns every environment read resolves the home from. */
-const HOME_SELECT = {
+export const HOME_SELECT = {
   homeLat: true,
   homeLon: true,
   homeLabel: true,
@@ -208,7 +208,7 @@ export function resolveHome(user: {
 }
 
 /** A location period whose sealed location this host cannot open. */
-interface UnreadablePeriod {
+export interface UnreadablePeriod {
   startDate: string;
   endDate: string;
 }
@@ -220,7 +220,7 @@ interface UnreadablePeriod {
  * period it cannot read still says "this account was not at home on these
  * days", so those days must not fall through to the home location.
  */
-async function readTravelOverrides(userId: string): Promise<{
+export async function readTravelOverrides(userId: string): Promise<{
   overrides: TravelOverride[];
   unreadable: UnreadablePeriod[];
 }> {
@@ -260,7 +260,7 @@ async function readTravelOverrides(userId: string): Promise<{
 }
 
 /** True when `day` falls inside one of `periods`. */
-function inAnyPeriod(day: string, periods: readonly UnreadablePeriod[]) {
+export function inAnyPeriod(day: string, periods: readonly UnreadablePeriod[]) {
   return periods.some((p) => day >= p.startDate && day <= p.endDate);
 }
 
@@ -401,7 +401,10 @@ export async function fetchAndStoreEnvironment(args: {
 }
 
 /** The air-quality columns of a stored day, from one observation. */
-function airQualityColumns(day: DailyAirQualityObservation, fetchedAt: Date) {
+export function airQualityColumns(
+  day: DailyAirQualityObservation,
+  fetchedAt: Date,
+) {
   return {
     pm25Mean: day.pm25Mean,
     pm25Max: day.pm25Max,
@@ -453,7 +456,7 @@ const AIR_QUALITY_UNFETCHED = {
 } as const;
 
 /** Build the idempotent per-day upsert operation (un-awaited, for a batch). */
-function buildUpsert(
+export function buildUpsert(
   userId: string,
   loc: ResolvedLocation,
   sealed: Uint8Array<ArrayBuffer>,
@@ -523,7 +526,8 @@ export interface AirQualityGapFillResult {
  * null), newest first, so the correlation window fills first and an account
  * with two years of weather catches up within about nine nights. Each day is
  * fetched at the location it was stored for (opened from its sealed copy),
- * never re-resolved. A day the feed cannot serve (before 2013) is marked
+ * never re-resolved. A day the feed cannot serve (before 2013 in Europe,
+ * before August 2022 elsewhere) is marked
  * fetched with every value null, so it is not asked for again. A no-op when
  * the air-quality part is off for the account or the instance.
  */
