@@ -25,7 +25,6 @@ import { useLoadMoreSentinel } from "@/hooks/use-load-more-sentinel";
 import type { CoachConversationDTO } from "@/lib/ai/coach/types";
 import { groupConversationsByRecency } from "@/lib/insights/coach-conversation-groups";
 
-import { COACH_SCROLLBAR } from "./message-thread";
 import { ConversationRename } from "./conversation-rename";
 import {
   useCoachConversationHistory,
@@ -153,7 +152,6 @@ export function HistoryRail({
           // `pb-20` keeps the last row clear of the panel's floating New
           // chat button; it pads this list's own scroll area, not `main`.
           "-mx-1 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-1 pb-20",
-          COACH_SCROLLBAR,
         )}
       >
         {isLoading && visible.length === 0 ? (

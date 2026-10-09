@@ -366,28 +366,6 @@ export function placeInterleaved(
 }
 
 /**
- * v1.18.7 — shared thin/rounded/subtle scrollbar styling for the Coach
- * scroll regions (the message thread + the history list). Kept as a
- * Tailwind-arbitrary class string so the styling is component-scoped —
- * the parallel agent owns `globals.css` and we must not touch it.
- *
- * Firefox: `scrollbar-width: thin` + a tinted thumb on a transparent
- * track. WebKit: an 8 px overlay-style thumb with a fully rounded
- * radius and no arrow buttons, brightening on hover. The Dracula purple
- * is mixed down so the bar reads as a hairline accent, not a hard edge.
- */
-export const COACH_SCROLLBAR = cn(
-  "[scrollbar-color:color-mix(in_srgb,var(--primary)_30%,transparent)_transparent] [scrollbar-width:thin]",
-  "[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2",
-  "[&::-webkit-scrollbar-track]:bg-transparent",
-  "[&::-webkit-scrollbar-button]:hidden [&::-webkit-scrollbar-button]:size-0",
-  "[&::-webkit-scrollbar-thumb]:rounded-full",
-  "[&::-webkit-scrollbar-thumb]:border-[3px] [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-clip-content",
-  "[&::-webkit-scrollbar-thumb]:bg-[color-mix(in_srgb,var(--primary)_30%,transparent)]",
-  "hover:[&::-webkit-scrollbar-thumb]:bg-[color-mix(in_srgb,var(--primary)_45%,transparent)]",
-);
-
-/**
  * The wrapper every assistant turn renders in, streaming or persisted, so a
  * turn keeps one element through the swap. While it streams it is the live
  * region: role=log + aria-live=polite so screen-reader users hear the prose
@@ -686,10 +664,6 @@ export function MessageThread({
             // the cap only bites on the wide page surface.
             "[&>*]:mx-auto [&>*]:w-full [&>*]:max-w-2xl",
             "scroll-smooth",
-            // v1.18.7 — thin, rounded, subtle scrollbar (WebKit + Firefox),
-            // component-scoped via Tailwind arbitrary variants so globals.css
-            // stays untouched. Replaces the default boxy/angular track.
-            COACH_SCROLLBAR,
           )}
         >
           {[

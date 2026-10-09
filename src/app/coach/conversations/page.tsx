@@ -17,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
-import { COACH_SCROLLBAR } from "@/components/insights/coach-panel/message-thread";
 import { ConversationRename } from "@/components/insights/coach-panel/conversation-rename";
 import { ConversationTranscript } from "@/components/insights/coach-panel/conversation-transcript";
 import {
@@ -170,7 +169,6 @@ function CoachConversationsBody({ readOnly }: { readOnly: boolean }) {
         data-slot="coach-conversations-list"
         className={cn(
           "-mx-1 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-1",
-          COACH_SCROLLBAR,
         )}
       >
         {isLoading && visible.length === 0 ? (

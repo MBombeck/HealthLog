@@ -17,7 +17,6 @@ import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { COACH_SCROLLBAR } from "@/components/insights/coach-panel/message-thread";
 import {
   useCoachPlans,
   useCoachPlanMutations,
@@ -238,7 +237,6 @@ function CoachPlansBody({ readOnly }: { readOnly: boolean }) {
         data-slot="coach-plans-list"
         className={cn(
           "-mx-1 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-1",
-          COACH_SCROLLBAR,
         )}
       >
         {query.isError ? (
