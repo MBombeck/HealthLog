@@ -582,8 +582,8 @@ function ChartBody({
           lane.labels.map((label, i) => (
             <text
               key={`label-${lane.key}-${label.itemId}-${i}`}
-              data-lane={lane.key}
-              data-item={label.itemId}
+              data-label-lane={lane.key}
+              data-label-item={label.itemId}
               x={label.x}
               y={label.y}
               fontSize={11}
