@@ -12475,7 +12475,6 @@
   "lifeEvents": {
     "title": "Lebensereignis",
     "add": "Lebensereignis",
-    "subtitle": "Ein Anker für die Zeitleiste, kein Messwert.",
     "privacy": "Titel und Notiz liegen verschlüsselt. Sie gehen an keine KI.",
     "emptyHint": "Umzug, Geburt oder eine neue Stelle geben den Jahren einen Anker.",
     "save": "Speichern",

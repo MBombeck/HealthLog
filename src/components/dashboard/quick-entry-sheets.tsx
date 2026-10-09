@@ -286,7 +286,6 @@ export function QuickEntrySheets({
         open={openSheet === "lifeEvent"}
         onOpenChange={handleQuickEntryOpenChange}
         title={t("dashboard.quickAddLifeEvent")}
-        description={t("lifeEvents.subtitle")}
         footer={<div ref={setLifeEventFooterEl} className="flex w-full" />}
       >
         {openSheet === "lifeEvent" && (

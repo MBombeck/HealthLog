@@ -12475,7 +12475,6 @@
   "lifeEvents": {
     "title": "Life event",
     "add": "Life event",
-    "subtitle": "An anchor for the timeline, not a reading.",
     "privacy": "Title and note are stored encrypted. They go to no AI.",
     "emptyHint": "A move, a birth or a new job gives the years an anchor.",
     "save": "Save",

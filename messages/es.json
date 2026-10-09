@@ -12475,7 +12475,6 @@
   "lifeEvents": {
     "title": "Acontecimiento vital",
     "add": "Acontecimiento vital",
-    "subtitle": "Un ancla para la cronología, no una medición.",
     "privacy": "El título y la nota se guardan cifrados. No se envían a ninguna IA.",
     "emptyHint": "Una mudanza, un nacimiento o un nuevo trabajo dan un ancla a los años.",
     "save": "Guardar",

@@ -12475,7 +12475,6 @@
   "lifeEvents": {
     "title": "Événement de vie",
     "add": "Événement de vie",
-    "subtitle": "Un repère pour la chronologie, pas une mesure.",
     "privacy": "Le titre et la note sont chiffrés. Ils ne sont envoyés à aucune IA.",
     "emptyHint": "Un déménagement, une naissance ou un nouvel emploi donnent un repère aux années.",
     "save": "Enregistrer",

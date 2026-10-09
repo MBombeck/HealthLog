@@ -30,7 +30,6 @@ export function LifeEventSheet({
       open={open}
       onOpenChange={onOpenChange}
       title={event ? t("lifeEvents.edit") : t("lifeEvents.title")}
-      description={t("lifeEvents.subtitle")}
       contentWidth="lg"
       footer={<div ref={setFooter} className="flex w-full" />}
     >

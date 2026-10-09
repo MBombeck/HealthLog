@@ -12475,7 +12475,6 @@
   "lifeEvents": {
     "title": "Evento di vita",
     "add": "Evento di vita",
-    "subtitle": "Un punto di riferimento per la cronologia, non una misurazione.",
     "privacy": "Titolo e nota sono salvati cifrati. Non vanno a nessuna IA.",
     "emptyHint": "Un trasloco, una nascita o un nuovo lavoro danno agli anni un punto di riferimento.",
     "save": "Salva",

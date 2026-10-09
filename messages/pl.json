@@ -12475,7 +12475,6 @@
   "lifeEvents": {
     "title": "Wydarzenie życiowe",
     "add": "Wydarzenie życiowe",
-    "subtitle": "Punkt odniesienia na osi czasu, nie pomiar.",
     "privacy": "Tytuł i notatka są zapisywane w postaci zaszyfrowanej. Nie trafiają do żadnej AI.",
     "emptyHint": "Przeprowadzka, narodziny dziecka czy nowa praca dają latom punkt odniesienia.",
     "save": "Zapisz",
