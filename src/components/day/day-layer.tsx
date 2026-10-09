@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   Suspense,
   useCallback,
@@ -169,6 +169,23 @@ function DayLayer() {
     closeDay();
   }, [owner]);
 
+  // `?day=` gone while the page stayed the same is the person leaving the
+  // day (Back past the step that opened it); gone with a page change is
+  // only the URL of another page, and the day comes with it. Declared
+  // before the effects that read the flag, so they see the close.
+  const pathname = usePathname();
+  const openOn = useRef<string | null>(null);
+  useEffect(() => {
+    if (date !== null) {
+      openOn.current = pathname;
+      return;
+    }
+    if (openOn.current !== null && openOn.current === pathname) {
+      if (owner !== null) writeDayClosed(owner);
+    }
+    openOn.current = null;
+  }, [date, pathname, owner]);
+
   const wide = useWideViewport();
   const phone = useIsMobile();
   const shell: "docked" | "sheet" | "bottom" = phone
@@ -215,13 +232,15 @@ function DayLayer() {
     if (shell !== "docked" || raw !== null || !leftOpen || railDay === null) {
       return;
     }
+    // Read again, not from the render: a Back on this page has just closed it.
+    if (!readDayOpen(owner)) return;
     restoring.current = true;
     window.history.replaceState(
       null,
       "",
       withDayHref(window.location.pathname, window.location.search, railDay),
     );
-  }, [shell, raw, leftOpen, railDay]);
+  }, [shell, raw, leftOpen, railDay, owner]);
 
   // What the polite region says: the day that just opened or was stepped to.
   const announcement = date !== null ? longLabel(date) : "";
@@ -249,7 +268,7 @@ function DayLayer() {
       }
       // Gone from the URL by a page change, not by the person: the day comes
       // back on the new page, and focus stays with the page.
-      if (leftOpen) {
+      if (readDayOpen(owner)) {
         collapsing.current = false;
         return;
       }
@@ -262,7 +281,7 @@ function DayLayer() {
       }
     }
     collapsing.current = false;
-  }, [date, shell, owner, leftOpen]);
+  }, [date, shell, owner]);
 
   const onStep = useCallback(
     (delta: number) => {
