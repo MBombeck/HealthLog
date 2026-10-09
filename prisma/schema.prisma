@@ -5171,6 +5171,14 @@ model AppSettings {
   /// step names who confirmed when the account still exists.
   encryptionKeyBackupConfirmedByUserId    String?   @map("encryption_key_backup_confirmed_by_user_id")
 
+  /// When this instance first stored a discovery finding under the seasonally
+  /// adjusted correlation engine (v1.42). Stamped once, by the first
+  /// `syncAcceptedPatterns` run of a discovery family, before it writes; null
+  /// until then. Consumer: `hadFindingsBeforeSeasonalAdjustment`, which counts
+  /// a discovery pattern created before it (or any, while it is null) as a
+  /// finding of the earlier engine and so earns the one-time note.
+  correlationSeasonalEngineSince DateTime? @map("correlation_seasonal_engine_since")
+
   @@map("app_settings")
 }
 
