@@ -18,10 +18,10 @@ describe("pg-boss failed-row ledger retention", () => {
     ) as { version: string };
     const plans = readFileSync(join(PG_BOSS_ROOT, "dist/plans.js"), "utf8");
 
-    expect(packageJson.version).toBe("12.34.0");
+    expect(packageJson.version).toBe("12.37.1");
     expect(plans).toContain("retention_seconds: FORTEEN_DAYS");
     expect(plans).toContain("deletion_seconds: SEVEN_DAYS");
-    // 12.34 reads the clock through job_now(), which is pg_catalog.now()
+    // 12.37 reads the clock through job_now(), which is pg_catalog.now()
     // unless a test clock opts in, so the seven-day deletion is unchanged.
     expect(plans).toContain(
       "completed_on + deletion_seconds * interval '1s' < ${schema}.job_now()",
