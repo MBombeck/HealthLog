@@ -11,11 +11,16 @@ an earlier fold computed from part of a day.
 ### Added
 
 - **Day view (#613).** `?day=YYYY-MM-DD` opens one local day over the
-  current page: docked from 1280 px, a side sheet below that, a bottom sheet
-  on a phone, always a sheet on `/coach`. It shows the value it was opened
-  from, what ran through the day, eight curated readings against the 30-day
-  usual range (the rest behind "All values") and the day's entries in clock
-  order. Every chart drawn in days opens it (on touch the tooltip offers the
+  current page: docked from 1280 px beside a fixed strip at the right edge
+  that opens and closes it and keeps it, with the last day, across pages; a
+  side sheet below that and a bottom sheet on a phone. On `/coach` it sits
+  next to the conversation list, each with its own strip. It shows the value
+  it was opened from, what ran through the day (one entry per medication
+  with the day's dose, the cycle day and phase), eight curated readings
+  against the 30-day usual range (the rest behind "All values"), the day's
+  scores (health score, readiness, recovery, sleep score, strain) and the
+  day's entries in clock order. Readings and scores link to their pages, and
+  the date in the header opens a calendar with Today. Every chart drawn in days opens it (on touch the tooltip offers the
   day first), as do data tables, the measurement, mood and intake lists,
   heatmaps, lab readings, documents, workouts, symptom and illness days and
   the days a Coach answer read. Back and Escape close it, Alt with an arrow
@@ -25,10 +30,12 @@ an earlier fold computed from part of a day.
   link and the doctor-report PDF.
 - **Timeline module (#613).** Opt-in. One SVG time axis from 768 px with
   lanes for life events, conditions, allergies, medications, vaccinations,
-  visits and procedures, labs and documents, a year, month or week grid and
-  up to six value lines of quarterly, monthly or weekly means by zoom (a
-  short gap dashed, a longer one left open, a mean from fewer than three
-  readings drawn hollow); a chronicle, newest first, on a phone. Switching the module on opens a readiness inventory that rates
+  visits and procedures, labs and documents (one row per medication, dose
+  changes and pauses as segments of its bar), a year, month or week grid or
+  any range, and as many value lines as the record has types, as quarterly,
+  monthly, weekly or daily means by span (a short gap dashed, a longer one
+  left open, a mean from fewer than three readings drawn hollow, each point
+  with its own tooltip); a chronicle, newest first, on a phone. Switching the module on opens a readiness inventory that rates
   each lane and links each gap; it stays available as Data coverage.
 - **Life events.** Title, kind (family, home, work, loss, other), a start
   at day, month or year precision, optional end and note; title and note
@@ -98,6 +105,12 @@ an earlier fold computed from part of a day.
   `REINDEX INDEX CONCURRENTLY` per index, largest first.
 - **Query statistics.** The bundled database loads `pg_stat_statements`;
   `CREATE EXTENSION` once to read it (`docs/ops/query-statistics.md`).
+- **Score history.** `/insights/health-score` charts the daily health score
+  with its usual band, broken where the score's recipe changed, from
+  `GET /api/insights/score-history`; readiness, recovery, sleep score,
+  stress and strain share one 7, 30, 90 days or all range picker.
+- **Top card switch.** The dashboard layout settings can hide the top card
+  (`todayCardVisible`).
 - **Keyboard shortcuts.** `g` then `d`, `m`, `l`, `t`, `i`, `c` or `s` opens
   a page, `n` the add menu, `[` and `]` step the open day, and `?` (or the
   account menu) lists them; ignored while typing in a field.
