@@ -71,6 +71,7 @@ describe("day values", () => {
       readings,
       new Map([["BLOOD_PRESSURE_SYS", band]]),
       true,
+      "UTC",
     );
     expect(values.map((v) => [v.type, v.value])).toEqual([
       ["SLEEP_DURATION", 420],
@@ -80,6 +81,6 @@ describe("day values", () => {
     ]);
     expect(values[1].band).toEqual(band);
     expect(values[3].at).toBe("2026-03-29T20:00:00.000Z");
-    expect(shapeDayValues(readings, new Map(), false)).toHaveLength(3);
+    expect(shapeDayValues(readings, new Map(), false, "UTC")).toHaveLength(3);
   });
 });

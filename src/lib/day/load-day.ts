@@ -160,7 +160,7 @@ export async function loadDay(args: LoadDayArgs): Promise<DayResponse> {
           }),
         ]);
 
-  const values = shapeDayValues(readings, bands, sleepReadable);
+  const values = shapeDayValues(readings, bands, sleepReadable, tz);
   const running = parts.flatMap((p) => p.running).sort(bySince);
   const events = parts.flatMap((p) => p.events).sort(byTime);
 

@@ -126,94 +126,130 @@ function dateKeyOrNull(value: Date | null): string | null {
 async function medicationsPart(frame: DayFrame): Promise<SectionPart> {
   const { userId, day } = frame;
   const dayDate = dayKeyAsUtcMidnight(day);
-  const [meds, courses, pauses, intakes, doseChanges] = await Promise.all([
-    prisma.medication.findMany({
-      where: {
-        userId,
-        asNeeded: false,
-        oneShot: false,
-        // Without a start date, the day the medication was entered stands in.
-        OR: [
-          { startsOn: { lte: dayDate } },
-          { startsOn: null, createdAt: { lt: frame.dayEnd } },
-        ],
-        AND: [{ OR: [{ endsOn: null }, { endsOn: { gte: dayDate } }] }],
-      },
-      select: {
-        id: true,
-        name: true,
-        dose: true,
-        active: true,
-        startsOn: true,
-        endsOn: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    }),
-    prisma.medicationCourse.findMany({
-      where: {
-        userId,
-        startsOn: { lte: dayDate },
-        OR: [{ endsOn: null }, { endsOn: { gte: dayDate } }],
-      },
-      select: {
-        id: true,
-        medicationId: true,
-        startsOn: true,
-        endsOn: true,
-        medication: { select: { name: true } },
-      },
-    }),
-    prisma.medicationPauseEra.findMany({
-      where: {
-        userId,
-        pausedAt: { lt: frame.dayEnd },
-        OR: [{ resumedAt: null }, { resumedAt: { gte: frame.dayStart } }],
-      },
-      select: {
-        id: true,
-        medicationId: true,
-        pausedAt: true,
-        resumedAt: true,
-        medication: { select: { name: true } },
-      },
-    }),
-    prisma.medicationIntakeEvent.findMany({
-      where: {
-        userId,
-        deletedAt: null,
-        skipped: false,
-        takenAt: { gte: frame.dayStart, lt: frame.dayEnd },
-        ...TRACKED_INTAKE_EVENT_WHERE,
-      },
-      select: {
-        id: true,
-        medicationId: true,
-        takenAt: true,
-        doseTaken: true,
-        medication: { select: { name: true, dose: true } },
-      },
-      orderBy: { takenAt: "asc" },
-    }),
-    prisma.medicationDoseChange.findMany({
-      where: {
-        medication: { userId },
-        effectiveFrom: { gte: frame.dayStart, lt: frame.dayEnd },
-      },
-      select: {
-        id: true,
-        medicationId: true,
-        effectiveFrom: true,
-        doseValue: true,
-        doseUnit: true,
-        note: true,
-        noteEncrypted: true,
-        medication: { select: { name: true } },
-      },
-    }),
-  ]);
+  const [meds, courses, pauses, intakes, doseChanges, dosesInEffect] =
+    await Promise.all([
+      prisma.medication.findMany({
+        where: {
+          userId,
+          asNeeded: false,
+          oneShot: false,
+          // Without a start date, the day the medication was entered stands in.
+          OR: [
+            { startsOn: { lte: dayDate } },
+            { startsOn: null, createdAt: { lt: frame.dayEnd } },
+          ],
+          AND: [{ OR: [{ endsOn: null }, { endsOn: { gte: dayDate } }] }],
+        },
+        select: {
+          id: true,
+          name: true,
+          dose: true,
+          active: true,
+          startsOn: true,
+          endsOn: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      prisma.medicationCourse.findMany({
+        where: {
+          userId,
+          startsOn: { lte: dayDate },
+          OR: [{ endsOn: null }, { endsOn: { gte: dayDate } }],
+        },
+        select: {
+          id: true,
+          medicationId: true,
+          startsOn: true,
+          endsOn: true,
+          medication: { select: { name: true } },
+        },
+      }),
+      prisma.medicationPauseEra.findMany({
+        where: {
+          userId,
+          pausedAt: { lt: frame.dayEnd },
+          OR: [{ resumedAt: null }, { resumedAt: { gte: frame.dayStart } }],
+        },
+        select: {
+          id: true,
+          medicationId: true,
+          pausedAt: true,
+          resumedAt: true,
+          medication: { select: { name: true } },
+        },
+      }),
+      prisma.medicationIntakeEvent.findMany({
+        where: {
+          userId,
+          deletedAt: null,
+          skipped: false,
+          takenAt: { gte: frame.dayStart, lt: frame.dayEnd },
+          ...TRACKED_INTAKE_EVENT_WHERE,
+        },
+        select: {
+          id: true,
+          medicationId: true,
+          takenAt: true,
+          doseTaken: true,
+          medication: { select: { name: true, dose: true } },
+        },
+        orderBy: { takenAt: "asc" },
+      }),
+      prisma.medicationDoseChange.findMany({
+        where: {
+          medication: { userId },
+          effectiveFrom: { gte: frame.dayStart, lt: frame.dayEnd },
+        },
+        select: {
+          id: true,
+          medicationId: true,
+          effectiveFrom: true,
+          doseValue: true,
+          doseUnit: true,
+          note: true,
+          noteEncrypted: true,
+          medication: { select: { name: true } },
+        },
+      }),
+      // The dose each medication was taken at that day: its last dose change
+      // on or before the day.
+      prisma.medicationDoseChange.findMany({
+        where: { medication: { userId }, effectiveFrom: { lt: frame.dayEnd } },
+        select: {
+          medicationId: true,
+          doseValue: true,
+          doseUnit: true,
+        },
+        orderBy: { effectiveFrom: "desc" },
+        distinct: ["medicationId"],
+      }),
+    ]);
 
   const out: SectionPart = { running: [], events: [] };
+  const doseThatDay = new Map(
+    dosesInEffect.map((d) => [d.medicationId, `${d.doseValue} ${d.doseUnit}`]),
+  );
+  // One running entry per medication. The medication, its course and its
+  // pause are three rows in three tables, and listed one by one they read
+  // as three medications ("Mounjaro 7.5 mg" above "Mounjaro"). The entry is
+  // the medication under its name and the dose of that day; a pause that
+  // day makes it the paused entry, a course lends it the course's days.
+  const runningByMedication = new Map<string, DayRunningItem>();
+  const takeRunning = (medicationId: string, item: DayRunningItem) => {
+    const held = runningByMedication.get(medicationId);
+    if (!held) {
+      runningByMedication.set(medicationId, item);
+      return;
+    }
+    const rank = (r: DayRunningItem) =>
+      r.kind === "medicationPause" ? 2 : r.kind === "medicationCourse" ? 1 : 0;
+    const [keep, other] = rank(item) > rank(held) ? [item, held] : [held, item];
+    runningByMedication.set(medicationId, {
+      ...keep,
+      sub: keep.kind === "medicationPause" ? null : (keep.sub ?? other.sub),
+    });
+  };
   for (const med of meds) {
     const since = dateKeyOrNull(med.startsOn);
     // Without a start date the entry's own date is the earliest the record
@@ -227,13 +263,14 @@ async function medicationsPart(frame: DayFrame): Promise<SectionPart> {
       (med.active ? null : userDayKey(med.updatedAt, frame.tz));
     if (shownFrom > day || (until !== null && until < day)) continue;
     const href = `/medications/${med.id}`;
-    out.running.push(
+    takeRunning(
+      med.id,
       running(frame, {
         kind: "medication",
         section: "medications",
         id: med.id,
         title: med.name,
-        sub: med.dose,
+        sub: doseThatDay.get(med.id) ?? med.dose,
         since,
         until,
         href,
@@ -270,13 +307,14 @@ async function medicationsPart(frame: DayFrame): Promise<SectionPart> {
     const since = dateOnlyKey(course.startsOn);
     const until = dateKeyOrNull(course.endsOn);
     const href = `/medications/${course.medicationId}`;
-    out.running.push(
+    takeRunning(
+      course.medicationId,
       running(frame, {
         kind: "medicationCourse",
         section: "medications",
         id: course.id,
         title: course.medication.name,
-        sub: null,
+        sub: doseThatDay.get(course.medicationId) ?? null,
         since,
         until,
         href,
@@ -313,7 +351,8 @@ async function medicationsPart(frame: DayFrame): Promise<SectionPart> {
       ? userDayKey(pause.resumedAt, frame.tz)
       : null;
     const href = `/medications/${pause.medicationId}`;
-    out.running.push(
+    takeRunning(
+      pause.medicationId,
       running(frame, {
         kind: "medicationPause",
         section: "medications",
@@ -387,6 +426,7 @@ async function medicationsPart(frame: DayFrame): Promise<SectionPart> {
       }),
     );
   }
+  out.running.push(...runningByMedication.values());
   return out;
 }
 

@@ -78,18 +78,13 @@ export const DAY_SECTION_LABEL =
 
 /* ─── Focus ───────────────────────────────────────────────────────────── */
 
-export function DayFocusCard({
-  focus,
-  usual,
-}: {
-  focus: DayFocus;
-  /** The usual range of the focus type that day, when the server has one. */
-  usual: string | null;
-}) {
-  const { t } = useTranslations();
-  const compare =
-    focus.compare ??
-    (usual ? { label: t("day.usualLabel"), value: usual } : null);
+/**
+ * The value the person came from. A comparison shows only when the opening
+ * surface brings one (an earlier lab result); the usual range of the 30 days
+ * before is not repeated here, because the value tiles below draw it.
+ */
+export function DayFocusCard({ focus }: { focus: DayFocus }) {
+  const compare = focus.compare ?? null;
   return (
     <div
       data-slot="day-focus"
@@ -264,7 +259,7 @@ export function dayMeta(
         : null;
       const bandKey = bands && band ? keyOf(bands, band) : undefined;
       const bandText = bandKey ? t(bandKey) : null;
-      return [score, bandText].filter(Boolean).join(" · ") || null;
+      return [score, bandText].filter(Boolean).join(", ") || null;
     }
     case "symptom":
       return t("symptoms.intensityPill", { value: meta });

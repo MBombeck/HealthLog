@@ -179,10 +179,12 @@ beforeEach(() => {
 });
 
 describe("<DayView>", () => {
-  it("names the day and counts what it holds", async () => {
+  it("names the day and carries no count line", async () => {
     const html = await render();
     expect(html).toContain("Saturday, January 3, 2026");
-    expect(html).toContain("3 values, 2 entries");
+    // The sections say what the day holds; a count above them repeated it.
+    expect(html).not.toContain("3 values, 2 entries");
+    expect(html).not.toContain('data-slot="day-meta"');
   });
 
   it("lists what ran through the day with its running count", async () => {
@@ -284,8 +286,9 @@ describe("<DayView>", () => {
       },
     });
     expect(html).toContain('data-slot="day-focus"');
-    expect(html).toContain("Your 30 days before");
-    expect(html).toContain("121–134/78–86");
+    // The usual range is the tiles' to draw, not repeated beside the value.
+    expect(html).not.toContain("Your 30 days before");
+    expect(html).not.toContain('data-slot="day-focus-compare"');
     expect(html).toContain('data-selected="true"');
     expect(html).toContain("Highest daily value since March 2025");
   });
