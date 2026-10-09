@@ -590,6 +590,23 @@ export interface PublicVersion {
   // offline tier is absent (host of IP_GEO_LOOKUP_URL, default ipwho.is).
   // Optional so legacy /api/version responses still satisfy the shape.
   geoProviderHost?: string;
+  /** v1.42 — `offline`, `online` or `off` (IP_GEO_LOOKUP_DISABLED). */
+  geoLookup?: "offline" | "online" | "off";
+  /** v1.42 — the operator named the provider in IP_GEO_LOOKUP_URL. */
+  geoProviderChosen?: boolean;
+}
+
+/**
+ * The geo row's state. Offline, switched off, or a provider the operator
+ * named are all decisions and read as fine; only the unconfigured default
+ * warns, because it sends every login IP to a third party nobody chose.
+ */
+export function geoLookupState(
+  version: PublicVersion,
+): "offline" | "off" | "chosen" | "default" {
+  if (version.offlineGeoEnabled) return "offline";
+  if (version.geoLookup === "off") return "off";
+  return version.geoProviderChosen ? "chosen" : "default";
 }
 
 /** Shared `/api/version` reader — the system-status section + overview

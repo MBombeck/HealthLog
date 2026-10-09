@@ -7292,6 +7292,8 @@
     "offlineGeoLabel": "Dati geografici",
     "offlineGeoEnabled": "Offline (GeoLite2)",
     "offlineGeoFallback": "Online ({host}) — monta i database GeoLite2 e imposta GEOLITE2_DIR",
+    "offlineGeoOff": "Disattivato",
+    "offlineGeoChosen": "Online ({host})",
     "apiGlobal": "Consentire endpoint API e token API.",
     "umamiTitle": "Umami",
     "umamiDescription": "Analisi web con Umami.",

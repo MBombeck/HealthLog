@@ -9,6 +9,8 @@ const resolveGeoProviderHostMock = vi.fn(() => "ipwho.is");
 vi.mock("@/lib/geo", () => ({
   offlineGeoReady: () => offlineGeoReadyMock(),
   resolveGeoProviderHost: () => resolveGeoProviderHostMock(),
+  geoLookupMode: () => (offlineGeoReadyMock() ? "offline" : "online"),
+  geoProviderChosen: () => false,
 }));
 
 import { GET } from "../route";

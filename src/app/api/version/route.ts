@@ -1,6 +1,11 @@
 import { apiHandler } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
-import { offlineGeoReady, resolveGeoProviderHost } from "@/lib/geo";
+import {
+  geoLookupMode,
+  geoProviderChosen,
+  offlineGeoReady,
+  resolveGeoProviderHost,
+} from "@/lib/geo";
 import packageJson from "../../../../package.json";
 
 // v1.4.27 R5 — `offlineGeoEnabled` reads from the same source the geo
@@ -64,5 +69,7 @@ export const GET = apiHandler(async () => {
     docs: "https://docs.healthlog.dev",
     offlineGeoEnabled,
     geoProviderHost,
+    geoLookup: geoLookupMode(),
+    geoProviderChosen: geoProviderChosen(),
   });
 });

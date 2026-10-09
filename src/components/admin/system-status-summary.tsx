@@ -26,7 +26,12 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { useTranslations } from "@/lib/i18n/context";
-import { StatusItem, usePublicVersion, useSystemStatus } from "./_shared";
+import {
+  geoLookupState,
+  StatusItem,
+  usePublicVersion,
+  useSystemStatus,
+} from "./_shared";
 import { useKeyBackupStatus } from "./use-key-backup-status";
 
 export function SystemStatusSummary() {
@@ -95,13 +100,20 @@ export function SystemStatusSummary() {
               icon={Globe}
               label={t("admin.overview.snapshotOfflineGeo")}
               value={
-                version.offlineGeoEnabled
-                  ? t("admin.overview.snapshotOfflineGeoOn")
-                  : t("admin.overview.snapshotOfflineGeoOff", {
-                      host: version.geoProviderHost ?? "ipwho.is",
-                    })
+                {
+                  offline: t("admin.overview.snapshotOfflineGeoOn"),
+                  off: t("admin.offlineGeoOff"),
+                  chosen: t("admin.offlineGeoChosen", {
+                    host: version.geoProviderHost ?? "ipwho.is",
+                  }),
+                  default: t("admin.overview.snapshotOfflineGeoOff", {
+                    host: version.geoProviderHost ?? "ipwho.is",
+                  }),
+                }[geoLookupState(version)]
               }
-              tone={version.offlineGeoEnabled ? "success" : "warning"}
+              tone={
+                geoLookupState(version) === "default" ? "warning" : "success"
+              }
             />
           )}
         </div>

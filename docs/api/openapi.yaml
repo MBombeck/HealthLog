@@ -36058,6 +36058,18 @@ components:
           type: string
           description: Host of the online geolocation provider the fallback would use, so an operator surface names the real one
             instead of assuming the default.
+        geoLookup:
+          type: string
+          enum:
+            - offline
+            - online
+            - off
+          description: "How login IPs are placed (since v1.42): `offline` from the GeoLite2 databases, `online` by the provider
+            above, `off` not at all (`IP_GEO_LOOKUP_DISABLED`)."
+        geoProviderChosen:
+          type: boolean
+          description: The operator named the online provider in `IP_GEO_LOOKUP_URL` (since v1.42). False while the default is in
+            use.
       required:
         - version
         - buildSha
@@ -36068,6 +36080,8 @@ components:
         - docs
         - offlineGeoEnabled
         - geoProviderHost
+        - geoLookup
+        - geoProviderChosen
       additionalProperties: false
       description: The running build's identity plus the offline-geolocation state. Public — no authentication, no account data.
     AssistantFlagsEnvelope:
