@@ -2909,6 +2909,7 @@
       "historyEmpty": "Twoje rozmowy pojawią się tutaj. Zadaj pytanie, aby zacząć.",
       "historyDeleteAria": "Usuń rozmowę",
       "historyDeleted": "Rozmowa usunięta",
+      "historyDeleteFailed": "Nie udało się usunąć rozmowy.",
       "rename": {
         "action": "Zmień nazwę rozmowy",
         "input": "Tytuł rozmowy",

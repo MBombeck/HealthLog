@@ -121,8 +121,9 @@ export function HistoryRail({
       action: {
         label: t("common.undo"),
         onClick: () => {
-          undoDelete(id);
-          if (wasActive) onUndoDeleteActive?.(id);
+          // A delete already committed (window over, or the page was
+          // hidden meanwhile) has nothing to reopen.
+          if (undoDelete(id) && wasActive) onUndoDeleteActive?.(id);
         },
       },
     });
