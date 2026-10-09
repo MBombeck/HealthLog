@@ -140,11 +140,23 @@ describe("readiness inventory", () => {
 
 describe("chronicle", () => {
   it("names an empty stretch instead of skipping it, and folds the ongoing items", () => {
+    // Without the standing medication and the value lines, April to October
+    // 2026 hold nothing at all.
+    const full = fullTimeline();
+    const eventsOnly = {
+      ...full,
+      series: [],
+      lanes: full.lanes.map((lane) =>
+        lane.key === "medications"
+          ? { ...lane, items: lane.items.filter((i) => i.group !== "med-1") }
+          : lane,
+      ),
+    };
     const html = render(
       <WithFormat
         build={(format) => (
           <TimelineChronicle
-            timeline={fullTimeline()}
+            timeline={eventsOnly}
             today={TODAY}
             grouping="month"
             selected="2026-01-03"
@@ -157,13 +169,40 @@ describe("chronicle", () => {
       />,
     );
     expect(html).toContain("Keine Einträge von April bis Oktober 2026");
-    expect(html).toContain("Dauerhaft");
     expect(html).toContain("2 Allergien");
     expect(html).toContain("Erkältung vorbei");
     expect(html).toContain("nach 9 Tagen");
     expect(html).toContain("Höchster Wert seit Langem");
     // The selected day is the highlighted row.
     expect(html).toMatch(/data-date="2026-01-03"><button[^>]*bg-muted/);
+  });
+
+  it("never calls a month empty while a medication was taken in it", () => {
+    const html = render(
+      <WithFormat
+        build={(format) => (
+          <TimelineChronicle
+            timeline={fullTimeline()}
+            today={TODAY}
+            grouping="month"
+            selected={null}
+            seriesColor={seriesColor}
+            seriesFormat={format}
+            onOpenDay={() => undefined}
+            onEditLifeEvent={null}
+          />
+        )}
+      />,
+    );
+    // April to October 2026 hold no event, but Ramipril was taken.
+    expect(html).not.toContain("Keine Einträge von April bis Oktober 2026");
+    expect(html).toContain("Dauerhaft");
+    // Every medication entry wears the medication colour.
+    for (const icon of html.match(/<svg[^>]*data-lane="medications"[^>]*>/g) ??
+      []) {
+      expect(icon).toContain("color:var(--chart-1)");
+    }
+    expect(html).toMatch(/data-lane="medications"/);
   });
 
   it("reads a pause as paused and resumed, never as an end", () => {

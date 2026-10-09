@@ -331,8 +331,17 @@ export function TimelineChronicle({
               <span className="text-muted-foreground text-xs leading-5 whitespace-nowrap tabular-nums">
                 {dateText}
               </span>
+              {/* Every entry of a kind carries its lane's colour, as on the
+                  chart: a medication is the medication colour wherever it
+                  is listed, never the colour of a rail passing beside it. */}
               <Icon
                 className="text-muted-foreground mt-0.5 size-4"
+                style={
+                  entry.kind === "item"
+                    ? { color: LANE_COLOR[entry.lane] }
+                    : undefined
+                }
+                data-lane={entry.kind === "item" ? entry.lane : undefined}
                 aria-hidden="true"
               />
               <span className="min-w-0">

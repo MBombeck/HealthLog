@@ -172,6 +172,29 @@ export function overlaps(
   return item.start <= to && end >= from;
 }
 
+/**
+ * The items of a lane that touch `[from, to]`, kept whole per `group`: when
+ * one item of a medication touches the window, every item of it is sent.
+ * The client reads a medication from all of them together
+ * (`medication-rows.ts`): its courses decide the stretches it was taken, and
+ * the dose of a piece that runs into the window was set by a dose change
+ * that may lie before it. Cut at the window edge, a course outside it was
+ * lost (the medication's own span stood in for it and bridged the gap), and
+ * the first piece in the window lost its dose.
+ */
+export function keepTouchingGroups(
+  items: readonly TimelineItem[],
+  from: string,
+  to: string,
+  today: string,
+): TimelineItem[] {
+  const touching = new Set<string>();
+  for (const it of items) {
+    if (overlaps(it, from, to, today)) touching.add(it.group ?? it.id);
+  }
+  return items.filter((it) => touching.has(it.group ?? it.id));
+}
+
 export async function loadTimeline(args: {
   recordId: string;
   query: TimelineQuery;
@@ -216,9 +239,9 @@ export async function loadTimeline(args: {
   const lanes: TimelineResponse["lanes"] = [];
   const standing: StandingItem[] = [];
   visibleLanes.forEach((key, i) => {
-    const items = reads[i].items
-      .filter((it) => overlaps(it, from, to, today))
-      .sort((a, b) => a.start.localeCompare(b.start));
+    const items = keepTouchingGroups(reads[i].items, from, to, today).sort(
+      (a, b) => a.start.localeCompare(b.start),
+    );
     if (items.length > 0) lanes.push({ key, items });
     standing.push(...reads[i].standing);
   });

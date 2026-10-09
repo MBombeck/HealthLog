@@ -52,6 +52,30 @@ function spans(item: TimelineItem): boolean {
   return item.open || (item.end !== null && item.end !== item.start);
 }
 
+/**
+ * The medication's own span as a stretch, where its courses do not say when
+ * it was taken: all of it when it has no course, and the time since its last
+ * course ended when it is still taken but no course is open. Without that
+ * second arm an active medication whose courses all lay in the past had no
+ * stretch in the current window and dropped out of the chart, while the day
+ * view, which reads the medication itself, listed it as running.
+ */
+function ownStretch(
+  medication: TimelineItem | null,
+  courses: readonly TimelineItem[],
+): TimelineItem[] {
+  if (!medication) return [];
+  if (courses.length === 0) return [medication];
+  if (!medication.open || courses.some((c) => c.open)) return [];
+  const lastEnd = courses
+    .map((c) => c.end ?? c.start)
+    .sort()
+    .at(-1)!;
+  const start = dayKey(dayNumber(lastEnd) + 1);
+  if (start <= medication.start) return [medication];
+  return [{ ...medication, id: `${medication.id}:since`, start }];
+}
+
 /** The medications lane's items, one group per medication, oldest first. */
 export function medicationGroups(
   items: readonly TimelineItem[],
@@ -67,8 +91,7 @@ export function medicationGroups(
   for (const [key, list] of byKey) {
     const medication = list.find((i) => i.kind === "medication") ?? null;
     const courses = list.filter((i) => i.kind === "course").sort(byStart);
-    const own = medication && courses.length === 0 ? [medication] : [];
-    const stretches = [...courses, ...own];
+    const stretches = [...courses, ...ownStretch(medication, courses)];
     groups.push({
       key,
       label: medication?.label ?? list[0].label,
