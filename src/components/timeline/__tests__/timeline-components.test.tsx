@@ -320,6 +320,15 @@ describe("selection bar head and hint", () => {
     expect(text(html)).toContain("Erkältung · 31. Dez. bis 8. Jan.");
   });
 
+  it("calls a bucket empty only when it holds neither an entry nor a value", () => {
+    // July 2026: no entry, but a systolic mean.
+    expect(bar("2026-07-15")).not.toContain("timeline-selection-empty");
+    // May 2026: no entry, no value.
+    expect(text(bar("2026-05-10"))).toContain(
+      "Keine Einträge in diesem Zeitraum",
+    );
+  });
+
   it("says how to pick a day only until one is picked", () => {
     expect(bar("2026-01-03", fullTimeline(), true)).toContain(
       'data-slot="timeline-selection-hint"',

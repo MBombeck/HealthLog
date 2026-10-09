@@ -73,6 +73,9 @@ export function SelectionBar({
   const periodTo = dayKey(dayNumber(bucketAfter(periodFrom, bucket)) - 1);
   const entries = itemsInPeriod(timeline.lanes, periodFrom, periodTo, today);
   const means = bucketValues(timeline.series, timeline.bucket, selected);
+  // A bucket with a value but no entry is not empty: the means below say
+  // what it holds, so "No entries" is kept for a stretch with nothing.
+  const hasValue = means.values.some((v) => v.mean !== null);
   // "Ø {values}": the words around the values, so the values can carry
   // their colour dots.
   const [meanBefore, meanAfter = ""] = t("timeline.selection.mean", {
@@ -109,7 +112,7 @@ export function SelectionBar({
       >
         {bucketTitle(periodFrom, bucket, intl, t)}
       </span>
-      {entries.length === 0 && (
+      {entries.length === 0 && !hasValue && (
         <span
           className="text-muted-foreground text-xs"
           data-slot="timeline-selection-empty"
