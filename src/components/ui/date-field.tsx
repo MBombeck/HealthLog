@@ -2,19 +2,34 @@
 
 import * as React from "react";
 import { CalendarIcon } from "lucide-react";
+import dynamic from "next/dynamic";
 import type { Matcher } from "react-day-picker";
-import { de, enUS, es, fr, it, ko, pl } from "date-fns/locale";
-import type { Locale as DateFnsLocale } from "date-fns";
 
 import { cn } from "@/lib/utils";
 import { useTranslations, useDateFormatPreference } from "@/lib/i18n/context";
 import { formatDate, parseIsoDate } from "@/lib/date-format";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+
+/**
+ * The calendar (react-day-picker and the date-fns month names of every
+ * interface language) loads when the popover first opens, not with every
+ * form that holds a date field: it is the heaviest part of the field and
+ * the only one a person may never use. Until it arrives the popover keeps
+ * the calendar's footprint.
+ */
+const DateFieldCalendar = dynamic(
+  () => import("./date-field-calendar").then((m) => m.DateFieldCalendar),
+  {
+    ssr: false,
+    loading: () => (
+      <div data-slot="date-field-calendar-loading" className="h-72 w-64" />
+    ),
+  },
+);
 
 /**
  * Dependency-free date input that DISPLAYS the value in the user's date-order
@@ -60,11 +75,13 @@ const FIELD_HEIGHT_CLASSES = "min-h-11 h-11 sm:min-h-10 sm:h-10";
 // `input-focus` tone, with no ring. The earlier `ring-2 ring-offset-2`
 // painted a hard 4 px ring OUTSIDE the box — wider than the field's div and
 // visibly mismatched next to the app's other inputs, and it shifted the
-// highlight box on focus. `text-base md:text-sm` mirrors `<Input>` too: a
-// sub-16 px input triggers iOS Safari's focus auto-zoom, which reads as a
-// layout jump; 16 px below `md:` suppresses it.
+// highlight box on focus. `text-base md:pointer-fine:text-sm` mirrors
+// `<Input>` too: a sub-16 px input triggers iOS Safari's focus auto-zoom,
+// which reads as a layout jump; 16 px on every touch screen suppresses it
+// (`pointer-fine`, globals.css — a width breakpoint alone missed a phone
+// held sideways and every iPad).
 const FIELD_BASE_CLASSES =
-  "border-input bg-background text-foreground placeholder:text-muted-foreground relative flex w-full min-w-0 items-center rounded-md border ps-3 pe-2 text-base md:text-sm shadow-xs transition-[color,box-shadow] focus-within:border-input-focus focus-within:outline-none";
+  "border-input bg-background text-foreground placeholder:text-muted-foreground relative flex w-full min-w-0 items-center rounded-md border ps-3 pe-2 text-base md:pointer-fine:text-sm shadow-xs transition-[color,box-shadow] focus-within:border-input-focus focus-within:outline-none";
 
 export interface DateFieldProps {
   id?: string;
@@ -234,8 +251,7 @@ export const DateField = React.forwardRef<HTMLInputElement, DateFieldProps>(
           </PopoverTrigger>
         </div>
         <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="single"
+          <DateFieldCalendar
             selected={selectedDate}
             onSelect={(d) => {
               commitIso(d ? dateToIso(d) : "");
@@ -243,8 +259,7 @@ export const DateField = React.forwardRef<HTMLInputElement, DateFieldProps>(
             }}
             disabled={disabledMatchers.length ? disabledMatchers : undefined}
             defaultMonth={selectedDate ?? new Date()}
-            locale={resolveDateFnsLocale(locale)}
-            autoFocus
+            appLocale={locale}
           />
         </PopoverContent>
       </Popover>
@@ -307,31 +322,6 @@ function resolveOrder(
   if (dateFormat === "YMD") return "YMD";
   // AUTO: en → MDY, every other shipped locale → DMY.
   return locale === "en" ? "MDY" : "DMY";
-}
-
-/**
- * Map the app locale → the date-fns locale so the calendar's month / weekday
- * names match the UI language. Defaults to enUS for anything unmapped.
- */
-function resolveDateFnsLocale(
-  locale: ReturnType<typeof useTranslations>["locale"],
-): DateFnsLocale {
-  switch (locale) {
-    case "de":
-      return de;
-    case "es":
-      return es;
-    case "fr":
-      return fr;
-    case "it":
-      return it;
-    case "pl":
-      return pl;
-    case "ko":
-      return ko;
-    default:
-      return enUS;
-  }
 }
 
 /**

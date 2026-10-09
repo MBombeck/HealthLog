@@ -10,7 +10,7 @@
  * but idle".
  *
  * This computes the last-value timestamp per `(source, type)` straight from the
- * `Measurement` table (no schema change, no migration) so a caller can surface
+ * `Measurement` table so a caller can surface
  * per-metric liveness honestly: a metric whose newest reading is frozen weeks in
  * the past is visibly distinct from one that is genuinely current. The
  * classification of "quiet" vs "current" is a pure function next to the verdict
@@ -22,7 +22,11 @@
  * pseudo-entry so those pipes are visible too.
  */
 import { prisma } from "@/lib/db";
-import type { MeasurementSource } from "@/generated/prisma/client";
+import type {
+  MeasurementSource,
+  MeasurementType,
+} from "@/generated/prisma/client";
+import { listLiveMeasurementTypes } from "@/lib/measurements/live-types";
 import type { IntegrationKey } from "./status";
 import {
   WORKOUT_FRESHNESS_TYPE,
@@ -70,32 +74,66 @@ export const INTEGRATION_WORKOUT_SOURCE: Partial<
 };
 
 /**
- * Newest measurement per `(source, type)` for the given sources. One grouped
- * query; a `(source, type)` pair with no rows simply has no entry, which is how
- * honest absence stays structural — a metric a provider never delivered is
- * never invented.
+ * Newest measurement per `(source, type)` for the given sources. A `(source,
+ * type)` pair with no rows simply has no entry, which is how honest absence
+ * stays structural — a metric a provider never delivered is never invented.
+ *
+ * v1.42: this used to be one `groupBy … _max(measuredAt)` over every live row
+ * of the sources, which on a multi-year Apple Health history reads six figures
+ * of rows for a two-digit answer on every settings visit. It now asks which
+ * types are live per source (`listLiveMeasurementTypes`, a loose index scan)
+ * and then probes each type's newest row through the same partial covering
+ * index, one `LIMIT 1` per type.
  */
 export async function getMeasurementFreshnessBySource(
   userId: string,
   sources: readonly MeasurementSource[],
 ): Promise<Map<MeasurementSource, MetricFreshnessSample[]>> {
   const out = new Map<MeasurementSource, MetricFreshnessSample[]>();
-  if (sources.length === 0) return out;
-
-  const grouped = await prisma.measurement.groupBy({
-    by: ["source", "type"],
-    where: { userId, deletedAt: null, source: { in: [...sources] } },
-    _max: { measuredAt: true },
-  });
-
-  for (const row of grouped) {
-    const lastSeen = row._max.measuredAt;
-    if (!lastSeen) continue;
-    const list = out.get(row.source) ?? [];
-    list.push({ type: row.type, lastSeenAt: lastSeen.toISOString() });
-    out.set(row.source, list);
+  const perSource = await Promise.all(
+    [...new Set(sources)].map(async (source) => {
+      const types = await listLiveMeasurementTypes(userId, { source });
+      return { source, samples: await newestPerType(userId, source, types) };
+    }),
+  );
+  for (const { source, samples } of perSource) {
+    if (samples.length > 0) out.set(source, samples);
   }
   return out;
+}
+
+async function newestPerType(
+  userId: string,
+  source: MeasurementSource,
+  types: readonly MeasurementType[],
+): Promise<MetricFreshnessSample[]> {
+  if (types.length === 0) return [];
+  // Parameter-bound throughout; the enum casts are literal SQL.
+  const rows = await prisma.$queryRaw<
+    Array<{ type: string; last_seen: Date | null }>
+  >`
+    SELECT live."type"::text AS "type",
+      (
+        SELECT m."measured_at"
+        FROM "measurements" m
+        WHERE m."user_id" = ${userId}
+          AND m."type" = live."type"
+          AND m."deleted_at" IS NULL
+          AND m."source" = ${source}::"measurement_source"
+        ORDER BY m."measured_at" DESC
+        LIMIT 1
+      ) AS "last_seen"
+    FROM unnest(${[...types]}::"measurement_type"[]) AS live("type")
+  `;
+  const samples: MetricFreshnessSample[] = [];
+  for (const row of rows) {
+    if (!row.last_seen) continue;
+    samples.push({
+      type: row.type,
+      lastSeenAt: new Date(row.last_seen).toISOString(),
+    });
+  }
+  return samples;
 }
 
 /**

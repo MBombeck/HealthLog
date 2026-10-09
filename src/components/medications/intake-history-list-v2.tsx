@@ -1,5 +1,6 @@
 "use client";
 
+import { DayLinkAt } from "@/components/day/day-link";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
@@ -385,7 +386,10 @@ export function IntakeHistoryListV2({
                               "(planned)" suffix so the chronological
                               order stays clean and no `—` row floats. */}
                           {event.takenAt ? (
-                            formatters.dateTime(event.takenAt)
+                            // v1.42 — a taken dose's date opens its day.
+                            <DayLinkAt at={event.takenAt}>
+                              {formatters.dateTime(event.takenAt)}
+                            </DayLinkAt>
                           ) : (
                             <>
                               {formatters.dateTime(event.scheduledFor)}{" "}
@@ -483,7 +487,9 @@ export function IntakeHistoryListV2({
                           <div className="min-w-0 space-y-1">
                             <p className="text-sm font-medium">
                               {event.takenAt ? (
-                                formatters.dateTime(event.takenAt)
+                                <DayLinkAt at={event.takenAt}>
+                                  {formatters.dateTime(event.takenAt)}
+                                </DayLinkAt>
                               ) : (
                                 <>
                                   {formatters.dateTime(event.scheduledFor)}{" "}

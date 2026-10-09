@@ -18,6 +18,11 @@ vi.mock("@/lib/ai/provider-runner", () => ({
   runRawCompletionWithFallback: (args: unknown) =>
     runRawCompletionWithFallback(args),
 }));
+// v1.42 — the budget stop's own warn line.
+const emitSignal = vi.fn();
+vi.mock("@/lib/logging/signal", () => ({
+  emitSignal: (...a: unknown[]) => emitSignal(...a),
+}));
 const runDialogTool = vi.fn();
 vi.mock("@/lib/ai/coach/tools/dialog-tools", async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -106,6 +111,7 @@ function lastParams() {
 }
 
 beforeEach(() => {
+  emitSignal.mockReset();
   executeCoachTool.mockReset();
   runRawCompletionWithFallback.mockReset();
   runDialogTool.mockReset();
@@ -459,5 +465,33 @@ describe("reasoning, provider state and the trail", () => {
     expect(activity.trail()?.entries[0]).toMatchObject({
       title: "Weighing the weeks",
     });
+  });
+});
+
+describe("budget stop line (v1.42)", () => {
+  it("writes coach.turn.budget_stop at warn, once, when the budget ends the turn", async () => {
+    runRawCompletionWithFallback
+      .mockResolvedValueOnce(round("", [table("bp")]))
+      .mockResolvedValueOnce(round("Answer from what I have."));
+    await runCoachToolLoop({
+      ...baseArgs,
+      budget: createTurnBudget({
+        payer: "operator",
+        initialInputTokens: 10,
+        limits: { tokens: 500, wallMs: 1e9, maxRounds: 12 },
+      }),
+    });
+    expect(emitSignal).toHaveBeenCalledTimes(1);
+    expect(emitSignal.mock.calls[0][0]).toMatchObject({
+      action: "coach.turn.budget_stop",
+      level: "warn",
+      meta: { reason: "budget", round: 2, payer: "operator" },
+    });
+  });
+
+  it("writes nothing for a turn that answered on its own", async () => {
+    runRawCompletionWithFallback.mockResolvedValueOnce(round("Plain answer."));
+    await runCoachToolLoop({ ...baseArgs, budget: roomy() });
+    expect(emitSignal).not.toHaveBeenCalled();
   });
 });

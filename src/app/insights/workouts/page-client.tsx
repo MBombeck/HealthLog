@@ -1,13 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Activity, Plus } from "lucide-react";
+import { Activity } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 import { useInfiniteWorkouts } from "@/hooks/use-workouts";
 import { MetricEmptyState } from "@/components/insights/metric-empty-state";
-import { SubPageShell } from "@/components/insights/sub-page-shell";
+import {
+  SubPageAddButton,
+  SubPageShell,
+} from "@/components/insights/sub-page-shell";
 import { WorkoutList } from "@/components/insights/workout-list";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -91,23 +94,12 @@ export default function InsightsWorkoutsPageClient() {
       coachLaunch
       headerAction={
         showLog ? (
-          // Same 40 px ghost icon and widened hit area as the header
-          // cluster's other actions; it opens the form in place.
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            data-slot="workout-log-manual"
-            aria-label={t("insights.workouts.manual.logWorkout")}
-            title={t("insights.workouts.manual.logWorkout")}
+          // The shared header plus; it opens the form in place.
+          <SubPageAddButton
+            label={t("insights.workouts.manual.logWorkout")}
             onClick={() => setLogOpen(true)}
-            className={cn(
-              "text-muted-foreground hover:text-foreground relative size-10",
-              "before:absolute before:-inset-1.5 before:content-['']",
-            )}
-          >
-            <Plus className="size-4" aria-hidden="true" />
-          </Button>
+            slot="workout-log-manual"
+          />
         ) : null
       }
     >
@@ -140,7 +132,7 @@ export default function InsightsWorkoutsPageClient() {
               </Button>
             ) : null
           }
-          coachPrefill="I haven't logged any workouts yet — why does tracking them matter, and what should I focus on first?"
+          coachPrefill="I haven't logged any workouts yet. Why does tracking them matter, and what should I focus on first?"
         />
       ) : (
         <>

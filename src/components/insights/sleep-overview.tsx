@@ -122,7 +122,13 @@ export function SleepOverview() {
 
   return (
     <div className="space-y-4">
-      {sleepStages ? (
+      {/* While the read is in flight the bar's own skeleton holds its
+          place: the "stages unavailable" card is a statement about the data,
+          and painting it before the data arrived both said something untrue
+          and pushed the duration chart down when the bar replaced it. */}
+      {isLoading ? (
+        <ChartSkeleton />
+      ) : sleepStages ? (
         <SleepStageStackedBar breakdown={sleepStages} />
       ) : (
         <Card>

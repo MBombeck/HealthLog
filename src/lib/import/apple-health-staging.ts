@@ -1,6 +1,7 @@
 /**
- * The staged Apple Health upload, from the request that writes it to the job
- * that consumes it, and what happens to it on every way out.
+ * The staged import upload (an Apple Health `export.zip` or, since v1.42, a
+ * Health Connect export ZIP), from the request that writes it to the job that
+ * consumes it, and what happens to it on every way out.
  *
  * The upload is the person's whole health export in plain text, written to
  * the shared temp directory by the kick-off request and read by the import
@@ -40,12 +41,27 @@ const ACTIVE_IMPORT_MAX_AGE_MS = 7 * 60 * 60 * 1000;
 /** Staged files older than this belong to no running import. */
 export const STAGING_MAX_AGE_MS = ACTIVE_IMPORT_MAX_AGE_MS;
 
-/** The names the kick-off and the extractor give their temp files. */
+/**
+ * The names the kick-offs and the extractors give their temp files: the
+ * uploads, the extracted Apple Health XML and the extracted Health Connect
+ * database.
+ */
 const STAGING_NAME =
-  /^healthlog-(?:apple-health-import|admin-apple-health-import|upload)-[0-9a-f-]{36}\.bin$|^healthlog-import-[0-9a-f]{24}\.xml$/;
+  /^healthlog-(?:apple-health-import|admin-apple-health-import|health-connect-import|upload)-[0-9a-f-]{36}\.bin$|^healthlog-import-[0-9a-f]{24}\.xml$|^healthlog-hc-import-[0-9a-f]{24}\.db$/;
 
-/** The error code a second concurrent import is refused with. */
+/** An extracted file (as opposed to an upload) a running import reads. */
+const EXTRACTED_NAME = /\.(?:xml|db)$/;
+
+/**
+ * The error code a second concurrent import is refused with. The name keeps
+ * its first importer's spelling because clients key on it; it covers every
+ * kind of import.
+ */
 export const IMPORT_BUSY_CODE = "import.apple_health.busy";
+
+/** The message that goes with {@link IMPORT_BUSY_CODE}, whichever import runs. */
+export const IMPORT_BUSY_MESSAGE =
+  "An import is already running for this account. Wait for it to finish, then upload again.";
 
 export type CreateImportJobResult =
   { created: { id: string } } | { busy: { id: string; status: string } };
@@ -83,15 +99,16 @@ export async function discardStagedUpload(path: string): Promise<void> {
 
 /**
  * What a queued or running import still owns: the staged uploads its queued
- * jobs name, and whether an import is extracting or reading its XML now.
+ * jobs name, and whether an import is extracting or reading an extracted file
+ * (the Apple Health XML or the Health Connect database) now.
  */
 export interface StagingInUse {
   paths: ReadonlySet<string>;
-  xmlInUse: boolean;
+  extractedInUse: boolean;
 }
 
 /**
- * Remove staged uploads and extracted XML files older than
+ * Remove staged uploads and extracted files older than
  * `STAGING_MAX_AGE_MS` from `dir`, except what `inUse` names. Age alone is
  * not enough: an upload can wait in the queue behind another account's
  * import for longer than that, and removing it failed the import when its
@@ -101,7 +118,7 @@ export interface StagingInUse {
 export async function sweepStaleImportStaging(
   dir: string = tmpdir(),
   now: number = Date.now(),
-  inUse: StagingInUse = { paths: new Set(), xmlInUse: false },
+  inUse: StagingInUse = { paths: new Set(), extractedInUse: false },
 ): Promise<number> {
   let names: string[];
   try {
@@ -114,7 +131,7 @@ export async function sweepStaleImportStaging(
     if (!STAGING_NAME.test(name)) continue;
     const path = join(dir, name);
     if (inUse.paths.has(path)) continue;
-    if (inUse.xmlInUse && name.endsWith(".xml")) continue;
+    if (inUse.extractedInUse && EXTRACTED_NAME.test(name)) continue;
     try {
       const info = await stat(path);
       if (!info.isFile()) continue;

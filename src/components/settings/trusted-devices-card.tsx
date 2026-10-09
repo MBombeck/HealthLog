@@ -90,6 +90,7 @@ export function TrustedDevicesCard({
   return (
     <SettingsCard data-slot="settings-trusted-devices-card">
       <SettingsCardHeader
+        anchor="trusted-devices"
         icon={ShieldCheck}
         title={t("settings.security.trustedDevices.title")}
       />

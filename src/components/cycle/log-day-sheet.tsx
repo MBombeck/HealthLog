@@ -1465,7 +1465,7 @@ export function SymptomRow({
             onClick={() => setConfirmRemove(true)}
             disabled={deleteCustom.isPending}
             aria-label={t("cycle.symptom.custom.remove", { label })}
-            className="text-muted-foreground hover:text-destructive hover:bg-accent focus-visible:ring-ring/50 grid size-11 shrink-0 place-items-center rounded-md transition-colors focus-visible:ring-2 focus-visible:outline-none sm:size-9"
+            className="text-muted-foreground hover:text-foreground hover:bg-accent focus-visible:ring-ring/50 grid size-11 shrink-0 place-items-center rounded-md transition-colors focus-visible:ring-2 focus-visible:outline-none sm:size-9"
           >
             <X className="size-4" aria-hidden="true" />
           </button>

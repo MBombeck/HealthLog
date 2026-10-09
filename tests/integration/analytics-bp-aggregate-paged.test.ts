@@ -21,6 +21,9 @@
  *      can attribute slow requests to outlier users without re-running
  *      a DB query.
  */
+import { dayValue } from "@/lib/measurements/day-mean";
+import { userDayKey } from "@/lib/tz/format";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
@@ -145,13 +148,22 @@ describe("GET /api/analytics — chunked per-type reads (Sr-H1)", () => {
     expect(response.status).toBe(200);
     const envelope = (await response.json()) as AnalyticsEnvelope;
 
-    // Response shape unchanged: count matches every row inserted, the
-    // latest value is the final row's value (the last index, i = 5999,
-    // gives 60 + (5999 % 40) = 60 + 39 = 99). If the cursor skipped or
-    // duplicated a row across the chunk boundary either of these
-    // assertions fails loudly.
+    // Response shape unchanged: count matches every row inserted. The
+    // latest pulse is the value of its latest local day (the mean of that
+    // day's hour means, the statistic the day view shows as "Pulse"), so it
+    // is computed here from the rows of that day through the same helper.
+    // If the cursor skipped or duplicated a row across the chunk boundary
+    // the count fails loudly.
     expect(envelope.data.summaries.PULSE.count).toBe(ROW_COUNT);
-    expect(envelope.data.summaries.PULSE.latest).toBe(99);
+    const tz = await resolveUserTimezone(user.id);
+    const lastDay = userDayKey(rows.at(-1)!.measuredAt, tz);
+    const sameDay = rows.filter(
+      (r) => userDayKey(r.measuredAt, tz) === lastDay,
+    );
+    expect(envelope.data.summaries.PULSE.latest).toBeCloseTo(
+      dayValue("PULSE", sameDay, tz)!,
+      9,
+    );
 
     // Wide-event annotation surfaces the row count for slow-query
     // attribution. Total reads = 6 000 PULSE rows; every other type

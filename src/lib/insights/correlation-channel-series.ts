@@ -37,7 +37,11 @@ import {
 } from "@/lib/insights/correlation-discovery";
 import { resolveLabFields } from "@/lib/labs/serialise";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
-import { ENVIRONMENT_FIELDS } from "@/lib/environment/fields";
+import {
+  ENVIRONMENT_FIELDS,
+  environmentFieldValue,
+} from "@/lib/environment/fields";
+import { isAirQualityActive } from "@/lib/environment/open-meteo-air-quality";
 import {
   buildComplianceDailySeries,
   buildSymptomEventDailySeries,
@@ -54,7 +58,7 @@ import {
   pickMainNightAndNaps,
   type SleepStageRow,
 } from "@/lib/analytics/sleep-night";
-import { isNearUtc } from "@/lib/tz/format";
+import { isNearUtc, shiftDateKey } from "@/lib/tz/format";
 import { probeRollupCoverage } from "@/lib/rollups/measurement-coverage";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import type {
@@ -237,40 +241,95 @@ export async function fetchEnvironmentSeries(
 ): Promise<NamedSeries[]> {
   // eslint-disable-next-line healthlog/no-utc-day-key -- baseline: lower bound on stored environment day keys; a day either way at the far edge does not change the series
   const sinceKey = since.toISOString().slice(0, 10);
-  const rows = await prisma.environmentContext.findMany({
-    where: { userId, date: { gte: sinceKey } },
-    orderBy: { date: "asc" },
-    take: 1000,
-    select: {
-      date: true,
-      tempMean: true,
-      tempMin: true,
-      tempMax: true,
-      apparentMean: true,
-      sunshineSec: true,
-      daylightSec: true,
-      precipSum: true,
-      pressureMean: true,
-      pressureDelta: true,
-      humidityMean: true,
-      cloudMean: true,
-    },
-  });
+  const [rows, account] = await Promise.all([
+    prisma.environmentContext.findMany({
+      where: { userId, date: { gte: sinceKey } },
+      orderBy: { date: "asc" },
+      take: 1000,
+      select: {
+        date: true,
+        tempMean: true,
+        tempMin: true,
+        tempMax: true,
+        apparentMean: true,
+        sunshineSec: true,
+        daylightSec: true,
+        precipSum: true,
+        pressureMean: true,
+        pressureDelta: true,
+        humidityMean: true,
+        cloudMean: true,
+        // v1.42 (#615) — the air-quality channels' columns. The read is an
+        // explicit select, so a channel whose column is missing here reads
+        // as never covered rather than failing.
+        pm25Mean: true,
+        o3Max8h: true,
+        pollenAlderMax: true,
+        pollenBirchMax: true,
+        pollenGrassMax: true,
+        pollenMugwortMax: true,
+        pollenOliveMax: true,
+        pollenRagweedMax: true,
+      },
+    }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { environmentAirQualityEnabled: true },
+    }),
+  ]);
+  // With the air-quality part off (by the account or the operator) its
+  // channels are empty: stored values from before the switch are kept, but
+  // not correlated against the person's wish.
+  const airQuality = isAirQualityActive(
+    account?.environmentAirQualityEnabled ?? true,
+  );
 
   return ENVIRONMENT_FIELDS.map((field) => {
-    const points: DailySeriesPoint[] = [];
-    for (const row of rows) {
-      const raw = row[field.column];
-      if (raw == null || !Number.isFinite(raw)) continue;
-      // Seconds → hours for the duration fields; pass through otherwise.
-      const value =
-        field.column === "sunshineSec" || field.column === "daylightSec"
-          ? raw / 3600
-          : raw;
-      points.push({ day: row.date, value });
+    const daily: DailySeriesPoint[] = [];
+    if (!field.airQuality || airQuality) {
+      for (const row of rows) {
+        const raw = environmentFieldValue(field, row);
+        if (raw == null) continue;
+        // Seconds → hours for the duration fields; pass through otherwise.
+        const value =
+          field.column === "sunshineSec" || field.column === "daylightSec"
+            ? raw / 3600
+            : raw;
+        daily.push({ day: row.date, value });
+      }
     }
-    return { key: field.key, role: "behaviour" as const, points };
+    // v1.42 — one averaged-lag hypothesis per outcome: the exposure on day D
+    // is the mean of D−1 and D, paired with the outcome on D (`lagDays: 0`).
+    // See the lag note in `src/lib/environment/fields.ts`.
+    return {
+      key: field.key,
+      role: "behaviour" as const,
+      points: averageWithPreviousDay(daily),
+      lagDays: 0,
+    };
   });
+}
+
+/**
+ * Exposure over "the day before and the day itself": for each day D whose
+ * previous calendar day is also present, the mean of the two values, keyed
+ * on D. A day without its predecessor yields no point (no half-window mean).
+ * Pure; input order is irrelevant, output is ascending by day.
+ */
+export function averageWithPreviousDay(
+  points: readonly DailySeriesPoint[],
+): DailySeriesPoint[] {
+  const byDay = new Map<string, number>();
+  for (const p of points) {
+    if (Number.isFinite(p.value)) byDay.set(p.day, p.value);
+  }
+  const out: DailySeriesPoint[] = [];
+  for (const day of [...byDay.keys()].sort()) {
+    const prev = byDay.get(shiftDateKey(day, -1));
+    if (prev === undefined) continue;
+    out.push({ day, value: (prev + (byDay.get(day) as number)) / 2 });
+  }
+  return out;
 }
 
 /** Explicit deterministic ceiling on opt-in custom behaviour channels. */

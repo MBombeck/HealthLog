@@ -130,7 +130,9 @@ export function ProfileSummaryPage() {
   });
 
   return (
-    <main className="container mx-auto max-w-3xl space-y-6 px-4 py-6">
+    // The shell owns the page frame (gutter, width, top space) and the
+    // <main> landmark; this page only sets its rhythm.
+    <div className="space-y-6">
       <PageHeader title={t("settings.sections.anamnesis.title")} />
       {summary.isPending ? (
         <p className="text-muted-foreground text-sm" aria-live="polite">
@@ -141,6 +143,6 @@ export function ProfileSummaryPage() {
         <QueryErrorCard onRetry={() => void summary.refetch()} />
       ) : null}
       {summary.data ? <ProfileSummary summary={summary.data} /> : null}
-    </main>
+    </div>
   );
 }

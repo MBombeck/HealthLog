@@ -63,7 +63,11 @@ export default function InsightsPulsPage() {
   const { t } = useTranslations();
   const { compareBaseline } = useInsightsLayoutPrefs(isAuthenticated);
 
-  const { data: analytics, isEmpty } = useInsightsAnalytics("PULSE");
+  const {
+    data: analytics,
+    isEmpty,
+    isLoading: analyticsLoading,
+  } = useInsightsAnalytics("PULSE");
   // VO₂ max rides on the same `/api/analytics` bundle; we only need the
   // sample count to decide whether to surface the cross-link to the
   // dedicated cardio-fitness page.
@@ -84,7 +88,7 @@ export default function InsightsPulsPage() {
 
   // v1.12.8 — visible-range stats shared between the pulse chart and the
   // strip (the VO2 chart-row below keeps its own full-range read).
-  const { statsByType, onVisibleStats } = useChartDomainStats();
+  const { statsByType, statsSettled, onVisibleStats } = useChartDomainStats();
 
   // v1.4.27 F17 — gate the sub-page on at least one pulse observation.
   // Brand-new accounts (no manual logs, no Apple-Health upload yet)
@@ -110,7 +114,7 @@ export default function InsightsPulsPage() {
               </Link>
             </Button>
           }
-          coachPrefill="I haven't recorded any resting pulse yet — why does it matter, and what should I know before I start?"
+          coachPrefill="I haven't recorded any resting pulse yet. Why does it matter, and what should I know before I start?"
         />
       </SubPageShell>
     );
@@ -123,11 +127,13 @@ export default function InsightsPulsPage() {
       explainerMetric="pulse"
       statStrip={
         <MetricStatStrip
+          pending={analyticsLoading}
           summary={pulseSummary}
           unit="bpm"
           seriesLabel={t("insights.pulseSectionTitle")}
           icon={Heart}
           windowStats={statsByType?.PULSE ?? null}
+          windowPending={!statsSettled}
         />
       }
       coachReadStrip={
@@ -151,14 +157,15 @@ export default function InsightsPulsPage() {
         titleIcon={Heart}
         colors={
           hasRestingHr
-            ? ["var(--success)", "var(--destructive)"]
-            : ["var(--success)"]
+            ? ["var(--chart-2)", "var(--chart-3)"]
+            : ["var(--chart-2)"]
         }
         unit="bpm"
         compareBaseline={compareBaseline}
         userTimezone={user?.timezone}
         onVisibleStats={onVisibleStats}
         showDataTable
+        dayLinks
       />
 
       {/* S11 — the intraday "shape of the day" layer: 10-minute mean heart

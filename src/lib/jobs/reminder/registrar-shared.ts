@@ -211,6 +211,82 @@ export const nightlyInsightPassOptions = {
 export const cronIsTheRetry = { retryLimit: 0 } as const;
 
 /**
+ * pg-boss's internal queue the cron timekeeper sends through: one job per
+ * schedule tick, for every schedule.
+ */
+const PG_BOSS_SEND_IT_QUEUE = "__pgboss__send-it";
+
+/**
+ * The shortest retention a queue may be given: the 72-hour failure window
+ * `job-failures.ts` reads back from pg-boss's terminal rows, plus a day. A
+ * failed job stays in `pgboss.job` until `completed_on + deletion_seconds`,
+ * so a queue kept for less than the window would make its failures vanish
+ * from the admin status before they were ever shown.
+ */
+export const QUEUE_RETENTION_FLOOR_SECONDS = 96 * 60 * 60;
+
+/**
+ * v1.42 — pure volume queues and their terminal-row retention
+ * (`deleteAfterSeconds`). pg-boss keeps every completed and failed job for
+ * seven days by default; these queues mint a job every few minutes, or one
+ * per write, and nothing reads their history beyond the failure window, so
+ * their rows were most of `pgboss.job` and of its sequential scans. Every
+ * other queue keeps the default. Each value is held at or above
+ * {@link QUEUE_RETENTION_FLOOR_SECONDS} by `queue-retention.test.ts`.
+ */
+export const VOLUME_QUEUE_DELETE_AFTER_SECONDS: Readonly<
+  Record<string, number>
+> = {
+  // Every five minutes, all day.
+  "host-metric-sample": QUEUE_RETENTION_FLOOR_SECONDS,
+  // One job per (user, type, day) a write touched.
+  "rollup-recompute": QUEUE_RETENTION_FLOOR_SECONDS,
+  // One job per write that dirties a status card.
+  "insight-status-generate": QUEUE_RETENTION_FLOOR_SECONDS,
+  // One job per schedule tick, for every cron in the tree.
+  [PG_BOSS_SEND_IT_QUEUE]: QUEUE_RETENTION_FLOOR_SECONDS,
+};
+
+/**
+ * Bring the retention of already-existing volume queues in line with the
+ * table above. `createQueue` only applies its options when it creates the
+ * queue, so an upgraded instance needs the update; `updateQueue` may change
+ * `deleteAfterSeconds` (unlike the policy). A job copies the value when it is
+ * inserted, so rows already in the table keep theirs and age out as before.
+ * Never fails a boot.
+ */
+async function reconcileVolumeQueueRetention(
+  boss: PgBoss,
+  queues: readonly string[],
+): Promise<void> {
+  const reconciled: string[] = [];
+  const failed: string[] = [];
+  for (const name of queues) {
+    const deleteAfterSeconds = VOLUME_QUEUE_DELETE_AFTER_SECONDS[name];
+    if (deleteAfterSeconds === undefined) continue;
+    try {
+      await boss.updateQueue(name, { deleteAfterSeconds });
+      reconciled.push(name);
+    } catch (err) {
+      failed.push(name);
+      workerLog("error", `[queue-retention] failed to update ${name}`, err);
+    }
+  }
+  if (reconciled.length === 0 && failed.length === 0) return;
+  await withBackgroundEvent(
+    "worker.boot.queue_retention_reconcile",
+    async () => {
+      annotate({
+        meta: {
+          queue_retention_reconciled: reconciled.join(",") || "none",
+          queue_retention_failed_count: failed.length,
+        },
+      });
+    },
+  );
+}
+
+/**
  * Create every queue in `queues`, then schedule every cron in `schedules`.
  * Centralised so each registrar provisions before it schedules in the exact
  * order the monolith did, and the `Europe/Berlin` tz default stays in one
@@ -231,9 +307,19 @@ export async function createAndSchedule(
 ): Promise<void> {
   for (const q of queues) {
     const decision = policies[q];
-    await boss.createQueue(q, decision ? { policy: decision.policy } : {});
+    const deleteAfterSeconds = VOLUME_QUEUE_DELETE_AFTER_SECONDS[q];
+    await boss.createQueue(q, {
+      ...(decision ? { policy: decision.policy } : {}),
+      ...(deleteAfterSeconds !== undefined ? { deleteAfterSeconds } : {}),
+    });
   }
   await reconcileQueuePolicies(policies);
+  // The cron timekeeper's own queue exists once pg-boss has started, and only
+  // a registrar that schedules something sends through it.
+  await reconcileVolumeQueueRetention(boss, [
+    ...queues,
+    ...(schedules.length > 0 ? [PG_BOSS_SEND_IT_QUEUE] : []),
+  ]);
   for (const [name, cron, sendOptions] of schedules) {
     await boss.schedule(
       name,

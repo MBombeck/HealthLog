@@ -8,10 +8,11 @@ import { MedicationsSection } from "./medications-section";
 import { MoodSection } from "./mood-section";
 import { LabsSection } from "./labs-section";
 import { IllnessSection } from "./illness-section";
+import { DocumentsSection } from "./documents-section";
 import { VorsorgeSection } from "./vorsorge-section";
 
 /**
- * v1.25.11 (#148) — single source of truth for the "Appearance" (slug
+ * v1.25.11 (#148) — single source of truth for the "Layout" (slug
  * `layout`) hub + its per-module subpages.
  *
  * "How my app looks and is arranged" was scattered across several unrelated
@@ -20,7 +21,7 @@ import { VorsorgeSection } from "./vorsorge-section";
  * back into a HUB → SUBPAGE model: `/settings/layout` lists the modules as
  * clickable rows, and each row opens `/settings/layout/<id>`, which renders
  * ONLY that module's section (the same existing section component, verbatim)
- * with a "← Appearance" back-link.
+ * with a "← Layout" back-link.
  *
  * This module is intentionally NOT `"use client"`: the client hub
  * (`layout-section.tsx`) AND the server subpage route
@@ -92,6 +93,12 @@ export const LAYOUT_GROUPS: ReadonlyArray<LayoutGroup> = [
     titleKey: "settings.sections.layout.illness.title",
     descriptionKey: "settings.sections.layout.illness.description",
     Body: IllnessSection,
+  },
+  {
+    id: "documents",
+    titleKey: "settings.sections.layout.documents.title",
+    descriptionKey: "settings.sections.layout.documents.description",
+    Body: DocumentsSection,
   },
   {
     id: "vorsorge",

@@ -17,12 +17,23 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     providerHealth: {
       groupBy: vi.fn(),
+      // v1.42 — the paused rows.
+      findMany: vi.fn(async () => []),
     },
     coachUsage: {
       aggregate: vi.fn(),
     },
+    // v1.42 — the operator key's model check reads the admin settings.
+    appSettings: { findUnique: vi.fn(async () => null) },
   },
 }));
+
+// v1.42 — the model check probes the operator endpoint's listing.
+const probeModelListing = vi.fn();
+vi.mock("@/lib/ai/model-availability", () => ({
+  probeModelListing: (...a: unknown[]) => probeModelListing(...a),
+}));
+vi.mock("@/lib/crypto", () => ({ decrypt: (v: string) => v }));
 
 vi.mock("@/lib/api-handler", async () => {
   const actual =
@@ -115,6 +126,9 @@ describe("GET /api/admin/provider-health", () => {
         lastOkAt: "2026-08-27T07:00:00.000Z",
         lastFailureAt: "2026-08-27T06:00:00.000Z",
         lastFailureStatus: 503,
+        pausedUsers: 0,
+        pausedUntil: null,
+        modelListing: null,
       },
     ]);
   });
@@ -255,5 +269,91 @@ describe("GET /api/admin/provider-health", () => {
     const res = await GET();
     const body = await res.json();
     expect(body.data.providers).toEqual([]);
+  });
+});
+
+describe("GET /api/admin/provider-health — pause and model check (v1.42)", () => {
+  const findMany = vi.mocked(prisma.providerHealth.findMany);
+  const settings = vi.mocked(prisma.appSettings.findUnique);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(requireAdmin).mockResolvedValue({
+      user: { id: "admin" },
+    } as never);
+    aggregate.mockResolvedValue({
+      _sum: { totalTokens: 0, operatorTokens: 0 },
+    } as never);
+    findMany.mockResolvedValue([] as never);
+    settings.mockResolvedValue(null as never);
+  });
+
+  it("counts the users a provider is paused for and when the last pause lifts", async () => {
+    groupBy.mockResolvedValue([
+      group("admin-openai", "hard_failed", 2, {
+        consecutiveFailures: 1766,
+        lastFailureAt: new Date("2026-10-08T04:31:00Z"),
+        lastStatus: 500,
+      }),
+    ] as never);
+    findMany.mockResolvedValue([
+      {
+        providerType: "admin-openai",
+        nextRetryAt: new Date("2026-10-08T05:01:00Z"),
+      },
+      {
+        providerType: "admin-openai",
+        nextRetryAt: new Date("2026-10-09T04:31:00Z"),
+      },
+    ] as never);
+
+    const body = await (await GET()).json();
+    expect(body.data.providers[0]).toMatchObject({
+      pausedUsers: 2,
+      pausedUntil: "2026-10-09T04:31:00.000Z",
+    });
+    // Only rows past the pause threshold, inside their window, are read.
+    expect(findMany.mock.calls[0][0]).toMatchObject({
+      where: {
+        lastResult: "hard_failed",
+        consecutiveFailures: { gte: 5 },
+      },
+    });
+  });
+
+  it("names a model the operator's endpoint no longer lists", async () => {
+    groupBy.mockResolvedValue([
+      group("admin-openai", "hard_failed", 1, {
+        consecutiveFailures: 9,
+        lastFailureAt: new Date("2026-10-08T04:31:00Z"),
+        lastStatus: 500,
+      }),
+    ] as never);
+    settings.mockResolvedValue({
+      adminAiModel: "gpt-5.4-mini",
+      adminAiBaseUrl: "http://openai-oauth-proxy:10531/v1",
+      adminAiKeyEncrypted: "key",
+    } as never);
+    probeModelListing.mockResolvedValue("not_listed");
+
+    const body = await (await GET()).json();
+    expect(body.data.providers[0].modelListing).toEqual({
+      model: "gpt-5.4-mini",
+      listing: "not_listed",
+    });
+    expect(probeModelListing).toHaveBeenCalledWith(
+      expect.objectContaining({ operatorTrusted: true, model: "gpt-5.4-mini" }),
+    );
+  });
+
+  it("does not probe while the operator's key is healthy", async () => {
+    groupBy.mockResolvedValue([
+      group("admin-openai", "ok", 4, {
+        lastOkAt: new Date("2026-10-08T04:31:00Z"),
+      }),
+    ] as never);
+    const body = await (await GET()).json();
+    expect(body.data.providers[0].modelListing).toBeNull();
+    expect(probeModelListing).not.toHaveBeenCalled();
   });
 });

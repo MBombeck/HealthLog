@@ -221,6 +221,22 @@ const workoutDetailResponse = z
     avgHr: z.number().int().nullable(),
     maxHr: z.number().int().nullable(),
     minHr: z.number().int().nullable(),
+    storedAvgHr: z
+      .number()
+      .int()
+      .nullable()
+      .optional()
+      .describe(
+        "The row's own average heart rate (v1.42). `avgHr` may be filled in from a same-session twin by the canonical picker; this is the stored value, which an edit of a hand-entered workout sends back so the twin's value is not written onto it.",
+      ),
+    storedMaxHr: z
+      .number()
+      .int()
+      .nullable()
+      .optional()
+      .describe(
+        "The row's own maximum heart rate (v1.42), as `storedAvgHr` is to `avgHr`.",
+      ),
     stepCount: z.number().int().nullable(),
     elevationM: z.number().nullable(),
     pauseDurationSec: z.number().int().nullable(),

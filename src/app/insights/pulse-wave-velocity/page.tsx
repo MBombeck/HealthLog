@@ -21,12 +21,12 @@ export default function InsightsPulswellengeschwindigkeitPage() {
       chartKey="pulseWaveVelocity"
       i18nPrefix="insights.pulseWaveVelocity"
       explainerMetric="pulseWaveVelocity"
-      color="var(--destructive)"
+      color="var(--chart-3)"
       unit="m/s"
       yAxisUnit="m/s"
       emptyStateIcon={<Activity className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any pulse wave velocity yet — what does this metric tell me about my health, and how do I improve it?"
+      coachPrefill="I haven't logged any pulse wave velocity yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

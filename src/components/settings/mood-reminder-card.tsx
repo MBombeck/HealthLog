@@ -203,7 +203,7 @@ export function MoodReminderCard({
       />
       <p className="text-sm">{t("notifications.moodReminder.detail")}</p>
       {enabled && (
-        <div className="flex min-h-11 items-center gap-3">
+        <div className="flex min-h-11 items-center justify-between gap-3">
           <label htmlFor="mood-reminder-hour" className="text-sm font-medium">
             {t("notifications.moodReminder.hourLabel")}
           </label>
@@ -229,8 +229,8 @@ export function MoodReminderCard({
           aria-live="polite"
           className={
             msgType === "error"
-              ? "text-destructive mt-3 text-sm"
-              : "text-muted-foreground mt-3 text-sm"
+              ? "text-destructive text-sm"
+              : "text-muted-foreground text-sm"
           }
         >
           {msg}

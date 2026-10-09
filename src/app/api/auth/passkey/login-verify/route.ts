@@ -1,4 +1,8 @@
-import { verifyAuthentication } from "@/lib/auth/passkey";
+import {
+  PasskeyAuthError,
+  verifyAuthentication,
+  type PasskeyAuthErrorKind,
+} from "@/lib/auth/passkey";
 import { createSession } from "@/lib/auth/session";
 import { syncMfaEnrollCookie } from "@/lib/auth/mfa-enrollment";
 import { recordSignInDevice } from "@/lib/auth/login-alert";
@@ -19,6 +23,43 @@ import {
 import { issueAccessAndRefresh } from "@/lib/auth/refresh-token";
 import { isOidcOnly } from "@/lib/auth/oidc";
 import { completePendingOidcLink } from "@/lib/auth/oidc-pending-link";
+
+const PASSKEY_VERIFICATION_FAILED_CODE = "passkey.verification.failed";
+
+/**
+ * How each passkey refusal answers. The challenge and verification cases are
+ * 401 (the sign-in did not prove anything), the unknown credential is 404 (the
+ * passkey is not registered on this server), and a malformed body is 422.
+ */
+const PASSKEY_REFUSALS: Record<
+  PasskeyAuthErrorKind,
+  { status: number; errorCode: string; message: string; auditReason: string }
+> = {
+  challenge_expired: {
+    status: 401,
+    errorCode: "passkey.challenge.expired",
+    message: "The sign-in took too long or was already used. Try again.",
+    auditReason: "passkey_challenge_expired",
+  },
+  unknown_passkey: {
+    status: 404,
+    errorCode: "passkey.unknown",
+    message: "This passkey is not registered here.",
+    auditReason: "passkey_unknown",
+  },
+  malformed: {
+    status: 422,
+    errorCode: "passkey.response.invalid",
+    message: "The passkey response could not be read.",
+    auditReason: "passkey_response_invalid",
+  },
+  verification_failed: {
+    status: 401,
+    errorCode: PASSKEY_VERIFICATION_FAILED_CODE,
+    message: "Passkey verification failed",
+    auditReason: "passkey_verification_failed",
+  },
+};
 
 export const POST = apiHandler(async (request: NextRequest) => {
   // OIDC_ONLY must block passkey login too, not just password login — a
@@ -55,17 +96,39 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("challengeId and credential required", 422);
   }
 
-  const { verification, passkey } = await verifyAuthentication(
-    challengeId,
-    credential,
-  );
+  let outcome: Awaited<ReturnType<typeof verifyAuthentication>>;
+  try {
+    outcome = await verifyAuthentication(challengeId, credential);
+  } catch (err) {
+    // A known client-side case — an expired challenge, a passkey that is no
+    // longer registered here, a malformed or refused assertion — answers
+    // with its own status and code (iOS #116, item 20) so the app can tell
+    // the person what to do instead of reporting a server error. Anything
+    // else is a real fault and keeps propagating.
+    if (!(err instanceof PasskeyAuthError)) throw err;
+    const refusal = PASSKEY_REFUSALS[err.kind];
+    await auditLog("auth.login.failed", {
+      ipAddress: ip,
+      details: { reason: refusal.auditReason },
+    });
+    annotate({
+      action: { name: "auth.login.passkey.refused" },
+      meta: { reason: err.kind },
+    });
+    return apiError(refusal.message, refusal.status, {
+      errorCode: refusal.errorCode,
+    });
+  }
+  const { verification, passkey } = outcome;
 
   if (!verification.verified) {
     await auditLog("auth.login.failed", {
       ipAddress: ip,
       details: { reason: "passkey_verification_failed" },
     });
-    return apiError("Passkey verification failed", 401);
+    return apiError("Passkey verification failed", 401, {
+      errorCode: PASSKEY_VERIFICATION_FAILED_CODE,
+    });
   }
 
   const user = await prisma.user.findUnique({

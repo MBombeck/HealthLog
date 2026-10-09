@@ -111,6 +111,9 @@ export const BACKED_UP_MODELS = [
   // else holds either; a restore without them loses the history outright.
   "SymptomDefinition",
   "SymptomEvent",
+  // v1.42 — the person's life events, the timeline's anchors. Written by the
+  // person and held nowhere else.
+  "LifeEvent",
   "EcgRecording",
   "UserHealthProfile",
   "HealthProfileFactRevision",
@@ -171,6 +174,10 @@ export const BACKED_UP_MODELS = [
   // re-syncs it from a provider.
   "VaccinationRecord",
   "VaccinationDocumentLink",
+  // v1.42 (#1005) — the person's own vaccine definitions. A dose logged
+  // against one resolves its antigens and booster rule through it, so a
+  // restore without them leaves those doses as bare names.
+  "CustomVaccine",
 
   // ── Coach ─────────────────────────────────────────────────────────────────
   // The transcript — conversation, message, attachment — travels; see
@@ -270,6 +277,8 @@ export const BACKUP_WRITER_FILES: readonly string[] = [
   // ride inside their definition (`include: { events }` out, `events: {
   // create }` back), the way a medication's side effects do.
   "src/lib/export/symptoms-backup.ts",
+  // The person's life events, both ends beside each other (v1.42).
+  "src/lib/export/life-events-backup.ts",
   "src/lib/cycle/backup.ts",
   // The medication category is read through the one helper that normalises
   // it; the payload writer calls the helper rather than the delegate. The
@@ -293,6 +302,7 @@ export const BACKUP_RESTORE_FILES: readonly string[] = [
   "src/lib/export/onboarding-backup.ts",
   "src/lib/export/ecg-backup.ts",
   "src/lib/export/symptoms-backup.ts",
+  "src/lib/export/life-events-backup.ts",
   "src/lib/cycle/backup.ts",
   // The restore writes the medication category through the same helper.
   "src/lib/medication-category.ts",
@@ -340,6 +350,7 @@ export const TWO_ENDED_MODELS = [
   "IllnessSymptomLink",
   "SymptomDefinition",
   "SymptomEvent",
+  "LifeEvent",
   "UserHealthProfile",
   "HealthProfileFactRevision",
   "CycleProfile",
@@ -374,6 +385,7 @@ export const TWO_ENDED_MODELS = [
   // from anywhere else.
   "VaccinationRecord",
   "VaccinationDocumentLink",
+  "CustomVaccine",
   // The Vorsorge reminders, off the debt register at last (v1.37.20, #223 /
   // iOS #68), and the completion ledger carried with them from the release
   // that introduces it. The pairing is deliberate: the ledger arriving is
@@ -708,6 +720,8 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "The record of a restore this host ran from one of its own stored copies. It names a backup row that exists only in this database, so carrying it would describe a restore the receiving host never performed.",
   OffhostBackupState:
     "When this host last put this account's copy in this operator's bucket, and how big it was. It describes one deployment's relationship with one bucket, so restoring it elsewhere would assert an off-host copy that host has never written.",
+  MeasurementFoldRepair:
+    "That this host's one-time fold repair has recomputed the account's hourly and daily means, which lets the compaction-tombstone purge delete the tombstones the repair reads. It describes this database, not the file: a restore of a file exported before the repair ran writes back the means and tombstones of that moment, so the restore removes the row and the repair runs again before anything is purged.",
   BackupPassAttempt:
     "When this host's backup passes last started and finished this account, kept so a pass the process died under is taken last next time and named on the backups page. It describes this deployment's own runs, so restoring it elsewhere would report an interrupted run that host never had, or hide one it did.",
   DocumentImportKey:
@@ -718,6 +732,10 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "Further import source keys that were answered with an already stored document because the bytes matched. The next import run writes the same alias again the moment it meets the same bytes, so a restore loses nothing a re-run does not rebuild; and for a deleted document it restores no less than the tombstones and ledger beside it do, which do not travel either.",
   ImportJob:
     "A job record pointing at an uploaded file that the backup does not carry, so restoring it would resurrect a task with nothing to work on.",
+  HealthKitTypeSync:
+    "When each HealthKit type last arrived on this host and how. Diagnostic state the next sync rebuilds; restored elsewhere it would claim deliveries that host never received.",
+  ManagedProfileHandover:
+    "A one-time handover link: a credential, minted by a guardian and shown once. Restoring it would bring back a link that was used, withdrawn or expired, and only its hash exists to carry anyway. Same reasoning as `InviteToken`.",
   InviteToken:
     "The instance's registration ledger, minted by the operator rather than by the person, and already declared instance-scoped by the wipe plan. Restoring one account's backup must not re-open a registration code the operator retired, and the creator relation is the only thing that makes this look account-scoped at all. It surfaced here when the classification check learned to read a relation by type instead of by field name.",
   MedicationIntakeImportJob:
@@ -891,6 +909,9 @@ export const USER_COLUMN_BACKUP_CLASS = {
   // The restore stamps its own: paired clients' cursors from before it must
   // be refused, which a carried value would undo.
   syncResetAt: "OPERATIONAL",
+  // v1.42 — the air-quality history backfill's progress; the restored
+  // account's job recounts it on its next run.
+  environmentAqHistoryJson: "OPERATIONAL",
 
   // ── Settings ──────────────────────────────────────────────────────────────
   // The body and the person, for the reference ranges, the score and the
@@ -914,6 +935,10 @@ export const USER_COLUMN_BACKUP_CLASS = {
   homeLabel: "SETTING",
   homeTimezone: "SETTING",
   homeSince: "SETTING",
+  // v1.42 (#615) — the sealed copy of the same home location, and the
+  // account's switch for the air-quality part of the module.
+  homeLocationEncrypted: "SETTING",
+  environmentAirQualityEnabled: "SETTING",
   // How the interface reads.
   timezone: "SETTING",
   locale: "SETTING",
@@ -930,6 +955,7 @@ export const USER_COLUMN_BACKUP_CLASS = {
   insightsLayoutJson: "SETTING",
   medicationListLayoutJson: "SETTING",
   moodTagLayoutJson: "SETTING",
+  documentsLayoutJson: "SETTING",
   reportSelectionJson: "SETTING",
   globalExcludedInjectionSites: "SETTING",
   healthKitConfigJson: "SETTING",

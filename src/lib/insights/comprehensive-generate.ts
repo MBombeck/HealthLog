@@ -41,6 +41,7 @@ import {
   fenceBlock,
 } from "@/lib/ai/coach/data-fence";
 import { screenInsightPayloadProse } from "@/lib/ai/safety/insight-payload-screen";
+import type { OutboundReason } from "@/lib/ai/safety/outbound-screen";
 import { computeCitationCoverage } from "@/lib/ai/citation-coverage";
 import { applyInsightsExcludeFilter } from "@/lib/insights/exclude-filter";
 import { getCachedFeatures } from "@/lib/insights/feature-cache";
@@ -166,7 +167,17 @@ export type GenerateOutcome =
         | "scope-changed"
         | "profile-scope-changed";
     }
-  | { status: "failed"; reason: string };
+  | {
+      status: "failed";
+      reason: string;
+      /**
+       * v1.42 — the chain's first provider refused the credential (a dead
+       * Codex sign-in, a revoked key). The nightly pass reports the account
+       * as `auth_failed` and does not queue a retry that cannot succeed until
+       * the person reconnects.
+       */
+      credentialExpired?: boolean;
+    };
 
 /** Higher, seedless temperature for the daily-briefing phrasing re-roll. */
 const BRIEFING_REROLL_TEMPERATURE = 0.6;
@@ -1259,7 +1270,11 @@ export async function generateComprehensiveInsight(
       locale,
       httpStatus: typeof err.httpStatus === "number" ? err.httpStatus : null,
     });
-    return { status: "failed", reason };
+    const credentialExpired =
+      e instanceof AllProvidersFailedError && e.primaryCredentialExpired;
+    return credentialExpired
+      ? { status: "failed", reason, credentialExpired }
+      : { status: "failed", reason };
   }
 
   // Anthropic + local have no native JSON mode, so a ```json-fenced or
@@ -1492,14 +1507,72 @@ export async function generateComprehensiveInsight(
   // persists NOTHING -- the previous cached payload stays, exactly as a
   // provider outage or an unparseable response already behaves. The next run
   // regenerates from scratch.
+  //
+  // v1.42 — one bounded repair before giving up, the way the grounding gate
+  // above gets one corrective retry. A withheld generation used to fail
+  // outright, and the nightly pass then queued its 45-minute provider retry,
+  // which asked the same model the same question and was screened again: on
+  // one account that was eight wasted generations a night over a single
+  // causal sentence. The repair names the contract that tripped and asks for
+  // the whole object again; the repaired payload has to pass the same JSON
+  // parse, the same number grounding and the same screen as a first pass, or
+  // nothing is persisted, exactly as before. A screened outcome is final for
+  // the caller: it is not a provider fault, so nothing retries it.
   const screened = screenInsightPayloadProse(insights, locale);
   if (screened) {
     annotate({
       action: { name: "insights.generate.outbound_blocked" },
       meta: { locale, reason: screened },
     });
-    void recordBriefingFailure({ userId, reason: "outbound-screened", locale });
-    return { status: "failed", reason: "outbound-screened" };
+    let repaired = false;
+    try {
+      const retry = await runBriefingCompletion({
+        userId,
+        chain,
+        systemPrompt,
+        userPrompt: `${userPrompt}\n\n${buildOutboundScreenCorrection(screened)}`,
+        temperature: AI_BUDGETS.comprehensive.temperature,
+        maxTokens: resolveInsightsMaxTokens(),
+        timeoutMs: effectiveTimeoutMs,
+        stage: "screen-retry",
+      });
+      const retryInsights = parseComprehensiveResult(retry.result.content);
+      const retryUngrounded =
+        retryInsights === null
+          ? []
+          : findUngroundedBriefingNumbers(
+              readBriefingBlock(retryInsights),
+              features.signalsOfDay ?? null,
+              features,
+              groundingExtra,
+            );
+      if (
+        retryInsights !== null &&
+        retryUngrounded.length === 0 &&
+        screenInsightPayloadProse(retryInsights, locale) === null
+      ) {
+        insights = retryInsights;
+        result = retry.result;
+        workingProviderType = retry.workingProvider.providerType;
+        briefingStrippedHard = false;
+        repaired = true;
+      }
+    } catch {
+      // A transport failure or the day's budget on the repair: the first
+      // pass stays withheld, nothing else changes.
+    }
+    annotate({
+      action: { name: "insights.generate.outbound_repair" },
+      meta: { locale, reason: screened, repaired },
+    });
+    if (!repaired) {
+      void recordBriefingFailure({
+        userId,
+        reason: "outbound-screened",
+        locale,
+      });
+      return { status: "failed", reason: "outbound-screened" };
+    }
   }
 
   // v1.9.0 — the caller abandoned this generation (its bounded timeout
@@ -1555,4 +1628,23 @@ export async function generateComprehensiveInsight(
   }
 
   return { status: "generated", providerType: workingProviderType };
+}
+
+/**
+ * The correction the one screen repair is sent with. Names the contract the
+ * first reply broke, never the sentence that broke it: the model gets the
+ * rule, not its own words back.
+ */
+export function buildOutboundScreenCorrection(reason: OutboundReason): string {
+  const rule =
+    reason === "causal_claim"
+      ? 'It stated that one measurement or habit CAUSES another. Describe co-occurrence and timing only ("was higher on days when", "tends to move together"); never say that something causes, drives, leads to or results in something else.'
+      : reason === "dose_prescription"
+        ? "It told the reader to take, change, stop or dose a medication. Never give a dose or a medication instruction; at most suggest discussing medication with their clinician."
+        : "It gave a risk score, a probability of disease or a diagnosis. Never estimate risk or name a diagnosis; describe the readings and their trend only.";
+  return `
+Your previous reply was withheld by the safety screen. ${rule}
+
+Re-write the whole JSON object with the same structure and the same numbers, changing only the wording that broke this rule. Return the full JSON object again.
+`;
 }

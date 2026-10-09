@@ -216,7 +216,7 @@ export function ScheduleHistoryTimeline({
                         local day (issue #490 audit). */}
                     <p className="text-muted-foreground text-xs tabular-nums">
                       {fmt.date(revision.validFrom)}
-                      {" – "}
+                      {"–"}
                       {fmt.date(revision.validUntil)}
                     </p>
                   </div>
@@ -239,7 +239,7 @@ export function ScheduleHistoryTimeline({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="text-muted-foreground hover:text-destructive size-11 sm:size-8"
+                        className="text-muted-foreground hover:text-foreground size-11 sm:size-8"
                         aria-label={t(
                           "medications.detail.zeitplan.history.deleteAria",
                         )}

@@ -17,6 +17,7 @@ const OWNER_BY_DOMAIN: ReadonlyMap<string, ModuleKey> = (() => {
   const out = new Map<string, ModuleKey>([
     ["cycle", "cycle"],
     ["illness", "illness"],
+    ["environment", "environment"],
   ]);
   for (const [key, sources] of Object.entries(MODULE_SCOPED_SOURCES)) {
     for (const source of sources ?? []) out.set(source, key as ModuleKey);

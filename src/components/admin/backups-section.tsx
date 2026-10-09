@@ -151,7 +151,7 @@ const RESTORE_PREVIEW_SECTIONS: ReadonlyArray<{
   },
   {
     labelKey: "previewVaccinations",
-    keys: ["vaccinations", "vaccinationLinks"],
+    keys: ["vaccinations", "vaccinationLinks", "customVaccines"],
   },
   {
     labelKey: "previewReminders",
@@ -470,6 +470,11 @@ function catalogueLabel(
   }
   if (catalogue === "vaccinationCiphertext") {
     return t("admin.section.backups.restoreSkippedVaccinationCiphertext");
+  }
+  if (catalogue === "environmentLocationCiphertext") {
+    return t(
+      "admin.section.backups.restoreSkippedEnvironmentLocationCiphertext",
+    );
   }
   if (catalogue === "moodLabelCiphertext") {
     return t("admin.section.backups.restoreSkippedMoodLabelCiphertext");

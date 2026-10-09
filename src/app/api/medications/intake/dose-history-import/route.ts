@@ -176,7 +176,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   if (plan.entries.length > MAX_QUEUED_ROWS) {
     return apiError(
-      `The file holds ${plan.entries.length} importable rows — the limit is ${MAX_QUEUED_ROWS} per import`,
+      `The file holds ${plan.entries.length} importable rows. The limit is ${MAX_QUEUED_ROWS} per import`,
       422,
       { errorCode: "too_many_rows" },
     );

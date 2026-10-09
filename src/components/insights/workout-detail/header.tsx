@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations, useTimeFormatPreference } from "@/lib/i18n/context";
+import { MEASUREMENT_SOURCE_LIST_LABEL_KEYS } from "@/lib/i18n/source-labels";
 import { iconForSport } from "@/lib/workouts/sport-icons";
 import type { WorkoutDetailPayload } from "@/hooks/use-workouts";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
@@ -48,7 +49,15 @@ export function WorkoutDetailHeader({ workout }: WorkoutDetailHeaderProps) {
         {renderSportIconBadge(workout.sportType)}
         <div className="min-w-0 flex-1 space-y-1">
           <p className="text-muted-foreground text-xs tracking-wide uppercase">
-            {workout.source}
+            {MEASUREMENT_SOURCE_LIST_LABEL_KEYS[
+              workout.source as keyof typeof MEASUREMENT_SOURCE_LIST_LABEL_KEYS
+            ]
+              ? t(
+                  MEASUREMENT_SOURCE_LIST_LABEL_KEYS[
+                    workout.source as keyof typeof MEASUREMENT_SOURCE_LIST_LABEL_KEYS
+                  ],
+                )
+              : workout.source}
           </p>
           <h2 className="truncate text-lg font-semibold sm:text-xl">
             {sportName}
@@ -65,7 +74,7 @@ export function WorkoutDetailHeader({ workout }: WorkoutDetailHeaderProps) {
       </div>
       <div className="flex items-center gap-2 sm:flex-col sm:items-end sm:gap-0 sm:text-right">
         <span className="text-2xl font-semibold tabular-nums">
-          {formatDuration(workout.durationSec)}
+          {formatDuration(workout.durationSec, t)}
         </span>
         {workout.distanceM != null ? (
           <span className="text-muted-foreground text-xs tabular-nums">

@@ -30,6 +30,10 @@ import {
   INBOUND_DOCUMENT_KINDS,
   INBOUND_DOCUMENT_STATUSES,
 } from "@/lib/validations/inbound-documents";
+import {
+  DOCUMENTS_LAYOUT_ARRANGEMENTS,
+  DOCUMENTS_LAYOUT_VIEWS,
+} from "@/lib/documents/documents-layout";
 
 import { aiExtractionRefusals } from "./ai-extraction-refusals";
 import { aiRunAccepted, preferRespondAsyncParameter } from "./ai-run-accepted";
@@ -44,6 +48,41 @@ import {
 } from "./shared";
 
 const kindEnum = z.enum(INBOUND_DOCUMENT_KINDS);
+
+// ─── Vault presentation (v1.42) ────────────────────────────────────────────
+
+const documentsLayoutSchema = z
+  .object({
+    version: z.literal(1),
+    view: z
+      .enum(DOCUMENTS_LAYOUT_VIEWS)
+      .describe(
+        '`cards` renders the preview-tile grid, `list` one compact row per document. Default "cards".',
+      ),
+    arrangement: z
+      .enum(DOCUMENTS_LAYOUT_ARRANGEMENTS)
+      .describe(
+        '`stacked` gives every month its own block; `flow` runs the documents across the full width and wraps, with month names inline. Default "flow"; an account that never chose keeps following the default.',
+      ),
+  })
+  .meta({
+    id: "DocumentsLayout",
+    description:
+      "Per-user document vault presentation. Display-only; a client that does not render a vault ignores it.",
+  });
+
+const documentsLayoutPutBody = z
+  .object({
+    version: z.literal(1),
+    view: z.enum(DOCUMENTS_LAYOUT_VIEWS).optional(),
+    arrangement: z.enum(DOCUMENTS_LAYOUT_ARRANGEMENTS).optional(),
+  })
+  .strict()
+  .meta({
+    id: "DocumentsLayoutPutBody",
+    description:
+      "Either field may be omitted; the stored value is kept for the one left out.",
+  });
 const statusEnum = z.enum(INBOUND_DOCUMENT_STATUSES);
 
 // ─── Chat about a document (P4) — response shapes ──────────────────────────
@@ -711,6 +750,53 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                   })
                   .meta({ id: "DocumentUsage" }),
                 "DocumentUsageEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/documents/inbound/layout": {
+    get: {
+      tags: ["Documents"],
+      summary: "Get the vault presentation",
+      description:
+        "The resolved card/list view and month arrangement for the vault, with defaults filled in when nothing has been chosen. Inside a shared record this answers the owner's choice.",
+      responses: {
+        ...recordRefusal(),
+        "200": {
+          description: "The resolved presentation.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                documentsLayoutSchema,
+                "DocumentsLayoutEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+    put: {
+      tags: ["Documents"],
+      summary: "Change the vault presentation",
+      description:
+        "Preserve-when-absent: a body carrying only `view` keeps the stored arrangement and vice versa. Returns the full resolved presentation. Refused while acting inside somebody else's record.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: documentsLayoutPutBody } },
+      },
+      responses: {
+        "200": {
+          description: "The presentation as stored.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                documentsLayoutSchema,
+                "DocumentsLayoutSavedEnvelope",
               ),
             },
           },

@@ -49,7 +49,9 @@
     "dismiss": "Descartar",
     "moreInfo": "Más información",
     "durationHoursMinutes": "{hours} h {minutes} min",
-    "durationMinutes": "{minutes} min"
+    "durationMinutes": "{minutes} min",
+    "durationClockMinutes": "{time} min",
+    "durationClockHours": "{time} h"
   },
   "apiErrors": {
     "measurement": {
@@ -165,7 +167,7 @@
     "anamnesisShiftSchedule": "Horario de trabajo",
     "anamnesisColFact": "Dato del perfil",
     "anamnesisColValue": "Valor registrado",
-    "subtitle": "HealthLog — Informe personal de salud",
+    "subtitle": "HealthLog: informe personal de salud",
     "patient": "Paciente",
     "dateOfBirth": "Fecha de nacimiento",
     "gender": "Sexo",
@@ -175,18 +177,18 @@
     "height": "Altura",
     "period": "Período del informe",
     "createdOn": "Creado el",
-    "vitalsTitle": "Signos vitales — Resumen",
+    "vitalsTitle": "Signos vitales: resumen",
     "colParameter": "Parámetro",
     "colCurrent": "Actual",
     "colAvgPeriod": "Med. periodo",
     "colMin": "Mín",
     "colMax": "Máx",
     "colN": "n",
-    "bpClassificationTitle": "Tensión arterial — Clasificación ESH (2023)",
+    "bpClassificationTitle": "Tensión arterial: clasificación ESH (2023)",
     "avgBp": "Tensión arterial media",
     "classification": "Clasificación",
     "bmiTitle": "Índice de masa corporal (IMC)",
-    "bmiRow": "IMC:{bmi} kg/m² — Classification: {class} (WHO)",
+    "bmiRow": "IMC:{bmi} kg/m², Classification: {class} (WHO)",
     "complianceTitle": "Cumplimiento de medicación",
     "glp1Title": "Terapia GLP-1",
     "glp1WeightSummary": "Peso en el periodo del informe: {start} kg → {end} kg ({delta} kg)",
@@ -204,7 +206,7 @@
     "colExpected": "Esperadas",
     "colComplianceRate": "Tasa de cumplimiento",
     "moodTitle": "Evolución del estado de ánimo",
-    "moodSummary": "Promedio:{avg} / 5.0 · Entries: {count} · Range: {min}–{max}",
+    "moodSummary": "Promedio {avg} / 5.0, {count} entradas, rango {min}–{max}",
     "colMood": "Estado de ánimo",
     "colCount": "Cantidad",
     "colShare": "Porcentaje",
@@ -234,8 +236,8 @@
     "typeGlucoseRandom": "Glucosa (aleatoria)",
     "typeGlucoseBedtime": "Glucosa (antes de dormir)",
     "typeGlucoseUnspecified": "Glucosa (sin indicar)",
-    "glucoseClassificationTitle": "Glucemia — Rangos de referencia (ADA 2024 / DDG)",
-    "glucoseRow": "{label}: med. {avg} {unit} (objetivo {rangeMin}–{rangeMax}) — {class}",
+    "glucoseClassificationTitle": "Glucemia: rangos de referencia (ADA 2024 / DDG)",
+    "glucoseRow": "{label}: med. {avg} {unit} (objetivo {rangeMin}–{rangeMax}), {class}",
     "glucoseInTarget": "en objetivo",
     "glucoseBelowTarget": "por debajo del objetivo",
     "glucoseAboveTarget": "por encima del objetivo",
@@ -287,7 +289,7 @@
       "gmi": "Indicador de gestión de la glucosa (GMI)",
       "eA1c": "A1C estimada",
       "cv": "Variabilidad (CV%)",
-      "spotCaveat": "Son estimaciones a partir de mediciones puntuales, no un perfil de monitor continuo — léelas como una tendencia, no como un veredicto clínico."
+      "spotCaveat": "Son estimaciones a partir de mediciones puntuales, no un perfil de monitor continuo. Léelas como una tendencia, no como un veredicto clínico."
     },
     "illnessTitle": "Afecciones y enfermedades",
     "illnessOngoing": "En curso",
@@ -376,12 +378,12 @@
     "backToDashboard": "Volver al panel"
   },
   "offlineBanner": {
-    "message": "Sin conexión — los cambios no se pueden guardar hasta que vuelvas a estar en línea.",
-    "saveFailed": "No se pudo guardar — estás sin conexión. Inténtalo de nuevo cuando vuelvas a estar en línea.",
+    "message": "Sin conexión: los cambios no se pueden guardar hasta que vuelvas a estar en línea.",
+    "saveFailed": "No se pudo guardar porque estás sin conexión. Inténtalo de nuevo cuando vuelvas a estar en línea.",
     "showingCached": "Mostrando tus últimos datos sincronizados."
   },
   "demoBanner": {
-    "message": "Modo demo — los cambios no se guardan."
+    "message": "Modo demo: los cambios no se guardan."
   },
   "nav": {
     "dashboard": "Panel",
@@ -427,7 +429,9 @@
       "workout": "Entrenamiento",
       "workoutDescription": "Una sesión que tus dispositivos no registraron",
       "symptom": "Síntoma",
-      "symptomDescription": "Uno de tus propios síntomas, con su intensidad"
+      "symptomDescription": "Uno de tus propios síntomas, con su intensidad",
+      "lifeEventDescription": "Una mudanza, un nacimiento, un nuevo trabajo",
+      "lifeEvent": "Acontecimiento vital"
     },
     "cycle": "Ciclo",
     "labs": "Análisis",
@@ -436,7 +440,8 @@
     "illness": "Enfermedad",
     "documents": "Documentos",
     "vaccinations": "Vacunas",
-    "mentalWellbeing": "Bienestar mental"
+    "mentalWellbeing": "Bienestar mental",
+    "timeline": "Cronología"
   },
   "auth": {
     "login": "Iniciar sesión",
@@ -460,7 +465,6 @@
       "signOut": "Cerrar sesión y aceptar la invitación"
     },
     "createAccount": "Crear cuenta",
-    "newAccount": "Crear cuenta nueva",
     "backToPasskey": "Volver a passkey",
     "passkeySetupLater": "Puedes configurar passkeys más tarde en los ajustes.",
     "passwordMinLength": "Mín. 12 caracteres",
@@ -513,6 +517,37 @@
       "fixLan": "Servidor en una red doméstica sin TLS: pon SESSION_COOKIE_SECURE=false en su configuración y reinícialo.",
       "fixHttps": "Servidor detrás de un proxy HTTPS: abre la dirección https:// y asegúrate de que el proxy reenvía X-Forwarded-Proto: https.",
       "localhostNote": "Esta página está en http://localhost y el servidor solo establece su cookie de sesión para https://. La mayoría de los navegadores lo aceptan en localhost; si vuelves aquí tras iniciar sesión, pon SESSION_COOKIE_SECURE=false."
+    },
+    "claim": {
+      "title": "Asume tu historial de salud",
+      "titleNamed": "Te damos la bienvenida, {name}",
+      "description": "Hasta ahora otras personas han llevado tu historial de salud por ti. Elige cómo iniciar sesión y pasará a ser tu propia cuenta. No se copia ni se mueve nada.",
+      "loading": "Comprobando tu enlace…",
+      "invalid": "Este enlace ya no funciona",
+      "invalidHint": "Es desconocido, ha caducado, se ha retirado o ya se ha usado. Pide uno nuevo a quien te lo envió.",
+      "oidcOnly": "Este servidor solo permite el inicio de sesión único, así que aquí todavía no se puede asumir un perfil.",
+      "signedInTitle": "Cierra la sesión primero",
+      "signedInBody": "Has iniciado sesión como {username}. Este enlace crea un acceso para otra persona, así que cierra la sesión antes de usarlo.",
+      "signOut": "Cerrar sesión y continuar",
+      "guardiansTitle": "Quién conserva el acceso por ahora",
+      "guardiansHint": "Lo proponen las personas que llevaron tu historial. Tú decides justo después de iniciar sesión.",
+      "guardianUnnamed": "Una persona tutora",
+      "usernameHint": "De 3 a 30 letras, números, _ o -.",
+      "usernameReserved": "Los nombres de usuario que empiezan por managed- están reservados.",
+      "emailHint": "Obligatorio, para que puedas volver a entrar si olvidas tu contraseña.",
+      "consentNote": "Confirmas tú mismo el aviso y cualquier uso de IA. Hasta entonces, nada de tu historial se envía a un proveedor de IA.",
+      "expires": "Este enlace es válido hasta el {date}.",
+      "submit": "Asumir",
+      "submitting": "Asumiendo…",
+      "errorTaken": "Ese nombre de usuario o correo electrónico ya está en uso.",
+      "errorRateLimit": "Demasiados intentos. Espera unos minutos y vuelve a intentarlo.",
+      "errorFailed": "No ha funcionado. Vuelve a intentarlo en un momento.",
+      "errorOffline": "No se llegó al servidor. Comprueba tu conexión y vuelve a intentarlo."
+    },
+    "inviteInvalid": {
+      "title": "Invitación no válida",
+      "description": "Este enlace de invitación está incompleto o se copió mal. Pide un enlace nuevo a la persona que te invitó.",
+      "toLogin": "Ir a iniciar sesión"
     }
   },
   "dashboard": {
@@ -544,17 +579,17 @@
     "sleepShort": "Sueño",
     "stepsShort": "Pasos",
     "vo2MaxShort": "VO₂ máx",
-    "bpInTargetWindow90": "PA-objetivo · 90 d",
-    "bpInTargetWindowDynamic": "PA-objetivo · {days} d",
+    "bpInTargetWindow90": "PA-objetivo (90 d)",
+    "bpInTargetWindowDynamic": "PA-objetivo ({days} d)",
     "bpInTargetCollecting": "recopilando datos",
     "medications": "Medicamentos",
     "quickAddMeasurement": "Registrar medición",
     "quickAddMood": "Registrar estado de ánimo",
     "quickAddMedicationIntake": "Registrar toma",
     "quickAddWorkout": "Registrar entrenamiento",
+    "quickAddLifeEvent": "Registrar acontecimiento vital",
     "customizeDashboard": "Personalizar panel",
     "medicationIntakeQuickAdd": {
-      "sheetTitle": "Registrar toma de medicación",
       "sheetDescription": "Registra dosis, hora y medicamento en unos pocos toques.",
       "medicationLabel": "Medicamento",
       "medicationPlaceholder": "Selecciona un medicamento",
@@ -667,7 +702,8 @@
       "body": "Sin una copia de la clave, tus datos no se pueden recuperar tras una reinstalación. Es cuestión de un minuto.",
       "action": "Abrir el paso"
     },
-    "quickAddSymptom": "Registrar síntoma"
+    "quickAddSymptom": "Registrar síntoma",
+    "todayCardVisible": "Mostrar la tarjeta superior"
   },
   "measurements": {
     "title": "Mediciones",
@@ -739,7 +775,7 @@
     "formReset": "Restablecer formulario",
     "saveError": "Error al guardar",
     "duplicateTimestamp": "Ya existe una medición de este tipo en la marca de tiempo seleccionada.",
-    "serverOwnedSource": "Los valores de una fuente conectada no se pueden editar — la fecha y la nota siguen siendo editables.",
+    "serverOwnedSource": "Los valores de una fuente conectada no se pueden editar, pero la fecha y la nota siguen siendo editables.",
     "deleteError": "Error al eliminar",
     "deletedToast": "Medición eliminada",
     "restoredToast": "Medición restaurada",
@@ -834,7 +870,8 @@
     "durationHoursOnly": "{hours} h",
     "durationMinutesOnly": "{minutes} min",
     "durationInvalid": "Escribe una duración como 7,5, 7:30 o 7h 30m.",
-    "durationTooLong": "Una entrada no puede durar más de 24 horas."
+    "durationTooLong": "Una entrada no puede durar más de 24 horas.",
+    "sourceHealthConnect": "Health Connect"
   },
   "metricCatalog": {
     "title": "Lo que HealthLog puede registrar",
@@ -846,11 +883,11 @@
     "connectCta": "Conectar una fuente",
     "viewCta": "Ver",
     "ecg": {
-      "source": "Tiras de ECG de una derivación desde un reloj compatible — hoy, Withings ScanWatch — sincronizadas automáticamente."
+      "source": "Tiras de ECG de una derivación desde un reloj compatible (hoy, Withings ScanWatch), sincronizadas automáticamente."
     },
     "watchdog": {
       "title": "Supervisión automática",
-      "description": "HealthLog también vigila en segundo plano — notificaciones de ritmo irregular y alteraciones respiratorias de un reloj conectado, alertas de desviación de tu valor de referencia, y cambios destacables entre tus dos últimos paneles de laboratorio — y solo muestra una tarjeta cuando algo destaca. Si al menos una de esas fuentes está conectada, que no aparezca ninguna tarjeta es una buena señal, no una función ausente; si todavía no hay ninguna conectada, sencillamente no se está vigilando nada."
+      "description": "HealthLog también vigila en segundo plano (notificaciones de ritmo irregular y alteraciones respiratorias de un reloj conectado, alertas de desviación de tu valor de referencia, y cambios destacables entre tus dos últimos paneles de laboratorio) y solo muestra una tarjeta cuando algo destaca. Si al menos una de esas fuentes está conectada, que no aparezca ninguna tarjeta es una buena señal, no una función ausente; si todavía no hay ninguna conectada, sencillamente no se está vigilando nada."
     }
   },
   "mood": {
@@ -1210,8 +1247,8 @@
       "dialogDescription": "Estos medicamentos están pendientes ahora. Confirma para registrarlos todos como tomados.",
       "confirm": "Tomar todos ({count})",
       "successToast": "{count} tomas registradas",
-      "partialToast": "{taken} registradas, {failed} fallidas – inténtalo de nuevo",
-      "failedToast": "No se registró ninguna toma – inténtalo de nuevo"
+      "partialToast": "{taken} registradas, {failed} fallidas. Inténtalo de nuevo",
+      "failedToast": "No se registró ninguna toma. Inténtalo de nuevo"
     },
     "logIntake": {
       "dialogTitle": "Registrar una toma",
@@ -1300,7 +1337,7 @@
     "complianceInfoLabel": "¿Qué significa el cumplimiento?",
     "lastIntake": "Última toma:",
     "nextIntake": "Próxima toma:",
-    "nextIntakeOverdue": "Atrasada · {time} — aún se puede tomar",
+    "nextIntakeOverdue": "Atrasada desde {time}, aún se puede tomar",
     "dayStreak": "días de racha",
     "dayStreakOne": "día de racha",
     "cycleDueToday": "Pendiente hoy",
@@ -1394,10 +1431,10 @@
         "error": {
           "empty": "Escribe una descripción primero.",
           "tooLong": "Mantén la descripción por debajo de 2000 caracteres.",
-          "rateLimit": "Demasiadas solicitudes — espera un momento e inténtalo de nuevo.",
-          "noProvider": "Sin proveedor de IA configurado — configúralo en Ajustes.",
-          "budget": "Se alcanzó el presupuesto diario de IA — inténtalo de nuevo mañana.",
-          "network": "No se pudo contactar con el proveedor de IA — inténtalo de nuevo.",
+          "rateLimit": "Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.",
+          "noProvider": "Sin proveedor de IA configurado. Configúralo en Ajustes.",
+          "budget": "Se alcanzó el presupuesto diario de IA. Inténtalo de nuevo mañana.",
+          "network": "No se pudo contactar con el proveedor de IA. Inténtalo de nuevo.",
           "consent": "Leer tu descripción con IA necesita primero tu consentimiento.",
           "unavailable": "Leer descripciones con IA no está disponible aquí ahora mismo."
         }
@@ -1413,7 +1450,7 @@
           "everyNMonths": "Cada N meses un día concreto",
           "yearly": "Una vez al año",
           "rolling": "Cada N días desde la última toma (flexible)",
-          "rollingExplainer": "Cuenta desde tu última toma registrada — se pausa si te saltas una dosis.",
+          "rollingExplainer": "Cuenta desde tu última toma registrada y se pausa si te saltas una dosis.",
           "oneShot": "Dosis única"
         },
         "weekdays": {
@@ -1471,7 +1508,7 @@
           "night": "Noche"
         },
         "max": {
-          "reached": "Máximo alcanzado — quita una hora antes de añadir otra."
+          "reached": "Máximo alcanzado: quita una hora antes de añadir otra."
         }
       },
       "courseWindow": {
@@ -1521,7 +1558,7 @@
         },
         "step3": {
           "title": "¿Cuál es la dosis?",
-          "subline": "Una pastilla, una inhalación, una gota — según la forma.",
+          "subline": "Una pastilla, una inhalación, una gota, según la forma.",
           "amountLabel": "Cantidad",
           "amountPlaceholder": "p. ej. 5",
           "unitLabel": "Unidad",
@@ -1547,7 +1584,7 @@
           },
           "dosesPerUnitLabel": "Dosis por unidad",
           "dosesPerUnitPlaceholder": "p. ej. 4",
-          "dosesPerUnitHint": "Dosis por pluma / vial — déjalo vacío para no controlar el inventario.",
+          "dosesPerUnitHint": "Dosis por pluma / vial. Déjalo vacío para no controlar el inventario.",
           "short": "Dosis",
           "unitsPerDoseLabel": "Unidades por dosis",
           "unitsPerDoseHint": "p. ej., 2 comprimidos de 2 mg para una dosis de 4 mg, o ½ comprimido para una dosis partida"
@@ -1559,7 +1596,7 @@
         },
         "step5": {
           "title": "¿Con qué frecuencia lo tomas?",
-          "subline": "Elige la frecuencia — los detalles vienen en el siguiente paso.",
+          "subline": "Elige la frecuencia. Los detalles vienen en el siguiente paso.",
           "short": "Frecuencia"
         },
         "step6": {
@@ -1581,7 +1618,7 @@
         },
         "step7": {
           "title": "¿Cuándo lo tomas?",
-          "subline": "Una o varias horas del día — los recordatorios siguen esta lista.",
+          "subline": "Una o varias horas del día. Los recordatorios siguen esta lista.",
           "presetsLabel": "Preajustes por hora del día",
           "presets": {
             "morning": "Mañana",
@@ -1597,11 +1634,11 @@
           "short": "Horas"
         },
         "step8": {
-          "title": "Listo — ¿quieres que HealthLog te lo recuerde?",
+          "title": "Listo. ¿Quieres que HealthLog te lo recuerde?",
           "subline": "Revisa todo abajo antes de guardar.",
           "remindersLabel": "Recordatorios activados",
-          "remindersDescription": "Push, Telegram o ntfy — según tus ajustes.",
-          "noChannelHint": "Los recordatorios necesitan un canal de notificaciones — ahora mismo no hay ninguno activo.",
+          "remindersDescription": "Push, Telegram o ntfy, según tus ajustes.",
+          "noChannelHint": "Los recordatorios necesitan un canal de notificaciones, pero ahora mismo no hay ninguno activo.",
           "noChannelHintLink": "Configurar notificaciones",
           "short": "Listo"
         }
@@ -1685,7 +1722,7 @@
         }
       },
       "errors": {
-        "submitFailed": "No se pudo guardar el medicamento — inténtalo de nuevo."
+        "submitFailed": "No se pudo guardar el medicamento. Inténtalo de nuevo."
       }
     },
     "doseStrength": {
@@ -1701,7 +1738,7 @@
       "empty": "Aún no hay pasos de escalada de dosis registrados. Añade cambios de dosis con fecha para trazar el plan.",
       "youAreHere": "Estás aquí",
       "doseStep": "{dose} {unit}",
-      "plannedFor": "Previsto · {date}"
+      "plannedFor": "Previsto para {date}"
     },
     "injectionSiteBodyOutlineAriaLabel": "Silueta del cuerpo",
     "injectionSitePickerAriaLabel": "Selector de sitio de inyección",
@@ -1752,7 +1789,7 @@
     "intakeHistoryStatusSkipped": "Omitida",
     "intakeHistorySortByTaken": "Ordenar por hora de toma",
     "intakeHistorySortByScheduled": "Ordenar por hora programada",
-    "intakeHistoryPageInfo": "Página {page} de {total} · {count} entradas",
+    "intakeHistoryPageInfo": "Página {page} de {total}, {count} entradas",
     "intakeHistoryPrev": "Anterior",
     "intakeHistoryNext": "Siguiente",
     "glp1": {
@@ -1793,7 +1830,7 @@
       "cadence": {
         "oneShotOn": "Dosis única el {date}.",
         "oneShotPending": "Dosis única pendiente.",
-        "asNeeded": "Según necesidad — sin plan fijo."
+        "asNeeded": "Según necesidad, sin plan fijo."
       },
       "intake": {
         "title": "Historial de tomas",
@@ -1852,7 +1889,7 @@
         "markAsTaken": "Marcar como tomada",
         "markAsSkipped": "Marcar como omitida",
         "adHocTag": "fuera de horario",
-        "takenDetail": "prevista {planned} · tomada {taken}",
+        "takenDetail": "prevista {planned}, tomada {taken}",
         "doseTaken": "Dosis: {dose}",
         "status": {
           "taken_on_time": "a tiempo",
@@ -1916,7 +1953,7 @@
         },
         "codes": {
           "label": "Códigos clínicos (ATC / RxNorm)",
-          "note": "Opcional. Se usan en la exportación FHIR del historial de salud. Los códigos se toman tal cual se introducen — nunca se adivinan.",
+          "note": "Opcional. Se usan en la exportación FHIR del historial de salud. Los códigos se toman tal cual se introducen; nunca se adivinan.",
           "atcLabel": "ATC",
           "rxNormLabel": "RxNorm",
           "saved": "Códigos clínicos guardados",
@@ -1936,7 +1973,7 @@
           "title": "Finalizar medicamento",
           "helper": "Detiene los recordatorios y marca el medicamento como finalizado. El historial sigue siendo visible.",
           "button": "Finalizar",
-          "dialogTitle": "Finalizar {name} — detiene los recordatorios, el historial sigue visible",
+          "dialogTitle": "Finalizar {name}: detiene los recordatorios, el historial sigue visible",
           "dialogBody": "No habrá más recordatorios. Las entradas antiguas permanecen en la línea de tiempo.",
           "toast": "Medicamento finalizado",
           "failed": "No se pudo finalizar el medicamento."
@@ -1974,7 +2011,7 @@
         "copyFailed": "No se pudo copiar.",
         "tokenCopied": "Token copiado",
         "copyToken": "Copiar token",
-        "mintedHint": "Copia este token ahora — solo se muestra una vez."
+        "mintedHint": "Copia este token ahora. Solo se muestra una vez."
       },
       "advanced": {
         "dataPortability": {
@@ -2003,7 +2040,6 @@
         "bestand": "Existencias",
         "verlauf": "Historial",
         "injektion": "Inyección",
-        "api": "API",
         "erweitert": "Avanzado",
         "wirkung": "Efecto"
       },
@@ -2015,9 +2051,9 @@
         "statusTitle": "Estado",
         "nextDoseLabel": "Próxima dosis",
         "nextDoseNone": "No hay dosis pendiente.",
-        "nextDoseAsNeeded": "Según necesidad — sin dosis programada.",
+        "nextDoseAsNeeded": "Según necesidad, sin dosis programada.",
         "nextDoseNotTracked": "Sin registro de tomas, se guarda como registro.",
-        "pausedHint": "En pausa — sin recordatorios.",
+        "pausedHint": "En pausa, sin recordatorios.",
         "reminderLabel": "Recordatorio",
         "reminderOn": "Activado",
         "reminderOff": "Desactivado",
@@ -2210,9 +2246,8 @@
     "tableStockDoses": "{count} dosis",
     "tableStockRunway": "≈ {days} días restantes",
     "cardLowStockRunway": "Reserva: ≈ {days} días",
-    "takeActionFor": "Tomar – {name}",
-    "skipActionFor": "Omitir – {name}",
-    "reorderTitle": "Ajustar orden",
+    "takeActionFor": "Tomar: {name}",
+    "skipActionFor": "Omitir: {name}",
     "reorderDescription": "Define el orden de tus medicamentos: se aplica a la vista de tarjetas y a la de tabla.",
     "reorderSaved": "Orden guardado",
     "reorderSaveFailed": "No se pudo guardar el orden",
@@ -2232,7 +2267,7 @@
       "levelShift": "Se detectó un cambio de nivel en torno a {date}.",
       "plateau": {
         "title": "Meseta de peso con la dosis actual",
-        "evidence": "Variación de peso de {delta} {unit} en los últimos {window} días ({readings} mediciones) — {days} días con {dose}."
+        "evidence": "Variación de peso de {delta} {unit} en los últimos {window} días ({readings} mediciones), {days} días con {dose}."
       },
       "retarget": {
         "label": "¿No es la medición correcta?",
@@ -2357,7 +2392,7 @@
   },
   "charts": {
     "loadingLabel": "Cargando la gráfica…",
-    "loadingSlowHint": "Calculando los análisis — puede tardar un momento.",
+    "loadingSlowHint": "Calculando los análisis. Puede tardar un momento.",
     "weight": "Peso",
     "bloodPressure": "Tensión arterial",
     "pulse": "Pulso",
@@ -2379,6 +2414,7 @@
     "days7Label": "7 d",
     "days7Title": "Últimos 7 días",
     "days30Label": "30 d",
+    "daysNLabel": "{days} d",
     "days30Title": "Últimos 30 días",
     "days90Label": "90 d",
     "days90Title": "Últimos 90 días",
@@ -2474,7 +2510,8 @@
       "moodHeatmapEmpty": "Mapa de calor de estado de ánimo, aún no hay días registrados.",
       "complianceHeatmap": "Mapa de calor de cumplimiento de medicación de {start} a {end}, {days} días activos.",
       "complianceHeatmapEmpty": "Mapa de calor de cumplimiento de medicación, aún no hay días activos."
-    }
+    },
+    "medicationsEmptyAction": "Añadir un medicamento"
   },
   "chart": {
     "overlay": {
@@ -2505,8 +2542,8 @@
     },
     "tooltipPrior": "Periodo anterior",
     "unavailable": {
-      "lastMonth": "Comparación no disponible — sin datos del mes anterior",
-      "lastYear": "Comparación no disponible — sin datos del año anterior"
+      "lastMonth": "Comparación no disponible: sin datos del mes anterior",
+      "lastYear": "Comparación no disponible: sin datos del año anterior"
     },
     "notAvailableForCompliance": "Comparación no disponible para el cumplimiento"
   },
@@ -2518,7 +2555,9 @@
       "dismissError": "No se pudo descartar este patrón.",
       "restoreError": "No se pudo restaurar este patrón.",
       "loadError": "No se pudieron cargar los patrones.",
-      "empty": "Ningún patrón actual superó el umbral de evidencia."
+      "empty": "Ningún patrón actual superó el umbral de evidencia.",
+      "seasonalNote": "Desde la versión 1.42, HealthLog descuenta la estación del año y la tendencia a largo plazo antes de comparar valores. Verás menos relaciones, pero las que quedan son más sólidas. Muchos de los patrones anteriores eran solo el calendario.",
+      "seasonalNoteDismiss": "Cerrar aviso"
     },
     "correlation": {
       "direction": {
@@ -2550,29 +2589,37 @@
         "ENV_DAYLIGHT": "la luz natural",
         "ENV_PRECIP": "las precipitaciones",
         "ENV_PRESSURE_MEAN": "la presión atmosférica",
-        "ENV_PRESSURE_DELTA": "la variación de presión del día"
+        "ENV_PRESSURE_DELTA": "la variación de presión del día",
+        "ENV_PM25": "las partículas finas (PM2,5)",
+        "ENV_OZONE_8H": "el ozono",
+        "ENV_POLLEN_MAX": "el polen"
       },
       "daily": {
-        "high": "Cuando {behaviour} es mayor, {outcome} del día siguiente tiende a {direction} en tus datos — un patrón que conviene observar, no una causa.",
-        "moderate": "Cuando {behaviour} es mayor, {outcome} del día siguiente parece tender a {direction}, según los datos disponibles — un patrón que conviene observar, no una causa.",
-        "faint": "Cuando {behaviour} es mayor, apenas se insinúa —si acaso— que {outcome} del día siguiente tienda a {direction} en tus datos — demasiado leve para fiarse, nunca una causa."
+        "high": "Cuando {behaviour} es mayor, {outcome} del día siguiente tiende a {direction} en tus datos. Es un patrón que conviene observar, no una causa.",
+        "moderate": "Cuando {behaviour} es mayor, {outcome} del día siguiente parece tender a {direction}, según los datos disponibles. Es un patrón que conviene observar, no una causa.",
+        "faint": "Cuando {behaviour} es mayor, como mucho se insinúa en tus datos que {outcome} del día siguiente tienda a {direction}. Es demasiado leve para fiarse y nunca una causa."
       },
       "lab": {
-        "default": "Unos valores de {lab} más altos coinciden con que {outcome} tienda a {direction} en los mismos periodos de tus datos — una asociación que conviene vigilar con tu médico, nunca una causa.",
-        "faint": "Unos valores de {lab} más altos apenas insinúan —si acaso— que {outcome} tienda a {direction} en los mismos periodos de tus datos — demasiado leve para fiarse, una asociación que conviene comentar con tu médico, nunca una causa."
+        "default": "Unos valores de {lab} más altos coinciden con que {outcome} tienda a {direction} en los mismos periodos de tus datos, una asociación que conviene vigilar con tu médico, nunca una causa.",
+        "faint": "Unos valores de {lab} más altos apenas insinúan que {outcome} tienda a {direction} en los mismos periodos de tus datos. Es demasiado leve para fiarse y nunca una causa, pero conviene comentarlo con tu médico."
       },
       "hypothesis": {
         "bpCompliance": {
-          "support": "Una mayor adherencia a la medicación coincide con valores sistólicos más bajos — un patrón que conviene observar.",
-          "surprising": "La adherencia y la sistólica se mueven juntas en tus datos — sorprendente; consulta con tu médico antes de cambiar nada.",
+          "support": "Una mayor adherencia a la medicación coincide con valores sistólicos más bajos, un patrón que conviene observar.",
+          "surprising": "La adherencia y la sistólica se mueven juntas en tus datos, algo sorprendente. Consulta con tu médico antes de cambiar nada.",
           "none": "La adherencia y la sistólica no se mueven juntas de forma marcada en este periodo."
         },
         "moodPulse": {
-          "support": "Los días de peor ánimo coinciden con un pulso en reposo más alto — un patrón que conviene observar.",
-          "surprising": "Los días de mejor ánimo coinciden con un pulso en reposo más alto en tus datos — sorprendente.",
+          "support": "Los días de peor ánimo coinciden con un pulso en reposo más alto, un patrón que conviene observar.",
+          "surprising": "Los días de mejor ánimo coinciden con un pulso en reposo más alto en tus datos, algo sorprendente.",
           "none": "El ánimo y el pulso en reposo no se mueven juntos de forma marcada en este periodo."
         },
-        "weightWeekday": "El peso de los {weekday} está {delta} kg {direction} tu media de los demás días — un patrón que conviene observar."
+        "weightWeekday": "El peso de los {weekday} está {delta} kg {direction} tu media de los demás días, un patrón que conviene observar."
+      },
+      "dailySameDay": {
+        "high": "Más {behaviour} el mismo día y el día anterior tiende a ir con {direction} {outcome} en tus datos: un patrón que conviene observar, no una causa.",
+        "moderate": "Más {behaviour} el mismo día y el día anterior parece ir con {direction} {outcome} en tus datos, según lo visto hasta ahora: un patrón que conviene observar, no una causa.",
+        "faint": "Más {behaviour} el mismo día y el día anterior muestra, como mucho, un leve indicio de {direction} {outcome} en tus datos: demasiado pequeño para fiarse, nunca una causa."
       }
     },
     "noAnalysisYet": "Aún no hay valoración.",
@@ -2619,7 +2666,7 @@
     "narrativeWeek": "Esta semana",
     "narrativeMonth": "Este mes",
     "narrativeUpdating": "Actualizando…",
-    "heroFallbackSubtitle": "Una mirada diaria a tus tendencias — directamente de los datos que registras.",
+    "heroFallbackSubtitle": "Una mirada diaria a tus tendencias, directamente de los datos que registras.",
     "heroGreetingMorning": "Buenos días",
     "heroGreetingAfternoon": "Buenas tardes",
     "heroGreetingEvening": "Buenas noches",
@@ -2684,7 +2731,7 @@
       "referenceSleep": "Al menos {low} minutos por noche; el sueño más largo no se penaliza",
       "referenceAdiposity": "Relación cintura-altura inferior a {high}",
       "referenceHba1c": "HbA1c de {low} a {high} %",
-      "referenceDetail": "{label} · {source} · {kind} · {low} a {high}",
+      "referenceDetail": "{label}: de {low} a {high} ({kind}, {source})",
       "openBound": "abierto",
       "laboratoryReferenceSource": "Intervalos de referencia del laboratorio",
       "personalTargetSource": "Objetivo personal",
@@ -2719,7 +2766,8 @@
       "coverage": {
         "recommendedMet": "Cubre los tres ámbitos que la puntuación recomienda",
         "areas": "{present} de {required} ámbitos de salud"
-      }
+      },
+      "historyLink": "Evolución"
     },
     "dailyBriefing": {
       "title": "Resumen del día",
@@ -2778,7 +2826,7 @@
       "experimentCta": "Iniciar experimento de 7 días",
       "experimentTooltip": "Próximamente",
       "emptyTitle": "Necesitamos más datos para mostrar esta correlación",
-      "sourceChip": "basado en {n} mediciones pareadas · {window}",
+      "sourceChip": "basado en {n} mediciones pareadas ({window})",
       "sourceWindowLast30": "Últimos 30 días",
       "confidenceHigh": "Confianza alta",
       "confidenceModerate": "Confianza media",
@@ -2793,14 +2841,14 @@
       }
     },
     "coach": {
-      "refusalOutOfScope": "Solo puedo ayudarte con los datos de salud de tu registro — mediciones, medicamentos, estado de ánimo, tendencias. Preguntas fuera de ese ámbito no las respondo.",
-      "refusalInjection": "Tu mensaje contiene instrucciones que pretenden sobrescribir mis indicaciones. Soy el coach de HealthLog y solo resumo tus propios datos de salud — reformula tu pregunta dentro de ese marco.",
+      "refusalOutOfScope": "Solo puedo ayudarte con los datos de salud de tu registro: mediciones, medicamentos, estado de ánimo, tendencias. Preguntas fuera de ese ámbito no las respondo.",
+      "refusalInjection": "Tu mensaje contiene instrucciones que pretenden sobrescribir mis indicaciones. Soy el coach de HealthLog y solo resumo tus propios datos de salud. Reformula tu pregunta dentro de ese marco.",
       "errorBudget": "Has alcanzado el límite diario del coach. El cupo se reinicia a medianoche (UTC).",
       "errorProvider": "El coach no ha podido contactar con un proveedor de análisis ahora mismo. Inténtalo en un momento.",
       "errorDemo": "En la demo, el Coach no responde.",
       "errorNoProvider": "El coach lee tus datos de salud registrados y responde preguntas sobre ellos (no es consejo médico). HealthLog necesita un proveedor de IA para ello: conecta tu propia clave o un modelo local.",
       "errorNoProviderAction": "Conectar un proveedor de IA",
-      "errorNetwork": "Sin conexión a Internet — inténtalo de nuevo cuando vuelvas a estar en línea.",
+      "errorNetwork": "Sin conexión a Internet. Inténtalo de nuevo cuando vuelvas a estar en línea.",
       "prefsSaveError": "No se pudieron guardar tus preferencias del Coach. Inténtalo de nuevo.",
       "errorCredentialExpired": "Tu conexión con el proveedor de IA ha caducado. Vuelve a conectarla en Ajustes para que el Coach siga funcionando.",
       "tagline": "Coach personal de salud, apoyado en tus datos.",
@@ -2819,7 +2867,7 @@
       "thinking": "Pensando…",
       "unverifiedFiguresNotice": "Algunas cifras no se pudieron contrastar con tus datos y se omitieron.",
       "composerPlaceholder": "Pregúntame algo …",
-      "nudgeBubbleLabel": "Nuevo mensaje del coach — abrir el chat",
+      "nudgeBubbleLabel": "Nuevo mensaje del coach: abrir el chat",
       "fabLabel": "Abrir el coach",
       "readAloud": "Leer en voz alta",
       "readAloudStop": "Detener lectura",
@@ -2843,7 +2891,7 @@
       "guided": {
         "offerTitle": "El Coach tiene {count} preguntas para ti",
         "offerTitleOne": "El Coach tiene una pregunta para ti",
-        "offerBody": "Respuestas breves afinan tu información personal — una pregunta a la vez, aquí en el chat.",
+        "offerBody": "Respuestas breves afinan tu información personal: una pregunta a la vez, aquí en el chat.",
         "offerStart": "Responder ahora",
         "offerLater": "Más tarde",
         "offerDismiss": "No volver a preguntar",
@@ -2853,7 +2901,7 @@
         "later": "Más tarde",
         "dismissRemaining": "No volver a preguntar",
         "answerPlaceholder": "Tu respuesta…",
-        "summaryTitle": "¡Listo — gracias por tus respuestas!",
+        "summaryTitle": "¡Listo, gracias por tus respuestas!",
         "summaryAnswered": "{answered} de {total} respondidas",
         "summaryAdopted": "{adopted} añadidas a tu información personal",
         "summaryAdoptedNone": "no se añadió nada nuevo a tu información personal",
@@ -2865,6 +2913,7 @@
       "historyEmpty": "Tus conversaciones aparecen aquí. Lanza una pregunta para empezar.",
       "historyDeleteAria": "Eliminar conversación",
       "historyDeleted": "Conversación eliminada",
+      "historyDeleteFailed": "No se pudo eliminar la conversación.",
       "rename": {
         "action": "Renombrar conversación",
         "input": "Título de la conversación",
@@ -2956,23 +3005,23 @@
       "cluster": {
         "cardio": {
           "label": "Cardiovascular",
-          "hint": "Presión · pulso · VFC · FC en reposo y al caminar"
+          "hint": "Presión, pulso, VFC, FC en reposo y al caminar"
         },
         "body": {
           "label": "Composición corporal",
-          "hint": "Peso · grasa · músculo · IMC"
+          "hint": "Peso, grasa, músculo e IMC"
         },
         "activity": {
           "label": "Actividad",
-          "hint": "Pasos · energía · distancia · VO₂ máx"
+          "hint": "Pasos, energía, distancia y VO₂ máx"
         },
         "workouts": {
           "label": "Entrenamientos",
-          "hint": "Carreras · paseos · sesiones"
+          "hint": "Carreras, paseos y sesiones"
         },
         "sleep": {
           "label": "Sueño",
-          "hint": "Duración · fases"
+          "hint": "Duración y fases"
         },
         "mood": {
           "label": "Estado de ánimo",
@@ -2984,15 +3033,15 @@
         },
         "medication": {
           "label": "Medicación",
-          "hint": "Adherencia · contexto GLP-1"
+          "hint": "Adherencia y contexto GLP-1"
         },
         "mobility": {
           "label": "Movilidad y marcha",
-          "hint": "Estabilidad · asimetría · marcha"
+          "hint": "Estabilidad, asimetría y marcha"
         },
         "environment": {
           "label": "Entorno",
-          "hint": "Ruido · luz del día · temp. piel"
+          "hint": "Ruido, luz del día y temperatura de la piel"
         }
       },
       "settingsClustersLabel": "Datos que ve el Coach",
@@ -3041,25 +3090,11 @@
         "steadyLatestWithin": "Tus valores suelen estar en {low} {unit}; tu última medición, del {date}, fue {value} y coincide.",
         "steadyLatestAbove": "Tus valores suelen estar en {low} {unit}; tu última medición, del {date}, fue {value}, por encima.",
         "steadyLatestBelow": "Tus valores suelen estar en {low} {unit}; tu última medición, del {date}, fue {value}, por debajo.",
-        "insufficient": "Todavía estoy aprendiendo tu rango habitual — sigue registrando unos días más.",
+        "insufficient": "Todavía estoy aprendiendo tu rango habitual. Sigue registrando unos días más.",
         "driver": "{note}"
       },
       "scope": {
-        "prefix": "El Coach ya está en {metric}",
-        "tap": "Toca para preguntar",
-        "question": "Explícame esta métrica — ¿hay algo que deba vigilar?"
-      },
-      "seeded": {
-        "prefix": "Hoy merece un vistazo: {signal}",
-        "signal": {
-          "readiness": "disposición",
-          "recovery": "recuperación"
-        },
-        "question": {
-          "readiness": "Mi disposición está rara hoy — ¿a qué se debe?",
-          "recovery": "Mi recuperación ha cambiado — ¿qué hay detrás?"
-        },
-        "dismiss": "Descartar"
+        "prefix": "El Coach ya está en {metric}"
       },
       "settings": "Ajustes",
       "history": {
@@ -3069,31 +3104,31 @@
         "groupEarlier": "Anteriores"
       },
       "seed": {
-        "bloodPressure": "Repasa conmigo la tendencia de mi presión arterial de los últimos 30 días — ¿hay algo que deba vigilar?",
+        "bloodPressure": "Repasa conmigo la tendencia de mi presión arterial de los últimos 30 días. ¿Hay algo que deba vigilar?",
         "weight": "¿Cómo ha evolucionado mi peso últimamente y la dirección es algo sobre lo que actuar?",
         "bmi": "¿Qué me dice mi tendencia de IMC y cómo debería interpretarla?",
-        "pulse": "Repasa conmigo mis lecturas de pulso — ¿hay algo fuera de lo normal?",
+        "pulse": "Repasa conmigo mis lecturas de pulso. ¿Hay algo fuera de lo normal?",
         "restingHr": "¿Cómo ha evolucionado mi frecuencia cardíaca en reposo y qué dice sobre mi forma física?",
         "hrv": "¿Qué me dice mi variabilidad de la frecuencia cardíaca sobre la recuperación y el estrés últimamente?",
-        "sleep": "Repasa conmigo mi sueño reciente — duración, regularidad y cualquier cosa que valga la pena cambiar.",
+        "sleep": "Repasa conmigo mi sueño reciente: duración, regularidad y cualquier cosa que valga la pena cambiar.",
         "mood": "¿Qué patrones ves en mi estado de ánimo durante las últimas semanas?",
         "medications": "¿Cómo va mi adherencia a la medicación y coincide con cómo me he sentido?",
         "steps": "¿Qué tan activo he estado últimamente según mis pasos y cómo se compara con un nivel de referencia saludable?",
         "activeEnergy": "¿Qué dice mi tendencia de energía activa sobre mi nivel de actividad últimamente?",
         "cardioFitness": "¿Qué significa la tendencia de mi capacidad cardiorrespiratoria (VO₂ máx.) y cómo la llevo en la dirección correcta?",
-        "bloodGlucose": "Repasa conmigo mis últimas lecturas de glucosa — ¿están en un rango saludable?",
+        "bloodGlucose": "Repasa conmigo mis últimas lecturas de glucosa. ¿Están en un rango saludable?",
         "oxygenSaturation": "¿Qué me dice mi tendencia de oxígeno en sangre (SpO₂)?",
         "respiratoryRate": "¿Qué dice mi tendencia de frecuencia respiratoria sobre mi salud?",
-        "workouts": "Repasa conmigo mis entrenamientos recientes — carga, frecuencia y cómo me recupero entre ellos.",
+        "workouts": "Repasa conmigo mis entrenamientos recientes: carga, frecuencia y cómo me recupero entre ellos.",
         "recoveryPage": "¿Por qué mi recuperación está donde está ahora mismo y qué la está provocando?",
-        "briefing": "Repasa conmigo el resumen de hoy — ¿en qué debería centrarme y hay algo en lo que valga la pena actuar?",
+        "briefing": "Repasa conmigo el resumen de hoy. ¿En qué debería centrarme y hay algo en lo que valga la pena actuar?",
         "healthScore": "¿Por qué mi puntuación de salud es {score} de 100 y qué la mejoraría más?",
-        "periodWeek": "Repasa conmigo cómo fue mi última semana en mis métricas de salud — ¿qué destaca?",
-        "periodMonth": "Repasa conmigo cómo fue mi último mes en mis métricas de salud — ¿qué destaca?",
+        "periodWeek": "Repasa conmigo cómo fue mi última semana en mis métricas de salud. ¿Qué destaca?",
+        "periodMonth": "Repasa conmigo cómo fue mi último mes en mis métricas de salud. ¿Qué destaca?",
         "correlationBpCompliance": "¿Cómo se relaciona mi adherencia a la medicación con mi presión arterial? Explícame qué significa esta correlación para mí.",
         "correlationMoodPulse": "¿Existe una relación real entre mi estado de ánimo y mi pulso? Ayúdame a interpretar esta correlación.",
         "correlationWeightWeekday": "¿Mi peso sigue un patrón semanal? ¿Qué me dice esta correlación por día de la semana?",
-        "recommendation": "Cuéntame más sobre esta recomendación: \"{text}\" — ¿por qué se aplica a mí y qué debería hacer al respecto?"
+        "recommendation": "Cuéntame más sobre esta recomendación: \"{text}\". ¿Por qué se aplica a mí y qué debería hacer al respecto?"
       },
       "assessmentPrompt": "Explícame mi evaluación de {metric}: ¿qué significa y qué debería hacer al respecto?",
       "attach": {
@@ -3180,9 +3215,9 @@
           "cap": "Muchos pasos, ahora lo resume",
           "noProgress": "No hay datos nuevos, lo resume"
         },
-        "thoughtProcessOne": "Razonamiento · {count} paso",
-        "thoughtProcessFew": "Razonamiento · {count} pasos",
-        "thoughtProcessOther": "Razonamiento · {count} pasos",
+        "thoughtProcessOne": "Razonamiento ({count} paso)",
+        "thoughtProcessFew": "Razonamiento ({count} pasos)",
+        "thoughtProcessOther": "Razonamiento ({count} pasos)",
         "awaitingAnswer": "Se necesita tu respuesta"
       },
       "memory": {
@@ -3222,7 +3257,8 @@
         "capped": "(limitado por el administrador)",
         "disabled": "El administrador ha desactivado el razonamiento profundo."
       },
-      "memoryLink": "Memoria ({count})"
+      "memoryLink": "Memoria ({count})",
+      "newConversation": "Nueva conversación"
     },
     "relativeJustNow": "ahora mismo",
     "relativeMinutesAgoOne": "hace {count} minuto",
@@ -3285,7 +3321,7 @@
     },
     "hrv": {
       "title": "VFC",
-      "description": "Variabilidad de la frecuencia cardíaca a lo largo del tiempo — señal de recuperación del sistema nervioso, captada por la noche por Apple Watch y otros wearables compatibles.",
+      "description": "Variabilidad de la frecuencia cardíaca a lo largo del tiempo: señal de recuperación del sistema nervioso, captada por la noche por Apple Watch y otros wearables compatibles.",
       "chartTitle": "Variabilidad de la frecuencia cardíaca",
       "emptyState": {
         "title": "Aún no hay valores de VFC",
@@ -3294,7 +3330,7 @@
     },
     "restingHr": {
       "title": "FC en reposo",
-      "description": "El nivel basal diario del corazón — distinto del pulso puntual de la página de pulso. Apple Salud aporta un valor al día.",
+      "description": "El nivel basal diario del corazón, distinto del pulso puntual de la página de pulso. Apple Salud aporta un valor al día.",
       "chartTitle": "Frecuencia cardíaca en reposo",
       "emptyState": {
         "title": "Aún no hay FC en reposo",
@@ -3304,7 +3340,7 @@
     },
     "oxygenSaturation": {
       "title": "Saturación de oxígeno",
-      "description": "Oxígeno en sangre (SpO₂) — rango clínico normal 95–100 %, con zonas objetivo sombreadas en el gráfico.",
+      "description": "Oxígeno en sangre (SpO₂): rango clínico normal 95–100 %, con zonas objetivo sombreadas en el gráfico.",
       "chartTitle": "Saturación de oxígeno",
       "emptyState": {
         "title": "Aún no hay muestras de SpO₂",
@@ -3317,13 +3353,13 @@
       "chartTitle": "Temperatura corporal",
       "emptyState": {
         "title": "Aún no hay temperatura corporal",
-        "description": "Registra una lectura o deja que tu wearable sincronice una — la tendencia aparecerá aquí.",
+        "description": "Registra una lectura o deja que tu wearable sincronice una, y la tendencia aparecerá aquí.",
         "cta": "Registrar temperatura corporal"
       }
     },
     "steps": {
       "title": "Pasos",
-      "description": "Recuento diario de pasos — una fila por día, desde Apple Salud o un dispositivo de actividad conectado.",
+      "description": "Recuento diario de pasos: una fila por día, desde Apple Salud o un dispositivo de actividad conectado.",
       "chartTitle": "Pasos por día",
       "emptyState": {
         "title": "Aún no hay datos de pasos",
@@ -3332,7 +3368,7 @@
     },
     "activeEnergy": {
       "title": "Energía activa",
-      "description": "Total diario de energía activa en kilocalorías — una fila por día, desde Apple Salud o la actividad de Withings.",
+      "description": "Total diario de energía activa en kilocalorías: una fila por día, desde Apple Salud o la actividad de Withings.",
       "chartTitle": "Energía activa",
       "emptyState": {
         "title": "Aún no hay datos de energía activa",
@@ -3399,7 +3435,7 @@
         "breathingDisturbancesBody": "Un wearable puede estimar con qué frecuencia se interrumpió tu respiración mientras dormías. Un índice más bajo es mejor; un nivel marcado como elevado, sobre todo durante muchas noches, conviene comentarlo con un profesional. Es una aproximación de cribado, no un diagnóstico de apnea del sueño.",
         "stepsBody": "El recuento de pasos es el número total de pasos que das cada día: la medida más sencilla del movimiento cotidiano. Un hábito constante importa más que un único día destacado, y la meta redonda de 10.000 pasos es un eslogan publicitario, no una conclusión de la investigación.",
         "readinessBody": "La disposición es una lectura diaria de lo listo que está tu cuerpo para afrontar el día, combinando la frecuencia cardíaca en reposo, la variabilidad de la frecuencia cardíaca y el sueño. Es una aproximación del dispositivo respecto a tu propia base, no una medida clínica: una puntuación más alta indica recuperación, una más baja es un aviso suave para bajar el ritmo.",
-        "sleepScoreBody": "Tu puntuación de sueño resume toda una noche en un solo número — duración, eficiencia, regularidad y el equilibrio entre sueño ligero, profundo y REM. Fíjate en el patrón a lo largo de las semanas en lugar de perseguir una puntuación perfecta una sola noche.",
+        "sleepScoreBody": "Tu puntuación de sueño resume toda una noche en un solo número: duración, eficiencia, regularidad y el equilibrio entre sueño ligero, profundo y REM. Fíjate en el patrón a lo largo de las semanas en lugar de perseguir una puntuación perfecta una sola noche.",
         "recoveryBody": "La recuperación refleja lo bien que tu cuerpo se ha repuesto, a partir de señales nocturnas como la variabilidad de la frecuencia cardíaca y la frecuencia en reposo. Una puntuación alta es luz verde para exigirte; una más baja sugiere que tu organismo aún se está reconstruyendo.",
         "strainBody": "El esfuerzo capta cuánta carga cardiovascular y física le has impuesto a tu cuerpo, desde los entrenamientos hasta un día activo de pie. Cuando ya hay suficiente historial, se valora frente a tu propio esfuerzo habitual, no frente a un estándar ajeno.",
         "stressBody": "El estrés aquí es una estimación de la carga fisiológica sobre tu sistema nervioso, leída sobre todo a partir de patrones de variabilidad de la frecuencia cardíaca y no de cómo te sientes conscientemente. Una puntuación más baja apunta a un estado calmado y bien regulado; una más alta es una invitación a incorporar recuperación.",
@@ -3422,7 +3458,7 @@
         "mean": "Media"
       },
       "showAllValues": "Mostrar todas las mediciones",
-      "valuesPageTitle": "{metric} — todas las mediciones",
+      "valuesPageTitle": "{metric}: todas las mediciones",
       "valuesPageDescription": "Cada medición detrás de esta métrica. Edita o elimina una entrada directamente.",
       "diversity": {
         "trigger": "Consejo de medición",
@@ -3462,11 +3498,11 @@
         "inBed": "En la cama",
         "nap": "Siesta",
         "napCount": "{count} siestas",
-        "unavailable": "Aún no hay datos de fases — las fases de sueño aparecerán aquí en cuanto una fuente conectada las proporcione."
+        "unavailable": "Aún no hay datos de fases. Las fases de sueño aparecerán aquí en cuanto una fuente conectada las proporcione."
       },
       "empty": {
         "title": "Aún no hay datos de sueño",
-        "description": "Conecta una fuente como Apple Health o un wearable — o registra el sueño manualmente — y esta vista se llenará automáticamente.",
+        "description": "Conecta una fuente como Apple Health o un wearable (o registra el sueño manualmente) y esta vista se llenará automáticamente.",
         "action": "Gestionar dispositivos"
       },
       "debt": {
@@ -3475,21 +3511,21 @@
         "caption": "Balance pendiente de las últimas {nights} noches",
         "clearValue": "Al día",
         "clearCaption": "Nada pendiente en las últimas {nights} noches",
-        "learning": "Aún estamos midiendo tu sueño — {counted} noches hasta ahora, faltan {remaining} para un balance fiable.",
+        "learning": "Aún estamos midiendo tu sueño: {counted} noches hasta ahora, faltan {remaining} para un balance fiable.",
         "computedInfo": "Esta es la estimación propia de HealthLog: un balance móvil de la necesidad menos el sueño de las últimas noches, que el sueño de recuperación va reduciendo. Puede diferir de la cifra de deuda de sueño nativa de un wearable, que usa su propio modelo de necesidad."
       },
       "average": {
         "title": "Media por noche",
         "value": "{hours} h {minutes} min",
         "caption": "Sueño medio en las últimas {nights} noches",
-        "learning": "Aún estamos midiendo tu sueño — {counted} noches hasta ahora, faltan {remaining} para una media fiable."
+        "learning": "Aún estamos midiendo tu sueño: {counted} noches hasta ahora, faltan {remaining} para una media fiable."
       },
       "chronotype": {
         "title": "Cronotipo",
-        "learning": "Aún estamos aprendiendo tu ritmo — {counted} de {total} noches libres. Un cronotipo necesita varias mañanas sin despertador para tener sentido.",
+        "learning": "Aún estamos aprendiendo tu ritmo: {counted} de {total} noches libres. Un cronotipo necesita varias mañanas sin despertador para tener sentido.",
         "advancedToggle": "Avanzado",
         "socialJetlagValue": "{hours} h {minutes} min de jet lag social",
-        "socialJetlagCaption": "La diferencia entre el horario de sueño laboral y el de los días libres — como un pequeño cambio de huso horario semanal.",
+        "socialJetlagCaption": "La diferencia entre el horario de sueño laboral y el de los días libres, como un pequeño cambio de huso horario semanal.",
         "msfScValue": "Punto medio corregido {clock}",
         "msfScCaption": "Ajustado por el sueño que recuperas el fin de semana (MSFsc).",
         "dayTypeNote": "Se asume que los días libres son los fines de semana hasta que se añada el registro del tipo de día.",
@@ -3678,7 +3714,10 @@
           "endInFuture": "Terminaría en el futuro. Pon como inicio la hora en que empezó el entrenamiento.",
           "distanceInvalid": "Introduce la distancia como un número dentro de un rango realista.",
           "energyInvalid": "Introduce la energía activa como un número de hasta 20.000 kcal."
-        }
+        },
+        "editTitle": "Editar entrenamiento",
+        "editAction": "Editar",
+        "updated": "Entrenamiento actualizado"
       }
     },
     "bloodGlucose": {
@@ -3852,7 +3891,7 @@
     "navSkinTemperature": "Temp. piel",
     "pulseWaveVelocity": {
       "title": "Velocidad de onda de pulso",
-      "description": "Tu velocidad de onda de pulso arterial en el tiempo, en m/s — valores más altos sugieren arterias más rígidas.",
+      "description": "Tu velocidad de onda de pulso arterial en el tiempo, en m/s. Valores más altos sugieren arterias más rígidas.",
       "chartTitle": "Velocidad de onda de pulso",
       "emptyState": {
         "title": "Aún no hay datos",
@@ -4002,7 +4041,6 @@
     "navWalkingSpeed": "Velocidad al andar",
     "mood": {
       "logLink": "Registrar un estado de ánimo",
-      "mentalWellbeingLink": "Hacer un chequeo de bienestar mental",
       "heatmapTitle": "Calendario de ánimo",
       "heatmapNoEntry": "Sin registro",
       "legendGreat": "Genial",
@@ -4013,7 +4051,7 @@
       "distributionDaysUnit": "días",
       "weekdayTitle": "Promedio por día de la semana",
       "weekdayNoData": "Sin datos",
-      "weekdayBestWorst": "Mejor día: {best} · Día más difícil: {worst}",
+      "weekdayBestWorst": "Mejor día: {best}, día más difícil: {worst}",
       "tagsTitle": "Etiquetas y desencadenantes",
       "tagAvgMood": "Ánimo promedio con esta etiqueta",
       "correlationsTitle": "Ánimo y otras métricas",
@@ -4029,7 +4067,7 @@
         "strengthModerate": "Moderada",
         "strengthWeak": "Débil",
         "strengthNone": "Ninguna",
-        "source": "{n} días emparejados · r = {r}",
+        "source": "{n} días emparejados, r = {r}",
         "emptyTitle": "Aún no hay suficientes datos emparejados",
         "emptyDescription": "Registra el ánimo y esta métrica los mismos días para ver una correlación.",
         "pendingDescription": "{n} de {needed} días emparejados. La correlación aparece cuando hay días suficientes para distinguir un patrón del azar.",
@@ -4088,7 +4126,7 @@
       "crosstab": {
         "title": "Etiquetas y tus métricas de salud",
         "description": "Cómo difiere una métrica de salud en los días que etiquetaste cada actividad, frente a los días que no.",
-        "pairLabel": "{tag} · {metric}",
+        "pairLabel": "{metric} en días con {tag}",
         "metricActiveEnergy": "Energía activa",
         "metricSleepDuration": "Sueño",
         "metricNextDayRecovery": "Recuperación al día siguiente",
@@ -4105,7 +4143,7 @@
       "factorCrosstab": {
         "title": "Tus factores valorados y tus constantes",
         "description": "Cómo difiere una constante en los días en que valoraste bajo cada factor frente a los días en que lo valoraste alto.",
-        "pairLabel": "{factor} · {metric}",
+        "pairLabel": "{metric} en días con {factor}",
         "metricSleepDuration": "Sueño",
         "metricSteps": "Pasos",
         "metricRestingHeartRate": "Frecuencia cardíaca en reposo",
@@ -4131,7 +4169,7 @@
         "moodDown": "Un mayor {factor} suele coincidir con peor ánimo al día siguiente en tus datos.",
         "outcomeUp": "Mejor ánimo suele coincidir con un {factor} más alto al día siguiente en tus datos.",
         "outcomeDown": "Mejor ánimo suele coincidir con un {factor} más bajo al día siguiente en tus datos.",
-        "stat": "{n} días emparejados · r = {r} · q = {q}",
+        "stat": "{n} días emparejados, r = {r}, q = {q}",
         "statLabel": "Cómo se calculó esto",
         "explainerLabel": "Cómo se calculó esto"
       },
@@ -4175,15 +4213,15 @@
     },
     "derived": {
       "coverage": {
-        "summary": "{present} de {required} entradas · {percent}%",
+        "summary": "{present} de {required} entradas ({percent}%)",
         "ratioLabel": "{present}/{required}",
         "historyDays": "Basado en {count} días de historial",
         "missing": "Registra estos para afinar el valor: {list}",
-        "summaryLabelled": "{label} · {percent}%"
+        "summaryLabelled": "{label} ({percent}%)"
       },
       "scoreRing": {
         "aria": "Puntuación {score} de 100, {band}",
-        "ariaProvisional": "Puntuación aún no disponible — datos insuficientes",
+        "ariaProvisional": "Puntuación aún no disponible: datos insuficientes",
         "provisionalCaption": "Datos aún insuficientes",
         "band": {
           "green": "bueno",
@@ -4197,7 +4235,7 @@
         "inputsLabel": "Entradas",
         "noInputs": "Aún no hay entradas que respalden este valor.",
         "methodLabel": "Método",
-        "window": "De tus últimos {days} días · datos de {source}",
+        "window": "De tus últimos {days} días de datos de {source}",
         "asOf": "a fecha de {date}",
         "standardLink": "Estándar: {name}"
       },
@@ -4207,7 +4245,7 @@
         "loadingLabel": "Cargando tus constantes",
         "loadError": "No se pudieron cargar tus constantes en este momento.",
         "infoLabel": "¿Cómo se calcula esto?",
-        "building": "Creando tu rango habitual — {count} de {target} días",
+        "building": "Creando tu rango habitual: {count} de {target} días",
         "typicalRange": "Habitual para ti: {low}–{high}",
         "fitnessYounger": "Forma cardiovascular de alguien ~{years} años más joven",
         "fitnessOlder": "Forma cardiovascular ~{years} años por encima de tu edad",
@@ -4239,9 +4277,8 @@
       "anatomy": {
         "outOf": "/100",
         "contributorsLabel": "Factores",
-        "contributorValue": "{value} · {weight}% de peso",
+        "contributorValue": "{value}, peso {weight}%",
         "contributorMissing": "sin datos",
-        "disclaimer": "Indicativo — no es una evaluación clínica.",
         "insufficient": "Aún no hay datos suficientes para puntuarlo. Sigue registrando y aparecerá aquí."
       },
       "composite": {
@@ -4260,15 +4297,14 @@
         "READINESS": {
           "title": "Disposición",
           "description": "Un indicador diario de bienestar según cómo se sitúan tus señales frente a tu propia base.",
-          "method": "Una mezcla de 0–100 de desviación de la frecuencia cardíaca en reposo, desviación de la VFC (SDNN), calidad del sueño, estabilidad de la frecuencia respiratoria y estabilidad del estado de ánimo — cada una medida frente a tu base personal. Los pesos se renormalizan según los componentes que tus datos sustentan. Un indicador de bienestar, no una puntuación de recuperación ni clínica.",
+          "method": "Una mezcla de 0–100 de desviación de la frecuencia cardíaca en reposo, desviación de la VFC (SDNN), calidad del sueño, estabilidad de la frecuencia respiratoria y estabilidad del estado de ánimo, cada una medida frente a tu base personal. Los pesos se renormalizan según los componentes que tus datos sustentan. Un indicador de bienestar, no una puntuación de recuperación ni clínica.",
           "component": {
             "rhr": "Frecuencia cardíaca en reposo",
             "hrv": "VFC (SDNN)",
             "sleep": "Sueño",
             "respiratory": "Frecuencia respiratoria",
             "mood": "Estabilidad del ánimo"
-          },
-          "caveat": "Un indicador de bienestar, no una puntuación de recuperación ni clínica."
+          }
         },
         "VITALS_BASELINE": {
           "method": "Tu rango típico personal es la mediana de tus valores diarios en el periodo, ± una dispersión robusta (desviación absoluta mediana, escalada). Sigue TUS lecturas, no una norma poblacional, así que un valor dentro de la banda es típico para ti."
@@ -4293,20 +4329,19 @@
         },
         "RECOVERY_SCORE": {
           "method": "Un indicador nocturno de recuperación de 0 a 100 que combina tu VFC, frecuencia cardíaca en reposo y sueño frente a tu línea base. Más alto significa mejor recuperado. Se calcula una vez por noche y aquí solo se lee, nunca se recalcula al vuelo.",
-          "caveat": "Un indicador de bienestar descriptivo, no una medida de recuperación clínica ni de nivel de entrenamiento.",
           "description": "Un indicador nocturno de recuperación a partir de tu VFC, frecuencia en reposo y sueño."
         },
         "STRESS_SCORE": {
           "method": "Un indicador nocturno de estrés de 0 a 100 a partir de la forma de tu VFC a lo largo del día frente a tu línea base. Más alto significa más carga fisiológica.",
-          "caveat": "Un indicador derivado de la VFC, NO una medición de estrés por EDA / actividad electrodérmica: tu reloj no tiene sensor EDA. Descriptivo, no clínico.",
           "description": "Un indicador nocturno de estrés a partir de la forma de tu VFC durante el día."
         },
         "STRAIN_SCORE": {
           "method": "Un indicador nocturno de esfuerzo de 0 a 100 a partir de tu carga de actividad ponderada por frecuencia cardíaca (un modelo de impulso de entrenamiento tipo TRIMP). Más alto significa un día más exigente.",
           "anchorPersonal": "Anclado a tu propia carga reciente de días de entrenamiento: se evalúa en relación con tu esfuerzo habitual, de modo que un día realmente duro para ti aparece alto.",
           "anchorPopulation": "Se evalúa frente a una referencia general mientras acumulas historial de entrenamiento; cuando tengas suficiente, pasa a tu propio esfuerzo habitual.",
-          "caveat": "Un indicador descriptivo de carga de actividad, no una medida de carga clínica ni de nivel de entrenamiento.",
-          "description": "Un indicador nocturno de carga de actividad a partir de tu esfuerzo ponderado por frecuencia cardíaca, relativo a tu esfuerzo habitual."
+          "description": "Un indicador nocturno de carga de actividad a partir de tu esfuerzo ponderado por frecuencia cardíaca, relativo a tu esfuerzo habitual.",
+          "deviceCaption": "Esfuerzo diario de tu dispositivo: {value} de {max}",
+          "deviceSource": "Hasta que HealthLog calcule su propio valor durante la noche, la tarjeta muestra el esfuerzo diario de tu dispositivo, convertido a 0–100."
         },
         "WRIST_TEMPERATURE_BASELINE": {
           "method": "Tu temperatura típica de muñeca durante la noche es la mediana de tus lecturas nocturnas en el periodo, ± una dispersión robusta (desviación absoluta de la mediana, escalada). Sigue TUS lecturas: la noche pasada se muestra como una desviación respecto a tu propia base, no a una norma poblacional.",
@@ -4341,7 +4376,9 @@
         "recovery": "Puntuación de recuperación",
         "recoveryCrossLink": "Ver los datos de recuperación y esfuerzo de tu wearable",
         "stress": "Estrés",
-        "strain": "Esfuerzo"
+        "strain": "Esfuerzo",
+        "historyTitle": "Evolución",
+        "historyWindow": "Últimos {days} días"
       },
       "coincident": {
         "label": "Varias constantes fuera de la base",
@@ -4368,7 +4405,7 @@
       "sameTime": {
         "sectionTitle": "Hoy hasta ahora",
         "sectionSubtitle": "Tus totales acumulados frente a lo que es habitual en ti a esta hora",
-        "learning": "Aprendiendo tu día habitual — {count} de {target} días",
+        "learning": "Aprendiendo tu día habitual: {count} de {target} días",
         "framing": "Habitual a las {time}: {typical} {unit}",
         "comparisonLabel": "Tu día habitual"
       }
@@ -4455,7 +4492,7 @@
     "navBreathingDisturbances": "Respiración",
     "rhythmEvents": {
       "sectionTitle": "Notificaciones de salud del dispositivo",
-      "sectionIntro": "Notificaciones que tu reloj envió por su cuenta. HealthLog solo las muestra — no las detecta, confirma ni interpreta.",
+      "sectionIntro": "Notificaciones que tu reloj envió por su cuenta. HealthLog solo las muestra; no las detecta, confirma ni interpreta.",
       "loadError": "No se pudieron cargar las notificaciones de tu dispositivo.",
       "disclaimer": "Estas son alertas que tu dispositivo generó con su propia detección integrada. Se muestran aquí solo para tu información. No es una evaluación médica de HealthLog, y HealthLog no diagnostica ninguna afección. Si una notificación te preocupa, habla con tu médico.",
       "event": {
@@ -4524,9 +4561,9 @@
       "emptyTitle": "Aún no hay datos de recuperación",
       "empty": "Aún no hay datos de recuperación. Conecta una cuenta de WHOOP, Polar u Oura y estas puntuaciones se completarán cuando tu dispositivo sincronice.",
       "block": {
-        "ansChargeExplainer": "Cuán cargado está tu sistema nervioso autónomo para el día — una lectura de recarga obtenida de tus señales nocturnas de corazón y respiración.",
+        "ansChargeExplainer": "Cuán cargado está tu sistema nervioso autónomo para el día: una lectura de recarga obtenida de tus señales nocturnas de corazón y respiración.",
         "dayStrainExplainer": "La carga cardiovascular del día en la escala de esfuerzo de tu dispositivo. Léela en relación con tu recuperación, no como una meta en sí.",
-        "workoutStrainExplainer": "Cuán exigente fue un entrenamiento en la misma escala de esfuerzo — el coste cardiovascular de esa sesión.",
+        "workoutStrainExplainer": "Cuán exigente fue un entrenamiento en la misma escala de esfuerzo: el coste cardiovascular de esa sesión.",
         "cardioLoadExplainer": "Una aproximación de la carga de entrenamiento que sigue la carga cardiovascular acumulada. Compárala con tus propios días recientes.",
         "averageHeartRateExplainer": "Tu frecuencia cardíaca media a lo largo de todo el día o ciclo, según informa tu wearable.",
         "maxHeartRateExplainer": "Tu frecuencia cardíaca máxima a lo largo de todo el día o ciclo, según informa tu wearable.",
@@ -4539,7 +4576,7 @@
     },
     "resilience": {
       "explainer": "Cómo equilibra tu cuerpo la carga diaria con la recuperación, leído a partir de tus señales nocturnas de los últimos días.",
-      "learning": "Aún estamos aprendiendo tu resiliencia — unos días más asentarán el nivel.",
+      "learning": "Aún estamos aprendiendo tu resiliencia. Unos días más asentarán el nivel.",
       "band": {
         "limited": "Limitada",
         "adequate": "Adecuada",
@@ -4681,9 +4718,9 @@
       "emptyCta": "Conectar un dispositivo"
     },
     "intradayPulse": {
-      "title": "La forma de tu día",
-      "caption": "Tu frecuencia cardíaca a lo largo del día, promediada en tramos de 10 minutos.",
-      "hourlyNote": "Mostrando el promedio por hora de este día — los días recientes muestran el detalle completo de 10 minutos.",
+      "title": "Pulso a lo largo del día",
+      "caption": "Promediado en intervalos de 10 minutos.",
+      "hourlyNote": "Mostrando el promedio por hora de este día. Los días recientes muestran el detalle completo de 10 minutos.",
       "empty": "Aún no hay suficientes lecturas para este día para mostrar su forma.",
       "coverageOne": "Basado en 1 lectura a lo largo de {hours}h.",
       "coverageMany": "Basado en {count} lecturas a lo largo de {hours}h.",
@@ -4706,6 +4743,19 @@
       "settingsBody": "HealthLog funciona por completo sin IA. Conecta un proveedor abajo si quieres un resumen diario, notas breves sobre tus mediciones y el Coach.",
       "action": "Configurar IA",
       "dismiss": "Ahora no"
+    },
+    "bmiHeight": {
+      "coachPrefill": "Todavía no he indicado mi altura: ¿por qué importa el IMC y qué debería saber antes de configurarla?"
+    },
+    "medicationsEmpty": {
+      "coachPrefill": "Todavía no he añadido medicamentos: ¿qué debería saber antes de empezar a seguir aquí la adherencia?"
+    },
+    "scoreHistory": {
+      "healthTitle": "Evolución de la puntuación de salud",
+      "healthDescription": "Tu puntuación de salud día a día, tal como se mostró cada día.",
+      "emptyDescription": "Todavía no hay ninguna puntuación registrada en este periodo.",
+      "usualRange": "Sombreado: tu rango habitual, de {lo} a {hi}.",
+      "seam": "La línea se interrumpe donde cambió lo que cuenta para la puntuación."
     }
   },
   "thresholds": {
@@ -4735,14 +4785,15 @@
     "metricBodyFat": "Grasa corporal",
     "metricSleep": "Duración del sueño",
     "metricSteps": "Pasos/día",
-    "metricGlucoseFasting": "Glucemia — en ayunas",
-    "metricGlucosePostprandial": "Glucemia — posprandial",
-    "metricGlucoseRandom": "Glucemia — cualquiera",
-    "metricGlucoseBedtime": "Glucemia — antes de dormir",
+    "metricGlucoseFasting": "Glucemia (en ayunas)",
+    "metricGlucosePostprandial": "Glucemia (posprandial)",
+    "metricGlucoseRandom": "Glucemia (cualquiera)",
+    "metricGlucoseBedtime": "Glucemia (antes de dormir)",
     "metricBodyWater": "Agua corporal",
     "metricBoneMass": "Masa ósea",
     "metricOxygenSaturation": "Saturación de oxígeno (SpO₂)",
-    "unsetExplanation": "Sin valor propio — se aplica el valor por defecto calculado."
+    "unsetExplanation": "Sin valor propio: se aplica el valor por defecto calculado.",
+    "cardTitle": "Rangos por métrica"
   },
   "onboarding": {
     "errorGeneric": "Algo ha salido mal al finalizar la configuración. Inténtalo de nuevo.",
@@ -4874,18 +4925,18 @@
       "sampleTitle": "Resumen diario",
       "sampleTag": "Ejemplo",
       "sampleAriaLabel": "Resumen diario de ejemplo",
-      "sampleBody": "Peso 1,2 kg menos en dos semanas. Pulso en reposo estable en 58 lpm. Tensión dentro del rango 6 de 7 días — la única lectura alta llegó tras una cena tardía y salada.",
-      "sampleCaption": "Solo un ejemplo — no son tus datos. Así se lee un resumen cuando los insights están activos.",
+      "sampleBody": "Peso 1,2 kg menos en dos semanas. Pulso en reposo estable en 58 lpm. Tensión dentro del rango 6 de 7 días; la única lectura alta llegó tras una cena tardía y salada.",
+      "sampleCaption": "Solo un ejemplo, no son tus datos. Así se lee un resumen cuando los insights están activos.",
       "ladderTitle": "Tres formas de activarlo",
-      "ladderLocalTitle": "Modelo local — las solicitudes de IA no salen de tu red",
-      "ladderLocalBody": "Apunta HealthLog a Ollama o LM Studio en tu propia máquina. Gratis y totalmente privado — la opción tranquila por defecto.",
+      "ladderLocalTitle": "Modelo local: las solicitudes de IA no salen de tu red",
+      "ladderLocalBody": "Apunta HealthLog a Ollama o LM Studio en tu propia máquina. Gratis y totalmente privado: la opción tranquila por defecto.",
       "ladderByokTitle": "Usa tu propia clave",
       "ladderByokBody": "Usa tu propia clave de OpenAI o Anthropic. Funciona con tu cuenta y facturación, y el nivel de API mantiene tus datos fuera del entrenamiento por defecto.",
       "ladderOauthTitle": "Inicia sesión con una suscripción",
-      "ladderOauthBody": "Conecta una cuenta de ChatGPT — sin coste por token, pero los términos del nivel de consumo pueden usar el contenido para entrenamiento, así que es una elección deliberada, nunca la opción por defecto para tus datos de salud.",
-      "keylessLine": "HealthLog es plenamente útil sin IA. Tus paneles, gráficos, tendencias y exportaciones funcionan — la IA solo añade la lectura en lenguaje claro por encima.",
+      "ladderOauthBody": "Conecta una cuenta de ChatGPT. Sin coste por token, pero los términos del nivel de consumo pueden usar el contenido para entrenamiento, así que es una elección deliberada, nunca la opción por defecto para tus datos de salud.",
+      "keylessLine": "HealthLog es plenamente útil sin IA. Tus paneles, gráficos, tendencias y exportaciones funcionan; la IA solo añade la lectura en lenguaje claro por encima.",
       "setupCta": "Configúralo (un minuto aprox.)",
-      "sharedKeyNote": "Esta instancia ya ofrece un proveedor de IA compartido, así que los insights funcionan para ti ahora mismo — sin configuración.",
+      "sharedKeyNote": "Esta instancia ya ofrece un proveedor de IA compartido, así que los insights funcionan para ti ahora mismo, sin configuración.",
       "offer": {
         "title": "Esta instancia ya puede escribir tu resumen en lenguaje claro.",
         "body": "El operador ofrece un proveedor que funcionó por última vez en las últimas 24 horas. Con un toque activas el lenguaje claro; tus datos irán entonces a ese único proveedor y a nadie más.",
@@ -5102,7 +5153,7 @@
       "profileDescription": "Altura, fecha de nacimiento y sexo desbloquean objetivos personalizados.",
       "profileCta": "Abrir perfil",
       "measurementTitle": "Registrar la primera medición",
-      "measurementDescription": "Una medición activa la tarjeta — la tendencia se dibuja a partir de la 5.ª medición.",
+      "measurementDescription": "Una medición activa la tarjeta; la tendencia se dibuja a partir de la 5.ª medición.",
       "measurementCta": "Añadir medición",
       "medicationTitle": "Añadir medicamento",
       "medicationDescription": "Sigue el cumplimiento y recibe recordatorios justo cuando los necesites.",
@@ -5111,7 +5162,7 @@
       "dataSourceDescription": "Sincroniza peso, presión, sueño y más desde Withings, WHOOP, Oura, Polar, Nightscout, Fitbit o Apple Health.",
       "dataSourceCta": "Conectar",
       "notificationsTitle": "Configurar notificaciones",
-      "notificationsDescription": "Elige cómo te recuerda HealthLog — Telegram, ntfy o Web Push.",
+      "notificationsDescription": "Elige cómo te recuerda HealthLog: Telegram, ntfy o Web Push.",
       "notificationsCta": "Abrir notificaciones",
       "insightsTitle": "Activar insights (opcional)",
       "insightsDescription": "Añade un modelo local o tu propia clave de IA para desbloquear el resumen diario y Coach.",
@@ -5259,12 +5310,10 @@
     "sections": {
       "account": {
         "title": "Cuenta",
-        "description": "Perfil, contraseña, claves de acceso y tu recorrido de incorporación.",
         "subtitle": "Tu perfil, identidad y datos de acceso."
       },
       "integrations": {
         "title": "Integraciones",
-        "description": "Servicios conectados, canales de entrega y prioridad de fuentes en un solo lugar.",
         "subtitle": "Conecta y gestiona tus fuentes de datos y dispositivos.",
         "connectionsHeading": "Conexiones",
         "channelsHeading": "Canales de entrega",
@@ -5273,16 +5322,14 @@
       },
       "notifications": {
         "title": "Notificaciones",
-        "description": "Todos los recordatorios en un solo lugar: qué se recuerda y cuándo, y dónde se entrega.",
         "subtitle": "Elige qué recordatorios recibes y dónde se entregan.",
         "remindersHeading": "Recordatorios",
         "matrixLink": "Notificaciones por canal",
         "channelsLink": "Canales de entrega"
       },
       "layout": {
-        "title": "Apariencia",
-        "description": "Elige cómo se ven y se organizan el panel, los análisis y tus módulos de seguimiento.",
-        "backToHub": "Volver a Apariencia",
+        "title": "Diseño",
+        "backToHub": "Volver a Diseño",
         "dashboard": {
           "title": "Panel",
           "description": "Diseño y orden de los mosaicos."
@@ -5291,7 +5338,7 @@
           "title": "Análisis",
           "description": "Orden de la vista general y de las pestañas de navegación."
         },
-        "subtitle": "Personaliza cómo se ven tu panel, los análisis y los módulos de seguimiento.",
+        "subtitle": "Elige qué muestran tu panel, los análisis y los módulos de seguimiento, y en qué orden.",
         "medications": {
           "title": "Medicamentos",
           "description": "Vista de lista y orden manual."
@@ -5311,6 +5358,10 @@
         "mood": {
           "title": "Etiquetas de ánimo",
           "description": "Grupos, etiquetas y etiquetas archivadas del selector de ánimo."
+        },
+        "documents": {
+          "title": "Documentos",
+          "description": "Vista y disposición de los meses."
         }
       },
       "dashboard": {
@@ -5318,15 +5369,13 @@
       },
       "thresholds": {
         "title": "Objetivos",
-        "description": "Por métrica: tu propio rango objetivo de valores saludables.",
         "subtitle": "Define tus rangos objetivo personales por métrica."
       },
       "sources": {
         "title": "Prioridad de fuentes",
-        "description": "Elige qué fuente prevalece cuando varias registran la misma métrica el mismo día.",
         "integrationsHint": "Conecta o desconecta fuentes de datos en la página de integraciones.",
         "integrationsHintLink": "Abrir integraciones",
-        "cardTitle": "Prioridad de fuentes por métrica",
+        "cardTitle": "Orden por métrica",
         "help": "Si varias fuentes entregan el mismo valor el mismo día, la fuente superior cuenta como canónica.",
         "resetDefaults": "Restablecer valores predeterminados",
         "resetDefaultsTitle": "¿Restablecer el orden de fuentes?",
@@ -5339,7 +5388,7 @@
         "resetSuccess": "Prioridad de fuentes restablecida a los valores predeterminados",
         "perMetricToggle": "Ajustes por métrica ({count})",
         "perMetricHelp": "Métricas que has personalizado respecto al orden predeterminado. Usa esta lista para devolver cualquier métrica concreta a su valor predeterminado sin tocar las demás.",
-        "perMetricEmpty": "No hay ajustes por métrica — todas las métricas usan el orden global de arriba.",
+        "perMetricEmpty": "No hay ajustes por métrica. Todas las métricas usan el orden global de arriba.",
         "resetMetric": "Restablecer",
         "deviceTypeToggle": "Prioridad por tipo de dispositivo ({count})",
         "deviceTypeHelp": "Dentro de una fuente, qué dispositivo prevalece. Cuando un Apple Watch y un iPhone registran ambos los pasos, el tipo de dispositivo mejor clasificado cuenta como la lectura canónica.",
@@ -5364,7 +5413,8 @@
           "respiratoryRate": "Frecuencia respiratoria",
           "recovery": "Recuperación",
           "stress": "Estrés",
-          "sleepDebt": "Deuda de sueño"
+          "sleepDebt": "Deuda de sueño",
+          "hrvRmssd": "VFC (RMSSD)"
         },
         "sourceLabels": {
           "WITHINGS": "Withings",
@@ -5381,7 +5431,8 @@
           "MCP": "MCP",
           "GOOGLE_HEALTH": "Google Health",
           "STRAVA": "Strava",
-          "EXTERNAL": "Dispositivo externo"
+          "EXTERNAL": "Dispositivo externo",
+          "HEALTH_CONNECT": "Health Connect"
         },
         "deviceLabels": {
           "watch": "Reloj",
@@ -5403,26 +5454,23 @@
           "moduleHintLink": "Gestionar módulos",
           "detail": "Solo lectura: la app de origen es la dueña de los valores."
         },
-        "helpDetail": "Las demás se conservan para la traza de auditoría."
+        "helpDetail": "Las demás se conservan para la traza de auditoría. Solo aparecen las fuentes que has conectado o de las que hay datos.",
+        "noneInUse": "Aún no hay fuentes que ordenar. Conecta una en Integraciones o registra un valor."
       },
       "ai": {
         "title": "Proveedor de IA",
-        "description": "Proveedor, modelo y clave API para los análisis, además de tu contexto «sobre mí».",
         "subtitle": "Elige tu proveedor de IA y usa tu propia clave."
       },
       "api": {
-        "title": "API & Tokens",
-        "description": "Tokens Bearer para tus propios scripts y apps — registra mediciones o tomas de medicación desde cualquier lugar.",
+        "title": "API y tokens",
         "subtitle": "Gestiona los endpoints de la API y los tokens de acceso."
       },
       "advanced": {
         "title": "Avanzado",
-        "description": "La salida: borra todos los registros de salud para siempre o cierra la cuenta.",
         "subtitle": "Restablecer datos y eliminar cuenta."
       },
       "export": {
         "title": "Exportar e importar",
-        "description": "Descarga tus datos como CSV o una copia de seguridad JSON completa, o importa desde Apple Health, JSON o CSV. El informe médico ahora está en Historia de salud.",
         "otherOptionsHeading": "Otras opciones de exportación",
         "downloadFailed": "No se pudo descargar la exportación. Inténtalo de nuevo.",
         "actions": {
@@ -5449,7 +5497,7 @@
           "fullBackup": {
             "title": "Copia completa",
             "description": "Todo tu historial en un archivo JSON.",
-            "scopeNote": "Los metadatos de los documentos y el resumen de IA, si existe, se incluyen en texto plano; los archivos originales de los documentos y los datos de rutas GPS/muestras de los entrenamientos no están incluidos — descárgalos por separado desde el archivo de documentos o la exportación de entrenamientos.",
+            "scopeNote": "Los metadatos de los documentos y el resumen de IA, si existe, se incluyen en texto plano; los archivos originales de los documentos y los datos de rutas GPS/muestras de los entrenamientos no están incluidos. Descárgalos por separado desde el archivo de documentos o la exportación de entrenamientos.",
             "encryptToggle": "Cifrar con una contraseña",
             "passphrasePlaceholder": "Contraseña (mín. 12 caracteres)",
             "passphraseHelp": "Deriva la clave del archivo con Argon2id y lo sella con AES-256-GCM. Guarda el archivo con la extensión .hlx.",
@@ -5581,8 +5629,8 @@
             "failed": "La importación falló. No se escribió nada.",
             "columnsHeading": "Qué hace cada columna",
             "jsonOnly": "solo JSON",
-            "previewLine": "Filas leídas: {rows} · se importarían: {queued} · rechazadas: {refused}",
-            "submittedLine": "Filas leídas: {rows} · en cola para importar: {queued}",
+            "previewLine": "{rows} filas leídas, {queued} se importarían, {refused} rechazadas",
+            "submittedLine": "{rows} filas leídas, {queued} en cola para importar",
             "unmatched": "Ningún medicamento registrado coincide con: {names}",
             "ambiguous": "Coincide con más de un medicamento: {names}",
             "mirrored": "Copiado de otra aplicación, así que no se puede añadir ninguna dosis: {names}",
@@ -5618,18 +5666,59 @@
               "tooManyRows": "Ese archivo tiene más filas de las que admite una importación. Divídelo e importa las partes."
             },
             "detail": "Un archivo abarca todos los medicamentos que contiene."
+          },
+          "healthConnect": {
+            "title": "Exportación de Health Connect",
+            "description": "Importa el archivo ZIP que crea la app Health Connect en Android al exportar tus datos.",
+            "choose": "Elegir archivo ZIP",
+            "uploading": "Subiendo…",
+            "uploadFailed": "La subida ha fallado. Inténtalo de nuevo.",
+            "tooLarge": "El archivo supera el tamaño que acepta este servidor.",
+            "doneSummary": "{count} valores importados.",
+            "failed": "La importación ha fallado: {reason}",
+            "phase": {
+              "queued": "Esperando para empezar",
+              "unpacking": "Descomprimiendo el archivo",
+              "parsing": "Leyendo los registros",
+              "upserting": "Guardando los valores",
+              "done": "Terminado",
+              "failed": "Fallido"
+            },
+            "steps": {
+              "export": "En tu teléfono Android, abre Health Connect, ve a Gestionar datos, luego a Exportar e importar, e inicia una exportación.",
+              "cloud": "Health Connect solo guarda la exportación en una app de almacenamiento en la nube como Google Drive, Dropbox o Nextcloud, nunca en el propio teléfono. Elige una allí.",
+              "upload": "Descarga el archivo ZIP de esa nube a este dispositivo y súbelo aquí."
+            },
+            "dropLabel": "Suelta aquí el ZIP de Health Connect",
+            "dropHint": "o haz clic para elegirlo. Hasta 1 GB.",
+            "fileInputLabel": "Archivo ZIP de la exportación de Health Connect",
+            "privacyNote": "El archivo se borra del servidor en cuanto termina la importación. Los registros de apps que ya conectas directamente, como Withings o Fitbit, se omiten para que nada llegue dos veces. Subir de nuevo el mismo archivo no cambia nada.",
+            "rateLimited": "Demasiadas subidas en poco tiempo. Espera un minuto y vuelve a intentarlo.",
+            "busy": "Ya hay una importación en curso para tu cuenta. Espera a que termine.",
+            "rowsSoFar": "{count} valores guardados hasta ahora",
+            "doneNothing": "La importación terminó, pero no había nada nuevo que añadir.",
+            "workouts": "Entrenamientos",
+            "leftOutConnected": "Se omitieron {count} registros de apps que ya conectas directamente.",
+            "nutrientsModuleOff": "Los totales de agua y nutrientes no se importaron porque el módulo Nutrientes está desactivado.",
+            "cycleModuleOff": "Los datos del periodo no se importaron porque el seguimiento del ciclo está desactivado.",
+            "failure": {
+              "unsupportedVersion": "Esta exportación de Health Connect es demasiado antigua para leerla. Actualiza Health Connect en el teléfono y vuelve a exportar.",
+              "notHealthConnect": "Este archivo no es una exportación de Health Connect. Elige el archivo ZIP que guardó Health Connect.",
+              "unsafeSchema": "Este archivo no tiene la estructura de una exportación de Health Connect y no se leyó.",
+              "tooLarge": "La exportación es mayor de lo que acepta este servidor.",
+              "stagingMissing": "El archivo subido ya no estaba en el servidor. Súbelo de nuevo.",
+              "interrupted": "Un reinicio del servidor interrumpió la importación. Sube el archivo de nuevo."
+            }
           }
         },
         "subtitle": "Exporta tus datos o importa desde una copia de seguridad."
       },
       "about": {
         "title": "Acerca de esta app",
-        "description": "Versión, licencia, enlaces.",
         "subtitle": "Versión, licencia y enlaces del proyecto."
       },
       "sharing": {
         "title": "Compartir",
-        "description": "Crea un enlace de solo lectura para compartir tu historial de salud con un profesional médico.",
         "subtitle": "Comparte acceso de solo lectura a tus datos."
       },
       "insights": {
@@ -5664,12 +5753,10 @@
       },
       "gesundheitsakte": {
         "title": "Historial médico",
-        "description": "Exporta tu historial médico completo como PDF, FHIR R4 o un paquete ZIP combinado.",
         "subtitle": "Exporta un historial de salud completo, listo para el médico."
       },
       "coach": {
         "title": "Coach",
-        "description": "Activa el Coach, tono y alcance, recuerdos guardados.",
         "subtitle": "Ajusta el Coach, sus avisos proactivos y su memoria."
       },
       "security": {
@@ -5678,8 +5765,7 @@
       },
       "privacy": {
         "title": "Datos y privacidad",
-        "subtitle": "Tus datos, su retención, el cifrado y la seguridad de la cuenta en un solo lugar.",
-        "description": "Exportación, eliminación, retención, estado de cifrado, sesiones y actividad de seguridad."
+        "subtitle": "Tus datos, su retención, el cifrado y la seguridad de la cuenta en un solo lugar."
       },
       "mcp": {
         "title": "Conector MCP",
@@ -5687,8 +5773,7 @@
       },
       "anamnesis": {
         "title": "Antecedentes médicos",
-        "subtitle": "Gestiona tus alergias y tus antecedentes familiares.",
-        "description": "Registros estructurados de alergias y antecedentes familiares."
+        "subtitle": "Tus antecedentes, tu estilo de vida, tus datos de emergencia y lo que la IA puede leer."
       },
       "environment": {
         "title": "Ubicación y clima",
@@ -5722,7 +5807,8 @@
           "add": "Añadir {label}",
           "remove": "Eliminar periodo de ubicación",
           "removeConfirmTitle": "¿Quitar este viaje?",
-          "removeConfirmBody": "Las mediciones de ese periodo permanecen; solo desaparece la entrada del viaje."
+          "removeConfirmBody": "Las mediciones de ese periodo permanecen; solo desaparece la entrada del viaje.",
+          "range": "Del {start} al {end}"
         },
         "backfill": {
           "title": "Rellenar días pasados",
@@ -5732,7 +5818,21 @@
         "noResults": "No se encontraron lugares coincidentes.",
         "fetchFailedOne": "La última actualización meteorológica en segundo plano falló ({when}).",
         "fetchFailedFew": "Las últimas {count} actualizaciones meteorológicas en segundo plano fallaron, la más reciente {when}.",
-        "fetchFailedOther": "Las últimas {count} actualizaciones meteorológicas en segundo plano fallaron, la más reciente {when}."
+        "fetchFailedOther": "Las últimas {count} actualizaciones meteorológicas en segundo plano fallaron, la más reciente {when}.",
+        "airQuality": {
+          "title": "Calidad del aire y polen",
+          "description": "Calidad del aire, polen y UV diarios para tu ubicación, del modelo CAMS a través de Open-Meteo.",
+          "toggle": "Incluir calidad del aire y polen",
+          "operatorDisabled": "La calidad del aire está desactivada en este servidor.",
+          "coverage": "{count} días con datos de calidad del aire",
+          "pollenEuropeOnly": "Los datos de polen solo cubren Europa.",
+          "historyProgress": "Completando la calidad del aire: {done} de {total} días",
+          "historyComplete": "La calidad del aire está completada para todos los días anteriores con registros que cubre la fuente ({total} días). Los días más antiguos quedan vacíos.",
+          "attribution": "Fuentes de datos y licencias",
+          "saveError": "No se pudo guardar el ajuste.",
+          "latest": "Día más reciente ({date})",
+          "modelNote": "Valores exteriores modelados para tu zona, no tu exposición personal."
+        }
       },
       "score": {
         "title": "Puntuación de salud",
@@ -5859,7 +5959,6 @@
     },
     "changePassword": "Cambiar contraseña",
     "changePasswordDescription": "Sustituye tu contraseña actual por una nueva.",
-    "passwordReset": "Restablecer contraseña",
     "currentPassword": "Contraseña actual",
     "newPassword": "Nueva contraseña",
     "confirmNewPassword": "Confirmar nueva contraseña",
@@ -5904,9 +6003,9 @@
     "botToken": "Token del bot",
     "chatId": "ID del chat",
     "enableNotifications": "Activar notificaciones",
-    "telegramStep1": "1. Crea un bot con @BotFather en Telegram y copia el token.",
-    "telegramStep2": "2. Envía /start a tu bot para activar el chat.",
-    "telegramStep3": "3. Obtén tu ID del chat con @userinfobot o la API del bot.",
+    "telegramStep1": "Crea un bot con @BotFather en Telegram y copia el token.",
+    "telegramStep2": "Envía /start a tu bot para activar el chat.",
+    "telegramStep3": "Obtén tu ID del chat con @userinfobot o la API del bot.",
     "ntfy": "ntfy",
     "ntfyDescription": "Notificaciones a través de ntfy (autoalojado o ntfy.sh).",
     "ntfyEnable": "Activar ntfy",
@@ -5915,7 +6014,7 @@
     "ntfyAuthToken": "Token de autenticación (opcional)",
     "ntfyAuthTokenHint": "Solo necesario para temas privados con control de acceso.",
     "webhook": "Webhook",
-    "webhookDescription": "Envía notificaciones por POST a cualquier URL: Gotify, Discord, Slack, Matrix o Home Assistant.",
+    "webhookDescription": "Envía notificaciones por POST a una URL: Discord, Slack, Gotify, Home Assistant, n8n o un relé que acepte JSON.",
     "webhookEnable": "Activar webhook",
     "webhookUrl": "URL del webhook",
     "webhookUrlHint": "La URL completa para el POST. Una dirección de una red privada necesita la aprobación del administrador del servidor.",
@@ -5923,6 +6022,7 @@
     "webhookHeaderValue": "Valor de cabecera (opcional)",
     "webhookFormat": "Formato del mensaje",
     "webhookFormatGeneric": "JSON genérico",
+    "webhookFormatGenericHint": "Pega una URL de webhook de Discord o Slack tal cual. Home Assistant y n8n leen los campos title, message, eventType y priority.",
     "webhookFormatGotify": "Gotify",
     "webhookFormatGotifyHint": "Usa la URL que termina en /message y pon el token de la aplicación en la cabecera X-Gotify-Key.",
     "email": "Correo electrónico",
@@ -5939,7 +6039,6 @@
     "webPushSubscribed": "¡Notificaciones push activadas!",
     "webPushUnsubscribed": "Notificaciones push desactivadas.",
     "webPushSubscribeFailed": "Falló la activación",
-    "kiInsightsDescription": "Opcional: guarda tu clave de OpenAI para análisis diarios y automáticos en Insights.",
     "codexConnected": "¡ChatGPT conectado correctamente! Insights ya está activo.",
     "codexDisconnected": "Conexión con ChatGPT eliminada.",
     "codexConnectionFailed": "Falló la conexión con ChatGPT. Inténtalo de nuevo.",
@@ -5949,7 +6048,7 @@
     "rawDataWarning": "Historial detallado activado: cada análisis envía además promedios diarios de los últimos 90 días, promedios semanales del año anterior y promedios mensuales hasta 5 años atrás.",
     "regenerateInsights": "Regenerar informes",
     "regenerateSuccess": "Informes regenerados correctamente",
-    "regenerateRateLimit": "Espera un momento — has alcanzado el límite por hora de análisis.",
+    "regenerateRateLimit": "Espera un momento: has alcanzado el límite por hora de análisis.",
     "lastGeneratedAt": "Generado por última vez",
     "ai": {
       "chatgptConnectedBadge": "ChatGPT conectado",
@@ -5959,11 +6058,11 @@
       "deviceCodeHeading": "Termina de conectar en chatgpt.com",
       "deviceCodeStep1": "Abre este enlace en cualquier dispositivo:",
       "deviceCodeStep2": "Introduce este código de un solo uso:",
-      "deviceCodeStep3": "Aprueba la conexión — esta página se actualiza automáticamente.",
+      "deviceCodeStep3": "Aprueba la conexión. Esta página se actualiza automáticamente.",
       "deviceCodeCopy": "Copiar",
       "deviceCodeWaiting": "Esperando aprobación…",
       "deviceCodeCancel": "Cancelar",
-      "oauthNotConfigured": "El OAuth de ChatGPT no está configurado en esta instancia — usa tu propia clave de API a continuación.",
+      "oauthNotConfigured": "El OAuth de ChatGPT no está configurado en esta instancia. Usa tu propia clave de API a continuación.",
       "modelLabel": "Modelo",
       "modelOptionDefault": "— Predeterminado —",
       "modelOptionCustom": "Personalizado…",
@@ -5987,7 +6086,7 @@
           "admin-openai": "OpenAI de administrador"
         },
         "title": "Cadena de respaldo",
-        "description": "Si el proveedor principal falla, HealthLog recorre la cadena en orden. Arrastra las filas para reordenarlas; usa el interruptor para desactivar un proveedor sin eliminarlo.",
+        "description": "Si el proveedor activo falla, HealthLog prueba el siguiente activado en este orden.",
         "moveUp": "Subir",
         "moveDown": "Bajar",
         "removeFromChain": "Quitar de la cadena",
@@ -6000,11 +6099,8 @@
         "resetConfirmTitle": "¿Restablecer la cadena a los valores predeterminados?",
         "resetConfirmBody": "La cadena vuelve a Codex → OpenAI → Anthropic → Local → OpenAI de administrador. Tus credenciales guardadas no se modifican."
       },
-      "providerCardTitle": "Proveedor de IA",
       "activeProviderHeading": "Proveedor activo",
-      "activeProviderBody": "Elige el proveedor que quieres usar primero. El formulario de abajo configura únicamente el proveedor seleccionado; la cadena de respaldo del final decide qué ocurre si falla.",
       "activeProviderLabel": "Proveedor principal",
-      "providerConfigTitle": "Configuración del proveedor",
       "providerSelect": {
         "codex": "Cuenta de ChatGPT (Codex)",
         "openai": "OpenAI (tu clave de API)",
@@ -6050,11 +6146,11 @@
         "notConfigured": "El operador no ha configurado una clave de OpenAI compartida en esta instancia."
       },
       "testProvider": "Probar el proveedor activo",
-      "testSuccess": "OK — {provider} ({model})",
+      "testSuccess": "OK: {provider} ({model})",
       "testFailedShort": "Prueba fallida: {message}",
-      "testUnexpectedResponse": "Falló la conexión con el proveedor de IA — respuesta inesperada del servidor.",
-      "testReasonCredentials": "El proveedor rechazó las credenciales — vuelve a autenticarte en los ajustes de IA.",
-      "testReasonRateLimited": "El proveedor limitó la solicitud — inténtalo de nuevo en breve.",
+      "testUnexpectedResponse": "Falló la conexión con el proveedor de IA: respuesta inesperada del servidor.",
+      "testReasonCredentials": "El proveedor rechazó las credenciales. Vuelve a autenticarte en los ajustes de IA.",
+      "testReasonRateLimited": "El proveedor limitó la solicitud. Inténtalo de nuevo en breve.",
       "testReasonServerError": "El proveedor de IA devolvió un error del servidor.",
       "testReasonBadRequest": "El proveedor rechazó la solicitud (HTTP {status}): el endpoint respondió, así que el problema está en el formato de la solicitud o en el nombre del modelo, no en la conexión.",
       "testReasonUnreachable": "No se pudo contactar con el proveedor de IA.",
@@ -6098,7 +6194,7 @@
         "markDone": "Hecho",
         "dismiss": "Descartar",
         "deleteAria": "Eliminar este recordatorio",
-        "note": "Los recordatorios se guardan cifrados. Elimina uno cuando quieras — desaparece de lo que el Coach puede ver.",
+        "note": "Los recordatorios se guardan cifrados. Elimina uno cuando quieras y desaparece de lo que el Coach puede ver.",
         "status": {
           "proposed": "Sugerido",
           "active": "Guardado",
@@ -6150,14 +6246,14 @@
       },
       "centralCodex": {
         "title": "Usar el acceso de IA compartido del servidor",
-        "subLabel": "Enruta las solicitudes de IA a través de la conexión que el operador configuró para este servidor, junto a tus propios proveedores como alternativa.",
+        "subLabel": "Las solicitudes de IA pasan por la conexión compartida del servidor, con tus propios proveedores como respaldo.",
         "honesty": "El acceso compartido es una única cuenta de IA con sesión iniciada que el operador conectó para todos en este servidor, no tu propia clave. Las solicitudes que hagas se usan de forma predeterminada para entrenar los modelos del proveedor y ningún acuerdo de tratamiento de datos las cubre, los límites por hora y semanales de la cuenta se comparten con todos los demás que se han unido, y tus propios proveedores se prueban primero. Actívalo solo si aceptas este compromiso.",
         "confirm": "Entendido: usar la conexión",
         "cancel": "Cancelar"
       },
       "consent": {
         "title": "Consentimiento de IA",
-        "activeSince": "Otorgado el {date}. Tus datos de salud pueden enviarse al proveedor configurado para las funciones de IA.",
+        "activeSince": "Otorgado el {date}: tus datos de salud pueden enviarse al proveedor configurado para las funciones de IA.",
         "withdrawn": "Retirado. Salvo que otro consentimiento lo cubra, el Coach e Insights ya no usan el acceso de IA de este servidor y ningún modelo en línea lee tus documentos. Con tu propia clave o un modelo local, el Coach e Insights siguen funcionando.",
         "withdraw": "Retirar el consentimiento",
         "confirmBody": "Salvo que otro consentimiento tuyo los siga cubriendo, se detienen de inmediato: el Coach e Insights cuando usan el acceso de IA de este servidor, y la lectura de documentos con un modelo en línea. Con tu propia clave o un modelo local, el Coach e Insights siguen funcionando. Salvo que otro consentimiento siga cubriendo Insights, se eliminan las notas que un modelo escribió para ti: notas de estado, el resumen diario, los resúmenes de periodo escritos por un modelo, las líneas de llegada y las notas de entrenamiento. Tus conversaciones con el Coach, lo que el Coach recordaba, tus planes y los resúmenes de tus documentos se conservan, y puedes leerlos o eliminarlos tú mismo.",
@@ -6168,7 +6264,7 @@
         "error": "No se pudo guardar la retirada. Inténtalo de nuevo.",
         "documentReading": {
           "title": "Consentimiento para leer documentos",
-          "activeSince": "Dado el {date}. Los documentos, los informes de laboratorio escaneados y las descripciones de medicamentos pueden enviarse a tu servicio de IA para leerlos.",
+          "activeSince": "Dado el {date}: documentos, análisis escaneados y textos de medicamentos pueden ir a tu servicio de IA para leerlos.",
           "confirmBody": "Los documentos, los informes de laboratorio escaneados y las descripciones de medicamentos dejan de enviarse para leerlos. No se elimina nada de lo que ya tienes."
         }
       },
@@ -6202,7 +6298,9 @@
           "high": "Alto"
         },
         "coachNote": "En el Coach se aplica la profundidad de pensamiento de los ajustes del Coach."
-      }
+      },
+      "providerCardDescription": "El proveedor al que HealthLog pregunta primero, con su clave y su modelo.",
+      "runtimeTitle": "Comprobar y actualizar"
     },
     "dashboard": {
       "units": {
@@ -6226,8 +6324,8 @@
     "withingsClientId": "ID de cliente",
     "withingsClientSecret": "Secreto de cliente",
     "withingsCredentialsSaved": "Credenciales guardadas",
-    "withingsCredentialsSavedPlaceholder": "Guardado — introduce uno nuevo para reemplazarlo",
-    "withingsCredentialsSavedPlaceholderSecret": "Guardado — introduce uno nuevo para reemplazarlo",
+    "withingsCredentialsSavedPlaceholder": "Guardado. Introduce uno nuevo para reemplazarlo",
+    "withingsCredentialsSavedPlaceholderSecret": "Guardado. Introduce uno nuevo para reemplazarlo",
     "withingsSaveCredentials": "Guardar",
     "configured": "Configurado",
     "withingsSync": "Sincronizar ahora",
@@ -6242,7 +6340,7 @@
     },
     "withingsFullSyncResult": "{count} mediciones sincronizadas por completo",
     "withingsSyncFailed": "Falló la sincronización",
-    "withingsOauthConnected": "Withings conectado — la primera sincronización comienza en segundo plano.",
+    "withingsOauthConnected": "Withings conectado. La primera sincronización comienza en segundo plano.",
     "withingsOauthFailed": "Error al conectar con Withings",
     "withingsOauthError": {
       "csrf1": "La comprobación de seguridad falló porque faltaba la cookie del navegador. Inicia la conexión de nuevo en el mismo navegador.",
@@ -6267,8 +6365,8 @@
     "whoopClientId": "Client ID",
     "whoopClientSecret": "Client Secret",
     "whoopCredentialsSaved": "Credenciales guardadas",
-    "whoopCredentialsSavedPlaceholder": "Guardado — introduce nuevas para reemplazar",
-    "whoopCredentialsSavedPlaceholderSecret": "Guardado — introduce nuevas para reemplazar",
+    "whoopCredentialsSavedPlaceholder": "Guardado. Introduce nuevas para reemplazar",
+    "whoopCredentialsSavedPlaceholderSecret": "Guardado. Introduce nuevas para reemplazar",
     "whoopSaveCredentials": "Guardar",
     "whoopSync": "Sincronizar ahora",
     "whoopFullSync": "Sincronizar todos los datos",
@@ -6297,7 +6395,7 @@
     },
     "fitbit": "Fitbit",
     "fitbitTag": "Fitbit y Pixel",
-    "fitbitDescription": "Conecta Fitbit para sincronizar tus datos de Fitbit y Pixel Watch — peso, frecuencia cardíaca y más.",
+    "fitbitDescription": "Conecta Fitbit para sincronizar tus datos de Fitbit y Pixel Watch: peso, frecuencia cardíaca y más.",
     "fitbitExperimentalBadge": "Experimental",
     "fitbitCredentials": "Credenciales de API",
     "fitbitClientId": "Client ID",
@@ -6329,8 +6427,8 @@
     "googleHealthClientId": "ID de cliente",
     "googleHealthClientSecret": "Secreto de cliente",
     "googleHealthCredentialsSaved": "Credenciales guardadas",
-    "googleHealthCredentialsSavedPlaceholder": "Guardado — introduce nuevas para reemplazar",
-    "googleHealthCredentialsSavedPlaceholderSecret": "Guardado — introduce nuevas para reemplazar",
+    "googleHealthCredentialsSavedPlaceholder": "Guardado. Introduce nuevas para reemplazar",
+    "googleHealthCredentialsSavedPlaceholderSecret": "Guardado. Introduce nuevas para reemplazar",
     "googleHealthSaveCredentials": "Guardar",
     "googleHealthSync": "Sincronizar ahora",
     "googleHealthSyncCheckStatus": "Actualizar estado",
@@ -6401,10 +6499,10 @@
     },
     "integrationPill": {
       "connected": "Conectado",
-      "errorReconnect": "Error — reconectar",
+      "errorReconnect": "Error: reconectar",
       "warningServerError": "Sincronización con errores",
       "failureCount": "{count}/{threshold}",
-      "parkedReconnect": "Pausado — reconectar",
+      "parkedReconnect": "Pausado: reconectar",
       "notConnected": "No conectado",
       "justNow": "ahora mismo",
       "minutesAgo": "hace {count} min",
@@ -6419,7 +6517,7 @@
     },
     "integrationFreshness": {
       "title": "Datos recibidos",
-      "summary": "{count} tipos de datos · más reciente {relative}",
+      "summary": "{count} tipos de datos, más reciente {relative}",
       "quiet": "{count} en silencio",
       "workouts": "Entrenamientos"
     },
@@ -6433,31 +6531,33 @@
     "fitbitViewData": "Ver tu sueño",
     "googleHealthViewData": "Ver tus pasos",
     "apiTokens": "Tokens de API",
-    "apiTokensDescription": "Revisa y revoca tokens de API para el registro externo de tomas de medicación.",
+    "apiTokensDescription": "Revisa y revoca los tokens de mediciones, entrenamientos, documentos y tomas de medicación.",
     "measurementsToken": {
       "title": "Tokens de mediciones",
       "description": "Crea un token para que una báscula, un reloj o tu domótica añadan mediciones.",
       "detail": "El token se muestra una sola vez.",
       "scopeNote": "Solo puede añadir mediciones nuevas a tu propio historial: no puede leer tus datos, ni modificar o borrar nada, ni crear otro token. Las mediciones se marcan como procedentes de un dispositivo externo, así las distingues más tarde, y puedes corregirlas igualmente.",
-      "createFailed": "No se pudo crear el token. Inténtalo de nuevo."
+      "createFailed": "No se pudo crear el token. Inténtalo de nuevo.",
+      "namePlaceholder": "Nombre, p. ej. Home Assistant"
     },
     "workoutsToken": {
       "title": "Tokens de entrenamientos",
       "description": "Crea un token para que un puente de tu reloj o un script de sincronización añadan tus entrenamientos.",
       "detail": "El token se muestra una sola vez.",
       "scopeNote": "Solo puede añadir entrenamientos nuevos a tu propio historial. No puede leer tus datos, ni modificar o borrar nada, ni crear otro token. Los entrenamientos que añade se marcan como procedentes de un dispositivo externo, y si tu teléfono registró la misma sesión, ves la copia del teléfono.",
-      "createFailed": "No se pudo crear el token. Inténtalo de nuevo."
+      "createFailed": "No se pudo crear el token. Inténtalo de nuevo.",
+      "namePlaceholder": "Nombre, p. ej. Garmin"
     },
     "documentsToken": {
       "title": "Tokens de documentos",
       "description": "Crea un token para que Paperless-ngx, Papra o el script de importación añadan documentos a tu archivo.",
       "detail": "El token se muestra una sola vez.",
       "scopeNote": "Solo puede añadir documentos nuevos a tu propio archivo. No puede listar, abrir, descargar, modificar ni borrar nada, ni crear otro token. Lo único que recibe es si un archivo se guardó, no cómo lo archivaste.",
-      "createFailed": "No se pudo crear el token. Inténtalo de nuevo."
+      "createFailed": "No se pudo crear el token. Inténtalo de nuevo.",
+      "namePlaceholder": "Nombre, p. ej. Paperless-ngx"
     },
-    "tokenMintMovedDescription": "Los tokens se emiten donde se aplican: arriba para las mediciones y los documentos, o en el endpoint de API de un medicamento para ese medicamento concreto.",
-    "tokenNamePlaceholder": "Nombre del token (p. ej., Atajo de iPhone)",
-    "tokenCreated": "Token creado — ¡cópialo ahora! No se mostrará de nuevo.",
+    "tokenMintMovedDescription": "Los tokens se emiten donde se aplican: arriba para las mediciones, los entrenamientos y los documentos, o en el endpoint de API de un medicamento para ese medicamento concreto.",
+    "tokenCreated": "Token creado. ¡Cópialo ahora! No se mostrará de nuevo.",
     "tokenCopy": "Copiar token",
     "tokenCopied": "Token copiado al portapapeles",
     "tokenCopyFailed": "No se pudo copiar el token",
@@ -6496,7 +6596,7 @@
     "deleteAccountCta": "Eliminar cuenta",
     "deleteAccountConfirmTitle": "¿Eliminar la cuenta de forma permanente?",
     "deleteAccountConfirmDescription": "Tu cuenta, todos los datos de salud, las claves de acceso, las sesiones y las entradas de auditoría se eliminarán de forma permanente. Se cerrará tu sesión inmediatamente después.",
-    "deleteAccountSuccess": "Cuenta eliminada — cerrando tu sesión.",
+    "deleteAccountSuccess": "Cuenta eliminada. Cerrando tu sesión.",
     "deleteAccountFailed": "No se pudo eliminar la cuenta",
     "deleteAccountFinal": "Eliminar permanentemente",
     "saved": "Guardado",
@@ -6519,7 +6619,7 @@
       "testing": "Probando…",
       "ok": "Conectado (latencia {latency} ms)",
       "errors": {
-        "credentials_rejected": "Credenciales rechazadas — comprueba tu token",
+        "credentials_rejected": "Credenciales rechazadas: comprueba tu token",
         "rate_limited": "Limitado por el servidor remoto",
         "timeout": "La solicitud agotó el tiempo de espera",
         "upstream_error": "El servidor remoto devolvió un error",
@@ -6530,7 +6630,7 @@
         "private_origin_not_approved": "Destino en una red privada. El operador debe añadir este origen a NOTIFICATION_PRIVATE_ORIGINS",
         "private_origin_not_grantable": "Esta dirección es de enlace local, de metadatos o no especificada; ninguna autorización del operador puede abrirla. Usa la dirección en la que escucha el relay",
         "url_invalid": "La URL no es válida",
-        "redirected": "El endpoint redirige — comprueba la URL",
+        "redirected": "El endpoint redirige: comprueba la URL",
         "endpoint_not_found": "No se encontró el endpoint en la URL",
         "credentials_unreadable": "Las credenciales no se pueden descifrar",
         "upstream_invalid_json": "El servidor remoto envió un JSON no válido",
@@ -6541,7 +6641,7 @@
     },
     "notificationStatus": {
       "title": "Fiabilidad de los canales",
-      "description": "Estado de cada canal — «Desactivado automáticamente» significa detenido tras errores permanentes.",
+      "description": "Estado de cada canal; «Desactivado automáticamente» significa detenido tras errores permanentes.",
       "emptyDescription": "Configura un canal en Ajustes › Integraciones › Canales de entrega.",
       "stateActive": "Activo",
       "stateAutoDisabled": "Desactivado automáticamente",
@@ -6599,7 +6699,7 @@
       "createTitle": "Nuevo enlace para compartir",
       "createDescription": "El enlace es de solo lectura y limitado en el tiempo.",
       "label": "Etiqueta",
-      "labelPlaceholder": "p. ej. Dra. García — revisión anual",
+      "labelPlaceholder": "p. ej. Dra. García, revisión anual",
       "range": "Días de historial",
       "rangeHint": "Hasta cuándo se remonta la ventana compartida.",
       "expiry": "Caduca en (días)",
@@ -6619,7 +6719,7 @@
       "statusRevoked": "Revocado",
       "statusExpired": "Caducado",
       "inactiveTitle": "Revocados y caducados ({count})",
-      "shownOnce": "Se muestra una sola vez. Guarde ahora el código QR y la frase de acceso — no se pueden recuperar después.",
+      "shownOnce": "Se muestra una sola vez. Guarde ahora el código QR y la frase de acceso: no se pueden recuperar después.",
       "qrAlt": "Código QR con el enlace para compartir y la frase de acceso",
       "linkLabel": "Enlace",
       "passphraseLabel": "Frase de acceso",
@@ -6648,7 +6748,8 @@
       "statusNeedsReselect": "Elegir contenido de nuevo",
       "reselectReason": "Este enlace mostraba un alcance que nadie eligió, por eso se cerró. Crea uno nuevo y elige su contenido.",
       "reselectAction": "Crear un reemplazo",
-      "createDetail": "El token se muestra una sola vez al crearlo — guárdalo entonces; no se puede recuperar."
+      "createDetail": "El token se muestra una sola vez al crearlo. Guárdalo entonces; no se puede recuperar.",
+      "activeDescription": "Los enlaces que has compartido, cuándo caducan y cuántas veces se abrieron."
     },
     "genderOther": "Otro",
     "nightscout": "Nightscout",
@@ -6680,7 +6781,7 @@
     "polarClientId": "Client ID",
     "polarClientSecret": "Client Secret",
     "polarCredentialsSaved": "Credenciales guardadas",
-    "polarCredentialsSavedPlaceholder": "Guardado — introduce nuevas para reemplazar",
+    "polarCredentialsSavedPlaceholder": "Guardado. Introduce nuevas para reemplazar",
     "polarSaveCredentials": "Guardar",
     "polarUnavailable": "Polar no está configurado en este servidor. Añade arriba tus propias credenciales OAuth de Polar, o pide a tu administrador que configure la app compartida.",
     "polarConnect": "Conectar Polar",
@@ -6709,7 +6810,7 @@
     "ouraClientId": "Client ID",
     "ouraClientSecret": "Client Secret",
     "ouraCredentialsSaved": "Credenciales guardadas",
-    "ouraCredentialsSavedPlaceholder": "Guardado — introduce nuevas para reemplazar",
+    "ouraCredentialsSavedPlaceholder": "Guardado. Introduce nuevas para reemplazar",
     "ouraSaveCredentials": "Guardar",
     "ouraUnavailable": "Oura no está configurado en este servidor. Añade arriba tus propias credenciales OAuth de Oura, o pide a tu administrador que configure la app compartida.",
     "ouraConnect": "Conectar Oura",
@@ -6750,7 +6851,7 @@
       }
     },
     "integrationRedirectGuide": {
-      "intro": "Esto se conecta mediante tu propia app de desarrollador de {provider} — unos 5 minutos de configuración:",
+      "intro": "Esto se conecta mediante tu propia app de desarrollador de {provider}, con unos 5 minutos de configuración:",
       "step1": "Crea una app en el portal de desarrolladores de {provider}.",
       "step2": "Configura su URL de redirección/callback en:",
       "step3": "Pega arriba el ID de cliente y el secreto de cliente que te da."
@@ -6874,12 +6975,11 @@
       },
       "stored": {
         "title": "Qué se almacena",
-        "measurements": "Mediciones (peso, presión arterial, pulso, glucosa, sueño, composición corporal)",
-        "medications": "Medicamentos e historial de tomas",
-        "moodLabs": "Entradas de estado de ánimo y resultados de laboratorio",
-        "coach": "Conversaciones con el asistente",
+        "measurements": "Mediciones: peso, presión arterial, pulso y cualquier otro valor que registres tú o un dispositivo",
         "integrations": "Tokens de integración (cifrados)",
-        "security": "Actividad de la cuenta y de seguridad (sesiones, registro de inicio de sesión)"
+        "security": "Actividad de la cuenta y de seguridad (sesiones, registro de inicio de sesión)",
+        "profile": "Tu perfil, tus antecedentes médicos y los datos del historial de salud",
+        "modules": "Registros de cada módulo: {list}"
       },
       "retention": {
         "title": "Retención",
@@ -6910,8 +7010,6 @@
     "mcp": {
       "enableTitle": "Endpoint MCP remoto",
       "enableDescription": "Permite que un asistente compatible con MCP (Claude.ai, ChatGPT) lea tus datos de salud mediante un token limitado.",
-      "enabled": "Activado",
-      "disabled": "Desactivado",
       "enableToggleLabel": "Activar el endpoint MCP",
       "endpointLabel": "URL del conector",
       "connectDescription": "Pega esta URL en la configuración del conector personalizado de tu asistente y autoriza con el token de abajo o inicia sesión cuando se te solicite.",
@@ -6930,7 +7028,8 @@
       "connectionRevokeDescription": "Esto finaliza el acceso del asistente de inmediato e impide su renovación. Será necesario autorizarlo de nuevo para volver a conectarlo.",
       "connectionRevokeFailed": "No se pudo desconectar el asistente.",
       "tokensDetail": "El token se muestra una sola vez.",
-      "connectionsDetail": "Revocar una conexión finaliza su acceso de inmediato, incluida su capacidad de renovación."
+      "connectionsDetail": "Revocar una conexión finaliza su acceso de inmediato, incluida su capacidad de renovación.",
+      "tokenNamePlaceholder": "Nombre, p. ej. Claude Desktop"
     },
     "strava": "Strava",
     "stravaDescription": "Conecta tu cuenta de Strava para sincronizar tus actividades con tu historial de entrenamientos.",
@@ -6939,7 +7038,7 @@
     "stravaClientId": "ID de cliente",
     "stravaClientSecret": "Secreto de cliente",
     "stravaCredentialsSaved": "Credenciales guardadas",
-    "stravaCredentialsSavedPlaceholder": "Guardadas — introduce nuevas para reemplazar",
+    "stravaCredentialsSavedPlaceholder": "Guardadas. Introduce nuevas para reemplazar",
     "stravaSaveCredentials": "Guardar",
     "stravaUnavailable": "Strava no está configurado en este servidor. Añade arriba tus propias credenciales de API de Strava o pide a tu administrador que configure la app compartida.",
     "stravaConnect": "Conectar Strava",
@@ -6977,26 +7076,33 @@
         "title": "Progreso de sincronización",
         "receivedLabel": "Registros recibidos",
         "oldestLabel": "Lectura más antigua alcanzada",
-        "flowing": "Han llegado datos en la última hora — la app del iPhone sigue enviando.",
-        "waiting": "Esperando a que la app del iPhone envíe más datos. La transferencia continúa cuando la app está abierta o cuando iOS le concede tiempo en segundo plano — una pausa durante la primera sincronización grande es normal, no un error."
+        "flowing": "Han llegado datos en la última hora. La app del iPhone sigue enviando.",
+        "waiting": "Esperando a que la app del iPhone envíe más datos. La transferencia continúa cuando la app está abierta o cuando iOS le concede tiempo en segundo plano. Una pausa durante la primera sincronización grande es normal, no un error."
       },
       "delivery": {
         "title": "Entrega",
         "lastTriggerLabel": "La última sincronización llegó",
         "lastBackgroundLabel": "Última sincronización en segundo plano",
-        "backgroundNever": "Nunca — hasta ahora todas las sincronizaciones llegaron con la app abierta",
+        "backgroundNever": "Nunca: hasta ahora todas las sincronizaciones llegaron con la app abierta",
         "noSyncYet": "Aún no ha llegado ninguna sincronización, así que no hay nada que informar aquí.",
         "trigger": {
           "foreground": "con la app abierta",
           "background": "en segundo plano",
           "push": "desde un aviso push",
-          "unknown": "la app no informó del desencadenante"
+          "unknown": "la app no informó del desencadenante",
+          "manual": "desde «Sincronizar todo»"
         }
+      },
+      "freshness": {
+        "title": "Por tipo de dato",
+        "lastReceived": "Última recepción {relative}",
+        "lastNewValue": "Último valor nuevo {relative}",
+        "never": "Aún no recibido"
       }
     },
     "garminInfo": {
       "title": "Garmin",
-      "body": "Garmin no tiene conexión directa aquí. Conéctalo a través de Apple Health (iOS) o Google Health Connect (Android). Las métricas propias de Garmin — Body Battery, Training Load, estado de HRV, VO₂ máx.— no las comparte Garmin con ninguna de las dos plataformas.",
+      "body": "Garmin no tiene conexión directa aquí. Conéctalo a través de Apple Health (iOS) o Google Health Connect (Android). Las métricas propias de Garmin (Body Battery, Training Load, estado de HRV, VO₂ máx.) no las comparte Garmin con ninguna de las dos plataformas.",
       "docsLink": "Leer la guía"
     },
     "glucoseReference": {
@@ -7052,6 +7158,12 @@
       "description": "Esto comparte o exporta tus datos de salud. Confirma que eres tú para continuar.",
       "signInAgain": "Vuelve a iniciar sesión y inténtalo de nuevo. Tu cuenta no tiene contraseña ni llave de acceso que confirmar aquí.",
       "failed": "No ha funcionado. Revisa lo que has introducido e inténtalo de nuevo."
+    },
+    "passwordTitle": "Contraseña",
+    "tokenNameLabel": "Nombre del token",
+    "displayCard": {
+      "title": "Visualización",
+      "description": "Idioma, unidades y formatos; se guardan en cuanto los cambias."
     }
   },
   "admin": {
@@ -7084,14 +7196,14 @@
     "aiServerKey": {
       "title": "Clave de IA del servidor",
       "description": "Una clave del operador para las cuentas que no tienen una propia.",
-      "byokHint": "La clave propia del usuario (BYOK, inicio de sesión de ChatGPT o proveedor local) siempre tiene prioridad — la clave del servidor es el último paso de la cadena de proveedores.",
+      "byokHint": "La clave propia del usuario (BYOK, inicio de sesión de ChatGPT o proveedor local) siempre tiene prioridad; la clave del servidor es el último paso de la cadena de proveedores.",
       "consentHint": "Las solicitudes con la clave del servidor requieren el consentimiento de IA activo del usuario; sin un recibo de consentimiento no se envía nada.",
       "baseUrlHint": "La URL base determina la API: se reconoce una URL de Anthropic como https://api.anthropic.com/v1, cualquier otro host se llama a través de la API compatible con OpenAI.",
       "statusConfigured": "Configurada",
       "statusNotConfigured": "Sin configurar",
       "keyLabel": "Clave de API",
       "keyPlaceholder": "sk-...",
-      "keyPlaceholderSet": "Guardada ({preview}) — introduce una clave nueva para reemplazarla",
+      "keyPlaceholderSet": "Guardada ({preview}). Introduce una clave nueva para reemplazarla",
       "modelLabel": "Modelo",
       "baseUrlLabel": "URL base",
       "save": "Guardar",
@@ -7125,7 +7237,10 @@
       "typeCodex": "Inicio de sesión de ChatGPT (personal)",
       "typeLocal": "Modelo local (personal)",
       "typeGateway": "Pasarela compatible con OpenAI (personal)",
-      "spendToday": "Hoy ({date}): {total} tokens, {operator} de ellos en la clave del operador."
+      "spendToday": "Hoy ({date}): {total} tokens, {operator} de ellos en la clave del operador.",
+      "statusPaused": "En pausa",
+      "pausedHint": "En pausa tras fallos repetidos para {count} usuarios hasta {at}. Después se vuelve a intentar automáticamente.",
+      "modelNotServed": "El endpoint ya no ofrece el modelo {model}. Elige en los ajustes de IA un modelo que ofrezca."
     },
     "aiQuality": {
       "title": "Calidad de los análisis",
@@ -7169,9 +7284,9 @@
     "defaultLanguage": "Idioma predeterminado",
     "defaultLanguageDescription": "Se usa para los nuevos usuarios y como reserva.",
     "defaultUserTimezone": "Zona horaria predeterminada para cuentas nuevas",
-    "defaultUserTimezoneDescription": "Se usa para cuentas nuevas que no tienen una zona detectada por el navegador. No afecta a los usuarios existentes.",
+    "defaultUserTimezoneDescription": "Se usa en cuentas nuevas sin zona detectada por el navegador; las cuentas existentes conservan la suya.",
     "defaultUserTimezoneFallback": "Europe/Berlin (predeterminada)",
-    "servicesGlobal": "Servicios (global)",
+    "servicesGlobal": "Canales y API",
     "servicesGlobalDescription": "Los servicios desactivados no están disponibles para ningún usuario.",
     "telegramGlobal": "Permitir notificaciones de Telegram.",
     "ntfyGlobal": "Permitir notificaciones de ntfy.",
@@ -7179,19 +7294,21 @@
     "integrationWebPush": "Web Push",
     "offlineGeoLabel": "Datos geográficos",
     "offlineGeoEnabled": "Sin conexión (GeoLite2)",
-    "offlineGeoFallback": "En línea ({host}) — monta las bases GeoLite2 y define GEOLITE2_DIR",
+    "offlineGeoFallback": "En línea ({host}): monta las bases GeoLite2 y define GEOLITE2_DIR",
+    "offlineGeoOff": "Desactivado",
+    "offlineGeoChosen": "En línea ({host})",
     "apiGlobal": "Permitir endpoints de API y tokens de API.",
     "umamiTitle": "Umami",
-    "umamiDescription": "Analítica web con Umami",
+    "umamiDescription": "Analítica web con Umami.",
     "glitchtipTitle": "GlitchTip",
-    "glitchtipDescription": "Seguimiento de errores con GlitchTip",
+    "glitchtipDescription": "Seguimiento de errores con GlitchTip.",
     "webPushVapidTitle": "Web Push VAPID",
-    "umamiEnabled": "Activar el seguimiento de Umami.",
+    "umamiEnabled": "Activar el seguimiento de Umami",
     "umamiScriptUrl": "URL del script de Umami",
     "umamiScriptUrlPlaceholder": "https://analytics.example.com/script.js",
     "umamiWebsiteId": "ID del sitio web de Umami",
     "umamiWebsiteIdPlaceholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-    "glitchtipEnabled": "Activar el seguimiento de errores de GlitchTip.",
+    "glitchtipEnabled": "Activar el seguimiento de errores de GlitchTip",
     "glitchtipDsn": "GlitchTip DSN",
     "glitchtipDsnPlaceholder": "https://<public-key>@glitchtip.example.com/<project-id>",
     "glitchtipEnvironment": "Entorno de GlitchTip",
@@ -7253,12 +7370,12 @@
       "title": "Disponibilidad de módulos",
       "description": "Desactiva un módulo para todo el servidor.",
       "saveError": "No se pudo actualizar la disponibilidad de módulos.",
-      "detail": "Un módulo desactivado aquí queda apagado para todas las cuentas, sin importar la preferencia personal. Los dominios principales (peso, presión arterial, pulso, medicación) están siempre activos y no se pueden desactivar.",
-      "coachFollowsSwitch": "Sigue el interruptor del Coach en Asistente."
+      "detail": "El peso, la presión arterial y el pulso son datos básicos y siempre están activos.",
+      "coachFollowsSwitch": "Sigue el interruptor del Coach en la sección Coach."
     },
     "invites": {
-      "title": "Invitaciones",
-      "description": "Enlaces de invitación para el registro: funcionan incluso con el registro cerrado.",
+      "title": "Enlaces de invitación",
+      "description": "Cada enlace permite un registro aunque el registro esté cerrado.",
       "create": "Crear invitación",
       "createTitle": "Crear invitación",
       "createDescription": "El enlace permite registrarse incluso con el registro cerrado.",
@@ -7304,8 +7421,8 @@
       "revokedToast": "Invitación revocada.",
       "revokeError": "No se pudo revocar la invitación."
     },
-    "userManagement": "Gestión de usuarios",
-    "userManagementDescription": "Gestiona las cuentas: roles, restablecimientos de contraseña y cierres de sesión forzados.",
+    "userManagement": "Cuentas",
+    "userManagementDescription": "Roles, restablecimientos de contraseña y cierres de sesión forzados de cada cuenta.",
     "userName": "Nombre",
     "userEmail": "Correo electrónico",
     "userRole": "Rol",
@@ -7339,7 +7456,6 @@
     "tokenNeverUsed": "Nunca",
     "tokensEmptyTitle": "Aún no hay tokens de API",
     "tokensEmptyDescription": "Los tokens se emiten cuando un cliente nativo inicia sesión o desde Ajustes → Cuenta.",
-    "loginOverview": "Resumen de inicios de sesión",
     "loginOverviewDescription": "Eventos de inicio de sesión y autenticación de todas las cuentas, filtrables y exportables como CSV.",
     "allAuthEvents": "Todos los eventos de autenticación",
     "failedOnly": "Solo fallidos",
@@ -7372,6 +7488,7 @@
     "finalDelete": "Eliminar permanentemente",
     "deletedResult": "Eliminadas {rows} filas en {tables} tablas. Se conservaron las cuentas de usuario y las credenciales de inicio de sesión.",
     "authRegister": "Registro",
+    "authClaim": "Perfil asumido",
     "authLogin": "Iniciar sesión",
     "authLoginPasskey": "Inicio de sesión con passkey",
     "authLoginPassword": "Inicio de sesión con contraseña",
@@ -7446,7 +7563,7 @@
       },
       "services": {
         "title": "Servicios",
-        "subtitle": "Activa o desactiva los canales de notificación y las integraciones en todo el sistema."
+        "subtitle": "Activa o desactiva los canales de notificación y la API en todo el servidor."
       },
       "integrations": {
         "title": "Integraciones",
@@ -7532,7 +7649,8 @@
         "refresh": "Actualizar",
         "eventDetails": "Detalles del evento",
         "closeDetails": "Cerrar detalles",
-        "processDetail": "El búfer es volátil y está limitado a 500 entradas."
+        "processDetail": "El búfer es volátil y está limitado a 500 entradas.",
+        "cardTitle": "Eventos recientes"
       },
       "backups": {
         "title": "Copias de seguridad",
@@ -7584,7 +7702,7 @@
         "restorePromptLabel": "Escribe RESTORE para continuar",
         "previewTitle": "Contenido de la copia",
         "previewLoading": "Leyendo el contenido…",
-        "previewUnavailable": "No se pudo leer el contenido — restaurar sigue siendo posible.",
+        "previewUnavailable": "No se pudo leer el contenido, pero restaurar sigue siendo posible.",
         "previewStillReading": "Esta copia se hizo con una versión anterior, así que su contenido se está leyendo completo, y con un historial grande eso lleva un rato. Vuelve a abrir este diálogo en unos minutos para verlo. Restaurar no depende de ello.",
         "previewEmpty": "El archivo no contiene registros.",
         "previewOther": "Otros registros",
@@ -7699,7 +7817,8 @@
         "restoreSkippedCycleCiphertext": "Nota o etiqueta del ciclo cifrada con una clave que este servidor no tiene (el día o el síntoma se conserva sin ella)",
         "restoreSkippedMoodLabelCiphertext": "Nombre de etiqueta o grupo de ánimo cifrado con una clave que este servidor no tiene (se conserva sin el nombre)",
         "restoreSkippedVisitCiphertext": "Texto de visita o profesional cifrado con una clave que este servidor no tiene (se conserva sin él)",
-        "restoreSkippedVaccinationCiphertext": "Nota de vacunación cifrada con una clave que este servidor no tiene (la dosis se conserva sin ella)"
+        "restoreSkippedVaccinationCiphertext": "Nota de vacunación cifrada con una clave que este servidor no tiene (la dosis se conserva sin ella)",
+        "restoreSkippedEnvironmentLocationCiphertext": "Ubicación de un periodo o día ambiental cifrada con una clave que este servidor no tiene (se conserva cifrada, esos días no se actualizan)"
       },
       "danger-zone": {
         "title": "Zona de peligro",
@@ -7716,7 +7835,6 @@
       "encryption": {
         "title": "Cifrado",
         "subtitle": "Cobertura de cifrado y estado de rotación de claves para los datos en reposo.",
-        "loading": "Cargando el estado de cifrado...",
         "loadError": "No se pudo cargar el estado de cifrado.",
         "coverageTitle": "Cobertura",
         "coverageDescription": "Cuántas filas cifradas hay bajo cada id de clave.",
@@ -7761,12 +7879,45 @@
         "backupsNone": "Ninguna copia ha registrado todavía las claves que necesita.",
         "backupsStillNeed": "Todas las filas están rotadas, pero las copias aún necesitan {keys}",
         "backupsUnrecordedBadge": "Todas las filas están rotadas, pero copias antiguas pueden necesitar aún una clave retirada",
-        "backupsDetail": "La rotación vuelve a cifrar cada fila, pero una copia conserva la clave con la que se escribió su contenido, y restaurarla necesita esa clave. Mantén una clave retirada en ENCRYPTION_KEYS hasta que no aparezca abajo."
+        "backupsDetail": "La rotación vuelve a cifrar cada fila, pero una copia conserva la clave con la que se escribió su contenido, y restaurarla necesita esa clave. Mantén una clave retirada en ENCRYPTION_KEYS hasta que no aparezca abajo.",
+        "columnsShow": "Mostrar la tabla ({count} con filas)",
+        "columnsHide": "Ocultar la tabla",
+        "columnsShowAll": "Mostrar las {count} columnas",
+        "columnsShowWithRows": "Solo columnas con filas",
+        "columnsNoneWithRows": "Ninguna columna cifrada contiene filas todavía."
+      },
+      "maintenance": {
+        "title": "Mantenimiento de la tabla de mediciones",
+        "description": "Libera el espacio que ocupaban los restos antiguos de sincronización, cuando la limpieza ya ha terminado.",
+        "body": "Ejecuta un vacuum de la tabla de mediciones y después reconstruye sus índices, uno a uno. Leer y guardar siguen funcionando mientras se ejecuta. Elige una hora tranquila y deja espacio libre en disco para una copia más del índice más grande.",
+        "tableSize": "Tabla con índices",
+        "indexSize": "Índices",
+        "loading": "Comprobando el estado del mantenimiento…",
+        "loadError": "No se pudo leer el estado del mantenimiento.",
+        "unavailable": "No hay ningún proceso en segundo plano conectado, así que el mantenimiento no puede ejecutarse aquí.",
+        "purgePending": "La limpieza de restos antiguos de sincronización sigue en marcha. El mantenimiento podrá empezar cuando termine.",
+        "state": {
+          "idle": "Aún no se ha ejecutado.",
+          "queued": "Esperando al proceso en segundo plano.",
+          "running": "En marcha desde las {since}. En una instancia grande puede tardar un rato.",
+          "completed": "Terminado el {at}.",
+          "refusedPurge": "No empezó porque la limpieza seguía en marcha. Vuelve a iniciarlo cuando la limpieza haya terminado.",
+          "alreadyRunning": "No empezó porque ya había otra ejecución trabajando.",
+          "failed": "Detenido el {at}. El registro de la aplicación indica el paso y el runbook explica qué revisar."
+        },
+        "start": "Iniciar mantenimiento",
+        "confirmTitle": "¿Iniciar el mantenimiento ahora?",
+        "confirmBody": "Se ejecuta en segundo plano, paso a paso, y puede tardar un rato. Si hoy aún no has hecho una copia de seguridad, hazla antes.",
+        "confirm": "Iniciar",
+        "cancel": "Cancelar",
+        "started": "Mantenimiento iniciado.",
+        "alreadyQueued": "Ya hay un mantenimiento en cola o en marcha.",
+        "startFailed": "No se pudo iniciar el mantenimiento."
       }
     },
     "carrier": "Operador",
     "mfaRequired": "Exigir un segundo factor",
-    "mfaRequiredDescription": "Cada cuenta sin un segundo factor activo se dirige a la configuración tras iniciar sesión. Esto pide a los usuarios web que lo configuren, pero no bloquea el acceso directo por API o nativo (Bearer) de las cuentas que aún no lo tienen.",
+    "mfaRequiredDescription": "Las cuentas sin segundo factor van a configurarlo tras iniciar sesión en la web; el acceso por API o nativo (Bearer) sigue abierto.",
     "mfaEnforcedOn": "MFA activado",
     "mfaEnforcedOff": "MFA desactivado",
     "mfaEnforcedOnHint": "Este usuario debe usar un segundo factor. Haz clic para dejar de exigirlo.",
@@ -7864,7 +8015,9 @@
       "restartNote": "Reinicia HealthLog después del cambio.",
       "lastResort": "Último recurso, solo si estás seguro de que la clave es correcta y ninguna de las tres opciones sirve: define {setting} y reinicia. HealthLog sirve igualmente y solo registra el hallazgo. Esto desactiva una comprobación de seguridad: con una clave incorrecta falla cada valor cifrado y los datos nuevos se escriben con esa clave.",
       "codes": "Para el administrador: las peticiones a la API responden 503 con el código de error {code}, y /api/health indica el motivo {reason}."
-    }
+    },
+    "loginOverviewCardTitle": "Eventos de inicio de sesión",
+    "userColumn": "Usuario"
   },
   "achievements": {
     "title": "Logros",
@@ -7880,7 +8033,9 @@
     "noneUnlockedYet": "Aún no has desbloqueado ningún logro.",
     "pointsValue": "{points} puntos",
     "metricCount": "{count}",
-    "metricDays": "{count} días",
+    "metricDaysOne": "{count} día",
+    "metricDaysFew": "{count} días",
+    "metricDaysOther": "{count} días",
     "metricPercent": "{count}%",
     "badges": {
       "intakeTotal1": {
@@ -7902,14 +8057,6 @@
       "intakeTotal300": {
         "title": "Leyenda de las tomas",
         "description": "Registra 300 tomas de medicación."
-      },
-      "overIntake1": {
-        "title": "Dosis doble",
-        "description": "Toma la medicación al menos una vez más de lo previsto."
-      },
-      "skippedIntake1": {
-        "title": "Un paso atrás",
-        "description": "Omite al menos una toma planificada."
       },
       "passkeyCreated1": {
         "title": "Clave de acceso creada",
@@ -7936,19 +8083,19 @@
         "description": "Toma todos los medicamentos a tiempo durante 1 día."
       },
       "compliance801": {
-        "title": "Adherencia 80% · 1d",
+        "title": "Adherencia del 80% durante 1 día",
         "description": "Alcanza al menos un 80% de adherencia de 30 días durante 1 día."
       },
       "bmiGreen1": {
-        "title": "IMC en verde · 1d",
+        "title": "IMC en verde durante 1 día",
         "description": "Mantén tu IMC en el rango normal durante 1 día."
       },
       "bpGreen1": {
-        "title": "Presión en verde · 1d",
+        "title": "Presión en verde durante 1 día",
         "description": "Mantén tu presión arterial en el rango normal durante 1 día."
       },
       "pulseGreen1": {
-        "title": "Pulso en verde · 1d",
+        "title": "Pulso en verde durante 1 día",
         "description": "Mantén tu pulso en reposo en el rango normal durante 1 día."
       },
       "onTimePerfect7": {
@@ -7956,19 +8103,19 @@
         "description": "Toma todos los medicamentos a tiempo durante 7 días seguidos."
       },
       "compliance807": {
-        "title": "Adherencia 80% · 7d",
+        "title": "Adherencia del 80% durante 7 días",
         "description": "Alcanza al menos un 80% de adherencia de 30 días durante 7 días seguidos."
       },
       "bmiGreen7": {
-        "title": "IMC en verde · 7d",
+        "title": "IMC en verde durante 7 días",
         "description": "Mantén tu IMC en el rango normal durante 7 días seguidos."
       },
       "bpGreen7": {
-        "title": "Presión en verde · 7d",
+        "title": "Presión en verde durante 7 días",
         "description": "Mantén tu presión arterial en el rango normal durante 7 días seguidos."
       },
       "pulseGreen7": {
-        "title": "Pulso en verde · 7d",
+        "title": "Pulso en verde durante 7 días",
         "description": "Mantén tu pulso en reposo en el rango normal durante 7 días seguidos."
       },
       "onTimePerfect30": {
@@ -7976,19 +8123,19 @@
         "description": "Toma todos los medicamentos a tiempo durante 30 días seguidos."
       },
       "compliance8030": {
-        "title": "Adherencia 80% · 30d",
+        "title": "Adherencia del 80% durante 30 días",
         "description": "Alcanza al menos un 80% de adherencia de 30 días durante 30 días seguidos."
       },
       "bmiGreen30": {
-        "title": "IMC en verde · 30d",
+        "title": "IMC en verde durante 30 días",
         "description": "Mantén tu IMC en el rango normal durante 30 días seguidos."
       },
       "bpGreen30": {
-        "title": "Presión en verde · 30d",
+        "title": "Presión en verde durante 30 días",
         "description": "Mantén tu presión arterial en el rango normal durante 30 días seguidos."
       },
       "pulseGreen30": {
-        "title": "Pulso en verde · 30d",
+        "title": "Pulso en verde durante 30 días",
         "description": "Mantén tu pulso en reposo en el rango normal durante 30 días seguidos."
       },
       "onTimePerfect180": {
@@ -7996,19 +8143,19 @@
         "description": "Toma todos los medicamentos a tiempo durante 180 días seguidos."
       },
       "compliance80180": {
-        "title": "Adherencia 80% · 180d",
+        "title": "Adherencia del 80% durante 180 días",
         "description": "Alcanza al menos un 80% de adherencia de 30 días durante 180 días seguidos."
       },
       "bmiGreen180": {
-        "title": "IMC en verde · 180d",
+        "title": "IMC en verde durante 180 días",
         "description": "Mantén tu IMC en el rango normal durante 180 días seguidos."
       },
       "bpGreen180": {
-        "title": "Presión en verde · 180d",
+        "title": "Presión en verde durante 180 días",
         "description": "Mantén tu presión arterial en el rango normal durante 180 días seguidos."
       },
       "pulseGreen180": {
-        "title": "Pulso en verde · 180d",
+        "title": "Pulso en verde durante 180 días",
         "description": "Mantén tu pulso en reposo en el rango normal durante 180 días seguidos."
       },
       "onTimePerfect360": {
@@ -8016,19 +8163,19 @@
         "description": "Toma todos los medicamentos a tiempo durante 360 días seguidos."
       },
       "compliance80360": {
-        "title": "Adherencia 80% · 360d",
+        "title": "Adherencia del 80% durante 360 días",
         "description": "Alcanza al menos un 80% de adherencia de 30 días durante 360 días seguidos."
       },
       "bmiGreen360": {
-        "title": "IMC en verde · 360d",
+        "title": "IMC en verde durante 360 días",
         "description": "Mantén tu IMC en el rango normal durante 360 días seguidos."
       },
       "bpGreen360": {
-        "title": "Presión en verde · 360d",
+        "title": "Presión en verde durante 360 días",
         "description": "Mantén tu presión arterial en el rango normal durante 360 días seguidos."
       },
       "pulseGreen360": {
-        "title": "Pulso en verde · 360d",
+        "title": "Pulso en verde durante 360 días",
         "description": "Mantén tu pulso en reposo en el rango normal durante 360 días seguidos."
       },
       "moodFirst": {
@@ -8112,15 +8259,15 @@
         "description": "Cambiaste el idioma de la app al menos una vez."
       },
       "missFree7": {
-        "title": "Sin dosis perdidas · 7d",
+        "title": "Sin dosis perdidas en 7 días",
         "description": "7 días consecutivos sin una dosis perdida."
       },
       "missFree30": {
-        "title": "Sin dosis perdidas · 30d",
+        "title": "Sin dosis perdidas en 30 días",
         "description": "30 días consecutivos sin una dosis perdida."
       },
       "missFree90": {
-        "title": "Sin dosis perdidas · 90d",
+        "title": "Sin dosis perdidas en 90 días",
         "description": "90 días consecutivos sin una dosis perdida."
       },
       "measurementWeeks4": {
@@ -8129,10 +8276,10 @@
       },
       "selfContextComplete": {
         "title": "Autoinforme al día",
-        "description": "Los cuatro campos del autoinforme completados — el Coach conoce tu contexto."
+        "description": "Los cuatro campos del autoinforme completados: el Coach conoce tu contexto."
       },
       "sleepLog7": {
-        "title": "Registro de sueño · 7d",
+        "title": "Registro de sueño durante 7 días",
         "description": "Datos de sueño registrados durante 7 días consecutivos."
       }
     },
@@ -8151,7 +8298,7 @@
     },
     "hiddenCard": {
       "title": "Logro oculto",
-      "description": "Sigue registrando — quizá te topes con él.",
+      "description": "Sigue registrando y quizá te topes con él.",
       "ariaLabel": "Logro oculto bloqueado"
     },
     "hiddenUnlockToast": {
@@ -8160,7 +8307,7 @@
     "dashboardCard": {
       "title": "Desbloqueos recientes",
       "viewAll": "Ver todo",
-      "empty": "Aún no hay logros — sigue registrando para desbloquear el primero."
+      "empty": "Aún no hay logros. Sigue registrando para desbloquear el primero."
     }
   },
   "notifications": {
@@ -8222,9 +8369,6 @@
       "enabledToast": "Avisos proactivos del Coach activados.",
       "disabledToast": "Avisos proactivos del Coach desactivados.",
       "saveError": "No se pudo guardar. Inténtalo de nuevo más tarde.",
-      "suggestionsLabel": "Sugerencias de ejemplo",
-      "suggestionsDesc": "Muestra de vez en cuando una pregunta de ejemplo en la pantalla del Coach.",
-      "suggestionsAria": "Activar o desactivar las sugerencias de ejemplo del Coach",
       "aiComposedLabel": "Deja que el Coach redacte el aviso",
       "aiComposedDesc": "Cuando hay un proveedor disponible, el aviso proactivo lo redacta el modelo en lugar de la plantilla fija. Desactivado por defecto.",
       "aiComposedAria": "Activar o desactivar el aviso proactivo redactado por IA"
@@ -8295,7 +8439,27 @@
     "loginRequired": "Inicia sesión para gestionar las notificaciones.",
     "someChannelsGloballyDisabled": "Uno o más canales están desactivados en los ajustes y no recibirán notificaciones.",
     "reminderSettingsLink": "Ajustes de recordatorios",
-    "channelsLink": "Canales"
+    "channelsLink": "Canales",
+    "handover": {
+      "claimedTitle": "{name} ya tiene su propia cuenta",
+      "claimedEnd": "{name} ha asumido su historial de salud. Tu acceso ha terminado.",
+      "claimedRead": "{name} ha asumido su historial de salud. Puedes seguir viéndolo, pero ya no cambiarlo.",
+      "claimedManage": "{name} ha asumido su historial de salud. Puedes seguir gestionándolo hasta que decida otra cosa.",
+      "changedTitle": "{name} ha cambiado tu acceso",
+      "changedEnd": "Tu acceso al historial de salud de {name} ha terminado.",
+      "changedRead": "Ahora puedes ver el historial de salud de {name}, pero no cambiarlo.",
+      "changedManage": "Puedes gestionar el historial de salud de {name}.",
+      "unnamed": {
+        "claimedTitle": "La persona a la que cuidabas ya tiene su propia cuenta",
+        "claimedEnd": "La persona a la que cuidabas ha asumido su historial de salud. Tu acceso ha terminado.",
+        "claimedRead": "La persona a la que cuidabas ha asumido su historial de salud. Puedes seguir viéndolo, pero ya no modificarlo.",
+        "claimedManage": "La persona a la que cuidabas ha asumido su historial de salud. Puedes seguir gestionándolo hasta que decida otra cosa.",
+        "changedTitle": "Tu acceso a un historial de salud ha cambiado",
+        "changedEnd": "Tu acceso al historial de salud de la persona a la que cuidabas ha terminado.",
+        "changedRead": "Ahora puedes ver el historial de salud de la persona a la que cuidabas, pero no modificarlo.",
+        "changedManage": "Puedes gestionar el historial de salud de la persona a la que cuidabas."
+      }
+    }
   },
   "i18n": {
     "maintainershipBanner": {
@@ -8326,7 +8490,7 @@
       }
     },
     "edit": {
-      "title": "Editar rango objetivo — {metric}",
+      "title": "Editar rango objetivo: {metric}",
       "description": "Ajusta el rango objetivo usado en gráficas, insights y el informe médico. Valores en {unit}.",
       "derivedHint": "Esta tarjeta se calcula a partir de otras métricas. Edita en su lugar los objetivos subyacentes (p. ej. tensión arterial o peso).",
       "minLabel": "Mín",
@@ -8350,15 +8514,19 @@
     "currentValue": "Actual: {value} {unit}",
     "targetRangeValue": "Rango objetivo: {min}–{max} {unit}",
     "sourceLabel": "Fuente: {source}",
+    "sourceNames": {
+      "moodEntries": "Entradas de ánimo",
+      "sevenDays": "7 días"
+    },
     "inTarget": "En rango objetivo",
     "aboveTarget": "{delta} {unit} por encima del rango",
     "belowTarget": "{delta} {unit} por debajo del rango",
     "diastolic": "Diastólica",
-    "glucoseFasting": "Glucemia — en ayunas",
-    "glucosePostprandial": "Glucemia — posprandial",
-    "glucoseRandom": "Glucemia — cualquiera",
-    "glucoseBedtime": "Glucemia — antes de dormir",
-    "glucoseUnspecified": "Glucemia — sin indicar",
+    "glucoseFasting": "Glucemia (en ayunas)",
+    "glucosePostprandial": "Glucemia (posprandial)",
+    "glucoseRandom": "Glucemia (cualquiera)",
+    "glucoseBedtime": "Glucemia (antes de dormir)",
+    "glucoseUnspecified": "Glucemia (sin indicar)",
     "status": {
       "underweight": "Peso insuficiente",
       "normal": "Normal",
@@ -8444,7 +8612,7 @@
     "askMedicationName": "Indica el medicamento, p. ej. <b>tomado Ramipril</b>.",
     "medicationNotFoundExact": "Medicamento no encontrado. Envía el nombre exactamente como aparece en HealthLog.",
     "helpHeader": "<b>Comandos disponibles:</b>",
-    "helpBody": "/help — mostrar esta ayuda\n/add — registrar una toma\n/start — iniciar el bot\n\n<b>Comandos de texto:</b>\ntaken &lt;nombre&gt; — confirmar una toma\n\n<b>Botones en los recordatorios:</b>\n• Tomado — confirmar la toma\n• 🕐 1h / 🕐 3h — posponer el recordatorio\n• ⏭ Omitir — omitir la toma\n• ✓ Confirmar — confirmar una toma omitida",
+    "helpBody": "/help: mostrar esta ayuda\n/add: registrar una toma\n/start: iniciar el bot\n\n<b>Comandos de texto:</b>\ntaken &lt;nombre&gt;: confirmar una toma\n\n<b>Botones en los recordatorios:</b>\n• Tomado: confirmar la toma\n• 🕐 1h / 🕐 3h: posponer el recordatorio\n• ⏭ Omitir: omitir la toma\n• ✓ Confirmar: confirmar una toma omitida",
     "measureValuePrompt": "Responde con el valor para registrarlo (opcional).",
     "buttonMeasureValue": "Valor…",
     "measureValueSaved": "Lectura guardada.",
@@ -8469,9 +8637,9 @@
   },
   "lowStockReminders": {
     "title": "Quedan pocas existencias: {medName}",
-    "bodyToday": "{medName}: quedan {units} unidades — menos de un día de suministro.",
-    "bodyReorder": "{medName}: quedan {units} unidades. Las existencias se agotan hacia el {runsOutOn} — vuelve a pedir antes del {reorderBy}.",
-    "bodyLastDose": "{medName}: quedan {units} unidades — alrededor de tu última dosis. Las existencias se agotan hacia el {runsOutOn}.",
+    "bodyToday": "{medName}: quedan {units} unidades, menos de un día de suministro.",
+    "bodyReorder": "{medName}: quedan {units} unidades. Las existencias se agotan hacia el {runsOutOn}. Vuelve a pedir antes del {reorderBy}.",
+    "bodyLastDose": "{medName}: quedan {units} unidades, alrededor de tu última dosis. Las existencias se agotan hacia el {runsOutOn}.",
     "bodyExpired": "{medName}: no quedan existencias utilizables. {units} unidades están marcadas como caducadas.",
     "bodyAsNeeded": "{medName}: solo quedan {units} unidades. Vuelve a pedir antes de necesitar la próxima dosis."
   },
@@ -8502,7 +8670,7 @@
   },
   "clinicianView": {
     "title": "Registro de salud compartido",
-    "period": "Período del informe: {start} – {end}",
+    "period": "Período del informe: {start}–{end}",
     "expires": "Este enlace caduca el {date}.",
     "provenance": "Este es un resumen de solo lectura compartido por la persona a la que pertenece, exportado de sus datos de HealthLog autorregistrados. Los valores son autoinformados y pueden incluir lecturas sincronizadas desde dispositivos; trátelos como informados por el paciente, no como un examen clínico.",
     "labs": "Valores de laboratorio",
@@ -8526,7 +8694,7 @@
       "strain": "Puntuación de esfuerzo",
       "score": "Puntuación de bienestar"
     },
-    "footer": "Compartido desde HealthLog — un registro de salud autoalojado.",
+    "footer": "Compartido desde HealthLog, un registro de salud autoalojado.",
     "unlock": {
       "title": "Introduzca la frase de acceso",
       "description": "Este registro de salud compartido está protegido. Introduzca la frase de acceso que recibió para verlo.",
@@ -8561,7 +8729,11 @@
     },
     "course": "Tratamiento {n}",
     "courseRange": "del {start} al {end}",
-    "courseSince": "desde el {start}"
+    "courseSince": "desde el {start}",
+    "unavailable": {
+      "title": "Enlace caducado o no válido",
+      "description": "Este enlace para compartir ha caducado, se ha revocado o está incompleto. Pide un enlace nuevo a la persona que lo compartió."
+    }
   },
   "cycle": {
     "symptomCategory": {
@@ -8614,7 +8786,7 @@
       },
       "crosstab": {
         "description": "Cómo se compara cada medición entre tus fases lútea y folicular, con tus propios datos.",
-        "pairLabel": "{metric} · lútea vs. folicular",
+        "pairLabel": "{metric}: fase lútea vs. folicular",
         "detail": "Lútea {lutealAvg} {unit} ({lutealDays} días) vs. folicular {follicularAvg} {unit} ({follicularDays} días).",
         "metricRestingHeartRate": "Frecuencia cardíaca en reposo",
         "metricHrv": "Variabilidad de la frecuencia cardíaca",
@@ -8737,8 +8909,8 @@
       "ariaUnknown": "Aún no hay ciclo activo",
       "caption": "de tu ciclo",
       "firstPeriodCta": "Registrar mi primer periodo",
-      "periodOverdue": "Tu período llega más tarde de lo habitual — el conteo de días se pausa hasta que registres el próximo período.",
-      "periodOverdueDays": "Tu período llega {days} días más tarde de lo habitual — el conteo de días se pausa hasta que registres el próximo período.",
+      "periodOverdue": "Tu período llega más tarde de lo habitual. El conteo de días se pausa hasta que registres el próximo período.",
+      "periodOverdueDays": "Tu período llega {days} días más tarde de lo habitual. El conteo de días se pausa hasta que registres el próximo período.",
       "logPeriodCta": "Registrar período"
     },
     "calendar": {
@@ -8763,7 +8935,7 @@
     "predictions": {
       "title": "Qué viene después",
       "nextPeriod": "Próximo periodo",
-      "nextPeriodWindow": "{low} – {high}",
+      "nextPeriodWindow": "{low}–{high}",
       "fertileWindow": "Ventana fértil",
       "ovulation": "Ovulación estimada",
       "confidenceHigh": "Alta",
@@ -8772,7 +8944,7 @@
       "stillLearning": "Aún aprendiendo",
       "stillLearningBody": "Registra al menos tres ciclos completos y tus predicciones mejorarán. Hasta entonces es una estimación aproximada.",
       "rawMode": "Predicción desactivada",
-      "rawModeBody": "Has desactivado las predicciones — solo se muestran tus datos registrados, sin pronóstico.",
+      "rawModeBody": "Has desactivado las predicciones: solo se muestran tus datos registrados, sin pronóstico.",
       "none": "Aún no hay predicción. Registra un periodo para empezar.",
       "ovulationConfirmed": "Ovulación (confirmada)"
     },
@@ -8834,7 +9006,7 @@
       "temperatureSection": "Temperatura y ovulación",
       "intimacySection": "Intimidad y anticoncepción",
       "testsSection": "Pruebas",
-      "phaseDayHeader": "Día {day} · {phase}",
+      "phaseDayHeader": "Día {day}, {phase}",
       "bbtHint": "Mídela a primera hora de la mañana, antes de levantarte.",
       "titleForDate": "Registro del {date}",
       "descriptionToday": "Hoy. Flujo, síntomas y notas.",
@@ -8962,14 +9134,14 @@
     "postpone": {
       "menuItem": "Aplazar…",
       "title": "Aplazar vencimiento",
-      "description": "Solo mueve el vencimiento actual — el ritmo regular no cambia.",
+      "description": "Solo mueve el vencimiento actual; el ritmo regular no cambia.",
       "chip": "+{days} días",
       "dateLabel": "Nueva fecha",
       "confirm": "Aplazar"
     },
     "skip": {
       "heading": "Omitir este vencimiento",
-      "explainer": "Se registra honestamente como omitido — no como hecho. El intervalo se reinicia desde hoy.",
+      "explainer": "Se registra honestamente como omitido, no como hecho. El intervalo se reinicia desde hoy.",
       "action": "Omitir",
       "confirmTitle": "¿Omitir este vencimiento?"
     },
@@ -9011,10 +9183,10 @@
       "VISCERAL_FAT": "Grasa visceral",
       "BODY_MASS_INDEX": "Índice de masa corporal (IMC)",
       "WAIST_CIRCUMFERENCE": "Perímetro de cintura",
-      "PHQ9_SCORE": "PHQ-9 · ánimo",
-      "GAD7_SCORE": "GAD-7 · preocupación",
-      "WHO5_SCORE": "WHO-5 · bienestar",
-      "SCI_SCORE": "SCI · sueño"
+      "PHQ9_SCORE": "PHQ-9 (ánimo)",
+      "GAD7_SCORE": "GAD-7 (preocupación)",
+      "WHO5_SCORE": "WHO-5 (bienestar)",
+      "SCI_SCORE": "SCI (sueño)"
     },
     "typeGroups": {
       "vitals": "Constantes vitales",
@@ -9172,7 +9344,7 @@
       "emptyDescription": "Añade un valor para seguir este biomarcador con el tiempo.",
       "title": "Biomarcador",
       "genericDescription": "Un biomarcador de laboratorio que sigues. Añade lecturas para ver su evolución frente al rango de referencia.",
-      "valuesTitle": "{marker} — todas las lecturas",
+      "valuesTitle": "{marker}: todas las lecturas",
       "valuesDescription": "Cada lectura de este biomarcador. Edita o elimina una entrada directamente.",
       "backToMarker": "Volver a {marker}",
       "latestResult": "Último resultado"
@@ -9343,12 +9515,12 @@
       "dateLabel": "Fecha",
       "refLowLabel": "Referencia inferior",
       "refHighLabel": "Referencia superior",
-      "newBiomarker": "Nuevo biomarcador — se creará",
+      "newBiomarker": "Nuevo biomarcador: se creará",
       "linksExisting": "Se vincula a {name} existente",
       "duplicateWarning": "Ya existe un valor coincidente",
       "lowConfidence": "Verifica este valor",
       "lowConfidenceBadge": "Confianza baja",
-      "valueUnreadable": "Valor ilegible — introdúcelo manualmente",
+      "valueUnreadable": "Valor ilegible: introdúcelo manualmente",
       "saveSelected": "Guardar {count} seleccionados",
       "discardAll": "Descartar todo",
       "savedToast": "{count} resultados de laboratorio guardados",
@@ -9464,6 +9636,10 @@
     "vaccinations": {
       "label": "Vacunas",
       "description": "La cartilla de vacunación estructurada: dosis, serie, próximo refuerzo."
+    },
+    "timeline": {
+      "label": "Cronología",
+      "description": "Años de un vistazo: enfermedades, medicamentos y visitas junto a tus valores, además de tus propios acontecimientos vitales."
     }
   },
   "moduleOff": {
@@ -9495,8 +9671,8 @@
     },
     "form": {
       "date": "Fecha",
-      "catalogLabel": "Vacuna (catálogo)",
-      "identityHint": "Elige del catálogo o escríbela abajo: basta con una.",
+      "catalogLabel": "Vacuna",
+      "identityHint": "Elige una vacuna de la lista o escríbela abajo. Basta con una.",
       "catalogNone": "Elegir una vacuna",
       "catalogSearch": "Buscar vacunas",
       "catalogNoMatch": "No se encontró ninguna entrada del catálogo",
@@ -9616,10 +9792,31 @@
       "overdue": "Refuerzo pendiente desde el {date}",
       "dueSoon": "Refuerzo previsto el {date}",
       "current": "Próximo refuerzo el {date}"
+    },
+    "custom": {
+      "title": "Vacunas propias",
+      "add": "Añadir vacuna propia",
+      "name": "Nombre",
+      "components": "Protege contra",
+      "seriesDoses": "Dosis de la serie primaria",
+      "boosterMonths": "Refuerzo cada (meses)",
+      "saved": "Vacuna guardada",
+      "deleted": "Vacuna eliminada",
+      "deleteConfirm": "¿Eliminar esta vacuna? Las dosis ya registradas conservan su nombre.",
+      "saveFailed": "No se pudo guardar la vacuna.",
+      "nameTaken": "Ya tienes una vacuna con este nombre.",
+      "editTitle": "Editar vacuna propia",
+      "description": "Una vacuna que el catálogo no recoge, contada como cualquier entrada del catálogo.",
+      "componentsHint": "Elige todas las enfermedades de las que protege.",
+      "boosterHint": "Déjalo vacío si no hay refuerzo.",
+      "protectsAgainst": "Protege contra {list}.",
+      "deleteTitle": "¿Quitar la vacuna propia?",
+      "sectionDescription": "Vacunas que añadiste tú porque el catálogo no las recoge.",
+      "catalogGroup": "Catálogo"
     }
   },
   "illness": {
-    "title": "Diario de enfermedad",
+    "title": "Enfermedad",
     "subtitle": "Un registro retrospectivo de tus episodios de enfermedad y dolencias.",
     "settings": {
       "viewDescription": "Elige si los episodios se muestran como tarjetas o como lista compacta.",
@@ -9758,7 +9955,7 @@
     "loadError": "No se pudo cargar este episodio.",
     "backToList": "Volver al diario",
     "detail": {
-      "note": "Note"
+      "note": "Nota"
     },
     "edit": {
       "title": "Editar episodio",
@@ -9807,7 +10004,7 @@
       "dismiss": "Ahora no",
       "applied": "Añadido",
       "dismissed": "Descartado",
-      "failed": "No se pudo añadir — inténtalo de nuevo",
+      "failed": "No se pudo añadir. Inténtalo de nuevo",
       "checkup": {
         "title": "¿Añadir un recordatorio de revisión?"
       },
@@ -9895,7 +10092,9 @@
         "illness": "Enfermedad y recuperación",
         "cycle": "Ciclo",
         "correlations": "Relaciones entre métricas",
-        "snapshot": "Resumen de datos"
+        "snapshot": "Resumen de datos",
+        "environment": "Tiempo y aire",
+        "day": "Un día"
       },
       "window": {
         "last7days": "últimos 7 días",
@@ -10084,10 +10283,10 @@
     "saved": "Guardado",
     "error": "Algo salió mal. Inténtalo de nuevo.",
     "instrument": {
-      "phq9": "PHQ-9 · ánimo",
-      "gad7": "GAD-7 · preocupación",
-      "who5": "WHO-5 · bienestar",
-      "sci": "SCI · sueño"
+      "phq9": "PHQ-9 (ánimo)",
+      "gad7": "GAD-7 (preocupación)",
+      "who5": "WHO-5 (bienestar)",
+      "sci": "SCI (sueño)"
     },
     "instrumentSub": {
       "phq9": "Cribado de depresión, 9 preguntas",
@@ -10528,12 +10727,34 @@
       "daylight": "Luz diurna",
       "precip": "Precipitación",
       "pressureMean": "Presión atmosférica",
-      "pressureDelta": "Variación de presión"
+      "pressureDelta": "Variación de presión",
+      "pm25": "Partículas finas (PM2,5)",
+      "pm10": "Partículas (PM10)",
+      "no2": "Dióxido de nitrógeno",
+      "ozone8h": "Ozono (máximo de 8 horas)",
+      "europeanAqi": "Índice europeo de calidad del aire",
+      "uvIndexMax": "Índice UV (máximo)",
+      "dustMax": "Polvo del Sáhara",
+      "pollenMax": "Polen (valor más alto)"
+    },
+    "chip": {
+      "day": "Tiempo del {date}",
+      "pollenHigh": "Mucho polen: {kinds}",
+      "hotNight": "Noche cálida",
+      "veryPoorAir": "Aire muy malo"
+    },
+    "pollen": {
+      "alder": "aliso",
+      "birch": "abedul",
+      "grass": "gramíneas",
+      "mugwort": "artemisa",
+      "olive": "olivo",
+      "ragweed": "ambrosía"
     }
   },
   "documents": {
     "title": "Documentos",
-    "subtitle": "Cada carta, informe y escaneo en un solo lugar con búsqueda — cifrado en reposo.",
+    "subtitle": "Cada carta, informe y escaneo en un solo lugar con búsqueda, cifrado en reposo.",
     "pageUpload": "Subir",
     "ownerOnlyUpload": "Solo el titular del historial puede añadir documentos.",
     "kind": {
@@ -10575,15 +10796,15 @@
     },
     "error": {
       "fileTooLarge": "Este archivo supera el límite de {maxSize}.",
-      "quotaExceeded": "El almacenamiento está lleno — {used} de {quota} usados.",
+      "quotaExceeded": "El almacenamiento está lleno: {used} de {quota} usados.",
       "unsupportedType": "Este tipo de archivo no es compatible.",
       "purged": "Este documento se eliminó definitivamente y no se puede restaurar.",
       "duplicateExists": "Ya hay guardado un documento idéntico.",
-      "rateLimited": "Demasiadas subidas — inténtalo de nuevo en unos minutos.",
+      "rateLimited": "Demasiadas subidas. Inténtalo de nuevo en unos minutos.",
       "generic": "La subida falló. Inténtalo de nuevo."
     },
     "toast": {
-      "duplicate": "Ya estaba guardado — se resalta el documento existente.",
+      "duplicate": "Ya estaba guardado. Se resalta el documento existente.",
       "deleted": "Documento eliminado",
       "restoreFailed": "No se pudo restaurar el documento."
     },
@@ -10606,7 +10827,7 @@
     },
     "empty": {
       "title": "Tu archivo de documentos está vacío",
-      "description": "Guarda cartas médicas, resultados de laboratorio, imágenes, recetas y certificados de vacunación — cifrados y con búsqueda por tipo, afección y año.",
+      "description": "Guarda cartas médicas, resultados de laboratorio, imágenes, recetas y certificados de vacunación. Se guardan cifrados y puedes buscarlos por tipo, afección y año.",
       "action": "Subir un primer documento",
       "noMatchesTitle": "No hay documentos coincidentes",
       "noMatchesDescription": "Nada coincide con la búsqueda y los filtros actuales."
@@ -10646,9 +10867,9 @@
       "linkCondition": "Vincular",
       "noConditions": "Sin vincular a una afección",
       "previewUnavailable": "Sin vista previa integrada para este tipo de archivo",
-      "uploadedMeta": "Añadido el {date} · {size}",
+      "uploadedMeta": "Añadido el {date}, {size}",
       "importedFrom": "Importado de {system}",
-      "importedFromWithId": "Importado de {system} · ID {id}",
+      "importedFromWithId": "Importado de {system}, ID {id}",
       "sourceOther": "otro sistema",
       "share": "Compartir",
       "labValuesLink": "Ver {count} valores de laboratorio",
@@ -10748,7 +10969,7 @@
         "CONDITION": "Afección",
         "MEDICATION_STATEMENT": "Medicamento"
       },
-      "statedRange": "rango indicado {range}",
+      "statedRange": "Rango indicado {range}",
       "needsCheck": "Comprueba este valor contra el documento y luego guárdalo.",
       "verify": "Comprobar",
       "verifySave": "Guardar valor",
@@ -10864,6 +11085,21 @@
       "finishedHint": "Busca de nuevo o cambia un filtro para elegir más documentos.",
       "maxReached": "Puedes importar como máximo {max} documentos a la vez.",
       "noMatchHint": "Prueba con parte del nombre o quita la etiqueta y las fechas."
+    },
+    "customize": "Personalizar vista",
+    "layout": {
+      "viewDescription": "Tarjetas con miniatura o una lista compacta.",
+      "arrangementHeading": "Disposición",
+      "arrangementDescription": "Cada mes en su propio bloque o todo seguido a lo ancho.",
+      "stacked": "Meses apilados",
+      "flow": "Continuo",
+      "saveFailed": "No se pudo guardar la vista."
+    },
+    "deleteConfirm": {
+      "titleOne": "¿Eliminar este documento?",
+      "titleMany": "¿Eliminar {count} documentos?",
+      "body": "Puedes deshacerlo justo después. A los 30 días se elimina definitivamente.",
+      "action": "Eliminar"
     }
   },
   "selfDescription": {
@@ -10950,7 +11186,7 @@
       "genericDescription": "Una medición que registras. Añade valores para seguirla con el tiempo.",
       "emptyTitle": "Aún sin valores",
       "emptyDescription": "Añade tu primer valor para empezar a representar esta métrica.",
-      "valuesTitle": "{metric} — todos los valores",
+      "valuesTitle": "{metric}: todos los valores",
       "valuesDescription": "Todos los valores registrados de esta métrica.",
       "backToMetric": "Volver a {metric}"
     }
@@ -11003,14 +11239,14 @@
       }
     },
     "hydration": {
-      "referenceMeta": "Ingesta de referencia {value} {unit}/día · EFSA"
+      "referenceMeta": "Ingesta de referencia {value} {unit}/día (EFSA)"
     },
     "caffeine": {
-      "ceilingMeta": "Límite de seguridad {value} {unit}/día · EFSA"
+      "ceilingMeta": "Límite de seguridad {value} {unit}/día (EFSA)"
     },
     "micronutrients": {
       "title": "Vitaminas y minerales",
-      "rowMeta": "{days} de {window} días · ref. {value} {unit} (EFSA)",
+      "rowMeta": "{days} de {window} días, ref. {value} {unit} (EFSA)",
       "rowMetaNoRef": "{days} de {window} días",
       "footer": "{tracked} de {total} micronutrientes registrados tienen datos en este periodo.",
       "emptyTitle": "Aún no hay datos de micronutrientes sincronizados",
@@ -11025,7 +11261,7 @@
     },
     "push": {
       "title": "Tu resumen matinal",
-      "bodyProvisional": "{line} · El sueño de anoche aún no está disponible."
+      "bodyProvisional": "{line}\nEl sueño de anoche aún no está disponible."
     },
     "item": {
       "doseWindow": {
@@ -11413,7 +11649,7 @@
     "managed": {
       "title": "Perfiles de los que te ocupas",
       "description": "Historiales de salud sin inicio de sesión propio.",
-      "explainer": "Un perfil administrado es un historial de salud para alguien que no inicia sesión — una criatura, o una persona a la que cuidas. No tiene inicio de sesión ni dirección de correo, y tú pasas a ser su primera persona responsable. Más adelante puedes añadir otras, y cualquiera de vosotras puede entrar en el historial para mantenerlo al día.",
+      "explainer": "Un perfil administrado es un historial de salud para alguien que no inicia sesión, como una criatura o una persona a la que cuidas. No tiene inicio de sesión ni dirección de correo, y tú pasas a ser su primera persona responsable. Más adelante puedes añadir otras, y cualquiera de vosotras puede entrar en el historial para mantenerlo al día.",
       "nameLabel": "Nombre",
       "namePlaceholder": "El nombre con el que reconocerás este historial",
       "nameHint": "Hasta 80 caracteres. Se muestra allá donde aparezca este historial.",
@@ -11435,7 +11671,7 @@
       "creating": "Creando…",
       "created": "{name} ya está listo. Puedes entrar en ese historial desde el menú de la cuenta.",
       "errorStepUp": "Confirma tu segundo factor y vuelve a intentarlo.",
-      "errorOffline": "Esto no llegó al servidor. No ha cambiado nada — revisa tu conexión y vuelve a intentarlo.",
+      "errorOffline": "Esto no llegó al servidor. No ha cambiado nada. Revisa tu conexión y vuelve a intentarlo.",
       "errorInvalid": "El servidor rechazó esos datos. Revisa el nombre, la fecha y la zona horaria.",
       "errorFailed": "No se pudo crear el perfil.",
       "edit": "Editar",
@@ -11446,7 +11682,7 @@
       "editErrorFailed": "No se han podido guardar los cambios.",
       "delete": "Eliminar perfil",
       "deleteTitle": "¿Eliminar {name}?",
-      "deleteBody": "Todo lo registrado para {name} desaparece con el perfil — mediciones, medicamentos, documentos y notas. Esto no se puede deshacer.",
+      "deleteBody": "Todo lo registrado para {name} desaparece con el perfil: mediciones, medicamentos, documentos y notas. Esto no se puede deshacer.",
       "deleteGuardiansOne": "{count} persona se ocupa hoy de este historial y lo perderá.",
       "deleteGuardiansFew": "{count} personas se ocupan hoy de este historial y lo perderán.",
       "deleteGuardiansOther": "{count} personas se ocupan hoy de este historial y lo perderán.",
@@ -11475,7 +11711,47 @@
       "guardianErrorFailed": "No se pudo enviar la invitación.",
       "errorMfaRequired": "Esto necesita un segundo factor y tu cuenta aún no tiene ninguno. Configura uno en Ajustes → Seguridad y vuelve a intentarlo.",
       "rosterLoadError": "No se pudo cargar quién se ocupa de este historial.",
-      "errorRateLimit": "Demasiados perfiles creados en la última hora. Espera un poco y vuelve a intentarlo."
+      "errorRateLimit": "Demasiados perfiles creados en la última hora. Espera un poco y vuelve a intentarlo.",
+      "handover": {
+        "action": "Entregar",
+        "title": "Entregar a {name}",
+        "description": "Da a {name} un acceso propio. No se copia ni se mueve nada: el historial pasa a ser su cuenta.",
+        "guardiansLabel": "Acceso después de la entrega",
+        "guardiansHint": "Tu propuesta. {name} la ve y decide después de iniciar sesión.",
+        "access": {
+          "end": "Sin acceso",
+          "read": "Solo ver",
+          "manage": "Gestionar"
+        },
+        "expiryLabel": "Enlace válido durante",
+        "expiry1": "1 día",
+        "expiry7": "7 días",
+        "expiry14": "14 días",
+        "minorHint": "{name} tiene menos de 16 años. Vale la pena conservar el acceso de lectura y hablar el paso juntos.",
+        "irreversible": "En cuanto {name} use el enlace, la entrega no se puede deshacer. El historial será suyo y decidirá quién conserva el acceso.",
+        "afterwards": "{name} confirma personalmente el aviso y cualquier consentimiento de IA. Los recordatorios de este historial dejarán de llegarte.",
+        "replaceNote": "Crear un enlace nuevo retira el que está abierto.",
+        "create": "Crear enlace",
+        "creating": "Creando…",
+        "linkOnce": "Este enlace solo se muestra ahora. Dáselo a {name} en persona o por un canal de confianza, o deja que escanee el código.",
+        "qrAlt": "Código QR del enlace de entrega para {name}",
+        "urlLabel": "Enlace de entrega",
+        "copy": "Copiar",
+        "copied": "Enlace copiado",
+        "copyError": "No se pudo copiar el enlace. Selecciónalo y cópialo a mano.",
+        "linkExpires": "Válido hasta el {date}.",
+        "done": "Listo",
+        "pending": "Hay un enlace de entrega abierto hasta el {date}.",
+        "replace": "Nuevo enlace",
+        "revoke": "Retirar enlace",
+        "revoked": "Enlace retirado",
+        "revokeFailed": "No se pudo retirar el enlace. Vuelve a intentarlo.",
+        "errorFailed": "No se pudo crear el enlace de entrega.",
+        "errorRosterChanged": "Mientras tanto ha cambiado quién se ocupa del historial. Cierra esto y vuelve a abrirlo.",
+        "oidcOnly": "No se puede entregar un perfil mientras este servidor solo permita el inicio de sesión único.",
+        "loadError": "No se pudo cargar el estado de la entrega.",
+        "entryHint": "Cuando {name} quiera llevar este historial por su cuenta."
+      }
     },
     "toast": {
       "savedTo": "Guardado en el historial de {name}"
@@ -11594,7 +11870,13 @@
       "symptomEventDelete": "{name} eliminó una entrada de síntoma",
       "symptomDefinitionCreate": "{name} añadió un síntoma",
       "symptomDefinitionUpdate": "{name} cambió un síntoma",
-      "symptomDefinitionDelete": "{name} quitó un síntoma"
+      "symptomDefinitionDelete": "{name} quitó un síntoma",
+      "customVaccineCreate": "{name} añadió una vacuna propia",
+      "customVaccineUpdate": "{name} editó una vacuna propia",
+      "customVaccineDelete": "{name} quitó una vacuna propia",
+      "lifeEventCreate": "{name} añadió un acontecimiento vital",
+      "lifeEventUpdate": "{name} cambió un acontecimiento vital",
+      "lifeEventDelete": "{name} eliminó un acontecimiento vital"
     },
     "section": {
       "measurements": {
@@ -11644,12 +11926,28 @@
       "notFound": "Ese acceso ya no existe.",
       "revokeFailed": "No se pudo terminar el acceso.",
       "renounceFailed": "No se pudo devolver el acceso.",
-      "profileNotFound": "Ese perfil ya no está — puede que se haya eliminado, o que tu acceso haya terminado.",
+      "profileNotFound": "Ese perfil ya no está. Puede que se haya eliminado, o que tu acceso haya terminado.",
       "deleteProfileFailed": "No se pudo eliminar el perfil.",
       "removeGuardianFailed": "No se pudo terminar ese acceso."
     },
     "anamnesis": {
       "relativeNote": "Una entrada de antecedentes familiares describe a los familiares de esta persona. Añádela solo si querría que quedara registrada aquí."
+    },
+    "handoverDecision": {
+      "title": "Quién conserva el acceso a tu historial",
+      "description": "Decide qué pueden hacer a partir de ahora las personas que llevaron tu historial.",
+      "proposed": "Propuesto: {access}",
+      "settled": "Ya cambiado en Acceso compartido",
+      "empty": "Nadie más tenía acceso a tu historial.",
+      "later": "Puedes cambiarlo cuando quieras en Ajustes, Acceso compartido.",
+      "save": "Confirmar",
+      "saving": "Guardando…",
+      "decideLater": "Más tarde",
+      "errorFailed": "No se pudo guardar tu decisión. Vuelve a intentarlo.",
+      "loadError": "No se pudo cargar quién llevaba tu historial.",
+      "notificationsTitle": "Configura tus propios recordatorios",
+      "notificationsBody": "Hasta ahora, los recordatorios de este historial llegaban a las personas que lo llevaban. A partir de ahora te llegan a ti, en cuanto añadas un canal de notificaciones.",
+      "notificationsAction": "Abrir notificaciones"
     }
   },
   "encounters": {
@@ -11670,7 +11968,7 @@
       "both": "Ambos lados",
       "none": "Sin indicar"
     },
-    "bodySiteWithSide": "{site} · {side}",
+    "bodySiteWithSide": "{site} ({side})",
     "sectionTitle": "Citas",
     "sectionDescription": "Visitas médicas y citas reservadas en un solo sitio.",
     "add": "Cita",
@@ -11762,7 +12060,6 @@
     "title": "Consultas y médicos",
     "description": "Tu propia agenda: escribe una consulta una vez y elígela en todas partes.",
     "linkLabel": "Agenda",
-    "add": "Entrada",
     "searchPlaceholder": "Buscar nombre, consulta o especialidad",
     "loadError": "No se pudo cargar la agenda.",
     "emptyTitle": "Todavía no hay entradas",
@@ -11859,7 +12156,6 @@
     "unreadableLabel": "Síntoma ilegible",
     "intensityPill": "{value}/10",
     "entry": {
-      "sheetTitle": "Registrar síntoma",
       "sheetDescription": "Uno de tus propios síntomas, su intensidad y cuándo.",
       "symptom": "Síntoma",
       "symptomRequired": "Elige un síntoma.",
@@ -11908,5 +12204,411 @@
       "title": "Síntomas registrados",
       "filed": "registrado con esta enfermedad"
     }
+  },
+  "day": {
+    "scoreOfMax": "de {max}",
+    "cycleDay": "Día {n} del ciclo",
+    "cyclePhaseLine": {
+      "MENSTRUAL": "Día {n} del ciclo, fase menstrual",
+      "FOLLICULAR": "Día {n} del ciclo, fase folicular",
+      "OVULATORY": "Día {n} del ciclo, fase ovulatoria",
+      "LUTEAL": "Día {n} del ciclo, fase lútea"
+    },
+    "previousDay": "Día anterior",
+    "nextDay": "Día siguiente",
+    "close": "Cerrar día",
+    "hidePanel": "Ocultar día",
+    "showPanel": "Mostrar {date}",
+    "openDay": "Abrir día",
+    "viewWholeDay": "Ver el día completo",
+    "captureForDay": "Registrar para este día",
+    "empty": "No hay entradas para este día.",
+    "notShared": "Algunas áreas no están compartidas contigo.",
+    "inTimeline": "En la cronología",
+    "askCoach": "Preguntar al Coach por este día",
+    "chartHint": "Haz clic en un punto para abrir su día.",
+    "loadFailed": "No se pudo cargar este día.",
+    "dayOf": "Día {n} de {m}",
+    "dayN": "Día {n}",
+    "usualRange": "Habitual de {lo} a {hi}",
+    "groups": {
+      "scores": "Puntuaciones",
+      "running": "En curso ese día",
+      "values": "Valores",
+      "happened": "Qué pasó"
+    },
+    "notable": {
+      "extremeHigh": "Valor diario más alto desde {since}",
+      "extremeLow": "Valor diario más bajo desde {since}",
+      "firstValue": "Primera medición de este tipo",
+      "gap": "{days} días sin medición"
+    },
+    "previousDayShortcut": "Día anterior (Alt + flecha izquierda)",
+    "nextDayShortcut": "Día siguiente (Alt + flecha derecha)",
+    "captureShort": "Registrar",
+    "inTimelineShort": "Cronología",
+    "askCoachPrompt": "¿Qué pasó el {date}?",
+    "chartHintTouch": "Toca un punto para ver su valor.",
+    "chartHintBar": "Haz clic en una barra para abrir su día.",
+    "chartHintTouchBar": "Toca una barra para ver sus valores.",
+    "chartHintCell": "Haz clic en un día para abrirlo.",
+    "chartHintTouchCell": "Toca un día para ver su valor.",
+    "coachChips": "Días en esta respuesta",
+    "description": "Todo lo que tus registros contienen para este día.",
+    "openDocument": "Abrir documento",
+    "previousReading": "Antes, {date}",
+    "rugLegend": "Los puntos bajo el eje marcan días con entradas, y un anillo, un día destacado.",
+    "sheetExpand": "Ampliar a toda la altura",
+    "sheetShrink": "Reducir",
+    "valuesLegend": "Punto para este día, barra para los 30 días anteriores",
+    "valuesAllOne": "Todos los valores",
+    "valuesAllFew": "Los {count} valores",
+    "valuesAllOther": "Los {count} valores",
+    "valuesFewer": "Menos valores",
+    "countEntriesOne": "1 entrada",
+    "countEntriesFew": "{count} entradas",
+    "countEntriesOther": "{count} entradas",
+    "meanOfReadingsOne": "Media de 1 medición",
+    "meanOfReadingsFew": "Media de {count} mediciones",
+    "meanOfReadingsOther": "Media de {count} mediciones",
+    "sinceLastVisit": {
+      "title": "Desde la última visita el {date}",
+      "countOne": "1 entrada",
+      "countFew": "{count} entradas",
+      "countOther": "{count} entradas",
+      "allOne": "Mostrar todo",
+      "allFew": "Mostrar las {count}",
+      "allOther": "Mostrar las {count}",
+      "fewer": "Mostrar menos",
+      "note": "Reunido a partir de tus entradas, sin valoración. Cada fecha abre el día completo.",
+      "report": "Informe médico del {date} hasta hoy"
+    },
+    "travel": "De viaje",
+    "event": {
+      "started": "Inicio: {label}",
+      "ended": "Fin: {label}",
+      "paused": "Pausa: {label}",
+      "resumed": "Reanudación: {label}",
+      "illnessBegan": "Inicio: {label}",
+      "illnessResolved": "Recuperación: {label}"
+    },
+    "pickDate": "Elegir una fecha",
+    "pickerTitle": "Ir a un día",
+    "today": "Hoy",
+    "hasEntries": "con entradas",
+    "dayNSince": "Día {n}, desde el {date}",
+    "sinceDate": "Desde el {date}"
+  },
+  "timeline": {
+    "title": "Cronología",
+    "subtitle": "Qué pasó y cuándo, junto a tus valores.",
+    "standing": "Permanente",
+    "startUnknown": "inicio desconocido",
+    "zoom": {
+      "all": "Todo",
+      "year": "12 meses",
+      "quarter": "3 meses",
+      "range": "Periodo"
+    },
+    "lanes": {
+      "life": "Vida",
+      "illness": "Enfermedades",
+      "allergies": "Alergias",
+      "medications": "Medicamentos",
+      "vaccinations": "Vacunas",
+      "visits": "Médico e intervenciones",
+      "labs": "Laboratorio",
+      "documents": "Documentos",
+      "cycle": "Ciclo"
+    },
+    "readiness": {
+      "title": "Lo que tu cronología ya muestra",
+      "subtitle": "Un inventario honesto antes de abrirla.",
+      "menuEntry": "Cobertura de datos",
+      "hint": "Las pistas vacías permanecen ocultas hasta que haya algo. Los módulos desactivados nunca aparecen. Encontrarás este resumen más adelante en Cobertura de datos, dentro de la cronología.",
+      "later": "Más tarde",
+      "open": "Abrir cronología",
+      "verdict": {
+        "carries": "Ya tiene contenido.",
+        "thin": "Aún escasa. Por ahora la cronología muestra sobre todo tus valores."
+      },
+      "status": {
+        "carries": "completa",
+        "thin": "escasa",
+        "empty": "vacía"
+      },
+      "lanes": {
+        "values": "Valores",
+        "mood": "Estado de ánimo",
+        "environment": "Entorno",
+        "life": "Acontecimientos vitales"
+      },
+      "meter": "{carrying} de {total} pistas tienen contenido",
+      "carriesDetail": "{carrying} de {total} pistas dan una visión general desde {since}.",
+      "loadFailed": "No se pudo cargar el inventario.",
+      "card": {
+        "title": "Lo que la cronología ya muestra",
+        "summary": "Llega hasta {since}; {carrying} de {total} pistas ya tienen contenido.",
+        "dismiss": "Ocultar"
+      },
+      "detail": {
+        "valuesOne": "{count} medida desde {since}",
+        "valuesFew": "{count} medidas desde {since}",
+        "valuesOther": "{count} medidas desde {since}",
+        "illnessOne": "{count} episodio; crónicos: {chronic}",
+        "illnessFew": "{count} episodios; crónicos: {chronic}",
+        "illnessOther": "{count} episodios; crónicos: {chronic}",
+        "allergiesOne": "{count} alergia",
+        "allergiesFew": "{count} alergias",
+        "allergiesOther": "{count} alergias",
+        "medicationsOne": "{count} medicamento; sin fecha de inicio: {missingStart}",
+        "medicationsFew": "{count} medicamentos; sin fecha de inicio: {missingStart}",
+        "medicationsOther": "{count} medicamentos; sin fecha de inicio: {missingStart}",
+        "medicationsDatedOne": "{count} medicamento con fecha de inicio",
+        "medicationsDatedFew": "{count} medicamentos con fecha de inicio",
+        "medicationsDatedOther": "{count} medicamentos con fecha de inicio",
+        "vaccinationsOne": "{count} vacuna",
+        "vaccinationsFew": "{count} vacunas",
+        "vaccinationsOther": "{count} vacunas",
+        "visitsOne": "{count} visita, {procedures} con intervención",
+        "visitsFew": "{count} visitas, {procedures} con intervención",
+        "visitsOther": "{count} visitas, {procedures} con intervención",
+        "visitsPlannedOne": "{count} visita, solo planificada",
+        "visitsPlannedFew": "{count} visitas, solo planificadas",
+        "visitsPlannedOther": "{count} visitas, solo planificadas",
+        "labsOne": "{count} día con resultados",
+        "labsFew": "{count} días con resultados",
+        "labsOther": "{count} días con resultados",
+        "documentsOne": "{count} documento con fecha",
+        "documentsFew": "{count} documentos con fecha",
+        "documentsOther": "{count} documentos con fecha",
+        "lifeOne": "{count} acontecimiento vital",
+        "lifeFew": "{count} acontecimientos vitales",
+        "lifeOther": "{count} acontecimientos vitales",
+        "cycleOne": "{count} ciclo",
+        "cycleFew": "{count} ciclos",
+        "cycleOther": "{count} ciclos",
+        "moodOne": "{count} entrada desde {since}",
+        "moodFew": "{count} entradas desde {since}",
+        "moodOther": "{count} entradas desde {since}",
+        "environmentOne": "{count} día con datos ambientales",
+        "environmentFew": "{count} días con datos ambientales",
+        "environmentOther": "{count} días con datos ambientales",
+        "empty": "Aún ninguno"
+      },
+      "gap": {
+        "valuesEmpty": "Conectar fuentes",
+        "illnessEmpty": "Añadir episodio",
+        "medicationsWithoutStart": "Completar",
+        "visitsEmpty": "Añadir visita",
+        "documentsUndated": "Revisar",
+        "labsEmpty": "Añadir resultado",
+        "vaccinationsEmpty": "Añadir vacunas",
+        "lifeEventsEmpty": "Añadir"
+      },
+      "gapLine": {
+        "medicationsWithoutStartOne": "{count} medicamento sin fecha de inicio",
+        "medicationsWithoutStartFew": "{count} medicamentos sin fecha de inicio",
+        "medicationsWithoutStartOther": "{count} medicamentos sin fecha de inicio",
+        "documentsUndatedOne": "{count} documento sin fecha",
+        "documentsUndatedFew": "{count} documentos sin fecha",
+        "documentsUndatedOther": "{count} documentos sin fecha",
+        "valuesEmpty": "Aún no hay valores durante un periodo largo",
+        "illnessEmpty": "Aún no hay enfermedades con fecha de inicio",
+        "visitsEmpty": "Aún no hay visitas médicas realizadas",
+        "labsEmpty": "Aún no hay resultados de laboratorio",
+        "vaccinationsEmpty": "Aún no hay vacunas",
+        "lifeEventsEmpty": "Aún no hay acontecimientos vitales"
+      }
+    },
+    "legendSpan": "Periodo",
+    "legendEvent": "Evento",
+    "legendMeanQuarter": "Media trimestral",
+    "legendMeanMonth": "Media mensual",
+    "legendMeanWeek": "Media semanal",
+    "legendThin": "Menos de 3 mediciones",
+    "legendGap": "Hueco corto sin mediciones",
+    "today": "Hoy",
+    "noDataYet": "Aún sin datos",
+    "layers": "Capas",
+    "layersLanes": "Pistas",
+    "zoomLabel": "Rango de la vista",
+    "chartLabel": "Cronología de {from} a {to}",
+    "keyboardHint": "Las flechas mueven la selección, Inicio y Fin saltan a los extremos, Intro abre el día.",
+    "loadFailed": "No se pudo cargar la cronología.",
+    "empty": {
+      "title": "Aún no hay nada en la cronología",
+      "description": "Las entradas con fecha aparecerán aquí en cuanto haya alguna."
+    },
+    "values": {
+      "menuTitle": "Valores bajo los carriles",
+      "trigger": "Valores ({count})",
+      "noneInWindow": "Sin valores en este periodo",
+      "series": {
+        "BLOOD_PRESSURE_SYS": "Presión sistólica",
+        "BLOOD_PRESSURE_DIA": "Presión diastólica"
+      },
+      "noValue": "sin valor",
+      "bloodPressure": "Presión arterial",
+      "readingsOne": "1 medición",
+      "readingsFew": "media de {count} mediciones",
+      "readingsOther": "media de {count} mediciones"
+    },
+    "table": {
+      "caption": "Entradas de la cronología",
+      "lane": "Pista",
+      "entry": "Entrada",
+      "start": "Inicio",
+      "end": "Fin",
+      "seriesCaption": "Medias por periodo",
+      "period": "Periodo"
+    },
+    "selection": {
+      "empty": "No hay entradas en este periodo",
+      "since": "desde {date}",
+      "range": "{from} a {to}",
+      "mean": "Ø {values}",
+      "week": "Semana del {date}",
+      "hintClick": "Haz clic en un momento para verlo aquí",
+      "hintTap": "Toca un momento para verlo aquí"
+    },
+    "chronicle": {
+      "months": "Meses",
+      "years": "Años",
+      "groupingLabel": "Agrupación",
+      "empty": "Sin entradas de {from} a {to}",
+      "emptySingle": "Sin entradas en {period}",
+      "ended": "Fin: {label}",
+      "afterDaysOne": "después de 1 día",
+      "afterDaysFew": "después de {count} días",
+      "afterDaysOther": "después de {count} días",
+      "notable": {
+        "extremeHigh": "El valor más alto en mucho tiempo",
+        "extremeLow": "El valor más bajo en mucho tiempo",
+        "firstValue": "Primer valor de una medida",
+        "gap": "Un hueco largo en los valores"
+      },
+      "notableMeta": "Abre el día para ver detalles"
+    },
+    "standingAllergiesOne": "{count} alergia",
+    "standingAllergiesFew": "{count} alergias",
+    "standingAllergiesOther": "{count} alergias",
+    "legendMeanDay": "Media diaria",
+    "range": {
+      "from": "Desde",
+      "to": "Hasta",
+      "label": "Periodo elegido",
+      "open": "Elegir un periodo",
+      "clear": "Mostrar todo",
+      "apply": "Aplicar"
+    },
+    "item": {
+      "labValuesOne": "1 valor de laboratorio",
+      "labValuesFew": "{count} valores de laboratorio",
+      "labValuesOther": "{count} valores de laboratorio"
+    }
+  },
+  "lifeEvents": {
+    "title": "Acontecimiento vital",
+    "add": "Acontecimiento vital",
+    "privacy": "El título y la nota se guardan cifrados. No se envían a ninguna IA.",
+    "emptyHint": "Una mudanza, un nacimiento o un nuevo trabajo dan un ancla a los años.",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar acontecimiento vital",
+    "saved": "Acontecimiento vital guardado",
+    "deleted": "Acontecimiento vital eliminado",
+    "fields": {
+      "title": "¿Qué pasó?",
+      "category": "Tipo",
+      "when": "Cuándo",
+      "precision": "Precisión",
+      "addEnd": "Fecha de fin, si fue un periodo",
+      "endDate": "Hasta",
+      "note": "Nota",
+      "optionalTag": "opcional",
+      "notePlaceholder": "Algo que quieras saber más adelante",
+      "removeEnd": "Quitar fecha de fin"
+    },
+    "category": {
+      "FAMILY": "Familia",
+      "HOME": "Vivienda",
+      "WORK": "Trabajo",
+      "LOSS": "Pérdida",
+      "OTHER": "Otro"
+    },
+    "precision": {
+      "DAY": "Día",
+      "MONTH": "Mes",
+      "YEAR": "Año"
+    },
+    "edit": "Editar acontecimiento vital",
+    "errors": {
+      "titleRequired": "Ponle un nombre al acontecimiento.",
+      "titleTooLong": "Máximo 120 caracteres.",
+      "categoryRequired": "Elige un tipo.",
+      "dateRequired": "Introduce una fecha válida.",
+      "endBeforeStart": "El final es anterior al inicio.",
+      "noteTooLong": "Máximo 2000 caracteres."
+    },
+    "saveFailed": "No se pudo guardar.",
+    "deleteFailed": "No se pudo eliminar.",
+    "deleteConfirm": {
+      "title": "¿Eliminar este acontecimiento vital?",
+      "body": "Su título y su nota desaparecerán."
+    }
+  },
+  "palette": {
+    "open": "Buscar…",
+    "openLabel": "Buscar páginas, ajustes y acciones",
+    "title": "Buscar",
+    "description": "Encuentra una página, un ajuste, un módulo o una acción.",
+    "placeholder": "Buscar páginas, ajustes, módulos…",
+    "results": "Resultados",
+    "noResults": "No hay resultados para «{query}».",
+    "moduleOn": "Activado",
+    "moduleOff": "Desactivado",
+    "hintMove": "Mover",
+    "hintOpen": "Abrir",
+    "hintClose": "Cerrar",
+    "groups": {
+      "recent": "Recientes",
+      "pages": "Páginas",
+      "insights": "Insights",
+      "settings": "Ajustes",
+      "modules": "Módulos",
+      "actions": "Acciones"
+    },
+    "actions": {
+      "capture": "Nueva entrada",
+      "coach": "Preguntar al Coach",
+      "backup": "Crear una copia de seguridad",
+      "today": "Abrir hoy",
+      "shortcuts": "Mostrar atajos de teclado"
+    }
+  },
+  "shortcuts": {
+    "title": "Atajos de teclado",
+    "description": "Teclas que funcionan en toda la aplicación, salvo mientras escribes en un campo.",
+    "menuEntry": "Atajos de teclado",
+    "then": "luego",
+    "search": "Buscar",
+    "help": "Mostrar esta lista",
+    "close": "Cerrar un diálogo o panel",
+    "previousDay": "Día anterior",
+    "nextDay": "Día siguiente",
+    "dayHint": "Mientras hay un día abierto.",
+    "groups": {
+      "navigation": "Navegación",
+      "actions": "Acciones",
+      "day": "Día"
+    }
+  },
+  "aboutPage": {
+    "eyebrow": "Información",
+    "title": "Acerca de HealthLog",
+    "lastUpdated": "Última actualización: {date}",
+    "project": "Proyecto",
+    "credits": "Créditos"
   }
 }

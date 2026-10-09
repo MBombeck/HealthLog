@@ -63,7 +63,7 @@ describe("OAuthProviderCard — parked + test + data-link parity", () => {
     expect(html).toContain('data-state="parked"');
     expect(html).toContain('data-testid="polar-parked-banner"');
     expect(html).toContain('data-testid="polar-resume-button"');
-    expect(html).toContain("Paused — reconnect");
+    expect(html).toContain("Paused: reconnect");
     // The parked banner uses the same warning treatment as the WHOOP card.
     expect(html).toContain("border-warning/30 bg-warning/10");
   });
@@ -157,7 +157,7 @@ describe("OAuthProviderCard — per-user BYO credentials form (v1.17.1)", () => 
         syncHealth: { verdict: "pending_first_sync", since: null },
       },
     });
-    expect(html).toContain("Saved — enter new to replace");
+    expect(html).toContain("Saved. Enter new to replace");
   });
 });
 

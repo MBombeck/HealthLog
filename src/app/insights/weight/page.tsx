@@ -48,7 +48,11 @@ export default function InsightsGewichtPage() {
   const { compareBaseline } = useInsightsLayoutPrefs(isAuthenticated);
   const unitDisplay = useUnitDisplay();
 
-  const { data: analytics, isEmpty } = useInsightsAnalytics("WEIGHT");
+  const {
+    data: analytics,
+    isEmpty,
+    isLoading: analyticsLoading,
+  } = useInsightsAnalytics("WEIGHT");
   const weightSummary = analytics?.summaries?.WEIGHT ?? null;
 
   // v1.34 — the user's own weight target, read through the shared
@@ -105,7 +109,7 @@ export default function InsightsGewichtPage() {
       : weightSummary;
 
   // v1.12.8 — visible-range stats shared between the chart and the strip.
-  const { statsByType, onVisibleStats } = useChartDomainStats();
+  const { statsByType, statsSettled, onVisibleStats } = useChartDomainStats();
 
   if (isEmpty) {
     return (
@@ -125,7 +129,7 @@ export default function InsightsGewichtPage() {
               </Link>
             </Button>
           }
-          coachPrefill="I haven't recorded any weight yet — why does it matter, and what should I know before I start tracking?"
+          coachPrefill="I haven't recorded any weight yet. Why does it matter, and what should I know before I start tracking?"
         />
       </SubPageShell>
     );
@@ -170,12 +174,14 @@ export default function InsightsGewichtPage() {
       explainerMetric="weight"
       statStrip={
         <MetricStatStrip
+          pending={analyticsLoading}
           summary={displaySummary}
           unit={weightUnit}
           fractionDigits={weightTransform.decimals}
           seriesLabel={t("insights.weightSectionTitle")}
           icon={Scale}
           windowStats={statsByType?.WEIGHT ?? null}
+          windowPending={!statsSettled}
         />
       }
       coachReadStrip={<CoachReadStrip metricType="WEIGHT" unit={weightUnit} />}
@@ -203,6 +209,7 @@ export default function InsightsGewichtPage() {
         valueScale={weightScale}
         onVisibleStats={onVisibleStats}
         showDataTable
+        dayLinks
       />
 
       <MetricTargetSummary slug="weight" />

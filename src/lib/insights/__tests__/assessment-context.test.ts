@@ -118,7 +118,7 @@ describe("formatRelationsBlock — cross-metric correlations, descriptive only",
   const rels: RelevantCorrelation[] = [
     {
       interpretation:
-        "Higher time in daylight tends to go with higher next-day sleep duration in your data — a pattern worth watching, not a cause.",
+        "Higher time in daylight tends to go with higher next-day sleep duration in your data. It is a pattern to watch, not a cause.",
       n: 42,
       r: 0.51,
     },

@@ -75,9 +75,12 @@ const COINCIDENT_WINDOW_DAYS = 30;
 export interface CoachCorrelationDriver {
   behaviour: string;
   outcome: string;
-  /** "higher" / "lower" — sign of the next-day association. */
+  /** "higher" / "lower" — sign of the association. */
   direction: "higher" | "lower";
-  /** Lag in days (always 1 today). */
+  /**
+   * Lag in days: 1 = next day; 0 = an environmental exposure averaged over
+   * the day before and the day itself, against the same day's outcome.
+   */
   lagDays: number;
   /** Paired-day sample count after the lag join. */
   n: number;

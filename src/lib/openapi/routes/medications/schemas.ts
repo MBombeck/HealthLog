@@ -936,6 +936,18 @@ export const medicationComplianceSummaryEntry = z
     compliance30: complianceResult.describe(
       "Thirty-day adherence summary, or an all-zero compatibility placeholder when applicable is false.",
     ),
+    compliance60: complianceResult
+      .optional()
+      .describe("Present only on `?days=60`: the trailing 60 days."),
+    compliance90: complianceResult
+      .optional()
+      .describe("Present only on `?days=90`: the trailing 90 days."),
+    compliance180: complianceResult
+      .optional()
+      .describe("Present only on `?days=180`: the trailing 180 days."),
+    compliance365: complianceResult
+      .optional()
+      .describe("Present only on `?days=365`: the trailing 365 days."),
     complianceDisplay: complianceDisplay.nullable(),
   })
   .meta({
@@ -1731,4 +1743,28 @@ export const medicationSideEffect = z
     id: "MedicationSideEffect",
     description:
       "One logged side effect. Not a clinical record — the account owns it, and it stays deletable at any time rather than locking after a retraction window.",
+  });
+
+/**
+ * v1.42.0 — the account-wide adherence figure the batched read carries in
+ * `meta.aggregate`, beside the per-medication rows.
+ */
+export const medicationComplianceAggregate = z
+  .object({
+    compliance7: complianceResult,
+    compliance30: complianceResult,
+    compliance60: complianceResult.nullable().optional(),
+    compliance90: complianceResult.nullable().optional(),
+    compliance180: complianceResult.nullable().optional(),
+    compliance365: complianceResult.nullable().optional(),
+    medicationCount: z
+      .number()
+      .int()
+      .positive()
+      .describe("How many applicable medications the figure is built from."),
+  })
+  .meta({
+    id: "MedicationComplianceAggregate",
+    description:
+      "One adherence figure for the whole account in the `ComplianceResult` shape, weighted by expected doses: `taken`, `skipped` and `missed` are summed across every medication with `applicable: true`, and `rate` is recomputed from the sums by the per-medication rule (round(100 · taken / (taken + missed)), capped at 100, 100 when nothing was expected). Averaging the per-medication rates would let a weekly injection weigh as much as a three-times-daily tablet. `streak` is the shortest per-medication streak. The `complianceN` block for a requested `days` is present when `days` was sent and is not 30.",
   });

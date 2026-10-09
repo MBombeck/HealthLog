@@ -28,25 +28,15 @@ import { useTranslations } from "@/lib/i18n/context";
  * in via `motion-safe` `animate-in` with capped delays; reduced-motion
  * users get the layout instantly.
  *
- * v1.21.2 (A2 + A3) — the hero accepts an optional `scopeHint` slot
- * (a `<ScopeHintBadge>`): the visible "the Coach is already on <metric>"
- * pill + seed question when launched scoped (A2), or the pre-seeded
- * notable-signal opener when launched unscoped (A3). When absent the hero
- * is the calm greeting + composer exactly as before, so the neutral
- * blank-state fallback is structural.
+ * The space under the composer stays empty: no suggested prompts and no
+ * openers, so an empty conversation is the greeting and the field.
  */
 export interface CoachHeroProps {
   /** The live `<CoachInput>` composer, re-parented into the hero. */
   composer: React.ReactNode;
-  /**
-   * v1.21.2 — optional scope/opener affordance rendered above the
-   * composer. The parent owns the data (launch scope / seeded signal) and
-   * passes a resolved `<ScopeHintBadge>`; null keeps the neutral hero.
-   */
-  scopeHint?: React.ReactNode;
 }
 
-export function CoachHero({ composer, scopeHint }: CoachHeroProps) {
+export function CoachHero({ composer }: CoachHeroProps) {
   const { t } = useTranslations();
 
   return (
@@ -104,23 +94,6 @@ export function CoachHero({ composer, scopeHint }: CoachHeroProps) {
         >
           {composer}
         </div>
-
-        {/* v1.21.2 (A2/A3) — visible scope pill + tappable opener, beneath
-            the composer so the greeting → composer rhythm stays intact and
-            the opener reads as a follow-on suggestion. Renders only when the
-            parent resolved a scope or a notable signal. */}
-        {scopeHint ? (
-          <div
-            data-slot="coach-hero-scope-hint"
-            className={cn(
-              "w-full",
-              "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2 motion-safe:duration-500",
-            )}
-            style={{ animationDelay: "240ms", animationFillMode: "both" }}
-          >
-            {scopeHint}
-          </div>
-        ) : null}
       </div>
     </div>
   );

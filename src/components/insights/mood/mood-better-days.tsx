@@ -2,7 +2,7 @@
 
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { moodTagIcon } from "@/components/mood/mood-tag-icons";
 import { cn } from "@/lib/utils";
 import type { MoodInfluenceConfidence } from "./mood-tag-influence";
@@ -70,6 +70,7 @@ export function MoodBetterDays({
   factors: MoodBetterDayFactor[];
 }) {
   const { t } = useTranslations();
+  const nf = useFormatters();
   if (factors.length === 0) return null;
 
   return (
@@ -108,9 +109,9 @@ export function MoodBetterDays({
           // metric factors show the correlation coefficient.
           const effectText =
             factor.source === "tag" && factor.delta != null
-              ? `${factor.delta >= 0 ? "+" : ""}${factor.delta.toFixed(1)}`
+              ? `${factor.delta >= 0 ? "+" : ""}${nf.number(factor.delta, 1)}`
               : factor.r != null
-                ? `r ${factor.r.toFixed(2)}`
+                ? `r ${nf.number(factor.r, 2)}`
                 : "";
 
           return (

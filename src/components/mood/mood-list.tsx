@@ -70,6 +70,7 @@ import {
 const MOOD_DESC_COLUMNS: ReadonlySet<string> = new Set(["moodLoggedAt"]);
 import { toast } from "sonner";
 import { formatDateTime } from "@/lib/format";
+import { DayLink } from "@/components/day/day-link";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { MOOD_LABEL_KEYS, MOOD_SCORE_BY_ENUM } from "@/lib/mood/labels";
 import {
@@ -173,9 +174,14 @@ interface MoodListProps {
    * rendering a no-op button.
    */
   onAddFirst?: () => void;
+  /**
+   * Told whether the unfiltered list is empty, so the page can drop its
+   * header add button while the empty state carries the add action.
+   */
+  onEmptyChange?: (empty: boolean) => void;
 }
 
-export function MoodList({ onAddFirst }: MoodListProps = {}) {
+export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
   const { t } = useTranslations();
   const fmt = useFormatters();
   const { isAuthenticated } = useAuth();
@@ -360,6 +366,12 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
     },
     enabled: isAuthenticated,
   });
+
+  const listEmpty =
+    !isLoading && !isError && !data?.entries?.length && moodFilter === "ALL";
+  useEffect(() => {
+    onEmptyChange?.(listEmpty);
+  }, [listEmpty, onEmptyChange]);
 
   // v1.16.4 — deletes are soft (tombstones), so the success toast can
   // carry a real Undo: it POSTs the ids to `/api/mood-entries/restore`,
@@ -730,7 +742,11 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
                   {t("mood.emptyResetFilter")}
                 </Button>
               ) : onAddFirst && canManageMind ? (
-                <Button size="sm" onClick={onAddFirst}>
+                <Button
+                  size="sm"
+                  onClick={onAddFirst}
+                  data-slot="mood-add-first"
+                >
                   <Plus className="h-4 w-4" />
                   {t("mood.emptyAddFirst")}
                 </Button>
@@ -841,7 +857,11 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
                           )}
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
-                          {formatDateTime(entry.moodLoggedAt)}
+                          {/* v1.42 — the entry's own day (its `date`, cut
+                            in the zone it was logged in) opens the day. */}
+                          <DayLink date={entry.date.slice(0, 10)}>
+                            {formatDateTime(entry.moodLoggedAt)}
+                          </DayLink>
                         </TableCell>
                         <TableCell>
                           {entry.source !== "MANUAL" && (
@@ -932,7 +952,9 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
                             : entry.mood}
                         </span>
                         <p className="text-muted-foreground truncate text-xs">
-                          {formatDateTime(entry.moodLoggedAt)}
+                          <DayLink date={entry.date.slice(0, 10)}>
+                            {formatDateTime(entry.moodLoggedAt)}
+                          </DayLink>
                         </p>
                         {entry.tags.length > 0 && (
                           <p className="text-muted-foreground truncate text-xs">
@@ -1189,7 +1211,6 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start">
                         <DropdownMenuItem
-                          variant="destructive"
                           onClick={() => setEditDeleteDialogOpen(true)}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />

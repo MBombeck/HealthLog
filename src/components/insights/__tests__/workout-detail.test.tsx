@@ -100,8 +100,8 @@ describe("<WorkoutDetailHeader>", () => {
   it("renders the sport label, source, and duration summary", () => {
     const html = render(<WorkoutDetailHeader workout={FIXTURE} />);
     expect(html).toContain("Running");
-    expect(html).toContain("APPLE_HEALTH");
-    expect(html).toContain("30m 00s");
+    expect(html).toContain("Apple Health");
+    expect(html).toContain("30:00 min");
     expect(html).toContain("5.20 km");
   });
 });
@@ -180,7 +180,7 @@ describe("<WorkoutDetailStats>", () => {
       );
       // 5200 m = 3.23 mi; 1800 s over it = 9:17 per mile; 12.5 m = 41.0 ft.
       expect(html).toContain("3.23 mi");
-      expect(html).toContain("9:17 /mi");
+      expect(html).toContain("9:17 min/mi");
       expect(html).toContain("41.0 ft");
       // The sport-average line: 5800 m = 3.60 mi.
       expect(html).toContain("3.60 mi");
@@ -196,7 +196,7 @@ describe("<WorkoutDetailStats>", () => {
   it("keeps kilometres, minutes per km and metres for a metric reader", () => {
     const html = render(<WorkoutDetailStats workout={FIXTURE} />);
     expect(html).toContain("5.20 km");
-    expect(html).toContain("5:46 /km");
+    expect(html).toContain("5:46 min/km");
     expect(html).toContain("12.5 m");
   });
 
@@ -365,7 +365,7 @@ describe("<WorkoutDetailSplits>", () => {
     expectSingleSectionHeading(html, "Splits");
     expect(html).toContain('data-slot="workout-detail-splits"');
     expect(html).toContain("5:00");
-    expect(html).toContain("4:48 /km");
+    expect(html).toContain("4:48 min/km");
   });
 });
 

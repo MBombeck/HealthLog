@@ -27,9 +27,12 @@
  *      mean-consolidation drain skeleton (same `runConsolidation` base,
  *      same soft-delete + rollup handling) but with the grace cutoff
  *      widened from 36 hours to the retention window, and the fold grain
- *      set to the LOCAL HOUR: per-sample rows OLDER than the window fold
+ *      set to the LOCAL HOUR: per-sample rows of the local days that ended
+ *      before the window's boundary (`foldBoundary`; a day folds whole, in
+ *      one run) fold
  *      to one `stats:<HK>:<YYYY-MM-DD>T<HH>` hourly-mean row per user ×
- *      type × local hour and the raw rows are tombstoned; rows INSIDE the
+ *      type × local hour and the raw rows are deleted (tombstoned before
+ *      v1.42); rows INSIDE the
  *      window stay raw so the Stress engine always has its per-sample
  *      inputs for the days it scores.
  *
@@ -47,8 +50,13 @@
  * The one-shot history rebuild that converts ALREADY-folded daily rows to
  * the hourly grain lives in `dense-intraday-hourly-rebuild.ts`.
  */
-import { holdAccountAgainstRestore } from "@/lib/export/restore-lock";
+import {
+  holdAccountAgainstRestore,
+  holdAccountFoldLock,
+  FOLD_TRANSACTION_OPTIONS,
+} from "@/lib/export/restore-lock";
 import type {
+  MeasurementSource,
   MeasurementType,
   Prisma,
   PrismaClient,
@@ -69,6 +77,18 @@ import { recomputeBucketsForMeasurement } from "@/lib/rollups/measurement-rollup
 import { percentile } from "@/lib/insights/strain-score";
 import type { PerSampleRow } from "./drain-per-sample-cumulative";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { localDayWindow } from "@/lib/tz/local-day";
+import {
+  absorbIntoFold,
+  foldConstituentHorizon,
+  foldWindowVerdict,
+  hasFoldRepairRun,
+  loadFoldTombstones,
+  loadLiveSamples,
+  meanOf,
+  type FoldConstituent,
+  type FoldLeftover,
+} from "./fold-constituents";
 
 /**
  * iOS#34 / #69 — heart-rate (PULSE) is the densest spot signal after
@@ -137,7 +157,7 @@ export const DENSE_INTRADAY_RETENTION_TYPES: ReadonlySet<MeasurementType> =
 
 /**
  * Retention bound (days). Per-sample dense-tier rows older than this window
- * fold to hourly-mean rows and the raw rows tombstone; rows inside the
+ * fold to hourly-mean rows and the raw rows are deleted; rows inside the
  * window stay raw so the Stress engine has its intra-day inputs.
  *
  * 90 days comfortably covers the Stress engine's 7-day reference window and
@@ -152,6 +172,23 @@ export const DENSE_INTRADAY_RETENTION_TYPES: ReadonlySet<MeasurementType> =
  * renders an empty chart for an older day.
  */
 export const DENSE_INTRADAY_RETENTION_DAYS = 90;
+
+/**
+ * The sources whose raw dense samples fold (v1.42). Apple Health from the
+ * start; Health Connect because its importer writes the samples of the last
+ * 90 days raw, exactly like an Apple Health sync, and without a fold every
+ * new export would add another quarter of minute-by-minute heart rate that
+ * never ages into hourly means. Each source folds into its OWN `stats:` rows,
+ * so an hour two sources both covered keeps one mean per source, the same
+ * way the raw samples kept their source.
+ */
+export const DENSE_INTRADAY_FOLD_SOURCES = [
+  "APPLE_HEALTH",
+  "HEALTH_CONNECT",
+] as const satisfies readonly MeasurementSource[];
+
+export type DenseIntradayFoldSource =
+  (typeof DENSE_INTRADAY_FOLD_SOURCES)[number];
 
 /** The stats externalId prefix marks an already-collapsed row. */
 const DAILY_STATS_PREFIX = "stats:";
@@ -248,10 +285,13 @@ export async function adoptOrMintHourlyRows(
   input: {
     userId: string;
     type: MeasurementType;
+    /** The source the folded samples carry; the hourly rows carry it too. */
+    source?: DenseIntradayFoldSource;
     unit: string;
     slots: readonly HourlySlot[];
   },
 ): Promise<string[]> {
+  const source = input.source ?? "APPLE_HEALTH";
   if (input.slots.length === 0) return [];
 
   // Every row that either index could put in the way, lowest id first — the
@@ -262,7 +302,7 @@ export async function adoptOrMintHourlyRows(
     where: {
       userId: input.userId,
       type: input.type,
-      source: "APPLE_HEALTH",
+      source,
       OR: [
         { externalId: { in: input.slots.map((slot) => slot.externalId) } },
         {
@@ -337,7 +377,7 @@ export async function adoptOrMintHourlyRows(
         type: input.type,
         value: slot.value,
         unit: input.unit,
-        source: "APPLE_HEALTH" as const,
+        source,
         measuredAt: slot.anchor,
         externalId: slot.externalId,
       })),
@@ -436,6 +476,12 @@ export interface DenseIntradayRetentionSummary {
      * resting signal the raw-PULSE proxy can no longer compute after fold.
      */
     derivedRestingRowsUpserted: number;
+    /**
+     * Hours that already had a live hourly row whose samples could not be
+     * shown to be complete (`fold-constituents.ts`): the stored mean and the
+     * hour's live rows were left as they are.
+     */
+    hoursLeftAsStored: number;
   };
 }
 
@@ -464,10 +510,10 @@ export interface DenseIntradayRetentionOptions {
 /**
  * Run the dense intra-day retention drain. Folds per-sample dense-tier
  * rows older than the retention window into hourly-mean `stats:` rows
- * (user-local hours, anchored at local HH:30) and soft-deletes the raw
- * rows; rows inside the window stay raw. Idempotent — re-invocation after
- * a successful pass converges to zero work because the folded rows are
- * soft-deleted and so excluded from the live scan, and the minted hourly
+ * (user-local hours, anchored at local HH:30) and deletes the raw rows
+ * (soft-deleted before v1.42); rows inside the window stay raw. Idempotent —
+ * re-invocation after a successful pass converges to zero work because the
+ * folded rows are gone from the live scan, and the minted hourly
  * rows are excluded by the `NOT startsWith('stats:')` predicate.
  *
  * Does NOT enforce any auth gate — the queue handler owns that concern.
@@ -494,6 +540,7 @@ export async function runDenseIntradayRetention(
       hourlyRowsUpserted: 0,
       dailyRowsRetired: 0,
       derivedRestingRowsUpserted: 0,
+      hoursLeftAsStored: 0,
     },
   };
 
@@ -537,262 +584,473 @@ export async function runDenseIntradayRetention(
   // for the dry-run hourly fan-out estimate (writeDay never runs on dry-run).
   let currentTz = DEFAULT_TIMEZONE;
 
-  const walk = await runConsolidation<MeasurementType>({
-    prismaClient,
-    options: { ...options, cutoffHours },
-    types: DENSE_INTRADAY_RETENTION_TYPES,
-    hkIdentifierForType,
-    dailyStatsExternalId,
-    statsPrefix: DAILY_STATS_PREFIX,
-    // The base's per-day reducedValue is the day MEAN; the hourly fold
-    // recomputes per-hour means itself (same `meanBucketValue` reducer, so
-    // the two surfaces can never drift), and the day-level value only
-    // feeds the summary/dry-run reporting.
-    reduce: meanBucketValue,
-    // Live per-sample rows for the type, source-scoped to APPLE_HEALTH so
-    // manual + Withings spot rows survive. The minted hourly stats rows are
-    // excluded by the NOT-startsWith predicate so they are never re-folded;
-    // soft-deleted rows are excluded so a re-run converges. `cutoffAt` is
-    // the retention boundary — rows newer than it (inside the window) are
-    // NOT scanned, so the dense intra-day shape is preserved.
-    buildScanWhere: ({ userId, type, cutoffAt, statsPrefix }) => ({
-      userId,
-      source: "APPLE_HEALTH",
-      type,
-      deletedAt: null,
-      NOT: { externalId: { startsWith: statsPrefix } },
-      ...(cutoffAt ? { measuredAt: { lt: cutoffAt } } : {}),
-    }),
-    scanSelect: {
-      id: true,
-      type: true,
-      value: true,
-      measuredAt: true,
-      externalId: true,
-      unit: true,
-    },
-    writeDay: async ({
-      prismaClient: pc,
-      userId,
-      type,
-      externalId,
-      canonicalTimestamp,
-      dayRows,
-      sourceRowIds,
-      tz,
-      dateKey,
-    }): Promise<DayWriteOutcome> => {
-      const unit = dayRows[0]?.unit ?? "unknown";
-      const isPulse = type === "PULSE";
-      const hkIdentifier = hkIdentifierForType(type);
-      // Unreachable: the base skips types without an HK identifier before
-      // scanning; asserted so a future type-set edit fails loud, not by
-      // minting a malformed externalId.
-      if (!hkIdentifier) {
-        throw new Error(`no HK identifier for dense-tier type ${type}`);
-      }
+  // Awaited inside, not returned bare: the restore-lock guard finds the
+  // consolidation passes by their `await runConsolidation`.
+  const walkSource = async (source: DenseIntradayFoldSource) =>
+    await runConsolidation<MeasurementType>({
+      prismaClient,
+      options: { ...options, cutoffHours },
+      types: DENSE_INTRADAY_RETENTION_TYPES,
+      hkIdentifierForType,
+      dailyStatsExternalId,
+      statsPrefix: DAILY_STATS_PREFIX,
+      // The base's per-day reducedValue is the day MEAN; the hourly fold
+      // recomputes per-hour means itself (same `meanBucketValue` reducer, so
+      // the two surfaces can never drift), and the day-level value only
+      // feeds the summary/dry-run reporting.
+      reduce: meanBucketValue,
+      // Live per-sample rows for the type, scoped to the one source this walk
+      // folds so manual + Withings spot rows survive and two sources never
+      // share a mean. The minted hourly stats rows are
+      // excluded by the NOT-startsWith predicate so they are never re-folded;
+      // soft-deleted rows are excluded so a re-run converges. `cutoffAt` is
+      // the retention boundary — rows newer than it (inside the window) are
+      // NOT scanned, so the dense intra-day shape is preserved.
+      buildScanWhere: ({ userId, type, cutoffAt, statsPrefix }) => ({
+        userId,
+        source,
+        type,
+        deletedAt: null,
+        NOT: { externalId: { startsWith: statsPrefix } },
+        ...(cutoffAt ? { measuredAt: { lt: cutoffAt } } : {}),
+      }),
+      scanSelect: {
+        id: true,
+        type: true,
+        value: true,
+        measuredAt: true,
+        externalId: true,
+        unit: true,
+      },
+      writeDay: async ({
+        prismaClient: pc,
+        userId,
+        type,
+        externalId,
+        canonicalTimestamp,
+        dayRows,
+        sourceRowIds,
+        tz,
+        dateKey,
+      }): Promise<DayWriteOutcome> => {
+        const unit = dayRows[0]?.unit ?? "unknown";
+        const isPulse = type === "PULSE";
+        const hkIdentifier = hkIdentifierForType(type);
+        // Unreachable: the base skips types without an HK identifier before
+        // scanning; asserted so a future type-set edit fails loud, not by
+        // minting a malformed externalId.
+        if (!hkIdentifier) {
+          throw new Error(`no HK identifier for dense-tier type ${type}`);
+        }
 
-      // DAY-rollup fidelity — mean AND min/max (all dense-tier types). The
-      // persistent `MeasurementRollup` DAY bucket aggregates LIVE rows;
-      // recomputing it AFTER the fold would aggregate the hourly means: the
-      // min/max collapse to the extreme hourly MEANS (for SpO2 hiding the
-      // overnight-desaturation nadir; for PULSE the resting floor + workout
-      // peak) and the mean becomes an unweighted mean-of-hourly-means that
-      // drifts whenever per-hour sample counts differ. So the DAY bucket is
-      // recomputed from the RAW rows BEFORE the fold, while they are still
-      // live, and the post-fold DAY recompute is skipped entirely. The
-      // WEEK/MONTH/YEAR recomputes this call enqueues run post-commit
-      // against whatever is live then, as before.
-      await recomputeBucketsForMeasurement(userId, type, canonicalTimestamp);
-
-      // Fold the day into per-LOCAL-HOUR mean rows, anchored at local
-      // HH:30. Sorted for a deterministic write order across runs.
-      const byHour = [...bucketRowsByLocalHour(dayRows, tz).entries()].sort(
-        (a, b) => a[0] - b[0],
-      );
-
-      const foldOnce = async (): Promise<{
-        removed: number;
-        retiredDaily: boolean;
-      }> => {
-        let removed = 0;
-        let retiredDaily = false;
-        await pc.$transaction(async (tx) => {
-          // First, before any reading is touched: see `restore-lock.ts`.
-          await holdAccountAgainstRestore(tx, userId);
-          const canonicalRowIds = await adoptOrMintHourlyRows(tx, {
-            userId,
-            type,
-            unit,
-            slots: byHour.map(([hour, hourRows]) => ({
-              externalId: hourlyStatsExternalId(hkIdentifier, dateKey, hour),
-              anchor: canonicalHourlyTimestamp(dateKey, hour, tz),
-              value: meanBucketValue(hourRows),
-            })),
-          });
-
-          // Retire a live pre-hourly DAILY `stats:` row for this day (the
-          // late-sync path: raw samples arriving for a day folded to the
-          // daily grain before v1.28.31). Same transaction as the hourly
-          // mint — an AVG-over-live-rows reader must never see the daily
-          // row and the hourly rows live at once (double count).
-          const dailyRow = await tx.measurement.findFirst({
+        // DAY-rollup fidelity — mean AND min/max (all dense-tier types). The
+        // persistent `MeasurementRollup` DAY bucket aggregates LIVE rows;
+        // recomputing it AFTER the fold would aggregate the hourly means: the
+        // min/max collapse to the extreme hourly MEANS (for SpO2 hiding the
+        // overnight-desaturation nadir; for PULSE the resting floor + workout
+        // peak) and the mean becomes an unweighted mean-of-hourly-means that
+        // drifts whenever per-hour sample counts differ. So the DAY bucket is
+        // recomputed from the RAW rows BEFORE the fold, while they are still
+        // live, and the post-fold DAY recompute is skipped entirely. The
+        // WEEK/MONTH/YEAR recomputes this call enqueues run post-commit
+        // against whatever is live then, as before.
+        //
+        // A day that already carries hourly rows of this source is one an
+        // earlier run folded in part (before the boundary was aligned to the
+        // local day) or that these rows reached afterwards. Its live rows are
+        // then a mix of hourly means and raw samples, and a DAY recompute
+        // from them would overwrite the figure the first fold took from the
+        // whole raw day, so it is left alone.
+        const hourlyPrefix = `stats:${hkIdentifier}:${dateKey}T`;
+        const dayAlreadyFolded =
+          (await pc.measurement.count({
             where: {
               userId,
               type,
-              source: "APPLE_HEALTH",
-              externalId,
+              source,
+              externalId: { startsWith: hourlyPrefix },
               deletedAt: null,
             },
-            select: { id: true },
-            orderBy: { id: "asc" },
-          });
-          if (dailyRow && !canonicalRowIds.includes(dailyRow.id)) {
-            await tx.measurement.update({
-              where: { id: dailyRow.id },
-              data: { deletedAt: new Date() },
-            });
-            retiredDaily = true;
-          }
-
-          // Soft-delete the out-of-window per-sample rows in the same
-          // transaction — tombstone, never hard-delete; they remain until
-          // the tombstone-retention prune and drop off the live read + this
-          // pass's re-run discovery. EXCLUDE the adopted canonical rows: a
-          // per-sample row that happened to fall on an hourly anchor is the
-          // row just adopted as that hour's mean, so tombstoning it would
-          // erase the fold.
-          const del = await tx.measurement.updateMany({
-            where: {
-              id: { in: sourceRowIds, notIn: canonicalRowIds },
-              deletedAt: null,
-            },
-            data: { deletedAt: new Date() },
-          });
-          removed = del.count;
-        });
-        return { removed, retiredDaily };
-      };
-
-      let foldResult: { removed: number; retiredDaily: boolean };
-      try {
-        foldResult = await foldOnce();
-      } catch (err) {
-        if (!isUniqueConstraintViolation(err)) throw err;
-        // A concurrent writer won a slot mid-transaction. Retry once: the
-        // deterministic lookup now resolves the winning row and adopts it,
-        // so this pass cannot create a duplicate.
-        foldResult = await foldOnce();
-      }
-      // Counters mutate OUTSIDE the retryable transaction so a P2002 retry
-      // cannot double-count.
-      summary.totals.hourlyRowsUpserted += byHour.length;
-      if (foldResult.retiredDaily) summary.totals.dailyRowsRetired += 1;
-
-      // iOS#34 — preserve the resting signal for PROXY users. For a user
-      // with zero native `RESTING_HEART_RATE` rows, the read-path resolver
-      // derives resting from the 20th-percentile of each day's RAW PULSE; the
-      // fold has just deleted those rows, so that day's resting figure would
-      // vanish (the hourly means flatten the low tail the percentile reads).
-      // Mint one derived `RESTING_HEART_RATE` row from the same percentile,
-      // sourced `COMPUTED` (distinct from Apple's own resting rows on both
-      // unique indexes), so the day reads back as the clean resting series
-      // the resolver prefers. Skipped for users WITH native resting rows
-      // (the resolver ignores the proxy entirely for them, so a derived row
-      // would only double-count).
-      if (isPulse) {
-        const restingValue = deriveDailyRestingFromPulse(dayRows);
-        if (restingValue !== null && !(await userHasNativeResting(userId))) {
-          const restingExternalId = dailyStatsExternalId(
-            RESTING_HK_IDENTIFIER,
-            // The fold's canonical timestamp is local-noon of the day; reuse
-            // its UTC date for the resting row's `stats:` key so a re-run
-            // upserts the same row instead of minting a sibling.
-            // eslint-disable-next-line healthlog/no-utc-day-key -- UTC by design: stable stats: externalId key; changing it would mint a sibling row on re-run
-            canonicalTimestamp.toISOString().slice(0, 10),
-          );
-          await pc.measurement.upsert({
-            where: {
-              userId_type_source_externalId: {
-                userId,
-                type: "RESTING_HEART_RATE",
-                source: "COMPUTED",
-                externalId: restingExternalId,
-              },
-            },
-            create: {
-              userId,
-              type: "RESTING_HEART_RATE",
-              value: restingValue,
-              unit: "bpm",
-              source: "COMPUTED",
-              measuredAt: canonicalTimestamp,
-              externalId: restingExternalId,
-            },
-            update: { value: restingValue, deletedAt: null },
-          });
-          summary.totals.derivedRestingRowsUpserted += 1;
-          // The derived row is its own (type, day); recompute its DAY bucket
-          // so the rollup tier serves it on a covered read.
+          })) > 0;
+        if (!dayAlreadyFolded) {
           await recomputeBucketsForMeasurement(
             userId,
-            "RESTING_HEART_RATE",
+            type,
             canonicalTimestamp,
           );
         }
-      }
+        // Whether the fold leftovers of this day are provably all still in
+        // the table (`foldConstituentHorizon`). Only then is a stored hourly
+        // mean, or the derived resting figure, recomputed.
+        const { dayStart, dayEnd } = localDayWindow(dateKey, tz);
+        const foldedAfterMs = retentionDays * 24 * 3_600_000;
+        const withinHorizon =
+          dayStart >= foldConstituentHorizon(new Date(), foldedAfterMs);
 
-      // No post-fold DAY recompute for ANY dense-tier type — it would
-      // overwrite the true raw-derived mean/min/max the pre-fold recompute
-      // above captured with hourly-mean-derived approximations (see the
-      // fidelity note there).
+        // Fold the day into per-LOCAL-HOUR mean rows, anchored at local
+        // HH:30. Sorted for a deterministic write order across runs.
+        const byHour = [...bucketRowsByLocalHour(dayRows, tz).entries()].sort(
+          (a, b) => a[0] - b[0],
+        );
 
-      return { kind: "written", sourceRowsRemoved: foldResult.removed };
-    },
-    recordBucket: ({ dayRows, outcome }) => {
-      summary.totals.daysConsolidated += 1;
-      if (outcome === null) {
-        // Dry-run: writeDay never ran, so estimate the hourly fan-out here
-        // from the same bucketing the real fold would use.
-        summary.totals.hourlyRowsUpserted += bucketRowsByLocalHour(
-          dayRows,
-          currentTz,
-        ).size;
-      }
-      summary.totals.perSampleRowsSoftDeleted +=
-        outcome?.kind === "written"
-          ? outcome.sourceRowsRemoved
-          : dayRows.length;
-    },
-    onUserStart: ({ tz }) => {
-      currentTz = tz;
-    },
-    onUserComplete: ({ userId, tz, dryRun }) => {
-      log(
-        `[dense-intraday-retention] user=${userId} tz=${tz}${dryRun ? " (dry-run)" : ""}`,
-      );
-    },
-    // Per-day failure boundary (v1.18.10 lesson). A day whose fold throws —
-    // e.g. a residual unique-index collision the adopt-in-place path could
-    // not absorb, or a derived-resting upsert that races a native row — is
-    // logged and STEPPED OVER so the global walk keeps draining every other
-    // user / type / day. The failed day keeps its raw rows live (the fold
-    // soft-deletes only on a committed transaction), so the next nightly run
-    // retries it. Without this, one poisoned day aborted the whole walk and
-    // stranded every later account.
-    onBucketError: ({ userId, type, dateKey, error }) => {
-      const reason = error instanceof Error ? error.message : String(error);
-      log(
-        `[dense-intraday-retention] user=${userId} type=${type} day=${dateKey} failed — ${reason}; continuing with the next bucket`,
-      );
-    },
-  });
+        const foldOnce = async (): Promise<{
+          removed: number;
+          retiredDaily: boolean;
+          slotsWritten: number;
+          hoursLeftAsStored: number;
+          /** Every raw sample of the day, when that is provably all of it. */
+          wholeDay: FoldConstituent[] | null;
+        }> => {
+          let removed = 0;
+          let retiredDaily = false;
+          let slotsWritten = 0;
+          let hoursLeftAsStored = 0;
+          let wholeDay: FoldConstituent[] | null = null;
+          await pc.$transaction(async (tx) => {
+            // First, before any reading is touched: see `restore-lock.ts`.
+            await holdAccountAgainstRestore(tx, userId);
+            // The fold repair rewrites the same rows; one of the two at a
+            // time.
+            await holdAccountFoldLock(tx, userId);
+            // An hour that already has a live hourly row is never re-minted
+            // from the samples in hand. Inside the horizon, before the fold
+            // repair has been through the account, with fold leftovers for
+            // the hour and no tombstone in it that may be a person's deletion
+            // (`fold-constituents.ts`), it gets the mean over every sample of
+            // the hour (live + leftovers) and the live samples are kept as
+            // leftovers (`absorbIntoFold`), so the repair and any later pass
+            // compute the same mean. Otherwise the stored mean was taken from
+            // samples that are not provably all in the table, and the hour is
+            // left exactly as it is, its live samples included: a mean of
+            // part of the hour must not replace it (see `refoldStoredDay` in
+            // `consolidate-daily-mean.ts`).
+            const hourIds = byHour.map(([hour]) =>
+              hourlyStatsExternalId(hkIdentifier, dateKey, hour),
+            );
+            const liveHourly = new Set(
+              (
+                await tx.measurement.findMany({
+                  where: {
+                    userId,
+                    type,
+                    source,
+                    externalId: { in: hourIds },
+                    deletedAt: null,
+                  },
+                  select: { externalId: true },
+                })
+              ).map((row) => row.externalId),
+            );
+            // Read under the fold lock: the repair may have taken some of the
+            // samples meanwhile.
+            let leftovers: FoldLeftover[] = [];
+            let ambiguous: FoldConstituent[] = [];
+            let liveIds = new Set(sourceRowIds);
+            // After the repair the purge may have removed leftovers inside
+            // the horizon; read under the fold lock, which the purge takes.
+            const refoldable =
+              liveHourly.size > 0 &&
+              withinHorizon &&
+              !(await hasFoldRepairRun(tx, userId));
+            if (refoldable) {
+              const window = {
+                userId,
+                type,
+                source,
+                from: dayStart,
+                to: dayEnd,
+              };
+              liveIds = new Set(
+                (await loadLiveSamples(tx, window)).map((row) => row.id),
+              );
+              const tombstones = await loadFoldTombstones(tx, {
+                ...window,
+                foldedAfterMs,
+              });
+              leftovers = tombstones.leftovers;
+              ambiguous = tombstones.ambiguous;
+            }
+            const leftoversByHour = new Map<number, FoldLeftover[]>();
+            for (const row of leftovers) {
+              const hour = hourOfDayForUserTz(row.measuredAt, tz);
+              const slot = leftoversByHour.get(hour) ?? [];
+              slot.push(row);
+              leftoversByHour.set(hour, slot);
+            }
+            const ambiguousByHour = new Map<number, number>();
+            for (const row of ambiguous) {
+              const hour = hourOfDayForUserTz(row.measuredAt, tz);
+              ambiguousByHour.set(hour, (ambiguousByHour.get(hour) ?? 0) + 1);
+            }
 
-  summary.totals.usersScanned = walk.usersScanned;
-  summary.stoppedEarly = walk.stoppedEarly;
+            const slots: HourlySlot[] = [];
+            const deleteIds: string[] = [];
+            const absorbIds: string[] = [];
+            for (const [hour, hourRows] of byHour) {
+              const slotId = hourlyStatsExternalId(hkIdentifier, dateKey, hour);
+              let value = meanBucketValue(hourRows);
+              if (liveHourly.has(slotId)) {
+                if (!refoldable) {
+                  hoursLeftAsStored += 1;
+                  continue;
+                }
+                const earlier = leftoversByHour.get(hour) ?? [];
+                const live = hourRows.filter((row) => liveIds.has(row.id));
+                if (live.length === 0) continue;
+                const verdict = foldWindowVerdict({
+                  leftovers: earlier,
+                  ambiguous: ambiguousByHour.get(hour) ?? 0,
+                  live: live.length,
+                });
+                if (verdict !== "recompute") {
+                  hoursLeftAsStored += 1;
+                  continue;
+                }
+                value = meanOf([
+                  ...live.map((row) => row.value),
+                  ...earlier.map((row) => row.value),
+                ]);
+                absorbIds.push(...live.map((row) => row.id));
+              } else {
+                deleteIds.push(...hourRows.map((row) => row.id));
+              }
+              slots.push({
+                externalId: slotId,
+                anchor: canonicalHourlyTimestamp(dateKey, hour, tz),
+                value,
+              });
+            }
+            const canonicalRowIds = await adoptOrMintHourlyRows(tx, {
+              userId,
+              type,
+              source,
+              unit,
+              slots,
+            });
+            slotsWritten = slots.length;
+
+            // Retire a live pre-hourly DAILY `stats:` row for this day (the
+            // late-sync path: raw samples arriving for a day folded to the
+            // daily grain before v1.28.31). Same transaction as the hourly
+            // mint — an AVG-over-live-rows reader must never see the daily
+            // row and the hourly rows live at once (double count).
+            const dailyRow = await tx.measurement.findFirst({
+              where: {
+                userId,
+                type,
+                source,
+                externalId,
+                deletedAt: null,
+              },
+              select: { id: true },
+              orderBy: { id: "asc" },
+            });
+            if (dailyRow && !canonicalRowIds.includes(dailyRow.id)) {
+              await tx.measurement.update({
+                where: { id: dailyRow.id },
+                data: { deletedAt: new Date() },
+              });
+              retiredDaily = true;
+            }
+
+            // Delete the out-of-window per-sample rows of the hours folded
+            // here in the same transaction. EXCLUDE the adopted canonical
+            // rows: a per-sample row that happened to fall on an hourly
+            // anchor is the row just adopted as that hour's mean, so removing
+            // it would erase the fold.
+            //
+            // v1.42 — deleted outright, like the cumulative drain's rows,
+            // where they used to be tombstoned for the 75-day retention. No
+            // client ever pulled these rows, so the tombstone told nobody
+            // anything; it only held the re-upload of a folded sample off,
+            // and the `folded_window` ingest guard (`folded-window.ts`) does
+            // that now from the live hourly row. The tombstones made up most
+            // of the table and its indexes.
+            const del = await tx.measurement.deleteMany({
+              where: {
+                id: { in: deleteIds, notIn: canonicalRowIds },
+                deletedAt: null,
+              },
+            });
+            const absorbed = await absorbIntoFold(
+              tx,
+              absorbIds.filter((id) => !canonicalRowIds.includes(id)),
+            );
+            removed = del.count + absorbed;
+
+            // The day's raw samples, for the derived resting figure: the rows
+            // in hand for a day folded here for the first time; for a day
+            // folded before, the live rows plus the leftovers, but only when
+            // every hour of it could be recomputed and no tombstone of the
+            // day may be a person's deletion.
+            if (!dayAlreadyFolded && liveHourly.size === 0) {
+              wholeDay = dayRows;
+            } else if (
+              refoldable &&
+              leftovers.length > 0 &&
+              ambiguous.length === 0 &&
+              hoursLeftAsStored === 0
+            ) {
+              wholeDay = [
+                ...dayRows.filter((row) => liveIds.has(row.id)),
+                ...leftovers,
+              ];
+            }
+          }, FOLD_TRANSACTION_OPTIONS);
+          return {
+            removed,
+            retiredDaily,
+            slotsWritten,
+            hoursLeftAsStored,
+            wholeDay,
+          };
+        };
+
+        let foldResult: Awaited<ReturnType<typeof foldOnce>>;
+        try {
+          foldResult = await foldOnce();
+        } catch (err) {
+          if (!isUniqueConstraintViolation(err)) throw err;
+          // A concurrent writer won a slot mid-transaction. Retry once: the
+          // deterministic lookup now resolves the winning row and adopts it,
+          // so this pass cannot create a duplicate.
+          foldResult = await foldOnce();
+        }
+        // Counters mutate OUTSIDE the retryable transaction so a P2002 retry
+        // cannot double-count.
+        summary.totals.hourlyRowsUpserted += foldResult.slotsWritten;
+        summary.totals.hoursLeftAsStored += foldResult.hoursLeftAsStored;
+        if (foldResult.retiredDaily) summary.totals.dailyRowsRetired += 1;
+
+        // iOS#34 — preserve the resting signal for PROXY users. For a user
+        // with zero native `RESTING_HEART_RATE` rows, the read-path resolver
+        // derives resting from the 20th-percentile of each day's RAW PULSE; the
+        // fold has just deleted those rows, so that day's resting figure would
+        // vanish (the hourly means flatten the low tail the percentile reads).
+        // Mint one derived `RESTING_HEART_RATE` row from the same percentile,
+        // sourced `COMPUTED` (distinct from Apple's own resting rows on both
+        // unique indexes), so the day reads back as the clean resting series
+        // the resolver prefers. Skipped for users WITH native resting rows
+        // (the resolver ignores the proxy entirely for them, so a derived row
+        // would only double-count).
+        //
+        // On a day an earlier run already folded, the figure comes from the
+        // whole day (live rows + fold leftovers) and only when that is
+        // provably the whole day; otherwise the stored figure stays.
+        const wholeDay = foldResult.wholeDay;
+        if (isPulse && wholeDay !== null) {
+          const restingValue = deriveDailyRestingFromPulse(
+            wholeDay.map((row) => ({
+              id: row.id,
+              type,
+              value: row.value,
+              measuredAt: row.measuredAt,
+              externalId: null,
+            })),
+          );
+          if (restingValue !== null && !(await userHasNativeResting(userId))) {
+            const restingExternalId = dailyStatsExternalId(
+              RESTING_HK_IDENTIFIER,
+              // The fold's canonical timestamp is local-noon of the day; reuse
+              // its UTC date for the resting row's `stats:` key so a re-run
+              // upserts the same row instead of minting a sibling.
+              // eslint-disable-next-line healthlog/no-utc-day-key -- UTC by design: stable stats: externalId key; changing it would mint a sibling row on re-run
+              canonicalTimestamp.toISOString().slice(0, 10),
+            );
+            await pc.measurement.upsert({
+              where: {
+                userId_type_source_externalId: {
+                  userId,
+                  type: "RESTING_HEART_RATE",
+                  source: "COMPUTED",
+                  externalId: restingExternalId,
+                },
+              },
+              create: {
+                userId,
+                type: "RESTING_HEART_RATE",
+                value: restingValue,
+                unit: "bpm",
+                source: "COMPUTED",
+                measuredAt: canonicalTimestamp,
+                externalId: restingExternalId,
+              },
+              update: { value: restingValue, deletedAt: null },
+            });
+            summary.totals.derivedRestingRowsUpserted += 1;
+            // The derived row is its own (type, day); recompute its DAY bucket
+            // so the rollup tier serves it on a covered read.
+            await recomputeBucketsForMeasurement(
+              userId,
+              "RESTING_HEART_RATE",
+              canonicalTimestamp,
+            );
+          }
+        }
+
+        // No post-fold DAY recompute for ANY dense-tier type — it would
+        // overwrite the true raw-derived mean/min/max the pre-fold recompute
+        // above captured with hourly-mean-derived approximations (see the
+        // fidelity note there).
+
+        return { kind: "written", sourceRowsRemoved: foldResult.removed };
+      },
+      recordBucket: ({ dayRows, outcome }) => {
+        summary.totals.daysConsolidated += 1;
+        if (outcome === null) {
+          // Dry-run: writeDay never ran, so estimate the hourly fan-out here
+          // from the same bucketing the real fold would use.
+          summary.totals.hourlyRowsUpserted += bucketRowsByLocalHour(
+            dayRows,
+            currentTz,
+          ).size;
+        }
+        summary.totals.perSampleRowsSoftDeleted +=
+          outcome?.kind === "written"
+            ? outcome.sourceRowsRemoved
+            : dayRows.length;
+      },
+      onUserStart: ({ tz }) => {
+        currentTz = tz;
+      },
+      onUserComplete: ({ userId, tz, dryRun }) => {
+        log(
+          `[dense-intraday-retention] user=${userId} source=${source} tz=${tz}${dryRun ? " (dry-run)" : ""}`,
+        );
+      },
+      // Per-day failure boundary (v1.18.10 lesson). A day whose fold throws —
+      // e.g. a residual unique-index collision the adopt-in-place path could
+      // not absorb, or a derived-resting upsert that races a native row — is
+      // logged and STEPPED OVER so the global walk keeps draining every other
+      // user / type / day. The failed day keeps its raw rows live (the fold
+      // deletes only on a committed transaction), so the next nightly run
+      // retries it. Without this, one poisoned day aborted the whole walk and
+      // stranded every later account.
+      onBucketError: ({ userId, type, dateKey, error }) => {
+        const reason = error instanceof Error ? error.message : String(error);
+        log(
+          `[dense-intraday-retention] user=${userId} source=${source} type=${type} day=${dateKey} failed — ${reason}; continuing with the next bucket`,
+        );
+      },
+    });
+
+  // One walk per source, Apple Health first so its behaviour and its order
+  // are exactly what they were before Health Connect folded too. A walk that
+  // stopped early stops the pass: the next run resumes where it left off.
+  for (const source of DENSE_INTRADAY_FOLD_SOURCES) {
+    const walk = await walkSource(source);
+    summary.totals.usersScanned = Math.max(
+      summary.totals.usersScanned,
+      walk.usersScanned,
+    );
+    if (walk.stoppedEarly) {
+      summary.stoppedEarly = true;
+      break;
+    }
+  }
 
   log(
-    `[dense-intraday-retention] done — usersScanned=${summary.totals.usersScanned} daysConsolidated=${summary.totals.daysConsolidated} perSampleRowsSoftDeleted=${summary.totals.perSampleRowsSoftDeleted} hourlyRowsUpserted=${summary.totals.hourlyRowsUpserted} dailyRowsRetired=${summary.totals.dailyRowsRetired} derivedRestingRowsUpserted=${summary.totals.derivedRestingRowsUpserted}${options.dryRun ? " (dry-run)" : ""}`,
+    `[dense-intraday-retention] done — usersScanned=${summary.totals.usersScanned} daysConsolidated=${summary.totals.daysConsolidated} perSampleRowsSoftDeleted=${summary.totals.perSampleRowsSoftDeleted} hourlyRowsUpserted=${summary.totals.hourlyRowsUpserted} dailyRowsRetired=${summary.totals.dailyRowsRetired} derivedRestingRowsUpserted=${summary.totals.derivedRestingRowsUpserted} hoursLeftAsStored=${summary.totals.hoursLeftAsStored}${options.dryRun ? " (dry-run)" : ""}`,
   );
 
   return summary;

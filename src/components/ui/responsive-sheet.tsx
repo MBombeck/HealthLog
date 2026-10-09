@@ -131,6 +131,23 @@ const CONTENT_WIDTH_CLASS: Record<
  * the form's chrome is unchanged because both branches expose the
  * same header / body / footer slot shape.
  */
+/**
+ * Phone branch only: on open, focus the sheet itself instead of its first
+ * field. Radix's default lands on the first tabbable element, and when that
+ * is a text-like field (a date, a name) the phone raises its keyboard over a
+ * sheet the person has not read yet, and the sheet jumps up under it. Focus
+ * still moves into the sheet (the content is focusable and traps focus), a
+ * field a form focuses on purpose (`autoFocus`, a mount effect) keeps it, and
+ * the desktop dialog keeps the default.
+ */
+export function keepKeyboardDownOnOpen(event: Event): void {
+  event.preventDefault();
+  const content = event.currentTarget as HTMLElement | null;
+  if (content && !content.contains(document.activeElement)) {
+    content.focus({ preventScroll: true });
+  }
+}
+
 export function ResponsiveSheet({
   open,
   onOpenChange,
@@ -153,6 +170,7 @@ export function ResponsiveSheet({
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent
           onCloseAutoFocus={onCloseAutoFocus}
+          onOpenAutoFocus={keepKeyboardDownOnOpen}
           side="bottom"
           showCloseButton={showCloseButton}
           data-slot="responsive-sheet-content"
@@ -232,8 +250,17 @@ export function ResponsiveSheet({
             className={cn(
               // Vertical-only scroll port — see the note on the Dialog
               // branch's body below for why `overflow-y-auto` alone does not
-              // say that.
-              "flex min-h-0 flex-1 flex-col gap-4 overflow-x-clip overflow-y-auto p-4",
+              // say that. `overscroll-contain`: a flick that reaches the end
+              // of the form stops there instead of chaining into the page
+              // (or the browser's pull-to-refresh) behind the sheet.
+              "flex min-h-0 flex-1 flex-col gap-4 overflow-x-clip overflow-y-auto overscroll-contain p-4",
+              // Without a footer the body is the sheet's bottom edge, so it
+              // keeps its last row above the home indicator of an
+              // installed app; the footer does that when there is one.
+              // Standing on the keyboard, the sheet is clear of the
+              // indicator already; the inset would leave a gap above it.
+              !footer &&
+                "keyboard-open:pb-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]",
               bodyClassName,
             )}
           >
@@ -242,7 +269,7 @@ export function ResponsiveSheet({
           {footer ? (
             <SheetFooter
               data-slot="responsive-sheet-footer"
-              className="border-border/70 bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky bottom-0 mt-0 flex-row justify-end gap-2 border-t p-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] backdrop-blur"
+              className="border-border/70 bg-background/95 supports-[backdrop-filter]:bg-background/80 keyboard-open:pb-4 sticky bottom-0 mt-0 flex-row justify-end gap-2 border-t p-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] backdrop-blur"
             >
               {footer}
             </SheetFooter>

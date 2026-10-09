@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { moodTagIcon } from "@/components/mood/mood-tag-icons";
 import { cn } from "@/lib/utils";
 
@@ -62,6 +62,7 @@ function deltaColor(delta: number): string {
 
 export function MoodTagInfluence({ rows }: { rows: MoodTagInfluenceRow[] }) {
   const { t } = useTranslations();
+  const nf = useFormatters();
   if (rows.length === 0) return null;
 
   return (
@@ -71,7 +72,7 @@ export function MoodTagInfluence({ rows }: { rows: MoodTagInfluenceRow[] }) {
           const Icon = row.labelKey ? moodTagIcon(row.icon) : null;
           const label = row.label ?? (row.labelKey ? t(row.labelKey) : row.tag);
           const up = row.delta >= 0;
-          const deltaText = `${up ? "+" : ""}${row.delta.toFixed(1)}`;
+          const deltaText = `${up ? "+" : ""}${nf.number(row.delta, 1)}`;
           return (
             <li
               key={`${row.labelKey ?? "flat"}:${row.tag}`}
@@ -110,8 +111,8 @@ export function MoodTagInfluence({ rows }: { rows: MoodTagInfluenceRow[] }) {
               </div>
               <p className="text-muted-foreground text-xs">
                 {t("insights.mood.influence.detail", {
-                  withAvg: row.withAvg.toFixed(1),
-                  withoutAvg: row.withoutAvg.toFixed(1),
+                  withAvg: nf.number(row.withAvg, 1),
+                  withoutAvg: nf.number(row.withoutAvg, 1),
                   withDays: row.withDays,
                 })}
               </p>

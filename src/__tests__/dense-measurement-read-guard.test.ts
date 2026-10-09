@@ -81,6 +81,8 @@ const DENSE_TYPES: ReadonlySet<string> = new Set([
  * list, keyed `<file>::<type expression>`, with why each stays bounded.
  */
 const ALLOWED: Record<string, string> = {
+  "lib/analytics/summaries-slice.ts::(shorthand)":
+    "one hourly-mean type (pulse) over one local day, the latest: the same rows the day view reads for that day, bounded by a day, not by the sampling history",
   "lib/insights/comprehensive-generate.ts::(shorthand)":
     'Only reached for SLEEP_DURATION (guarded by `type === "SLEEP_DURATION"`); a few stage rows per night.',
   "lib/insights/derived/vascular-age.ts::VASCULAR_AGE_TYPE":
@@ -107,6 +109,8 @@ const ALLOWED: Record<string, string> = {
     "Cross-source merge probe for one posted sleep segment: SLEEP_DURATION in a ±tolerance window around its end.",
   "lib/targets/build-response.ts::{ in: recentTypes":
     "Thirty days of weight, blood pressure, resting heart rate, body fat and steps (drained to one row per day). PULSE is filtered out of `recentTypes` and folds in SQL.",
+  "lib/import/health-connect/import.ts::{ in: spotTypes":
+    "The Health Connect import's same-reading check: the spot types of one 500-row batch (weight, blood pressure, vitals) in that batch's time window, ±2 s. Heart rate and sleep never take the check.",
   "lib/doctor-report/collect.ts::{ notIn: rawExcluded":
     "The report window's sparse types. Pulse, heart-rate variability and blood oxygen over 10 000 readings or any window over 90 days, and glucose over 90 days, are in `rawExcluded` and read as day buckets; glucose inside 90 days stays raw for the clinical panel (per-reading metrics), below 26 000 rows at a sensor's rate.",
 };
@@ -123,6 +127,8 @@ const ALLOWED_SQL: Record<string, string> = {
     "Canonical-source blood pressure and weight over 90 days: sparse types, a few rows a day.",
   "lib/measurements/reconcile-external-measurement.ts::1":
     "Row locks (`FOR UPDATE`) on an id list the caller already read; returns those ids only.",
+  "lib/jobs/pr-detection.ts::1":
+    "Selects account ids; `measurements` is read inside `EXISTS`, one row per account at most.",
   "lib/rollups/measurement-coverage.ts::1":
     "Selects from `unnest` of the caller's type list; `measurements` is read inside `EXISTS`, one row per type at most.",
 };

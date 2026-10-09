@@ -243,7 +243,6 @@ export function InventorySection({
           icon={<PackageOpen className="size-6" />}
           title={t("medications.detail.bestand.empty")}
           description={t("medications.detail.bestand.emptyHelper")}
-          ctaSize="lg"
           action={
             <Button size="sm" onClick={() => setAddOpen(true)}>
               <Plus aria-hidden="true" className="h-4 w-4" />

@@ -21,12 +21,12 @@ export default function InsightsGehpulsPage() {
       chartKey="walkingHeartRateAverage"
       i18nPrefix="insights.walkingHeartRateAverage"
       explainerMetric="walkingHeartRate"
-      color="var(--destructive)"
+      color="var(--chart-3)"
       unit="bpm"
       yAxisUnit="bpm"
       emptyStateIcon={<HeartPulse className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any walking heart rate average yet — what does this metric tell me about my health, and how do I improve it?"
+      coachPrefill="I haven't logged any walking heart rate average yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

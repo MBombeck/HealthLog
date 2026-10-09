@@ -94,6 +94,13 @@ export interface LabResultBackupEntry {
   sourceReferenceLow: number | null;
   sourceReferenceHigh: number | null;
   sourceReferenceText: string | null;
+  /**
+   * @pending-consumer(#1095) The value and unit the source report printed,
+   * kept when a write converted it. Nothing writes them yet; the backup
+   * carries them so the conversion, when it lands, needs no backup change.
+   */
+  sourceValue?: number | null;
+  sourceUnit?: string | null;
   takenAt: string;
   source: string;
   /** Human-readable cross-reference into `biomarkers` below, not an id. */
@@ -118,6 +125,8 @@ export interface BiomarkerBackupEntry {
   panel: string | null;
   hidden: boolean;
   context: string | null;
+  /** @pending-consumer(#1095) The catalogue key the name resolves to. */
+  analyteKey?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -414,6 +423,8 @@ export async function buildRecordsBackupSection(
     sourceReferenceLow: r.sourceReferenceLow,
     sourceReferenceHigh: r.sourceReferenceHigh,
     sourceReferenceText: r.sourceReferenceText,
+    sourceValue: r.sourceValue,
+    sourceUnit: r.sourceUnit,
     takenAt: r.takenAt.toISOString(),
     source: r.source,
     biomarkerName: r.biomarker?.name ?? null,
@@ -438,6 +449,7 @@ export async function buildRecordsBackupSection(
       "biomarker context",
       decryptContextFromBytes,
     ),
+    analyteKey: b.analyteKey,
   }));
 
   const illnessEpisodes: CanonicalIllnessEpisode[] = disasterRecovery

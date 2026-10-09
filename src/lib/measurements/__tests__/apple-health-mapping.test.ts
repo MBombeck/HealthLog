@@ -45,9 +45,8 @@ const MEASUREMENT_TYPES_WITHOUT_HK_COUNTERPART = new Set<MeasurementType>([
   // v1.11.0 — WHOOP-native score classes. These ingest server-side from the
   // WHOOP API (source = WHOOP), never from HealthKit; Apple ships no
   // identifier for day/workout strain, the WHOOP sleep-quality indices, sleep
-  // need, RMSSD HRV (Apple ships only the SDNN variant), or kJ energy. They
-  // have no HK mapping by design.
-  "HRV_RMSSD",
+  // need, or kJ energy. They have no HK mapping by design. (RMSSD HRV left
+  // this list in v1.42: iOS 27 added an identifier for it, #1110.)
   "DAY_STRAIN",
   "WORKOUT_STRAIN",
   "SLEEP_PERFORMANCE",
@@ -124,6 +123,8 @@ describe("APPLE_HEALTH_TYPE_MAP", () => {
       [
         "HKCategoryTypeIdentifierSleepAnalysis",
         "HKQuantityTypeIdentifierHeartRateVariabilitySDNN",
+        // v1.42 (#1110) — the RMSSD variant, same consent as SDNN.
+        "HKQuantityTypeIdentifierHeartRateVariabilityRMSSD",
         "HKQuantityTypeIdentifierVO2Max",
         // v1.10.0 — overnight wrist temperature + the sleep-breathing
         // index ride behind an explicit Health-share consent, same as
@@ -1079,5 +1080,32 @@ describe("percent-shaped HealthKit types take a fraction or an already-scaled pe
       APPLE_HEALTH_TYPE_MAP["HKQuantityTypeIdentifierWaistCircumference"];
     expect(mapping.convertToDbUnit(0.86)).toBeCloseTo(86);
     expect(mapping.convertToDbUnit(1.02)).toBeCloseTo(102);
+  });
+});
+
+describe("RMSSD HRV from HealthKit (#1110, iOS 27)", () => {
+  it("maps the RMSSD identifier onto HRV_RMSSD in milliseconds, never onto SDNN", () => {
+    const out = mapAppleHealthEntry({
+      hkIdentifier: "HKQuantityTypeIdentifierHeartRateVariabilityRMSSD",
+      value: 64,
+      unit: "ms",
+      startDate: "2026-10-01T03:00:00.000Z",
+      endDate: "2026-10-01T03:00:00.000Z",
+    });
+    expect(out).toMatchObject({ type: "HRV_RMSSD", value: 64, unit: "ms" });
+    expect(hkIdentifierForType("HRV_RMSSD")).toBe(
+      "HKQuantityTypeIdentifierHeartRateVariabilityRMSSD",
+    );
+    expect(hkIdentifierForType("HEART_RATE_VARIABILITY")).toBe(
+      "HKQuantityTypeIdentifierHeartRateVariabilitySDNN",
+    );
+  });
+
+  it("accepts a trained person's 250 ms and refuses 301 ms", () => {
+    // RMSSD runs higher than SDNN; an out-of-range value is a terminal skip,
+    // so a 200 ms ceiling would have lost real readings for good.
+    expect(validateMeasurementRange("HRV_RMSSD", 250)).toBeNull();
+    expect(validateMeasurementRange("HRV_RMSSD", 300)).toBeNull();
+    expect(validateMeasurementRange("HRV_RMSSD", 301)).not.toBeNull();
   });
 });

@@ -66,6 +66,7 @@ import { useUrlFilterSync } from "@/hooks/use-url-filter-sync";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { formatDateOrRelative, formatDateTime } from "@/lib/format";
+import { DayLink, DayLinkAt } from "@/components/day/day-link";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { MEASUREMENT_SOURCE_LIST_LABEL_KEYS } from "@/lib/i18n/source-labels";
 import { CUMULATIVE_DAY_SUM_TYPES } from "@/lib/measurements/cumulative-day-sum";
@@ -103,6 +104,8 @@ import {
   MEASUREMENT_TYPE_LABEL_KEYS as TYPE_LABEL_KEYS,
   MEASUREMENT_TYPE_ICONS as TYPE_ICONS,
   MEASUREMENT_TYPE_COLORS as TYPE_COLORS,
+  measurementUnitLabel,
+  measurementUnitMetaLead,
 } from "./measurement-list-meta";
 import {
   measurementListFiltersToSearch,
@@ -194,6 +197,11 @@ interface MeasurementListProps {
    */
   onAddFirst?: () => void;
   /**
+   * Told whether the unfiltered list is empty, so the page can drop its
+   * header add button while the empty state carries the add action.
+   */
+  onEmptyChange?: (empty: boolean) => void;
+  /**
    * v1.8.5 — pin the list to a single `MeasurementType` and hide the
    * type selector. Used by the insights "all readings" subpage, which
    * already knows the metric from the route and wants a focused list
@@ -284,6 +292,7 @@ function sourceBadgeClass(source: string): string {
 export function MeasurementList({
   onEdit,
   onAddFirst,
+  onEmptyChange,
   lockedType,
 }: MeasurementListProps) {
   const { t } = useTranslations();
@@ -657,6 +666,15 @@ export function MeasurementList({
     },
     enabled: isAuthenticated,
   });
+
+  const listEmpty =
+    !isLoading &&
+    !isError &&
+    !data?.measurements?.length &&
+    (typeFilter === "ALL" || !!lockedType);
+  useEffect(() => {
+    onEmptyChange?.(listEmpty);
+  }, [listEmpty, onEmptyChange]);
 
   // v1.16.4 — deletes are soft (tombstones), so the success toast can
   // carry a real Undo: it POSTs the ids to `/api/measurements/restore`,
@@ -1070,7 +1088,10 @@ export function MeasurementList({
                     {t("measurements.emptyResetFilter")}
                   </Button>
                 ) : onAddFirst && canAddMeasurement ? (
-                  <Button onClick={onAddFirst}>
+                  <Button
+                    onClick={onAddFirst}
+                    data-slot="measurement-add-first"
+                  >
                     <Plus className="h-4 w-4" />
                     {t("measurements.emptyAddFirst")}
                   </Button>
@@ -1261,7 +1282,11 @@ export function MeasurementList({
                                         rowDisplay(m).value,
                                         rawDisplayFractionDigits(m.type),
                                       )}{" "}
-                                  {isGrouped ? m.unit : rowDisplay(m).unit}
+                                  {measurementUnitLabel(
+                                    m.type,
+                                    isGrouped ? m.unit : rowDisplay(m).unit,
+                                    t,
+                                  )}
                                   {isGrouped && (
                                     <span className="text-muted-foreground ml-2 text-xs font-normal">
                                       {t("measurements.dailyTotalCaption", {
@@ -1283,7 +1308,17 @@ export function MeasurementList({
                             phrase "when".
                           */}
                             <TableCell className="text-muted-foreground text-sm">
-                              {formatDateOrRelative(m.measuredAt, t)}
+                              {/* v1.42 — the date opens its day; the row
+                                keeps opening the reading. */}
+                              {m.dayKey !== undefined ? (
+                                <DayLink date={m.dayKey}>
+                                  {formatDateOrRelative(m.measuredAt, t)}
+                                </DayLink>
+                              ) : (
+                                <DayLinkAt at={m.measuredAt}>
+                                  {formatDateOrRelative(m.measuredAt, t)}
+                                </DayLinkAt>
+                              )}
                             </TableCell>
                             <TableCell className="text-sm">
                               {m.notes ? (
@@ -1404,7 +1439,7 @@ export function MeasurementList({
                       className="bg-card border-border data-[state=selected]:border-primary/60 data-[state=selected]:bg-primary/5"
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 overflow-hidden">
+                        <div className="flex min-w-0 flex-1 items-center gap-2">
                           {/* v1.15.13 — multi-select checkbox in a 44px tap
                             target; absent for synthetic grouped rows. */}
                           {!isGrouped && canManage && (
@@ -1441,20 +1476,24 @@ export function MeasurementList({
                               <Icon className="h-4 w-4" />
                             </button>
                           )}
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             {/* v1.22 — metadata badges sit on the scale
                               token `text-xs` (12 px, the mobile legibility
                               baseline) instead of an arbitrary per-site
                               size, so the row tracks the type scale. */}
-                            {(m.type === "BLOOD_PRESSURE_SYS" ||
-                              m.type === "BLOOD_PRESSURE_DIA") && (
-                              <Badge
-                                variant="outline"
-                                className="mr-1.5 h-5 px-1 text-xs"
-                              >
-                                {t(TYPE_LABEL_KEYS[m.type])}
-                              </Badge>
-                            )}
+                            {/* The type names the row: without it two
+                              readings in the same unit ("55 ms" HRV and
+                              "63 ms" RMSSD) could not be told apart on a
+                              phone, where the desktop table's type column
+                              does not exist. */}
+                            <p
+                              className="truncate text-xs font-medium"
+                              data-slot="measurement-row-type"
+                            >
+                              {TYPE_LABEL_KEYS[m.type]
+                                ? t(TYPE_LABEL_KEYS[m.type])
+                                : m.type}
+                            </p>
                             <span
                               className="font-semibold tabular-nums"
                               data-slot="measurement-row-value"
@@ -1465,19 +1504,14 @@ export function MeasurementList({
                                 their native decimal precision so
                                 "78.4 kg" no longer truncates to "78".
                                 v1.11.5 — sleep rows render TIME ASLEEP. */}
-                              {isSleep ? (
-                                formatDurationMinutes(m.value, t)
-                              ) : (
-                                <>
-                                  {isGrouped
-                                    ? fmt.integer(m.value)
-                                    : fmt.number(
-                                        rowDisplay(m).value,
-                                        rawDisplayFractionDigits(m.type),
-                                      )}{" "}
-                                  {isGrouped ? m.unit : rowDisplay(m).unit}
-                                </>
-                              )}
+                              {isSleep
+                                ? formatDurationMinutes(m.value, t)
+                                : isGrouped
+                                  ? fmt.integer(m.value)
+                                  : fmt.number(
+                                      rowDisplay(m).value,
+                                      rawDisplayFractionDigits(m.type),
+                                    )}
                             </span>
                             {isSleep ? (
                               <SleepNightCaption m={m} />
@@ -1490,16 +1524,51 @@ export function MeasurementList({
                                 </span>
                               )
                             )}
-                            <p className="text-muted-foreground truncate text-xs">
+                            {/* The meta line wraps rather than truncates:
+                              cut to "vor 9 Stunden…" it hid the day it
+                              opens and the source beside it. */}
+                            <p className="text-muted-foreground text-xs">
                               {/*
                               v1.4.43 QoL (L8) — see desktop
                               counterpart at the same `measuredAt`
                               site. Relative under 24 h, absolute
                               older.
                             */}
-                              <span>
-                                {formatDateOrRelative(m.measuredAt, t)}
-                              </span>
+                              {/* The unit is meta, and on a phone a long
+                                one ("Atemzüge/min") beside the value pushed
+                                the row's controls; it leads the meta line
+                                instead. Sleep reads as a duration. */}
+                              {(() => {
+                                if (isSleep) return null;
+                                const lead = measurementUnitMetaLead(
+                                  m.type,
+                                  isGrouped ? m.unit : rowDisplay(m).unit,
+                                  t,
+                                );
+                                return lead ? (
+                                  <span
+                                    data-slot="measurement-row-unit"
+                                    className="whitespace-nowrap"
+                                  >
+                                    {lead}
+                                  </span>
+                                ) : null;
+                              })()}
+                              {m.dayKey !== undefined ? (
+                                <DayLink
+                                  date={m.dayKey}
+                                  className="whitespace-nowrap"
+                                >
+                                  {formatDateOrRelative(m.measuredAt, t)}
+                                </DayLink>
+                              ) : (
+                                <DayLinkAt
+                                  at={m.measuredAt}
+                                  className="whitespace-nowrap"
+                                >
+                                  {formatDateOrRelative(m.measuredAt, t)}
+                                </DayLinkAt>
+                              )}
                               {m.source !== "MANUAL" && (
                                 <Badge
                                   variant="outline"
@@ -1740,7 +1809,6 @@ export function MeasurementList({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start">
                         <DropdownMenuItem
-                          variant="destructive"
                           onClick={() => setEditDeleteDialogOpen(true)}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />

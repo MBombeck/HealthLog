@@ -120,6 +120,7 @@ function McpConnectionsCard() {
   return (
     <SettingsCard>
       <SettingsCardHeader
+        anchor="mcp-connections"
         icon={Link2}
         title={t("settings.mcp.connectionsTitle")}
         description={t("settings.mcp.connectionsDescription")}
@@ -165,7 +166,7 @@ function McpConnectionsCard() {
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button
-                      variant="destructive"
+                      variant="outline"
                       size="sm"
                       className="min-h-11 w-full"
                     >
@@ -229,18 +230,10 @@ function McpEnableCard() {
   return (
     <SettingsCard>
       <SettingsCardHeader
+        anchor="mcp-enable"
         icon={Plug}
         title={t("settings.mcp.enableTitle")}
         description={t("settings.mcp.enableDescription")}
-        status={
-          enabled ? (
-            <Badge className="bg-success/15 text-success">
-              {t("settings.mcp.enabled")}
-            </Badge>
-          ) : (
-            <Badge variant="outline">{t("settings.mcp.disabled")}</Badge>
-          )
-        }
       />
 
       <div className="space-y-4">
@@ -367,14 +360,17 @@ function McpTokensCard() {
     <SettingsCard>
       {recentProof.dialog}
       <SettingsCardHeader
+        anchor="mcp-tokens"
         icon={Key}
         title={t("settings.mcp.tokensTitle")}
         description={t("settings.mcp.tokensDescription")}
       />
-      <p className="text-sm">{t("settings.mcp.tokensDetail")}</p>
-
       <div className="space-y-4">
-        <p className="text-sm leading-relaxed">{t("settings.mcp.scopeNote")}</p>
+        {/* "Shown once" is part of the same statement as the scope note, so
+            it reads inside that paragraph rather than as a line of its own. */}
+        <p className="text-sm leading-relaxed">
+          {t("settings.mcp.tokensDetail")} {t("settings.mcp.scopeNote")}
+        </p>
 
         <div className="border-border bg-muted/30 space-y-2 rounded-lg border p-3">
           <div className="flex items-center justify-between gap-4">
@@ -396,7 +392,8 @@ function McpTokensCard() {
           <Input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder={t("settings.tokenNamePlaceholder")}
+            placeholder={t("settings.mcp.tokenNamePlaceholder")}
+            aria-label={t("settings.tokenNameLabel")}
             maxLength={100}
             className="flex-1"
           />
@@ -506,7 +503,7 @@ function McpTokensCard() {
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button
-                          variant="destructive"
+                          variant="outline"
                           size="sm"
                           className="min-h-11 w-full"
                         >

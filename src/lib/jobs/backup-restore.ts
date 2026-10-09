@@ -77,6 +77,7 @@ import {
   RESTORE_FAILURE_CAUSES,
   type RestoreFailureCause,
 } from "@/lib/export/restore-failure-cause";
+import { logCaught } from "@/lib/logging/signal";
 
 export const BACKUP_RESTORE_QUEUE = "backup-restore";
 
@@ -478,7 +479,8 @@ export async function admitBackupRestore(input: {
       data: { pgBossJobId: bossJobId },
     });
     return { admitted: true, jobId };
-  } catch {
+  } catch (err) {
+    logCaught("backup.restore.enqueue_failed", err, { jobId });
     // Written but never queued: fail it here, or it holds the account's slot
     // until the unclaimed window runs out.
     await prisma.backupRestoreJob.update({
@@ -818,7 +820,8 @@ export async function enqueueBackupRestoreSweepAtBoot(
         expireInSeconds: BACKUP_RESTORE_EXPIRE_SECONDS,
       },
     );
-  } catch {
+  } catch (err) {
+    logCaught("backup.restore.sweep_enqueue_failed", err);
     // The admission check fails an abandoned job the next time the account
     // is restored, so a missed sweep costs a retry, not a stuck account.
   }

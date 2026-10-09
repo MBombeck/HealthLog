@@ -50,6 +50,11 @@ vi.mock("@tanstack/react-query", () => ({
             activeSessions: 1,
           },
           integrations: { umami: null, glitchtip: null, webPush: null },
+          geo: {
+            lookup: "offline",
+            providerChosen: false,
+            providerHost: "ipwho.is",
+          },
         },
         isLoading: false,
         isError: false,

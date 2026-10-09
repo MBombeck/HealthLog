@@ -23,7 +23,7 @@ export default function InsightsOxygenSaturationPage() {
       chartKey="oxygenSaturation"
       i18nPrefix="insights.oxygenSaturation"
       explainerMetric="oxygenSaturation"
-      color="var(--info)"
+      color="var(--chart-4)"
       unit="%"
       yAxisUnit="%"
       valueBands={[
@@ -37,7 +37,7 @@ export default function InsightsOxygenSaturationPage() {
       emptyStateIcon={<Wind className="size-6" />}
       emptyStateCtaType={null}
       captureType="OXYGEN_SATURATION"
-      coachPrefill="I haven't logged any oxygen-saturation data yet — what does SpO₂ tell me, and what range should I aim for?"
+      coachPrefill="I haven't logged any oxygen-saturation data yet. What does SpO₂ tell me, and what range should I aim for?"
     />
   );
 }

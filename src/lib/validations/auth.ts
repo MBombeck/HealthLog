@@ -6,19 +6,39 @@ import { clientTransportSchema } from "@/lib/validations/client-transport";
 /** Minimum password length — must match checkPasswordStrength() in @/lib/auth/password.ts */
 const PASSWORD_MIN_LENGTH = 12;
 
+/**
+ * v1.42 (#959) — the prefix a managed profile's generated username carries
+ * (`managed-<hex>`, `src/lib/managed-profiles/create.ts`). An account a person
+ * names themselves may not start with it: a self-chosen `managed-…` would read
+ * as a profile nobody signs into, in every list that shows usernames, and a
+ * profile being claimed has to leave the generated name behind rather than
+ * keep it.
+ */
+export const MANAGED_USERNAME_PREFIX = "managed-";
+
+/** A username a person chooses: registration and claiming a profile. */
+export const accountUsernameSchema = z
+  .string()
+  .min(3, "At least 3 characters")
+  .max(30, "Maximum 30 characters")
+  .regex(/^[a-zA-Z0-9_-]+$/, "Only letters, numbers, _ and -")
+  .refine(
+    (value) => !value.toLowerCase().startsWith(MANAGED_USERNAME_PREFIX),
+    `A username cannot start with "${MANAGED_USERNAME_PREFIX}"`,
+  );
+
+/** A first password: registration and claiming a profile. */
+export const newAccountPasswordSchema = z
+  .string()
+  .min(
+    PASSWORD_MIN_LENGTH,
+    `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
+  );
+
 export const registerSchema = z.object({
   email: z.email("Invalid email address"),
-  username: z
-    .string()
-    .min(3, "At least 3 characters")
-    .max(30, "Maximum 30 characters")
-    .regex(/^[a-zA-Z0-9_-]+$/, "Only letters, numbers, _ and -"),
-  password: z
-    .string()
-    .min(
-      PASSWORD_MIN_LENGTH,
-      `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
-    ),
+  username: accountUsernameSchema,
+  password: newAccountPasswordSchema,
   /**
    * v1.4.25 W7 — browser-detected timezone. The signup form pulls
    * `Intl.DateTimeFormat().resolvedOptions().timeZone` and sends it

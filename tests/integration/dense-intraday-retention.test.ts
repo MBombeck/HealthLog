@@ -12,7 +12,7 @@
  * adopts, retires a pre-hourly daily row atomically, stays idempotent,
  * and preserves the dense-tier scope.
  */
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { runDenseIntradayRetention } from "@/lib/measurements/dense-intraday-retention";
@@ -39,7 +39,7 @@ beforeEach(async () => {
 });
 
 describe("runDenseIntradayRetention (real Postgres)", () => {
-  it("folds out-of-window HRV per-sample rows into hourly MEANs and soft-deletes them", async () => {
+  it("folds out-of-window HRV per-sample rows into hourly MEANs and deletes them", async () => {
     const prisma = getPrismaClient();
     await prisma.measurement.createMany({
       data: [
@@ -103,6 +103,12 @@ describe("runDenseIntradayRetention (real Postgres)", () => {
     expect(live[1].externalId).toBe(`stats:${HRV_HK}:${DAY_KEY}T11`);
     expect(live[1].value).toBeCloseTo(70, 6);
     expect(live[1].measuredAt.toISOString()).toBe("2026-05-01T09:30:00.000Z");
+    // v1.42 — the raw rows are gone, not tombstoned.
+    expect(
+      await prisma.measurement.count({
+        where: { userId: TEST_USER_ID, type: "HEART_RATE_VARIABILITY" },
+      }),
+    ).toBe(2);
   });
 
   it("retires a pre-hourly DAILY stats row in the same pass (late-sync path, no P2002, no double count)", async () => {
@@ -203,12 +209,35 @@ describe("runDenseIntradayRetention (real Postgres)", () => {
       },
     });
 
-    // Must not throw P2002 — the fold adopts the existing hourly row.
-    const summary = await runDenseIntradayRetention(prisma, {
-      userId: TEST_USER_ID,
-      retentionDays: 0,
-      log: () => {},
+    // The sample the prior fold took for that hour, soft-deleted by it.
+    await prisma.measurement.create({
+      data: {
+        userId: TEST_USER_ID,
+        type: "HEART_RATE_VARIABILITY",
+        value: 20,
+        unit: "ms",
+        source: "APPLE_HEALTH",
+        measuredAt: new Date("2026-05-01T06:05:00.000Z"),
+        externalId: "hk-hrv-early",
+        deletedAt: new Date("2026-05-03T00:00:00.000Z"),
+      },
     });
+
+    // Must not throw P2002 — the fold adopts the existing hourly row. Run
+    // a few days after the fold, inside the tombstone horizon, where the
+    // stored hour may be recomputed from all of its samples.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-05-05T00:00:00.000Z"));
+    let summary: Awaited<ReturnType<typeof runDenseIntradayRetention>>;
+    try {
+      summary = await runDenseIntradayRetention(prisma, {
+        userId: TEST_USER_ID,
+        retentionDays: 0,
+        log: () => {},
+      });
+    } finally {
+      vi.useRealTimers();
+    }
     expect(summary.totals.daysConsolidated).toBe(1);
 
     const live = await prisma.measurement.findMany({
@@ -220,8 +249,9 @@ describe("runDenseIntradayRetention (real Postgres)", () => {
     });
     expect(live).toHaveLength(1);
     expect(live[0].externalId).toBe(`stats:${HRV_HK}:${DAY_KEY}T08`);
-    // Refreshed to the late sample's hourly mean, overwriting the stale 999.
-    expect(live[0].value).toBeCloseTo(40, 6);
+    // Refreshed to the mean over every sample of the hour, the prior fold's
+    // tombstone included, never to the late sample alone.
+    expect(live[0].value).toBeCloseTo(30, 6);
     expect(live[0].measuredAt.toISOString()).toBe("2026-05-01T06:30:00.000Z");
   });
 
@@ -370,5 +400,90 @@ describe("runDenseIntradayRetention (real Postgres)", () => {
     });
     // Both raw samples survive — the intra-day shape is preserved.
     expect(live).toHaveLength(2);
+  });
+
+  it("folds Health Connect raw heart rate past the window into its own hourly rows, beside Apple Health's", async () => {
+    const prisma = getPrismaClient();
+    // Berlin UTC+2 on 1 May: 08:xx UTC is local hour 10 — far past 90 days.
+    const at = (minute: number) =>
+      new Date(`2026-05-01T08:${String(minute).padStart(2, "0")}:00.000Z`);
+    await prisma.measurement.createMany({
+      data: [
+        ...[60, 70, 80].map((value, i) => ({
+          userId: TEST_USER_ID,
+          type: "PULSE" as const,
+          value,
+          unit: "bpm",
+          source: "HEALTH_CONNECT" as const,
+          measuredAt: at(i * 10 + 1),
+          externalId: `hc:00000000-0000-0000-0000-00000000000a:${i}`,
+        })),
+        {
+          userId: TEST_USER_ID,
+          type: "PULSE" as const,
+          value: 100,
+          unit: "bpm",
+          source: "APPLE_HEALTH" as const,
+          measuredAt: at(5),
+          externalId: "hk-pulse-1",
+        },
+      ],
+    });
+
+    const summary = await runDenseIntradayRetention(prisma, {
+      userId: TEST_USER_ID,
+      // The default 90-day window: the samples are well past it.
+      log: () => {},
+    });
+    expect(summary.totals.perSampleRowsSoftDeleted).toBe(4);
+
+    const rows = await prisma.measurement.findMany({
+      where: { userId: TEST_USER_ID, type: "PULSE" },
+      orderBy: { source: "asc" },
+    });
+    // Raw rows of both sources are gone outright, not tombstoned.
+    expect(rows.every((row) => row.externalId?.startsWith("stats:"))).toBe(
+      true,
+    );
+    expect(rows.every((row) => row.deletedAt === null)).toBe(true);
+    const id = "stats:HKQuantityTypeIdentifierHeartRate:2026-05-01T10";
+    // One mean per source: the two sources never share a row.
+    expect(rows.map((row) => [row.source, row.externalId, row.value])).toEqual([
+      ["APPLE_HEALTH", id, 100],
+      ["HEALTH_CONNECT", id, 70],
+    ]);
+
+    // A second run finds nothing left to fold.
+    const again = await runDenseIntradayRetention(prisma, {
+      userId: TEST_USER_ID,
+      log: () => {},
+    });
+    expect(again.totals.daysConsolidated).toBe(0);
+  });
+
+  it("keeps Health Connect raw heart rate inside the window raw", async () => {
+    const prisma = getPrismaClient();
+    const recent = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+    await prisma.measurement.create({
+      data: {
+        userId: TEST_USER_ID,
+        type: "PULSE",
+        value: 64,
+        unit: "bpm",
+        source: "HEALTH_CONNECT",
+        measuredAt: recent,
+        externalId: "hc:00000000-0000-0000-0000-00000000000b:1",
+      },
+    });
+    const summary = await runDenseIntradayRetention(prisma, {
+      userId: TEST_USER_ID,
+      log: () => {},
+    });
+    expect(summary.totals.daysConsolidated).toBe(0);
+    expect(
+      await prisma.measurement.count({
+        where: { userId: TEST_USER_ID, source: "HEALTH_CONNECT" },
+      }),
+    ).toBe(1);
   });
 });

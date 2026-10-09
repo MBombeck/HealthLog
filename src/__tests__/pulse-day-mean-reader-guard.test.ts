@@ -114,6 +114,10 @@ const TS_READERS: Record<string, Entry> = {
     via: "lib/ai/coach/snapshot-series.ts",
     passes: /buildDailyValueRows\([^)]*"PULSE"/,
   },
+  "components/day/day-values-model.ts": {
+    exempt:
+      "means several readings of a type the day route sends one by one (weight, blood pressure, glucose); pulse arrives as one server-side day value (`dayValueShape` in lib/day/values.ts)",
+  },
   "components/charts/health-chart.tsx": {
     exempt:
       "a rolling average over the points the chart draws: display smoothing, not a stated figure",

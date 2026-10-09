@@ -20,12 +20,12 @@ export default function InsightsStairAscentSpeedPage() {
       chartKey="stairAscentSpeed"
       i18nPrefix="insights.stairAscentSpeed"
       explainerMetric="stairAscentSpeed"
-      color="var(--success)"
+      color="var(--chart-2)"
       unit="m/s"
       yAxisUnit="m/s"
       emptyStateIcon={<Gauge className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any stair-ascent-speed data yet — what does this metric tell me about my health, and how do I improve it?"
+      coachPrefill="I haven't logged any stair-ascent-speed data yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

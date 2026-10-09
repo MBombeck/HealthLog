@@ -380,10 +380,9 @@ export function CoachInput({
           autoCapitalize="sentences"
           rows={1}
           className={cn(
-            "order-1 w-full min-w-0 flex-1 resize-none bg-transparent text-base leading-relaxed outline-none sm:text-sm",
+            "order-1 w-full min-w-0 flex-1 resize-none bg-transparent text-base leading-relaxed outline-none sm:pointer-fine:text-sm",
             "px-2 py-1.5",
             "max-h-[9.5rem] overflow-auto",
-            "[scrollbar-width:thin] [scrollbar-color:color-mix(in_srgb,var(--primary)_35%,transparent)_transparent]",
             "placeholder:text-muted-foreground aria-disabled:opacity-60",
             "placeholder:overflow-hidden placeholder:text-ellipsis placeholder:whitespace-nowrap",
           )}

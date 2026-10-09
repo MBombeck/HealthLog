@@ -167,7 +167,18 @@ export class WideEventBuilder {
   }
 
   setError(err: unknown): this {
-    this.elevateLevel("error");
+    // v1.42 — a refusal the request was meant to get (an expired session,
+    // a missing permission, a validation error: anything that carries a 4xx
+    // status) is a `warn`, not an `error`. Every 401 from an expired token
+    // used to land at `error`, about nine in ten of all error lines, so a
+    // query or an alert on `level=error` could not see the real failures
+    // between them. The error details are recorded either way.
+    const status = (err as { statusCode?: unknown } | null)?.statusCode;
+    this.elevateLevel(
+      typeof status === "number" && status >= 400 && status < 500
+        ? "warn"
+        : "error",
+    );
     if (err instanceof Error) {
       this.event.error = {
         type: err.constructor.name,

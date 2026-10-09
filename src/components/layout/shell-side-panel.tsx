@@ -7,8 +7,9 @@ import { createShellSlot } from "./shell-slot";
  * `<main>` rather than inside `<main>`. A panel portalled here runs the full
  * height of the content row, from the top of the window (below any banner
  * strip) to the bottom, and the top bar ends at its left edge instead of
- * running underneath it. The Coach's docked conversations panel is the one
- * user. See `shell-slot.tsx`.
+ * running underneath it. The docked day and the Coach's docked
+ * conversations live here; their strips sit right of this column
+ * (`shell-dock.tsx`). See `shell-slot.tsx`.
  */
 const slot = createShellSlot("shell-side-panel");
 

@@ -85,7 +85,7 @@ export function EditSymptomEventSheet({
       title={t("symptoms.section.editEventTitle", { symptom: label })}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
           <Button onClick={handleSave} disabled={update.isPending}>
@@ -128,8 +128,8 @@ export function EditSymptomEventSheet({
           htmlFor="symptom-event-note"
           label={
             <>
-              {t("symptoms.entry.note")}{" "}
-              <span className="text-muted-foreground font-normal">
+              {t("symptoms.entry.note")}
+              <span className="text-muted-foreground ml-1 font-normal">
                 ({t("common.optional")})
               </span>
             </>
@@ -194,7 +194,7 @@ export function EditSymptomDefinitionSheet({
       title={t("symptoms.section.editSymptomTitle")}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
           <Button onClick={handleSave} disabled={update.isPending}>

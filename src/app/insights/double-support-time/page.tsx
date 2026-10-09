@@ -21,12 +21,12 @@ export default function InsightsDoppelstandphasePage() {
       chartKey="walkingDoubleSupport"
       i18nPrefix="insights.walkingDoubleSupport"
       explainerMetric="doubleSupportTime"
-      color="var(--success)"
+      color="var(--chart-2)"
       unit="%"
       yAxisUnit="%"
       emptyStateIcon={<Footprints className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any double support time yet — what does this metric tell me about my health, and how do I improve it?"
+      coachPrefill="I haven't logged any double support time yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

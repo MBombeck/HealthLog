@@ -9,6 +9,7 @@ import { AnthropicClient } from "./anthropic-client";
 import { LocalOpenAICompatibleClient } from "./local-client";
 import {
   refreshDeviceTokens,
+  codexReconnectRequired,
   encryptCodexCreds,
   decryptCodexCreds,
   encryptAdminCodexCreds,
@@ -328,14 +329,14 @@ async function resolveCodexProvider(
         !freshUser?.codexAccessTokenEncrypted ||
         !freshUser.codexRefreshTokenEncrypted
       ) {
-        throw new Error("No refresh token available");
+        throw codexReconnectRequired("no refresh token");
       }
       const decoded = decryptCodexCreds({
         accessEncrypted: freshUser.codexAccessTokenEncrypted,
         refreshEncrypted: freshUser.codexRefreshTokenEncrypted,
       });
       if (!decoded) {
-        throw new Error("Codex token storage corrupt; user must re-link");
+        throw codexReconnectRequired("token storage corrupt");
       }
       const fresh = await refreshDeviceTokens(decoded.refreshToken);
       const enc = encryptCodexCreds(fresh);
@@ -444,7 +445,7 @@ async function resolveAdminCodexProvider(): Promise<AIProvider | null> {
         !fresh.adminCodexRefreshTokenEncrypted ||
         !fresh.adminCodexAccountIdEncrypted
       ) {
-        throw new Error("No central-codex refresh token available");
+        throw codexReconnectRequired("no central refresh token");
       }
       const decoded = decryptAdminCodexCreds({
         accessEncrypted: fresh.adminCodexAccessTokenEncrypted,
@@ -453,9 +454,7 @@ async function resolveAdminCodexProvider(): Promise<AIProvider | null> {
         expiresAt: fresh.adminCodexTokenExpiresAt,
       });
       if (!decoded) {
-        throw new Error(
-          "Central-codex token storage corrupt; re-link required",
-        );
+        throw codexReconnectRequired("central token storage corrupt");
       }
       const refreshed = await refreshDeviceTokens(decoded.refreshToken);
       const enc = encryptAdminCodexCreds(refreshed);

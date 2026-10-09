@@ -7,6 +7,7 @@ import {
   CartesianGrid,
   Cell,
   Legend,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -14,9 +15,18 @@ import {
 } from "recharts";
 
 import { Button } from "@/components/ui/button";
+import { ChartDataTable } from "@/components/charts/chart-data-table";
+import {
+  ChartDayFooter,
+  OPEN_DAY_LINE,
+  dayAnchor,
+  useChartDayLinks,
+} from "@/components/day/chart-day-links";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { TileHeader } from "@/components/insights/tile-header";
 import { useTranslations } from "@/lib/i18n/context";
+import { useCalendarDate } from "@/hooks/use-calendar-date";
+import { dateOnlyKey } from "@/lib/tz/date-only";
 import { formatDurationMinutes } from "@/lib/i18n/duration";
 import { resolveIntlLocale } from "@/lib/format-locale";
 import type { Locale } from "@/lib/i18n/config";
@@ -260,6 +270,8 @@ export function compositionTotals(row: CompositionRow | undefined): {
 
 export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
   const { t, locale } = useTranslations();
+  const formatCalendar = useCalendarDate();
+  const fmtDay = (date: Date) => formatCalendar(dateOnlyKey(date));
 
   // v1.4.25 W3f — window toggle (7 / 14 / 30). Default 7d so the user
   // sees their most recent week with maximal per-bar resolution.
@@ -313,6 +325,36 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
       ),
     );
 
+  // v1.42 — each night's column opens the day it ended on (the day the
+  // per-night key names, as `/api/sleep/night` does), through the same doors
+  // every day-linked chart has.
+  const nightDays = data.map((row) =>
+    typeof row.dayKey === "string" && row.dayKey !== "aggregate"
+      ? row.dayKey
+      : null,
+  );
+  const chartDays = useChartDayLinks({
+    enabled: hasData && nightDays.some((day) => day !== null),
+    days: nightDays,
+    focusFor: (index) => {
+      const totals = compositionTotals(data[index]);
+      return totals.nightMinutes > 0
+        ? {
+            label: t("insights.sleep.mainSleep"),
+            value: formatDurationMinutes(totals.nightMinutes, t),
+            types: ["SLEEP_DURATION"],
+          }
+        : null;
+    },
+  });
+  const tableColumns = [...STAGE_ORDER, ...(hasNap ? [NAP_KEY] : [])]
+    .filter((stage) =>
+      data.some(
+        (row) => typeof row[stage] === "number" && (row[stage] as number) > 0,
+      ),
+    )
+    .map((stage) => ({ key: stage, label: stageLabels[stage] ?? stage }));
+
   const ariaLabel = t("insights.sleep.compositionAriaLabel", {
     nights: breakdown.nights,
   });
@@ -354,7 +396,9 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
                 aria-pressed={windowDays === w}
                 data-slot={`sleep-stage-window-${w}`}
               >
-                {w}d
+                {/* The page's other range controls read "7T / 30T"; this
+                    one printed an English "7d" beside them. */}
+                {t("charts.daysNLabel", { days: w })}
               </Button>
             ))}
           </div>
@@ -369,157 +413,228 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
             {t("insights.sleep.stages.unavailable")}
           </p>
         ) : (
-          <div role="img" aria-label={ariaLabel}>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart
-                data={data}
-                margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="var(--border)"
-                  opacity={0.3}
-                />
-                <XAxis
-                  type="category"
-                  dataKey="label"
-                  stroke="var(--muted-foreground)"
-                  fontSize={10}
-                  interval="preserveStartEnd"
-                />
-                <YAxis
-                  type="number"
-                  stroke="var(--muted-foreground)"
-                  fontSize={11}
-                  tickFormatter={(v: number) => {
-                    // Render the y-axis as hours so 480 min reads as 8h.
-                    if (v <= 0) return "0";
-                    return `${Math.round(v / 60)}h`;
-                  }}
-                />
-                <Tooltip
-                  cursor={{ fill: "transparent" }}
-                  content={({ active, payload, label }) => {
-                    if (!active || !payload || payload.length === 0)
-                      return null;
-                    const row = payload[0]?.payload as
-                      Record<string, number | string> | undefined;
-                    const napCount =
-                      typeof row?.napCount === "number" ? row.napCount : 0;
-                    // The footer's first line is the NIGHT. The nap is listed
-                    // above it as its own line and stays out of that sum, so
-                    // the per-stage percentages keep meaning "of this night".
-                    // On a day with a nap a second line carries the whole
-                    // column — main sleep plus naps — the Main sleep / Naps /
-                    // Total split issue #611 asked for.
-                    const totals = compositionTotals(row);
-                    return (
-                      <div className="bg-popover text-popover-foreground rounded-md border p-2 text-xs shadow-md">
-                        <div className="border-border mb-1 border-b pb-1 font-medium">
-                          {label}
-                        </div>
-                        {payload.map((entry) => {
-                          const stage = String(entry.dataKey ?? "");
-                          const minutes =
-                            typeof entry.value === "number" ? entry.value : 0;
-                          if (minutes === 0) return null;
-                          const isNap = stage === NAP_KEY;
-                          const label = isNap
-                            ? napCount > 1
-                              ? t("insights.sleep.stages.napCount", {
-                                  count: String(napCount),
-                                })
-                              : stageLabels[NAP_KEY]
-                            : (stageLabels[stage] ?? stage);
-                          const pct =
-                            totals.nightMinutes > 0
-                              ? Math.round(
-                                  (minutes / totals.nightMinutes) * 100,
-                                )
-                              : 0;
-                          return (
-                            <div
-                              key={stage}
-                              className="flex items-center justify-between gap-3"
-                            >
-                              <span className="flex items-center gap-1.5">
-                                <span
-                                  aria-hidden="true"
-                                  className="inline-block h-2 w-2 rounded-sm"
-                                  style={{ background: STAGE_COLORS[stage] }}
-                                />
-                                {label}
-                              </span>
-                              <span className="text-muted-foreground">
-                                {/* The nap is not part of the night, so it
+          <>
+            <div
+              role="img"
+              aria-label={ariaLabel}
+              data-slot="chart-plot"
+              {...chartDays.plotProps}
+              className={chartDays.plotClassName}
+            >
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart
+                  data={data}
+                  margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
+                  onClick={chartDays.onChartClick}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="var(--border)"
+                    opacity={0.3}
+                  />
+                  <XAxis
+                    type="category"
+                    // The day key, so the open day's line can name its column;
+                    // the tick prints the window's label for it.
+                    dataKey="dayKey"
+                    tickFormatter={(dayKey: string) =>
+                      dayKey === "aggregate"
+                        ? t("insights.sleep.compositionTitle")
+                        : formatDayTick(dayKey, windowDays, locale)
+                    }
+                    stroke="var(--muted-foreground)"
+                    fontSize={10}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis
+                    type="number"
+                    stroke="var(--muted-foreground)"
+                    fontSize={11}
+                    tickFormatter={(v: number) => {
+                      // Render the y-axis as hours so 480 min reads as 8h.
+                      if (v <= 0) return "0";
+                      return `${Math.round(v / 60)}h`;
+                    }}
+                  />
+                  {chartDays.openIndex !== undefined ? (
+                    <ReferenceLine
+                      x={nightDays[chartDays.openIndex] ?? undefined}
+                      {...OPEN_DAY_LINE}
+                    />
+                  ) : null}
+                  <Tooltip
+                    {...chartDays.tooltipProps}
+                    cursor={{ fill: "transparent" }}
+                    content={({ active, payload }) => {
+                      if (!active || !payload || payload.length === 0)
+                        return null;
+                      const row = payload[0]?.payload as
+                        Record<string, number | string> | undefined;
+                      const label = row?.label;
+                      const rowIndex = row ? data.indexOf(row) : -1;
+                      const napCount =
+                        typeof row?.napCount === "number" ? row.napCount : 0;
+                      // The footer's first line is the NIGHT. The nap is listed
+                      // above it as its own line and stays out of that sum, so
+                      // the per-stage percentages keep meaning "of this night".
+                      // On a day with a nap a second line carries the whole
+                      // column — main sleep plus naps — the Main sleep / Naps /
+                      // Total split issue #611 asked for.
+                      const totals = compositionTotals(row);
+                      return (
+                        <div className="bg-popover text-popover-foreground rounded-md border p-2 text-xs shadow-md">
+                          <div className="border-border mb-1 border-b pb-1 font-medium">
+                            {label}
+                          </div>
+                          {payload.map((entry) => {
+                            const stage = String(entry.dataKey ?? "");
+                            const minutes =
+                              typeof entry.value === "number" ? entry.value : 0;
+                            if (minutes === 0) return null;
+                            const isNap = stage === NAP_KEY;
+                            const label = isNap
+                              ? napCount > 1
+                                ? t("insights.sleep.stages.napCount", {
+                                    count: String(napCount),
+                                  })
+                                : stageLabels[NAP_KEY]
+                              : (stageLabels[stage] ?? stage);
+                            const pct =
+                              totals.nightMinutes > 0
+                                ? Math.round(
+                                    (minutes / totals.nightMinutes) * 100,
+                                  )
+                                : 0;
+                            return (
+                              <div
+                                key={stage}
+                                className="flex items-center justify-between gap-3"
+                              >
+                                <span className="flex items-center gap-1.5">
+                                  <span
+                                    aria-hidden="true"
+                                    className="inline-block h-2 w-2 rounded-sm"
+                                    style={{ background: STAGE_COLORS[stage] }}
+                                  />
+                                  {label}
+                                </span>
+                                <span className="text-muted-foreground">
+                                  {/* The nap is not part of the night, so it
                                     gets no share-of-night percentage. */}
-                                {isNap
-                                  ? formatDurationMinutes(minutes, t)
-                                  : `${formatDurationMinutes(minutes, t)} · ${pct}%`}
-                              </span>
-                            </div>
-                          );
-                        })}
-                        {totals.nightMinutes > 0 && (
-                          <div className="border-border mt-1 border-t pt-1 font-medium">
-                            <div className="flex items-center justify-between gap-3">
-                              <span>{t("insights.sleep.mainSleep")}</span>
-                              <span>
-                                {formatDurationMinutes(totals.nightMinutes, t)}
-                              </span>
-                            </div>
-                            {totals.napMinutes > 0 && (
-                              <div className="flex items-center justify-between gap-3">
-                                <span>{t("insights.sleep.totalSleep")}</span>
-                                <span>
-                                  {formatDurationMinutes(totals.dayMinutes, t)}
+                                  {isNap
+                                    ? formatDurationMinutes(minutes, t)
+                                    : `${formatDurationMinutes(minutes, t)} · ${pct}%`}
                                 </span>
                               </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  }}
-                />
-                <Legend
-                  wrapperStyle={{ fontSize: 11 }}
-                  formatter={(value: string) => stageLabels[value] ?? value}
-                />
-                {STAGE_ORDER.map((stage) => (
-                  <Bar
-                    key={stage}
-                    dataKey={stage}
-                    stackId="stages"
-                    fill={STAGE_COLORS[stage]}
-                    isAnimationActive={false}
-                  >
-                    <Cell fill={STAGE_COLORS[stage]} />
-                  </Bar>
-                ))}
-                {hasNap && (
-                  <Bar
-                    key={NAP_KEY}
-                    dataKey={NAP_KEY}
-                    stackId="stages"
-                    fill={STAGE_COLORS[NAP_KEY]}
-                    // The outline is what separates the nap from the stage
-                    // beneath it; the two fills alone measure as low as
-                    // 1.04:1. See NAP_SEPARATOR.
-                    stroke={NAP_SEPARATOR.stroke}
-                    strokeWidth={NAP_SEPARATOR.strokeWidth}
-                    isAnimationActive={false}
-                  >
-                    <Cell
+                            );
+                          })}
+                          {totals.nightMinutes > 0 && (
+                            <div className="border-border mt-1 border-t pt-1 font-medium">
+                              <div className="flex items-center justify-between gap-3">
+                                <span>{t("insights.sleep.mainSleep")}</span>
+                                <span>
+                                  {formatDurationMinutes(
+                                    totals.nightMinutes,
+                                    t,
+                                  )}
+                                </span>
+                              </div>
+                              {totals.napMinutes > 0 && (
+                                <div className="flex items-center justify-between gap-3">
+                                  <span>{t("insights.sleep.totalSleep")}</span>
+                                  <span>
+                                    {formatDurationMinutes(
+                                      totals.dayMinutes,
+                                      t,
+                                    )}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {chartDays.tooltipAction(
+                            rowIndex === -1 ? undefined : rowIndex,
+                          )}
+                        </div>
+                      );
+                    }}
+                  />
+                  <Legend
+                    wrapperStyle={{ fontSize: 11 }}
+                    formatter={(value: string) => stageLabels[value] ?? value}
+                  />
+                  {STAGE_ORDER.map((stage) => (
+                    <Bar
+                      key={stage}
+                      dataKey={stage}
+                      stackId="stages"
+                      fill={STAGE_COLORS[stage]}
+                      isAnimationActive={false}
+                    >
+                      <Cell fill={STAGE_COLORS[stage]} />
+                    </Bar>
+                  ))}
+                  {hasNap && (
+                    <Bar
+                      key={NAP_KEY}
+                      dataKey={NAP_KEY}
+                      stackId="stages"
                       fill={STAGE_COLORS[NAP_KEY]}
+                      // The outline is what separates the nap from the stage
+                      // beneath it; the two fills alone measure as low as
+                      // 1.04:1. See NAP_SEPARATOR.
                       stroke={NAP_SEPARATOR.stroke}
                       strokeWidth={NAP_SEPARATOR.strokeWidth}
-                    />
-                  </Bar>
-                )}
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+                      isAnimationActive={false}
+                    >
+                      <Cell
+                        fill={STAGE_COLORS[NAP_KEY]}
+                        stroke={NAP_SEPARATOR.stroke}
+                        strokeWidth={NAP_SEPARATOR.strokeWidth}
+                      />
+                    </Bar>
+                  )}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <ChartDayFooter
+              links={chartDays}
+              points={data.map((row) => ({
+                timestamp:
+                  typeof row.dayKey === "string" && row.dayKey !== "aggregate"
+                    ? dayAnchor(row.dayKey)
+                    : 0,
+              }))}
+              axis="band"
+              mark="bar"
+              // The plot's margin (8) + the y axis (60) on the left, the
+              // margin (16) on the right.
+              insetLeft={8 + 60}
+              insetRight={16}
+            />
+            {chartDays.active ? (
+              <ChartDataTable
+                points={data.map((row) => ({
+                  date: String(row.dayKey),
+                  timestamp: dayAnchor(String(row.dayKey)),
+                  ...Object.fromEntries(
+                    tableColumns.map(({ key }) => [
+                      key,
+                      typeof row[key] === "number" && (row[key] as number) > 0
+                        ? (row[key] as number)
+                        : undefined,
+                    ]),
+                  ),
+                }))}
+                columns={tableColumns}
+                formatValue={(minutes) => formatDurationMinutes(minutes, t)}
+                formatDate={(date) => fmtDay(date)}
+                bucket="day"
+                metricLabel={t("insights.sleep.compositionTitle")}
+                dayLinks
+              />
+            ) : null}
+          </>
         )}
       </CardContent>
     </Card>

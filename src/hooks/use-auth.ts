@@ -27,6 +27,8 @@ import type { CoachReasoningState } from "@/lib/ai/reasoning/resolve";
 import type { ModuleAccessState } from "@/lib/sharing/module-disclosure";
 import type { OnboardingStateDto } from "@/lib/onboarding/needs";
 import type { TourProgress } from "@/lib/onboarding/tour-progress";
+import { clearLastDay } from "@/lib/day/last-day";
+import { clearCoachDeleteJournal } from "@/lib/ai/coach/delete-journal";
 import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
 import {
   setRecordScope,
@@ -37,7 +39,7 @@ import {
   settleRefusedRecordSessionTransition,
 } from "@/lib/query-keys/record-session-transition";
 import type { AccountAccess } from "@/lib/sharing/account-access-view";
-import { parseAccountAccess } from "@/lib/sharing/account-access-schema";
+import { parseAccountAccess } from "@/lib/sharing/account-access-parse";
 
 /**
  * v1.36.0 — an account with no sharing at all. The shape `fetchMe` falls back
@@ -621,6 +623,11 @@ export function clearCachesForSessionEnd(queryClient: QueryClient): void {
   // end the next cold offline launch must land on the login gate, not the
   // cached shell.
   clearWasAuthenticated();
+  // The day the layer last showed is a date of this account's record.
+  clearLastDay();
+  // Coach deletes this session could not confirm belong to its account; the
+  // next one must not re-send them against its own record.
+  clearCoachDeleteJournal();
   void clearOfflineCachesForSessionEnd();
 }
 

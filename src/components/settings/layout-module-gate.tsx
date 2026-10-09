@@ -11,7 +11,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import type { ModuleKey } from "@/lib/modules/registry";
 
 /**
- * Client gate for an Appearance subpage (`/settings/layout/<module>`).
+ * Client gate for a Layout subpage (`/settings/layout/<module>`).
  *
  * The subpage is a real URL a person can land on (a bookmark, the hub's own
  * link, a link somebody sent) with its module switched off. It answers in

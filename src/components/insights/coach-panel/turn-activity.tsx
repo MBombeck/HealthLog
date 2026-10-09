@@ -40,6 +40,8 @@ import {
   Brain,
   ChartLine,
   ChartScatter,
+  CalendarDays,
+  CloudSun,
   ChevronDown,
   CircleStop,
   Database,
@@ -272,6 +274,10 @@ export function stepIcon(
       return ChartLine;
     case "get_correlations":
       return ChartScatter;
+    case "get_environment":
+      return CloudSun;
+    case "get_day":
+      return CalendarDays;
     case "get_metric_table":
       return Table2;
     default:

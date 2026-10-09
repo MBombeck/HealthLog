@@ -50,7 +50,7 @@ describe("<InsightsTabStrip> — availability gating (v1.4.27 F19)", () => {
     // only Overview, then pills light up as data arrives.
     const html = render(<InsightsTabStrip />);
     expect(html).toContain(">Overview<");
-    expect(html).not.toContain(">Blood Pressure<");
+    expect(html).not.toContain(">Blood pressure<");
     expect(html).not.toContain(">Weight<");
     expect(html).not.toContain(">Pulse<");
     expect(html).not.toContain(">Mood<");
@@ -75,7 +75,7 @@ describe("<InsightsTabStrip> — availability gating (v1.4.27 F19)", () => {
     expect(html).toContain(">Weight<");
     expect(html).toContain('data-group="body"');
     // Pills without data drop.
-    expect(html).not.toContain(">Blood Pressure<");
+    expect(html).not.toContain(">Blood pressure<");
     expect(html).not.toContain(">Mood<");
     expect(html).not.toContain(">Medication<");
     expect(html).not.toContain(">Sleep<");
@@ -234,7 +234,7 @@ describe("<InsightsTabStrip> — vitals group collapse (v1.4.34 IW-D)", () => {
   it("preserves the pinned flat pills inline", () => {
     const html = render(<InsightsTabStrip availability={fullAvailability} />);
     // Pinned pills must still be reachable directly.
-    expect(html).toContain(">Blood Pressure<");
+    expect(html).toContain(">Blood pressure<");
     expect(html).toContain(">Weight<");
     expect(html).toContain(">Sleep<");
     expect(html).toContain(">Mood<");
@@ -361,7 +361,7 @@ describe("<InsightsTabStrip> — saved-layout visibility gate (v1.15.14 W2)", ()
         visibleTileIds={visibleTileIds}
       />,
     );
-    expect(html).not.toContain(">Blood Pressure<");
+    expect(html).not.toContain(">Blood pressure<");
     expect(html).toContain(">Weight<");
   });
 
@@ -616,5 +616,25 @@ describe("<InsightsTabStrip> — pill row clip box (v1.16.8)", () => {
     expect(scroller).toBeTruthy();
     expect(scroller).toContain("px-1");
     expect(scroller).toContain("-mx-1");
+  });
+});
+
+describe("<InsightsTabStrip> — scroll arrows hold their slot", () => {
+  it("renders both arrows before the row is measured, hidden but in place", () => {
+    // Mounting the arrows only once the row measured as overflowing shifted
+    // every pill sideways right after first paint (a layout shift on every
+    // insights page). They render from the start and only hide.
+    const html = render(<InsightsTabStrip />);
+    for (const slot of [
+      "insights-tab-strip-scroll-left",
+      "insights-tab-strip-scroll-right",
+    ]) {
+      const tag = html.match(
+        new RegExp(`<button[^>]*data-slot="${slot}"[^>]*>`),
+      );
+      expect(tag?.[0]).toBeDefined();
+      expect(tag?.[0]).toContain("invisible");
+      expect(tag?.[0]).toContain('tabindex="-1"');
+    }
   });
 });

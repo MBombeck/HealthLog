@@ -5,8 +5,8 @@
  * Modelled on `mean-consolidation.ts`: a discovery query enqueues one job
  * per user still holding live per-sample dense-tier rows OLDER than the
  * retention window, the per-user handler runs `runDenseIntradayRetention`,
- * and the pass is idempotent across reboots (folded rows are soft-deleted
- * so they drop off the discovery list).
+ * and the pass is idempotent across reboots (folded rows are deleted, before
+ * v1.42 soft-deleted, so they drop off the discovery list).
  *
  * Unlike the daily-mean consolidation, this pass scopes to the dense-tier
  * types (`HEART_RATE_VARIABILITY`, `PULSE`, `OXYGEN_SATURATION`) and keeps
@@ -25,6 +25,7 @@ import {
   runDenseIntradayRetention,
   DENSE_INTRADAY_RETENTION_TYPES,
   DENSE_INTRADAY_RETENTION_DAYS,
+  DENSE_INTRADAY_FOLD_SOURCES,
 } from "@/lib/measurements/dense-intraday-retention";
 
 export const DENSE_INTRADAY_RETENTION_QUEUE = "dense-intraday-retention";
@@ -140,14 +141,15 @@ export async function runDenseIntradayRetentionForUser(
 
 /**
  * Boot-time discovery. Finds every user holding at least one LIVE
- * per-sample dense-tier row (an `APPLE_HEALTH` row of a
- * `DENSE_INTRADAY_RETENTION_TYPES` type whose externalId does NOT start
+ * per-sample dense-tier row (a row of a `DENSE_INTRADAY_FOLD_SOURCES` source
+ * and a `DENSE_INTRADAY_RETENTION_TYPES` type whose externalId does NOT start
  * with the daily-stats prefix, that is not tombstoned, AND whose
  * `measuredAt` is older than the retention window) and enqueues one
  * retention job per account.
  *
  * Idempotent across reboots: once a user's out-of-window per-sample rows
- * are soft-deleted, the predicate drops them from the discovery set.
+ * are folded (deleted since v1.42), the predicate drops them from the
+ * discovery set.
  * pg-boss `singletonKey` coalesces duplicate sends. Best-effort: errors
  * are returned through the result value so worker boot never fails because
  * of a retention miss.
@@ -186,7 +188,7 @@ export async function enqueueBootTimeDenseIntradayRetention(): Promise<{
     const users = await prisma.measurement.groupBy({
       by: ["userId"],
       where: {
-        source: "APPLE_HEALTH",
+        source: { in: [...DENSE_INTRADAY_FOLD_SOURCES] },
         type: { in: types },
         deletedAt: null,
         NOT: { externalId: { startsWith: "stats:" } },

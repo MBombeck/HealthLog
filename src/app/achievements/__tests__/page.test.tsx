@@ -132,8 +132,6 @@ const mockData = {
   ] satisfies AchievementProgress[],
   metrics: {
     totalTakenIntakes: 1,
-    overIntakeCount: 0,
-    skippedIntakeCount: 0,
     bmiGreenStreak: 0,
     bpGreenStreak: 0,
     pulseGreenStreak: 0,

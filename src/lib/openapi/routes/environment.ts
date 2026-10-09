@@ -135,6 +135,113 @@ const environmentOverview = z
       .describe(
         "Upstream attribution string. Display it wherever the observations are shown.",
       ),
+    airQuality: z
+      .object({
+        enabled: z
+          .boolean()
+          .describe(
+            "The account's switch (`PATCH /api/environment/preferences`).",
+          ),
+        operatorDisabled: z
+          .boolean()
+          .describe(
+            "True when the operator turned air quality off for the instance; the account switch then has no effect.",
+          ),
+        days: z
+          .number()
+          .int()
+          .describe(
+            "Stored days the air-quality feed returned hourly values for.",
+          ),
+        latestDate: z
+          .string()
+          .nullable()
+          .describe("Newest such day (YYYY-MM-DD)."),
+        domain: z
+          .string()
+          .nullable()
+          .describe(
+            "The model domain of that day: `cams_europe` (about 11 km, with pollen) or `cams_global` (about 45 km, no pollen).",
+          ),
+        history: z
+          .object({
+            total: z
+              .number()
+              .int()
+              .describe(
+                "Past days with entries the source can serve at their place (from 2013 in Europe, from August 2022 elsewhere). Older days stay without values.",
+              ),
+            done: z
+              .number()
+              .int()
+              .describe("Of those, the days whose air quality is stored."),
+            complete: z
+              .boolean()
+              .describe("True when nothing the source serves is left."),
+            checkedAt: z
+              .string()
+              .describe("ISO instant of the run that counted them."),
+          })
+          .nullable()
+          .describe(
+            "Progress of the background backfill that fills air quality for every past day with entries. Null before its first run and while air quality is off.",
+          ),
+      })
+      .describe("v1.42 — the air-quality part of the module."),
+    latestDay: z
+      .object({
+        date: z.string().describe("YYYY-MM-DD of the newest stored day."),
+        tempMin: z.number().nullable(),
+        tempMax: z.number().nullable(),
+        apparentMax: z
+          .number()
+          .nullable()
+          .describe("Daily feels-like maximum, °C."),
+        airQuality: z
+          .object({
+            pm25Mean: z
+              .number()
+              .nullable()
+              .describe("PM2.5 daily mean, µg/m³."),
+            pm10Mean: z.number().nullable().describe("PM10 daily mean, µg/m³."),
+            no2Mean: z.number().nullable().describe("NO2 daily mean, µg/m³."),
+            o3Max8h: z
+              .number()
+              .nullable()
+              .describe("Ozone, highest 8-hour running mean, µg/m³."),
+            eaqiMax: z
+              .number()
+              .nullable()
+              .describe("European air-quality index, daily maximum."),
+            uvIndexMax: z.number().nullable(),
+            dustMax: z.number().nullable().describe("Dust, µg/m³."),
+            pollen: z
+              .object({
+                alder: z.number().nullable(),
+                birch: z.number().nullable(),
+                grass: z.number().nullable(),
+                mugwort: z.number().nullable(),
+                olive: z.number().nullable(),
+                ragweed: z.number().nullable(),
+              })
+              .describe(
+                "Daily maxima, grains/m³; null where not covered (outside Europe, before mid 2022).",
+              ),
+          })
+          .nullable()
+          .describe(
+            "Null while air quality is off for the account or the instance, and for a day whose air-quality part was not fetched yet. Null values inside mean not covered, never zero.",
+          ),
+      })
+      .nullable()
+      .describe(
+        "v1.42 — the newest stored day, usually yesterday or the day before (the archive settles late). No forecast. Null when nothing is stored.",
+      ),
+    attributions: z
+      .array(z.string())
+      .describe(
+        "v1.42 — every attribution line, weather first; the air-quality lines (Open-Meteo, Copernicus) while air quality is on. Display them wherever the values are shown.",
+      ),
   })
   .meta({
     id: "EnvironmentOverview",
@@ -159,7 +266,57 @@ const geocodeResult = z
   })
   .meta({ id: "EnvironmentGeocodeResult" });
 
+// v1.42 (#615) — the per-user environment switches.
+const environmentPreferencesRequest = z
+  .object({
+    airQualityEnabled: z
+      .boolean()
+      .describe("Fetch and show air quality, pollen and UV for this account."),
+  })
+  .strict()
+  .meta({ id: "EnvironmentPreferencesRequest" });
+
+const environmentPreferences = z
+  .object({
+    airQualityEnabled: z.boolean(),
+    operatorDisabled: z
+      .boolean()
+      .describe(
+        "True when the operator turned air quality off for the whole instance; the account switch then has no effect.",
+      ),
+  })
+  .meta({ id: "EnvironmentPreferences" });
+
 export const environmentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+  "/api/environment/preferences": {
+    patch: {
+      tags: ["Environment"],
+      summary: "Change the environment switches",
+      description:
+        "Turns the air-quality part of the module on or off for this account (on by default). Off means the nightly fetch skips the air-quality feed, and the overview, the Coach, MCP and the correlations leave the air-quality values out; days already stored keep theirs. Turning it on queues a refresh, and the nightly gap fill catches up on older days. Module-gated. Strict body: an unknown key is a 422.",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: environmentPreferencesRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description: "The stored switches.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                environmentPreferences,
+                "EnvironmentPreferencesEnvelope",
+              ),
+            },
+          },
+        },
+        ...moduleDisabledResponse,
+        ...stdResponses,
+      },
+    },
+  },
   "/api/environment": {
     get: {
       tags: ["Environment"],
@@ -227,7 +384,7 @@ export const environmentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
     post: {
       tags: ["Environment"],
       summary: "Enqueue a historical environment fetch",
-      description: `Asks the worker to fetch and store past days rather than waiting for the rolling nightly lookback. Returns 202 — the work has been QUEUED, not done; poll \`GET /api/environment\` and watch \`context.days\`.\n\nAn omitted bound defaults to the conservative \`[homeSince .. today]\` range. An explicit start earlier than \`homeSince\` is accepted and then resolves to a skip inside the worker: the span cannot fabricate weather for the pre-home past, so a wide range can legitimately return \`enqueued: true\` and add no days at all.\n\nThe span is capped at ${ENVIRONMENT_MAX_BACKFILL_DAYS} days, and the worker re-checks the cap independently. Body cap 4 KiB. Module-gated, and it draws on the shared analytics-read rate bucket.`,
+      description: `Asks the worker to fetch and store past days rather than waiting for the rolling nightly lookback. Returns 202 — the work has been QUEUED, not done; poll \`GET /api/environment\` and watch \`context.days\`.\n\nAn omitted bound defaults to the conservative \`[homeSince .. today]\` range. An explicit start earlier than \`homeSince\` is accepted and then resolves to a skip inside the worker: the span cannot fabricate weather for the pre-home past, so a wide range can legitimately return \`enqueued: true\` and add no days at all.\n\nThe span is capped at ${ENVIRONMENT_MAX_BACKFILL_DAYS} days, and the worker re-checks the cap independently. Body cap 4 KiB. Module-gated, and it draws on the shared analytics-read rate bucket.\n\nEvery backfill draws on the instance-wide Open-Meteo budget, so one account is held to three a rolling hour (429 \`environment.backfill_rate_limited\`), at most one queued backfill per twenty-minute slot (409 \`environment.backfill_pending\`), and, inside the worker, its own share of the daily request budget; days the share does not reach are filled by the nightly run.`,
       requestBody: {
         required: true,
         content: { "application/json": { schema: backfillRequest } },
@@ -257,7 +414,7 @@ export const environmentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...moduleDisabledResponse,
         "409": {
           description:
-            "No home location is set, so there is nothing to resolve the days against. `meta.errorCode` = `environment.no_home`.",
+            "No home location is set, so there is nothing to resolve the days against (`meta.errorCode` = `environment.no_home`), or a backfill for this account is already queued in the current twenty-minute slot (`environment.backfill_pending`).",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "413": {

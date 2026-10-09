@@ -88,7 +88,6 @@ export function ModuleDisabledNotice({
         icon={icon}
         title={t(copy.title, { module: moduleName })}
         description={t(copy.description, { module: moduleName })}
-        ctaSize="lg"
         action={state === "disabled" ? action : undefined}
       />
     </div>

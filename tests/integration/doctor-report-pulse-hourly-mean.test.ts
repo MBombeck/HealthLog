@@ -43,6 +43,7 @@ const MODULES = {
   mentalHealth: true,
   nutrients: true,
   vaccinations: true,
+  timeline: true,
 } as const;
 
 const SELECTION = selectionFromLeaves(["PULSE"]);

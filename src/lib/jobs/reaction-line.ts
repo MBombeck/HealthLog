@@ -78,6 +78,7 @@ import {
 } from "@/lib/arrivals/reaction-line-shared";
 
 import { workerLog } from "./reminder/shared";
+import { caughtAs } from "@/lib/logging/signal";
 
 export { REACTION_LINE_QUEUE };
 
@@ -567,7 +568,7 @@ export async function runReactionLine(
   const hasReservedTokens = row.generationReservedTokens != null;
   const hasReservationDate = row.generationBudgetDateKey != null;
   if (hasReservedTokens !== hasReservationDate) {
-    await releaseClaim().catch(() => {});
+    await releaseClaim().catch(caughtAs("reaction_line.cleanup_failed"));
     return { status: "skipped", reason: "invalid_reservation_state" };
   }
 
@@ -600,7 +601,7 @@ export async function runReactionLine(
       if (err instanceof ReactionClaimLostError) {
         return { status: "skipped", reason: "claim_lost" };
       }
-      await releaseClaim().catch(() => {});
+      await releaseClaim().catch(caughtAs("reaction_line.cleanup_failed"));
       throw err;
     }
   }
@@ -620,7 +621,7 @@ export async function runReactionLine(
   } catch (err) {
     // No provider was touched, so releasing ownership is retry-safe. The
     // durable reservation remains attached and is reused by the retry.
-    await releaseClaim().catch(() => {});
+    await releaseClaim().catch(caughtAs("reaction_line.cleanup_failed"));
     throw err;
   }
 
@@ -690,8 +691,10 @@ export async function runReactionLine(
       reservation.dateKey,
       0,
       { servedBy: chain[0].providerType, reservedOwner: reservation.owner },
-    ).catch(() => {});
-    await finishTerminalAttempt().catch(() => {});
+    ).catch(caughtAs("reaction_line.cleanup_failed"));
+    await finishTerminalAttempt().catch(
+      caughtAs("reaction_line.cleanup_failed"),
+    );
     workerLog("error", "[reaction-line] generation failed", err);
     return { status: "skipped", reason: "provider_failed" };
   }
@@ -708,14 +711,18 @@ export async function runReactionLine(
   } catch (err) {
     // Do not publish a line whose spend was not durably reconciled. The
     // invocation timestamp remains terminal, preventing a second provider call.
-    await finishTerminalAttempt().catch(() => {});
+    await finishTerminalAttempt().catch(
+      caughtAs("reaction_line.cleanup_failed"),
+    );
     workerLog("error", "[reaction-line] spend reconciliation failed", err);
     return { status: "skipped", reason: "spend_reconciliation_failed" };
   }
 
   const line = sanitiseReactionLine(result.content, locale);
   if (!line) {
-    await finishTerminalAttempt().catch(() => {});
+    await finishTerminalAttempt().catch(
+      caughtAs("reaction_line.cleanup_failed"),
+    );
     return { status: "skipped", reason: "unusable_output" };
   }
   // Prompt instructions are not an enforcement boundary. Grade every numeric
@@ -729,7 +736,9 @@ export async function runReactionLine(
     (evidenceLedger.length === 0 && /\d/.test(line)) ||
     findUnverifiedCoachNumbersInLedger(line, evidenceLedger, locale).length > 0;
   if (hasUngroundedNumber) {
-    await finishTerminalAttempt().catch(() => {});
+    await finishTerminalAttempt().catch(
+      caughtAs("reaction_line.cleanup_failed"),
+    );
     return { status: "skipped", reason: "ungrounded_output" };
   }
 
@@ -740,7 +749,9 @@ export async function runReactionLine(
     chain[0].providerType,
   ]);
   if (late) {
-    await finishTerminalAttempt().catch(() => {});
+    await finishTerminalAttempt().catch(
+      caughtAs("reaction_line.cleanup_failed"),
+    );
     return { status: "skipped", reason: late.reason };
   }
 

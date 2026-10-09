@@ -179,7 +179,7 @@ export function LoginOverviewSection() {
     if (entries.length === 0) return;
     const labels = {
       timestamp: t("admin.timestamp"),
-      user: t("admin.users"),
+      user: t("admin.userColumn"),
       ip: t("admin.ip"),
       location: t("admin.location"),
       // v1.4.27 B3 — `admin.carrier` is shipped by bucket B6. The
@@ -223,7 +223,7 @@ export function LoginOverviewSection() {
     <SettingsCard>
       <SettingsCardHeader
         icon={ScrollText}
-        title={t("admin.loginOverview")}
+        title={t("admin.loginOverviewCardTitle")}
         description={t("admin.loginOverviewDescription")}
       />
 
@@ -233,6 +233,7 @@ export function LoginOverviewSection() {
         <div className="flex gap-1">
           <Button
             variant={filter === "all" ? "default" : "ghost"}
+            aria-pressed={filter === "all"}
             size="sm"
             className="min-h-11 min-w-11 px-3 text-xs"
             onClick={resetPageOnFilterChange(() => setFilter("all"))}
@@ -241,6 +242,7 @@ export function LoginOverviewSection() {
           </Button>
           <Button
             variant={filter === "failed" ? "default" : "ghost"}
+            aria-pressed={filter === "failed"}
             size="sm"
             className="min-h-11 min-w-11 px-3 text-xs"
             onClick={resetPageOnFilterChange(() => setFilter("failed"))}
@@ -250,7 +252,7 @@ export function LoginOverviewSection() {
         </div>
 
         {/* Detailed filter row */}
-        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))]">
           <Input
             type="search"
             placeholder={t("admin.section.auditLog.filterActor")}
@@ -269,6 +271,7 @@ export function LoginOverviewSection() {
             }}
           >
             <SelectTrigger
+              className="w-full"
               aria-label={t("admin.section.auditLog.filterAction")}
             >
               <SelectValue
@@ -305,7 +308,10 @@ export function LoginOverviewSection() {
               setRange(v as DateRangePreset);
             }}
           >
-            <SelectTrigger aria-label={t("admin.section.auditLog.filterDate")}>
+            <SelectTrigger
+              className="w-full"
+              aria-label={t("admin.section.auditLog.filterDate")}
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -328,7 +334,10 @@ export function LoginOverviewSection() {
         {/* Toolbar row: per-page + export */}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">
+            <span
+              id="login-overview-per-page"
+              className="text-muted-foreground"
+            >
               {t("admin.section.auditLog.perPage")}
             </span>
             <Select
@@ -338,7 +347,10 @@ export function LoginOverviewSection() {
                 setPerPage(Number(v) as PerPageValue);
               }}
             >
-              <SelectTrigger className="h-8 w-20">
+              <SelectTrigger
+                className="h-8 w-20"
+                aria-labelledby="login-overview-per-page"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -407,7 +419,7 @@ export function LoginOverviewSection() {
                       {t("admin.status")}
                     </th>
                     <th className="px-3 py-2 text-left font-medium">
-                      {t("admin.users")}
+                      {t("admin.userColumn")}
                     </th>
                     <th className="px-3 py-2 text-left font-medium">
                       {t("admin.action")}

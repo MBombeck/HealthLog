@@ -42,6 +42,7 @@ vi.mock("@/lib/db", () => ({
     encounterLabLink: { findMany: vi.fn().mockResolvedValue([]) },
     encounterConditionLink: { findMany: vi.fn().mockResolvedValue([]) },
     vaccinationRecord: { findMany: vi.fn().mockResolvedValue([]) },
+    customVaccine: { findMany: vi.fn().mockResolvedValue([]) },
     vaccinationDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },
     // The reminder engine tables (v1.37.20, #223 / iOS #68). Empty for the
     // same reason as the visit tables above.
@@ -67,6 +68,7 @@ vi.mock("@/lib/db", () => ({
     extractedFact: { findMany: vi.fn().mockResolvedValue([]) },
     ecgRecording: { findMany: vi.fn().mockResolvedValue([]) },
     symptomDefinition: { findMany: vi.fn().mockResolvedValue([]) },
+    lifeEvent: { findMany: vi.fn().mockResolvedValue([]) },
     cycleProfile: { findUnique: vi.fn().mockResolvedValue(null) },
     menstrualCycle: { findMany: vi.fn().mockResolvedValue([]) },
     cycleDayLog: { findMany: vi.fn().mockResolvedValue([]) },

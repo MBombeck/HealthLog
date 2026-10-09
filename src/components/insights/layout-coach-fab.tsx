@@ -224,6 +224,8 @@ export function LayoutCoachFab() {
         type="button"
         size="icon"
         data-slot="coach-fab"
+        // Steps aside while the on-screen keyboard is open (globals.css).
+        data-keyboard-hide=""
         data-unread={showDot ? "true" : undefined}
         onClick={handleOpen}
         aria-label={accessibleLabel}
@@ -240,8 +242,11 @@ export function LayoutCoachFab() {
           // 64 px bottom-nav plus the home-indicator safe-area inset
           // (`bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)]`), so the
           // gap is asymmetric there by design, not drift.
-          "fixed right-6 z-40 size-14 rounded-full shadow-lg md:right-8",
-          "bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)] md:bottom-8",
+          // v1.42 — the side and bottom insets apply at every width: a
+          // phone held sideways (844 px, past `md`) has its notch on one
+          // side, and an installed iPad its home indicator along the bottom.
+          "fixed right-[calc(env(safe-area-inset-right,0px)+1.5rem)] z-40 size-14 rounded-full shadow-lg md:right-[calc(env(safe-area-inset-right,0px)+2rem)]",
+          "shell-desktop:bottom-[calc(env(safe-area-inset-bottom,0px)+2rem)] bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)]",
           // Dark glyph on the purple/pink gradient — white sat at
           // ≈2.3:1 against the gradient midpoint; the background token
           // reads ≈6.5:1.
@@ -250,7 +255,14 @@ export function LayoutCoachFab() {
           // The default ring alone is hard to see against the gradient;
           // the offset ring draws a clear halo around the circle.
           "focus-visible:ring-offset-background focus-visible:ring-offset-2",
-          "transition-opacity duration-150 motion-reduce:transition-none",
+          "transition-[opacity,right] duration-150 motion-reduce:transition-none",
+          // v1.42 — from 1280 px the day's 2.5 rem strip stays at the right
+          // edge; the launcher stays clear of it. While the day is open, the
+          // launcher moves left with the page's own edge, so it stays over
+          // the page and never over the day's footer actions. The `:has()`
+          // gates key off the strip's state, so exactly one of them holds.
+          "[body:has([data-slot=day-strip][data-state=closed])_&]:right-[calc(2.5rem+2rem)]",
+          "[body:has([data-slot=day-strip][data-state=open])_&]:right-[calc(26.25rem+2.5rem+2rem)]",
           // Yield to the data-list selection bar: its delete action lands
           // in the same lower-right band, and the destructive control
           // wins. The `:has()` gate keys off the bar's `data-slot`.

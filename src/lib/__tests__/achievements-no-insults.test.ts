@@ -41,17 +41,14 @@ describe("achievement titles", () => {
     expect(offending).toEqual([]);
   });
 
+  // The two badges those titles belonged to rewarded a doubled and a
+  // skipped dose. They are gone; their keys must not drift back in.
   test.each([
     ["en", enMessages as unknown as MessagesShape],
     ["de", deMessages as unknown as MessagesShape],
-  ] as const)(
-    "%s overIntake1/skippedIntake1 are translated, not the literal English shipped before",
-    (_locale, bundle) => {
-      const badges = bundle.achievements?.badges ?? {};
-      expect(badges.overIntake1?.title).toBeDefined();
-      expect(badges.skippedIntake1?.title).toBeDefined();
-      expect(badges.overIntake1?.title).not.toBe("Idiot");
-      expect(badges.skippedIntake1?.title).not.toBe("Lazy Boy");
-    },
-  );
+  ] as const)("%s ships no dosing badge copy", (_locale, bundle) => {
+    const badges = bundle.achievements?.badges ?? {};
+    expect(badges).not.toHaveProperty("overIntake1");
+    expect(badges).not.toHaveProperty("skippedIntake1");
+  });
 });

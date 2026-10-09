@@ -7,6 +7,7 @@ import { QueryErrorRow } from "@/components/ui/query-error-row";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { TileHeader } from "@/components/insights/tile-header";
+import { CorrelationSeasonalNote } from "@/components/insights/correlation-seasonal-note";
 import { useAuth } from "@/hooks/use-auth";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
@@ -83,6 +84,13 @@ export function MoodWhatStandsOut({
             slot="mood-discovery-error"
             message={t("insights.pattern.loadError")}
             onRetry={() => void refetch()}
+          />
+        ) : null}
+        {data ? (
+          <CorrelationSeasonalNote
+            findingsBeforeSeasonalAdjustment={
+              data.findingsBeforeSeasonalAdjustment
+            }
           />
         ) : null}
         {!isLoading && !isError && data && !hasDiscovered ? (

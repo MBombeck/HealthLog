@@ -297,7 +297,7 @@ export const PATCH = apiHandler(
 
     if (outcome === "contradictory-reminder") {
       return apiError(
-        "A booked visit cannot also close a checkup — it has not happened yet",
+        "A booked visit cannot also close a checkup. It has not happened yet",
         422,
         { errorCode: "encounter.reminder-conflict" },
       );

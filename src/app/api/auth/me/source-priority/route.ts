@@ -30,6 +30,7 @@ import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { invalidateUserProfile } from "@/lib/cache/invalidate";
+import { getSourcesInUse } from "@/lib/integrations/sources-in-use";
 import {
   parseSourcePriority,
   sourcePrioritySchema,
@@ -41,11 +42,19 @@ export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
   annotate({ action: { name: "auth.me.source-priority.get" } });
 
-  const row = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { sourcePriorityJson: true },
+  const [row, inUse] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: { sourcePriorityJson: true },
+    }),
+    getSourcesInUse(user.id),
+  ]);
+  // `inUse` is read-only context for the editor: which ranked sources this
+  // account has connected or holds data from. It never feeds the ladder.
+  return apiSuccess({
+    ...parseSourcePriority(row?.sourcePriorityJson),
+    inUse,
   });
-  return apiSuccess(parseSourcePriority(row?.sourcePriorityJson));
 });
 
 export const PUT = apiHandler(async (req: Request) => {
@@ -118,5 +127,8 @@ export const PUT = apiHandler(async (req: Request) => {
     action: { name: "auth.me.source-priority.put" },
     meta: { keys: Object.keys(parsed.data).length },
   });
-  return apiSuccess(parseSourcePriority(parsed.data));
+  return apiSuccess({
+    ...parseSourcePriority(parsed.data),
+    inUse: await getSourcesInUse(user.id),
+  });
 });

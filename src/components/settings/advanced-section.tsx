@@ -100,6 +100,7 @@ function DataResetCard() {
           The protective gate (confirmation dialog) is unchanged; this
           is purely a visual-tone fix per the v1.4.43 audit. */}
       <SettingsCardHeader
+        anchor="danger-zone"
         icon={Trash2}
         title={t("settings.dangerZone")}
         description={t("settings.dangerZoneDescription")}
@@ -238,6 +239,7 @@ function AccountDeleteCard() {
   return (
     <SettingsCard data-slot="settings-account-delete-card">
       <SettingsCardHeader
+        anchor="delete-account"
         icon={Trash2}
         title={t("settings.deleteAccountCardTitle")}
         description={t("settings.deleteAccountCardDescription")}

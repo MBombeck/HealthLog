@@ -28,6 +28,15 @@ interface ValueBlock {
   source: CoachScopeSource;
   snapshotKey: string;
   type: string | readonly string[];
+  /**
+   * For a block whose types are different statistics of one thing (HRV:
+   * SDNN and RMSSD). With rows of one measure the block is built as before;
+   * with rows of several, the block carries one timeline per measure under
+   * `byMeasure`, named by measure, instead of one daily series averaging the
+   * two together (#1110: since iOS 27 one watch writes both). Same section
+   * key, so every reader that asks for the section still finds it.
+   */
+  measures?: readonly { type: string; label: string }[];
 }
 
 const VALUE_BLOCKS: readonly ValueBlock[] = [
@@ -36,6 +45,10 @@ const VALUE_BLOCKS: readonly ValueBlock[] = [
     source: "hrv",
     snapshotKey: "heartRateVariability",
     type: ["HEART_RATE_VARIABILITY", "HRV_RMSSD"],
+    measures: [
+      { type: "HEART_RATE_VARIABILITY", label: "SDNN" },
+      { type: "HRV_RMSSD", label: "RMSSD" },
+    ],
   },
   {
     metric: "resting_hr",
@@ -271,14 +284,13 @@ export function buildValueSeriesBlocks(
 
     const wanted = Array.isArray(block.type) ? new Set(block.type) : null;
     const blockCutoff = ctx.additiveCutoff(block.source);
-    const rows = ctx.measurementRows
-      .filter((row) =>
-        wanted ? wanted.has(row.type) : row.type === block.type,
-      )
-      .map((row) => ({ measuredAt: row.measuredAt, value: row.value }))
-      .filter((row) => row.measuredAt >= blockCutoff);
+    const inWindow = ctx.measurementRows.filter(
+      (row) =>
+        (wanted ? wanted.has(row.type) : row.type === block.type) &&
+        row.measuredAt >= blockCutoff,
+    );
 
-    if (rows.length === 0) {
+    if (inWindow.length === 0) {
       const cluster = sourceCluster(block.source);
       if (cluster) {
         annotate({
@@ -289,43 +301,120 @@ export function buildValueSeriesBlocks(
       continue;
     }
 
-    const recentRows = buildDailyValueRows(rows, ctx.recentCutoff, ctx.userTz);
-    // Aggregated on the canonical value (the grounding below reads that),
-    // stated in the reader's unit. The two HRV estimators share one unit.
-    const transform = getReadingTransform(
-      typeof block.type === "string" ? block.type : block.type[0],
-      ctx.units,
+    const present = block.measures?.filter((measure) =>
+      inWindow.some((row) => row.type === measure.type),
     );
-    ctx.snapshot[block.snapshotKey] = {
-      ...(UNLABELLED_UNITS.has(transform.displayUnit)
-        ? {}
-        : { unit: transform.displayUnit }),
-      timeline: timelineInUnit(
-        {
-          recent: recentRows,
-          weekly: bucketWeekly(
-            rows.filter((row) => row.measuredAt < ctx.recentCutoff),
-            ctx.userTz,
-          ),
-        },
-        transform,
-      ),
-    };
-    ctx.metrics.add(block.metric);
-    ctx.counts[block.metric] = rows.length;
-    ctx.registerBlock(block.snapshotKey, block.source, () => ({
-      value: dailyPoints(rows, ctx.userTz, undefined, transform),
-    }));
-
-    const referenceMetric =
-      typeof block.type === "string"
-        ? TYPE_TO_REFERENCE_METRIC[block.type]
-        : undefined;
-    if (referenceMetric && recentRows.length > 0) {
-      const values = recentRows.slice(-14);
-      const mean =
-        values.reduce((sum, row) => sum + row.value, 0) / values.length;
-      ctx.groundingValues.set(referenceMetric, mean);
+    if (present && present.length > 1) {
+      writeMeasuresSection(ctx, block, present, inWindow);
+    } else {
+      writeValueSection(
+        ctx,
+        block,
+        typeof block.type === "string" ? block.type : block.type[0]!,
+        inWindow,
+      );
     }
+    ctx.metrics.add(block.metric);
+    ctx.counts[block.metric] = inWindow.length;
+  }
+}
+
+type ValueRows = ValueSeriesBlocksContext["measurementRows"];
+
+function toPoints(rows: ValueRows) {
+  return rows.map((row) => ({ measuredAt: row.measuredAt, value: row.value }));
+}
+
+function valueTimeline(
+  ctx: Readonly<ValueSeriesBlocksContext>,
+  rows: ReturnType<typeof toPoints>,
+  transform: ReturnType<typeof getReadingTransform>,
+) {
+  return timelineInUnit(
+    {
+      recent: buildDailyValueRows(rows, ctx.recentCutoff, ctx.userTz),
+      weekly: bucketWeekly(
+        rows.filter((row) => row.measuredAt < ctx.recentCutoff),
+        ctx.userTz,
+      ),
+    },
+    transform,
+  );
+}
+
+/**
+ * Several measures of one metric, each its own timeline under `byMeasure`,
+ * and each its own series should the budget pass condense the block.
+ */
+function writeMeasuresSection(
+  ctx: Readonly<ValueSeriesBlocksContext>,
+  block: ValueBlock,
+  measures: readonly { type: string; label: string }[],
+  inWindow: ValueRows,
+): void {
+  // The measures of one block share a unit (HRV: milliseconds).
+  const transform = getReadingTransform(measures[0]!.type, ctx.units);
+  const byMeasure: Record<string, unknown> = {};
+  const pointsByMeasure = new Map<string, ReturnType<typeof toPoints>>();
+  for (const measure of measures) {
+    const rows = toPoints(inWindow.filter((row) => row.type === measure.type));
+    pointsByMeasure.set(measure.label, rows);
+    byMeasure[measure.label] = valueTimeline(ctx, rows, transform);
+  }
+  ctx.snapshot[block.snapshotKey] = {
+    ...(UNLABELLED_UNITS.has(transform.displayUnit)
+      ? {}
+      : { unit: transform.displayUnit }),
+    byMeasure,
+  };
+  ctx.registerBlock(block.snapshotKey, block.source, () =>
+    Object.fromEntries(
+      [...pointsByMeasure].map(([label, rows]) => [
+        label,
+        dailyPoints(rows, ctx.userTz, undefined, transform),
+      ]),
+    ),
+  );
+}
+
+function writeValueSection(
+  ctx: Readonly<ValueSeriesBlocksContext>,
+  block: ValueBlock,
+  unitType: string,
+  sourceRows: ValueRows,
+): void {
+  const rows = toPoints(sourceRows);
+  const recentRows = buildDailyValueRows(rows, ctx.recentCutoff, ctx.userTz);
+  // Aggregated on the canonical value (the grounding below reads that),
+  // stated in the reader's unit.
+  const transform = getReadingTransform(unitType, ctx.units);
+  ctx.snapshot[block.snapshotKey] = {
+    ...(UNLABELLED_UNITS.has(transform.displayUnit)
+      ? {}
+      : { unit: transform.displayUnit }),
+    timeline: timelineInUnit(
+      {
+        recent: recentRows,
+        weekly: bucketWeekly(
+          rows.filter((row) => row.measuredAt < ctx.recentCutoff),
+          ctx.userTz,
+        ),
+      },
+      transform,
+    ),
+  };
+  ctx.registerBlock(block.snapshotKey, block.source, () => ({
+    value: dailyPoints(rows, ctx.userTz, undefined, transform),
+  }));
+
+  const referenceMetric =
+    typeof block.type === "string"
+      ? TYPE_TO_REFERENCE_METRIC[block.type]
+      : undefined;
+  if (referenceMetric && recentRows.length > 0) {
+    const values = recentRows.slice(-14);
+    const mean =
+      values.reduce((sum, row) => sum + row.value, 0) / values.length;
+    ctx.groundingValues.set(referenceMetric, mean);
   }
 }

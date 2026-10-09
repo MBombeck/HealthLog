@@ -62,6 +62,10 @@ import {
   reduceManagedProfileGuardian,
   withManagedProfileLock,
 } from "@/lib/managed-profiles/lifecycle";
+import {
+  grantAccessFor,
+  type HandoverAccess,
+} from "@/lib/managed-profiles/handover-access";
 import { ENTIRE_RECORD, isShareDomain } from "@/lib/sharing/scope";
 import type { ShareDomain, ShareScope } from "@/lib/sharing/scope";
 import { Prisma } from "@/generated/prisma/client";
@@ -613,6 +617,19 @@ export async function revokeManagedProfileGuardian(input: {
         { grantorId: profile.id, granteeId: target.granteeId },
         tx,
       );
+      // v1.42 (#959) — a handover link the removed Guardian minted dies with
+      // their access. The claim refuses it anyway (its creator must still be
+      // an active Guardian); withdrawing it here keeps the other Guardians'
+      // panel from showing a link that can no longer be used.
+      await tx.managedProfileHandover.updateMany({
+        where: {
+          profileId: profile.id,
+          createdById: target.granteeId,
+          usedAt: null,
+          revokedAt: null,
+        },
+        data: { revokedAt: now },
+      });
       await auditLog("managed_profile.guardian.revoked", {
         userId: profile.id,
         actorUserId: input.guardianId,
@@ -622,6 +639,139 @@ export async function revokeManagedProfileGuardian(input: {
       return tx.accountGrant.findUniqueOrThrow({ where: { id: target.id } });
     });
   });
+}
+
+// ── Handover (v1.42, #959) ──────────────────────────────────────────────────
+
+/**
+ * Withdraw every invitation the record has offered and nobody has accepted.
+ *
+ * Called when a managed profile is claimed. A pending MANAGE invitation on a
+ * managed profile is a Guardian invitation; once the record belongs to an
+ * adult, `acceptGrant` would still accept it, and the invitee would become a
+ * MANAGE delegate of a person who never agreed to them. Withdrawing every
+ * pending row the record has offered closes that, and nothing else is lost:
+ * the new owner invites whoever they want themselves.
+ *
+ * `revokedBy = GRANTOR` because the record's owner is the party ending them.
+ * Must run inside the caller's transaction and under the managed-profile lock,
+ * which is what orders it against a concurrent acceptance.
+ */
+export async function withdrawPendingGrantsOfRecord(
+  tx: Prisma.TransactionClient,
+  recordId: string,
+  now: Date,
+): Promise<number> {
+  const { count } = await tx.accountGrant.updateMany({
+    where: { grantorId: recordId, acceptedAt: null, revokedAt: null },
+    data: { revokedAt: now, revokedBy: "GRANTOR" },
+  });
+  return count;
+}
+
+/** What settling one Guardian's access did. */
+export interface HandoverGrantSettlement {
+  /** The level the Guardian now holds. */
+  access: HandoverAccess;
+  /** The live grant afterwards, or null when access ended. */
+  grantId: string | null;
+  /** Whether a row was ended or written. */
+  changed: boolean;
+  /** How many of the Guardian's browser sessions were inside the record. */
+  sessionsCleared: number;
+}
+
+/**
+ * Set one former Guardian's access to a managed profile that is being, or has
+ * just been, handed over. The one place a handover moves a grant.
+ *
+ * The rules of WHICH level to set live in `handover-access.ts`; this is the
+ * mechanics, and it follows the state machine above:
+ *
+ *   - the level a row carries never moves. Changing it ends the row
+ *     (`revokedBy = GRANTOR`, the record's owner deciding) and writes a new
+ *     one, so the history keeps "who had what, from when to when";
+ *   - ending a row and clearing the sessions inside it are one act, in the
+ *     caller's transaction, as {@link endAndClear} has it for the panel;
+ *   - a row that already says what the target says is left alone.
+ *
+ * The new row is written ACCEPTED, which is the one place this file creates a
+ * grant without an acceptance, and it is argued rather than assumed. The
+ * Guardian accepted MANAGE over this whole record when they became a Guardian;
+ * a handover only ever sets a level at or below that, and only for somebody
+ * who held it a moment earlier. A READ row cut from their MANAGE is a
+ * narrowing they need no new consent for, and a MANAGE row the new owner
+ * restores is the consent they already gave. What it cannot do is reach
+ * anybody who was not a Guardian of this record, or reach above MANAGE.
+ *
+ * Callers hold the managed-profile lock (`withManagedProfileLock`) for the
+ * transaction, so the live row read beside this call is the row it settles.
+ */
+export async function settleHandoverGuardianGrant(
+  tx: Prisma.TransactionClient,
+  input: {
+    recordId: string;
+    guardianId: string;
+    /** The pair's live row (`revokedAt IS NULL`), or null. */
+    liveGrant: Pick<AccountGrant, "id" | "access" | "scopeJson"> | null;
+    target: HandoverAccess;
+    now: Date;
+  },
+): Promise<HandoverGrantSettlement> {
+  const pair = { grantorId: input.recordId, granteeId: input.guardianId };
+  const targetAccess = grantAccessFor(input.target);
+  const live = input.liveGrant;
+
+  const alreadyThere =
+    live !== null &&
+    targetAccess !== null &&
+    live.access === targetAccess &&
+    (live.access === "MANAGE" || live.scopeJson === null);
+  if (alreadyThere) {
+    return {
+      access: input.target,
+      grantId: live.id,
+      changed: false,
+      sessionsCleared: 0,
+    };
+  }
+  if (live === null && targetAccess === null) {
+    return {
+      access: "end",
+      grantId: null,
+      changed: false,
+      sessionsCleared: 0,
+    };
+  }
+
+  if (live !== null) {
+    await tx.accountGrant.updateMany({
+      where: { id: live.id, revokedAt: null },
+      data: { revokedAt: input.now, revokedBy: "GRANTOR" },
+    });
+  }
+
+  let grantId: string | null = null;
+  if (targetAccess !== null) {
+    const created = await tx.accountGrant.create({
+      data: {
+        grantorId: input.recordId,
+        granteeId: input.guardianId,
+        access: targetAccess,
+        // `DbNull`, never `null`: see `inviteGrant` for why the two nulls
+        // mean opposite things on this column.
+        scopeJson: Prisma.DbNull,
+        invitedAt: input.now,
+        acceptedAt: input.now,
+        expiresAt: null,
+      },
+      select: { id: true },
+    });
+    grantId = created.id;
+  }
+
+  const sessionsCleared = await clearActingSessions(pair, tx);
+  return { access: input.target, grantId, changed: true, sessionsCleared };
 }
 
 export interface RevokeGrantInput {

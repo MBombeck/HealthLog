@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { MoodExplainerIcon } from "./mood-explainer-icon";
 import {
   PatternDismissButton,
@@ -50,6 +50,8 @@ export interface CorrelationDiscoveryResponse {
   pairsTested: number;
   fdrQ: number;
   minPairs: number;
+  /** v1.42 — the record had findings before the seasonal adjustment. */
+  findingsBeforeSeasonalAdjustment?: boolean;
 }
 
 /** Map a discovery channel key to its localized measurement-type label. */
@@ -71,6 +73,10 @@ const CHANNEL_LABEL_KEY: Record<string, string> = {
   ENV_PRECIP: "environment.fields.precip",
   ENV_PRESSURE_MEAN: "environment.fields.pressureMean",
   ENV_PRESSURE_DELTA: "environment.fields.pressureDelta",
+  // v1.42 (#615) — the air-quality channels.
+  ENV_PM25: "environment.fields.pm25",
+  ENV_OZONE_8H: "environment.fields.ozone8h",
+  ENV_POLLEN_MAX: "environment.fields.pollenMax",
 };
 
 /** Keep only the discovered pairs that involve the mood channel. */
@@ -90,6 +96,7 @@ export function MoodDiscoveredRelations({
   pairsTested: number;
 }) {
   const { t } = useTranslations();
+  const nf = useFormatters();
   const dismissal = usePatternDismissalOverrides();
 
   if (pairs.length === 0) return null;
@@ -165,8 +172,8 @@ export function MoodDiscoveredRelations({
                   label={t("insights.mood.discovery.statLabel")}
                   detail={t("insights.mood.discovery.stat", {
                     n: pair.n,
-                    r: pair.r.toFixed(2),
-                    q: pair.qValue.toFixed(3),
+                    r: nf.number(pair.r, 2),
+                    q: nf.number(pair.qValue, 3),
                   })}
                 />
               </span>

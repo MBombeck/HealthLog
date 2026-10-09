@@ -274,4 +274,70 @@ describe("GET /api/medications/compliance", () => {
     );
     expect(prisma.medication.findMany).not.toHaveBeenCalled();
   });
+
+  it("carries one account-wide figure in meta.aggregate, from applicable medications only", async () => {
+    vi.mocked(prisma.medication.findMany).mockResolvedValue([
+      medication("med-1"),
+      medication("med-2"),
+      {
+        ...medication("mirror-1"),
+        externalSource: "APPLE_HEALTH",
+        externalId: "hk-concept-1",
+        schedules: [],
+      },
+    ] as never);
+
+    const res = await (GET as (req: Request) => Promise<Response>)(
+      new Request("http://localhost"),
+    );
+    const body = await res.json();
+    const items = body.data as Array<{
+      compliance7: { totalExpected: number; missed: number };
+      compliance30: { totalExpected: number };
+    }>;
+    expect(body.meta.aggregate.medicationCount).toBe(2);
+    // Summed over the two scheduled medications; the mirror adds nothing.
+    expect(body.meta.aggregate.compliance7.totalExpected).toBe(
+      items[0].compliance7.totalExpected + items[1].compliance7.totalExpected,
+    );
+    expect(body.meta.aggregate.compliance30.totalExpected).toBe(
+      items[0].compliance30.totalExpected + items[1].compliance30.totalExpected,
+    );
+    expect(body.meta.aggregate.compliance7.totalExpected).toBeGreaterThan(0);
+    expect(body.meta).not.toHaveProperty("days");
+  });
+
+  it("answers meta.aggregate null when no medication's adherence applies", async () => {
+    vi.mocked(prisma.medication.findMany).mockResolvedValue([] as never);
+    const res = await (GET as (req: Request) => Promise<Response>)(
+      new Request("http://localhost"),
+    );
+    const body = await res.json();
+    expect(body.meta).toEqual({ aggregate: null });
+  });
+
+  it("adds a complianceN block per medication and to the aggregate on ?days=N", async () => {
+    vi.mocked(prisma.medication.findMany).mockResolvedValue([
+      medication("med-1"),
+    ] as never);
+    const res = await (GET as (req: Request) => Promise<Response>)(
+      new Request("http://localhost/api/medications/compliance?days=90"),
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    const item = body.data[0] as Record<string, { totalExpected: number }>;
+    expect(item.compliance90.totalExpected).toBeGreaterThan(
+      item.compliance30.totalExpected,
+    );
+    expect(body.meta.days).toBe(90);
+    expect(body.meta.aggregate.compliance90).toEqual(item.compliance90);
+  });
+
+  it("refuses a window the ledger does not serve", async () => {
+    const res = await (GET as (req: Request) => Promise<Response>)(
+      new Request("http://localhost/api/medications/compliance?days=45"),
+    );
+    expect(res.status).toBe(422);
+    expect(prisma.medication.findMany).not.toHaveBeenCalled();
+  });
 });

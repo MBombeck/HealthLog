@@ -35,7 +35,12 @@ function actionLabelKey(action: string): string {
     return "settings.security.action.newDevice";
   if (action === "auth.login.failed")
     return "settings.security.action.loginFailed";
-  if (action.startsWith("auth.login") || action === "auth.register")
+  // v1.42 (#959) — claiming a managed profile is the account's first sign-in.
+  if (
+    action.startsWith("auth.login") ||
+    action === "auth.register" ||
+    action === "auth.claim"
+  )
     return "settings.security.action.login";
   if (action.startsWith("auth.password"))
     return "settings.security.action.passwordChange";
@@ -75,6 +80,7 @@ export function SecurityActivityCard({
   return (
     <SettingsCard data-slot="settings-security-activity-card">
       <SettingsCardHeader
+        anchor="security-activity"
         icon={ShieldCheck}
         title={
           <button

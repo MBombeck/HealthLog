@@ -336,8 +336,8 @@ describe("<DashboardLayoutSection> — native-only widget group (issue #581)", (
     const html = render(<DashboardLayoutSection id="dashboard-layout" />);
 
     expect(html).toContain('data-widget-id="bmi"');
-    expect(html).toContain('aria-label="BMI — Tile"');
-    expect(html).toContain('aria-label="BMI — Chart"');
+    expect(html).toContain('aria-label="BMI: Tile"');
+    expect(html).toContain('aria-label="BMI: Chart"');
     // Reflects the stored flags rather than inventing a default.
     const row = html.match(
       /data-widget-id="bmi"[\s\S]*?(?=data-slot="native-widget-row"|$)/,
@@ -448,7 +448,7 @@ describe("<DashboardLayoutSection> — iOS-pin-only ids hidden from web (v1.11.2
       html.indexOf('data-slot="native-only-widgets"'),
     );
     for (const id of IOS_PIN_ONLY_WIDGET_IDS) {
-      expect(sortableList).not.toContain(`${pinOnlyLabels[id]} — `);
+      expect(sortableList).not.toContain(`${pinOnlyLabels[id]}: `);
       // ...and each is reachable exactly once, in the native-only group.
       expect(html).toContain(`data-widget-id="${id}"`);
     }
@@ -465,11 +465,11 @@ describe("<DashboardLayoutSection> — iOS-pin-only ids hidden from web (v1.11.2
 describe("<DashboardLayoutSection> — disabled-module widget toggles", () => {
   // The achievements widget label drives its switch aria-label; it is the
   // canonical disabled-module probe (label resolves to "Achievements").
-  const ACHIEVEMENTS_ARIA = "Achievements — ";
+  const ACHIEVEMENTS_ARIA = "Achievements: ";
   // Mood is a module-owned widget too; weight is a core widget with NO module
   // entry, so it must survive any module-off state.
-  const MOOD_ARIA = "Mood — ";
-  const WEIGHT_ARIA = "Weight — ";
+  const MOOD_ARIA = "Mood: ";
+  const WEIGHT_ARIA = "Weight: ";
 
   it("hides a widget toggle whose owning module is disabled", () => {
     authState.modules = { achievements: false };
@@ -619,5 +619,46 @@ describe("<DashboardLayoutSection> — hero content", () => {
   it("states that notification settings are managed separately", () => {
     const html = render(<DashboardLayoutSection id="dashboard-layout" />);
     expect(html).toContain("Notification settings are managed separately.");
+  });
+});
+
+describe("<DashboardLayoutSection> — the top card switch", () => {
+  function control(html: string): string {
+    const match = html.match(/<button[^>]*data-slot="today-card-switch"[^>]*>/);
+    expect(match).not.toBeNull();
+    return match![0];
+  }
+
+  it("offers one labelled switch, on by default", () => {
+    const html = render(<DashboardLayoutSection id="dashboard-layout" />);
+    expect(html.match(/data-slot="today-card-switch"/g)).toHaveLength(1);
+    expect(control(html)).toContain('data-state="checked"');
+    const id = control(html).match(/id="([^"]+)"/)![1];
+    expect(html).toContain(`for="${id}"`);
+    expect(html).toContain("Show the top card");
+    expect(html).toContain("Using default layout");
+  });
+
+  it("reads a layout that predates the field as shown", () => {
+    const legacy: DashboardLayout = { ...DEFAULT_DASHBOARD_LAYOUT };
+    delete legacy.todayCardVisible;
+    queryState.layout = legacy;
+    const html = render(<DashboardLayoutSection id="dashboard-layout" />);
+    expect(control(html)).toContain('data-state="checked"');
+  });
+
+  it("shows a hidden top card as off, and as a customised layout", () => {
+    queryState.layout = {
+      ...DEFAULT_DASHBOARD_LAYOUT,
+      todayCardVisible: false,
+    };
+    const html = render(<DashboardLayoutSection id="dashboard-layout" />);
+    expect(control(html)).toContain('data-state="unchecked"');
+    expect(html).toContain("Custom layout active");
+  });
+
+  it("labels it in German", () => {
+    const html = render(<DashboardLayoutSection id="dashboard-layout" />, "de");
+    expect(html).toContain("Obere Karte anzeigen");
   });
 });

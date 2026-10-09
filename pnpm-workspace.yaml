@@ -27,6 +27,13 @@ overrides:
   "@hono/node-server@<1.19.15": "^1.19.15"
   "picomatch@<4.0.4": "^4.0.4"
   "body-parser@<2.3.0": "^2.3.0"
+  # CVE-2026-93749 (source-map-js < 1.2.2, HIGH, under postcss and the
+  # Tailwind build), CVE-2026-104844 (postcss-selector-parser < 7.1.6, under
+  # shadcn) and GHSA-r4xh-jqrq-34v2 (smol-toml < 1.9.0, under knip). All three
+  # are quadratic-time parsers reached at build or dev time only.
+  "source-map-js@<1.2.2": "^1.2.2"
+  "postcss-selector-parser@<7.1.6": "^7.1.6"
+  "smol-toml@<1.9.0": "^1.9.0"
   # Array-limit bypass through bracket-key comma parsing, and a denial of
   # service through an attacker-controlled isBuffer. 6.16.0 covers both.
   "qs@<6.16.0": "^6.16.0"

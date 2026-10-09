@@ -21,12 +21,12 @@ export default function InsightsGangstabilitaetPage() {
       chartKey="walkingSteadiness"
       i18nPrefix="insights.walkingSteadiness"
       explainerMetric="walkingSteadiness"
-      color="var(--success)"
+      color="var(--chart-2)"
       unit="%"
       yAxisUnit="%"
       emptyStateIcon={<Gauge className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any walking steadiness yet — what does this metric tell me about my health, and how do I improve it?"
+      coachPrefill="I haven't logged any walking steadiness yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

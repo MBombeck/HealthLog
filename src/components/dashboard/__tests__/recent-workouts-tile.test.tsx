@@ -146,6 +146,6 @@ describe("<RecentWorkoutsTile>", () => {
     expect(html).toContain("Running");
     expect(html).toContain("Cycling");
     expect(html).toContain("30m");
-    expect(html).toContain("1h 00m");
+    expect(html).toContain("1h 0m");
   });
 });

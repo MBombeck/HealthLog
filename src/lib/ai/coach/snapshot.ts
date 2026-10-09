@@ -1223,10 +1223,12 @@ export function degradeToBudget(
       delete timeline.coarse;
       changed = true;
     }
-    const byContext = asRecord(block.byContext);
-    if (byContext) {
-      for (const ctx of Object.keys(byContext)) {
-        const c = asRecord(byContext[ctx]);
+    // Glucose keeps a timeline per context, HRV one per measure (#1110).
+    for (const nested of [block.byContext, block.byMeasure]) {
+      const byKey = asRecord(nested);
+      if (!byKey) continue;
+      for (const ctx of Object.keys(byKey)) {
+        const c = asRecord(byKey[ctx]);
         if (c && "recent" in c) {
           delete c.recent;
           changed = true;
@@ -1258,10 +1260,11 @@ export function degradeToBudget(
         delete block.timeline;
       }
     }
-    const byContext = asRecord(block.byContext);
-    if (byContext) {
-      for (const ctx of Object.keys(byContext)) {
-        const c = asRecord(byContext[ctx]);
+    for (const nested of [block.byContext, block.byMeasure]) {
+      const byKey = asRecord(nested);
+      if (!byKey) continue;
+      for (const ctx of Object.keys(byKey)) {
+        const c = asRecord(byKey[ctx]);
         if (c && "weekly" in c) {
           delete c.weekly;
           changed = true;

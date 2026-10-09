@@ -199,7 +199,6 @@ export default function InsightsMedikamentePage() {
           icon={<Pill className="size-6" />}
           title={t("insights.emptyState.medication.title")}
           description={t("insights.emptyState.medication.description")}
-          ctaSize="lg"
           action={
             <Button size="sm" asChild>
               <Link href="/medications">
@@ -208,7 +207,9 @@ export default function InsightsMedikamentePage() {
             </Button>
           }
         />
-        <CoachLaunchButton prefill="I haven't added any medications yet — what should I know before I start tracking medication compliance here?" />
+        <CoachLaunchButton
+          prefill={t("insights.medicationsEmpty.coachPrefill")}
+        />
       </SubPageShell>
     );
   }

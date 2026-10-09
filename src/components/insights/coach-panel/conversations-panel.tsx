@@ -1,9 +1,16 @@
 "use client";
 
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { PanelRightClose, PanelRightOpen, Plus, Target, X } from "lucide-react";
+import {
+  MessagesSquare,
+  PanelRightClose,
+  PanelRightOpen,
+  Target,
+  X,
+} from "lucide-react";
 
+import { useOpenDay, yieldDay } from "@/components/day/day-layer-controller";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -12,6 +19,12 @@ import {
   SheetDescription,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  DOCK_SLIDE,
+  DockStrip,
+  ShellStrip,
+  useLingering,
+} from "@/components/layout/shell-dock";
 import { ShellSidePanel } from "@/components/layout/shell-side-panel";
 import { SHELL_HEADER_BAND } from "@/components/layout/shell-metrics";
 import { TopBarActions } from "@/components/layout/top-bar-actions";
@@ -42,17 +55,28 @@ import { useDeleteCoachConversationWithUndo } from "./use-coach";
  * Docked, the panel is a column of the shell beside the content column
  * (top bar and page): it runs the full height of the window, and the top bar
  * ends at its left edge. The panel's header row is the top bar's band, so
- * the two bottom borders draw one line. Shut, it is gone entirely (no rail)
- * and the top bar runs to the window's edge. The toggle is the last item of
- * the top bar, so it sits against the open panel and at the window's edge
- * when the panel is shut. The panel header carries the title, a link to
- * Plans, the settings gear and, in the sheet, a close button. The round New
- * chat button sits at the panel's bottom right.
+ * the two bottom borders draw one line. Its strip stays at the right edge of
+ * the window, left of the day's (`shell-dock.tsx`), open or not: a click
+ * on the strip opens the panel left of the strips and a second click shuts
+ * it; the header's first control shuts it too. The panel slides open and
+ * shut (a 200 ms width transition, none under reduced motion).
+ * The header carries the title, a link to Plans, the settings gear and, in
+ * the sheet, a close button. New conversation is not here: it floats in the
+ * conversation itself (`NewChatFab`).
  *
- * Keyboard: Escape closes the docked panel when focus is inside it and
+ * The day docks right of the panel on this page too (page, conversations,
+ * day). Below 1600 px only one of the two is open: a day opening folds the
+ * list without touching the remembered choice, and opening the list closes
+ * the day (`yieldDay`). From 1600 px both stay open.
+ *
+ * Below 1280 px the panel is a sheet, opened from the toggle at the end of
+ * the top bar.
+ *
+ * Keyboard: Escape folds the docked panel when focus is inside it and
  * nothing inside (a row menu, the rename field, the settings popover) has
- * already claimed the key, then focus returns to the toggle. In the sheet
- * Radix owns Escape, the focus trap and the return.
+ * already claimed the key; focus moves to the strip, and opening from the
+ * strip lands on the fold control. In the sheet Radix owns Escape, the
+ * focus trap and the return.
  */
 export const COACH_PANEL_ID = "coach-conversations-panel";
 
@@ -66,6 +90,61 @@ export const PANEL_HEADER_BUTTON =
 const PANEL_HEADER_ICON = "size-5 pointer-fine:size-4";
 
 const noSubscription = () => () => {};
+
+/** Wide enough for the conversations and a day beside the conversation. */
+export const BOTH_PANELS_QUERY = "(min-width: 1600px)";
+
+function subscribeBothPanels(callback: () => void): () => void {
+  if (typeof window === "undefined" || !window.matchMedia) return () => {};
+  const mql = window.matchMedia(BOTH_PANELS_QUERY);
+  mql.addEventListener("change", callback);
+  return () => mql.removeEventListener("change", callback);
+}
+
+function useBothPanelsFit(): boolean {
+  return useSyncExternalStore(
+    subscribeBothPanels,
+    () =>
+      typeof window !== "undefined" && !!window.matchMedia
+        ? window.matchMedia(BOTH_PANELS_QUERY).matches
+        : false,
+    () => false,
+  );
+}
+
+/**
+ * Whether the docked list gives way to an open day: it does when the day
+ * opens, or the window narrows, while both would be open below 1600 px.
+ * Only those two moments fold it, so opening the list again beside an open
+ * day (which folds the day) is never undone.
+ */
+export function listYields(state: {
+  docked: boolean;
+  fitsBoth: boolean;
+  listOpen: boolean;
+  dayOpened: boolean;
+  narrowed: boolean;
+  dayOpen: boolean;
+}): boolean {
+  return (
+    state.docked &&
+    !state.fitsBoth &&
+    state.listOpen &&
+    state.dayOpen &&
+    (state.dayOpened || state.narrowed)
+  );
+}
+
+/**
+ * Whether opening the docked list closes an open day: below 1600 px only one
+ * of the two is open, and the one the person just opened wins.
+ */
+export function dayYields(state: {
+  fitsBoth: boolean;
+  dayOpen: boolean;
+}): boolean {
+  return !state.fitsBoth && state.dayOpen;
+}
 
 /**
  * Whether the phone sheet is open. A settings deep link opens it only once
@@ -180,22 +259,64 @@ export function ConversationsPanel({
   const [settingsOpen, setSettingsOpen] = useState(openSettingsOnData);
   const [settingsOnData, setSettingsOnData] = useState(openSettingsOnData);
 
-  const dockedOpen = rememberedOpen || revealed;
-  const expanded = docked ? dockedOpen : sheetOpen;
-
-  function toggle() {
-    if (docked) {
-      setRevealed(false);
-      setOpen(!dockedOpen);
-    } else {
-      setSheetOpen(!sheetOpen);
+  // The day beside the list (docked on this page from 1280 px too).
+  const openDay = useOpenDay();
+  const fitsBoth = useBothPanelsFit();
+  // Folded for the day, without rewriting the remembered choice.
+  const [yielded, setYielded] = useState(false);
+  const dockedOpen = (rememberedOpen || revealed) && !yielded;
+  const [seen, setSeen] = useState<{ day: string | null; fitsBoth: boolean }>({
+    day: null,
+    fitsBoth,
+  });
+  if (seen.day !== openDay || seen.fitsBoth !== fitsBoth) {
+    setSeen({ day: openDay, fitsBoth });
+    if (
+      listYields({
+        docked,
+        fitsBoth,
+        listOpen: dockedOpen,
+        dayOpen: openDay !== null,
+        dayOpened: seen.day === null && openDay !== null,
+        narrowed: seen.fitsBoth && !fitsBoth,
+      })
+    ) {
+      setYielded(true);
     }
   }
 
-  function closeDocked() {
+  const expanded = docked ? dockedOpen : sheetOpen;
+  const collapseRef = useRef<HTMLButtonElement>(null);
+  const expandRef = useRef<HTMLButtonElement>(null);
+  // The list keeps painting while it slides shut.
+  const shownOpen = useLingering(docked && dockedOpen ? true : null) ?? false;
+  // Where focus goes once the docked panel has folded or opened.
+  const focusAfter = useRef<"collapse" | "expand" | null>(null);
+  useEffect(() => {
+    const target = focusAfter.current;
+    focusAfter.current = null;
+    if (target === "collapse") collapseRef.current?.focus();
+    if (target === "expand") expandRef.current?.focus();
+  }, [dockedOpen]);
+
+  function toggleSheet() {
+    setSheetOpen(!sheetOpen);
+  }
+
+  function expandDocked() {
+    focusAfter.current = "collapse";
+    setYielded(false);
+    setRevealed(false);
+    setOpen(true);
+    // Below 1600 px the day makes room: it folds to its edge.
+    if (dayYields({ fitsBoth, dayOpen: openDay !== null })) yieldDay();
+  }
+
+  function collapseDocked() {
+    focusAfter.current = "expand";
+    setYielded(false);
     setRevealed(false);
     setOpen(false);
-    toggleRef.current?.focus();
   }
 
   function afterPick() {
@@ -209,21 +330,45 @@ export function ConversationsPanel({
   const header = (inSheet: boolean) => (
     <div
       data-slot="coach-conversations-panel-header"
-      // Docked, the row reserves the safe-area inset the top bar reserves,
-      // so a standalone PWA on a tablet does not tuck it under the status
-      // bar; the band keeps its height (border-box), like the top bar.
-      style={
-        inSheet ? undefined : { paddingTop: "env(safe-area-inset-top, 0px)" }
-      }
+      // No inset of its own: docked, the panel is a column of the app
+      // shell, which already starts below the status bar of an installed
+      // app (`shell-safe-area` in `auth-shell.tsx`).
       // Docked, the row is the top bar's band (height and bottom border
       // from `SHELL_HEADER_BAND`), so the two borders draw one line.
+      // Touch: 44 px buttons already carry their own air, so the row packs
+      // them tighter to leave the title room at 390 px.
       className={cn(
-        "flex shrink-0 items-center gap-2",
+        "flex shrink-0 items-center gap-1 pointer-fine:gap-2",
         inSheet
           ? "border-border border-b p-3"
           : cn("border-sidebar-border px-3", SHELL_HEADER_BAND),
       )}
     >
+      {inSheet ? null : (
+        // A title, not a tooltip: focus lands here when the panel opens
+        // from its edge, and a tooltip opened by that focus would take the
+        // next Escape for itself.
+        <Button
+          ref={collapseRef}
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={collapseDocked}
+          data-slot="coach-panel-collapse"
+          aria-controls={COACH_PANEL_ID}
+          aria-expanded={true}
+          aria-label={t("insights.coach.frame.hidePanel")}
+          title={t("insights.coach.frame.hidePanel")}
+          className={PANEL_HEADER_BUTTON}
+        >
+          {/* The day's own fold control and glyph, mirrored so it points
+              the way the panel goes. */}
+          <PanelRightClose
+            className={cn(PANEL_HEADER_ICON, "-scale-x-100")}
+            aria-hidden="true"
+          />
+        </Button>
+      )}
       {inSheet ? (
         <SheetTitle className="min-w-0 flex-1 truncate text-lg leading-tight font-semibold">
           {t("insights.coach.historyTitle")}
@@ -290,73 +435,82 @@ export function ConversationsPanel({
         onUndoDeleteActive={(id) => onSelect(id)}
         className="min-h-0 flex-1"
       />
-      {/* New chat: a round filled button floating at the panel's bottom
-          right; the list pads its own scroll area so the last row clears it. */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            type="button"
-            size="icon"
-            onClick={() => {
-              onNewChat();
-              afterPick();
-            }}
-            data-slot="coach-panel-new-chat"
-            aria-label={t("insights.coach.newChat")}
-            className="absolute right-4 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] size-12 rounded-full shadow-lg md:right-6 md:bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))]"
-          >
-            <Plus className="size-6" aria-hidden="true" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="left">
-          {t("insights.coach.newChat")}
-        </TooltipContent>
-      </Tooltip>
     </>
   );
 
   return (
     <TooltipProvider delayDuration={300}>
-      <TopBarActions>
-        <PanelToggle
-          ref={toggleRef}
-          expanded={expanded}
-          label={toggleLabel}
-          onToggle={toggle}
-        />
-      </TopBarActions>
+      {docked ? null : (
+        <TopBarActions>
+          <PanelToggle
+            ref={toggleRef}
+            expanded={expanded}
+            label={toggleLabel}
+            onToggle={toggleSheet}
+          />
+        </TopBarActions>
+      )}
 
       {docked ? (
-        <ShellSidePanel>
-          <aside
-            id={COACH_PANEL_ID}
-            aria-label={t("insights.coach.historyTitle")}
-            data-slot="coach-conversations-panel"
-            data-state={dockedOpen ? "open" : "closed"}
-            inert={!dockedOpen}
-            onKeyDown={(event) => {
-              if (event.key !== "Escape" || event.defaultPrevented) return;
-              event.preventDefault();
-              closeDocked();
-            }}
-            className={cn(
-              // A column of the shell's content row (`ShellSidePanel`), so it
-              // runs from the top of the window to the bottom beside the top
-              // bar. The width animates (offcanvas: shut, nothing of it
-              // shows); the inner column
-              // keeps 18rem and is pinned to the panel's left edge, so it
-              // slides out to the right instead of squeezing. The thread column
-              // keeps its width; only its centring moves.
-              "bg-sidebar text-sidebar-foreground relative h-full shrink-0 overflow-hidden",
-              "transition-[width] duration-200 ease-linear motion-reduce:transition-none",
-              dockedOpen ? "w-72" : "w-0",
-            )}
-          >
-            <div className="border-sidebar-border absolute inset-y-0 left-0 flex w-72 flex-col border-l">
-              {body(false)}
+        <>
+          <ShellSidePanel>
+            <div
+              id={COACH_PANEL_ID}
+              data-slot="coach-conversations-panel"
+              data-state={dockedOpen ? "open" : "closed"}
+              onKeyDown={(event) => {
+                if (
+                  !dockedOpen ||
+                  event.key !== "Escape" ||
+                  event.defaultPrevented
+                ) {
+                  return;
+                }
+                event.preventDefault();
+                collapseDocked();
+              }}
+              className={cn(
+                // A column of the shell's content row (`ShellSidePanel`), so
+                // it runs from the top of the window to the bottom beside the
+                // top bar, left of a docked day (`order-1`, the day is
+                // `order-2`). The width slides between the open column and
+                // nothing; the content keeps 18rem, pinned left, so it slides
+                // instead of squeezing (`DOCK_SLIDE`).
+                DOCK_SLIDE,
+                "bg-sidebar text-sidebar-foreground order-1",
+                dockedOpen ? "w-72" : "w-0",
+              )}
+            >
+              {shownOpen ? (
+                <aside
+                  aria-label={t("insights.coach.historyTitle")}
+                  // Sliding shut, it paints the list and takes no input.
+                  inert={!dockedOpen}
+                  className="border-sidebar-border absolute inset-y-0 left-0 flex w-72 flex-col border-l"
+                >
+                  {body(false)}
+                </aside>
+              ) : null}
             </div>
-          </aside>
-        </ShellSidePanel>
+          </ShellSidePanel>
+          <ShellStrip>
+            <DockStrip
+              ref={expandRef}
+              slot="coach-panel-strip"
+              order={1}
+              controls={COACH_PANEL_ID}
+              expanded={dockedOpen}
+              label={t("insights.coach.historyTitle")}
+              actionLabel={
+                dockedOpen
+                  ? t("insights.coach.frame.hidePanel")
+                  : t("insights.coach.frame.showPanel")
+              }
+              icon={MessagesSquare}
+              onToggle={dockedOpen ? collapseDocked : expandDocked}
+            />
+          </ShellStrip>
+        </>
       ) : (
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetContent

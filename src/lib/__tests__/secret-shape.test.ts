@@ -8,6 +8,7 @@ describe("looksSecretShaped", () => {
     ["a refresh token", "hlr_xyz789"],
     ["a share-link token", "see hls_def456"],
     ["an invite token", "hlv_0a1b2c3d"],
+    ["a managed-profile handover token", "hlp_0a1b2c3d"],
     ["an elevation token", "hle_0a1b2c3d"],
     ["a native sign-in handoff code", "hlh_Ab9-xYz_12"],
     ["an MCP authorization code", "hlac_eyJ0eXAi"],

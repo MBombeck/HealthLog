@@ -45,7 +45,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     userCode = decoded.userCode;
   } catch {
     cookieStore.delete("central_codex_device");
-    return apiError("Invalid device-auth state — restart the flow", 400);
+    return apiError("Invalid device-auth state. Restart the flow", 400);
   }
 
   let result;
@@ -55,7 +55,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     const message = err instanceof Error ? err.message : "unknown";
     annotate({ meta: { central_codex_device_poll_error: message } });
     return apiError(
-      "Central Codex device-poll failed — please restart the flow",
+      "Central Codex device-poll failed. Please restart the flow",
       502,
     );
   }

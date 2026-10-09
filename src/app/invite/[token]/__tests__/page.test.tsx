@@ -24,6 +24,11 @@ vi.mock("next/navigation", () => ({
   redirect: (href: string) => redirectMock(href),
 }));
 
+vi.mock("@/lib/i18n/server-locale", () => ({
+  resolveServerLocale: async () => "en",
+}));
+
+import { renderToStaticMarkup } from "react-dom/server";
 import InviteLandingPage from "../page";
 
 beforeEach(() => {
@@ -56,9 +61,10 @@ describe("<InviteLandingPage> universal-link landing", () => {
     expect(url.searchParams.get("invite")).toBe(VALID_TOKEN);
   });
 
-  it("drops a malformed token to plain register (no enumeration oracle)", async () => {
-    // Wrong prefix, wrong length, and outright garbage all land on the
-    // identical target — the page never reveals whether a token exists.
+  it("names a malformed link as invalid instead of opening registration", async () => {
+    // Wrong prefix, wrong length, and outright garbage all render the same
+    // invalid-invite state. The shape is public, so this reveals nothing
+    // about which well-formed tokens exist; those still go on to register.
     for (const bad of [
       "not-a-token",
       `hlk_${"a".repeat(64)}`,
@@ -66,8 +72,14 @@ describe("<InviteLandingPage> universal-link landing", () => {
       `hlv_${"G".repeat(64)}`,
     ]) {
       redirectMock.mockClear();
-      const href = await runRedirect(bad);
-      expect(href).toBe("/auth/register");
+      const node = await InviteLandingPage({
+        params: Promise.resolve({ token: bad }),
+      });
+      expect(redirectMock).not.toHaveBeenCalled();
+      const html = renderToStaticMarkup(node);
+      expect(html).toContain('data-slot="invite-invalid"');
+      expect(html).toContain("Invitation invalid");
+      expect(html).not.toContain("/auth/register");
     }
   });
 });

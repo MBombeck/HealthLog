@@ -12,9 +12,11 @@
  * which case the documented CLI is the path).
  */
 
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Archive,
+  ChevronDown,
   KeyRound,
   Loader2,
   RotateCw,
@@ -43,6 +45,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
 import { getApiErrorMessage } from "./_shared";
 import { KeyBackupCard } from "./key-backup-card";
+import { useKeyBackupStatus } from "./use-key-backup-status";
 
 interface ColumnScan {
   model: string;
@@ -88,6 +91,9 @@ export function EncryptionSection() {
   const fmt = useFormatters();
   const queryClient = useQueryClient();
 
+  // Same query as the card's own (deduplicated by key): read here only to
+  // know when the page can paint the cards below it in one step.
+  const keyBackup = useKeyBackupStatus();
   const statusQuery = useQuery({
     queryKey: queryKeys.adminEncryptionStatus(),
     queryFn: async (): Promise<EncryptionStatus> => {
@@ -129,7 +135,19 @@ export function EncryptionSection() {
   // downward the moment the status resolved. Same shape as
   // `coach-feedback-section.tsx`, which fixed this for itself and never had
   // the fix carried across.
-  if (statusQuery.isLoading || statusQuery.isError || !statusQuery.data) {
+  // Until both reads land, only the key-backup card paints. It is the first
+  // card and grows into its loaded shape with nothing under it yet; painting
+  // the coverage card below it while the backup card was still a one-line
+  // loader moved that card down the page when the backup status arrived.
+  if (statusQuery.isLoading || keyBackup.isLoading) {
+    return (
+      <div className="space-y-6">
+        <KeyBackupCard />
+      </div>
+    );
+  }
+
+  if (statusQuery.isError || !statusQuery.data) {
     return (
       <div className="space-y-6">
         <KeyBackupCard />
@@ -143,16 +161,9 @@ export function EncryptionSection() {
             {t("admin.section.encryption.coverageDetail")}
           </p>
 
-          {statusQuery.isLoading ? (
-            <div className="text-muted-foreground flex items-center gap-2 text-sm">
-              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-              {t("admin.section.encryption.loading")}
-            </div>
-          ) : (
-            <p role="alert" className="text-destructive text-sm">
-              {t("admin.section.encryption.loadError")}
-            </p>
-          )}
+          <p role="alert" className="text-destructive text-sm">
+            {t("admin.section.encryption.loadError")}
+          </p>
         </SettingsCard>
       </div>
     );
@@ -160,6 +171,7 @@ export function EncryptionSection() {
 
   const s = statusQuery.data;
   const running = s.rotation.state === "running" || rotate.isPending;
+  const hasRetiredKey = s.configuredKeyCount > 1;
   // Only the rows that share a coverage view need the per-column table; sort
   // stale-first so an operator sees what still needs rotating.
   const columns = [...s.columns].sort((a, b) => b.legacy - a.legacy);
@@ -174,6 +186,9 @@ export function EncryptionSection() {
           title={t("admin.section.encryption.coverageTitle")}
           description={t("admin.section.encryption.coverageDescription")}
         />
+        <p className="text-sm">
+          {t("admin.section.encryption.coverageDetail")}
+        </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <Stat
             label={t("admin.section.encryption.activeKeyId")}
@@ -192,20 +207,26 @@ export function EncryptionSection() {
             value={s.staleRows.toLocaleString()}
           />
         </div>
-        {s.safeToDropRetiredKeys ? (
+        {/* "Safe to drop the legacy key" needs a legacy key to drop. With a
+            single configured key the server's flag is vacuously true, and
+            the badge named a key that does not exist. */}
+        {hasRetiredKey && s.safeToDropRetiredKeys ? (
           <Badge className="border-success/40 bg-success/15 text-success">
             {t("admin.section.encryption.safeToDropLegacy")}
           </Badge>
         ) : s.rotationComplete ? (
           // Every row is on the active key, and that is not the whole
           // answer: a backup keeps the key its content was written under.
-          <Badge variant="secondary" data-slot="encryption-backups-need-keys">
-            {s.backups.retiredKeysStillNeeded.length > 0
-              ? t("admin.section.encryption.backupsStillNeed", {
-                  keys: s.backups.retiredKeysStillNeeded.join(", "),
-                })
-              : t("admin.section.encryption.backupsUnrecordedBadge")}
-          </Badge>
+          !hasRetiredKey &&
+          s.backups.retiredKeysStillNeeded.length === 0 ? null : (
+            <Badge variant="secondary" data-slot="encryption-backups-need-keys">
+              {s.backups.retiredKeysStillNeeded.length > 0
+                ? t("admin.section.encryption.backupsStillNeed", {
+                    keys: s.backups.retiredKeysStillNeeded.join(", "),
+                  })
+                : t("admin.section.encryption.backupsUnrecordedBadge")}
+            </Badge>
+          )
         ) : (
           <Badge variant="secondary">
             {t("admin.section.encryption.rotationIncomplete", {
@@ -341,51 +362,141 @@ export function EncryptionSection() {
           title={t("admin.section.encryption.columnsTitle")}
           description={t("admin.section.encryption.columnsDescription")}
         />
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-muted-foreground border-b text-left">
-                <th className="py-2 pr-3 font-medium">
-                  {t("admin.section.encryption.colColumn")}
-                </th>
-                <th className="py-2 pr-3 font-medium">
-                  {t("admin.section.encryption.colTotal")}
-                </th>
-                <th className="py-2 pr-3 font-medium">
-                  {t("admin.section.encryption.colActive")}
-                </th>
-                <th className="py-2 font-medium">
-                  {t("admin.section.encryption.colStale")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {columns.map((c) => {
-                const active = c.byKeyId[s.activeKeyId] ?? 0;
-                const stale = c.total - active;
-                return (
-                  <tr key={`${c.model}.${c.field}`} className="border-b">
-                    <td className="py-2 pr-3 font-mono text-xs">
-                      {c.model}.{c.field}
-                    </td>
-                    <td className="py-2 pr-3">{c.total.toLocaleString()}</td>
-                    <td className="py-2 pr-3">{active.toLocaleString()}</td>
-                    <td className="py-2">
-                      {stale > 0 ? (
-                        <Badge variant="secondary">
-                          {stale.toLocaleString()}
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground">0</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <ColumnCoverage columns={columns} activeKeyId={s.activeKeyId} />
       </SettingsCard>
+    </div>
+  );
+}
+
+/**
+ * The per-column table, collapsed by default. A fresh install lists well over
+ * a hundred encrypted columns, nearly all of them empty, and the table pushed
+ * every other card off the page. Opened, it shows the columns that hold rows
+ * (the ones a rotation has to touch), with a toggle for the full list.
+ */
+export function ColumnCoverage({
+  columns,
+  activeKeyId,
+  initiallyOpen = false,
+}: {
+  columns: ColumnScan[];
+  activeKeyId: string;
+  /** Start expanded; the page always starts collapsed. */
+  initiallyOpen?: boolean;
+}) {
+  const { t } = useTranslations();
+  const [open, setOpen] = useState(initiallyOpen);
+  const [showAll, setShowAll] = useState(false);
+  const withRows = columns.filter((c) => c.total > 0);
+  const shown = showAll ? columns : withRows;
+
+  return (
+    <div className="space-y-3">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+        aria-controls="encryption-columns-panel"
+        data-testid="encryption-columns-toggle"
+        className="text-foreground hover:text-primary flex min-h-11 items-center gap-2 text-sm font-medium transition-colors sm:min-h-9"
+      >
+        <ChevronDown
+          aria-hidden="true"
+          className={`size-4 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+        {open
+          ? t("admin.section.encryption.columnsHide")
+          : t("admin.section.encryption.columnsShow", {
+              count: withRows.length,
+            })}
+      </button>
+      {/* The panel stays in the tree, empty and hidden, while closed, so
+          the toggle's aria-controls always names an element. */}
+      <div id="encryption-columns-panel" hidden={!open} className="space-y-3">
+        {open ? (
+          <>
+            {shown.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                {t("admin.section.encryption.columnsNoneWithRows")}
+              </p>
+            ) : (
+              /* Focusable, named scroll region: on a phone the table scrolls
+               sideways, and a keyboard user has to be able to reach it
+               (axe scrollable-region-focusable). */
+              <div
+                className="overflow-x-auto"
+                tabIndex={0}
+                role="region"
+                aria-label={t("admin.section.encryption.columnsTitle")}
+              >
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-muted-foreground border-b text-left">
+                      <th className="py-2 pr-3 font-medium">
+                        {t("admin.section.encryption.colColumn")}
+                      </th>
+                      <th className="py-2 pr-3 font-medium">
+                        {t("admin.section.encryption.colTotal")}
+                      </th>
+                      <th className="py-2 pr-3 font-medium">
+                        {t("admin.section.encryption.colActive")}
+                      </th>
+                      <th className="py-2 font-medium">
+                        {t("admin.section.encryption.colStale")}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody data-slot="encryption-column-rows">
+                    {shown.map((c) => {
+                      const active = c.byKeyId[activeKeyId] ?? 0;
+                      const stale = c.total - active;
+                      return (
+                        <tr key={`${c.model}.${c.field}`} className="border-b">
+                          <td className="py-2 pr-3 font-mono text-xs">
+                            {c.model}.{c.field}
+                          </td>
+                          <td className="py-2 pr-3">
+                            {c.total.toLocaleString()}
+                          </td>
+                          <td className="py-2 pr-3">
+                            {active.toLocaleString()}
+                          </td>
+                          <td className="py-2">
+                            {stale > 0 ? (
+                              <Badge variant="secondary">
+                                {stale.toLocaleString()}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">0</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {withRows.length < columns.length ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="min-h-11 sm:min-h-9"
+                onClick={() => setShowAll((prev) => !prev)}
+                aria-pressed={showAll}
+                data-testid="encryption-columns-show-all"
+              >
+                {showAll
+                  ? t("admin.section.encryption.columnsShowWithRows")
+                  : t("admin.section.encryption.columnsShowAll", {
+                      count: columns.length,
+                    })}
+              </Button>
+            ) : null}
+          </>
+        ) : null}
+      </div>
     </div>
   );
 }

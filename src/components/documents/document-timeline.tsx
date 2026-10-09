@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * The vault timeline: a virtualized, month-sectioned card grid windowed
+ * The vault timeline: a virtualized, month-sectioned grid of preview tiles
+ * (`document-month-grid.tsx`) windowed
  * with `@tanstack/react-virtual` over the shell's scroll container
  * (`#main-content` — single scroll owner per the design standards; the
  * timeline never brings its own scrollport). The flat item list (month
@@ -9,8 +10,9 @@
  * mounted DOM stays bounded (< ~400 nodes) regardless of corpus size.
  *
  * Columns are measured, not breakpoint-classed: a ResizeObserver on the
- * grid container drives the per-row chunking (4 / 3 / 2 / 1), which keeps
- * the virtualizer's row model and the painted grid in lockstep.
+ * grid container drives the per-row chunking (4 / 3 on a desktop, 2 on a
+ * phone, 1 on the narrowest screens), which keeps the virtualizer's row model
+ * and the painted grid in lockstep.
  *
  * In-flight / failed uploads render as a small non-virtualized grid above
  * the timeline — they are few (client concurrency 3) and must appear
@@ -28,19 +30,27 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { useTranslations } from "@/lib/i18n/context";
 import type { InboundDocumentDto } from "@/lib/validations/inbound-documents";
-import { DocumentCard, UploadStateCard } from "./document-card";
+import { UploadStateCard } from "./document-card";
+import {
+  DEFAULT_DOCUMENTS_LAYOUT,
+  type DocumentsLayoutArrangement,
+  type DocumentsLayoutView,
+} from "@/lib/documents/documents-layout";
+import {
+  columnsForWidth,
+  DocumentMonthHeading,
+  DocumentMonthRow,
+  estimatedRowHeight,
+  listColumnsForWidth,
+} from "./document-month-grid";
 import type { UploadQueueItem } from "./use-document-upload";
-import { buildTimelineItems, formatMonthLabel } from "./vault-utils";
+import {
+  buildFlowTimelineItems,
+  buildTimelineItems,
+  formatMonthLabel,
+} from "./vault-utils";
 
 const SCROLL_CONTAINER_ID = "main-content";
-
-/** Measured-width → column count (desktop 4/3, tablet 2, phone 1). */
-function columnsForWidth(width: number): number {
-  if (width >= 1200) return 4;
-  if (width >= 900) return 3;
-  if (width >= 600) return 2;
-  return 1;
-}
 
 export function DocumentTimeline({
   documents,
@@ -56,7 +66,13 @@ export function DocumentTimeline({
   highlightId,
   onPrefetch,
   timezone,
+  view = DEFAULT_DOCUMENTS_LAYOUT.view,
+  arrangement = DEFAULT_DOCUMENTS_LAYOUT.arrangement,
 }: {
+  /** Preview tiles or compact rows (the reader's vault presentation). */
+  view?: DocumentsLayoutView;
+  /** Months as their own blocks, or one continuous run across the width. */
+  arrangement?: DocumentsLayoutArrangement;
   /** The reader's profile zone; an undated document files under its upload day there. */
   timezone: string;
   documents: InboundDocumentDto[];
@@ -77,6 +93,7 @@ export function DocumentTimeline({
   const { t, locale } = useTranslations();
   const listRef = useRef<HTMLDivElement | null>(null);
   const [columns, setColumns] = useState(1);
+  const [gridWidth, setGridWidth] = useState(0);
   const [scrollMargin, setScrollMargin] = useState(0);
 
   // Roving tabindex over the card grid: exactly one card is tabbable; the
@@ -84,21 +101,39 @@ export function DocumentTimeline({
   // the remembered card left the corpus (filter change, deletion).
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // Measured columns — the ResizeObserver drives the row chunking.
+  const flow = arrangement === "flow";
+
+  // Measured columns — the ResizeObserver drives the row chunking. Tiles
+  // share a row on any width; compact rows only in the flowing arrangement,
+  // a stacked list stays one column.
   useEffect(() => {
     const el = listRef.current;
     if (!el) return;
-    const update = () => setColumns(columnsForWidth(el.clientWidth));
+    const update = () => {
+      const width = el.clientWidth;
+      setColumns(
+        view === "cards"
+          ? columnsForWidth(width)
+          : flow
+            ? listColumnsForWidth(width)
+            : 1,
+      );
+      setGridWidth(width);
+    };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [view, flow]);
 
   const items = useMemo(
-    () => buildTimelineItems(documents, columns, timezone),
-    [documents, columns, timezone],
+    () =>
+      flow
+        ? buildFlowTimelineItems(documents, columns, timezone)
+        : buildTimelineItems(documents, columns, timezone),
+    [documents, columns, timezone, flow],
   );
+  const formatMonth = (key: string) => formatMonthLabel(key, locale);
 
   // The timeline does not start at the scrollport's top edge (page header,
   // filter bar, upload row sit above it) — feed the offset to the
@@ -127,7 +162,10 @@ export function DocumentTimeline({
   const virtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => document.getElementById(SCROLL_CONTAINER_ID),
-    estimateSize: (index) => (items[index].type === "month" ? 40 : 140),
+    estimateSize: (index) =>
+      items[index].type === "month"
+        ? 40
+        : estimatedRowHeight(gridWidth, columns, view, flow),
     getItemKey: (index) => items[index].key,
     overscan: 6,
     scrollMargin,
@@ -230,7 +268,12 @@ export function DocumentTimeline({
   ]);
 
   return (
-    <div data-slot="document-timeline" className="space-y-4">
+    <div
+      data-slot="document-timeline"
+      data-view={view}
+      data-arrangement={arrangement}
+      className="space-y-4"
+    >
       {uploadItems.length > 0 ? (
         <div
           data-slot="document-upload-queue"
@@ -282,31 +325,25 @@ export function DocumentTimeline({
                 }}
               >
                 {item.type === "month" ? (
-                  <h2 className="text-muted-foreground pt-2 pb-3 text-xs font-medium tracking-wide uppercase">
-                    {formatMonthLabel(item.key, locale)}
-                  </h2>
+                  <DocumentMonthHeading
+                    label={formatMonthLabel(item.key, locale)}
+                  />
                 ) : (
-                  <div
-                    className="grid gap-4 pb-4"
-                    style={{
-                      gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-                    }}
-                  >
-                    {item.documents.map((doc) => (
-                      <DocumentCard
-                        key={doc.id}
-                        document={doc}
-                        selected={selectedIds.has(doc.id)}
-                        onToggleSelected={onToggleSelected}
-                        onOpen={onOpen}
-                        onDelete={onDelete}
-                        highlighted={highlightId === doc.id}
-                        tabIndex={rovingId === doc.id ? 0 : -1}
-                        onCardFocus={setActiveId}
-                        onPrefetch={onPrefetch}
-                      />
-                    ))}
-                  </div>
+                  <DocumentMonthRow
+                    documents={item.documents}
+                    columns={columns}
+                    view={view}
+                    monthStarts={item.monthStarts}
+                    formatMonth={formatMonth}
+                    selectedIds={selectedIds}
+                    onToggleSelected={onToggleSelected}
+                    onOpen={onOpen}
+                    onDelete={onDelete}
+                    highlightId={highlightId}
+                    rovingId={rovingId}
+                    onCardFocus={setActiveId}
+                    onPrefetch={onPrefetch}
+                  />
                 )}
               </div>
             );

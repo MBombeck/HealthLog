@@ -23,8 +23,8 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import {
+  geoLookupState,
   StatusItem,
-  usePublicVersion,
   useSystemStatus,
   type FailingQueue,
 } from "./_shared";
@@ -128,7 +128,6 @@ export function SystemStatusSection() {
   const { t } = useTranslations();
   const fmt = useFormatters();
   const { data: status, isError, refetch } = useSystemStatus();
-  const { data: version } = usePublicVersion();
 
   return (
     <div className="space-y-6">
@@ -237,23 +236,27 @@ export function SystemStatusSection() {
                 tone="success"
               />
             )}
-            {/* v1.4.27 R5 — offline GeoLite2 availability. Renders only
-                when /api/version returns the new field so legacy
-                responses do not produce a placeholder row. */}
-            {version?.offlineGeoEnabled !== undefined && (
-              <StatusItem
-                icon={Map}
-                label={t("admin.offlineGeoLabel")}
-                value={
-                  version.offlineGeoEnabled
-                    ? t("admin.offlineGeoEnabled")
-                    : t("admin.offlineGeoFallback", {
-                        host: version.geoProviderHost ?? "ipwho.is",
-                      })
-                }
-                tone={version.offlineGeoEnabled ? "success" : "warning"}
-              />
-            )}
+            {/* v1.4.27 R5 — offline GeoLite2 availability, read from the
+                admin status rather than the public /api/version. */}
+            <StatusItem
+              icon={Map}
+              label={t("admin.offlineGeoLabel")}
+              value={
+                {
+                  offline: t("admin.offlineGeoEnabled"),
+                  off: t("admin.offlineGeoOff"),
+                  chosen: t("admin.offlineGeoChosen", {
+                    host: status.geo.providerHost,
+                  }),
+                  default: t("admin.offlineGeoFallback", {
+                    host: status.geo.providerHost,
+                  }),
+                }[geoLookupState(status.geo)]
+              }
+              tone={
+                geoLookupState(status.geo) === "default" ? "warning" : "success"
+              }
+            />
           </div>
         ) : isError ? (
           // P19: surface load failures inline instead of leaving the

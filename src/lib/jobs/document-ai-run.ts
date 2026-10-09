@@ -89,6 +89,7 @@ import {
   OCR_EXTRACT_MODEL_CALLS,
 } from "@/lib/labs/ocr-run";
 import { annotate } from "@/lib/logging/context";
+import { logCaught } from "@/lib/logging/signal";
 
 export const DOCUMENT_AI_RUN_QUEUE = "document-ai-run";
 
@@ -133,6 +134,7 @@ export async function enqueueDocumentAiRun(
       action: { name: "ai_runs.enqueue_failed" },
       meta: { reason: err instanceof Error ? err.name : "unknown" },
     });
+    logCaught("ai_runs.enqueue_failed", err);
     return false;
   }
 }

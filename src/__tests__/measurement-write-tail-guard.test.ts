@@ -72,6 +72,8 @@ const WRITE_SITES: Record<string, string> = {
     "a primitive; every caller runs the tail over the verdicts' dirty identities",
   "lib/measurements/import-apple-health-export.ts":
     "the import worker refolds the import's span and re-warms every imported type",
+  "lib/import/health-connect/import.ts":
+    "the Health Connect import worker refolds the import's span and re-warms every imported type",
   "lib/export/restore-backup.ts":
     "a restore replaces the whole record: it refolds the whole window and drops every per-user cache",
   // Value-preserving reshapes: the same readings folded into daily or hourly
@@ -98,6 +100,12 @@ const WRITE_SITES: Record<string, string> = {
     "encrypts the note column in place; no value, instant or type changes",
   "lib/jobs/measurement-tombstone-cleanup.ts":
     "hard-deletes rows that were already soft-deleted and read nowhere",
+  "lib/jobs/compaction-tombstone-purge.ts":
+    "hard-deletes compaction tombstones, rows already soft-deleted and read nowhere",
+  "lib/jobs/measurement-fold-repair.ts":
+    "corrects the value of a folded stats: mean in place, takes the window's live samples into it, and refolds the DAY rollup of a touched daily mean itself; no instant or type changes",
+  "lib/measurements/fold-constituents.ts":
+    "soft-deletes the samples a fold or the fold repair has just taken into a recomputed stats: mean, which accounts for them from then on",
 };
 
 function sourceFiles(): string[] {
@@ -155,8 +163,12 @@ describe("measurement write tail", () => {
     const handRolled = Object.entries(WRITE_SITES)
       .filter(([, reason]) => reason.includes("re-warms"))
       .map(([file]) => file)
+      // The two export importers leave both legs to their workers, which
+      // run them once over the whole import.
       .filter(
-        (file) => file !== "lib/measurements/import-apple-health-export.ts",
+        (file) =>
+          file !== "lib/measurements/import-apple-health-export.ts" &&
+          file !== "lib/import/health-connect/import.ts",
       );
     expect(handRolled.length).toBeGreaterThan(0);
     const missing = handRolled.filter((file) => {

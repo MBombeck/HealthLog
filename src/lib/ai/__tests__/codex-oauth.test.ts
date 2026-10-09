@@ -11,6 +11,8 @@ import {
   requestDeviceCode,
   pollDeviceCode,
   refreshDeviceTokens,
+  CodexRefreshError,
+  codexReconnectRequired,
   encryptCodexCreds,
   decryptCodexCreds,
   getCodexClientId,
@@ -169,6 +171,76 @@ describe("codex-oauth", () => {
         grant_type: "refresh_token",
         refresh_token: "refresh-1",
       });
+    });
+  });
+
+  describe("refreshDeviceTokens failures", () => {
+    function failWith(status: number, body: string) {
+      global.fetch = vi.fn(
+        async () =>
+          new Response(body, {
+            status,
+            headers: { "content-type": "application/json" },
+          }),
+      ) as never;
+    }
+
+    async function refreshError(): Promise<CodexRefreshError> {
+      try {
+        await refreshDeviceTokens("refresh-dead");
+      } catch (err) {
+        return err as CodexRefreshError;
+      }
+      throw new Error("refresh unexpectedly succeeded");
+    }
+
+    it("reads a dead refresh token as an expired credential with an auth status", async () => {
+      // The production shape: 401 with `invalid_refresh_token`.
+      failWith(401, JSON.stringify({ error: "invalid_refresh_token" }));
+      const err = await refreshError();
+      expect(err).toBeInstanceOf(CodexRefreshError);
+      expect(err.httpStatus).toBe(401);
+      expect(err.credentialExpired).toBe(true);
+      expect(err.oauthError).toBe("invalid_refresh_token");
+    });
+
+    it("classifies invalid_grant on a 400 as a dead credential (401), not a request bug", async () => {
+      failWith(
+        400,
+        JSON.stringify({
+          error: { code: "invalid_grant", message: "Refresh token revoked" },
+        }),
+      );
+      const err = await refreshError();
+      expect(err.httpStatus).toBe(401);
+      expect(err.credentialExpired).toBe(true);
+      expect(err.oauthError).toBe("invalid_grant");
+    });
+
+    it("keeps the status of a refusal that is not about the credential", async () => {
+      failWith(503, "upstream unavailable");
+      const err = await refreshError();
+      expect(err.httpStatus).toBe(503);
+      expect(err.credentialExpired).toBe(false);
+      expect(err.oauthError).toBeNull();
+    });
+
+    it("never quotes the response body in the message", async () => {
+      failWith(
+        401,
+        JSON.stringify({
+          error: "invalid_refresh_token",
+          error_description: "token rt-secret-value was revoked",
+        }),
+      );
+      const err = await refreshError();
+      expect(err.message).not.toContain("rt-secret-value");
+    });
+
+    it("codexReconnectRequired carries the same auth contract", () => {
+      const err = codexReconnectRequired("no refresh token");
+      expect(err.httpStatus).toBe(401);
+      expect(err.credentialExpired).toBe(true);
     });
   });
 

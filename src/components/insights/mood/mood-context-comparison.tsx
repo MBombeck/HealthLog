@@ -16,7 +16,7 @@
  * them; a second threshold in the presentation layer would be a second place
  * to get the statistics wrong.
  */
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { contextValueLabelKey } from "@/lib/mood/context-vocabulary";
 import type { ContextComparisonRow } from "@/lib/insights/mood-context-crosstab";
 
@@ -26,6 +26,7 @@ export function MoodContextComparison({
   rows: ContextComparisonRow[];
 }) {
   const { t } = useTranslations();
+  const nf = useFormatters();
   if (rows.length === 0) return null;
 
   return (
@@ -50,8 +51,8 @@ export function MoodContextComparison({
                 {t("insights.mood.contextComparison.statement", {
                   label,
                   direction,
-                  withAvg: row.withAvg.toFixed(1),
-                  withoutAvg: row.withoutAvg.toFixed(1),
+                  withAvg: nf.number(row.withAvg, 1),
+                  withoutAvg: nf.number(row.withoutAvg, 1),
                 })}
               </p>
               {/* The counts ride with the statement, in the same block a

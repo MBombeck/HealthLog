@@ -58,7 +58,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (existingSession) {
     annotate({ action: { name: "auth.register.refused_authenticated" } });
     return apiError(
-      "Already signed in — sign out first to use an invitation",
+      "Already signed in. Sign out first to use an invitation",
       409,
       { errorCode: "auth.already_authenticated" },
     );

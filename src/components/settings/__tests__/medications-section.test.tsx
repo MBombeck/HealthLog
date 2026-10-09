@@ -97,7 +97,8 @@ describe("<MedicationsSection> — SSR smoke", () => {
 
   it("renders the German copy end-to-end", () => {
     const html = render("de");
-    expect(html).toContain("Reihenfolge anpassen");
+    // The order card shares its title with the Labs order card.
+    expect(html).toContain(">Reihenfolge<");
     expect(html).toContain(
       "Wähle, ob deine Medikamente als Karten oder als Tabelle angezeigt werden.",
     );

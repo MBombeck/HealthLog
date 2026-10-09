@@ -98,7 +98,7 @@ export function PractitionerList({ enabled = true }: { enabled?: boolean }) {
       onClick={() => openSheet("new")}
     >
       <Plus className="size-4" aria-hidden />
-      {t("practitioners.add")}
+      {t("common.add")}
     </Button>
   ) : null;
 
@@ -152,7 +152,6 @@ export function PractitionerList({ enabled = true }: { enabled?: boolean }) {
               : "practitioners.emptyDescription",
           )}
           action={debounced ? undefined : (addButton ?? undefined)}
-          ctaSize="lg"
         />
       ) : (
         <div className="space-y-4" data-slot="practitioner-list">

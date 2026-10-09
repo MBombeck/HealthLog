@@ -86,11 +86,13 @@ function MeasurementTokensCard() {
       endpoint="/api/tokens/measurements"
       icon={Upload}
       slot="settings-measurements-token-created"
+      anchor="measurements-token"
       copy={{
         title: t("settings.measurementsToken.title"),
         description: t("settings.measurementsToken.description"),
         detail: t("settings.measurementsToken.detail"),
         scopeNote: t("settings.measurementsToken.scopeNote"),
+        namePlaceholder: t("settings.measurementsToken.namePlaceholder"),
         createFailed: t("settings.measurementsToken.createFailed"),
       }}
     />
@@ -109,11 +111,13 @@ function WorkoutTokensCard() {
       endpoint="/api/tokens/workouts"
       icon={Activity}
       slot="settings-workouts-token-created"
+      anchor="workouts-token"
       copy={{
         title: t("settings.workoutsToken.title"),
         description: t("settings.workoutsToken.description"),
         detail: t("settings.workoutsToken.detail"),
         scopeNote: t("settings.workoutsToken.scopeNote"),
+        namePlaceholder: t("settings.workoutsToken.namePlaceholder"),
         createFailed: t("settings.workoutsToken.createFailed"),
       }}
     />
@@ -132,11 +136,13 @@ function DocumentTokensCard() {
       endpoint="/api/tokens/documents"
       icon={FileUp}
       slot="settings-documents-token-created"
+      anchor="documents-token"
       copy={{
         title: t("settings.documentsToken.title"),
         description: t("settings.documentsToken.description"),
         detail: t("settings.documentsToken.detail"),
         scopeNote: t("settings.documentsToken.scopeNote"),
+        namePlaceholder: t("settings.documentsToken.namePlaceholder"),
         createFailed: t("settings.documentsToken.createFailed"),
       }}
     />
@@ -148,8 +154,11 @@ function IngestTokenCard({
   endpoint,
   icon,
   slot,
+  anchor,
   copy,
 }: {
+  /** Deep-link anchor for the card (`/settings/api#<anchor>`). */
+  anchor: string;
   endpoint:
     | "/api/tokens/measurements"
     | "/api/tokens/workouts"
@@ -161,6 +170,7 @@ function IngestTokenCard({
     description: string;
     detail: string;
     scopeNote: string;
+    namePlaceholder: string;
     createFailed: string;
   };
 }) {
@@ -228,22 +238,25 @@ function IngestTokenCard({
     <SettingsCard>
       {recentProof.dialog}
       <SettingsCardHeader
+        anchor={anchor}
         icon={icon}
         title={copy.title}
         description={copy.description}
       />
 
       <div className="space-y-3">
-        <p className="text-sm leading-relaxed">{copy.detail}</p>
-        <p className="text-muted-foreground text-sm leading-relaxed">
-          {copy.scopeNote}
+        {/* "Shown once" and what the token can do are one statement about
+            the credential, so they read as one paragraph. */}
+        <p className="text-sm leading-relaxed">
+          {copy.detail} {copy.scopeNote}
         </p>
 
         <form onSubmit={handleCreate} className="flex items-center gap-2">
           <Input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder={t("settings.tokenNamePlaceholder")}
+            placeholder={copy.namePlaceholder}
+            aria-label={t("settings.tokenNameLabel")}
             maxLength={100}
             className="flex-1"
           />
@@ -341,6 +354,7 @@ function ApiEndpointsCard() {
   return (
     <SettingsCard>
       <SettingsCardHeader
+        anchor="api-endpoints"
         icon={Key}
         title={t("settings.apiEndpointsTitle")}
         description={t("settings.apiEndpointsDescription")}
@@ -463,6 +477,7 @@ function ApiTokensCard() {
   return (
     <SettingsCard>
       <SettingsCardHeader
+        anchor="api-tokens"
         icon={Key}
         title={t("settings.apiTokens")}
         description={t("settings.apiTokensDescription")}
@@ -579,7 +594,7 @@ function ApiTokensCard() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="text-destructive h-9 w-9"
+                                  className="text-muted-foreground hover:text-foreground h-9 w-9"
                                   aria-label={t("settings.tokenRevokeAction")}
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
@@ -676,7 +691,7 @@ function ApiTokensCard() {
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button
-                              variant="destructive"
+                              variant="outline"
                               size="sm"
                               className="min-h-11 w-full"
                             >

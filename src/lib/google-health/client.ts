@@ -829,17 +829,32 @@ export async function forEachDataPointPage(
         verdict.classification === "success"
           ? undefined
           : extractGoogleApiErrorDetail(json);
+      // v1.42 (#1023) — the first filtered daily-summary read answering 400
+      // is the expected trigger for the snake_case retry below, not a
+      // failure: some accounts reject the documented camelCase prefix on
+      // some types, and the very next request answers 200. It was logged as
+      // an error next to the 200 that followed it. It is recorded as a note
+      // now; any other 400 still carries its error.
+      const expectedFallback =
+        canFallBack &&
+        dateStyle === "camel" &&
+        requestCount === 1 &&
+        res.status === 400;
       getEvent()?.addExternalCall({
         service: "google-health",
         method: `${verb}(page=${pageCount})`,
         duration_ms: Math.round(performance.now() - pageStart),
         status: res.status,
-        error:
-          verdict.classification === "success"
-            ? undefined
-            : apiErrorDetail
-              ? `${verdict.reason} ${apiErrorDetail}`
-              : verdict.reason,
+        ...(expectedFallback
+          ? { note: "date_filter_rejected_retrying_snake_case" }
+          : {
+              error:
+                verdict.classification === "success"
+                  ? undefined
+                  : apiErrorDetail
+                    ? `${verdict.reason} ${apiErrorDetail}`
+                    : verdict.reason,
+            }),
       });
       if (verdict.classification !== "success") {
         throw new GoogleHealthApiError({

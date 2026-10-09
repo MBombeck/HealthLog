@@ -32,6 +32,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { invalidateGrantReads } from "@/lib/queries/use-account-grants";
 import type { GrantParty } from "@/lib/queries/use-account-grants";
 import type { Locale } from "@/lib/i18n/config";
+import type { HandoverAccess } from "@/lib/managed-profiles/handover-access";
 
 /**
  * Exactly the body `POST /api/managed-profiles` accepts.
@@ -338,5 +339,114 @@ export function useRemoveManagedProfileGuardian() {
       grantId: string;
     }) => apiDelete(`/api/managed-profiles/${profileId}/guardians/${grantId}`),
     onSuccess: invalidate,
+  });
+}
+
+// ── Handover (v1.42, #959) ──────────────────────────────────────────────────
+
+/** What `GET /api/managed-profiles/{id}/handover` answers. */
+export interface ManagedProfileHandoverStatus {
+  /** False on a single-sign-on-only instance, where no link can be made. */
+  available: boolean;
+  open: {
+    id: string;
+    createdAt: string;
+    expiresAt: string;
+    createdByYou: boolean;
+  } | null;
+}
+
+/** The minted link. `token` and `url` exist in this response only. */
+export interface ManagedProfileHandoverLink {
+  id: string;
+  token: string;
+  url: string;
+  expiresAt: string;
+}
+
+/**
+ * Exactly the body `POST /api/managed-profiles/{id}/handover` accepts, plus
+ * the profile it is addressed to. The route is `.strict()`, so the wire body
+ * is composed by {@link handoverCreateBody} rather than by spreading this.
+ */
+export interface CreateManagedProfileHandoverInput {
+  profileId: string;
+  expiresInDays: 1 | 7 | 14;
+  proposals: { grantId: string; proposal: HandoverAccess }[];
+}
+
+/** The wire body, composed once and exported for the integration suite. */
+export function handoverCreateBody(input: CreateManagedProfileHandoverInput): {
+  expiresInDays: 1 | 7 | 14;
+  proposals: { grantId: string; proposal: HandoverAccess }[];
+} {
+  return {
+    expiresInDays: input.expiresInDays,
+    proposals: input.proposals.map((p) => ({
+      grantId: p.grantId,
+      proposal: p.proposal,
+    })),
+  };
+}
+
+/** Whether this profile has an open handover link. Never the link itself. */
+export function useManagedProfileHandover(profileId: string, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.managedProfileHandover(profileId),
+    queryFn: () =>
+      apiGet<ManagedProfileHandoverStatus>(
+        `/api/managed-profiles/${profileId}/handover`,
+      ),
+    enabled,
+  });
+}
+
+/**
+ * Mint the handover link. Step-up gated like every act in this family, so a
+ * 401 carrying `auth.stepup.required` is the expected first answer.
+ *
+ * The link lives in the mutation's `data` and nowhere else: it is shown once
+ * and never cached under a query key.
+ */
+export function useCreateManagedProfileHandover() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: queryKeys.managedProfileHandoverCreate(),
+    mutationFn: async (input: CreateManagedProfileHandoverInput) => {
+      const link = await apiPost<ManagedProfileHandoverLink>(
+        `/api/managed-profiles/${input.profileId}/handover`,
+        handoverCreateBody(input),
+      );
+      // Lazy chunk, as the admin invite and the share link do: the QR encoder
+      // is needed here, at mint time, and nowhere else.
+      const QRCode = (await import("qrcode")).default;
+      const qrDataUrl = await QRCode.toDataURL(link.url, {
+        width: 240,
+        margin: 1,
+      });
+      return { ...link, qrDataUrl };
+    },
+    onSuccess: (_link, input) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.managedProfileHandover(input.profileId),
+      });
+    },
+  });
+}
+
+/** Withdraw the open link. No step-up: taking it back is never harder. */
+export function useRevokeManagedProfileHandover() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: queryKeys.managedProfileHandoverRevoke(),
+    mutationFn: (profileId: string) =>
+      apiDelete<{ revoked: boolean }>(
+        `/api/managed-profiles/${profileId}/handover`,
+      ),
+    onSuccess: (_result, profileId) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.managedProfileHandover(profileId),
+      });
+    },
   });
 }

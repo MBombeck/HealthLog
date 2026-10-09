@@ -127,10 +127,10 @@ const batchPayloadSchema = z
     // used in attribution — sending it or omitting it produces byte-identical
     // row outcomes. Omit on any client that does not track its wake reason.
     syncTrigger: z
-      .enum(["foreground", "background", "push"])
+      .enum(["foreground", "background", "push", "manual"])
       .optional()
       .describe(
-        "Diagnostic-only. Names what triggered this sync (foreground app open, background refresh, or a push wake). Recorded on the ingest wide event and kept on the account as `lastSyncTrigger` — plus `lastBackgroundSyncAt` for a `background` or `push` trigger — both readable from `GET /api/integrations/healthkit`. It does not affect dedup, attribution, or how any sample is stored. Optional and backward-compatible: pre-#66 clients omit it.",
+        'Diagnostic-only. Names what triggered this sync (foreground app open, background refresh, a push wake, or a user-initiated `manual` "Sync all" run, since v1.42). Recorded on the ingest wide event and kept on the account as `lastSyncTrigger` — plus `lastBackgroundSyncAt` for a `background` or `push` trigger — both readable from `GET /api/integrations/healthkit`. Since v1.42 it is also recorded per measurement type the batch carried (Apple Health rows only), served as `lastReceivedAt` / `lastTrigger` / `lastNewSampleAt` on each `metricFreshness` entry of that read. It does not affect dedup, attribution, or how any sample is stored. Optional and backward-compatible: pre-#66 clients omit it.',
       ),
   })
   .meta({
@@ -147,7 +147,12 @@ const batchEntryResult = z
       .describe(
         "`inserted`/`duplicate` — the row landed (advance the cursor). `updated` — a `stats:` aggregate overwrote an existing row. `skipped` — validation no-op; see `reason`. `failed` — retryable database failure that must not advance the entry cursor; the response is marked `Cache-Control: no-store`.",
       ),
-    reason: z.string().optional(),
+    reason: z
+      .string()
+      .optional()
+      .describe(
+        "Why a row was `skipped` or a `duplicate`. `folded_window` (since v1.42): a raw sample of a dense or mean type whose local day lies before the fold boundary and whose hour or day a live `stats:` row of the same source already covers. Nothing to retry; treat it like any duplicate.",
+      ),
     convertedValue: z
       .number()
       .optional()
@@ -1079,7 +1084,7 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...stdResponses,
         "422": {
           description:
-            "The batch exceeded the 500-entry limit (`measurement.batch.too_large`), failed validation (`measurement.batch.invalid`, with every issue under `details.issues`), or (`measurement.batch.source_not_permitted`) carried an entry naming a source, any source, under a narrow `measurements:write` credential. Nothing was written in any of the three cases, and all three are permanent for the batch as sent: resending it unchanged is refused the same way.",
+            'The batch exceeded the 500-entry limit (`measurement.batch.too_large`), failed validation (`measurement.batch.invalid`, with every issue under `details.issues`), or (`measurement.batch.source_not_permitted`) carried an entry naming a source, any source, under a narrow `measurements:write` credential. Nothing was written in any of the three cases, and all three are permanent for the batch as sent: resending it unchanged is refused the same way. Which issues belong to an entry: every issue caused by one entry has a `path` that starts `entries.<n>` (the entry\'s index in the request, then the field, e.g. `entries.3.startDate`, or just `entries.4` when the entry is not an object). Those are the only per-entry issues, so a client may drop the named entries and resend the rest. An issue whose `path` is `""` (the body is not an object), `entries` (missing, not an array, or empty) or `syncTrigger` is about the batch itself, and no split recovers it.',
           content: { "application/json": { schema: errorEnvelope } },
         },
       },

@@ -78,3 +78,45 @@ export async function holdAccountAgainstRestore(
   `;
   if (!row?.held) throw new AccountRestoreInProgressError(userId);
 }
+
+/**
+ * Transaction options for a day transaction that takes
+ * {@link holdAccountFoldLock}. The wait for the lock runs inside the
+ * transaction, so it counts against the interactive timeout, and Prisma's
+ * default of five seconds would abort a day whenever the other pass holds the
+ * lock a little longer (P2028). The other side holds it for one day's
+ * transaction, itself bounded by this timeout, and every statement (the lock
+ * wait included) by the connection's 60-second `statement_timeout`; two
+ * minutes covers a full wait and the day's own work. `maxWait` bounds the
+ * wait for a pool connection, as elsewhere in the repo.
+ */
+export const FOLD_TRANSACTION_OPTIONS = {
+  maxWait: 10_000,
+  timeout: 120_000,
+} as const;
+
+/**
+ * Serialise the passes that rewrite an account's `stats:` means from their
+ * samples: the daily-mean consolidation, the dense hourly fold and the
+ * one-time fold repair (`measurement-fold-repair.ts`). Each day transaction
+ * of those passes takes it right after {@link holdAccountAgainstRestore}, and
+ * reads the day's samples only after it has it, so two of them never compute
+ * the same window from two different views of its samples, and never write
+ * the same row at once. It waits rather than refusing: the other side holds
+ * it for one day's transaction.
+ *
+ * The compaction-tombstone purge takes it too, for each account it deletes
+ * from, so it never removes leftovers between a re-fold's reads
+ * (`fold-constituents.ts`).
+ *
+ * The two-key form keeps it apart from the restore lock's single-key space.
+ */
+export async function holdAccountFoldLock(
+  tx: LockClient,
+  userId: string,
+): Promise<void> {
+  await tx.$queryRaw`
+    SELECT 1 AS locked
+    FROM pg_advisory_xact_lock(hashtext('measurement-fold'), hashtext(${userId}))
+  `;
+}

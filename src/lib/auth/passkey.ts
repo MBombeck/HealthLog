@@ -304,6 +304,33 @@ export async function createAuthenticationOptions(userId?: string) {
   return { options, challengeId: challenge.id };
 }
 
+/**
+ * Why a passkey assertion could not be checked at all — as opposed to an
+ * assertion that was checked and did not verify. Each kind is a case a
+ * client can name to the person (the passkey was removed here, the sign-in
+ * took too long), so the sign-in route answers it with its own status and
+ * `meta.errorCode` instead of letting it surface as a server fault.
+ *
+ * - `challenge_expired`: the challenge is gone (expired, already used, never
+ *   issued) or was begun for a different account.
+ * - `unknown_passkey`: no passkey with this credential id is registered here.
+ * - `malformed`: the assertion body is not an authentication response.
+ * - `verification_failed`: the WebAuthn library refused the assertion
+ *   (origin, RP id, challenge or signature mismatch).
+ */
+export type PasskeyAuthErrorKind =
+  "challenge_expired" | "unknown_passkey" | "malformed" | "verification_failed";
+
+export class PasskeyAuthError extends Error {
+  constructor(
+    readonly kind: PasskeyAuthErrorKind,
+    message: string,
+  ) {
+    super(message);
+    this.name = "PasskeyAuthError";
+  }
+}
+
 export async function verifyAuthentication(
   challengeId: string,
   response: unknown,
@@ -318,7 +345,10 @@ export async function verifyAuthentication(
     type: "authentication",
   });
   if (!challenge) {
-    throw new Error("Challenge expired or not found");
+    throw new PasskeyAuthError(
+      "challenge_expired",
+      "Challenge expired or not found",
+    );
   }
 
   // v1.4.43 W13 L-3 — explicit Zod narrowing instead of the previous
@@ -329,7 +359,10 @@ export async function verifyAuthentication(
   // type-narrowing gap a future refactor could trip on.
   const parsed = authenticationResponseSchema.safeParse(response);
   if (!parsed.success) {
-    throw new Error("Malformed passkey authentication response");
+    throw new PasskeyAuthError(
+      "malformed",
+      "Malformed passkey authentication response",
+    );
   }
   const typedResponse = parsed.data as unknown as AuthenticationResponseJSON;
 
@@ -340,27 +373,41 @@ export async function verifyAuthentication(
   });
 
   if (!passkey) {
-    throw new Error("Passkey not found");
+    throw new PasskeyAuthError("unknown_passkey", "Passkey not found");
   }
 
   // A challenge begun for one account (the re-proof arm names the account)
   // is answered only by that account's passkey.
   if (challenge.userId !== null && challenge.userId !== passkey.userId) {
-    throw new Error("Challenge expired or not found");
+    throw new PasskeyAuthError(
+      "challenge_expired",
+      "Challenge expired or not found",
+    );
   }
 
-  const verification = await verifyAuthenticationResponse({
-    response: typedResponse,
-    expectedChallenge: challenge.challenge,
-    expectedOrigin: getExpectedOrigin(),
-    expectedRPID: getRpId(),
-    credential: {
-      id: passkey.credentialId,
-      publicKey: passkey.credentialPublicKey,
-      counter: Number(passkey.counter),
-      transports: passkey.transports as Transport[],
-    },
-  });
+  let verification: VerifiedAuthenticationResponse;
+  try {
+    verification = await verifyAuthenticationResponse({
+      response: typedResponse,
+      expectedChallenge: challenge.challenge,
+      expectedOrigin: getExpectedOrigin(),
+      expectedRPID: getRpId(),
+      credential: {
+        id: passkey.credentialId,
+        publicKey: passkey.credentialPublicKey,
+        counter: Number(passkey.counter),
+        transports: passkey.transports as Transport[],
+      },
+    });
+  } catch (err) {
+    // The library throws, rather than answering `verified: false`, for an
+    // origin, RP id or challenge mismatch and for a bad signature. Those are
+    // a refused assertion, not a server fault.
+    throw new PasskeyAuthError(
+      "verification_failed",
+      err instanceof Error ? err.message : "Passkey verification failed",
+    );
+  }
 
   if (verification.verified) {
     // Update counter + stamp last-used so the management UI can surface

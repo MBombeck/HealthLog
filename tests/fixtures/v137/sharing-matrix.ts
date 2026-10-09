@@ -457,6 +457,31 @@ export const ADMITTED_MUTATING_HANDLERS = [
     "write",
     "upsert",
   ),
+  // v1.42 (#1005) — the record's own vaccine definitions.
+  handler(
+    "app/api/vaccinations/custom/route.ts",
+    "/api/vaccinations/custom",
+    "POST",
+    "profile",
+    "write",
+    "create",
+  ),
+  handler(
+    "app/api/vaccinations/custom/[id]/route.ts",
+    "/api/vaccinations/custom/[id]",
+    "PATCH",
+    "profile",
+    "manage",
+    "update",
+  ),
+  handler(
+    "app/api/vaccinations/custom/[id]/route.ts",
+    "/api/vaccinations/custom/[id]",
+    "DELETE",
+    "profile",
+    "manage",
+    "delete",
+  ),
   handler(
     "app/api/illness/episodes/[id]/day-logs/route.ts",
     "/api/illness/episodes/[id]/day-logs",

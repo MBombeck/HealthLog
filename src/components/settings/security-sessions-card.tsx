@@ -135,6 +135,7 @@ export function SecuritySessionsCard({
   return (
     <SettingsCard data-slot="settings-security-sessions-card">
       <SettingsCardHeader
+        anchor="sessions"
         icon={MonitorSmartphone}
         title={
           <button

@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { resolveIntlLocale } from "@/lib/format-locale";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+
 /**
  * v1.4.27 B3 — Public about / credits page.
  *
@@ -40,7 +44,7 @@ export const dynamic = "force-dynamic";
 const LAST_UPDATED = "2026-08-02";
 
 export const metadata: Metadata = {
-  title: "About — HealthLog",
+  title: "About | HealthLog",
   description:
     "Open-source credits and third-party data attributions for the HealthLog project.",
   robots: { index: true, follow: true },
@@ -60,14 +64,24 @@ function Section({
       <h2 className="text-xl font-semibold tracking-tight md:text-2xl">
         {title}
       </h2>
-      <div className="text-muted-foreground space-y-3 text-sm leading-relaxed md:text-base">
+      <div className="text-foreground space-y-3 text-sm leading-relaxed md:text-base">
         {children}
       </div>
     </section>
   );
 }
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  // The headings, the date and the sign-in link follow the reader's locale;
+  // the body is the attribution text the licences ask for and stays as
+  // written.
+  const locale = await resolveServerLocale();
+  const { t } = getServerTranslator(locale);
+  const lastUpdated = new Intl.DateTimeFormat(resolveIntlLocale(locale), {
+    dateStyle: "medium",
+    timeZone: "UTC",
+  }).format(new Date(`${LAST_UPDATED}T12:00:00Z`));
+
   return (
     <div className="bg-background text-foreground min-h-dvh">
       <header className="border-border/60 bg-background/80 sticky top-0 z-10 border-b pt-[env(safe-area-inset-top)] backdrop-blur">
@@ -82,7 +96,7 @@ export default function AboutPage() {
             href="/auth/login"
             className="text-muted-foreground hover:text-foreground inline-flex min-h-11 items-center text-sm"
           >
-            Sign in
+            {t("auth.login")}
           </Link>
         </div>
       </header>
@@ -99,17 +113,19 @@ export default function AboutPage() {
       >
         <div className="space-y-3">
           <p className="text-muted-foreground text-xs tracking-wider uppercase">
-            About
+            {t("aboutPage.eyebrow")}
           </p>
           <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
-            About HealthLog
+            {t("aboutPage.title")}
           </h1>
           <p className="text-muted-foreground text-sm">
-            Last updated: {LAST_UPDATED}
+            <time dateTime={LAST_UPDATED}>
+              {t("aboutPage.lastUpdated", { date: lastUpdated })}
+            </time>
           </p>
         </div>
 
-        <Section id="project" title="Project">
+        <Section id="project" title={t("aboutPage.project")}>
           <p>
             HealthLog is an open-source, self-hostable personal-health-tracking
             application. The source code lives at{" "}
@@ -117,7 +133,7 @@ export default function AboutPage() {
               href="https://github.com/MBombeck/HealthLog"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline"
+              className="text-primary underline underline-offset-2"
             >
               github.com/MBombeck/HealthLog
             </a>{" "}
@@ -127,7 +143,7 @@ export default function AboutPage() {
           </p>
         </Section>
 
-        <Section id="credits" title="Credits">
+        <Section id="credits" title={t("aboutPage.credits")}>
           <p>
             HealthLog stands on a number of open-source libraries and public
             data sources. The list below covers the third-party assets that ship
@@ -145,7 +161,7 @@ export default function AboutPage() {
               href="https://www.maxmind.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline"
+              className="text-primary underline underline-offset-2"
             >
               www.maxmind.com
             </a>
@@ -164,7 +180,7 @@ export default function AboutPage() {
               href="https://www.maxmind.com/en/geolite/eula"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline"
+              className="text-primary underline underline-offset-2"
             >
               GeoLite End User License Agreement
             </a>
@@ -173,7 +189,7 @@ export default function AboutPage() {
               href="https://creativecommons.org/licenses/by-sa/4.0/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline"
+              className="text-primary underline underline-offset-2"
             >
               Creative Commons Attribution-ShareAlike 4.0 International License
             </a>{" "}

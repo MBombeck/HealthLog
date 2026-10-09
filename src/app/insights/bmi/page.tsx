@@ -69,7 +69,7 @@ export default function InsightsBmiPage() {
               </Link>
             </Button>
           }
-          coachPrefill="I haven't recorded any weight yet — why does BMI matter for me, and what should I know before I start tracking it?"
+          coachPrefill="I haven't recorded any weight yet. Why does BMI matter for me, and what should I know before I start tracking it?"
         />
       </SubPageShell>
     );
@@ -86,7 +86,6 @@ export default function InsightsBmiPage() {
           icon={<Ruler className="size-6" />}
           title={t("insights.bmiEmptyTitle")}
           description={t("insights.bmiEmptyDescription")}
-          ctaSize="lg"
           action={
             <Button size="sm" asChild>
               <Link href="/settings/account">
@@ -95,7 +94,7 @@ export default function InsightsBmiPage() {
             </Button>
           }
         />
-        <CoachLaunchButton prefill="I haven't set my height yet — why does BMI matter, and what should I know before I configure it?" />
+        <CoachLaunchButton prefill={t("insights.bmiHeight.coachPrefill")} />
       </SubPageShell>
     );
   }
@@ -117,13 +116,14 @@ export default function InsightsBmiPage() {
         chartKey="bmi"
         types={["WEIGHT"]}
         title={t("targets.bmi")}
-        colors={["var(--dracula-yellow)"]}
+        colors={["var(--chart-5)"]}
         unit="kg/m²"
         valueMode="bmi"
         valueBands={BMI_BANDS}
         compareBaseline={compareBaseline}
         userTimezone={user?.timezone}
         showDataTable
+        dayLinks
       />
 
       <MetricTargetSummary slug="bmi" />

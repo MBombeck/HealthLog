@@ -44,6 +44,17 @@ vi.mock("@/lib/jobs/worker-status", () => ({
   })),
 }));
 
+const geoMock = vi.hoisted(() => ({
+  lookup: "online" as "offline" | "online" | "off",
+  chosen: false,
+  host: "ipwho.is",
+}));
+vi.mock("@/lib/geo", () => ({
+  geoLookupMode: () => geoMock.lookup,
+  geoProviderChosen: () => geoMock.chosen,
+  resolveGeoProviderHost: () => geoMock.host,
+}));
+
 vi.mock("@/lib/jobs/job-failures", () => ({
   JOB_FAILURE_WINDOW_HOURS: 72,
   readFailingQueues: vi.fn(),
@@ -206,6 +217,19 @@ describe("GET /api/admin/status (integration health summary)", () => {
           failures: 2,
         }),
       ],
+    });
+  });
+
+  it("carries the login-IP geo state the public version route no longer shows", async () => {
+    geoMock.lookup = "online";
+    geoMock.chosen = true;
+    geoMock.host = "ip-api.com";
+    const res = await GET();
+    const body = (await res.json()) as { data: { geo: unknown } };
+    expect(body.data.geo).toEqual({
+      lookup: "online",
+      providerChosen: true,
+      providerHost: "ip-api.com",
     });
   });
 });

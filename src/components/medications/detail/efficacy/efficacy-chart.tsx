@@ -23,10 +23,24 @@ import {
   Tooltip,
   ReferenceLine,
   ReferenceArea,
+  ReferenceDot,
 } from "recharts";
 import { makeFormatters } from "@/lib/format-locale";
 import { useDateFormatPreference, useTranslations } from "@/lib/i18n/context";
 import { axisUnitSuffix } from "@/lib/charts/axis-unit";
+import {
+  RichChartTooltip,
+  type RichTooltipRow,
+} from "@/components/charts/chart-tooltip";
+import { ChartDataTable } from "@/components/charts/chart-data-table";
+import {
+  ChartDayFooter,
+  OPEN_DAY_LINE,
+  dayAnchor,
+  useChartDayLinks,
+} from "@/components/day/chart-day-links";
+import { dateKeyOfInstant } from "@/components/day/day-url";
+import { dateOnlyKey, isNoonUtcAnchor } from "@/lib/tz/date-only";
 
 export interface EfficacyChartTarget {
   label: string;
@@ -137,6 +151,40 @@ export function EfficacyChart({
     return [Math.floor(min - pad), Math.ceil(max + pad)];
   }, [displaySeries]);
 
+  // v1.42 — each value of the target series opens its day, through the doors
+  // every day-linked chart has. The series and the adherence lane are two
+  // `<Line data>` arrays on one time axis, so a click is placed by its x
+  // value, not by an index into the chart's data.
+  const seriesDays = displaySeries.map((p) => {
+    const instant = new Date(p.t);
+    return isNoonUtcAnchor(instant)
+      ? dateOnlyKey(instant)
+      : dateKeyOfInstant(instant, timezone);
+  });
+  const chartDays = useChartDayLinks({
+    enabled: displaySeries.length > 0,
+    days: seriesDays,
+    focusFor: (index) => {
+      const point = displaySeries[index];
+      if (!point) return null;
+      return {
+        label: target.label,
+        value: mode === "percent" ? `${point.value}%` : String(point.value),
+        unit: mode === "percent" ? undefined : (target.unit ?? undefined),
+      };
+    },
+    indexOfClick: (state) => {
+      const x = Number(state.activeLabel);
+      if (!Number.isFinite(x)) return null;
+      const at = displaySeries.findIndex((p) => p.t === x);
+      return at === -1 ? null : at;
+    },
+  });
+  const openPoint =
+    chartDays.openIndex !== undefined
+      ? displaySeries[chartDays.openIndex]
+      : undefined;
+
   if (seriesData.length === 0 || !domain) return null;
 
   const unitSuffix = mode === "percent" ? "%" : target.unit;
@@ -145,153 +193,240 @@ export function EfficacyChart({
   // domain max keeps the render pure (no `Date.now()` in the render body).
   const rightEdge = domain[1];
   return (
-    <div className="touch-pan-y">
-      <ResponsiveContainer width="100%" height={220}>
-        <LineChart margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke="var(--border)"
-            opacity={0.5}
-          />
-          <XAxis
-            dataKey="t"
-            type="number"
-            scale="time"
-            domain={domain}
-            tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(v: number) => fmt.date(new Date(v))}
-          />
-          <YAxis
-            yAxisId="target"
-            domain={targetDomain}
-            tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-            tickLine={false}
-            axisLine={false}
-            width={40}
-            unit={axisUnitSuffix(unitSuffix)}
-          />
-          <YAxis
-            yAxisId="adherence"
-            orientation="right"
-            domain={[0, 100]}
-            hide
-          />
+    <div>
+      <div
+        className={`touch-pan-y ${chartDays.plotClassName}`}
+        data-slot="chart-plot"
+        {...chartDays.plotProps}
+      >
+        <ResponsiveContainer width="100%" height={220}>
+          <LineChart
+            margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
+            onClick={chartDays.onChartClick}
+          >
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="var(--border)"
+              opacity={0.5}
+            />
+            <XAxis
+              dataKey="t"
+              type="number"
+              scale="time"
+              domain={domain}
+              tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v: number) => fmt.date(new Date(v))}
+            />
+            <YAxis
+              yAxisId="target"
+              domain={targetDomain}
+              tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+              tickLine={false}
+              axisLine={false}
+              width={40}
+              unit={axisUnitSuffix(unitSuffix)}
+            />
+            <YAxis
+              yAxisId="adherence"
+              orientation="right"
+              domain={[0, 100]}
+              hide
+            />
 
-          {/* Population reference band — faint context, labelled "typical
+            {/* Population reference band — faint context, labelled "typical
               range", explicitly NOT a target line. Hidden in percent mode:
               an absolute band is meaningless once the series is normalized. */}
-          {mode === "absolute" && target.referenceBand ? (
-            <ReferenceArea
-              yAxisId="target"
-              y1={target.referenceBand.low}
-              y2={target.referenceBand.high}
-              fill="var(--muted-foreground)"
-              fillOpacity={0.08}
-              stroke="none"
-              label={{
-                value: typicalRangeLabel,
-                position: "insideTopLeft",
-                fill: "var(--muted-foreground)",
-                fontSize: 10,
-              }}
-            />
-          ) : null}
+            {mode === "absolute" && target.referenceBand ? (
+              <ReferenceArea
+                yAxisId="target"
+                y1={target.referenceBand.low}
+                y2={target.referenceBand.high}
+                fill="var(--muted-foreground)"
+                fillOpacity={0.08}
+                stroke="none"
+                label={{
+                  value: typicalRangeLabel,
+                  position: "insideTopLeft",
+                  fill: "var(--muted-foreground)",
+                  fontSize: 10,
+                }}
+              />
+            ) : null}
 
-          {/* Shaded pause bands. An open pause runs to now. */}
-          {pauses.map((p, i) => (
-            <ReferenceArea
-              key={`pause-${i}`}
-              yAxisId="target"
-              x1={toMs(p.from)}
-              x2={p.to ? toMs(p.to) : rightEdge}
-              fill="var(--foreground)"
-              fillOpacity={0.06}
-              stroke="none"
-            />
-          ))}
+            {/* Shaded pause bands. An open pause runs to now. */}
+            {pauses.map((p, i) => (
+              <ReferenceArea
+                key={`pause-${i}`}
+                yAxisId="target"
+                x1={toMs(p.from)}
+                x2={p.to ? toMs(p.to) : rightEdge}
+                fill="var(--foreground)"
+                fillOpacity={0.06}
+                stroke="none"
+              />
+            ))}
 
-          {/* Adherence lane — faint, hidden right axis. */}
-          <Line
-            yAxisId="adherence"
-            data={adherenceData}
-            dataKey="rate"
-            name={adherenceLabel}
-            type="stepAfter"
-            stroke="var(--chart-4)"
-            strokeWidth={1.5}
-            strokeOpacity={0.5}
-            dot={false}
-            connectNulls
-            isAnimationActive={false}
-          />
-
-          {/* The target series. */}
-          <Line
-            yAxisId="target"
-            data={displaySeries}
-            dataKey="value"
-            name={target.label}
-            type="monotone"
-            stroke="var(--chart-1)"
-            strokeWidth={2}
-            dot={{ r: 2, fill: "var(--chart-1)" }}
-            activeDot={{ r: 4 }}
-            connectNulls
-            isAnimationActive={false}
-          />
-
-          {/* Start marker. */}
-          {startMs !== null ? (
-            <ReferenceLine
-              yAxisId="target"
-              x={startMs}
-              stroke="var(--primary)"
+            {/* Adherence lane — faint, hidden right axis. */}
+            <Line
+              yAxisId="adherence"
+              data={adherenceData}
+              dataKey="rate"
+              name={adherenceLabel}
+              type="stepAfter"
+              stroke="var(--chart-4)"
               strokeWidth={1.5}
-              label={{
-                value: startLabel,
-                position: "insideTopRight",
-                fill: "var(--foreground)",
-                fontSize: 10,
+              strokeOpacity={0.5}
+              dot={false}
+              connectNulls
+              isAnimationActive={false}
+            />
+
+            {/* The target series. */}
+            <Line
+              yAxisId="target"
+              data={displaySeries}
+              dataKey="value"
+              name={target.label}
+              type="monotone"
+              stroke="var(--chart-1)"
+              strokeWidth={2}
+              dot={{ r: 2, fill: "var(--chart-1)" }}
+              activeDot={{ r: 4 }}
+              connectNulls
+              isAnimationActive={false}
+            />
+
+            {/* Start marker. */}
+            {startMs !== null ? (
+              <ReferenceLine
+                yAxisId="target"
+                x={startMs}
+                stroke="var(--primary)"
+                strokeWidth={1.5}
+                label={{
+                  value: startLabel,
+                  position: "insideTopRight",
+                  fill: "var(--foreground)",
+                  fontSize: 10,
+                }}
+              />
+            ) : null}
+
+            {/* Dose-change markers — quiet, dashed. */}
+            {doseChanges.map((d, i) => (
+              <ReferenceLine
+                key={`dose-${i}`}
+                yAxisId="target"
+                x={toMs(d.at)}
+                stroke="var(--muted-foreground)"
+                strokeDasharray="4 4"
+                strokeOpacity={0.6}
+              />
+            ))}
+
+            {/* The open day: the dashed line every chart draws through it,
+              and a ring on its value, which keeps it apart from the quiet
+              dose-change lines. */}
+            {openPoint ? (
+              <ReferenceLine
+                yAxisId="target"
+                x={openPoint.t}
+                {...OPEN_DAY_LINE}
+              />
+            ) : null}
+            {openPoint ? (
+              <ReferenceDot
+                yAxisId="target"
+                x={openPoint.t}
+                y={openPoint.value}
+                r={6.5}
+                fill="var(--card)"
+                stroke="var(--chart-1)"
+                strokeWidth={2.5}
+                ifOverflow="discard"
+              />
+            ) : null}
+
+            <Tooltip
+              {...chartDays.tooltipProps}
+              content={(props) => {
+                const payload = props.payload as unknown as
+                  | ReadonlyArray<{
+                      name?: string;
+                      value?: number;
+                      color?: string;
+                      payload?: { t: number };
+                    }>
+                  | undefined;
+                if (!props.active || !payload || payload.length === 0) {
+                  return <RichChartTooltip active={false} rows={[]} />;
+                }
+                const x = payload[0]?.payload?.t;
+                const rows: RichTooltipRow[] = payload
+                  .filter((item) => typeof item.value === "number")
+                  .map((item) => {
+                    const num = Number(item.value);
+                    const value =
+                      item.name === adherenceLabel
+                        ? `${Math.round(num)}%`
+                        : mode === "percent"
+                          ? `${num}%`
+                          : `${num}${target.unit ? ` ${target.unit}` : ""}`;
+                    return {
+                      name: String(item.name ?? ""),
+                      value,
+                      color: item.color ?? "var(--chart-1)",
+                    };
+                  });
+                const index =
+                  typeof x === "number"
+                    ? displaySeries.findIndex((p) => p.t === x)
+                    : -1;
+                return (
+                  <RichChartTooltip
+                    active
+                    label={typeof x === "number" ? fmt.date(new Date(x)) : ""}
+                    rows={rows}
+                    action={chartDays.tooltipAction(
+                      index === -1 ? undefined : index,
+                    )}
+                  />
+                );
               }}
             />
-          ) : null}
-
-          {/* Dose-change markers — quiet, dashed. */}
-          {doseChanges.map((d, i) => (
-            <ReferenceLine
-              key={`dose-${i}`}
-              yAxisId="target"
-              x={toMs(d.at)}
-              stroke="var(--muted-foreground)"
-              strokeDasharray="4 4"
-              strokeOpacity={0.6}
-            />
-          ))}
-
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "var(--card)",
-              border: "1px solid var(--border)",
-              borderRadius: "0.5rem",
-              fontSize: "0.8125rem",
-            }}
-            labelFormatter={(v) => fmt.date(new Date(Number(v)))}
-            formatter={(value, name) => {
-              const num = Number(value);
-              if (name === adherenceLabel) {
-                return [`${Math.round(num)}%`, String(name)];
-              }
-              const text =
-                mode === "percent"
-                  ? `${num}%`
-                  : `${num}${target.unit ? ` ${target.unit}` : ""}`;
-              return [text, String(name)];
-            }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <ChartDayFooter
+        links={chartDays}
+        // The axis spans the series and the adherence lane together.
+        points={[{ timestamp: domain[0] }, { timestamp: domain[1] }]}
+        axis="time"
+        // The y axis (40) on the left, the margin (8) on the right.
+        insetLeft={40}
+        insetRight={8}
+      />
+      {/* The keyboard and screen-reader way to a day: the plot opens days on
+          a click or a tap only. Each row stands at its day's anchor, the
+          calendar day the plot's own door opens. */}
+      {chartDays.active ? (
+        <ChartDataTable
+          points={displaySeries.map((point, index) => ({
+            date: seriesDays[index]!,
+            timestamp: dayAnchor(seriesDays[index]!),
+            value: point.value,
+          }))}
+          columns={[{ key: "value", label: target.label }]}
+          unit={unitSuffix ?? undefined}
+          formatValue={(value) => String(value)}
+          formatDate={fmt.date}
+          bucket="day"
+          metricLabel={target.label}
+          dayLinks
+        />
+      ) : null}
     </div>
   );
 }

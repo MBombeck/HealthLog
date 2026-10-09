@@ -85,7 +85,6 @@ export function UmamiSection() {
       <div className="space-y-3">
         <SettingsToggle
           label={t("admin.umamiEnabled")}
-          icon={Activity}
           checked={settings?.umamiEnabled ?? false}
           onCheckedChange={(checked) =>
             updateSettings.mutate({ umamiEnabled: checked })
@@ -94,7 +93,7 @@ export function UmamiSection() {
         />
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="admin-umami-script-url" className="text-xs">
+            <Label htmlFor="admin-umami-script-url">
               {t("admin.umamiScriptUrl")}
             </Label>
             <Input
@@ -112,7 +111,7 @@ export function UmamiSection() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="admin-umami-website-id" className="text-xs">
+            <Label htmlFor="admin-umami-website-id">
               {t("admin.umamiWebsiteId")}
             </Label>
             <Input

@@ -35,16 +35,16 @@ import {
 import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import { queryKeys } from "@/lib/query-keys";
 import { isReadingSharedRecord } from "@/lib/query-keys/record-scope";
+// Session-end cleanup removes every current/legacy HealthLog cache family
+// while leaving unrelated CacheStorage namespaces on the same origin
+// untouched; the name contract is shared with `public/sw.js`.
+import { HEALTHLOG_CACHE_NAME_RE } from "@/lib/pwa/sw-cache-policy";
 
 const DB_NAME = "healthlog-query-cache";
 const STORE = "kv";
 const KEY = "react-query";
 const VERSION_KEY = "react-query-version";
 const MAX_AGE_MS = 24 * 60 * 60 * 1000; // discard anything older than a day
-// Keep this ownership contract aligned with `public/sw.js`. Session-end
-// cleanup removes every current/legacy HealthLog cache family while leaving
-// unrelated CacheStorage namespaces on the same origin untouched.
-const HEALTHLOG_CACHE_NAME_RE = /^healthlog-(?:static|pages|data)-/;
 
 /**
  * Upper bound on the serialized snapshot. The allowlist already caps WHAT is

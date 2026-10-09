@@ -32,6 +32,7 @@
  * `findAllByType` reconciliation; the dashboard's `next/dynamic` for
  * the wrapper itself stays intact.
  */
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { queryKeys } from "@/lib/query-keys";
@@ -50,6 +51,8 @@ import { ComplianceInfoTip } from "@/components/medications/card-parts/complianc
 import { TileHeader } from "@/components/insights/tile-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useAuth } from "@/hooks/use-auth";
 import {
   useDateFormatPreference,
@@ -60,6 +63,7 @@ import { formatDateShort } from "@/lib/format";
 import { makeFormatters } from "@/lib/format-locale";
 import { cn } from "@/lib/utils";
 import { RichChartTooltip, type RichTooltipRow } from "./chart-tooltip";
+import { ChartDataTable } from "./chart-data-table";
 import { ChartEmptyState } from "./chart-empty-state";
 import { ChartErrorState } from "./chart-error-state";
 import { ChartOverlayControls } from "./chart-overlay-controls";
@@ -70,6 +74,12 @@ import { chooseTickInterval } from "@/lib/charts/x-axis-density";
 import { apiGet } from "@/lib/api/api-fetch";
 import { shouldFireDataReady } from "@/lib/charts/data-ready-latch";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { chartPointDayKey } from "@/components/day/chart-day";
+import {
+  ChartDayFooter,
+  OPEN_DAY_LINE,
+  useChartDayLinks,
+} from "@/components/day/chart-day-links";
 
 interface DailyCompliancePoint {
   /** Berlin calendar day, "YYYY-MM-DD". */
@@ -205,6 +215,11 @@ interface MedicationComplianceChartProps {
    * Optional and repeat-safe.
    */
   onDataReady?: () => void;
+  /**
+   * v1.42 — each day's point opens that day, through the doors every
+   * day-linked chart has (`useChartDayLinks`).
+   */
+  dayLinks?: boolean;
 }
 
 export function MedicationComplianceChart({
@@ -212,6 +227,7 @@ export function MedicationComplianceChart({
   userTimezone = DEFAULT_TIMEZONE,
   compareBaseline,
   onDataReady,
+  dayLinks = false,
 }: MedicationComplianceChartProps) {
   // v1.4.27 R4 RC3 — the prop is accepted so the dashboard can pass
   // `compareBaseline={compareBaseline}` uniformly across every chart.
@@ -263,6 +279,22 @@ export function MedicationComplianceChart({
     },
     enabled: isAuthenticated,
   });
+
+  // An empty compliance window means one of two things: no dose fell in it,
+  // or there is no medication at all. The second is not "no data in the
+  // chosen range" — it is a first step, so the tile offers it. The list
+  // read is the medications page's own cell (usually warm already).
+  const complianceEmpty = !isLoading && !isError && (data?.length ?? 0) === 0;
+  const medicationList = useQuery({
+    queryKey: queryKeys.medications(),
+    queryFn: () => apiGet<{ id: string }[]>("/api/medications"),
+    enabled: isAuthenticated && complianceEmpty,
+  });
+  const noMedications =
+    complianceEmpty &&
+    medicationList.isSuccess &&
+    (medicationList.data?.length ?? 0) === 0;
+  const { canWriteDomain } = useRecordCapabilities();
 
   // v1.16.0 — report the settled query to the dashboard's shared
   // reveal gate (see `onDataReady` prop doc).
@@ -343,6 +375,17 @@ export function MedicationComplianceChart({
   };
 
   const displayTitle = title ?? t("dashboard.medications");
+
+  const chartDays = useChartDayLinks({
+    enabled: dayLinks && chartData.length >= 3,
+    days: chartData.map((point) => chartPointDayKey(point.timestamp)),
+    focusFor: (index) => {
+      const point = chartData[index];
+      return point
+        ? { label: displayTitle, value: `${fmt.integer(point.rate)} %` }
+        : null;
+    },
+  });
   const yAxisFormatter = (value: number) => `${fmt.integer(value)} %`;
   const animationsEnabled = !prefersReducedMotion();
 
@@ -510,6 +553,24 @@ export function MedicationComplianceChart({
           actionContext={displayTitle}
           onAction={() => void refetch()}
         />
+      ) : !hasData && noMedications ? (
+        <EmptyState
+          variant="plain"
+          size="compact"
+          data-slot="medication-compliance-no-medications"
+          className="flex h-48 items-center justify-center"
+          icon={<Pill className="size-4" />}
+          title={t("medications.emptyTitle")}
+          action={
+            canWriteDomain("medications") ? (
+              <Button asChild size="sm">
+                <Link href="/medications?new=1">
+                  {t("charts.medicationsEmptyAction")}
+                </Link>
+              </Button>
+            ) : undefined
+          }
+        />
       ) : !hasData ? (
         <div className="text-muted-foreground flex h-48 items-center justify-center text-sm">
           {t("charts.noData")}
@@ -535,121 +596,172 @@ export function MedicationComplianceChart({
           />
         )
       ) : (
-        <div
-          className="h-[var(--chart-height,240px)] touch-pan-y md:h-[var(--chart-height-md,280px)]"
-          role="img"
-          aria-label={complianceAriaLabel}
-        >
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart
-              data={chartData}
-              margin={{ top: 10, right: 8, bottom: 8, left: 8 }}
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="var(--border)"
-                opacity={0.5}
-              />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                tickLine={false}
-                axisLine={false}
-                interval={chooseTickInterval(chartData.length, viewportWidth)}
-              />
-              <YAxis
-                domain={[0, 100]}
-                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                tickLine={false}
-                axisLine={false}
-                width={48}
-                tickFormatter={yAxisFormatter}
-              />
-              <Tooltip
-                cursor={{
-                  stroke: "var(--muted-foreground)",
-                  strokeOpacity: 0.3,
-                  strokeDasharray: "3 3",
-                }}
-                content={(props) => {
-                  const { active, payload } = props as unknown as {
-                    active?: boolean;
-                    payload?: Array<{
-                      value?: number;
-                      color?: string;
-                      payload?: ChartPoint;
-                    }>;
-                  };
-                  if (!active || !payload?.length) return null;
-                  const ts = payload[0]?.payload?.timestamp;
-                  const dateLabel = ts ? tzFmt.date(new Date(ts)) : "";
-                  const rate = payload[0]?.value;
-                  if (typeof rate !== "number") return null;
-                  // Delta vs. the 100 % goal — a positive delta means
-                  // "100 % target hit" and reads as success; a
-                  // negative delta is the gap to close.
-                  const gap = 100 - rate;
-                  let delta: string | undefined;
-                  if (gap < 0.5) {
-                    delta = t("charts.deltaUnchanged");
-                  } else {
-                    const formatted = `−${fmt.integer(gap)} pp`;
-                    delta = t("charts.deltaVsTarget").replace(
-                      "{delta}",
-                      formatted,
+        <>
+          <div
+            className={cn(
+              "h-[var(--chart-height,240px)] touch-pan-y md:h-[var(--chart-height-md,280px)]",
+              chartDays.plotClassName,
+            )}
+            role="img"
+            aria-label={complianceAriaLabel}
+            data-slot="chart-plot"
+            {...chartDays.plotProps}
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart
+                data={chartData}
+                margin={{ top: 10, right: 8, bottom: 8, left: 8 }}
+                onClick={chartDays.onChartClick}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--border)"
+                  opacity={0.5}
+                />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                  tickLine={false}
+                  axisLine={false}
+                  interval={chooseTickInterval(chartData.length, viewportWidth)}
+                />
+                <YAxis
+                  domain={[0, 100]}
+                  tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={48}
+                  tickFormatter={yAxisFormatter}
+                />
+                {chartDays.openIndex !== undefined ? (
+                  <ReferenceLine
+                    x={chartData[chartDays.openIndex]?.date}
+                    {...OPEN_DAY_LINE}
+                  />
+                ) : null}
+                <Tooltip
+                  {...chartDays.tooltipProps}
+                  cursor={{
+                    stroke: "var(--muted-foreground)",
+                    strokeOpacity: 0.3,
+                    strokeDasharray: "3 3",
+                  }}
+                  content={(props) => {
+                    const { active, payload } = props as unknown as {
+                      active?: boolean;
+                      payload?: Array<{
+                        value?: number;
+                        color?: string;
+                        payload?: ChartPoint;
+                      }>;
+                    };
+                    if (!active || !payload?.length) return null;
+                    const ts = payload[0]?.payload?.timestamp;
+                    const dateLabel = ts ? tzFmt.date(new Date(ts)) : "";
+                    const rate = payload[0]?.value;
+                    if (typeof rate !== "number") return null;
+                    // Delta vs. the 100 % goal — a positive delta means
+                    // "100 % target hit" and reads as success; a
+                    // negative delta is the gap to close.
+                    const gap = 100 - rate;
+                    let delta: string | undefined;
+                    if (gap < 0.5) {
+                      delta = t("charts.deltaUnchanged");
+                    } else {
+                      const formatted = `−${fmt.integer(gap)} pp`;
+                      delta = t("charts.deltaVsTarget").replace(
+                        "{delta}",
+                        formatted,
+                      );
+                    }
+                    const rows: RichTooltipRow[] = [
+                      {
+                        name: t("dashboard.compliance7d"),
+                        value: `${fmt.integer(rate)} %`,
+                        color: payload[0]?.color ?? COLOR_LINE,
+                        delta,
+                      },
+                    ];
+                    const hoverPoint = payload[0]?.payload;
+                    return (
+                      <RichChartTooltip
+                        active
+                        label={dateLabel}
+                        rows={rows}
+                        action={chartDays.tooltipAction(
+                          hoverPoint
+                            ? chartData.indexOf(hoverPoint)
+                            : undefined,
+                        )}
+                      />
                     );
-                  }
-                  const rows: RichTooltipRow[] = [
-                    {
-                      name: t("dashboard.compliance7d"),
-                      value: `${fmt.integer(rate)} %`,
-                      color: payload[0]?.color ?? COLOR_LINE,
-                      delta,
-                    },
-                  ];
-                  return (
-                    <RichChartTooltip active label={dateLabel} rows={rows} />
-                  );
-                }}
-              />
-              {/* v1.4.18 — minimum-acceptable threshold + goal line
+                  }}
+                />
+                {/* v1.4.18 — minimum-acceptable threshold + goal line
                   are now opt-in via the "Target range" overlay
                   toggle. Default OFF; chart renders as a clean line
                   until the user activates the overlay from the
                   settings popover. */}
-              {showTargetRange ? (
-                <>
-                  <ReferenceLine
-                    y={80}
-                    stroke={COLOR_THRESHOLD}
-                    strokeDasharray="3 5"
-                    strokeOpacity={0.6}
-                    data-slot="medication-threshold-line"
-                  />
-                  <ReferenceLine
-                    y={100}
-                    stroke={COLOR_GOAL}
-                    strokeDasharray="5 5"
-                    strokeOpacity={0.85}
-                    data-slot="medication-goal-line"
-                  />
-                </>
-              ) : null}
-              <Line
-                type="monotone"
-                dataKey="rate"
-                stroke={COLOR_LINE}
-                strokeWidth={2}
-                dot={{ r: 2, fill: COLOR_LINE }}
-                activeDot={{ r: 4 }}
-                connectNulls
-                isAnimationActive={animationsEnabled}
-                animationDuration={animationsEnabled ? 600 : 0}
-                animationEasing="ease-out"
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
+                {showTargetRange ? (
+                  <>
+                    <ReferenceLine
+                      y={80}
+                      stroke={COLOR_THRESHOLD}
+                      strokeDasharray="3 5"
+                      strokeOpacity={0.6}
+                      data-slot="medication-threshold-line"
+                    />
+                    <ReferenceLine
+                      y={100}
+                      stroke={COLOR_GOAL}
+                      strokeDasharray="5 5"
+                      strokeOpacity={0.85}
+                      data-slot="medication-goal-line"
+                    />
+                  </>
+                ) : null}
+                <Line
+                  type="monotone"
+                  dataKey="rate"
+                  stroke={COLOR_LINE}
+                  strokeWidth={2}
+                  dot={{ r: 2, fill: COLOR_LINE }}
+                  activeDot={{ r: 4 }}
+                  connectNulls
+                  isAnimationActive={animationsEnabled}
+                  animationDuration={animationsEnabled ? 600 : 0}
+                  animationEasing="ease-out"
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+          <ChartDayFooter
+            links={chartDays}
+            points={chartData}
+            axis="band"
+            // The margin (8) + the y axis (48) on the left, the margin (8)
+            // on the right.
+            insetLeft={8 + 48}
+            insetRight={8}
+          />
+          {/* The keyboard and screen-reader way to a day: the plot opens
+              days on a click or a tap only. */}
+          {chartDays.active ? (
+            <ChartDataTable
+              points={chartData.map((point) => ({
+                date: point.date,
+                timestamp: point.timestamp,
+                rate: point.rate,
+              }))}
+              columns={[{ key: "rate", label: t("dashboard.compliance7d") }]}
+              formatValue={(value) => `${fmt.integer(value)} %`}
+              formatDate={tzFmt.date}
+              bucket="day"
+              metricLabel={displayTitle}
+              dayLinks
+            />
+          ) : null}
+        </>
       )}
     </div>
   );

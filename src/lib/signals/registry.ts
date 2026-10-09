@@ -1725,6 +1725,58 @@ export const SIGNALS: Record<string, SignalDefinition> = {
       coachSnapshot: false,
       mcp: false,
     },
+  }, // ── v1.42 (#615) air-quality exposure channels ───────────────────────────
+  // Three correlation channels out of the air-quality feed: fine particles,
+  // the ozone 8-hour high, and the day's highest pollen count. UV, NO2 and
+  // dust are display and Coach context only. Same surface flags as the weather
+  // channels above; the channel series builder carries the wiring.
+  ENV_PM25: {
+    key: "ENV_PM25",
+    kind: "environment",
+    source: { environmentChannelKey: "ENV_PM25" },
+    i18nPrefix: "environment.fields.pm25",
+    displayName: "Fine particles (PM2.5)",
+    unit: "µg/m³",
+    direction: "target-band",
+    archetype: "environmental-exposure",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: true,
+      coachSnapshot: false,
+      mcp: false,
+    },
+  },
+  ENV_OZONE_8H: {
+    key: "ENV_OZONE_8H",
+    kind: "environment",
+    source: { environmentChannelKey: "ENV_OZONE_8H" },
+    i18nPrefix: "environment.fields.ozone8h",
+    displayName: "Ozone (8-hour high)",
+    unit: "µg/m³",
+    direction: "target-band",
+    archetype: "environmental-exposure",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: true,
+      coachSnapshot: false,
+      mcp: false,
+    },
+  },
+  ENV_POLLEN_MAX: {
+    key: "ENV_POLLEN_MAX",
+    kind: "environment",
+    source: { environmentChannelKey: "ENV_POLLEN_MAX" },
+    i18nPrefix: "environment.fields.pollenMax",
+    displayName: "Pollen (highest)",
+    unit: "grains/m³",
+    direction: "target-band",
+    archetype: "environmental-exposure",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: true,
+      coachSnapshot: false,
+      mcp: false,
+    },
   },
 };
 

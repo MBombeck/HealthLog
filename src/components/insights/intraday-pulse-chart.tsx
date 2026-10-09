@@ -21,6 +21,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { userDayKey, shiftDateKey, DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { TileHeader } from "@/components/insights/tile-header";
+import { DayLink } from "@/components/day/day-link";
 import { Button } from "@/components/ui/button";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -85,6 +86,9 @@ const AXIS_TICKS = [0, 360, 720, 1080, 1440];
  * navigator still works from there, so "the day before" stays one tap away.
  * Absent, the view opens on today and keeps tracking it.
  */
+/** Fewest present buckets that make a course worth drawing across 24 h. */
+const MIN_BUCKETS_FOR_COURSE = 3;
+
 export function IntradayPulseChart({
   userTimezone,
   initialDateKey,
@@ -193,13 +197,10 @@ export function IntradayPulseChart({
   return (
     <div
       data-slot="intraday-pulse-chart"
-      // `.metric-accent` — the tension layer's identity edge on the CARD
-      // shell only (`--tile-stress`, the wellness vocabulary's autonomic
-      // hue, per the plan's §3.6 hue-family call); the chart inside stays
-      // untouched. The same hue marks the `tension_window` rail card, so
-      // the two S11 surfaces read as one family.
-      className="bg-card metric-accent space-y-1.5 rounded-xl border p-4 md:p-6"
-      style={{ "--tile-hue": "var(--tile-stress)" } as React.CSSProperties}
+      // A plain card, like every other chart card and the day view it
+      // opens into. The coloured identity edge it used to carry read as a
+      // warning stripe beside a workout.
+      className="bg-card space-y-1.5 rounded-xl border p-4 md:p-6"
     >
       <TileHeader
         icon={Activity}
@@ -219,8 +220,12 @@ export function IntradayPulseChart({
             >
               <ChevronLeft className="size-4" aria-hidden="true" />
             </Button>
-            <span className="text-muted-foreground min-w-14 text-center text-xs tabular-nums">
-              {dayLabel}
+            {/* v1.42 — the date opens the whole day this chart is one part
+                of, the one thing every date in the app does. */}
+            <span className="min-w-14 text-center text-xs">
+              <DayLink date={dateKey} size="xs">
+                {dayLabel}
+              </DayLink>
             </span>
             <Button
               type="button"
@@ -253,7 +258,10 @@ export function IntradayPulseChart({
           onRetry={() => refetch()}
           className="border-0 bg-transparent shadow-none"
         />
-      ) : chartData.length === 0 ? (
+      ) : (data?.series?.length ?? 0) < MIN_BUCKETS_FOR_COURSE ? (
+        // A lone reading or two on a 24-hour axis drew a dot in an empty
+        // field and called it the course of the day. Below a handful of
+        // buckets the card says there is not enough for a course.
         <div className="text-muted-foreground flex h-44 items-center justify-center rounded-lg border border-dashed text-sm">
           {t("insights.intradayPulse.empty")}
         </div>

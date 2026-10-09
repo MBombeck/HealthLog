@@ -11,5 +11,23 @@
 export function axisUnitSuffix(
   unit: string | null | undefined,
 ): string | undefined {
-  return unit ? ` ${unit}` : undefined;
+  // A space inside the unit ("/ 5") would break the label the same way.
+  return unit ? ` ${unit.replace(/ /g, "\u00a0")}` : undefined;
+}
+
+/**
+ * The longest unit a tick label carries. A word-length unit ("Schritte",
+ * "Atemzüge/min", "mL/(kg·min)") made every tick wider than the fixed y-axis
+ * gutter, and the label was clipped at its left edge (".744 Schritte"). Such
+ * a unit stays off the ticks; the stat strip and the tile above the chart
+ * already name it.
+ */
+export const MAX_TICK_UNIT_LENGTH = 5;
+
+/** The tick suffix for `unit`, or none when the unit is too long to fit. */
+export function axisTickUnitSuffix(
+  unit: string | null | undefined,
+): string | undefined {
+  if (!unit || unit.length > MAX_TICK_UNIT_LENGTH) return undefined;
+  return axisUnitSuffix(unit);
 }

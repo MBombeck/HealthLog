@@ -6,6 +6,7 @@ import {
   Droplets,
   FileScan,
   FlaskConical,
+  History,
   Home,
   Lightbulb,
   MessagesSquare,
@@ -205,6 +206,18 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     tKey: "nav.documents",
     icon: FileScan,
     tourId: "nav-documents",
+  },
+  // v1.42 (#613) — the life timeline, after Documents and before Insights.
+  // Owned by the opt-in `timeline` module in the surface map, so it appears
+  // only once the person switches it on; on a phone it lands in the More hub
+  // and takes no primary slot. A record read across sections: a delegate
+  // holding the whole record sees it, a scoped grant never does.
+  {
+    href: "/timeline",
+    sharedRecord: true,
+    tKey: "nav.timeline",
+    icon: History,
+    tourId: "nav-timeline",
   },
   // Insights belongs to no module: the `insights` key means AI analysis, and
   // the area is data, so switching AI analysis off leaves this entry standing.

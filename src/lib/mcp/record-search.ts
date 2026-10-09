@@ -66,7 +66,11 @@ import { listTargets } from "@/lib/links";
 import type { LinkedTarget } from "@/lib/links/link-service";
 import { isModuleEnabled, type ModuleKey } from "@/lib/modules/gate";
 import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
-import { resolveCatalogEntry } from "@/lib/vaccinations/vaccine-catalog";
+import {
+  CUSTOM_VACCINE_RESOLVE_SELECT,
+  customLookupOf,
+  resolveVaccineEntry,
+} from "@/lib/vaccinations/resolve-vaccine-entry";
 
 // ── Bounds ───────────────────────────────────────────────────────────
 
@@ -430,8 +434,8 @@ function vaccineCatalogName(
   slug: string | null,
   locale: Locale,
 ): string | null {
-  const entry = resolveCatalogEntry(slug);
-  if (!entry) return null;
+  const entry = resolveVaccineEntry({ antigenSlug: slug });
+  if (!entry?.slug) return null;
   return getServerTranslator(locale).t(`vaccinations.catalog.${entry.slug}`);
 }
 
@@ -646,7 +650,26 @@ const VACCINATION_SELECT = {
   lotNumber: true,
   site: true,
   practitioner: PRACTITIONER_SELECT,
+  // v1.42 (#1005) — the person's own definition, for its name and antigens.
+  customVaccineId: true,
+  customVaccine: { select: CUSTOM_VACCINE_RESOLVE_SELECT },
 } as const;
+
+/**
+ * The person's own vaccine definition a dose names, when it is the answer
+ * (the catalogue wins when the dose also carries a slug). Its name is user
+ * text and is scrubbed or fenced by the caller.
+ */
+function ownVaccine(row: {
+  antigenSlug: string | null;
+  customVaccineId: string | null;
+  customVaccine: Parameters<typeof customLookupOf>[0][number];
+}): { name: string; components: readonly string[] } | null {
+  const entry = resolveVaccineEntry(row, customLookupOf([row.customVaccine]));
+  return entry?.kind === "custom" && entry.name
+    ? { name: entry.name, components: entry.components }
+    : null;
+}
 
 async function conditionCandidates(
   userId: string,
@@ -858,10 +881,15 @@ async function vaccinationCandidates(
   });
   return rows.map((row) => {
     const practitioner = livePractitioner(row.practitioner);
-    const entry = resolveCatalogEntry(row.antigenSlug);
+    const entry = resolveVaccineEntry({ antigenSlug: row.antigenSlug });
+    const own = ownVaccine(row);
     const catalogEn = vaccineCatalogName(row.antigenSlug, "en");
     const name =
-      row.vaccineName ?? catalogEn ?? row.antigenSlug ?? "Vaccination";
+      row.vaccineName ??
+      catalogEn ??
+      own?.name ??
+      row.antigenSlug ??
+      "Vaccination";
     const dose = row.doseNumber ? `dose ${row.doseNumber}, ` : "";
     const day = dateOnly(row.occurredAt);
     return {
@@ -881,6 +909,10 @@ async function vaccinationCandidates(
               ? enumWords(row.antigenSlug.replace(/-/g, "_"))
               : "",
             ...(entry?.synonyms ?? []),
+            own?.name ?? "",
+            ...(own?.components ?? []).map((antigen) =>
+              enumWords(antigen.replace(/-/g, "_")),
+            ),
           ].join(" "),
           weight: WEIGHT.primary,
         },
@@ -1072,6 +1104,8 @@ async function fetchVisit(
             vaccineName: true,
             antigenSlug: true,
             occurredAt: true,
+            customVaccineId: true,
+            customVaccine: { select: CUSTOM_VACCINE_RESOLVE_SELECT },
           },
           orderBy: [{ occurredAt: "asc" }, { id: "asc" }],
         })
@@ -1087,6 +1121,7 @@ async function fetchVisit(
       label: scrubFenceMarkers(
         dose.vaccineName ??
           vaccineCatalogName(dose.antigenSlug, "en") ??
+          ownVaccine(dose)?.name ??
           dose.antigenSlug ??
           "Vaccination",
       ),
@@ -1377,7 +1412,9 @@ async function fetchVaccination(
   ]);
 
   const catalog = vaccineCatalogName(row.antigenSlug, "en");
-  const name = row.vaccineName ?? catalog ?? row.antigenSlug ?? "Vaccination";
+  const own = ownVaccine(row);
+  const name =
+    row.vaccineName ?? catalog ?? own?.name ?? row.antigenSlug ?? "Vaccination";
   const practitioner = livePractitioner(row.practitioner);
   const day = dateOnly(row.occurredAt);
   const dose =
@@ -1388,6 +1425,13 @@ async function fetchVaccination(
   const sentences = [
     `Vaccination ${fenceUserText(name)} on ${day}, ${dose}.`,
     catalog && row.vaccineName ? `Catalogue entry: ${catalog}.` : null,
+    own
+      ? `Logged against the person's own vaccine ${fenceUserText(own.name)}${
+          own.components.length > 0
+            ? `, which protects against ${own.components.join(", ")}`
+            : ""
+        }.`
+      : null,
     practitioner
       ? `Given by ${fenceUserText(practitioner.name)}.`
       : "No practitioner recorded.",

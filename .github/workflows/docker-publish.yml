@@ -39,7 +39,7 @@ concurrency:
 jobs:
   release-policy:
     name: Validate release policy
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       actions: read
@@ -121,7 +121,7 @@ jobs:
       matrix:
         include:
           - platform: linux/amd64
-            runner: ubuntu-latest
+            runner: ubuntu-24.04
             cache_scope: amd64
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
@@ -313,7 +313,7 @@ jobs:
   # the registry instead of on one cross-emulated runner.
   merge:
     name: Merge multi-arch manifest
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.event_name != 'pull_request'
     needs: [build]
     timeout-minutes: 10
@@ -449,7 +449,7 @@ jobs:
   promote:
     name: Promote verified image to Coolify
     needs: [merge, verify-published-image]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read

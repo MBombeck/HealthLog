@@ -110,7 +110,10 @@ export default defineConfig({
       name: "chromium-desktop",
       // The disk-layer spec needs a live service worker, which the shared
       // `use` block blocks for every other spec. It runs in its own project.
-      testIgnore: ["v137-record-session-fence-offline.spec.ts"],
+      testIgnore: [
+        "v137-record-session-fence-offline.spec.ts",
+        "pwa-offline.spec.ts",
+      ],
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1280, height: 720 },
@@ -130,10 +133,14 @@ export default defineConfig({
       // cannot pass is worse than no check, so the spec gets a project rather
       // than a caveat.
       //
-      // It uses no route mocks for exactly this reason, and it is the only
-      // spec in this project.
+      // It uses no route mocks for exactly this reason. v1.42 — the offline
+      // page journey (`pwa-offline.spec.ts`) joined it on the same terms:
+      // what the worker itself serves without a connection, no mocks.
       name: "chromium-service-worker",
-      testMatch: ["v137-record-session-fence-offline.spec.ts"],
+      testMatch: [
+        "v137-record-session-fence-offline.spec.ts",
+        "pwa-offline.spec.ts",
+      ],
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1280, height: 720 },
@@ -185,6 +192,11 @@ export default defineConfig({
         // through stable data-slots, not a mobile layout, so it runs in one
         // project.
         "vaccinations.spec.ts",
+        // The timeline journey moves its account's timeline module on and
+        // off; two projects on that one account would flip it under each
+        // other. It checks the phone chronicle itself by resizing inside the
+        // desktop project.
+        "timeline.spec.ts",
         // The blood-glucose journey writes readings to the one shared account
         // and then reads GLOBAL verdicts off it — three rows in the list, one
         // tile per meal-time context — while also moving that account's
@@ -215,6 +227,7 @@ export default defineConfig({
         "doctor-report-delegate.spec.ts",
         // Runs only in the service-worker project.
         "v137-record-session-fence-offline.spec.ts",
+        "pwa-offline.spec.ts",
         // The Apple Health import journey uploads an archive into the one
         // shared account and its refusal control asserts that the account's
         // Apple-Health row count did not move. A second project running the
@@ -276,6 +289,11 @@ export default defineConfig({
         // account under the first. They prove server state through stable
         // data-slots, not a mobile layout, so they run in one project.
         "ai-optional-account.spec.ts",
+        // The score-history journey moves its account's top card and range
+        // tabs; two projects on that one account would flip them under each
+        // other. It checks the phone width by resizing inside the desktop
+        // project.
+        "score-history.spec.ts",
       ],
       use: {
         // Pixel 5 — Chromium-based mobile profile so CI only needs

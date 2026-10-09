@@ -23,10 +23,10 @@ import {
   ANTIGEN_SLUGS,
   VACCINE_CATALOG,
   VACCINE_CATALOG_SLUGS,
-  componentsForSlug,
   resolveCatalogEntry,
   type AntigenSlug,
 } from "@/lib/vaccinations/vaccine-catalog";
+import { componentsForDose } from "@/lib/vaccinations/resolve-vaccine-entry";
 
 const MONOVALENT = new Set<string>(ANTIGEN_SLUGS);
 
@@ -193,8 +193,10 @@ describe("a slug the catalogue no longer knows degrades to the free text", () =>
   it("matches no antigen at all rather than guessing from the name", () => {
     // The consequence that matters: an unresolvable dose must not clear a
     // booster reminder. No components means no match.
-    expect(componentsForSlug(ORPHANED_RECORD.antigenSlug)).toEqual([]);
-    expect(componentsForSlug(null)).toEqual([]);
+    expect(
+      componentsForDose({ antigenSlug: ORPHANED_RECORD.antigenSlug }),
+    ).toEqual([]);
+    expect(componentsForDose({ antigenSlug: null })).toEqual([]);
   });
 
   it("still resolves a slug it does have, so the check above is not vacuous", () => {

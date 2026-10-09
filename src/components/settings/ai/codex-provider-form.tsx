@@ -10,6 +10,7 @@ import { Loader2, Sparkles, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { formatDateTime } from "@/lib/format";
@@ -270,19 +271,21 @@ export function CodexProviderForm({
           </div>
         </div>
       ) : (
-        <Button
-          variant="outline"
-          onClick={handleConnect}
-          disabled={devicePolling}
-          className="min-h-11 w-full sm:min-h-9 sm:w-auto"
-        >
-          {devicePolling ? (
-            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Sparkles className="h-4 w-4" />
-          )}
-          {t("settings.ai.codex.connectButton")}
-        </Button>
+        <SettingsCardActions>
+          <Button
+            variant="outline"
+            onClick={handleConnect}
+            disabled={devicePolling}
+            className="min-h-11 sm:min-h-9"
+          >
+            {devicePolling ? (
+              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            {t("settings.ai.codex.connectButton")}
+          </Button>
+        </SettingsCardActions>
       )}
 
       {msg && (

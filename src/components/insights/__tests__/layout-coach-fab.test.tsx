@@ -69,13 +69,24 @@ describe("<LayoutCoachFab>", () => {
     // bottom-nav hides (`md:hidden`) — so the FAB never floats mid-air
     // in the 768-1023px band. v1.18.1 (C5) — the corner inset is
     // symmetric: right equals bottom at each breakpoint (`right-6`
-    // mobile-band / `md:right-8` desktop mirrors `md:bottom-8`).
-    expect(html).toContain("fixed right-6");
-    expect(html).toContain("md:right-8");
+    // mobile-band / `md:right-8` desktop mirrors `md:bottom-8`). v1.42 —
+    // each offset sits on top of the matching safe-area inset (the notch
+    // of a phone held sideways, an installed iPad's home indicator).
+    expect(html).toContain(
+      "fixed right-[calc(env(safe-area-inset-right,0px)+1.5rem)]",
+    );
+    expect(html).toContain(
+      "md:right-[calc(env(safe-area-inset-right,0px)+2rem)]",
+    );
     expect(html).toContain(
       "bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)]",
     );
-    expect(html).toContain("md:bottom-8");
+    // The bottom offset follows the shell, not a width: a phone held
+    // sideways keeps the bottom nav, so the FAB keeps clearing it there.
+    expect(html).toContain(
+      "shell-desktop:bottom-[calc(env(safe-area-inset-bottom,0px)+2rem)]",
+    );
+    expect(html).toContain('data-keyboard-hide=""');
     expect(html).not.toContain("md:bottom-6");
     expect(html).not.toContain("lg:bottom-6");
   });

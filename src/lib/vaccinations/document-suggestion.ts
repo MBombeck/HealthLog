@@ -89,6 +89,9 @@ export async function suggestVaccinationForDate(
       occurredAt: true,
       antigenSlug: true,
       vaccineName: true,
+      // v1.42 (#1005) — a dose named only by the person's own definition is
+      // offered under that definition's name.
+      customVaccine: { select: { name: true, deletedAt: true } },
     },
   });
 
@@ -96,7 +99,11 @@ export async function suggestVaccinationForDate(
     id: row.id,
     occurredAt: row.occurredAt.toISOString(),
     antigenSlug: row.antigenSlug,
-    vaccineName: row.vaccineName,
+    vaccineName:
+      row.vaccineName ??
+      (row.customVaccine && row.customVaccine.deletedAt === null
+        ? row.customVaccine.name
+        : null),
   }));
 
   if (vaccinations.length === 0) return { kind: "none" };

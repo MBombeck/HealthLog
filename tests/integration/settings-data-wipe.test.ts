@@ -102,6 +102,8 @@ describe("DELETE /api/settings/data leaves nothing it promised to delete", () =>
         fullName: "Seeded Name",
         insurerName: "Seeded Insurer",
         stravaAthleteId: "12345",
+        // Off, so the reset back to the default (on) is visible below.
+        environmentAirQualityEnabled: false,
         thresholdsJson: { sys: 130 },
         onboardingCompletedAt: new Date(),
         passwordHash: "argon2-placeholder",
@@ -229,7 +231,11 @@ describe("DELETE /api/settings/data leaves nothing it promised to delete", () =>
         value === 0 ||
         (Array.isArray(value) && value.length === 0) ||
         value === "aggregated" ||
-        value === "disconnected";
+        value === "disconnected" ||
+        // A column whose reset is a non-empty default (v1.42: the air-quality
+        // switch resets to on) is cleared when it holds exactly that default.
+        (typeof value === "boolean" &&
+          (USER_RESET as Record<string, unknown>)[column] === value);
       if (!cleared) stillSet.push(`${column} = ${JSON.stringify(value)}`);
     }
     expect(

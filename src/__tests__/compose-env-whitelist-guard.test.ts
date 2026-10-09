@@ -102,6 +102,8 @@ const NOT_OPERATOR_CONFIGURABLE: Readonly<Record<string, string>> = {
   // --- Baked at build time by the Dockerfile's ARG/ENV pairs. ---
   NEXT_PUBLIC_APP_VERSION:
     "Dockerfile build arg; a runtime value cannot change what is compiled in",
+  NEXT_PUBLIC_I18N_CATALOG_VERSION:
+    "computed by next.config.ts from the message catalogs at build time",
   NEXT_PUBLIC_APP_BUILD_SHA:
     "Dockerfile build arg, stamped from the release commit",
   NEXT_PUBLIC_APP_BUILT_AT: "Dockerfile build arg, stamped at image build",

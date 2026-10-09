@@ -12,7 +12,7 @@ import {
   YAxis,
 } from "recharts";
 
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 
 /**
  * v1.8.5 — average mood per weekday (Monday-aligned).
@@ -50,6 +50,7 @@ function colorForScore(score: number): string {
 
 export function MoodWeekdayChart({ weekday }: { weekday: MoodWeekdayRow[] }) {
   const { t } = useTranslations();
+  const nf = useFormatters();
 
   const data = weekday.map((row) => ({
     weekday: row.weekday,
@@ -134,7 +135,7 @@ export function MoodWeekdayChart({ weekday }: { weekday: MoodWeekdayRow[] }) {
                   return [t("insights.mood.weekdayNoData"), ""];
                 }
                 return [
-                  `${payload.avgScore.toFixed(1)} (${payload.count})`,
+                  `${nf.number(payload.avgScore, 1)} (${payload.count})`,
                   t("insights.mood.weekdayTitle"),
                 ];
               }}

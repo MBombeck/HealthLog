@@ -265,7 +265,7 @@ describe("<MedicationCard> — open overdue slot (v1.16.4)", () => {
       client,
     );
 
-    expect(html).toContain("Overdue ·");
+    expect(html).toContain("Overdue since");
     expect(html).toContain("can still be taken");
     expect(html).toContain("text-warning");
     expect(html).not.toContain("Next intake: Tomorrow,");
@@ -291,7 +291,7 @@ describe("<MedicationCard> — open overdue slot (v1.16.4)", () => {
 
     expect(html).toContain("Next intake:");
     expect(html).toContain("Tomorrow");
-    expect(html).not.toContain("Overdue ·");
+    expect(html).not.toContain("Overdue since");
     expect(html).not.toContain("can still be taken");
   });
 });

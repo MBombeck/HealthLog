@@ -118,6 +118,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     ],
     "cycle-prefs": ["cycle-prefs.body.invalid_json", "cycle-prefs.invalid"],
     "disable-coach": ["disable-coach.body.invalid_json"],
+    day: ["day.invalid"],
     demo: ["demo.readOnly"],
     documents: [
       "documents.chat.conversationNotFound",
@@ -176,6 +177,8 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     ],
     encryption: ["encryption.keyBackup.stale", "encryption.key_mismatch"],
     environment: [
+      "environment.backfill_pending",
+      "environment.backfill_rate_limited",
       "environment.invalid",
       "environment.no_home",
       "environment.range_too_large",
@@ -230,10 +233,13 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "labs.update.referenceRangeInvalid",
       "labs.update.sourceReferenceRangeInvalid",
     ],
+    life_event: ["life_event.invalid", "life_event.not_found"],
     managed_profile: [
       "managed_profile.guardian.duplicate",
       "managed_profile.guardian.managed_invitee",
       "managed_profile.guardian.required",
+      "managed_profile.handover.no_pending",
+      "managed_profile.handover.unknown_guardian",
       "managed_profile.not_found",
     ],
     measurement: [
@@ -248,7 +254,10 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "measurement.restore.invalid",
       "measurement.update.server_owned_source",
     ],
-    medication: ["medication.intake.import.invalid_format"],
+    medication: [
+      "medication.intake.import.invalid_format",
+      "medication.intake.notTracked",
+    ],
     medications: [
       "medications.category.invalid",
       "medications.category.limitReached",
@@ -306,6 +315,12 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "onboarding.restart.rateLimited",
       "onboarding.tour.invalid",
     ],
+    passkey: [
+      "passkey.challenge.expired",
+      "passkey.response.invalid",
+      "passkey.unknown",
+      "passkey.verification.failed",
+    ],
     personal_records: ["personal_records.invalid_query"],
     practitioner: ["practitioner.invalid"],
     profile: [
@@ -314,6 +329,11 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "profile.update.emailSecondFactorRequired",
       "profile.update.invalidBody",
       "profile.update.nothingSaved",
+    ],
+    profile_claim: [
+      "profile_claim.invalid",
+      "profile_claim.oidc_only_unsupported",
+      "profile_claim.taken",
     ],
     record_write: ["record_write.rate_limited"],
     "report-selection": [
@@ -364,6 +384,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "symptoms.event.notFound",
       "symptoms.invalid",
     ],
+    timeline: ["timeline.invalid"],
     tokens: [
       "tokens.documents.ceiling_reached",
       "tokens.measurements.ceiling_reached",
@@ -373,6 +394,10 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "vaccination.booster-invalid",
       "vaccination.booster-no-antigen",
       "vaccination.booster-out-of-scope",
+      "vaccination.custom-vaccine-not-found",
+      "vaccination.custom.invalid",
+      "vaccination.custom.name-taken",
+      "vaccination.custom.not-found",
       "vaccination.encounter-not-found",
       "vaccination.identity-required",
       "vaccination.invalid",

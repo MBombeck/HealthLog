@@ -109,7 +109,6 @@ describe("parseNotificationPrefs", () => {
         nudgeVitals: true,
         nudgeRoutine: true,
         nudgeFrequency: "weekly",
-        ambientSuggestions: true,
         nudgeAiComposed: false,
       },
       measurementReminder: {
@@ -134,7 +133,6 @@ describe("parseNotificationPrefs", () => {
         nudgeVitals: true,
         nudgeRoutine: true,
         nudgeFrequency: "weekly",
-        ambientSuggestions: true,
         nudgeAiComposed: false,
       },
       measurementReminder: {
@@ -161,7 +159,6 @@ describe("parseNotificationPrefs", () => {
         nudgeVitals: true,
         nudgeRoutine: true,
         nudgeFrequency: "weekly",
-        ambientSuggestions: true,
         nudgeAiComposed: false,
       },
       measurementReminder: {
@@ -204,7 +201,6 @@ describe("resolveNotificationPrefs (deep-merge)", () => {
         nudgeVitals: true,
         nudgeRoutine: true,
         nudgeFrequency: "weekly",
-        ambientSuggestions: true,
         nudgeAiComposed: false,
       },
       measurementReminder: {
@@ -235,7 +231,6 @@ describe("resolveNotificationPrefs (deep-merge)", () => {
         nudgeVitals: true,
         nudgeRoutine: true,
         nudgeFrequency: "weekly",
-        ambientSuggestions: true,
         nudgeAiComposed: false,
       },
       measurementReminder: {
@@ -263,7 +258,6 @@ describe("resolveNotificationPrefs (deep-merge)", () => {
         nudgeVitals: true,
         nudgeRoutine: true,
         nudgeFrequency: "weekly",
-        ambientSuggestions: true,
         nudgeAiComposed: false,
       },
       measurementReminder: {
@@ -291,7 +285,6 @@ describe("resolveNotificationPrefs (deep-merge)", () => {
         nudgeVitals: true,
         nudgeRoutine: true,
         nudgeFrequency: "weekly",
-        ambientSuggestions: true,
         nudgeAiComposed: false,
       },
       measurementReminder: {
@@ -320,7 +313,6 @@ describe("resolveNotificationPrefs (deep-merge)", () => {
         nudgeVitals: true,
         nudgeRoutine: true,
         nudgeFrequency: "weekly",
-        ambientSuggestions: true,
         nudgeAiComposed: false,
       },
       measurementReminder: {

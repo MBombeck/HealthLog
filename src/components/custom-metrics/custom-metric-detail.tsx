@@ -287,6 +287,7 @@ export function CustomMetricDetail({
             <CardContent>
               <CustomMetricChart
                 entries={entries}
+                name={metric?.name ?? ""}
                 unit={metric?.unit ?? ""}
                 targetLow={metric?.targetLow ?? null}
                 targetHigh={metric?.targetHigh ?? null}

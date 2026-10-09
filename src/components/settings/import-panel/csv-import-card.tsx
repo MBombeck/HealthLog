@@ -108,6 +108,7 @@ export function CsvImportCard() {
   return (
     <ImportCardShell
       testId="import-card-csv"
+      anchor="import-csv"
       icon={FileSpreadsheet}
       title={t("settings.sections.export.import.csv.title")}
       description={t("settings.sections.export.import.csv.description")}

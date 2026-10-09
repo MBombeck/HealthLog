@@ -255,7 +255,7 @@ describe("<MessageThread>", () => {
   it("folds an older message's provenance into the thought-process row, never a raw key", () => {
     const html = render(<MessageThread conversation={baseConversation} />);
     expect(html).toContain('data-slot="coach-turn-steps-done"');
-    expect(html).toContain("Thought process · 1 step");
+    expect(html).toContain("Thought process (1 step)");
     expect(html).not.toContain('data-slot="coach-source-chips"');
     expect(html).not.toContain("insights.coach.metric.");
     expect(html).not.toContain("n=26");
@@ -479,7 +479,7 @@ describe("<MessageThread>", () => {
     expect(html).not.toContain("What I&#x27;m looking at");
     expect(html).not.toContain("138 mmHg");
     // The areas the answer drew on stay reachable from the row.
-    expect(html).toContain("Thought process · 1 step");
+    expect(html).toContain("Thought process (1 step)");
   });
 
   it("names the thought-process row in German under 'de'", () => {
@@ -487,7 +487,7 @@ describe("<MessageThread>", () => {
       <MessageThread conversation={baseConversation} />,
       "de",
     );
-    expect(html).toContain("Denkprozess · 1 Schritt");
+    expect(html).toContain("Denkprozess (1 Schritt)");
     expect(html).not.toContain("Worauf bezieht sich das?");
   });
 

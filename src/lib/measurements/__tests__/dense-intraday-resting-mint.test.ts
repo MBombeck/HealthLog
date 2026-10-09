@@ -40,6 +40,7 @@ import { candidateLookup, createManyVia } from "./hourly-mint-mock";
 vi.mock("@/lib/export/restore-lock", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/export/restore-lock")>()),
   holdAccountAgainstRestore: vi.fn(async () => {}),
+  holdAccountFoldLock: vi.fn(async () => {}),
 }));
 
 /** A day well outside the retention window, so the fold definitely runs. */
@@ -71,6 +72,7 @@ function buildPrismaMock(existingResting: Array<{ source: string }>) {
   const create = vi.fn().mockResolvedValue({ id: "minted-hourly" });
   const update = vi.fn().mockResolvedValue({});
   const updateMany = vi.fn().mockResolvedValue({ count: 0 });
+  const deleteMany = vi.fn().mockResolvedValue({ count: 0 });
   const txFindFirst = vi.fn().mockResolvedValue(null);
 
   // The probe. Honours a `source: { not: X }` clause exactly like the DB.
@@ -90,6 +92,7 @@ function buildPrismaMock(existingResting: Array<{ source: string }>) {
       update,
       findFirst: txFindFirst,
       updateMany,
+      deleteMany,
       upsert,
       findMany: candidateLookup(),
       createManyAndReturn: createManyVia(create),
@@ -104,11 +107,17 @@ function buildPrismaMock(existingResting: Array<{ source: string }>) {
           .mockResolvedValue([{ id: "user-1", timezone: "Europe/Berlin" }]),
       },
       measurement: {
-        findMany: vi.fn(async (args: { where: { type: string } }) =>
-          args.where.type === "PULSE" ? pulseRows() : [],
+        // The seeded rows are Apple Health's; the Health Connect walk
+        // finds none.
+        findMany: vi.fn(
+          async (args: { where: { type: string; source: string } }) =>
+            args.where.type === "PULSE" && args.where.source === "APPLE_HEALTH"
+              ? pulseRows()
+              : [],
         ),
         findFirst: probeFindFirst,
         upsert,
+        count: vi.fn().mockResolvedValue(0),
       },
       $transaction: vi.fn(async (cb: (t: unknown) => Promise<unknown>) =>
         cb(tx),

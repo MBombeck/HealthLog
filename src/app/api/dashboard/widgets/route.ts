@@ -170,6 +170,10 @@ const layoutSchema = z.object({
   // Same preserve-when-absent contract as `comparisonBaseline`; the
   // resolver drops unknown stored values back to "score" on read.
   hero: z.enum(HERO_PRIMARY_CONTENTS).optional(),
+  // v1.42 — whether the dashboard shows its top card. Same additive,
+  // preserve-when-absent contract as `hero`; the default (shown) is omitted
+  // from storage.
+  todayCardVisible: z.boolean().optional(),
   // v1.32.16 (issue #581) — the optimistic-concurrency base token used to
   // live here. v1.32.21 (R5a) moved it to the shared `takeBaseToken` helper,
   // which strips it BEFORE this parse: the token is transport, not a layout
@@ -490,30 +494,33 @@ export const DELETE = apiHandler(async () => {
   // dashboard to defaults is the loudest possible version of redecorating it.
   const { user } = await requireAuth();
 
-  const { normalized, updatedAt } = await prisma.$transaction(
-    async (tx) => {
-      const existing = await tx.user.findUnique({
-        where: { id: user.id },
-        select: { dashboardWidgetsJson: true },
-      });
-      const existingLayout = resolveDashboardLayout(
-        existing?.dashboardWidgetsJson,
-      );
-      const normalized = serializeDashboardLayout({
-        ...existingLayout,
-        widgets: DEFAULT_DASHBOARD_LAYOUT.widgets,
-        enabledHeroItemKinds: DEFAULT_DASHBOARD_LAYOUT.enabledHeroItemKinds,
-      });
+  // Under a row lock rather than Serializable isolation: a reset racing a
+  // chart-overlay toggle on the same account waits for it instead of
+  // failing with a serialization error (a 500).
+  const { normalized, updatedAt } = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM users WHERE id = ${user.id} FOR UPDATE`;
+    const existing = await tx.user.findUnique({
+      where: { id: user.id },
+      select: { dashboardWidgetsJson: true },
+    });
+    const existingLayout = resolveDashboardLayout(
+      existing?.dashboardWidgetsJson,
+    );
+    const normalized = serializeDashboardLayout({
+      ...existingLayout,
+      widgets: DEFAULT_DASHBOARD_LAYOUT.widgets,
+      enabledHeroItemKinds: DEFAULT_DASHBOARD_LAYOUT.enabledHeroItemKinds,
+      // A reset brings a hidden top card back.
+      todayCardVisible: DEFAULT_DASHBOARD_LAYOUT.todayCardVisible,
+    });
 
-      const updated = await tx.user.update({
-        where: { id: user.id },
-        data: { dashboardWidgetsJson: toJson(normalized) },
-        select: { updatedAt: true },
-      });
-      return { normalized, updatedAt: updated.updatedAt.toISOString() };
-    },
-    { isolationLevel: "Serializable" },
-  );
+    const updated = await tx.user.update({
+      where: { id: user.id },
+      data: { dashboardWidgetsJson: toJson(normalized) },
+      select: { updatedAt: true },
+    });
+    return { normalized, updatedAt: updated.updatedAt.toISOString() };
+  });
 
   annotate({ action: { name: "dashboard.widgets.reset" } });
 

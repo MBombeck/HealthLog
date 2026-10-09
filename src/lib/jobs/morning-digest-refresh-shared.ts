@@ -15,6 +15,7 @@
  */
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
+import { logCaught } from "@/lib/logging/signal";
 
 export const MORNING_DIGEST_REFRESH_QUEUE = "morning-digest-refresh";
 
@@ -76,7 +77,8 @@ export async function enqueueMorningDigestRefresh(
       action: { name: "daily.morning_refresh.enqueued" },
       meta: { local_date: payload.localDate },
     });
-  } catch {
+  } catch (err) {
+    logCaught("daily.morning_refresh.enqueue_failed", err);
     // Best-effort: a failed enqueue leaves the next sleep landing + the nightly
     // cron as the catch-net; the digest stays honestly provisional meanwhile.
   }

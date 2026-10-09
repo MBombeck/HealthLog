@@ -376,6 +376,12 @@ const cyclePhaseLaggedPair = z
     behaviour: z.string(),
     outcome: z.string(),
     n: z.number().int(),
+    nEff: z
+      .number()
+      .optional()
+      .describe(
+        "v1.42 — effective sample size after serial correlation, ≤ `n`; the p-value uses it.",
+      ),
     r: z.number(),
     pValue: z.number(),
     qValue: z.number(),

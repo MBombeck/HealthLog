@@ -48,11 +48,51 @@ import { useTranslations } from "@/lib/i18n/context";
 
 const SLOW_HINT_DELAY_MS = 3_000;
 
+/**
+ * The footer a loaded `<HealthChart>` paints under its plot: the row of day
+ * dots and its caption on a day-linked chart, and the collapsed "show as
+ * table" disclosure. A loading shell without it was ~100 px shorter than the
+ * card it turned into (CLS on every metric page, the BMI page most visibly),
+ * so the shells reserve the same boxes: `h-3` rug, `mt-1` caption (two lines
+ * on a phone, one from `sm`), and the disclosure's `mt-3 border-t pt-3` frame
+ * around its `min-h-11` button.
+ */
+export function ChartFooterReserve({
+  dayLinks = false,
+  dataTable = false,
+}: {
+  dayLinks?: boolean;
+  dataTable?: boolean;
+}) {
+  if (!dayLinks && !dataTable) return null;
+  return (
+    <div aria-hidden="true" data-slot="chart-footer-reserve">
+      {dayLinks ? (
+        <>
+          <div className="h-3" />
+          <div className="mt-1 h-9 sm:h-4" />
+        </>
+      ) : null}
+      {dataTable ? (
+        <div className="border-border mt-3 border-t pt-3">
+          <div className="h-11" />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function ChartSkeleton({
   className,
   mini = false,
+  dayLinks = false,
+  dataTable = false,
 }: {
   className?: string;
+  /** Reserve the day-dot row + caption a day-linked chart paints. */
+  dayLinks?: boolean;
+  /** Reserve the collapsed data-table disclosure. */
+  dataTable?: boolean;
   /**
    * When true, render the compact variant used inside the trends-row
    * chart slot (140 px band, lighter chrome). Defaults to false for
@@ -106,8 +146,9 @@ export function ChartSkeleton({
       {/* Header row — title + range tabs match the real chart's
           `mb-4 flex flex-col gap-2 sm:flex-row` chrome. */}
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <Skeleton className="h-4 w-32" />
-        <div className="flex items-center gap-2">
+        <Skeleton className="h-5 w-32" />
+        {/* The range tabs are 44 px tap targets, so the row is too. */}
+        <div className="flex h-11 items-center gap-2">
           <Skeleton className="h-6 w-12" />
           <Skeleton className="h-6 w-12" />
           <Skeleton className="h-6 w-12" />
@@ -118,6 +159,7 @@ export function ChartSkeleton({
       {/* Chart band — mirrors the same `h-[var(--chart-height,…)]`
           contract `health-chart.tsx` paints at line 1087-1089. */}
       <Skeleton className="h-[var(--chart-height,240px)] w-full md:h-[var(--chart-height-md,280px)]" />
+      <ChartFooterReserve dayLinks={dayLinks} dataTable={dataTable} />
 
       {showSlowHint && (
         <p

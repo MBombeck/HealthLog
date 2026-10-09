@@ -121,6 +121,14 @@
     "**/__mocks__/**",
     "e2e/setup/test-helpers.ts",
     "src/lib/logging/index.ts",
+    // v1.42 release-branch contract stubs: each is created ahead of its
+    // consumers so the packages built in parallel share one signature. Drop
+    // a line the moment its first consumer lands; the release integration
+    // checklist removes whatever is left before the tag.
+    "src/lib/environment/air-quality-contract.ts",
+    // The day view and timeline contract (#613): constants and wire types the
+    // server, the two views and the Coach/MCP tool build against.
+    "src/lib/day/contract.ts",
   ],
   "ignoreDependencies": [
     "@types/node",

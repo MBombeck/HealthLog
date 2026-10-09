@@ -1,5 +1,6 @@
 "use client";
 
+import { localDateTimeValue } from "@/components/day/prefill";
 import { useActiveRecordName } from "@/hooks/use-record-capabilities";
 import { useId, useState } from "react";
 import { createPortal } from "react-dom";
@@ -264,6 +265,11 @@ interface MeasurementFormProps {
   onCancel?: () => void;
   defaultType?: string;
   /**
+   * v1.42 — a calendar day (`YYYY-MM-DD`) to start the date on, when the
+   * form is opened from that day. Defaults to now.
+   */
+  defaultDate?: string;
+  /**
    * v1.4.27 R4 RC2 — when the form is mounted inside a
    * `<ResponsiveSheet>` the caller passes the sheet's footer slot
    * element here. The form's action-row (kebab + Cancel + Save) is
@@ -294,7 +300,9 @@ function UnitLabel({ htmlFor, label }: { htmlFor: string; label: string }) {
   const name = match ? match[1] : label;
   const unit = match ? match[2] : null;
   return (
-    <Label htmlFor={htmlFor} className="flex items-baseline gap-1">
+    // `after:-ml-1` pulls the label's colon back against the unit: the colon
+    // is a flex item of its own here, and the row gap set it apart.
+    <Label htmlFor={htmlFor} className="flex items-baseline gap-1 after:-ml-1">
       <span className="truncate">{name}</span>
       {unit ? (
         <span className="text-muted-foreground shrink-0 text-xs font-normal">
@@ -310,6 +318,7 @@ export function MeasurementForm({
   onCancel,
   defaultType,
   footerSlot,
+  defaultDate,
 }: MeasurementFormProps) {
   const { t } = useTranslations();
   const recordName = useActiveRecordName();
@@ -352,7 +361,9 @@ export function MeasurementForm({
   const [diaBp, setDiaBp] = useState("");
   const [pulse, setPulse] = useState("");
   const [notes, setNotes] = useState("");
-  const [measuredAt, setMeasuredAt] = useState(getDefaultMeasuredAtValue);
+  const [measuredAt, setMeasuredAt] = useState(() =>
+    localDateTimeValue(defaultDate),
+  );
   const [glucoseContext, setGlucoseContext] =
     useState<GlucoseContextValue>("FASTING");
   const [loading, setLoading] = useState(false);
@@ -385,7 +396,7 @@ export function MeasurementForm({
     setDiaBp("");
     setPulse("");
     setNotes("");
-    setMeasuredAt(getDefaultMeasuredAtValue());
+    setMeasuredAt(localDateTimeValue(defaultDate));
     setError(null);
     setValueError(null);
   }
@@ -764,8 +775,8 @@ export function MeasurementForm({
         htmlFor="notes"
         label={
           <>
-            {t("measurements.notes")}{" "}
-            <span className="text-muted-foreground font-normal">
+            {t("measurements.notes")}
+            <span className="text-muted-foreground ml-1 font-normal">
               ({t("common.optional")})
             </span>
           </>

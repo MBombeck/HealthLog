@@ -54,6 +54,7 @@ import {
   assembleDiscoveryMatrix,
   maskSeriesByModules,
 } from "@/lib/insights/discovery-matrix";
+import { fetchEnvironmentSeries } from "@/lib/insights/correlation-channel-series";
 
 const OPTS = {
   tz: "UTC",
@@ -117,6 +118,18 @@ describe("assembleDiscoveryMatrix — switched-off modules", () => {
     expect(keys).toContain("WEIGHT");
     expect(keys).toContain("BLOOD_PRESSURE_SYS");
     expect(keys).toContain("CUSTOM_METRIC:abc");
+  });
+
+  it("does not read the weather at all with the environment module off", async () => {
+    const read = vi.mocked(fetchEnvironmentSeries);
+    read.mockClear();
+    await assembleDiscoveryMatrix("u1", {
+      ...OPTS,
+      modules: { environment: false },
+    });
+    expect(read).not.toHaveBeenCalled();
+    await assembleDiscoveryMatrix("u1", OPTS);
+    expect(read).toHaveBeenCalledTimes(1);
   });
 
   it("drops nothing for AI analysis off", async () => {

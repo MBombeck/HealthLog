@@ -71,6 +71,7 @@ vi.mock("@/lib/medications/inventory/consumption", () => ({
 
 vi.mock("@/lib/medications/route-guards", () => ({
   assertMedicationOwnership: vi.fn().mockResolvedValue(null),
+  assertMedicationTakesIntake: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock("@/lib/cache/invalidate", () => ({

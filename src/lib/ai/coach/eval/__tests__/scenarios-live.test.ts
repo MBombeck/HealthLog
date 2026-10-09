@@ -52,7 +52,9 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-describe("runScenarioLive", () => {
+// Each case drives the whole scripted turn through the real assembler; on a
+// loaded machine that has run past the 5 s default while taking ~1.5 s idle.
+describe("runScenarioLive", { timeout: 20_000 }, () => {
   it("captures each call with its arguments and sends the chat turn's context", async () => {
     const provider = scripted([
       toolRound("show_result", { ref: "m1.r1", view: "chart" }),

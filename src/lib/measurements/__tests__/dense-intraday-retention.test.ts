@@ -6,7 +6,7 @@
  * OLDER than the retention window (`measuredAt < now - retentionDays`), so
  * the recent intra-day shape the Stress engine reads is never collapsed.
  * Also pins the dense-tier scope (HRV + PULSE + SpO2), the APPLE_HEALTH
- * source scope, the per-local-hour MEAN reduction + soft-delete, the
+ * source scope, the per-local-hour MEAN reduction + delete, the
  * hourly `stats:` externalId shape, and the pre-fold rollup recompute.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -24,6 +24,7 @@ import {
   DENSE_INTRADAY_RETENTION_TYPES,
 } from "../dense-intraday-retention";
 import type { PerSampleRow } from "../drain-per-sample-cumulative";
+import { foldBoundary } from "../consolidation-tz";
 import type { MeasurementType, PrismaClient } from "@/generated/prisma/client";
 import { candidateLookup, createManyVia } from "./hourly-mint-mock";
 
@@ -33,6 +34,7 @@ import { candidateLookup, createManyVia } from "./hourly-mint-mock";
 vi.mock("@/lib/export/restore-lock", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/export/restore-lock")>()),
   holdAccountAgainstRestore: vi.fn(async () => {}),
+  holdAccountFoldLock: vi.fn(async () => {}),
 }));
 
 function row(
@@ -61,9 +63,13 @@ function buildPrismaMock(
       existingCanonicalId ? { id: existingCanonicalId } : null,
     );
   const updateMany = vi.fn().mockResolvedValue({ count: 0 });
+  const deleteMany = vi.fn().mockResolvedValue({ count: 0 });
+  // The seeded rows are Apple Health's; the Health Connect walk finds none.
   const findManyMeasurement = vi.fn(
-    async (args: { where: { type: string } }) =>
-      rowsByType[args.where.type] ?? [],
+    async (args: { where: { type: string; source: string } }) =>
+      args.where.source === "APPLE_HEALTH"
+        ? (rowsByType[args.where.type] ?? [])
+        : [],
   );
   const tx = {
     measurement: {
@@ -71,6 +77,7 @@ function buildPrismaMock(
       update,
       findFirst,
       updateMany,
+      deleteMany,
       findMany: candidateLookup(existingCanonicalId),
       createManyAndReturn: createManyVia(create),
     },
@@ -82,7 +89,10 @@ function buildPrismaMock(
           .fn()
           .mockResolvedValue([{ id: "user-1", timezone: "Europe/Berlin" }]),
       },
-      measurement: { findMany: findManyMeasurement },
+      measurement: {
+        findMany: findManyMeasurement,
+        count: vi.fn().mockResolvedValue(0),
+      },
       $transaction: vi.fn(async (cb: (t: unknown) => Promise<unknown>) =>
         cb(tx),
       ),
@@ -91,6 +101,7 @@ function buildPrismaMock(
     update,
     findFirst,
     updateMany,
+    deleteMany,
     findManyMeasurement,
   };
 }
@@ -113,16 +124,29 @@ describe("runDenseIntradayRetention — retention bound", () => {
       ).where;
       expect(where.measuredAt?.lt).toBeInstanceOf(Date);
     }
-    // The cutoff is ~DENSE_INTRADAY_RETENTION_DAYS in the past.
+    // The cutoff is the start of the account's local day that
+    // DENSE_INTRADAY_RETENTION_DAYS back falls on: only complete local days
+    // fold, so no day is folded in two runs.
     const firstCutoff = (
       findManyMeasurement.mock.calls[0]?.[0] as unknown as {
         where: { measuredAt: { lt: Date } };
       }
-    ).where.measuredAt.lt.getTime();
-    const expected =
-      Date.now() - DENSE_INTRADAY_RETENTION_DAYS * 24 * 60 * 60 * 1000;
-    // Within a generous 60s of the expected boundary.
-    expect(Math.abs(firstCutoff - expected)).toBeLessThan(60_000);
+    ).where.measuredAt.lt;
+    const expected = foldBoundary(
+      new Date(),
+      DENSE_INTRADAY_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+      "Europe/Berlin",
+    );
+    expect(firstCutoff.getTime()).toBe(expected.getTime());
+    // Local midnight in Berlin.
+    expect(
+      new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Europe/Berlin",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
+      }).format(firstCutoff),
+    ).toBe("00:00");
   });
 
   it("folds everything when retentionDays = 0 (no window)", async () => {
@@ -137,32 +161,33 @@ describe("runDenseIntradayRetention — retention bound", () => {
     }
   });
 
-  it("scans exactly the dense-tier types, source-scoped to APPLE_HEALTH", async () => {
+  it("scans exactly the dense-tier types, once per fold source, Apple Health first", async () => {
     const { mock, findManyMeasurement } = buildPrismaMock({});
     await runDenseIntradayRetention(mock, { log: () => {} });
 
-    const scannedTypes = findManyMeasurement.mock.calls.map(
-      (c) => (c[0] as { where: { type: string } }).where.type,
-    );
-    expect(scannedTypes.sort()).toEqual(
-      Array.from(DENSE_INTRADAY_RETENTION_TYPES).sort(),
-    );
-    for (const call of findManyMeasurement.mock.calls) {
-      const where = (call[0] as unknown as { where: { source: string } }).where;
-      expect(where.source).toBe("APPLE_HEALTH");
-    }
+    const scans = findManyMeasurement.mock.calls.map((c) => {
+      const where = (c[0] as { where: { type: string; source: string } }).where;
+      return `${where.source}:${where.type}`;
+    });
+    const types = Array.from(DENSE_INTRADAY_RETENTION_TYPES);
+    // One walk per source, each scoped to its one source: two sources
+    // never share a mean, and manual or Withings rows are never scanned.
+    expect(scans).toEqual([
+      ...types.map((type) => `APPLE_HEALTH:${type}`),
+      ...types.map((type) => `HEALTH_CONNECT:${type}`),
+    ]);
   });
 });
 
 describe("runDenseIntradayRetention — hourly fold flow", () => {
-  it("creates one MEAN row per LOCAL hour and soft-deletes the out-of-window rows", async () => {
+  it("creates one MEAN row per LOCAL hour and deletes the out-of-window rows", async () => {
     // Two HRV samples in DIFFERENT local hours (Berlin is UTC+2 on this
     // date: 08:00Z → 10:xx local, 09:00Z → 11:xx local).
     const hrvRows = [
       row("a", 40, "2026-05-01T08:00:00.000Z", "HEART_RATE_VARIABILITY"),
       row("b", 60, "2026-05-01T09:00:00.000Z", "HEART_RATE_VARIABILITY"),
     ];
-    const { mock, create, update, updateMany } = buildPrismaMock({
+    const { mock, create, update, updateMany, deleteMany } = buildPrismaMock({
       HEART_RATE_VARIABILITY: hrvRows,
     });
 
@@ -205,11 +230,12 @@ describe("runDenseIntradayRetention — hourly fold flow", () => {
       expect(d.type).toBe("HEART_RATE_VARIABILITY");
     }
 
-    // soft-delete, never hard delete.
-    const updArg = updateMany.mock.calls[0]?.[0] as {
-      data: { deletedAt: Date };
+    // v1.42 — the raw rows are deleted outright, no longer tombstoned.
+    const delArg = deleteMany.mock.calls[0]?.[0] as {
+      where: { id: { in: string[] } };
     };
-    expect(updArg.data.deletedAt).toBeInstanceOf(Date);
+    expect(delArg.where.id.in).toEqual(["a", "b"]);
+    expect(updateMany).not.toHaveBeenCalled();
     expect(summary.totals.daysConsolidated).toBe(1);
     expect(summary.totals.hourlyRowsUpserted).toBe(2);
   });
@@ -242,7 +268,7 @@ describe("runDenseIntradayRetention — hourly fold flow", () => {
       row("a", 40, "2026-05-01T08:00:00.000Z", "HEART_RATE_VARIABILITY"),
     ];
     // A row already sits on the hourly slot (externalId or anchor).
-    const { mock, create, update, updateMany } = buildPrismaMock(
+    const { mock, create, update, deleteMany } = buildPrismaMock(
       { HEART_RATE_VARIABILITY: hrvRows },
       "existing-canonical-row",
     );
@@ -264,11 +290,11 @@ describe("runDenseIntradayRetention — hourly fold flow", () => {
     );
     expect(updateArg.data.deletedAt).toBeNull();
 
-    // The soft-delete excludes the adopted canonical row ids.
-    const updManyArg = updateMany.mock.calls[0]?.[0] as {
+    // The delete excludes the adopted canonical row ids.
+    const delArg = deleteMany.mock.calls[0]?.[0] as {
       where: { id: { notIn: string[] } };
     };
-    expect(updManyArg.where.id.notIn).toContain("existing-canonical-row");
+    expect(delArg.where.id.notIn).toContain("existing-canonical-row");
   });
 
   it("retires a live pre-hourly DAILY stats row in the same fold transaction", async () => {

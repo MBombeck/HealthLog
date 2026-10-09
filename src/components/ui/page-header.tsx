@@ -27,9 +27,9 @@ import { cn } from "@/lib/utils";
  * they drifted apart from every module page in the first place.
  */
 /**
- * A one-word German title ("Krankheitstagebuch") is wider than the column a
- * phone leaves beside the actions, and without a break opportunity it ran
- * underneath them. `hyphens-auto` breaks it by the page's `lang`; the
+ * A long one-word German title (the illness page was once
+ * "Krankheitstagebuch") is wider than the column a phone leaves beside the
+ * actions, and without a break opportunity it ran underneath them. `hyphens-auto` breaks it by the page's `lang`; the
  * `wrap-break-word` floor covers a word the hyphenation dictionary does not.
  */
 const HEADING_CLASS =

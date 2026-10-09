@@ -64,9 +64,11 @@ model User {
   ///
   /// A timestamp rather than a boolean: it says since when, and preserves a
   /// future-compatible null state without adding a transition surface here.
-  /// This release does not expose a way to clear the marker or attach
-  /// credentials; the grants and activity trail remain intact if a later,
-  /// separately designed handover ever needs that state.
+  /// Cleared by the handover flow (`ManagedProfileHandover`): when the
+  /// person the profile describes claims it with credentials of their own,
+  /// the marker goes back to null in the same transaction that settles the
+  /// guardians' grants, so the account becomes an ordinary adult account.
+  /// The grants and activity trail stay intact across that transition.
   ///
   /// Consumers land in this release: the guardian resolver in
   /// `src/lib/api-handler.ts` reads it on every guardian request, and the
@@ -91,16 +93,32 @@ model User {
   // without a home set) simply has no environment rows. `homeTimezone` anchors
   // the day-key an observation is stored under (it can differ from the display
   // `timezone` above for an account that tracks weather for another locale).
-  homeLat      Float?    @map("home_lat")
-  homeLon      Float?    @map("home_lon")
-  homeLabel    String?   @map("home_label")
-  homeTimezone String?   @map("home_timezone")
+  homeLat                      Float?    @map("home_lat")
+  homeLon                      Float?    @map("home_lon")
+  homeLabel                    String?   @map("home_label")
+  homeTimezone                 String?   @map("home_timezone")
   // v1.25 — effective-from instant for the home location. Stamped the moment a
   // home is set/updated. Day resolution attributes a past day to home ONLY when
   // the day is on/after this instant; earlier days are skipped (never fabricated
   // from the current home). To fill the deep past the user adds an explicit
   // dated location period instead. Backfill defaults its start to this instant.
-  homeSince    DateTime? @map("home_since")
+  homeSince                    DateTime? @map("home_since")
+  /// v1.42 — sealed home location (lat, lon, label)
+  /// under AAD `healthlog/environment-location/v1`. Replaces the plaintext
+  /// `homeLat` / `homeLon` / `homeLabel` once the free-text encryption backfill
+  /// reports zero remaining rows; the plaintext columns drop in v1.43.
+  homeLocationEncrypted        Bytes?    @map("home_location_encrypted")
+  /// v1.42 — per-user switch for the air-quality and
+  /// pollen part of the environment module. On by default; off means the
+  /// nightly fetch skips the air-quality feed and the surfaces leave the
+  /// fields out. The operator switch `ENVIRONMENT_AIR_QUALITY_DISABLED` wins.
+  environmentAirQualityEnabled Boolean   @default(true) @map("environment_air_quality_enabled")
+  /// v1.42 — progress of the air-quality history backfill
+  /// (`src/lib/environment/air-quality-history.ts`): how many past days with
+  /// entries the source can cover, how many carry air quality, when it was
+  /// last checked and whether it is through. Written by the job only; read by
+  /// `GET /api/environment` for the settings card. Null until the first run.
+  environmentAqHistoryJson     Json?     @map("environment_aq_history_json")
 
   // Codex OAuth (ChatGPT subscription)
   codexAccessTokenEncrypted  String?   @map("codex_access_token_encrypted")
@@ -298,6 +316,12 @@ model User {
   // once the user has explicitly toggled the view or saved an order.
   // Shape: { "version": 1, "view": "table", "order": ["<medicationId>", ...] }
   medicationListLayoutJson Json?                @map("medication_list_layout_json")
+  // v1.42 — per-user document vault presentation: the card/list view and
+  // the stacked/flowing month arrangement. Display-only, preserve-when-absent
+  // PUT on `/api/documents/inbound/layout`, resolved field by field on read
+  // (`src/lib/documents/documents-layout.ts`). Null = defaults (cards, stacked).
+  // Shape: { "version": 1, "view": "list", "arrangement": "flow" }
+  documentsLayoutJson      Json?                @map("documents_layout_json")
   // v1.17.0 — per-user mood-tag presentation: group order + per-group tag
   // placement (catalogue tags "moved" into a group live here only — their
   // `categoryId` never changes). Display-only, preserve-when-absent PUT,
@@ -971,6 +995,20 @@ model User {
   // `vaccinations` module key, which governs the surfaces and not the store.
   vaccinationRecords                        VaccinationRecord[]
   vaccinationDocumentLinks                  VaccinationDocumentLink[]
+  // v1.42 — user-defined vaccines for products the shipped catalogue does
+  // not list (#1005).
+  customVaccines                            CustomVaccine[]
+  // v1.42 — per-HealthKit-type arrival ledger (#1173).
+  healthKitTypeSyncs                        HealthKitTypeSync[]
+  // v1.42 — managed-profile handover links (#959): the profile being handed
+  // over, and the guardian who minted the link.
+  handoversOfProfile                        ManagedProfileHandover[]          @relation("HandoverProfile")
+  handoversCreated                          ManagedProfileHandover[]          @relation("HandoverCreator")
+  // v1.42 — dated anchors in the person's life for the timeline (#613): a
+  // move, a birth, a new job. Shared under the `profile` domain; never sent to
+  // a model.
+  lifeEvents                                LifeEvent[]
+  measurementFoldRepair                     MeasurementFoldRepair?
 
   // v1.7.0 profile — optional patient-identity fields surfaced on the
   // health-record export cover (PDF) and the FHIR `Patient` resource.
@@ -1074,16 +1112,21 @@ model EnvironmentContext {
   date String
 
   /// Coarse resolved location for the day (lat/lon rounded to 1 decimal, about
-  /// 11 km, + label + the source that won precedence).
-  lat           Float
-  lon           Float
+  /// 11 km, + label + the source that won precedence). Nullable since v1.42:
+  /// the sealed copy in `locationEncrypted` replaces the plaintext once the
+  /// encryption backfill has run; the plaintext columns drop in v1.43.
+  lat               Float?
+  lon               Float?
   /// @internal: human-readable label of the resolved location, stored as
   /// operator/debug provenance beside the coordinates; surfaces select the
   /// numeric and weather columns only, never this label. The backup selects it
   /// (`src/lib/export/environment-backup.ts`) with the rest of the row: a
   /// restored reading has to keep saying where it was read.
-  locationLabel String                    @map("location_label")
-  source        EnvironmentLocationSource
+  locationLabel     String?                   @map("location_label")
+  /// v1.42 — sealed (lat, lon, label) for the day,
+  /// AAD `healthlog/environment-location/v1`.
+  locationEncrypted Bytes?                    @map("location_encrypted")
+  source            EnvironmentLocationSource
 
   /// Daily temperature (°C). Min doubles as the overnight-low proxy.
   tempMin      Float? @map("temp_min")
@@ -1111,6 +1154,54 @@ model EnvironmentContext {
   /// WMO weather code for the day (descriptive condition lookup).
   weatherCode Int? @map("weather_code")
 
+  // v1.42 (#615) — air quality, pollen and UV from the Open-Meteo
+  // air-quality feed (CAMS). All nullable: a partial or absent feed stores
+  // what it has, and a day the feed never covered stays NULL, never zero.
+  /// Daily apparent ("feels-like") maximum (°C).
+  apparentMax      Float?    @map("apparent_max")
+  /// PM2.5 daily mean (µg/m³).
+  pm25Mean         Float?    @map("pm25_mean")
+  /// PM2.5 hourly maximum over the local day (µg/m³).
+  pm25Max          Float?    @map("pm25_max")
+  /// PM10 daily mean (µg/m³).
+  pm10Mean         Float?    @map("pm10_mean")
+  /// Nitrogen dioxide daily mean (µg/m³).
+  no2Mean          Float?    @map("no2_mean")
+  /// Sulphur dioxide daily mean (µg/m³).
+  so2Mean          Float?    @map("so2_mean")
+  /// Carbon monoxide daily mean (µg/m³).
+  coMean           Float?    @map("co_mean")
+  /// Ozone, maximum 8-hour running mean of the day (µg/m³).
+  o3Max8h          Float?    @map("o3_max_8h")
+  /// European AQI, daily maximum.
+  eaqiMax          Float?    @map("eaqi_max")
+  /// US AQI, daily maximum.
+  usaqiMax         Float?    @map("usaqi_max")
+  /// UV index, daily maximum.
+  uvIndexMax       Float?    @map("uv_index_max")
+  /// Saharan dust, daily maximum (µg/m³).
+  dustMax          Float?    @map("dust_max")
+  /// Aerosol optical depth, daily maximum.
+  aodMax           Float?    @map("aod_max")
+  /// Alder pollen, daily maximum (grains/m³, Europe only).
+  pollenAlderMax   Float?    @map("pollen_alder_max")
+  /// Birch pollen, daily maximum (grains/m³, Europe only).
+  pollenBirchMax   Float?    @map("pollen_birch_max")
+  /// Grass pollen, daily maximum (grains/m³, Europe only).
+  pollenGrassMax   Float?    @map("pollen_grass_max")
+  /// Mugwort pollen, daily maximum (grains/m³, Europe only).
+  pollenMugwortMax Float?    @map("pollen_mugwort_max")
+  /// Olive pollen, daily maximum (grains/m³, Europe only).
+  pollenOliveMax   Float?    @map("pollen_olive_max")
+  /// Ragweed pollen, daily maximum (grains/m³, Europe only).
+  pollenRagweedMax Float?    @map("pollen_ragweed_max")
+  /// Which air-quality model domain served the day (`cams_europe` / `cams_global`).
+  aqDomain         String?   @map("aq_domain")
+  /// Hourly air-quality samples the day was aggregated from (75 % rule).
+  aqHours          Int?      @map("aq_hours")
+  /// When the air-quality part was last fetched; NULL = not yet fetched (gap index).
+  aqFetchedAt      DateTime? @map("aq_fetched_at")
+
   /// When the row was last fetched/refreshed from the upstream feed.
   fetchedAt DateTime @default(now()) @map("fetched_at")
   createdAt DateTime @default(now()) @map("created_at")
@@ -1118,6 +1209,9 @@ model EnvironmentContext {
 
   @@unique([userId, date])
   @@index([userId, date])
+  // `environment_contexts_aq_gap_idx` (user_id, date) WHERE aq_fetched_at IS
+  // NULL and `environment_contexts_plain_location_idx` (id) WHERE lat IS NOT
+  // NULL are partial indexes from migrations 0381 / 0382 (raw SQL only).
   @@map("environment_contexts")
 }
 
@@ -1138,14 +1232,22 @@ model EnvironmentTravelLocation {
   startDate String @map("start_date")
   endDate   String @map("end_date")
 
-  lat   Float
-  lon   Float
-  label String
+  /// Plaintext coarse location. Nullable since v1.42: the sealed copy in
+  /// `locationEncrypted` replaces it once the encryption backfill has run;
+  /// the plaintext columns drop in v1.43.
+  lat               Float?
+  lon               Float?
+  label             String?
+  /// v1.42 — sealed (lat, lon, label) for the
+  /// period, AAD `healthlog/environment-location/v1`.
+  locationEncrypted Bytes?  @map("location_encrypted")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([userId, startDate, endDate])
+  // `environment_travel_locations_plain_location_idx` (id) WHERE lat IS NOT
+  // NULL is a partial index from migration 0382 (raw SQL only).
   @@map("environment_travel_locations")
 }
 
@@ -1791,6 +1893,12 @@ enum MeasurementSource {
   // user's own. iOS DTO must mirror this exact spelling so the
   // /api/sync/changes delta feed decodes the rows.
   EXTERNAL
+  // v1.42 — rows imported from an Android Health Connect export (#972).
+  // Server-owned: written only by the Health Connect import worker, never
+  // by a client, so the batch + single-POST surfaces reject it like IMPORT.
+  // iOS DTO must mirror this spelling so the /api/sync/changes delta feed
+  // decodes the rows.
+  HEALTH_CONNECT
 
   @@map("measurement_source")
 }
@@ -3814,6 +3922,71 @@ model InviteToken {
   @@map("invite_tokens")
 }
 
+/// v1.42 (#959) — a one-time link that hands a managed profile over to the
+/// person it describes. Minted by a guardian with MANAGE on the profile; the
+/// token (`hlp_` + 64 hex) is shown once and only its HMAC-SHA256 hash is
+/// stored, the `InviteToken` scheme. Claiming sets credentials on the
+/// profile's own `User` row (no data moves), clears `managedProfileAt` and
+/// settles each guardian's grant by the proposal recorded here. At most one
+/// open link per profile (partial unique index in migration 0383).
+model ManagedProfileHandover {
+  id            String    @id @default(cuid())
+  /// The managed profile (`User` row with `managedProfileAt` set).
+  profileId     String    @map("profile_id")
+  /// The guardian who minted the link. Cleared when that account is deleted
+  /// (0390): a claimed handover keeps the new owner's pending decision, and
+  /// an unclaimed link without a creator is refused like any link whose
+  /// creator lost access.
+  createdById   String?   @map("created_by_id")
+  /// HMAC-SHA256 of the token, unique; the claim and its preview look the
+  /// link up by it (`src/lib/managed-profiles/handover.ts`).
+  tokenHash     String    @unique @map("token_hash")
+  /// The handover's state, versioned and read fail-closed by
+  /// `parseHandoverState`: the issuing guardian's proposal per guardian
+  /// (end / read / manage), and after the claim what each guardian was given
+  /// and the new owner's final decision. The pending-decision read on the new
+  /// owner's account is answered from here.
+  proposalsJson Json      @map("proposals_json")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  /// Link expiry (1, 7 or 14 days after minting).
+  expiresAt     DateTime  @map("expires_at")
+  /// Set when the profile was claimed through the link; the token is spent.
+  usedAt        DateTime? @map("used_at")
+  /// Set when a guardian withdrew the link, a newer link replaced it, or its
+  /// creator lost access.
+  revokedAt     DateTime? @map("revoked_at")
+
+  profile   User  @relation("HandoverProfile", fields: [profileId], references: [id], onDelete: Cascade)
+  createdBy User? @relation("HandoverCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([profileId])
+  // `managed_profile_handovers_open_idx` UNIQUE (profile_id) WHERE used_at IS
+  // NULL AND revoked_at IS NULL is a partial index from migration 0383.
+  @@map("managed_profile_handovers")
+}
+
+/// v1.42 (#1173) — when each HealthKit type last arrived through the batch
+/// ingest, and by which trigger. One row per (user, type), upserted by the
+/// batch route; read by the Apple Health card's per-type freshness list.
+/// Diagnostic state: rebuilt by the next sync, so it is not backed up.
+model HealthKitTypeSync {
+  userId          String          @map("user_id")
+  type            MeasurementType
+  /// Last batch that carried this type.
+  lastReceivedAt  DateTime        @map("last_received_at")
+  /// `syncTrigger` of that batch
+  /// (`foreground` / `background` / `push` / `manual`), NULL when absent.
+  lastTrigger     String?         @map("last_trigger")
+  /// Last batch that inserted or updated a sample of
+  /// this type (as opposed to sending only duplicates).
+  lastNewSampleAt DateTime?       @map("last_new_sample_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, type])
+  @@map("healthkit_type_syncs")
+}
+
 // v1.16.0 — one row per signup an invite admitted. `InviteToken.usedBy`
 // keeps only the LAST consumer (it overwrites on multi-use invites);
 // this ledger carries the full history so the admin table can show
@@ -4958,8 +5131,8 @@ model AppSettings {
   // `src/lib/ai/reasoning/resolve.ts` and published per record on
   // `GET /api/auth/me` as `coachReasoning`. Defaults keep reasoning on with no
   // cap, so an upgrade needs no admin action.
-  aiReasoningEnabled            Boolean @default(true) @map("ai_reasoning_enabled")
-  aiReasoningMaxEffort          String  @default("high") @map("ai_reasoning_max_effort")
+  aiReasoningEnabled   Boolean @default(true) @map("ai_reasoning_enabled")
+  aiReasoningMaxEffort String  @default("high") @map("ai_reasoning_max_effort")
 
   // v1.18.0 — operator-level server-wide module availability. A DISABLED
   // allowlist mirroring the per-user `User.modulePreferencesJson`: absent /
@@ -4997,6 +5170,14 @@ model AppSettings {
   /// and a deleted admin leaves the confirmation standing. Consumer: the admin
   /// step names who confirmed when the account still exists.
   encryptionKeyBackupConfirmedByUserId    String?   @map("encryption_key_backup_confirmed_by_user_id")
+
+  /// When this instance first stored a discovery finding under the seasonally
+  /// adjusted correlation engine (v1.42). Stamped once, by the first
+  /// `syncAcceptedPatterns` run of a discovery family, before it writes; null
+  /// until then. Consumer: `hadFindingsBeforeSeasonalAdjustment`, which counts
+  /// a discovery pattern created before it (or any, while it is null) as a
+  /// finding of the earlier engine and so earns the one-time note.
+  correlationSeasonalEngineSince DateTime? @map("correlation_seasonal_engine_since")
 
   @@map("app_settings")
 }
@@ -5439,6 +5620,13 @@ model ImportJob {
   pgBossJobId        String?   @unique @map("pg_boss_job_id")
   /// `queued | unpacking | parsing | upserting | done | failed`.
   status             String    @default("queued")
+  /// v1.42 (#972) — which importer owns the row: `apple_health` (every row
+  /// before v1.42) or `health_connect`. The reconcile cron and the
+  /// staged-file sweep look each row up on its own kind's queue
+  /// (`src/lib/jobs/apple-health-import-worker.ts`), so one importer never
+  /// fails or deletes the other's running job; the upload dedupe and the
+  /// Health Connect status route scope by it.
+  kind               String    @default("apple_health")
   /// Free-text reason on `failed`; null otherwise.
   failureReason      String?   @map("failure_reason")
   /// Bytes uploaded — surfaced to the operator audit trail.
@@ -5486,6 +5674,7 @@ model ImportJob {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, startedAt])
+  @@index([userId, kind, startedAt])
   @@index([status])
   @@map("import_jobs")
 }
@@ -5929,6 +6118,13 @@ model LabResult {
   sourceReferenceLow  Float?    @map("source_reference_low")
   sourceReferenceHigh Float?    @map("source_reference_high")
   sourceReferenceText String?   @map("source_reference_text")
+  /// @pending-consumer(#1095) v1.42 — the value as printed on the source
+  /// report, kept when a write converted it into the biomarker's canonical
+  /// unit. NULL when no conversion happened. A later edit of `value` clears it.
+  sourceValue         Float?    @map("source_value")
+  /// @pending-consumer(#1095) v1.42 — the unit the source report printed,
+  /// paired with `sourceValue`.
+  sourceUnit          String?   @map("source_unit")
   /// When the sample was taken (UTC instant; wall-clock anchoring is the
   /// reader's concern per the schema's UTC-only convention).
   takenAt             DateTime  @map("taken_at")
@@ -5997,6 +6193,10 @@ model Biomarker {
   /// and from the lab-entry pickers, but never deleted — its readings and
   /// canonical unit/range definition survive.
   hidden           Boolean  @default(false) @map("hidden")
+  /// @pending-consumer(#1095) v1.42 — the catalogue analyte this marker
+  /// resolves to (alias list in `src/lib/labs/biomarker-catalog.ts`), which
+  /// selects the unit-conversion table. NULL = not resolved; no conversion.
+  analyteKey       String?  @map("analyte_key")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
@@ -9120,13 +9320,13 @@ model EncounterConditionLink {
 /// module is off; these data routes stay exempt so a restore or an import
 /// keeps working and re-enabling finds every row intact.
 model VaccinationRecord {
-  id             String           @id @default(cuid())
-  userId         String           @map("user_id")
+  id              String           @id @default(cuid())
+  userId          String           @map("user_id")
   /// The day the dose was given, at UTC midnight. An Impfpass carries dates,
   /// never times, so the time component is not meaningful and is not
   /// collected. The API refuses future instants: a vaccination is logged
   /// after the fact, and a planned booster is a reminder, not a record.
-  occurredAt     DateTime         @map("occurred_at")
+  occurredAt      DateTime         @map("occurred_at")
   /// Catalogue identity. NULL = a free-text-only row, which is the arm that
   /// makes a 1987 Pass line loggable at all.
   ///
@@ -9136,46 +9336,84 @@ model VaccinationRecord {
   /// resolve, but a restore writes whatever the backup held. A slug that
   /// stops resolving degrades to the free-text arm — a tested behaviour, not
   /// an accident (`src/lib/vaccinations/__tests__/catalog-integrity.test.ts`).
-  antigenSlug    String?          @map("antigen_slug")
+  antigenSlug     String?          @map("antigen_slug")
   /// The Pass's own wording, verbatim. May be a trade name; that is user
   /// data. Plaintext and bounded so the list can render and search it.
-  vaccineName    String?          @map("vaccine_name")
+  vaccineName     String?          @map("vaccine_name")
   /// The Pass's claim about which dose this is. Optional — the series
   /// derivation falls back to the chronological index per component antigen.
-  doseNumber     Int?             @map("dose_number")
+  doseNumber      Int?             @map("dose_number")
   /// Per-record override of the catalogue's typical series length, for the
   /// schedule a person was actually given.
-  seriesDoses    Int?             @map("series_doses")
+  seriesDoses     Int?             @map("series_doses")
   /// Chargenbezeichnung (IfSG §22). A batch code, not a secret: plaintext and
   /// bounded so the list and the report can render it without a decrypt.
-  lotNumber      String?          @map("lot_number")
-  site           VaccinationSite?
-  practitionerId String?          @map("practitioner_id")
-  encounterId    String?          @map("encounter_id")
+  lotNumber       String?          @map("lot_number")
+  site            VaccinationSite?
+  practitionerId  String?          @map("practitioner_id")
+  encounterId     String?          @map("encounter_id")
   /// The booster reminder this dose satisfied, when one matched. The act runs
   /// through `satisfyReminder`; this column is the record of it, not the act.
   /// One id for possibly several satisfied rows — the engine keeps
   /// `lastSatisfiedAt` per reminder, this keeps the first match in catalogue
   /// component order.
-  reminderId     String?          @map("reminder_id")
+  reminderId      String?          @map("reminder_id")
+  /// v1.42 (#1005) — the user's own vaccine definition when the dose is for a
+  /// product the catalogue does not list, resolved through
+  /// `src/lib/vaccinations/resolve-vaccine-entry.ts`. Catalogue wins when both
+  /// resolve. Removing the definition unlinks the dose and leaves it a name
+  /// (`removeCustomVaccine`); SetNull covers a hard delete the same way.
+  customVaccineId String?          @map("custom_vaccine_id")
   /// The one free-text field (AES-256-GCM at rest, the `*Encrypted` Bytes
   /// convention). Impfreaktionen live here in v1 rather than in a structured
   /// reaction model nobody has asked for yet.
-  noteEncrypted  Bytes?           @map("note_encrypted")
-  createdAt      DateTime         @default(now()) @map("created_at")
-  updatedAt      DateTime         @updatedAt @map("updated_at")
+  noteEncrypted   Bytes?           @map("note_encrypted")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
   /// Soft-delete tombstone. NULL = live; non-NULL = deleted at the instant.
-  deletedAt      DateTime?        @map("deleted_at")
+  deletedAt       DateTime?        @map("deleted_at")
 
   user          User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   practitioner  Practitioner?             @relation(fields: [practitionerId], references: [id], onDelete: SetNull)
   encounter     Encounter?                @relation(fields: [encounterId], references: [id], onDelete: SetNull)
   reminder      MeasurementReminder?      @relation(fields: [reminderId], references: [id], onDelete: SetNull)
+  customVaccine CustomVaccine?            @relation(fields: [customVaccineId], references: [id], onDelete: SetNull)
   documentLinks VaccinationDocumentLink[]
 
   @@index([userId, deletedAt, occurredAt])
   @@index([userId, antigenSlug, occurredAt])
+  @@index([customVaccineId])
   @@map("vaccination_records")
+}
+
+/// v1.42 (#1005) — a vaccine the user defines for a product the shipped
+/// catalogue does not list. Same shape the resolver hands out for a
+/// catalogue entry (`components` = antigen slugs, typical series length,
+/// booster interval), so series derivation and booster matching treat both
+/// alike. Soft-deleted; a deleted definition leaves its doses standing on
+/// their `vaccineName`.
+model CustomVaccine {
+  id                    String    @id @default(cuid())
+  userId                String    @map("user_id")
+  /// Display name, unique per user (the API also refuses a case-only twin).
+  name                  String
+  /// Antigen slugs the product covers, from `ANTIGEN_SLUGS`; storage is
+  /// tolerant, the resolver skips a slug it does not know.
+  components            String[]
+  /// Typical primary-series length; the series total for its doses.
+  typicalSeriesDoses    Int?      @map("typical_series_doses")
+  /// Booster interval in months, the booster offer's prefill; NULL = none.
+  boosterIntervalMonths Int?      @map("booster_interval_months")
+  /// Soft-delete tombstone. NULL = live.
+  deletedAt             DateTime? @map("deleted_at")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  user    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  records VaccinationRecord[]
+
+  @@unique([userId, name])
+  @@map("custom_vaccines")
 }
 
 /// Where the dose went. Small and closed, because the Pass's own vocabulary
@@ -9355,4 +9593,90 @@ model DocumentAiRun {
   @@index([documentId, kind, status])
   @@index([status, expiresAt])
   @@map("document_ai_runs")
+}
+
+/// A dated anchor in the person's life for the timeline (v1.42, #613): a move,
+/// a birth, a new job, a loss. Not a health reading and not a symptom; it gives
+/// the years around the readings something to hang on.
+///
+/// Shared under the `profile` domain, beside allergies, visits and the
+/// immunization history. Never sent to a model in any form: the Coach, the
+/// MCP endpoint and every AI job leave it out, and the day loader's model-facing
+/// projection drops it.
+///
+/// Dates are calendar dates without a time zone (`YYYY-MM-DD`), the
+/// `src/lib/tz/date-only.ts` convention, because "we moved in September 2023"
+/// names a day on a calendar, not an instant. `precision` says how much of the
+/// date the person actually knows; at MONTH or YEAR the stored date is the
+/// first day of that month or year, and only a DAY event appears in a day view.
+model LifeEvent {
+  id             String             @id @default(cuid())
+  userId         String             @map("user_id")
+  /// @pending-consumer(#613) The kind of event, from a deliberately short list.
+  category       LifeEventCategory
+  /// @pending-consumer(#613) First day of the event, `YYYY-MM-DD`. At MONTH or
+  /// YEAR precision the first day of that month or year.
+  startDate      String             @map("start_date")
+  /// @pending-consumer(#613) Last day, `YYYY-MM-DD`, for an event that spans a
+  /// period (parental leave, a year abroad). NULL = a single date.
+  endDate        String?            @map("end_date")
+  /// @pending-consumer(#613) How much of the date is known. Applies to both
+  /// ends.
+  precision      LifeEventPrecision
+  /// @pending-consumer(#613) What happened, in the person's own words,
+  /// AES-256-GCM encrypted at rest.
+  titleEncrypted Bytes              @map("title_encrypted")
+  /// @pending-consumer(#613) An optional note, AES-256-GCM encrypted at rest.
+  noteEncrypted  Bytes?             @map("note_encrypted")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+  /// Soft-delete tombstone. NULL = live.
+  deletedAt      DateTime?          @map("deleted_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, deletedAt, startDate])
+  @@map("life_events")
+}
+
+/// What kind of life event. Few on purpose: travel already comes from the
+/// environment module, and a long list turns an anchor into a diary.
+enum LifeEventCategory {
+  FAMILY
+  HOME
+  WORK
+  LOSS
+  OTHER
+
+  @@map("life_event_category")
+}
+
+/// How much of a life event's date the person knows.
+enum LifeEventPrecision {
+  DAY
+  MONTH
+  YEAR
+
+  @@map("life_event_precision")
+}
+
+/// v1.42 — the fold repair has been through this account.
+///
+/// Before v1.42 the daily-mean consolidation and the dense hourly fold could
+/// fold a local day in two runs, the second overwriting the stored mean with
+/// the mean of the later part alone. The one-time repair
+/// (`src/lib/jobs/measurement-fold-repair.ts`) recomputes every such mean from
+/// the samples still in the table, the fold's own tombstones among them. The
+/// compaction-tombstone purge deletes exactly those tombstones, so it leaves an
+/// account alone until this row exists, and a restore that writes back a file
+/// older than `completedAt`'s run removes the row so the repair goes again.
+model MeasurementFoldRepair {
+  userId      String   @id @map("user_id")
+  /// When the repair finished the account. A restore compares it with the
+  /// file's export instant; the purge only asks whether the row exists.
+  completedAt DateTime @map("completed_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("measurement_fold_repairs")
 }

@@ -17,6 +17,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
   readActiveJobsStartedBefore,
+  readConsecutiveRunFailures,
   readFailingQueues,
   readQueueFailureForUser,
 } from "@/lib/jobs/job-failures";
@@ -186,6 +187,46 @@ describe("readActiveJobsStartedBefore (#1031)", () => {
     ).resolves.toEqual([]);
 
     await boss.complete(OTHER_QUEUE, jobId!);
+  });
+});
+
+describe("readConsecutiveRunFailures (v1.42)", () => {
+  const STREAK_QUEUE = "insight-pregenerate";
+
+  /** Complete one job with the facts a handler returned. */
+  async function completeOneJob(did: Record<string, unknown>) {
+    const jobId = await boss.send(STREAK_QUEUE, {}, { retryLimit: 0 });
+    const [job] = await boss.fetch(STREAK_QUEUE);
+    if (!job || job.id !== jobId) throw new Error("nothing to fetch");
+    await boss.complete(STREAK_QUEUE, job.id, { ok: true, did });
+    return jobId!;
+  }
+
+  /** Pin the finishing order so the test does not race the clock. */
+  async function finishedMinutesAgo(jobId: string, minutes: number) {
+    await getPrismaClient().$executeRawUnsafe(
+      `UPDATE pgboss.job SET completed_on = now() - make_interval(mins => ${minutes}) WHERE id = '${jobId}'`,
+    );
+  }
+
+  it("counts failed runs and all-failed nights, skips runs that do not say, and stops at a good night", async () => {
+    await boss.createQueue(STREAK_QUEUE);
+    // Oldest first: a good night, then a pg-boss failure, an on-demand job
+    // that reports nothing about the run, and an all-failed night.
+    await finishedMinutesAgo(await completeOneJob({ all_failed: false }), 40);
+    await finishedMinutesAgo(
+      await failOneJob(STREAK_QUEUE, {}, "worker died"),
+      30,
+    );
+    await finishedMinutesAgo(await completeOneJob({ forced: 1 }), 20);
+    await finishedMinutesAgo(await completeOneJob({ all_failed: true }), 10);
+
+    // Two earlier failures plus the run failing now.
+    await expect(readConsecutiveRunFailures(STREAK_QUEUE)).resolves.toBe(3);
+  });
+
+  it("answers 1 for a queue with no history: the run failing now", async () => {
+    await expect(readConsecutiveRunFailures("never-ran")).resolves.toBe(1);
   });
 });
 

@@ -72,6 +72,11 @@ x-healthlog-env: &healthlog_env
   # (default 60000; 0 disables it and restores the unbounded behaviour).
   # Raise it if a very large account's analytics fallback is being cut off.
   DATABASE_STATEMENT_TIMEOUT_MS: "${DATABASE_STATEMENT_TIMEOUT_MS:-}"
+  # Postgres work_mem for every app session (default 16MB).
+  DATABASE_WORK_MEM: "${DATABASE_WORK_MEM:-}"
+  # 1 sends neither of the two settings above (they ride the libpq `options`
+  # startup parameter, which PgBouncer refuses by default).
+  DATABASE_SESSION_OPTIONS_DISABLED: "${DATABASE_SESSION_OPTIONS_DISABLED:-}"
   WITHINGS_WEBHOOK_SECRET: "${WITHINGS_WEBHOOK_SECRET:-}"
   # Overrides the derived `${NEXT_PUBLIC_APP_URL}/api/withings/callback`;
   # set it when the URL registered with Withings differs from the app's own
@@ -244,6 +249,11 @@ x-healthlog-env: &healthlog_env
   # the coordinate lookups off a third party.
   OPENMETEO_BASE_URL: "${OPENMETEO_BASE_URL:-}"
   OPENMETEO_GEOCODING_URL: "${OPENMETEO_GEOCODING_URL:-}"
+  # Air quality, pollen and UV (CAMS via Open-Meteo). Same hosted default and
+  # self-host option as above; ENVIRONMENT_AIR_QUALITY_DISABLED=1 stops the
+  # air-quality requests for the whole instance.
+  OPENMETEO_AIR_QUALITY_URL: "${OPENMETEO_AIR_QUALITY_URL:-}"
+  ENVIRONMENT_AIR_QUALITY_DISABLED: "${ENVIRONMENT_AIR_QUALITY_DISABLED:-}"
   # OIDC SSO login (self-hosted IdP: Authentik/Keycloak/Authelia/etc).
   # All three of ISSUER_URL/CLIENT_ID/CLIENT_SECRET together enable the
   # "Sign in with SSO" button; set none to leave it disabled. OIDC_ONLY
@@ -533,6 +543,17 @@ services:
     # (concrete pin, active watch) from being dropped.
     image: postgres:16.15-alpine
     container_name: healthlog-db
+    # Loads pg_stat_statements so slow queries can be found from measurements
+    # instead of guesses. Loading the library only collects statistics; the
+    # view appears after a one-time `CREATE EXTENSION pg_stat_statements;`
+    # (docs/ops/query-statistics.md). Changing this line restarts the
+    # database once on the next `compose up`.
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.track=top
     # cap_drop: [ALL] is deliberately NOT applied here (unlike `app`): the
     # official Postgres entrypoint starts as root, chowns the data
     # directory, and drops privileges to the `postgres` user itself, which

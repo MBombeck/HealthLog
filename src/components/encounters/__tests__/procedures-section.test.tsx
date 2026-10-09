@@ -138,7 +138,7 @@ describe("<ProceduresSection>", () => {
       html.indexOf('data-encounter-id="older"'),
     );
     expect(html).toContain("Meniscus repair");
-    expect(html).toContain("Knee · Left");
+    expect(html).toContain("Knee (Left)");
     expect(html).toContain("2 of 2");
   });
 
@@ -182,7 +182,7 @@ describe("<ProceduresSection>", () => {
       /data-slot="procedures-site-all"[^>]*aria-pressed="true"|aria-pressed="true"[^>]*data-slot="procedures-site-all"/,
     );
     expect(html).toMatch(
-      /aria-pressed="false"[^>]*>Knee · Left|data-slot="procedures-site"[^>]*aria-pressed="false"/,
+      /aria-pressed="false"[^>]*>Knee \(Left\)|data-slot="procedures-site"[^>]*aria-pressed="false"/,
     );
   });
 

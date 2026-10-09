@@ -1,0 +1,14 @@
+-- Android Health Connect import provenance (#972).
+--
+-- Rows written by the Health Connect import worker carry their own
+-- `MeasurementSource` value, so they stay distinguishable from the Apple
+-- Health and generic IMPORT rows and get an isolated idempotency namespace
+-- `(userId, type, HEALTH_CONNECT, externalId)`.
+--
+-- Purely additive enum extension, alone in its migration: Postgres forbids
+-- USING a freshly added value in the same transaction, and nothing here uses
+-- it. `ADD VALUE IF NOT EXISTS` makes a rerun safe. Mirrors 0346 (EXTERNAL).
+--
+-- Reversibility: Postgres cannot remove an enum value, so `HEALTH_CONNECT`
+-- stays (inert with no rows).
+ALTER TYPE "measurement_source" ADD VALUE IF NOT EXISTS 'HEALTH_CONNECT';

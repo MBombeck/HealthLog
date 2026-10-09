@@ -1,3 +1,4 @@
+import { settleWithin } from "@/lib/async/settle-within";
 import { prisma } from "@/lib/db";
 import { lookupIpGeo } from "@/lib/geo";
 import { getEvent } from "@/lib/logging/context";
@@ -80,11 +81,7 @@ export async function auditLog(
   // provider can't stall the audit write.
   if (opts.ipAddress && action.startsWith("auth.")) {
     const ipAddress = opts.ipAddress;
-    const timeout = new Promise<null>((resolve) =>
-      setTimeout(() => resolve(null), 3000),
-    );
-
-    Promise.race([lookupIpGeo(ipAddress), timeout])
+    settleWithin(lookupIpGeo(ipAddress), 3000, null)
       .then((result) => {
         if (!result) return;
         const { location, asn, carrier } = result;

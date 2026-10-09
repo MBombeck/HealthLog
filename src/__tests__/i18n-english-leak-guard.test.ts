@@ -98,6 +98,7 @@ const LEGIT_IDENTICAL = new Set<string>([
   "insights.derived.composite.READINESS.component.hrv",
   "labs.catalog.hs-crp",
   "measurements.typeHrvRmssd",
+  "settings.sections.sources.metrics.hrvRmssd",
   "measurements.typeVo2Max",
   // "{hours} h {minutes} min": the SI symbols for hour and minute.
   "measurements.durationHoursMinutes",
@@ -112,6 +113,7 @@ const LEGIT_IDENTICAL = new Set<string>([
   "admin.webPushVapidTitle",
   "measurements.sourceAppleHealth",
   "measurements.sourceGoogleHealth",
+  "measurements.sourceHealthConnect",
   "medications.sourceAppleHealth",
   "settings.ai.providerChain.types.anthropic",
   "settings.ai.providerChain.types.codex",
@@ -119,6 +121,7 @@ const LEGIT_IDENTICAL = new Set<string>([
   "settings.sections.export.import.appleHealth.title",
   "settings.sections.sources.sourceLabels.APPLE_HEALTH",
   "settings.sections.sources.sourceLabels.GOOGLE_HEALTH",
+  "settings.sections.sources.sourceLabels.HEALTH_CONNECT",
   "settings.appleHealth.title",
   "mood.tag.fastFood",
   // Technical / config labels conventionally kept verbatim.

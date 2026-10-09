@@ -214,7 +214,7 @@ describe("buildFallbackQuestions", () => {
     const hints = buildFallbackQuestions(emptyCtx, "en", ["ABOUT_ME"]);
 
     expect(hints).toEqual([
-      "Want to tell the Coach a bit about yourself — routines, goals, context?",
+      "Want to tell the Coach a bit about yourself: routines, goals, context?",
     ]);
   });
 

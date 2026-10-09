@@ -662,6 +662,14 @@ async function main() {
       prisma.symptomEvent,
     ),
   );
+  // v1.42 — a life event's title and note. The note is NULL on most rows,
+  // which the walk skips.
+  results.push(
+    await rotateBytesColumn("LifeEvent", "titleEncrypted", prisma.lifeEvent),
+  );
+  results.push(
+    await rotateBytesColumn("LifeEvent", "noteEncrypted", prisma.lifeEvent),
+  );
 
   // ───── v1.19.0 ECG waveform (Bytes column) ─────
   // "waveformEncrypted" holds the JSON-encoded micro-volt sample array in the
@@ -812,6 +820,30 @@ async function main() {
   results.push(
     await rotateRegistryColumn("WorkoutRoute", "geometryEncrypted", {
       workoutRoute: prisma.workoutRoute,
+    } as unknown as CorpusClient),
+  );
+
+  // ───── v1.42 environment locations (Bytes, binary2, batched) ─────
+  // The sealed home, each dated location period and each day's resolved
+  // location, all under the environment-location label. NULL on a row the
+  // encryption backfill has not reached yet, which the walk skips.
+  results.push(
+    await rotateRegistryColumn("User", "homeLocationEncrypted", {
+      user: prisma.user,
+    } as unknown as CorpusClient),
+  );
+  results.push(
+    await rotateRegistryColumn(
+      "EnvironmentTravelLocation",
+      "locationEncrypted",
+      {
+        environmentTravelLocation: prisma.environmentTravelLocation,
+      } as unknown as CorpusClient,
+    ),
+  );
+  results.push(
+    await rotateRegistryColumn("EnvironmentContext", "locationEncrypted", {
+      environmentContext: prisma.environmentContext,
     } as unknown as CorpusClient),
   );
 

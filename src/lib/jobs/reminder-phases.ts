@@ -85,6 +85,31 @@ export function resolvePhaseThresholds(
 }
 
 /**
+ * The first phase a slot's window reaches, which is the reminder that
+ * announces the dose; every later phase is a follow-up for a dose that is
+ * still open.
+ *
+ * It is not always GREEN. GREEN needs the window to have opened AND to be
+ * within `greenMinBefore` of its end, while YELLOW needs only the second
+ * condition with the smaller `yellowMinBefore`. A window no longer than the
+ * YELLOW lead (a point slot such as 07:00 to 07:00 is zero minutes long)
+ * reaches YELLOW first and never shows GREEN, and so does any configuration
+ * whose GREEN lead is not longer than its YELLOW lead.
+ */
+export function openingPhase(
+  thresholds: ReturnType<typeof resolvePhaseThresholds>,
+  windowDurationMin: number,
+): ReminderPhase {
+  if (
+    windowDurationMin <= thresholds.yellowMinBefore ||
+    thresholds.greenMinBefore <= thresholds.yellowMinBefore
+  ) {
+    return "YELLOW";
+  }
+  return "GREEN";
+}
+
+/**
  * Determine the current phase for a schedule based on minutes to window end.
  *
  * @param minutesToEnd - Positive = before window end, negative = after window end

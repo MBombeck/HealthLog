@@ -26,12 +26,12 @@ export default function InsightsStepsPage() {
       i18nPrefix="insights.steps"
       explainerMetric="steps"
       statIcon={Footprints}
-      color="var(--success)"
+      color="var(--chart-2)"
       unitKey="insights.units.steps"
       emptyStateIcon={<Footprints className="size-6" />}
       emptyStateCtaType={null}
       captureType="ACTIVITY_STEPS"
-      coachPrefill="I haven't logged any steps yet — what's a reasonable daily step target, and how does walking more help my health?"
+      coachPrefill="I haven't logged any steps yet. What's a reasonable daily step target, and how does walking more help my health?"
     />
   );
 }

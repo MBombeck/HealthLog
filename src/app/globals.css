@@ -32,6 +32,63 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * `pointer-fine:` — a mouse or trackpad is the primary pointer. Form fields
+ * take the compact 14 px type only under it: iOS and iPadOS Safari zoom the
+ * page into any focused field whose text is smaller than 16 px, and a width
+ * breakpoint alone (`md:text-sm`) handed 14 px to a phone held sideways
+ * (844 px) and to every iPad. Touch-first screens keep the 16 px base at
+ * every width.
+ */
+@custom-variant pointer-fine {
+  @media (hover: hover) and (pointer: fine) {
+    @slot;
+  }
+}
+
+/*
+ * `pointer-coarse:` — a finger is the primary pointer. The control
+ * primitives (Button, tab triggers, the sidebar rail rows) grow their hit
+ * area to the 44 px touch floor under it, so a phone or a touch tablet gets
+ * reachable targets while a mouse keeps the compact desktop density.
+ */
+@custom-variant pointer-coarse {
+  @media (pointer: coarse) {
+    @slot;
+  }
+}
+
+/*
+ * `shell-desktop:` / `shell-mobile:` — which app shell the viewport gets.
+ * The desktop rail (sidebar, no bottom nav) from `md` up, EXCEPT a touch
+ * screen at most 520 px tall: a phone held sideways is 844–932 px wide but
+ * only 390–430 px tall, and the rail plus the top bar left it a sliver of
+ * content and no thumb-reachable navigation. It keeps the phone shell (top
+ * bar, bottom nav, capture button) instead. Everything that switches
+ * between the two shells keys on these, never on a bare `md:`, so the bars
+ * cannot disagree about which shell is showing.
+ */
+@custom-variant shell-desktop {
+  @media (min-width: 48rem) and (pointer: fine),
+    (min-width: 48rem) and (pointer: none),
+    (min-width: 48rem) and (min-height: 521px) {
+    @slot;
+  }
+}
+
+/*
+ * `keyboard-open:` — while the on-screen keyboard is up (see the keyboard
+ * rules further down). A bottom sheet then stands on the keyboard, not on
+ * the home indicator, so its safe-area padding has nothing left to clear.
+ */
+@custom-variant keyboard-open (html[data-keyboard="open"] &);
+
+@custom-variant shell-mobile {
+  @media (max-width: 47.98rem), (pointer: coarse) and (max-height: 520px) {
+    @slot;
+  }
+}
+
 @theme inline {
   /* Extra-small breakpoint (30rem / 480px) for the narrowest phones — the
      default scale starts at sm (640px), which leaves a gap between an iPhone SE
@@ -56,6 +113,9 @@
   --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
+  --color-switch-off: var(--switch-off);
+  --color-primary-disabled: var(--primary-disabled);
+  --color-primary-disabled-foreground: var(--primary-disabled-foreground);
   --color-input-focus: var(--input-focus);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
@@ -242,6 +302,19 @@
   --destructive: #ff5555;
   --border: #44475a;
   --input: #44475a;
+  /* An off switch's track, and a disabled primary button. Dark keeps the
+   * look these had (input at 80 %, primary at half strength). */
+  --switch-off: color-mix(in oklab, var(--input) 80%, transparent);
+  --primary-disabled: color-mix(
+    in oklab,
+    var(--primary) 50%,
+    var(--background)
+  );
+  --primary-disabled-foreground: color-mix(
+    in oklab,
+    var(--primary-foreground) 70%,
+    var(--primary-disabled)
+  );
   /* Text-field focus border: a neutral, foreground-based tone, no colour
    * ring. ~5.2:1 on --background, ~6:1 on --card. */
   --input-focus: #9a9b9d;
@@ -373,6 +446,15 @@
   --success-foreground: #ffffff;
   --border: oklch(0.885 0.008 300);
   --input: oklch(0.87 0.009 300);
+  /* An off switch's track: the input grey sat at ~1.4:1 on the card, so an
+   * off switch all but vanished. ~3.5:1 on --card clears the 3:1 floor for
+   * a control boundary. */
+  --switch-off: oklch(0.62 0.012 295);
+  /* A disabled primary button: opacity-50 left white text on a washed
+   * violet at ~2:1. A pale violet fill with a dark violet label (~5.5:1)
+   * still reads as the primary action, and as unavailable. */
+  --primary-disabled: oklch(0.88 0.035 290);
+  --primary-disabled-foreground: oklch(0.44 0.06 290);
   /* Text-field focus border, neutral: ~4.2:1 on --background. */
   --input-focus: oklch(0.56 0.012 295);
   --ring: oklch(0.48 0.012 290); /* neutral: no purple focus frames anywhere */
@@ -508,6 +590,95 @@
   }
   p {
     color: var(--foreground);
+  }
+}
+
+/*
+ * The shell's safe area, the on-screen keyboard and the sheet clearances sit
+ * in the components layer, under the utilities, so a utility on the same
+ * element still wins and these rules cannot silently override one. The
+ * bottom sheet takes its `bottom` from here alone for that reason (the
+ * sheet primitive sets no `bottom-*`); the keyboard rules that must beat a
+ * utility say `!important`, which in a layer outranks any utility.
+ */
+@layer components {
+  /*
+   * `.shell-safe-area` — the authenticated app shell's share of the installed
+   * app's safe area (see the note in `auth-shell.tsx`). The shell takes the top
+   * and side insets as padding, and the strip behind the status bar is painted
+   * in the chrome colour (`--card`, the top bar and the sidebar) rather than
+   * the page colour, so the status bar reads as part of the bar beneath it. A
+   * zero inset makes the gradient zero tall: nothing changes in a browser tab.
+   */
+  .shell-safe-area {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    background: linear-gradient(var(--card), var(--card)) top / 100%
+      env(safe-area-inset-top, 0px) no-repeat;
+  }
+
+  /*
+   * The on-screen keyboard. iOS Safari, and Chrome on Android by default,
+   * shrink only the visual viewport when the keyboard opens: everything
+   * `position: fixed` stays anchored to the layout viewport, so a bottom sheet
+   * keeps its footer (Save, the Coach composer) behind the keyboard and the
+   * bottom bar floats somewhere under it. `useKeyboardInset()` (mounted once
+   * in the providers) publishes the covered height as `--keyboard-inset` and
+   * sets `data-keyboard` on `<html>` while it is open.
+   *
+   * Bottom sheets then stand on the keyboard and give up the height it takes,
+   * so their own scroll body (every bottom sheet is a flex column with a
+   * scrolling middle) carries the form, and the bottom bar and the Coach
+   * button step aside until the keyboard is gone.
+   */
+  [data-sheet-side="bottom"] {
+    bottom: var(--keyboard-inset, 0px);
+  }
+  html[data-keyboard="open"] [data-sheet-side="bottom"] {
+    max-height: calc(
+      100dvh - var(--keyboard-inset, 0px) - env(safe-area-inset-top, 0px) -
+        0.5rem
+    ) !important;
+  }
+  html[data-keyboard="open"] [data-keyboard-hide] {
+    display: none !important;
+  }
+
+  /*
+   * Side and top sheets run the full height of the window. In an installed
+   * app on a tablet the status bar sits over their first 24 px, and a phone
+   * held sideways has its notch over one side, so the panel keeps its header
+   * clear of both. A transparent border rather than padding: every consumer
+   * sets its own padding (often `p-0`), which would override a padding here,
+   * while the border adds the clearance under any of them and lets the
+   * panel's own background show through it.
+   */
+  [data-sheet-side="right"],
+  [data-sheet-side="left"],
+  [data-sheet-side="top"] {
+    border-top: env(safe-area-inset-top, 0px) solid transparent;
+  }
+  [data-sheet-side="right"] {
+    border-right: env(safe-area-inset-right, 0px) solid transparent;
+  }
+  [data-sheet-side="left"] {
+    border-left: env(safe-area-inset-left, 0px) solid transparent;
+  }
+}
+
+/*
+ * Toasts clear the bottom bar wherever the phone shell shows it. The
+ * toaster's `mobileOffset` (providers.tsx) applies below 600 px only, while
+ * the bar follows the shell (up to `md`, and a phone held sideways): between
+ * the two the "new version" toast sat over the tabs. Unlayered and one `html`
+ * deeper than Sonner's injected `[data-sonner-toaster][data-y-position]`
+ * rule, which is unlayered too and lands after this sheet. The Coach panel's
+ * rule further down still outranks it while that panel is open.
+ */
+html [data-sonner-toaster][data-y-position="bottom"] {
+  @variant shell-mobile {
+    bottom: calc(4rem + env(safe-area-inset-bottom, 0px) + 0.75rem);
   }
 }
 

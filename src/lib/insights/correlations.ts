@@ -41,6 +41,11 @@
  */
 import { defaultLocale } from "@/lib/i18n/config";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
+import {
+  dayKeyToIndex,
+  residualisePair,
+  type SeasonalBasis,
+} from "@/lib/insights/seasonal-adjust";
 
 /** Locale-aware string builder — mirrors the server translator's `t`. */
 type Translate = (
@@ -149,6 +154,12 @@ export interface PearsonOk {
   pValue: number;
   /** 95 % confidence interval on r via Fisher z-transform. */
   confidenceInterval: [number, number];
+  /**
+   * The effective sample size the p-value and interval used, when the caller
+   * supplied one (serially correlated input). Absent on the plain path, where
+   * the p-value uses `n`.
+   */
+  effectiveN?: number;
 }
 
 export interface PearsonInsufficient {
@@ -168,6 +179,21 @@ export function pearson(input: {
   xs: readonly number[];
   ys: readonly number[];
   minPairs?: number;
+  /**
+   * Effective sample size for serially correlated input (see
+   * `effectiveSampleSize` in `seasonal-adjust.ts`). When given, the t-test
+   * uses `min(effectiveN, n − covariates) − 2` degrees of freedom and the
+   * Fisher-z interval `effectiveN − 3`, so a persistent series cannot claim the
+   * evidence of `n` independent days. `minPairs` still gates on the observed
+   * pair count.
+   */
+  effectiveN?: number;
+  /**
+   * Nuisance columns already partialled out of both arms (trend, harmonic).
+   * Each costs one degree of freedom, as in any partial correlation. Only
+   * read when `effectiveN` is given.
+   */
+  covariates?: number;
 }): PearsonResult {
   const { xs, ys } = input;
   const minPairs = input.minPairs ?? MIN_PAIRED_N;
@@ -210,15 +236,24 @@ export function pearson(input: {
   // grid past the three pre-defined cards here; the exact p-value
   // pre-empts a class of false positives that the normal-approx
   // overstated at low df.
+  const effectiveN =
+    input.effectiveN !== undefined && Number.isFinite(input.effectiveN)
+      ? Math.min(n, Math.max(3, input.effectiveN))
+      : undefined;
+  const df =
+    effectiveN === undefined
+      ? n - 2
+      : Math.min(effectiveN, n - (input.covariates ?? 0)) - 2;
   const tStat =
     Math.abs(clamped) >= 1
       ? Number.POSITIVE_INFINITY
-      : (clamped * Math.sqrt(n - 2)) / Math.sqrt(1 - clamped * clamped);
-  const pValue = twoSidedPFromT(Math.abs(tStat), n - 2);
+      : (clamped * Math.sqrt(Math.max(0, df))) /
+        Math.sqrt(1 - clamped * clamped);
+  const pValue = twoSidedPFromT(Math.abs(tStat), df);
 
   // Fisher z-transform for 95 % CI on r.
   const z = atanh(clamped);
-  const se = 1 / Math.sqrt(Math.max(1, n - 3));
+  const se = 1 / Math.sqrt(Math.max(1, (effectiveN ?? n) - 3));
   const zLow = z - 1.96 * se;
   const zHigh = z + 1.96 * se;
   const confidenceInterval: [number, number] = [tanh(zLow), tanh(zHigh)];
@@ -229,7 +264,95 @@ export function pearson(input: {
     n,
     pValue,
     confidenceInterval,
+    ...(effectiveN === undefined
+      ? {}
+      : { effectiveN: Math.round(effectiveN * 10) / 10 }),
   };
+}
+
+/** One paired observation keyed on a calendar day. */
+export interface DayPair {
+  /** Day index (days since 1970-01-01) or a `YYYY-MM-DD` key. */
+  day: number | string;
+  x: number;
+  y: number;
+}
+
+export type AdjustedPearsonResult =
+  | (PearsonOk & { effectiveN: number; basis: SeasonalBasis })
+  | PearsonInsufficient;
+
+/**
+ * Pearson for two daily series with the shared season and trend removed and
+ * the p-value computed from the effective sample size. The discovery engine
+ * (every surface that scans the matrix) and the dated fixed-hypothesis cards
+ * below go through it.
+ *
+ * The reported `r` is the correlation of the residuals, i.e. the partial
+ * correlation with trend (and, over 120 days or more, the annual cycle) held
+ * fixed. `n` stays the observed pair count; `effectiveN` is what the evidence
+ * is worth after serial correlation. Pairs too few to fit the basis come back
+ * `too_few_pairs` and are not tested at all.
+ */
+export function seasonallyAdjustedPearson(
+  pairs: readonly DayPair[],
+  opts: { minPairs?: number } = {},
+): AdjustedPearsonResult {
+  const minPairs = opts.minPairs ?? MIN_PAIRED_N;
+  const n = pairs.length;
+  if (n < minPairs)
+    return { status: "insufficient", reason: "too_few_pairs", n };
+  const days = pairs.map((p) =>
+    typeof p.day === "number" ? p.day : dayKeyToIndex(p.day),
+  );
+  const adjusted = residualisePair(
+    days,
+    pairs.map((p) => p.x),
+    pairs.map((p) => p.y),
+  );
+  if (!adjusted) return { status: "insufficient", reason: "too_few_pairs", n };
+  // A series that is nothing but trend (and season) leaves residuals that are
+  // zero up to rounding. Pearson on those would correlate floating-point
+  // noise, so treat a residual spread below 1e-9 of the raw spread as none.
+  if (
+    negligibleSpread(
+      pairs.map((p) => p.x),
+      adjusted.xs,
+    ) ||
+    negligibleSpread(
+      pairs.map((p) => p.y),
+      adjusted.ys,
+    )
+  ) {
+    return { status: "insufficient", reason: "no_variance", n };
+  }
+  const result = pearson({
+    xs: adjusted.xs,
+    ys: adjusted.ys,
+    minPairs,
+    effectiveN: adjusted.effectiveN,
+    covariates: adjusted.covariates,
+  });
+  if (result.status !== "ok") return result;
+  return {
+    ...result,
+    effectiveN: result.effectiveN ?? n,
+    basis: adjusted.basis,
+  };
+}
+
+function sumSquaresAboutMean(values: readonly number[]): number {
+  const mean = values.reduce((s, v) => s + v, 0) / values.length;
+  return values.reduce((s, v) => s + (v - mean) ** 2, 0);
+}
+
+function negligibleSpread(
+  raw: readonly number[],
+  residuals: readonly number[],
+): boolean {
+  const rawSs = sumSquaresAboutMean(raw);
+  if (rawSs === 0) return true;
+  return sumSquaresAboutMean(residuals) <= rawSs * 1e-9;
 }
 
 function atanh(x: number): number {
@@ -631,6 +754,15 @@ function twoSidedPFromF(
   return 1 - normalCdf(z);
 }
 
+/**
+ * Day index of a day-start `Date` (the fast path builds these from user-zone
+ * day keys at UTC midnight). Rounded so a DST-shifted midnight lands on the
+ * same day.
+ */
+function dayIndexOfDate(date: Date): number {
+  return Math.round(date.getTime() / 86_400_000);
+}
+
 // ── Hypothesis #1 — BP × medication compliance ─────────────────
 
 export interface BpComplianceInput {
@@ -657,9 +789,13 @@ export function correlateBpCompliance(
     x: d.compliancePct,
     y: d.systolic,
   }));
-  const xs = points.map((p) => p.x);
-  const ys = points.map((p) => p.y);
-  const r = pearson({ xs, ys });
+  const r = seasonallyAdjustedPearson(
+    input.daily.map((d, i) => ({
+      day: dayIndexOfDate(d.date),
+      x: points[i].x,
+      y: points[i].y,
+    })),
+  );
   if (r.status === "insufficient") {
     return {
       kind: "bp-compliance",
@@ -718,9 +854,13 @@ export function correlateMoodPulse(
   t: Translate = defaultTranslate(),
 ): CorrelationResult {
   const points = input.daily.map((d) => ({ x: d.mood, y: d.restingPulse }));
-  const xs = points.map((p) => p.x);
-  const ys = points.map((p) => p.y);
-  const r = pearson({ xs, ys });
+  const r = seasonallyAdjustedPearson(
+    input.daily.map((d, i) => ({
+      day: dayIndexOfDate(d.date),
+      x: points[i].x,
+      y: points[i].y,
+    })),
+  );
   if (r.status === "insufficient") {
     return {
       kind: "mood-pulse",

@@ -36,6 +36,11 @@ import {
   inviteManagedProfileGuardianSchema,
   updateManagedProfileSchema,
 } from "@/lib/validations/managed-profiles";
+import {
+  createHandoverSchema,
+  handoverAccessSchema,
+  handoverDecisionSchema,
+} from "@/lib/validations/managed-profile-handover";
 import { onboardingStateResource } from "./onboarding";
 import { aiAccountBlock, moduleAccessMap } from "./profile";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
@@ -496,6 +501,30 @@ const accountPayload = z
   .looseObject({
     id: z.string(),
     username: z.string(),
+    // Enumerated because clients cut days and convert glucose by them: the
+    // day key and the unit must be the server's, not the device's.
+    timezone: z
+      .string()
+      .describe(
+        "The IANA zone the server cuts this account's days in: the stored zone, or the instance default when the stored one is unusable. Resolved, never the raw column, so bucket day keys by this value.",
+      ),
+    glucoseUnit: z
+      .enum(["mg/dL", "mmol/L"])
+      .nullable()
+      .describe(
+        "The account's chosen glucose display unit, as stored. `null` means the person never chose one (or the stored value is neither unit), and the server then shows glucose in mg/dL.",
+      ),
+    features: z
+      .object({
+        trackIntake: z
+          .literal(true)
+          .describe(
+            "Medications take `trackIntake`: a medication can be kept as a record whose doses are never due, and a dose written against one is refused with `medication.intake.notTracked`.",
+          ),
+      })
+      .describe(
+        "What this server understands, for a client released apart from it. Constant across accounts; a flag appears once the server supports the feature and stays `true`. Absent on servers older than v1.42.0. A client that meets a flag it does not know ignores it.",
+      ),
     accountAccess: accountAccessBlock,
     moduleAccess: moduleAccessMap,
     // v1.39 — enumerated because every AI surface decides on it: a client
@@ -545,7 +574,243 @@ const managedProfileEnvelope = dataEnvelope(
   "ManagedProfileEnvelope",
 );
 
+// v1.42 (#959) — handing a managed profile over to the person it describes.
+const handoverAccess = handoverAccessSchema
+  .describe(
+    "What a guardian's access becomes after the handover: ended (`end`), view only (`read`), or still managing (`manage`).",
+  )
+  .meta({ id: "ManagedProfileHandoverAccess" });
+
+const createHandoverRequest = createHandoverSchema.meta({
+  id: "CreateManagedProfileHandoverRequest",
+  description:
+    "`expiresInDays` is 1, 7 (default) or 14. `proposals` names at most one entry per active guardian grant; a guardian left out is proposed `read`, and a grant that is not an active guardian of this profile is refused with 422.",
+});
+
+const managedProfileHandover = z
+  .object({
+    id: z.string(),
+    token: z
+      .string()
+      .describe(
+        "The one-time `hlp_` token. Returned only in this response and never again; only its hash is stored.",
+      ),
+    url: z.string().describe("The link to hand over: `<app>/claim/<token>`."),
+    expiresAt: z.iso.datetime({ offset: true }),
+  })
+  .meta({ id: "ManagedProfileHandover" });
+
+const managedProfileHandoverStatus = z
+  .object({
+    available: z
+      .boolean()
+      .describe(
+        "False on an instance that allows single sign-on only, where a handover cannot be created.",
+      ),
+    open: z
+      .object({
+        id: z.string(),
+        createdAt: z.iso.datetime({ offset: true }),
+        expiresAt: z.iso.datetime({ offset: true }),
+        createdByYou: z.boolean(),
+      })
+      .nullable()
+      .describe(
+        "The profile's open link, or null. Never the link itself: only its hash is stored.",
+      ),
+  })
+  .meta({ id: "ManagedProfileHandoverStatus" });
+
+const handoverDecisionRequest = handoverDecisionSchema.meta({
+  id: "HandoverDecisionRequest",
+  description:
+    "The new owner's decision per former guardian, named by the guardian's grant id at the claim. A guardian left out keeps the access the claim gave them.",
+});
+
+const pendingHandoverDecision = z
+  .object({
+    pending: z
+      .object({
+        claimedAt: z.iso.datetime({ offset: true }),
+        guardians: z.array(
+          z.object({
+            grantId: z
+              .string()
+              .describe(
+                "The guardian's grant at the claim; what a decision names.",
+              ),
+            displayName: z.string(),
+            proposal: handoverAccess,
+            current: handoverAccess,
+            decidable: z
+              .boolean()
+              .describe(
+                "False when the access moved since the claim (the guardian stepped away, or it was changed under shared access); such a row is shown and left alone.",
+              ),
+          }),
+        ),
+      })
+      .nullable(),
+  })
+  .meta({ id: "PendingHandoverDecision" });
+
 export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+  "/api/managed-profiles/{id}/handover": {
+    get: {
+      tags: ["Account sharing"],
+      summary: "Whether a handover link is open",
+      description:
+        "The profile's open handover link, if any, and whether this instance allows creating one. Never returns the link: only its hash is stored. Cookie-only, no step-up.",
+      requestParams: { path: z.object({ id: z.string() }) },
+      responses: {
+        ...stdResponses,
+        "200": {
+          description: "The status.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                managedProfileHandoverStatus,
+                "ManagedProfileHandoverStatusEnvelope",
+              ),
+            },
+          },
+        },
+        "404": {
+          description:
+            "No such managed profile, or the caller is not one of its Guardians (`meta.errorCode: managed_profile.not_found`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+      },
+    },
+    post: {
+      tags: ["Account sharing"],
+      summary: "Create a handover link for a managed profile",
+      description:
+        "Mints the one-time link that lets the person a managed profile describes take it over as their own account. No data moves: claiming sets credentials on the profile's own record. Claiming applies each guardian's proposal at once; the new owner then confirms or changes it on first sign-in, and until they do the proposal holds. Creating a new link withdraws an open one. Pending invitations on the profile are withdrawn when it is claimed. Cookie-only and step-up gated, like every act on a managed profile; ten an hour per caller. Refused on an instance that allows single sign-on only.",
+      requestParams: { path: z.object({ id: z.string() }) },
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: createHandoverRequest } },
+      },
+      responses: {
+        ...stdResponses,
+        "201": {
+          description: "The link, shown once.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                managedProfileHandover,
+                "ManagedProfileHandoverEnvelope",
+              ),
+            },
+          },
+        },
+        "403": {
+          description:
+            "The instance allows single sign-on only (`meta.errorCode: profile_claim.oidc_only_unsupported`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "404": {
+          description:
+            "No such managed profile, or the caller is not one of its Guardians (`meta.errorCode: managed_profile.not_found`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "422": {
+          description:
+            "The body is invalid, or a proposal names a grant that is not an active guardian of this profile (`meta.errorCode: managed_profile.handover.unknown_guardian`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+      },
+    },
+    delete: {
+      tags: ["Account sharing"],
+      summary: "Withdraw the open handover link",
+      description:
+        "Withdraws the profile's open handover link, if there is one; the link then answers like any unknown one. Cookie-only; no step-up, because withdrawing only takes something away.",
+      requestParams: { path: z.object({ id: z.string() }) },
+      responses: {
+        ...stdResponses,
+        "200": {
+          description: "Withdrawn, or there was no open link.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ revoked: z.boolean() }),
+                "RevokeManagedProfileHandoverEnvelope",
+              ),
+            },
+          },
+        },
+        "404": {
+          description:
+            "No such managed profile, or the caller is not one of its Guardians (`meta.errorCode: managed_profile.not_found`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+      },
+    },
+  },
+  "/api/account/handover-decision": {
+    get: {
+      tags: ["Account sharing"],
+      summary: "The handover decision waiting for a new owner",
+      description:
+        "After claiming a managed profile, the new owner decides each former guardian's access. This answers that decision, or `pending: null` when none is waiting. Refused while acting on another account.",
+      responses: {
+        ...stdResponses,
+        "200": {
+          description: "The waiting decision, or null.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                pendingHandoverDecision,
+                "PendingHandoverDecisionEnvelope",
+              ),
+            },
+          },
+        },
+      },
+    },
+    post: {
+      tags: ["Account sharing"],
+      summary: "Decide each former guardian's access",
+      description:
+        "Records the new owner's final decision per former guardian. A changed level ends the guardian's grant and writes a new one; `manage` can restore access a guardian held before the handover. After this, access changes through the ordinary grant endpoints. Refused while acting on another account.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: handoverDecisionRequest } },
+      },
+      responses: {
+        ...stdResponses,
+        "200": {
+          description: "Decided.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({
+                  decided: z.literal(true),
+                  changed: z
+                    .number()
+                    .int()
+                    .describe("How many guardians' access this changed."),
+                }),
+                "HandoverDecisionEnvelope",
+              ),
+            },
+          },
+        },
+        "409": {
+          description:
+            "No decision is waiting (`meta.errorCode: managed_profile.handover.no_pending`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "422": {
+          description:
+            "The body is invalid, or a decision names somebody who was not a guardian at the claim (`meta.errorCode: managed_profile.handover.unknown_guardian`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+      },
+    },
+  },
   "/api/auth/me": {
     get: {
       tags: ["Auth"],

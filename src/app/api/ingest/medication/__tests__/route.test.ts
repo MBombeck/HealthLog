@@ -577,4 +577,22 @@ describe("POST /api/ingest/medication — the rate-limit bucket", () => {
     );
     expect(res.status).toBe(429);
   });
+
+  it("refuses a dose for a record-only medication with medication.intake.notTracked", async () => {
+    vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValue(
+      null as never,
+    );
+    vi.mocked(prisma.medication.findFirst).mockResolvedValue({
+      id: "med-1",
+      userId: "user-1",
+      name: "Metformin",
+      trackIntake: false,
+    } as never);
+    const res = await POST(
+      postReq({ medicationName: "Metformin", idempotencyKey: "k-record-001" }),
+    );
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.meta?.errorCode).toBe("medication.intake.notTracked");
+  });
 });

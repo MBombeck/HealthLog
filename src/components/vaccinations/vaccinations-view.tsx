@@ -26,7 +26,12 @@ import { useTranslations } from "@/lib/i18n/context";
 import { VaccinationList } from "./vaccination-list";
 import { VaccinationSheet } from "./vaccination-sheet";
 import { BoosterMintPrompt, boosterOfferFor } from "./booster-mint-prompt";
-import { useVaccinations, type Vaccination } from "./use-vaccinations";
+import { CustomVaccineList } from "./custom-vaccine-list";
+import {
+  useCustomVaccines,
+  useVaccinations,
+  type Vaccination,
+} from "./use-vaccinations";
 
 export function VaccinationsView() {
   const { t } = useTranslations();
@@ -45,6 +50,10 @@ export function VaccinationsView() {
   const canPlanBooster = canWriteDomain("measurements");
   const { data, isLoading, isError, refetch } = useVaccinations();
   const records = data?.vaccinations ?? [];
+  // v1.42 (#1005) — the record's own definitions, listed below the log once
+  // there is one. A failed read leaves the section out rather than claiming
+  // there are none; the picker reads the same query and says the same.
+  const customs = useCustomVaccines();
 
   // One sheet for create and edit. Bumped `session` remounts it so a second
   // open never shows the first's values.
@@ -95,7 +104,11 @@ export function VaccinationsView() {
           </span>
         }
         description={t("vaccinations.subtitle")}
-        actions={addButton}
+        // The empty state carries the add action while the Impfpass is
+        // empty; the header offers it once there is a list to add to.
+        actions={
+          !isLoading && !isError && records.length === 0 ? null : addButton
+        }
       />
 
       <VaccinationSheet
@@ -154,6 +167,12 @@ export function VaccinationsView() {
           }
         />
       )}
+
+      <CustomVaccineList
+        customs={customs.data ?? []}
+        canAdd={canAddDose}
+        canManage={canManageProfile}
+      />
     </div>
   );
 }

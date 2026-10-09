@@ -1,5 +1,5 @@
 /**
- * v1.25.11 (#148) — the "Appearance" hub (slug stays `layout`).
+ * v1.25.11 (#148) — the "Layout" hub (slug stays `layout`).
  *
  * The hub is a navigable index: it lists each module as a clickable row
  * (`<a href="/settings/layout/<id>">` with the localized title + description +

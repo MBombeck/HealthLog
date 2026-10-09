@@ -21,12 +21,12 @@ export default function InsightsViszeralfettPage() {
       chartKey="visceralFat"
       i18nPrefix="insights.visceralFat"
       explainerMetric="visceralFat"
-      color="var(--warning)"
+      color="var(--chart-5)"
       unit=""
       yAxisUnit=""
       emptyStateIcon={<Droplets className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any visceral fat yet — what does this metric tell me about my health, and how do I improve it?"
+      coachPrefill="I haven't logged any visceral fat yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

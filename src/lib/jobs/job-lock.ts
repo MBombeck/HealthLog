@@ -19,6 +19,7 @@
  * One extra connection per running locked job.
  */
 import { Client } from "pg";
+import { caughtAs } from "@/lib/logging/signal";
 
 /** What a guarded run came to. */
 export type GuardedRun<T> = { ran: true; result: T } | { ran: false };
@@ -50,9 +51,9 @@ export async function withJobLock<T>(
     } finally {
       await client
         .query("SELECT pg_advisory_unlock(hashtextextended($1, 0))", [key])
-        .catch(() => {});
+        .catch(caughtAs("jobs.lock.release_failed"));
     }
   } finally {
-    await client.end().catch(() => {});
+    await client.end().catch(caughtAs("jobs.lock.release_failed"));
   }
 }

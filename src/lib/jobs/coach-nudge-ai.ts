@@ -49,6 +49,7 @@ import { singleUserTurn } from "@/lib/ai/types";
 import { screenCoachReply } from "@/lib/ai/coach/outbound-guard";
 import { extractAssessmentSummary } from "@/lib/insights/status-shared";
 import { annotate } from "@/lib/logging/context";
+import { caughtAs, logCaught } from "@/lib/logging/signal";
 
 /** Per-call upstream timeout — kept inside the spec's ≤8–10 s window. */
 export const COACH_NUDGE_AI_CALL_TIMEOUT_MS = 9_000;
@@ -246,13 +247,14 @@ export const composeNudgeWithAI: ComposeNudgeWithAI = async (params) => {
           signal: AbortSignal.timeout(COACH_NUDGE_AI_CALL_TIMEOUT_MS + 1_000),
         }),
       );
-    } catch {
+    } catch (err) {
       // Timeout / network / provider error → refund what wasn't spent and
       // fall back to the template.
+      logCaught("coach.nudge.ai_failed", err);
       await reconcileSpend(params.userId, reservation.reserved, 0, dateKey, 0, {
         servedBy: null,
         reservedOwner: reservation.owner,
-      }).catch(() => {});
+      }).catch(caughtAs("coach.nudge.reconcile_failed"));
       annotate({ action: { name: "coach.nudge.ai.fallback" } });
       return null;
     }
@@ -264,7 +266,7 @@ export const composeNudgeWithAI: ComposeNudgeWithAI = async (params) => {
       dateKey,
       result.cachedInputTokens ?? 0,
       { servedBy: chain[0].providerType, reservedOwner: reservation.owner },
-    ).catch(() => {});
+    ).catch(caughtAs("coach.nudge.reconcile_failed"));
 
     const body = sanitiseAiBody(result.content, params.locale);
     if (!body) {
@@ -274,7 +276,8 @@ export const composeNudgeWithAI: ComposeNudgeWithAI = async (params) => {
 
     annotate({ action: { name: "coach.nudge.ai.composed" } });
     return { title: params.template.title, body };
-  } catch {
+  } catch (err) {
+    logCaught("coach.nudge.compose_failed", err);
     // Defensive: any unexpected failure keeps the template.
     return null;
   }

@@ -46,8 +46,11 @@ export default function InsightsBlutdruckPage() {
   const { t } = useTranslations();
   const { compareBaseline } = useInsightsLayoutPrefs(user != null);
 
-  const { data: analytics, isEmpty } =
-    useInsightsAnalytics("BLOOD_PRESSURE_SYS");
+  const {
+    data: analytics,
+    isEmpty,
+    isLoading: analyticsLoading,
+  } = useInsightsAnalytics("BLOOD_PRESSURE_SYS");
   // v1.12.4 — blood pressure is two series, so it stacks two stat strips
   // (systolic / diastolic) rather than the single-series strip the other
   // metrics carry. Both summaries ride the same `summaries` slice.
@@ -57,7 +60,7 @@ export default function InsightsBlutdruckPage() {
   // v1.12.8 — chart-reactive metric statistics. Blood pressure tracks BOTH
   // series at once: the single chart reports per-type visible-range stats and
   // each strip column reads its own half.
-  const { statsByType, onVisibleStats } = useChartDomainStats();
+  const { statsByType, statsSettled, onVisibleStats } = useChartDomainStats();
   const bpTargets = useBpTargetBand();
 
   if (isEmpty) {
@@ -78,7 +81,7 @@ export default function InsightsBlutdruckPage() {
               </Link>
             </Button>
           }
-          coachPrefill="I haven't recorded any blood pressure yet — why does it matter, and what should I know before I start?"
+          coachPrefill="I haven't recorded any blood pressure yet. Why does it matter, and what should I know before I start?"
         />
       </SubPageShell>
     );
@@ -98,10 +101,10 @@ export default function InsightsBlutdruckPage() {
         {
           min: bpTargets.diastolic.min,
           max: bpTargets.diastolic.max,
-          color: "var(--info)",
+          color: "var(--chart-4)",
           opacity: 0.21,
           label: t("charts.diastolic"),
-          textColor: "var(--info)",
+          textColor: "var(--chart-4)",
           lineOpacity: 0.24,
         },
       ]
@@ -128,6 +131,7 @@ export default function InsightsBlutdruckPage() {
         // brushing the single chart reports per-type windowed stats and each
         // column reads its own half.
         <MetricStatStrip
+          pending={analyticsLoading}
           groupLabel={t("insights.bloodPressureSectionTitle")}
           series={[
             {
@@ -138,6 +142,7 @@ export default function InsightsBlutdruckPage() {
               seriesLabel: t("charts.systolic"),
               icon: ArrowUpRight,
               windowStats: statsByType?.BLOOD_PRESSURE_SYS ?? null,
+              windowPending: !statsSettled,
             },
             {
               dataKey: "dia",
@@ -147,6 +152,7 @@ export default function InsightsBlutdruckPage() {
               seriesLabel: t("charts.diastolic"),
               icon: ArrowDownRight,
               windowStats: statsByType?.BLOOD_PRESSURE_DIA ?? null,
+              windowPending: !statsSettled,
             },
           ]}
         />
@@ -166,7 +172,7 @@ export default function InsightsBlutdruckPage() {
         types={["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"]}
         title={t("charts.bloodPressure")}
         titleIcon={HeartPulse}
-        colors={["var(--chart-3)", "var(--info)"]}
+        colors={["var(--chart-3)", "var(--chart-4)"]}
         unit="mmHg"
         yAxisUnit="mmHg"
         targetZones={bpTargetZones}
@@ -174,6 +180,7 @@ export default function InsightsBlutdruckPage() {
         userTimezone={user?.timezone}
         onVisibleStats={onVisibleStats}
         showDataTable
+        dayLinks
       />
 
       {/* v1.12.4 — target card sits between the chart and the assessment on

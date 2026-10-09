@@ -42,11 +42,14 @@ export function SleepDurationChart({
       chartKey="sleep"
       types={["SLEEP_DURATION"]}
       title={t("charts.sleep")}
-      colors={["var(--info)"]}
+      colors={["var(--chart-4)"]}
       unit="h"
       yAxisUnit="h"
       compareBaseline={compareBaseline}
       userTimezone={userTimezone}
+      // v1.42 — the same doors to the day every metric page's chart has.
+      showDataTable
+      dayLinks
     />
   );
 }

@@ -106,7 +106,6 @@ export function EpisodeMenu({
           ) : null}
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            variant="destructive"
             onSelect={(e) => {
               e.preventDefault();
               setConfirmOpen(true);

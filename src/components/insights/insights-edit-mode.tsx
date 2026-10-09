@@ -1,10 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Eye, EyeOff, GripVertical, Loader2, RotateCcw } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  GripVertical,
+  LayoutGrid,
+  Loader2,
+  RotateCcw,
+} from "lucide-react";
 import {
   DndContext,
   KeyboardSensor,
@@ -24,6 +31,8 @@ import { CSS } from "@dnd-kit/utilities";
 
 import { Button } from "@/components/ui/button";
 import { SettingsCard } from "@/components/settings/settings-card";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
+import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { cn } from "@/lib/utils";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
@@ -36,6 +45,13 @@ import {
   type InsightsSectionConfig,
   type InsightsSectionId,
 } from "@/lib/insights-layout";
+import {
+  arrangeSavePayload,
+  arrangementSignature,
+  reconcileArrangeDraft,
+  seedArrangeDraft,
+  sortByOrder,
+} from "@/lib/insights-arrange-draft";
 import { apiDelete, apiPut } from "@/lib/api/api-fetch";
 import {
   readUpdatedAtToken,
@@ -57,8 +73,9 @@ import {
  * Tile-level management (the per-metric detail pages + their nav pills)
  * moved to Settings → Insights in v1.15.20 — the pill-order section there
  * carries both sorting AND the eye toggles, so the disclosure this card used
- * to nest under the Vitals row was a duplicate surface. The card keeps the
- * draft's `tiles` untouched and links to the settings section instead.
+ * to nest under the Vitals row was a duplicate surface. A save sends the
+ * CURRENT server tiles (never a copy taken at mount), so a pill-order save
+ * made beside this card survives a later section save.
  */
 
 /** Localized title key per section id — used for the edit-card label. */
@@ -88,26 +105,42 @@ interface InsightsEditModeProps {
   gatedOffSectionIds: ReadonlySet<InsightsSectionId>;
   /** Close edit mode (the "Fertig" / save-success path calls this). */
   onClose: () => void;
+  /**
+   * `page` (default) is the inline editor the Insights overview opens: its own
+   * title, Reset + Done beside it, and a pointer to the Settings pill manager.
+   * `settings` is the same editor as a standing Settings card: a settings
+   * header, the actions in one row at the bottom (design standards §12), no
+   * pointer back to the page it already sits on, and no focus grab on mount —
+   * the card is part of the page, not a surface the user just opened.
+   */
+  variant?: "page" | "settings";
 }
 
 export function InsightsEditMode({
   layout,
   gatedOffSectionIds,
   onClose,
+  variant = "page",
 }: InsightsEditModeProps) {
+  const inSettings = variant === "settings";
   const { t } = useTranslations();
   const queryClient = useQueryClient();
 
-  // Local draft seeded from the resolved layout. Edits mutate the draft only;
-  // "Fertig" flushes it via the PUT mutation. Sections/tiles are sorted by
-  // order for stable rendering.
-  const [draft, setDraft] = useState<InsightsLayout>(() => ({
-    version: layout.version,
-    sections: [...layout.sections].sort((a, b) => a.order - b.order),
-    // Tiles pass through the save verbatim — pill order + visibility are
-    // managed on Settings → Insights since v1.15.20.
-    tiles: [...layout.tiles].sort((a, b) => a.order - b.order),
-  }));
+  // Local section draft seeded from the resolved layout. Edits mutate the
+  // draft only; "Fertig" flushes it via the PUT mutation. When the server copy
+  // changes underneath (the pill manager beside the Settings card also flips
+  // the "ecg" section), an untouched draft re-seeds in render — the
+  // React-sanctioned "adjust state on prop change" pattern — so it never turns
+  // someone else's save into a pending edit of its own.
+  const [draftState, setDraftState] = useState(() =>
+    seedArrangeDraft(layout.sections),
+  );
+  const reconciled = reconcileArrangeDraft(draftState, layout.sections);
+  if (reconciled) setDraftState(reconciled);
+  const draftSections = (reconciled ?? draftState).sections;
+  const setDraftSections = (
+    update: (sections: InsightsSectionConfig[]) => InsightsSectionConfig[],
+  ) => setDraftState((d) => ({ ...d, sections: update(d.sections) }));
 
   // v1.15.11 QA L5 — on mount move focus to the edit-card heading so keyboard /
   // screen-reader users land on the surface they just opened (not the top of
@@ -115,8 +148,9 @@ export function InsightsEditMode({
   // "Anpassen" toggle on close via the page's onClose handler.
   const headingRef = useRef<HTMLHeadingElement | null>(null);
   useEffect(() => {
+    if (inSettings) return;
     headingRef.current?.focus();
-  }, []);
+  }, [inSettings]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -126,14 +160,14 @@ export function InsightsEditMode({
   );
 
   const saveMutation = useMutation({
-    mutationFn: async (next: InsightsLayout) => {
+    mutationFn: async (sections: InsightsSectionConfig[]) => {
       // v1.32.21 (R5a) — echo the optimistic-concurrency base token this edit
       // was based on so an interleaved write (a Settings pill-order Save, or
       // this surface open in another tab) 409s instead of clobbering.
       return apiPut<InsightsLayoutWithToken>(
         "/api/insights/layout",
         withBaseToken(
-          { version: 2, sections: next.sections, tiles: next.tiles },
+          arrangeSavePayload(sections, layout),
           readUpdatedAtToken(queryClient, queryKeys.insightsLayout()),
         ),
       );
@@ -175,86 +209,93 @@ export function InsightsEditMode({
         queryKey: queryKeys.insightsLayout(),
       });
       // Re-seed the draft so the open editor reflects the restored defaults.
-      setDraft({
-        version: saved.version,
-        sections: [...saved.sections].sort((a, b) => a.order - b.order),
-        tiles: [...saved.tiles].sort((a, b) => a.order - b.order),
-      });
+      setDraftState(seedArrangeDraft(saved.sections));
       toast.success(t("insights.editMode.resetSuccess"));
     },
     onError: () => toast.error(t("insights.editMode.saveError")),
   });
 
   const busy = saveMutation.isPending || resetMutation.isPending;
+  // The Settings card's Save waits for a change, like the pill-order Save
+  // beside it; the overview's inline editor keeps "Done" live because it
+  // also closes the editor.
+  const dirty =
+    arrangementSignature(draftSections) !==
+    arrangementSignature(layout.sections);
 
-  const sections = useMemo(
-    () => [...draft.sections].sort((a, b) => a.order - b.order),
-    [draft.sections],
-  );
+  const sections = sortByOrder(draftSections);
   const sectionIds = sections.map((s) => s.id);
 
   function toggleSection(id: InsightsSectionId, visible: boolean) {
-    setDraft((d) => ({
-      ...d,
-      sections: d.sections.map((s) => (s.id === id ? { ...s, visible } : s)),
-    }));
+    setDraftSections((rows) =>
+      rows.map((s) => (s.id === id ? { ...s, visible } : s)),
+    );
   }
 
   function handleSectionDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const reordered = reorderById<InsightsSectionConfig>(
-      draft.sections,
+      draftSections,
       String(active.id),
       String(over.id),
     );
-    setDraft((d) => ({ ...d, sections: reordered }));
+    setDraftSections(() => reordered);
   }
 
-  const allHidden = draft.sections.every((s) => !s.visible);
+  const allHidden = draftSections.every((s) => !s.visible);
 
   return (
     <SettingsCard data-slot="insights-edit-mode">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-        <div>
-          <h2
-            ref={headingRef}
-            tabIndex={-1}
-            className="text-lg font-semibold focus-visible:outline-none"
-          >
-            {t("insights.editMode.title")}
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            {t("insights.editMode.description")}
-          </p>
+      {inSettings ? (
+        <SettingsCardHeader
+          icon={LayoutGrid}
+          title={t("insights.settings.overviewTitle")}
+          titleId="insights-overview-arrange-title"
+          description={t("insights.settings.overviewDescription")}
+        />
+      ) : (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <div>
+            <h2
+              ref={headingRef}
+              tabIndex={-1}
+              className="text-lg font-semibold focus-visible:outline-none"
+            >
+              {t("insights.editMode.title")}
+            </h2>
+            <p className="text-muted-foreground text-sm">
+              {t("insights.editMode.description")}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <ConfirmButton
+              slot="insights-edit-reset"
+              variant="ghost"
+              size="sm"
+              icon={<RotateCcw className="h-3.5 w-3.5" />}
+              label={t("insights.editMode.reset")}
+              title={t("insights.editMode.resetTitle")}
+              body={t("insights.editMode.resetBody")}
+              confirmLabel={t("insights.editMode.resetConfirm")}
+              disabled={busy && !resetMutation.isPending}
+              pending={resetMutation.isPending}
+              onConfirm={() => resetMutation.mutate()}
+            />
+            <Button
+              size="sm"
+              onClick={() => saveMutation.mutate(draftSections)}
+              disabled={busy}
+              data-slot="insights-edit-done"
+            >
+              {saveMutation.isPending && (
+                <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+              )}
+              {t("insights.editMode.done")}
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2 self-end sm:self-auto">
-          <ConfirmButton
-            slot="insights-edit-reset"
-            variant="ghost"
-            size="sm"
-            icon={<RotateCcw className="h-3.5 w-3.5" />}
-            label={t("insights.editMode.reset")}
-            title={t("insights.editMode.resetTitle")}
-            body={t("insights.editMode.resetBody")}
-            confirmLabel={t("insights.editMode.resetConfirm")}
-            disabled={busy && !resetMutation.isPending}
-            pending={resetMutation.isPending}
-            onConfirm={() => resetMutation.mutate()}
-          />
-          <Button
-            size="sm"
-            onClick={() => saveMutation.mutate(draft)}
-            disabled={busy}
-            data-slot="insights-edit-done"
-          >
-            {saveMutation.isPending && (
-              <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-            )}
-            {t("insights.editMode.done")}
-          </Button>
-        </div>
-      </div>
+      )}
 
       {allHidden && (
         <p
@@ -298,18 +339,49 @@ export function InsightsEditMode({
         </SortableContext>
       </DndContext>
 
-      {/* v1.15.20 — the per-detail-page manager (sort + show/hide) lives on
-          Settings → Insights; the disclosure this card used to nest under
-          the Vitals row duplicated it. Keep a quiet pointer instead. */}
-      <p className="text-muted-foreground text-xs">
-        <Link
-          href="/settings/layout/insights#insights-pill-order"
-          data-slot="insights-edit-manage-link"
-          className="hover:text-foreground focus-visible:ring-ring rounded underline underline-offset-2 focus-visible:ring-2 focus-visible:outline-none"
-        >
-          {t("insights.editMode.manageInSettings")}
-        </Link>
-      </p>
+      {inSettings ? (
+        <SettingsCardActions>
+          <ConfirmButton
+            slot="insights-edit-reset"
+            variant="outline"
+            size="sm"
+            className="min-h-11 sm:min-h-9"
+            icon={<RotateCcw className="h-3.5 w-3.5" />}
+            label={t("insights.editMode.reset")}
+            title={t("insights.editMode.resetTitle")}
+            body={t("insights.editMode.resetBody")}
+            confirmLabel={t("insights.editMode.resetConfirm")}
+            disabled={busy && !resetMutation.isPending}
+            pending={resetMutation.isPending}
+            onConfirm={() => resetMutation.mutate()}
+          />
+          <Button
+            size="sm"
+            className="min-h-11 sm:min-h-9"
+            onClick={() => saveMutation.mutate(draftSections)}
+            disabled={busy || !dirty}
+            data-slot="insights-edit-done"
+          >
+            {saveMutation.isPending && (
+              <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+            )}
+            {t("common.save")}
+          </Button>
+        </SettingsCardActions>
+      ) : (
+        // v1.15.20 — the per-detail-page manager (sort + show/hide) lives on
+        // Settings → Insights; the disclosure this card used to nest under
+        // the Vitals row duplicated it. Keep a quiet pointer instead.
+        <p className="text-muted-foreground text-xs">
+          <Link
+            href="/settings/layout/insights#insights-pill-order"
+            data-slot="insights-edit-manage-link"
+            className="hover:text-foreground focus-visible:ring-ring rounded underline underline-offset-2 focus-visible:ring-2 focus-visible:outline-none"
+          >
+            {t("insights.editMode.manageInSettings")}
+          </Link>
+        </p>
+      )}
     </SettingsCard>
   );
 }
@@ -404,7 +476,7 @@ function SortableSectionRow({
           type="button"
           {...attributes}
           {...listeners}
-          aria-label={`${labels.dragHandle} — ${title}`}
+          aria-label={`${labels.dragHandle}: ${title}`}
           title={labels.dragHandle}
           disabled={disabled}
           data-slot="insights-edit-section-handle"
@@ -435,7 +507,7 @@ function SortableSectionRow({
         <EyeToggle
           visible={section.visible}
           disabled={disabled || gatedOff}
-          label={`${section.visible ? labels.hide : labels.show} — ${title}`}
+          label={`${section.visible ? labels.hide : labels.show}: ${title}`}
           onClick={() => onToggle(section.id, !section.visible)}
           slot="insights-edit-section-eye"
         />

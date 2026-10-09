@@ -39,6 +39,8 @@ import { BACKUP_RESTORE_EXPIRE_SECONDS } from "@/lib/jobs/backup-restore";
 import { RESTORE_DRILL_EXPIRE_SECONDS } from "@/lib/jobs/restore-drill";
 import { APPLE_HEALTH_IMPORT_SEND_OPTIONS } from "@/lib/jobs/apple-health-import-worker";
 import { MEDICATION_INTAKE_IMPORT_SEND_OPTIONS } from "@/lib/jobs/medication-intake-import";
+import { HEALTH_CONNECT_IMPORT_SEND_OPTIONS } from "@/lib/jobs/health-connect-import-worker";
+import { MEASUREMENT_MAINTENANCE_SEND_OPTIONS } from "@/lib/jobs/measurement-maintenance";
 
 /** pg-boss's default job expiry, in seconds. */
 export const DEFAULT_JOB_EXPIRE_SECONDS = 15 * 60;
@@ -351,6 +353,51 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     "The legacy queue: moves each job onto apple-health-import-v2.",
   ),
   "apple-health-import-reconcile": short("One updateMany."),
+  "health-connect-import": {
+    runtime: "long",
+    expireInSeconds: HEALTH_CONNECT_IMPORT_SEND_OPTIONS.expireInSeconds,
+    expiryVia: ["HEALTH_CONNECT_IMPORT_SEND_OPTIONS"],
+    stop: {
+      oneShot:
+        "The run consumes and unlinks its staged upload, so it can neither stop half-way nor be retried; the send sets retryLimit 0.",
+    },
+    exclusive: {
+      marker: "retryLimit: 0",
+      at: {
+        file: "lib/jobs/health-connect-import-worker.ts",
+        fn: "HEALTH_CONNECT_IMPORT_SEND_OPTIONS",
+      },
+    },
+    why: "Reads a Health Connect export database that can hold years of minute-level samples.",
+  },
+  "compaction-tombstone-purge": short(
+    "At most 40 batches of 5 000 rows per run; the predicate is idempotent, so the next run resumes.",
+  ),
+  "measurement-fold-repair": {
+    runtime: "budgeted",
+    budget: {
+      file: "lib/jobs/measurement-fold-repair.ts",
+      fn: "handleMeasurementFoldRepair",
+    },
+    why: "One account's folded means, a day at a time; stops at three quarters of the default expiry and sends a follow-up that resumes at the next day.",
+  },
+  "measurement-maintenance": {
+    runtime: "long",
+    expireInSeconds: MEASUREMENT_MAINTENANCE_SEND_OPTIONS.expireInSeconds,
+    expiryVia: ["MEASUREMENT_MAINTENANCE_SEND_OPTIONS"],
+    stop: {
+      oneShot:
+        "VACUUM and REINDEX CONCURRENTLY cannot be resumed mid-statement; the send sets retryLimit 0 and the operator re-triggers.",
+    },
+    exclusive: {
+      marker: "retryLimit: 0",
+      at: {
+        file: "lib/jobs/measurement-maintenance.ts",
+        fn: "MEASUREMENT_MAINTENANCE_SEND_OPTIONS",
+      },
+    },
+    why: "Rebuilds every index of the largest table, one at a time.",
+  },
   "medication-intake-import": {
     runtime: "long",
     expireInSeconds: MEDICATION_INTAKE_IMPORT_SEND_OPTIONS.expireInSeconds,
@@ -418,5 +465,8 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "document-thumbnail-backfill": short("Enqueues at most 1 000 documents."),
   "environment-fetch": short(
     "A fan-out of sends, or one account's bounded archive range.",
+  ),
+  "environment-aq-history": short(
+    "A fan-out of sends, or one account's history run: at most eight ranges of up to 90 days, two requests each, then a follow-up.",
   ),
 };

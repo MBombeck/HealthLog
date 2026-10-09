@@ -1,5 +1,6 @@
 "use client";
 
+import { MEASUREMENT_TYPE_LABEL_KEYS } from "@/lib/measurements/type-label-keys";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import React, { Suspense, useCallback, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -28,7 +29,11 @@ import {
   TrendingUp,
   Wind,
 } from "lucide-react";
-import { convertGlucose, resolveGlucoseUnit } from "@/lib/glucose";
+import {
+  convertGlucose,
+  glucoseFractionDigits,
+  resolveGlucoseUnit,
+} from "@/lib/glucose";
 import { cn } from "@/lib/utils";
 import {
   resolveDashboardLayout,
@@ -69,6 +74,7 @@ import { summaryToTrend7Delta } from "@/lib/analytics/trend-delta";
 import { GettingStartedChecklist } from "@/components/onboarding/getting-started-checklist";
 import { RecentAchievementsCard } from "@/components/gamification/recent-achievements-card";
 import { RecentWorkoutsTile } from "@/components/dashboard/recent-workouts-tile";
+import { EnvironmentChip } from "@/components/dashboard/environment-chip";
 import { SleepSourceDiscrepancyMarker } from "@/components/insights/sleep-source-discrepancy-marker";
 import { VorsorgeDashboardCard } from "@/components/measurement-reminders/vorsorge-dashboard-card";
 
@@ -443,6 +449,19 @@ export default function DashboardPageClient({
   const rhr = data?.summaries?.RESTING_HEART_RATE;
   const hasRestingHr = (rhr?.count ?? 0) > 0;
   const pulseTileSummary = hasRestingHr ? rhr : p;
+  // The pulse widget shows ONE of two statistics, and its name says which:
+  // with resting rows it is the resting heart rate (one figure a day, the
+  // same series the day view names "Resting heart rate"); without them it
+  // is the pulse, whose latest value is the latest day's pulse (the mean of
+  // its hours' means, `summaries-slice.ts`), the number the day view shows
+  // as "Pulse" for that day. Calling the resting figure "Pulse" put 62 on
+  // the dashboard beside a day view reading 77 for the same name.
+  const pulseLabel = hasRestingHr
+    ? t(MEASUREMENT_TYPE_LABEL_KEYS.RESTING_HEART_RATE)
+    : t("dashboard.pulseShort");
+  const pulseTitle = hasRestingHr
+    ? t(MEASUREMENT_TYPE_LABEL_KEYS.RESTING_HEART_RATE)
+    : t("dashboard.pulse");
   const bf = data?.summaries?.BODY_FAT;
   const sleepSummary = data?.summaries?.SLEEP_DURATION;
   // v1.11.4 — `summaries.SLEEP_DURATION` now carries per-NIGHT time-asleep
@@ -949,20 +968,35 @@ export default function DashboardPageClient({
         // rehydrates from disk. The error / empty branches stay reachable only
         // post-mount. DO NOT add `["daily", …]` to that allowlist, or render
         // the hero from any client-only source, without revisiting this gate.
-        digestQuery.data ? (
-          <TodayHero
-            digest={digestQuery.data}
-            renderFilteredAllClear={renderFilteredHeroAllClear}
-            // Server-persisted hero choice — rides the same resolved layout
-            // as the widget visibility below, so SSR and hydration agree.
-            primaryContent={layout.hero ?? "score"}
-          />
-        ) : !mounted || digestQuery.isLoading ? (
-          <TodayHeroSkeleton />
-        ) : digestQuery.isError ? (
-          <QueryErrorCard onRetry={() => digestQuery.refetch()} />
-        ) : null
+        // v1.42 — the top card can be switched off in the layout settings;
+        // only an explicit `false` hides it, and with it its skeleton and
+        // its error card.
+        layout.todayCardVisible === false ? null : (
+          // `contents`: a stable hook for the switch, no box of its own.
+          <div data-slot="today-card" className="contents">
+            {digestQuery.data ? (
+              <TodayHero
+                digest={digestQuery.data}
+                renderFilteredAllClear={renderFilteredHeroAllClear}
+                // Server-persisted hero choice — rides the same resolved
+                // layout as the widget visibility below, so SSR and
+                // hydration agree.
+                primaryContent={layout.hero ?? "score"}
+              />
+            ) : !mounted || digestQuery.isLoading ? (
+              <TodayHeroSkeleton />
+            ) : digestQuery.isError ? (
+              <QueryErrorCard onRetry={() => digestQuery.refetch()} />
+            ) : null}
+          </div>
+        )
       }
+
+      {/* v1.42 (#615) — a quiet note about the newest stored environment
+          day (high pollen, a hot night, very poor air). Renders nothing
+          unless one of those applies, and nothing before mount (the module
+          map and the overview are client reads). Not a layout widget. */}
+      {mounted && <EnvironmentChip />}
 
       {/* v1.18.6 — the spotlight tour launcher moved to the app-shell
        * (`AuthShell`) so its overlay survives the cross-page
@@ -1032,6 +1066,7 @@ export default function DashboardPageClient({
             node: (
               <TrendCard
                 key="bp-sys"
+                fractionDigits={0}
                 label={t("dashboard.bloodPressureSysShort")}
                 latest={sys?.latest ?? null}
                 unit="mmHg"
@@ -1073,6 +1108,7 @@ export default function DashboardPageClient({
             node: (
               <TrendCard
                 key="bp-dia"
+                fractionDigits={0}
                 label={t("dashboard.bloodPressureDiaShort")}
                 latest={dia?.latest ?? null}
                 unit="mmHg"
@@ -1114,7 +1150,8 @@ export default function DashboardPageClient({
             node: (
               <TrendCard
                 key="pulse"
-                label={t("dashboard.pulseShort")}
+                fractionDigits={0}
+                label={pulseLabel}
                 latest={pulseTileSummary?.latest ?? null}
                 unit="bpm"
                 avg7={pulseTileSummary?.avg7 ?? null}
@@ -1236,6 +1273,7 @@ export default function DashboardPageClient({
             node: (
               <TrendCard
                 key="steps"
+                fractionDigits={0}
                 label={t("dashboard.stepsShort") ?? "Steps"}
                 latest={stepsSummary?.latest ?? null}
                 unit=""
@@ -1296,6 +1334,7 @@ export default function DashboardPageClient({
             node: (
               <TrendCard
                 key="hrv"
+                fractionDigits={0}
                 // Name the measure when the RMSSD series is the one on show.
                 // Without it a ring / strap reading (typically 20-60 ms) sits
                 // under the same label as an SDNN one and reads as a collapse
@@ -1624,6 +1663,7 @@ export default function DashboardPageClient({
                       : null
                   }
                   unit={displayGlucoseUnit}
+                  fractionDigits={glucoseFractionDigits(displayGlucoseUnit)}
                   avg7={
                     s.avg7 != null
                       ? convertGlucose(s.avg7, displayGlucoseUnit)
@@ -1686,6 +1726,7 @@ export default function DashboardPageClient({
                 compareBaseline={compareBaseline}
                 userTimezone={user?.timezone}
                 valueScale={unitDisplay.transformFor("WEIGHT").factor}
+                dayLinks
               />
             ),
           });
@@ -1739,6 +1780,7 @@ export default function DashboardPageClient({
                     },
                   ]}
                   compareBaseline={compareBaseline}
+                  dayLinks
                 />
               ),
             });
@@ -1761,10 +1803,10 @@ export default function DashboardPageClient({
                 title={t("dashboard.bloodPressure")}
                 colors={["var(--chart-3)", "var(--chart-4)"]}
                 unit="mmHg"
-                yAxisUnit="Hg"
                 targetZones={bpTargetZones}
                 compareBaseline={compareBaseline}
                 userTimezone={user?.timezone}
+                dayLinks
               />
             ),
           });
@@ -1787,12 +1829,13 @@ export default function DashboardPageClient({
                 // rate WITHOUT the resting-band overlay (it would mark
                 // expected-high workout HR as "outside target").
                 types={hasRestingHr ? ["RESTING_HEART_RATE"] : ["PULSE"]}
-                title={t("dashboard.pulse")}
+                title={pulseTitle}
                 colors={["var(--success)"]}
                 unit="bpm"
                 valueBands={hasRestingHr ? pulseBands : undefined}
                 compareBaseline={compareBaseline}
                 userTimezone={user?.timezone}
+                dayLinks
               />
             ),
           });
@@ -1817,6 +1860,7 @@ export default function DashboardPageClient({
                 valueBands={bodyFatBands}
                 compareBaseline={compareBaseline}
                 userTimezone={user?.timezone}
+                dayLinks
               />
             ),
           });
@@ -1833,6 +1877,7 @@ export default function DashboardPageClient({
                 onDataReady={() => markChartReady("mood-chart")}
                 compareBaseline={compareBaseline}
                 chartKey="mood"
+                dayLinks
               />
             ),
           });
@@ -1854,6 +1899,7 @@ export default function DashboardPageClient({
                 unit="h"
                 compareBaseline={compareBaseline}
                 userTimezone={user?.timezone}
+                dayLinks
               />
             ),
           });
@@ -1876,6 +1922,7 @@ export default function DashboardPageClient({
                 colors={["var(--success)"]}
                 compareBaseline={compareBaseline}
                 userTimezone={user?.timezone}
+                dayLinks
               />
             ),
           });
@@ -1896,6 +1943,7 @@ export default function DashboardPageClient({
                 onDataReady={() => markChartReady("medications")}
                 compareBaseline={compareBaseline}
                 userTimezone={user?.timezone}
+                dayLinks
               />
             ),
           });

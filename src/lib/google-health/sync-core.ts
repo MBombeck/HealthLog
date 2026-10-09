@@ -20,6 +20,7 @@ import { prisma } from "@/lib/db";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { encrypt, decrypt } from "@/lib/crypto";
 import { getEvent } from "@/lib/logging/context";
+import { userDayKey } from "@/lib/tz/format";
 import { dropImplausibleMeasurements } from "@/lib/measurements/plausibility-gate";
 import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit";
 import { recordSyncFailure, type FailureKind } from "@/lib/integrations/status";
@@ -58,6 +59,43 @@ const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
  * row is re-fetched on the next tick. Mirrors WHOOP's recovery/sleep overlap.
  */
 export const GOOGLE_HEALTH_DEFAULT_OVERLAP_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * v1.42 (#1023) — the overlap for intraday samples (heart rate, one point a
+ * minute). The 24 h overlap exists for daily summaries and sleep, which
+ * Google re-scores after the fact; a minute sample is final when it is
+ * written. Re-reading a whole day of it every hour meant 38 to 40 pages per
+ * sync on a per-minute stream, which a slow host felt. Two hours still
+ * covers a watch that syncs to the phone late.
+ */
+export const GOOGLE_HEALTH_INTRADAY_OVERLAP_MS = 2 * 60 * 60 * 1000;
+
+/**
+ * The intraday overlap for one cycle. Two hours covers a watch that reaches
+ * the phone a little late, but a watch worn without its phone uploads to
+ * Google's cloud only when it next meets the phone, which can be many hours
+ * after the samples were taken. Those samples carry their original sample
+ * time, so once `lastSyncedAt` has moved past them a two-hour window never
+ * sees them again.
+ *
+ * So the first successful cycle of each local day reads intraday samples
+ * with the full day of overlap, and every later cycle that day keeps the
+ * short window. "First of the day" is derived from the watermark itself
+ * (`lastSyncedAt` falls on an earlier local day than now), so no extra state
+ * is needed, and a failed wide cycle does not stamp `markSynced`, which makes
+ * the next cycle wide again. Cost stays bounded: one day-wide read per day
+ * instead of one per hour, still under the dense page cap (#1023).
+ */
+export function intradayOverlapMs(
+  lastSyncedAt: Date | null,
+  tz: string,
+  now: Date = new Date(),
+): number {
+  if (!lastSyncedAt) return GOOGLE_HEALTH_INTRADAY_OVERLAP_MS;
+  return userDayKey(lastSyncedAt, tz) === userDayKey(now, tz)
+    ? GOOGLE_HEALTH_INTRADAY_OVERLAP_MS
+    : GOOGLE_HEALTH_DEFAULT_OVERLAP_MS;
+}
 
 export interface GoogleHealthTokenInfo {
   accessToken: string;
@@ -354,6 +392,12 @@ export interface GoogleHealthResourceSyncOptions {
   fullSync?: boolean;
   /** The incremental lower bound, snapshotted once by the orchestrator. */
   start?: Date;
+  /**
+   * v1.42 — the incremental lower bound for intraday samples, from the same
+   * snapshot with `GOOGLE_HEALTH_INTRADAY_OVERLAP_MS`. Undefined on a full
+   * run, like `start`; a resource that does not set it falls back to `start`.
+   */
+  intradayStart?: Date;
   /**
    * When true, `upsertGoogleHealthMeasurements` writes the rows but SKIPS the
    * inline per-(type,day) DAY-rollup recompute + status-insight invalidate,

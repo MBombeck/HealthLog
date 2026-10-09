@@ -413,6 +413,7 @@ function makePrisma() {
     encounterLabLink: { findMany: vi.fn().mockResolvedValue([]) },
     encounterConditionLink: { findMany: vi.fn().mockResolvedValue([]) },
     vaccinationRecord: { findMany: vi.fn().mockResolvedValue([]) },
+    customVaccine: { findMany: vi.fn().mockResolvedValue([]) },
     vaccinationDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },
     // The reminder engine tables (v1.37.20, #223 / iOS #68). Empty for the
     // same reason as the visit tables above.
@@ -444,6 +445,7 @@ function makePrisma() {
     // builder must still answer for.
     ecgRecording: { findMany: vi.fn().mockResolvedValue([]) },
     symptomDefinition: { findMany: vi.fn().mockResolvedValue([]) },
+    lifeEvent: { findMany: vi.fn().mockResolvedValue([]) },
     // Left unmocked on purpose: `buildProfileBackupSection` runs for real
     // against these, so the assertions below exercise the builder rather than
     // a stand-in that would agree with whatever the payload happened to do.

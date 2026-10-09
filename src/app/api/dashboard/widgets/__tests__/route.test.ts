@@ -11,6 +11,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
+const transactionLock = vi.hoisted(() => vi.fn(async () => []));
 const transactionUser = vi.hoisted(() => ({
   findUnique: vi.fn(),
   update: vi.fn(),
@@ -123,8 +124,12 @@ beforeEach(() => {
   // test below the dead-switch block assumes.
   vi.mocked(isModuleEnabled).mockResolvedValue(true as never);
   vi.mocked(prisma.$transaction).mockImplementation((async (
-    callback: (tx: { user: typeof transactionUser }) => Promise<unknown>,
-  ) => callback({ user: transactionUser })) as never);
+    callback: (tx: {
+      user: typeof transactionUser;
+      $queryRaw: typeof transactionLock;
+    }) => Promise<unknown>,
+  ) =>
+    callback({ user: transactionUser, $queryRaw: transactionLock })) as never);
 });
 
 describe("PUT /api/dashboard/widgets — 422 multi-issue envelope (v1.4.42 W2)", () => {
@@ -929,7 +934,9 @@ describe("DELETE /api/dashboard/widgets — web-owned reset scope", () => {
       selectedScoreRings: ["READINESS", "SLEEP_SCORE"],
       heroRingOrder: ["SLEEP_SCORE", "HEALTH_SCORE", "READINESS"],
       enabledHeroItemKinds: ["milestone"],
+      todayCardVisible: false,
     });
+    expect(stored.todayCardVisible).toBe(false);
     const advanced = new Date("2026-07-24T12:00:00.000Z");
     transactionUser.findUnique.mockResolvedValue({
       dashboardWidgetsJson: stored,
@@ -940,9 +947,13 @@ describe("DELETE /api/dashboard/widgets — web-owned reset scope", () => {
     expect(res.status).toBe(200);
 
     expect(prisma.$transaction).toHaveBeenCalledOnce();
-    expect(vi.mocked(prisma.$transaction).mock.calls[0]?.[1]).toEqual({
-      isolationLevel: "Serializable",
-    });
+    // A row lock, not Serializable isolation, which failed concurrent
+    // writers with a serialization error.
+    expect(vi.mocked(prisma.$transaction).mock.calls[0]?.[1]).toBeUndefined();
+    expect(transactionLock).toHaveBeenCalledOnce();
+    expect(
+      (transactionLock.mock.calls[0] as unknown[] | undefined)?.[0],
+    ).toEqual(expect.arrayContaining([expect.stringContaining("FOR UPDATE")]));
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
     expect(prisma.user.update).not.toHaveBeenCalled();
     expect(transactionUser.findUnique).toHaveBeenCalledOnce();
@@ -957,6 +968,10 @@ describe("DELETE /api/dashboard/widgets — web-owned reset scope", () => {
     expect(persisted.widgets).toEqual(DEFAULT_DASHBOARD_LAYOUT.widgets);
     expect(
       Object.prototype.hasOwnProperty.call(persisted, "enabledHeroItemKinds"),
+    ).toBe(false);
+    // A reset brings a hidden top card back; shown is stored by omission.
+    expect(
+      Object.prototype.hasOwnProperty.call(persisted, "todayCardVisible"),
     ).toBe(false);
     expect(persisted.comparisonBaseline).toBe("lastYear");
     expect(persisted.chartOverlayPrefs).toEqual({
@@ -1073,6 +1088,96 @@ describe("dashboard widgets — hero primary content", () => {
 
     const body = (await res.json()) as { data: { hero?: string } };
     expect(body.data.hero).toBeUndefined();
+  });
+});
+
+describe("dashboard widgets — the top card switch", () => {
+  const weightOnly = [
+    { id: "weight" as const, visible: true, tileVisible: true, order: 0 },
+  ];
+
+  function persistedLayout() {
+    const updateArg = vi.mocked(prisma.user.update).mock
+      .calls[0]?.[0] as unknown as {
+      data: { dashboardWidgetsJson: { todayCardVisible?: boolean } };
+    };
+    return updateArg.data.dashboardWidgetsJson;
+  }
+
+  it("accepts and persists todayCardVisible: false", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      dashboardWidgetsJson: null,
+    } as never);
+    vi.mocked(prisma.user.update).mockResolvedValue({} as never);
+
+    const res = await callPut(
+      makeReq({ version: 1, widgets: weightOnly, todayCardVisible: false }),
+    );
+    expect(res.status).toBe(200);
+    expect(persistedLayout().todayCardVisible).toBe(false);
+    const body = (await res.json()) as {
+      data: { todayCardVisible?: boolean };
+    };
+    expect(body.data.todayCardVisible).toBe(false);
+  });
+
+  it("rejects a non-boolean with 422", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      dashboardWidgetsJson: null,
+    } as never);
+    vi.mocked(prisma.user.update).mockResolvedValue({} as never);
+
+    const res = await callPut(
+      makeReq({ version: 1, widgets: weightOnly, todayCardVisible: "no" }),
+    );
+    expect(res.status).toBe(422);
+    expect(vi.mocked(prisma.user.update)).not.toHaveBeenCalled();
+  });
+
+  it("keeps a hidden top card hidden when the client omits the field", async () => {
+    // A save from a client that predates the field must not bring it back.
+    const stored = serializeDashboardLayout({
+      version: 1,
+      widgets: weightOnly,
+      todayCardVisible: false,
+    });
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      dashboardWidgetsJson: stored,
+    } as never);
+    vi.mocked(prisma.user.update).mockResolvedValue({} as never);
+
+    const res = await callPut(makeReq({ version: 1, widgets: weightOnly }));
+    expect(res.status).toBe(200);
+    expect(persistedLayout().todayCardVisible).toBe(false);
+  });
+
+  it("stores showing it again as the omitted default", async () => {
+    const stored = serializeDashboardLayout({
+      version: 1,
+      widgets: weightOnly,
+      todayCardVisible: false,
+    });
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      dashboardWidgetsJson: stored,
+    } as never);
+    vi.mocked(prisma.user.update).mockResolvedValue({} as never);
+
+    const res = await callPut(
+      makeReq({ version: 1, widgets: weightOnly, todayCardVisible: true }),
+    );
+    expect(res.status).toBe(200);
+    expect(persistedLayout()).not.toHaveProperty("todayCardVisible");
+  });
+
+  it("GET answers true for a layout that never chose", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      dashboardWidgetsJson: serializeDashboardLayout(DEFAULT_DASHBOARD_LAYOUT),
+    } as never);
+    const res = await callGet();
+    const body = (await res.json()) as {
+      data: { todayCardVisible?: boolean };
+    };
+    expect(body.data.todayCardVisible).toBe(true);
   });
 });
 

@@ -34,22 +34,40 @@ import { FieldGroup } from "@/components/ui/field-group";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { useTranslations } from "@/lib/i18n/context";
-import { resolveCatalogEntry } from "@/lib/vaccinations/vaccine-catalog";
+import {
+  customLookupOf,
+  resolveVaccineEntry,
+} from "@/lib/vaccinations/resolve-vaccine-entry";
 import { useBoosterMint, type Vaccination } from "./use-vaccinations";
 
 /**
- * Whether a freshly created dose should raise the offer at all. Only a
- * catalogue entry that carries a booster interval does; a free-text row and a
+ * Whether a freshly created dose should raise the offer at all. Only an entry
+ * that carries a booster interval and an antigen to key it on does — a
+ * catalogue pick or the person's own definition alike; a free-text row and a
  * one-off vaccine never prompt.
  */
-export function boosterOfferFor(
-  record: Vaccination,
-): { intervalMonths: number; catalogName: string } | null {
-  const entry = resolveCatalogEntry(record.antigenSlug);
-  if (!entry || entry.boosterIntervalMonths === null) return null;
+export function boosterOfferFor(record: Vaccination): {
+  intervalMonths: number;
+  /** The catalogue slug, or null for the person's own definition. */
+  slug: string | null;
+  /** The definition's own name, or null for a catalogue entry. */
+  name: string | null;
+} | null {
+  const entry = resolveVaccineEntry(
+    record,
+    customLookupOf([record.customVaccine]),
+  );
+  if (
+    !entry ||
+    entry.boosterIntervalMonths === null ||
+    entry.components.length === 0
+  ) {
+    return null;
+  }
   return {
     intervalMonths: entry.boosterIntervalMonths,
-    catalogName: entry.slug,
+    slug: entry.slug,
+    name: entry.name,
   };
 }
 
@@ -71,7 +89,7 @@ export function BoosterMintPrompt({
   // the person's own locale — the server never resolves an i18n key.
   const defaultLabel =
     record && offer
-      ? `${t(`vaccinations.catalog.${record.antigenSlug}`)} ${t("vaccinations.booster.labelSuffix")}`
+      ? `${offer.slug ? t(`vaccinations.catalog.${offer.slug}`) : offer.name} ${t("vaccinations.booster.labelSuffix")}`
       : "";
   const [label, setLabel] = useState(defaultLabel);
   const [months, setMonths] = useState<number>(offer?.intervalMonths ?? 12);

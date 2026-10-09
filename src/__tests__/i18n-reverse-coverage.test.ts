@@ -67,6 +67,19 @@ const DYNAMIC_ALLOWLIST_PREFIXES = [
 ] as const;
 
 /**
+ * Keys a release lands ahead of their call sites, so that the packages built
+ * in parallel on the release branch share one bundle and never edit it
+ * themselves. Each entry names the package that wires the call sites and the
+ * issue it serves.
+ *
+ * This list expires by construction: the companion test fails as soon as an
+ * entry no longer covers a single orphan, so a prefix whose call sites have
+ * all landed must be dropped in the same change, and the list is empty again
+ * before the release is tagged. It is NOT a place for keys nobody will wire.
+ */
+const RELEASE_PENDING_PREFIXES: Record<string, string> = {};
+
+/**
  * Interpolating strings that LOOK like key templates and are not. Each entry
  * whitelists nothing — the template still contributes no reachable keys — it
  * only says the collector's bare-namespace complaint has been read and
@@ -118,9 +131,14 @@ function nodePaths(obj: unknown, prefix: string, out: Set<string>): void {
   }
 }
 
+function underPrefix(leaf: string, prefix: string): boolean {
+  return leaf === prefix || leaf.startsWith(`${prefix}.`);
+}
+
 function isAllowlisted(leaf: string): boolean {
-  return DYNAMIC_ALLOWLIST_PREFIXES.some(
-    (p) => leaf === p || leaf.startsWith(`${p}.`),
+  return (
+    DYNAMIC_ALLOWLIST_PREFIXES.some((p) => underPrefix(leaf, p)) ||
+    Object.keys(RELEASE_PENDING_PREFIXES).some((p) => underPrefix(leaf, p))
   );
 }
 
@@ -184,5 +202,19 @@ describe("i18n reverse coverage", () => {
           "Wire a call site, or add a DB-driven prefix to DYNAMIC_ALLOWLIST_PREFIXES.",
       );
     }
+  }, 15_000);
+
+  it("every release-pending prefix still covers an unwired key", () => {
+    const { leaves, ref } = scan();
+    const stale = Object.keys(RELEASE_PENDING_PREFIXES).filter(
+      (prefix) =>
+        !leaves.some(
+          (leaf) => underPrefix(leaf, prefix) && !isReferenced(leaf, ref),
+        ),
+    );
+    expect(
+      stale,
+      "These RELEASE_PENDING_PREFIXES entries have all their call sites now — drop them",
+    ).toEqual([]);
   }, 15_000);
 });

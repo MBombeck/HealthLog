@@ -29,20 +29,53 @@ import { importWithRetry } from "@/lib/retry-import";
  * to ONE error card with a reload affordance instead of bubbling to the
  * route-level `error.tsx`.
  */
-const HealthChartLazy = dynamic(
-  () =>
-    importWithRetry(() => import("@/components/charts/chart-runtime")).then(
-      (mod) => ({ default: mod.HealthChart }),
-    ),
-  { ssr: false, loading: () => <ChartSkeleton /> },
-);
+const loadHealthChart = () =>
+  importWithRetry(() => import("@/components/charts/chart-runtime")).then(
+    (mod) => ({ default: mod.HealthChart }),
+  );
+
+// One lazy boundary per footer shape: `next/dynamic`'s loading slot gets no
+// props, so the shell that must match a day-linked chart with its data table
+// is its own boundary. All four resolve the same chunk.
+const HealthChartLazy = dynamic(loadHealthChart, {
+  ssr: false,
+  loading: () => <ChartSkeleton />,
+});
+const HealthChartLazyDay = dynamic(loadHealthChart, {
+  ssr: false,
+  loading: () => <ChartSkeleton dayLinks />,
+});
+const HealthChartLazyTable = dynamic(loadHealthChart, {
+  ssr: false,
+  loading: () => <ChartSkeleton dataTable />,
+});
+const HealthChartLazyDayTable = dynamic(loadHealthChart, {
+  ssr: false,
+  loading: () => <ChartSkeleton dayLinks dataTable />,
+});
 
 export function HealthChartDynamic(
   props: ComponentProps<typeof HealthChartLazy>,
 ): ReactElement {
+  const Lazy = props.mini
+    ? HealthChartLazy
+    : props.dayLinks
+      ? props.showDataTable
+        ? HealthChartLazyDayTable
+        : HealthChartLazyDay
+      : props.showDataTable
+        ? HealthChartLazyTable
+        : HealthChartLazy;
+  // A chart that never mounts never reports its window, and a stat strip
+  // holding its cells for that report would stay a skeleton for good. The
+  // failure settles it with "no window", so the strip falls back to the
+  // full-range summary it already has.
+  const { onVisibleStats } = props;
   return (
-    <ChartErrorBoundary>
-      <HealthChartLazy {...props} />
+    <ChartErrorBoundary
+      onError={onVisibleStats ? () => onVisibleStats(null) : undefined}
+    >
+      <Lazy {...props} />
     </ChartErrorBoundary>
   );
 }

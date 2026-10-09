@@ -251,6 +251,7 @@ export function TotpCard({
   return (
     <SettingsCard data-testid="totp-card">
       <SettingsCardHeader
+        anchor="two-factor"
         icon={Smartphone}
         title={t("settings.security.totp.title")}
         description={t("settings.security.totp.description")}
@@ -265,21 +266,25 @@ export function TotpCard({
 
       <div>
         {/* ── Not enabled, no wizard: the enable CTA ── */}
+        {/* The enable CTA is the card's primary, right-aligned in the one
+            action row like every other Settings card (design standards §12). */}
         {!enabled && !setup && !freshCodes && (
-          <Button
-            type="button"
-            data-testid="totp-setup-start"
-            className="min-h-11 sm:min-h-9"
-            onClick={() => beginSetup.mutate(undefined)}
-            disabled={beginSetup.isPending}
-          >
-            {beginSetup.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-            ) : (
-              <KeyRound className="h-4 w-4" />
-            )}
-            {t("settings.security.totp.setUp")}
-          </Button>
+          <SettingsCardActions>
+            <Button
+              type="button"
+              data-testid="totp-setup-start"
+              className="min-h-11 sm:min-h-9"
+              onClick={() => beginSetup.mutate(undefined)}
+              disabled={beginSetup.isPending}
+            >
+              {beginSetup.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+              ) : (
+                <KeyRound className="h-4 w-4" />
+              )}
+              {t("settings.security.totp.setUp")}
+            </Button>
+          </SettingsCardActions>
         )}
         <ExistingFactorReauthDialog
           open={reauthOpen}
@@ -418,7 +423,7 @@ export function TotpCard({
                 { count: recoveryCodesRemaining },
               )}
             </p>
-            <div className="flex flex-wrap gap-2">
+            <SettingsCardActions>
               <AlertDialog
                 open={regenerateOpen}
                 onOpenChange={setRegenerateOpen}
@@ -470,8 +475,8 @@ export function TotpCard({
                 <AlertDialogTrigger asChild>
                   <Button
                     type="button"
-                    variant="outline"
-                    className="text-destructive min-h-11 sm:min-h-9"
+                    variant="destructive"
+                    className="min-h-11 sm:min-h-9"
                   >
                     {t("settings.security.totp.disable")}
                   </Button>
@@ -544,7 +549,7 @@ export function TotpCard({
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
-            </div>
+            </SettingsCardActions>
           </div>
         )}
 

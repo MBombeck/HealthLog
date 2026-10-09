@@ -31,6 +31,7 @@ import {
   determinePhase,
   getPhaseMessage,
   getPhaseKeyboard,
+  openingPhase,
 } from "@/lib/jobs/reminder-phases";
 import {
   claimNotificationEvent,
@@ -555,6 +556,9 @@ export async function handleReminderCheck(
                       windowStart: phaseWindow.start,
                       minutesToEnd,
                       currentPhase,
+                      followUp:
+                        currentPhase !==
+                        openingPhase(thresholds, windowDuration),
                     }
                   : null;
               })
@@ -570,6 +574,7 @@ export async function handleReminderCheck(
               windowStart,
               minutesToEnd,
               currentPhase,
+              followUp,
             } = phaseCandidate;
             const slotInstant = slotScheduledFor.getTime();
             if (liveEraStart !== null && slotInstant < liveEraStart) {
@@ -767,6 +772,12 @@ export async function handleReminderCheck(
                     medicationId: med.id,
                     scheduleId: schedule.id,
                     phase: currentPhase,
+                    // False for the reminder that announces the dose (the
+                    // slot's opening phase), true for every escalation after
+                    // it. A client that reminds locally at dose time
+                    // (`medication.clientManaged`) replaces only the first
+                    // one, so only that one is kept off APNs.
+                    followUp,
                     date: slotScheduledFor.toLocaleDateString("sv-SE", {
                       timeZone: userTz,
                     }),

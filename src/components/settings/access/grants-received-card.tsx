@@ -64,6 +64,7 @@ export function GrantsReceivedCard() {
   return (
     <SettingsCard data-slot="grants-received-card">
       <SettingsCardHeader
+        anchor="shared-with-you"
         icon={FolderOpen}
         title={t("recordSharing.received.title")}
         description={t("recordSharing.received.description")}

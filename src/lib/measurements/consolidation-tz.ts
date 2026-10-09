@@ -29,6 +29,7 @@ import type { MeasurementType } from "@/generated/prisma/client";
 // node:module pull) so importing it keeps this dependency-free module clean.
 import { userDayKey } from "@/lib/tz/format";
 import { zonedWallClockToUtc } from "@/lib/tz/wall-clock";
+import { startOfLocalDayInTz } from "@/lib/tz/local-day";
 
 /**
  * Canonical grace window shared by the cumulative + mean drains. Rows
@@ -38,6 +39,26 @@ import { zonedWallClockToUtc } from "@/lib/tz/wall-clock";
  * trailing sync window for watches that weren't worn at midnight.
  */
 export const CONSOLIDATION_GRACE_CUTOFF_HOURS = 36;
+
+/**
+ * The instant a fold stops at: the first instant of the local day that
+ * `now - cutoffMs` falls on, in the account's zone. Rows before it belong
+ * to local days that are over in full, so a fold never cuts a day (or any
+ * hour of it) in two.
+ *
+ * Cutting at `now - cutoffMs` itself used to fold the first part of a day on
+ * one run and the rest on the next, and the second run overwrote the stored
+ * mean with the mean of the later part alone. The day is the grain for the
+ * hourly fold too: its pre-fold DAY rollup and the derived resting figure are
+ * computed from the whole day's raw rows, which only a complete day has.
+ *
+ * The `folded_window` ingest guard and the compaction-tombstone classifier
+ * read the same boundary (`folded-window.ts`), so "folded" means the same
+ * thing on all three paths.
+ */
+export function foldBoundary(now: Date, cutoffMs: number, tz: string): Date {
+  return startOfLocalDayInTz(new Date(now.getTime() - cutoffMs), tz);
+}
 
 /**
  * Per-sample row shape the drains scan and bucket. Exposed for unit

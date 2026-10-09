@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { assertMedicationOwnership } from "../route-guards";
+import {
+  assertMedicationOwnership,
+  assertMedicationTakesIntake,
+} from "../route-guards";
 
 function buildClient(med: { id: string; userId: string } | null) {
   return {
@@ -70,5 +73,36 @@ describe("assertMedicationOwnership", () => {
     await assertMedicationOwnership("med-1", "user-1", client);
     const call = client.medication.findUnique.mock.calls[0][0];
     expect(call.select).toEqual({ id: true, userId: true });
+  });
+});
+
+describe("assertMedicationTakesIntake", () => {
+  function client(
+    med: { id: string; userId: string; trackIntake: boolean } | null,
+  ) {
+    return { medication: { findUnique: vi.fn().mockResolvedValue(med) } };
+  }
+
+  it("admits a tracked medication the caller holds", async () => {
+    const c = client({ id: "med-1", userId: "user-1", trackIntake: true });
+    expect(await assertMedicationTakesIntake("med-1", "user-1", c)).toBeNull();
+    expect(c.medication.findUnique).toHaveBeenCalledWith({
+      where: { id: "med-1" },
+      select: { id: true, userId: true, trackIntake: true },
+    });
+  });
+
+  it("refuses a record-only medication by name", async () => {
+    const c = client({ id: "med-1", userId: "user-1", trackIntake: false });
+    const result = await assertMedicationTakesIntake("med-1", "user-1", c);
+    expect(result?.status).toBe(422);
+    const body = await result!.json();
+    expect(body.meta.errorCode).toBe("medication.intake.notTracked");
+  });
+
+  it("answers 404, not 422, for a record-only medication of another account", async () => {
+    const c = client({ id: "med-1", userId: "owner", trackIntake: false });
+    const result = await assertMedicationTakesIntake("med-1", "intruder", c);
+    expect(result?.status).toBe(404);
   });
 });

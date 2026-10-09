@@ -162,8 +162,17 @@ test("a fresh arrival flips the day in place", async ({ page }) => {
     // swept by the same `e2e-just-in-` purge on the next run.
     const priorNight = new Date(Date.now() - 3 * 24 * 60 * 60_000);
     const priorWoke = new Date(priorNight.getTime() + 7 * 60 * 60_000);
+    //
+    // Tagged `foreground`, the trigger an open app sends. Since v1.42 a batch
+    // without it only marks the dashboard snapshot stale, and `cachedSwr`
+    // serves the stale cell once while it rebuilds: a snapshot an earlier
+    // spec left for this account (no sleep at all, so no sleep expected)
+    // would then paint the BEFORE state as `final`, depending on which spec
+    // happened to run first in the shard. `foreground` evicts, so the first
+    // read below is built from the rows this spec just wrote.
     const priorBatch = await page.request.post("/api/measurements/batch", {
       data: {
+        syncTrigger: "foreground",
         entries: [
           {
             hkIdentifier: "HKCategoryTypeIdentifierSleepAnalysis",
@@ -229,8 +238,11 @@ test("a fresh arrival flips the day in place", async ({ page }) => {
     const wokeAt = new Date(now.getTime() - 60 * 60_000);
     const fellAsleepAt = new Date(wokeAt.getTime() - 7 * 60 * 60_000);
 
+    // `foreground` for the same reason as the prior night above: the page
+    // is open while it lands.
     const batch = await page.request.post("/api/measurements/batch", {
       data: {
+        syncTrigger: "foreground",
         entries: [
           {
             hkIdentifier: "HKCategoryTypeIdentifierSleepAnalysis",

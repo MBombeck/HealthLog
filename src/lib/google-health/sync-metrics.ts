@@ -65,6 +65,11 @@ interface MetricResource {
   verb: string;
   /** Page ceiling for the walk; the client default when omitted. */
   maxPages?: number;
+  /**
+   * v1.42 — a minute-level sample stream, final when written, so it
+   * re-reads only the short intraday overlap instead of a whole day.
+   */
+  intraday?: boolean;
 }
 
 /** The launch metric resources (Measurement-producing). Height handled separately. */
@@ -104,6 +109,7 @@ const METRIC_RESOURCES: MetricResource[] = [
     map: mapHeartRate,
     verb: "fetchHeartRate",
     maxPages: GOOGLE_HEALTH_DENSE_MAX_PAGES,
+    intraday: true,
   },
   {
     dataType: GOOGLE_HEALTH_DATA_TYPES.bloodGlucose,
@@ -166,7 +172,10 @@ export async function syncUserMetrics(
         resource.dataType,
         tokenInfo.accessToken,
         resource.verb,
-        { start, maxPages: resource.maxPages },
+        {
+          start: resource.intraday ? (opts.intradayStart ?? start) : start,
+          maxPages: resource.maxPages,
+        },
         async (points) => {
           const readings: GoogleHealthMeasurementUpsert[] = [];
           for (const point of points) {

@@ -12,6 +12,7 @@
  * day-log history, paginated server-side); when nothing has been logged it
  * renders a calm prompt to log a day.
  */
+import { DayLink } from "@/components/day/day-link";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { TileHeader } from "@/components/insights/tile-header";
@@ -38,7 +39,10 @@ function DayLogRow({ log }: { log: IllnessDayLogDTO }) {
   return (
     <div className="border-border/60 space-y-2 border-l-2 pl-3">
       <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-        {fmt.dateShortSmartCalendar(log.date)}
+        {/* v1.42 — the logged day opens the whole day. */}
+        <DayLink date={log.date.slice(0, 10)}>
+          {fmt.dateShortSmartCalendar(log.date)}
+        </DayLink>
       </p>
 
       {log.symptoms.length > 0 ? (
@@ -82,7 +86,8 @@ function DayLogRow({ log }: { log: IllnessDayLogDTO }) {
       ) : null}
 
       {log.note ? (
-        <p className="text-muted-foreground text-sm whitespace-pre-wrap">
+        // User-written text reads in the content colour, never muted.
+        <p className="text-foreground text-sm whitespace-pre-wrap">
           {log.note}
         </p>
       ) : null}

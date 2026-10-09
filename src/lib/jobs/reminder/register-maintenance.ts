@@ -62,6 +62,29 @@ import {
   type AppleHealthImportPayload,
 } from "@/lib/jobs/apple-health-import-worker";
 import {
+  COMPACTION_TOMBSTONE_PURGE_QUEUE,
+  enqueueBootTimeCompactionTombstonePurge,
+  handleCompactionTombstonePurge,
+  type CompactionTombstonePurgePayload,
+} from "@/lib/jobs/compaction-tombstone-purge";
+import {
+  MEASUREMENT_FOLD_REPAIR_QUEUE,
+  enqueueBootTimeMeasurementFoldRepair,
+  handleMeasurementFoldRepair,
+  type MeasurementFoldRepairPayload,
+} from "@/lib/jobs/measurement-fold-repair";
+import {
+  MEASUREMENT_MAINTENANCE_QUEUE,
+  handleMeasurementMaintenance,
+  type MeasurementMaintenancePayload,
+} from "@/lib/jobs/measurement-maintenance";
+import {
+  HEALTH_CONNECT_IMPORT_QUEUE,
+  HEALTH_CONNECT_IMPORT_CONCURRENCY,
+  handleHealthConnectImport,
+  type HealthConnectImportPayload,
+} from "@/lib/jobs/health-connect-import-worker";
+import {
   MEDICATION_INTAKE_IMPORT_QUEUE,
   MEDICATION_INTAKE_IMPORT_CONCURRENCY,
   handleMedicationIntakeImport,
@@ -174,6 +197,13 @@ import {
   handleEnvironmentFetch,
   type EnvironmentFetchPayload,
 } from "@/lib/jobs/environment-fetch";
+import {
+  ENVIRONMENT_AQ_HISTORY_CRON,
+  ENVIRONMENT_AQ_HISTORY_QUEUE,
+  enqueueBootTimeAirQualityHistory,
+  handleEnvironmentAqHistory,
+  type EnvironmentAqHistoryPayload,
+} from "@/lib/jobs/environment-air-quality-history";
 import { recordError } from "@/lib/jobs/worker-status";
 import { jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
 import {
@@ -303,9 +333,11 @@ const INTAKE_SLOT_DEDUP_CRON = "28 3 * * *";
 const OFFHOST_BACKUP_CRON = "30 2 * * *";
 
 const HOST_METRIC_QUEUE = "host-metric-sample";
-// Per-minute cadence — matches the chart's 60s polling refetchInterval.
+// v1.42 — every five minutes. A per-minute sample filled pg-boss's job
+// table with one row a minute for a chart nobody reads at that resolution.
+// The admin chart's polling interval (`host-metrics-chart.tsx`) has to match.
 
-const HOST_METRIC_CRON = "* * * * *";
+const HOST_METRIC_CRON = "*/5 * * * *";
 // v1.4.16 phase B5e — daily rec-feedback aggregator. 04:00 Europe/Berlin
 // runs the slot AFTER all the cleanup jobs (rate-limit, idempotency,
 // audit-log) so the previous-day's noise is gone before we aggregate.
@@ -394,6 +426,9 @@ const allQueues = [
   // surface. Without this entry pg-boss never provisions it and both the cron
   // and the backfill button silently no-op.
   ENVIRONMENT_FETCH_QUEUE,
+  // v1.42 — the air-quality history backfill: per account, from boot and
+  // nightly discovery, the home being set and air quality switched on.
+  ENVIRONMENT_AQ_HISTORY_QUEUE,
   DATA_BACKUP_QUEUE,
   RATE_LIMIT_CLEANUP_QUEUE,
   IDEMPOTENCY_CLEANUP_QUEUE,
@@ -436,6 +471,21 @@ const allQueues = [
   // that survives past the next worker boot is never revisited.
   IMPORT_JOB_RECONCILE_QUEUE,
   MEDICATION_INTAKE_IMPORT_QUEUE,
+  // v1.42 (#972) — Android Health Connect export import, the Apple Health
+  // import's sibling. Without this entry every upload would queue a job
+  // nobody works.
+  HEALTH_CONNECT_IMPORT_QUEUE,
+  // v1.42 — backlog purge of compaction tombstones, queued once at boot.
+  // Without this entry the boot enqueue silently no-ops.
+  COMPACTION_TOMBSTONE_PURGE_QUEUE,
+  // v1.42 — one-time repair of the means older releases folded from part of
+  // their window; the purge above waits for it. Without this entry the boot
+  // enqueue silently no-ops and the purge never runs.
+  MEASUREMENT_FOLD_REPAIR_QUEUE,
+  // v1.42 — operator-triggered VACUUM / REINDEX of `measurements`. No
+  // cron: the admin route enqueues it. Without this entry the trigger
+  // silently no-ops.
+  MEASUREMENT_MAINTENANCE_QUEUE,
   // v1.8.2 — one-time duplicate dose-slot cleanup. Boot discovery enqueues
   // one job per user holding two live intake rows that snap to the same
   // canonical slot (the pre-fix REMINDER-pending + API-taken pair). Also
@@ -560,6 +610,9 @@ const schedules: ScheduleEntry[] = [
   // v1.25 (W-ENV) — daily 02:10 Europe/Berlin discovery tick (empty payload)
   // that fans out one per-user environment fetch per opted-in account.
   [ENVIRONMENT_FETCH_QUEUE, ENVIRONMENT_FETCH_CRON],
+  // v1.42 — daily 02:40 discovery for the air-quality history backfill, after
+  // the night's environment fetch has taken its share of the budget.
+  [ENVIRONMENT_AQ_HISTORY_QUEUE, ENVIRONMENT_AQ_HISTORY_CRON],
   // The send options are the point of this tuple: without them the weekly
   // snapshot inherits pg-boss's 15-minute expiration and is killed mid-run on
   // any sizeable record. See `data-backup-policy.ts` for why the window rides
@@ -714,8 +767,10 @@ const schedules: ScheduleEntry[] = [
  *     Any policy would collapse every keyless explicit-range backfill onto the
  *     shared empty key, so two different requested date ranges would silently
  *     become one. That is exactly the class of silent work-dropping a policy is
- *     supposed to prevent, so the queue keeps `standard` until the enqueue side
- *     gives the explicit-range variant a key of its own.
+ *     supposed to prevent, so the queue keeps `standard`. The settings
+ *     backfill (v1.42) is held per account by a keyed time slot
+ *     (`singletonSeconds`), which pg-boss enforces under any policy; the
+ *     travel-period refresh stays keyless so two periods never merge.
  *   - APPLE_HEALTH_IMPORT_V2_QUEUE, APPLE_HEALTH_IMPORT_LEGACY_QUEUE,
  *     DATA_BACKUP_QUEUE and PR_DETECTION_QUEUE send keylessly by design (each
  *     import / backup / detection run is a distinct unit of work). A policy
@@ -759,6 +814,41 @@ const queuePolicies: QueuePolicyTable = {
     policy: "exclusive",
     reason:
       "Fixed singleton key, admin-triggered. Two concurrent corpus rotations must never overlap; the route already reports a suppressed send back as alreadyQueued.",
+  },
+  // v1.42 — operator-triggered VACUUM / REINDEX of `measurements`.
+  [MEASUREMENT_MAINTENANCE_QUEUE]: {
+    policy: "exclusive",
+    reason:
+      "Fixed singleton key, admin-triggered. Two maintenance passes would rebuild the same indexes side by side; the route reports a suppressed send back as enqueued: false.",
+  },
+  // v1.42 — compaction-tombstone backlog purge. `short`, not `exclusive`:
+  // a run that stops early sends its own follow-up while it is still active,
+  // and `exclusive` would swallow that send. A boot's send while a run is
+  // queued collapses into it; the delete predicate is idempotent, so a boot
+  // that lands beside an active run costs a duplicate scan, never a wrong row.
+  [COMPACTION_TOMBSTONE_PURGE_QUEUE]: {
+    policy: "short",
+    reason:
+      "Fixed singleton key; collapse queued duplicates only, so the active run can queue its own follow-up.",
+  },
+  // v1.42 — per-account fold repair. `short` for the same reason: a run the
+  // budget stopped sends its own follow-up for the account while it is still
+  // active. A boot's send for a queued account collapses into it; a duplicate
+  // beside an active run rewrites nothing, since only differing means are
+  // written.
+  // v1.42 — the air-quality history backfill. `short` for the same reason: a
+  // run with work left sends its own follow-up while it is still active. A
+  // send for an account whose run is queued collapses into it; one beside an
+  // active run only re-reads what is done, since done days are never fetched.
+  [ENVIRONMENT_AQ_HISTORY_QUEUE]: {
+    policy: "short",
+    reason:
+      "Per-account singleton key; collapse queued duplicates only, so the active run can queue its own follow-up.",
+  },
+  [MEASUREMENT_FOLD_REPAIR_QUEUE]: {
+    policy: "short",
+    reason:
+      "Per-account singleton key; collapse queued duplicates only, so the active run can queue its own follow-up.",
   },
 
   // Per-document, enqueued on upload. `short`, NOT `exclusive`: each handler
@@ -1083,6 +1173,38 @@ export async function registerMaintenanceQueues(
       }
       return jobDone({ jobs: jobs.length });
     },
+  );
+  // v1.42 (#972) — Health Connect import. One at a time per worker, like the
+  // Apple Health import: each run reads a whole export and consumes its
+  // staged upload.
+  await createAndWork<HealthConnectImportPayload>(
+    boss,
+    HEALTH_CONNECT_IMPORT_QUEUE,
+    { localConcurrency: HEALTH_CONNECT_IMPORT_CONCURRENCY },
+    handleHealthConnectImport,
+  );
+  // v1.42 — compaction-tombstone backlog purge. Serial: each batch holds
+  // an account against a concurrent restore.
+  await createAndWork<CompactionTombstonePurgePayload>(
+    boss,
+    COMPACTION_TOMBSTONE_PURGE_QUEUE,
+    { localConcurrency: 1 },
+    handleCompactionTombstonePurge,
+  );
+  // v1.42 — fold repair. Serial: each day holds the account against a
+  // concurrent restore, and the purge waits for it.
+  await createAndWork<MeasurementFoldRepairPayload>(
+    boss,
+    MEASUREMENT_FOLD_REPAIR_QUEUE,
+    { localConcurrency: 1 },
+    handleMeasurementFoldRepair,
+  );
+  // v1.42 — measurement table maintenance, operator-triggered only.
+  await createAndWork<MeasurementMaintenancePayload>(
+    boss,
+    MEASUREMENT_MAINTENANCE_QUEUE,
+    { localConcurrency: 1 },
+    handleMeasurementMaintenance,
   );
   // v1.32.1 (issue #588) — periodic orphan-ImportJob sweep. Single-flight:
   // the underlying `updateMany` is idempotent and two ticks racing the same
@@ -1669,6 +1791,22 @@ export async function registerMaintenanceQueues(
     },
   );
 
+  // v1.42 — the air-quality history backfill. Serial: every run draws on the
+  // same instance-wide Open-Meteo budget as the nightly fetch.
+  await createAndWork<EnvironmentAqHistoryPayload>(
+    boss,
+    ENVIRONMENT_AQ_HISTORY_QUEUE,
+    { localConcurrency: 1 },
+    async (jobs) => {
+      let failure: JobOutcome | null = null;
+      for (const job of jobs) {
+        const outcome = await handleEnvironmentAqHistory(boss, job.data);
+        if (!outcome.ok && failure === null) failure = outcome;
+      }
+      return failure ?? jobDone({ jobs: jobs.length });
+    },
+  );
+
   // v1.25 (W-ENV) — nightly environment fetch. The daily discovery tick (empty
   // payload) fans out one per-user job per opted-in account; the queue also
   // serves the on-demand backfill payloads from the settings surface. Serial
@@ -1821,6 +1959,71 @@ export async function enqueueMaintenanceBootDiscovery(): Promise<void> {
     workerLog(
       "error",
       "[document-thumbnail-backfill] boot discovery threw an unexpected error",
+      err,
+    );
+  }
+
+  // v1.42 — the air-quality history backfill after an update, staggered past
+  // the boot storm. Accounts whose history is through are not offered.
+  try {
+    const { enqueued, skipped, error } = await enqueueBootTimeAirQualityHistory(
+      BOOT_BACKFILL_STAGGER_SECONDS * 7,
+    );
+    if (error) {
+      workerLog(
+        "error",
+        `[environment-aq-history] boot discovery failed: ${error}`,
+      );
+    } else {
+      workerLog(
+        "info",
+        `[environment-aq-history] boot discovery: enqueued=${enqueued} skipped=${skipped}`,
+      );
+    }
+  } catch (err) {
+    workerLog(
+      "error",
+      "[environment-aq-history] boot discovery threw an unexpected error",
+      err,
+    );
+  }
+
+  // v1.42 — the fold repair, once per account; the purge below waits for it.
+  try {
+    const { enqueued, skipped, error } =
+      await enqueueBootTimeMeasurementFoldRepair();
+    if (error) {
+      workerLog(
+        "error",
+        `[measurement-fold-repair] boot discovery failed: ${error}`,
+      );
+    } else {
+      workerLog(
+        "info",
+        `[measurement-fold-repair] boot discovery: enqueued=${enqueued} skipped=${skipped}`,
+      );
+    }
+  } catch (err) {
+    workerLog(
+      "error",
+      "[measurement-fold-repair] boot discovery threw an unexpected error",
+      err,
+    );
+  }
+
+  // v1.42 — one compaction-tombstone purge run per boot. The run is
+  // self-limiting and idempotent, so a boot with no backlog costs one query.
+  // It sends nothing until the fold repair has finished an account.
+  try {
+    const { enqueued } = await enqueueBootTimeCompactionTombstonePurge();
+    workerLog(
+      "info",
+      `[compaction-tombstone-purge] boot discovery: enqueued=${enqueued}`,
+    );
+  } catch (err) {
+    workerLog(
+      "error",
+      "[compaction-tombstone-purge] boot discovery threw an unexpected error",
       err,
     );
   }

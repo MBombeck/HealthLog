@@ -20,9 +20,10 @@ import PrivacyPage from "../page";
  *      enumerated verbatim by identifier. Drift from the iOS source
  *      (`HealthKitWireConverter.swift` + `HealthKitService.swift`)
  *      would be a compliance hole.
- *   4. The numbered section headings are all present (English form, so
- *      the scannable spine matches the in-app `Settings → Privacy`
- *      link target and the table of contents above each section).
+ *   4. The numbered section headings are all present, German first with
+ *      the English title beside it, so the scannable spine still matches
+ *      the in-app `Settings → Privacy` link target and the table of
+ *      contents.
  *   5. v1.4.40 SB-3 additions — consent receipt endpoint, TLS 1.3,
  *      operator email + deletion-route disclosure, retention windows.
  */
@@ -46,31 +47,53 @@ describe("<PrivacyPage>", () => {
   it("advertises the policy version + last-updated date", () => {
     const html = render();
     expect(html).toContain(`Policy version ${POLICY_VERSION}`);
-    expect(html).toContain(`Last updated: ${LAST_UPDATED}`);
-    expect(html).toContain(`Stand: ${LAST_UPDATED}`);
+    // Each language writes the date its own way, on its own line.
+    expect(html).toContain("Stand: 11. August 2026");
+    expect(html).toContain("Last updated: 11 August 2026");
+    expect(html).toContain(`dateTime="${LAST_UPDATED}"`);
     expect(html).toContain('data-slot="privacy-last-updated"');
   });
 
   it("renders the numbered section headings", () => {
     const html = render();
-    // 11 numbered sections — H2 headings carry the English form as the
-    // canonical scan spine, with the German title appearing inline in
-    // each section body. The TOC at the top mirrors both.
-    const expectedHeadings = [
-      "1. Overview",
-      "2. Data we collect",
-      "3. Why we collect each category",
-      "4. Third-party sub-processors",
-      "5. Data storage and retention",
-      "6. Your rights (GDPR Art. 15-22, DSGVO)",
-      "7. Medical-device boundary (EU MDR 2017/745, MDCG 2021-24)",
-      "8. Apple App Store privacy categories",
-      "9. Children",
-      "10. Changes to this policy",
-      "11. Contact",
+    // 11 numbered sections. The H2 leads in German, like the body under it,
+    // and carries the English title after it so the English table of
+    // contents and the in-app link target still scan the same spine.
+    const expectedHeadings: Array<[string, string]> = [
+      ["1. Überblick", "Overview"],
+      ["2. Erhobene Daten", "Data we collect"],
+      ["3. Zwecke der Verarbeitung", "Why we collect each category"],
+      [
+        "4. Auftragsverarbeiter und Drittanbieter",
+        "Third-party sub-processors",
+      ],
+      [
+        "5. Speicherung, Speicherdauer und Verschlüsselung",
+        "Data storage and retention",
+      ],
+      [
+        "6. Ihre Rechte (DSGVO Art. 15–22)",
+        "Your rights (GDPR Art. 15-22, DSGVO)",
+      ],
+      [
+        "7. Medizinprodukte-Grenze (EU-MDR 2017/745, MDCG 2021-24)",
+        "Medical-device boundary (EU MDR 2017/745, MDCG 2021-24)",
+      ],
+      [
+        "8. Apple-App-Store-Datenschutzkategorien",
+        "Apple App Store privacy categories",
+      ],
+      ["9. Kinder", "Children"],
+      ["10. Änderungen dieser Erklärung", "Changes to this policy"],
+      ["11. Kontakt", "Contact"],
     ];
-    for (const heading of expectedHeadings) {
-      expect(html, `missing H2 ${JSON.stringify(heading)}`).toContain(heading);
+    for (const [de, en] of expectedHeadings) {
+      expect(html, `missing H2 ${JSON.stringify(de)}`).toContain(
+        `<span lang="de">${de.replaceAll("&", "&amp;")}</span>`,
+      );
+      expect(html, `missing English title ${JSON.stringify(en)}`).toContain(
+        ` / ${en}`,
+      );
     }
   });
 

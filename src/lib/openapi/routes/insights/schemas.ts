@@ -21,6 +21,10 @@ import { ANALYTICS_RANGES } from "@/lib/analytics/range-delta";
 import { providerChainPutSchema } from "@/lib/validations/ai-provider";
 import { PERIOD_DAYS } from "@/lib/insights/narrative/period-narrative";
 import { aiCapabilityState } from "../profile";
+import {
+  SCORE_HISTORY_IDS,
+  SCORE_HISTORY_MAX_DAYS,
+} from "@/lib/insights/score-history-ids";
 
 /** The retrospective periods the narrative route accepts, read off the engine. */
 const NARRATIVE_PERIOD_VALUES = Object.keys(PERIOD_DAYS);
@@ -254,6 +258,20 @@ export const wellnessScoreValue = z
       .describe(
         "RECOVERY only, and only when the canonical value is the server's computed proxy — a device-native recovery percentage is not our blend and carries no decomposition.",
       ),
+    device: z
+      .object({
+        value: z
+          .number()
+          .describe("The device's latest day strain on its own scale."),
+        scaleMax: z
+          .number()
+          .describe("Top of the device scale (21 for WHOOP day strain)."),
+      })
+      .nullable()
+      .optional()
+      .describe(
+        "STRAIN only — present when no computed strain score exists in the window and the score is served from the device's own DAY_STRAIN instead. `score` is then `value` as a 0–100 share of `scaleMax`. Absent when the computed proxy is the source.",
+      ),
   })
   .meta({ id: "WellnessScoreValue" });
 
@@ -473,12 +491,23 @@ export const discoveredCorrelation = z
       .string()
       .optional()
       .describe("Display label for a dynamic outcome channel."),
-    n: z
+    n: z.number().int().describe("Paired-day count after the lag join (≥ 20)."),
+    nEff: z
       .number()
-      .int()
-      .describe("Paired-day count after the day+1 lag join (≥ 20)."),
-    r: z.number().describe("Pearson r over the lag-joined daily series."),
-    pValue: z.number().describe("Two-sided exact Student-t p-value (< 0.05)."),
+      .optional()
+      .describe(
+        "v1.42 — effective sample size after serial correlation (Pyper–Peterman), ≤ `n`. The p-value, the shrinkage and the tier use it.",
+      ),
+    r: z
+      .number()
+      .describe(
+        "Pearson r over the lag-joined daily series, computed on residuals: a linear trend (and, from 120 paired days, one annual harmonic) is removed from both series first (v1.42).",
+      ),
+    pValue: z
+      .number()
+      .describe(
+        "Two-sided exact Student-t p-value (< 0.05) at the effective sample size.",
+      ),
     qValue: z
       .number()
       .describe(
@@ -497,7 +526,12 @@ export const discoveredCorrelation = z
     interpretation: z
       .string()
       .describe("Conservative, descriptive interpretation — never causal."),
-    lagDays: z.number().int().describe("Lag in days applied (1)."),
+    lagDays: z
+      .number()
+      .int()
+      .describe(
+        "Lag in days applied: 1 = behaviour day, outcome the next day; 0 = the environmental channels, whose exposure is the mean of the day before and the day itself, paired with the same day's outcome (v1.42).",
+      ),
     window: z
       .enum(["retrospective", "recent"])
       .optional()
@@ -660,6 +694,11 @@ export const correlationDiscoveryResponse = z
       .optional()
       .describe(
         "v1.22 — labs ↔ outcome associations (each draw vs the contemporaneous outcome window-mean), FDR-controlled; absent-degrading on sparse draws.",
+      ),
+    findingsBeforeSeasonalAdjustment: z
+      .boolean()
+      .describe(
+        "v1.42 — true when the record held a discovery finding before the engine began removing trend and season from both series. Drives a one-time explanation of why fewer pairs surface; false for every account created since.",
       ),
   })
   .meta({
@@ -2712,38 +2751,6 @@ export const coachReadStripResponse = z
       "The two server-authoritative lines a metric sub-page renders above its chart. Pure compute over the baseline and correlation engines — no provider call, no cache table — so web and native decode the same resolved DTO.",
   });
 
-// ── Coach seeded opener (`/api/insights/coach/seeded-question`) ───────
-
-export const coachSeededQuestionResponse = z
-  .object({
-    signal: z
-      .object({
-        sourceMetric: z
-          .string()
-          .describe(
-            "Sentinel id the client keys its localised copy on (`readiness` / `recovery`).",
-          ),
-        score: z.number().describe("The latest 0..100 score."),
-        band: z
-          .string()
-          .describe(
-            "`yellow` or `red`. Green never surfaces — a good day is not notable.",
-          ),
-      })
-      .nullable()
-      .describe(
-        "Null whenever nothing crossed the detector's confidence and notability gate, AND whenever the account has turned proactive suggestions off, AND whenever the `coach` capability is unavailable (then `ai` says why) — all mean the hero keeps its neutral greeting rather than showing a fabricated opener.",
-      ),
-    ai: aiCapabilityState.describe(
-      "The `coach` capability the opener exists for.",
-    ),
-  })
-  .meta({
-    id: "CoachSeededQuestion",
-    description:
-      "Today's single most notable derived wellness signal, resolved server-side into a tappable opener for the Coach's blank-chat hero. The client renders the resolved DTO and never recomputes the selection.",
-  });
-
 // ── Period narrative (`/api/insights/narrative`) ──────────────────────
 
 export const narrativeQuery = z
@@ -2953,4 +2960,62 @@ export const intradayPulseResponse = z
     id: "IntradayPulseResponse",
     description:
       "One local day's intraday heart-rate shape, plus at most one cautious elevated-at-rest window. Computed from raw samples through the read-swap pattern rather than persisted as ten-minute rollups for all history. Awareness only, never a diagnosis.",
+  });
+
+export const scoreHistoryQuery = z
+  .object({
+    score: z
+      .enum(SCORE_HISTORY_IDS)
+      .describe(
+        "The score to chart. `HEALTH_SCORE` reads the stored day scores, `READINESS` the nightly readiness blend, `SLEEP_SCORE` the per-night sleep score. The nightly recovery, stress and strain scores are stored measurements and chart through the measurement series instead.",
+      ),
+    days: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(SCORE_HISTORY_MAX_DAYS)
+      .describe(
+        `Trailing window in local calendar days ending today (1–${SCORE_HISTORY_MAX_DAYS}). The web chart sends 7, 30, 90, or ${SCORE_HISTORY_MAX_DAYS} for its "All" tab. Out of range is a 422, never a silent clamp.`,
+      ),
+  })
+  .meta({ id: "ScoreHistoryQuery" });
+
+export const scoreHistoryResponse = z
+  .object({
+    score: z.enum(SCORE_HISTORY_IDS),
+    days: z.number().int().describe("The window the request asked for."),
+    points: z
+      .array(
+        z.object({
+          day: z
+            .string()
+            .describe(
+              "The local calendar day the value describes, `YYYY-MM-DD`; the day the day view opens for it.",
+            ),
+          value: z.number().int().min(0).max(100),
+          seamBreak: z
+            .boolean()
+            .describe(
+              "True on the first day scored under a different recipe (what counts, or the algorithm version) than the day before. Draw no line from the previous point to this one: the values either side are averages of different things. Only the health score has seams; never true on the first point.",
+            ),
+        }),
+      )
+      .describe(
+        "One point per day that has a value, oldest first. A day without one is absent, never zero.",
+      ),
+    band: z
+      .object({
+        lo: z.number().int(),
+        hi: z.number().int(),
+        n: z.number().int().describe("Days the range was formed from."),
+      })
+      .nullable()
+      .describe(
+        "The person's usual range behind the newest point: median and scaled MAD of the values in the 30 days before it, from its own side of the last seam. Null with fewer than seven such days. Describes, does not grade.",
+      ),
+  })
+  .meta({
+    id: "ScoreHistoryResponse",
+    description:
+      "One score's daily course over a trailing window, for a history chart with a day per point.",
   });

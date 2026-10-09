@@ -26,6 +26,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Label } from "@/components/ui/label";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { useTranslations } from "@/lib/i18n/context";
@@ -137,7 +138,7 @@ export function ConditionsManager() {
             t("records.conditions.focusLabel"),
             t("settings.ai.aboutMe.focusPlaceholder"),
           )}
-          <div className="flex justify-end">
+          <SettingsCardActions>
             <Button
               type="button"
               size="sm"
@@ -154,7 +155,7 @@ export function ConditionsManager() {
               )}
               {t("settings.ai.aboutMe.save")}
             </Button>
-          </div>
+          </SettingsCardActions>
         </>
       )}
     </div>

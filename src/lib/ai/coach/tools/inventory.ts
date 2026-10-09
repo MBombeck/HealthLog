@@ -17,6 +17,8 @@
  */
 import { annotate } from "@/lib/logging/context";
 import { isCycleAvailableForUser } from "@/lib/cycle/gate";
+import { prisma } from "@/lib/db";
+import { isModuleEnabled } from "@/lib/modules/gate";
 import { buildCoachSnapshot } from "@/lib/ai/coach/snapshot";
 import type {
   CoachProvenanceMetric,
@@ -143,9 +145,10 @@ export async function buildCoachDataInventory(
         ? undefined
         : clampWindow(scope.window, reach),
   };
-  const [snapshot, cycleEnabled] = await Promise.all([
+  const [snapshot, cycleEnabled, environment] = await Promise.all([
     buildCoachSnapshot(userId, probeScope, { reach }),
     isCycleAvailableForUser(userId),
+    probeEnvironment(userId),
   ]);
   const sections = snapshot.sections;
   const counts = snapshot.provenance.counts ?? {};
@@ -234,6 +237,25 @@ export async function buildCoachDataInventory(
     });
   }
 
+  // v1.42 (#615) — the stored days' weather and air quality, advertised only
+  // while the environment module is on (off, the domain does not exist for
+  // the Coach, like the cycle above).
+  if (environment !== null) {
+    entries.push({
+      tool: "get_environment",
+      domain: "weather, air quality & pollen (modelled, not personal exposure)",
+      present: environment,
+    });
+  }
+
+  // v1.42 (#613) — one day across the record, by date. Always offered: the
+  // tool answers no_data itself for a day that holds nothing.
+  entries.push({
+    tool: "get_day",
+    domain: "one day across the record, by date (YYYY-MM-DD)",
+    present: true,
+  });
+
   // Every row that came back absent gets checked against the record before the
   // manifest says "absent". A domain whose whole history predates the window —
   // an imported year of readings, a device that stopped syncing — is otherwise
@@ -256,6 +278,30 @@ export async function buildCoachDataInventory(
     ...(reach.days !== null ? { lookbackLimit: reach.window } : {}),
     probeScope,
   };
+}
+
+/**
+ * Whether the account's environment days exist: null when the module is off
+ * or the probe failed (the row is left out), else whether any day is stored.
+ * One indexed probe.
+ */
+async function probeEnvironment(userId: string): Promise<boolean | null> {
+  try {
+    if (!(await isModuleEnabled(userId, "environment"))) return null;
+    const row = await prisma.environmentContext.findFirst({
+      where: { userId },
+      select: { date: true },
+    });
+    return row !== null;
+  } catch (err) {
+    // The manifest is advisory: a failed probe leaves the row out (the tool
+    // itself still answers), and says so on the request's event.
+    annotate({
+      action: { name: "coach.inventory.environment_failed" },
+      meta: { reason: err instanceof Error ? err.name : "unknown" },
+    });
+    return null;
+  }
 }
 
 /**

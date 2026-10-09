@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 
 /**
  * Apple-Health-style rich tooltip for chart wrappers (B1a v1.4.16).
@@ -51,6 +51,12 @@ export interface RichChartTooltipProps {
   label?: string;
   /** Already-shaped, sorted rows. The tooltip never re-orders. */
   rows: RichTooltipRow[];
+  /**
+   * v1.42 — one action under the rows, e.g. "View the whole day" on a touch
+   * screen, where the tooltip is pinned by a tap and is the way onward. The
+   * chart makes the tooltip take pointer events only when it passes one.
+   */
+  action?: ReactNode;
 }
 
 /**
@@ -67,6 +73,7 @@ export function RichChartTooltip({
   active,
   label,
   rows,
+  action,
 }: RichChartTooltipProps): ReactElement | null {
   if (!active || rows.length === 0) return null;
 
@@ -120,6 +127,7 @@ export function RichChartTooltip({
           </div>
         ))}
       </div>
+      {action ?? null}
     </div>
   );
 }

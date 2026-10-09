@@ -15,7 +15,9 @@ import {
   buildMedicationComplianceBundle,
   expectsDoses,
   lastNonSkippedTakenAt,
+  COMPLIANCE_REPORT_DAYS,
   type ComplianceDisplay,
+  type ComplianceReportDays,
   type ComplianceResult,
   type DailyComplianceEntry,
 } from "@/lib/analytics/compliance";
@@ -47,7 +49,16 @@ export interface CompliancePayload {
   compliance30: ComplianceResult;
   dailyCompliance: Record<string, DailyComplianceEntry>;
   complianceDisplay: ComplianceDisplay | null;
+  /**
+   * The report windows the batched read serves on `?days=N`. Cached with the
+   * rest of the cell so a report read costs no second ledger pass; NOT on the
+   * per-medication wire, which keeps its published shape.
+   */
+  reportWindows: Record<ComplianceReportDays, ComplianceResult>;
 }
+
+/** The cached payload minus the fields only the batched read serves. */
+export type CompliancePayloadWire = Omit<CompliancePayload, "reportWindows">;
 
 /**
  * Legacy-compatible placeholder for a medication whose adherence percentage
@@ -67,6 +78,13 @@ const NOT_APPLICABLE_LEGACY_COMPLIANCE: ComplianceResult = {
   rate: 0,
   streak: 0,
 };
+
+const NOT_APPLICABLE_REPORT_WINDOWS = Object.fromEntries(
+  COMPLIANCE_REPORT_DAYS.map((days) => [
+    days,
+    NOT_APPLICABLE_LEGACY_COMPLIANCE,
+  ]),
+) as Record<ComplianceReportDays, ComplianceResult>;
 
 /** The medication slice the payload builder consumes. */
 export interface ComplianceMedicationInput {
@@ -194,6 +212,7 @@ export async function buildCompliancePayload(
       compliance30: NOT_APPLICABLE_LEGACY_COMPLIANCE,
       dailyCompliance: {},
       complianceDisplay: null,
+      reportWindows: NOT_APPLICABLE_REPORT_WINDOWS,
     };
   }
 
@@ -207,6 +226,7 @@ export async function buildCompliancePayload(
       compliance30: NOT_APPLICABLE_LEGACY_COMPLIANCE,
       dailyCompliance: {},
       complianceDisplay: null,
+      reportWindows: NOT_APPLICABLE_REPORT_WINDOWS,
     };
   }
 
@@ -314,5 +334,49 @@ export async function buildCompliancePayload(
     compliance30: bundle.compliance30,
     dailyCompliance,
     complianceDisplay: bundle.complianceDisplay,
+    reportWindows: bundle.reportWindows,
+  };
+}
+
+/**
+ * One adherence figure for the whole account, in the per-medication
+ * `ComplianceResult` shape, weighted by expected doses: the counts are summed
+ * across every applicable medication and the rate is recomputed from the sums
+ * with the same rule a single medication's tally uses
+ * (`round(100 · taken / (taken + missed))`, capped at 100, 100 when nothing
+ * was expected). Averaging the per-medication rates instead would let a
+ * weekly injection weigh as much as a three-times-daily tablet.
+ *
+ * `streak` is the shortest per-medication streak: a day only extends the
+ * account's streak when every medication's doses were taken that day.
+ *
+ * `null` when no medication contributes, so a client shows nothing rather
+ * than a vacuous 100 %.
+ */
+export function aggregateCompliance(
+  results: readonly ComplianceResult[],
+): ComplianceResult | null {
+  if (results.length === 0) return null;
+  let taken = 0;
+  let skipped = 0;
+  let missed = 0;
+  let streak = Number.POSITIVE_INFINITY;
+  for (const r of results) {
+    taken += r.taken;
+    skipped += r.skipped;
+    missed += r.missed;
+    streak = Math.min(streak, r.streak);
+  }
+  const denominator = taken + missed;
+  return {
+    totalExpected: taken + skipped + missed,
+    taken,
+    skipped,
+    missed,
+    rate:
+      denominator > 0
+        ? Math.min(100, Math.round((taken / denominator) * 100))
+        : 100,
+    streak,
   };
 }

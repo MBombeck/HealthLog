@@ -4,6 +4,7 @@ import {
   Fragment,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -18,6 +19,7 @@ import { ChatBubble, type FollowUpOffer, type ReplyOffer } from "./chat-bubble";
 import type { SuggestedReply } from "./suggested-replies";
 import { CoachMessageDatesProvider } from "./coach-results";
 import { ScrollToBottomButton } from "./scroll-to-bottom-button";
+import { openAtEnd } from "./open-at-end";
 import { focusCoachComposer } from "./composer-focus";
 import {
   EMPTY_LIVE_TURN_KEYS,
@@ -364,28 +366,6 @@ export function placeInterleaved(
 }
 
 /**
- * v1.18.7 — shared thin/rounded/subtle scrollbar styling for the Coach
- * scroll regions (the message thread + the history list). Kept as a
- * Tailwind-arbitrary class string so the styling is component-scoped —
- * the parallel agent owns `globals.css` and we must not touch it.
- *
- * Firefox: `scrollbar-width: thin` + a tinted thumb on a transparent
- * track. WebKit: an 8 px overlay-style thumb with a fully rounded
- * radius and no arrow buttons, brightening on hover. The Dracula purple
- * is mixed down so the bar reads as a hairline accent, not a hard edge.
- */
-export const COACH_SCROLLBAR = cn(
-  "[scrollbar-color:color-mix(in_srgb,var(--primary)_30%,transparent)_transparent] [scrollbar-width:thin]",
-  "[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2",
-  "[&::-webkit-scrollbar-track]:bg-transparent",
-  "[&::-webkit-scrollbar-button]:hidden [&::-webkit-scrollbar-button]:size-0",
-  "[&::-webkit-scrollbar-thumb]:rounded-full",
-  "[&::-webkit-scrollbar-thumb]:border-[3px] [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-clip-content",
-  "[&::-webkit-scrollbar-thumb]:bg-[color-mix(in_srgb,var(--primary)_30%,transparent)]",
-  "hover:[&::-webkit-scrollbar-thumb]:bg-[color-mix(in_srgb,var(--primary)_45%,transparent)]",
-);
-
-/**
  * The wrapper every assistant turn renders in, streaming or persisted, so a
  * turn keeps one element through the swap. While it streams it is the live
  * region: role=log + aria-live=polite so screen-reader users hear the prose
@@ -579,6 +559,21 @@ export function MessageThread({
     el.scrollTo({ top: el.scrollHeight, behavior: scrollBehaviorForUser() });
   }, []);
 
+  // Opening a saved conversation lands on its last answer, and stays there
+  // while the answers' charts and tables finish loading (see `open-at-end`).
+  // Keyed on the conversation, so switching to another one re-opens at its
+  // end even when both have the same number of messages; a layout effect, so
+  // the first painted frame is already the end rather than the top.
+  const conversationId = conversation?.id ?? null;
+  const hasMessages = messages.length > 0;
+  useLayoutEffect(() => {
+    const el = scrollerRef.current;
+    if (!el || !conversationId || !hasMessages) return;
+    wasPinnedRef.current = true;
+    setPinned(true);
+    return openAtEnd(el);
+  }, [conversationId, hasMessages]);
+
   // Auto-scroll on new messages OR streaming-content growth, but only
   // when the user was already at the bottom. v1.4.25 W5 — the
   // optimistic user bubble counts as a new message; scroll on its
@@ -669,10 +664,6 @@ export function MessageThread({
             // the cap only bites on the wide page surface.
             "[&>*]:mx-auto [&>*]:w-full [&>*]:max-w-2xl",
             "scroll-smooth",
-            // v1.18.7 — thin, rounded, subtle scrollbar (WebKit + Firefox),
-            // component-scoped via Tailwind arbitrary variants so globals.css
-            // stays untouched. Replaces the default boxy/angular track.
-            COACH_SCROLLBAR,
           )}
         >
           {[

@@ -31,6 +31,8 @@ import {
 import { consumeForIntake } from "@/lib/medications/inventory/consumption";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { isRecordOnly } from "@/lib/medications/intake-tracking";
+import { refuseUntrackedIntake } from "@/lib/medications/route-guards";
 import { NextRequest } from "next/server";
 
 const RATE_LIMIT = 60;
@@ -223,6 +225,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
   ) {
     return apiError("API endpoint for this medication is disabled", 403);
   }
+
+  // A record-only medication takes no new dose — the same refusal every
+  // dose-writing route gives (iOS #116, item 15). Checked after the scope
+  // gate so a token without this medication's scope learns nothing about it.
+  if (isRecordOnly(medication)) return refuseUntrackedIntake();
 
   // The external ingest path runs without a User record in scope;
   // resolve the timezone once — band attribution and the compliance

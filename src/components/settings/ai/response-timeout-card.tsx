@@ -13,9 +13,12 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Timer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { SettingsCard } from "@/components/settings/settings-card";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
+import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
@@ -100,20 +103,13 @@ export function ResponseTimeoutCard({
   }
 
   return (
-    <form
-      className="bg-muted/50 space-y-3 rounded-lg p-4"
-      onSubmit={submit}
-      noValidate
-    >
-      <div>
-        <p className="text-sm font-medium">
-          {t("settings.ai.responseTimeoutHeading")}
-        </p>
-        <p className="text-muted-foreground text-xs">
-          {t("settings.ai.responseTimeoutBody", RESPONSE_TIMEOUT_COPY_PARAMS)}
-        </p>
-      </div>
-      <div>
+    <SettingsCard as="form" onSubmit={submit} noValidate>
+      <SettingsCardHeader
+        anchor="response-timeout"
+        icon={Timer}
+        title={t("settings.ai.responseTimeoutHeading")}
+      />
+      <div className="flex flex-col gap-1.5">
         <Label htmlFor="ai-response-timeout">
           {t("settings.ai.responseTimeoutLabel")}
         </Label>
@@ -129,10 +125,24 @@ export function ResponseTimeoutCard({
             "settings.ai.responseTimeoutPlaceholder",
             RESPONSE_TIMEOUT_COPY_PARAMS,
           )}
-          className="mt-1 sm:max-w-xs"
+          aria-describedby="ai-response-timeout-hint"
+          className="sm:max-w-xs"
         />
+        {/* The explainer is several sentences, so it rides under the field it
+            explains rather than in the one-sentence header slot. */}
+        <p
+          id="ai-response-timeout-hint"
+          className="text-muted-foreground text-xs"
+        >
+          {t("settings.ai.responseTimeoutBody", RESPONSE_TIMEOUT_COPY_PARAMS)}
+        </p>
       </div>
-      <div>
+      {msg && (
+        <p className={`text-xs ${ok ? "text-success" : "text-destructive"}`}>
+          {msg}
+        </p>
+      )}
+      <SettingsCardActions>
         <Button
           type="submit"
           size="sm"
@@ -147,12 +157,7 @@ export function ResponseTimeoutCard({
           )}
           {t("settings.ai.saveCta")}
         </Button>
-      </div>
-      {msg && (
-        <p className={`text-xs ${ok ? "text-success" : "text-destructive"}`}>
-          {msg}
-        </p>
-      )}
-    </form>
+      </SettingsCardActions>
+    </SettingsCard>
   );
 }

@@ -52,6 +52,7 @@ import { moodDateKey } from "@/lib/mood/date-key";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import {
   reconstructSleepNights,
+  type SleepNight,
   type SleepStageRow,
 } from "@/lib/analytics/sleep-night";
 import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
@@ -159,7 +160,7 @@ interface LinkedRow {
  * untouched, which is the picker's own pass-through and is correct for a type
  * no two sources compete over.
  */
-function canonicalRowsOfDay(
+export function canonicalRowsOfDay(
   rows: readonly LinkedRow[],
   type: MeasurementType,
   day: string,
@@ -594,4 +595,119 @@ export async function resolveLinkedDayFigures(
 /** A figure as a plain number, with absence staying absence. */
 function valueOf(figure: LinkedFigure): number | null {
   return figure.present ? figure.value : null;
+}
+
+/** One canonical reading of a local day, as the day view reads it. */
+export interface DayReadingRow extends LinkedRow {
+  unit: string;
+}
+
+/** Every reading of one local day, one source per metric, and its night. */
+export interface DayReadings {
+  /** Canonical rows per type, oldest first; sleep stages are not here. */
+  rowsByType: Map<MeasurementType, DayReadingRow[]>;
+  /** The night that woke on this day, or null when none was recorded. */
+  night: SleepNight | null;
+  /** The source of the night's last stage row, the night's representative. */
+  nightSource: MeasurementSource | null;
+}
+
+/**
+ * v1.42 (#613) — the day view's readings, through the same engine as the
+ * mood sheet's linked figures.
+ *
+ * The day view is the wider cousin of {@link resolveLinkedDayContext}: every
+ * type rather than five, and every reading of the day rather than one figure
+ * per block. It stays in this file so there is still one answer to "what did
+ * this day hold": the cross-source de-dup is `canonicalRowsOfDay`, the night
+ * is the `reconstructSleepNights` night whose wake day is this one, and the
+ * night reads the same generous window the linked block reads, because a
+ * night starts the evening before.
+ *
+ * The readings themselves are cut exactly: `[dayStart, dayEnd)` of the local
+ * day in `tz`, which is 23, 24 or 25 hours long. A reading at 00:30 belongs
+ * to the day it was taken on, never to the UTC day the rollups would file it
+ * under. `typeVisible` is the caller's module (and section) mask; a type it
+ * refuses is never read.
+ */
+export async function resolveDayReadings(
+  userId: string,
+  day: string,
+  tz: string,
+  window: { dayStart: Date; dayEnd: Date },
+  typeVisible: (type: MeasurementType) => boolean,
+  priorityJson?: unknown,
+): Promise<DayReadings> {
+  const sleepVisible = typeVisible("SLEEP_DURATION");
+  const generous = localDayWindow(day);
+  const [priority, rows, stageRows] = await Promise.all([
+    priorityJson !== undefined
+      ? Promise.resolve(priorityJson)
+      : loadUserSourcePriority(userId),
+    prisma.measurement.findMany({
+      where: {
+        userId,
+        deletedAt: null,
+        type: { not: "SLEEP_DURATION" },
+        measuredAt: { gte: window.dayStart, lt: window.dayEnd },
+      },
+      select: {
+        type: true,
+        value: true,
+        unit: true,
+        measuredAt: true,
+        source: true,
+        deviceType: true,
+      },
+      // Same determinism precondition as the linked block above.
+      orderBy: [{ measuredAt: "asc" }, { id: "asc" }],
+    }),
+    sleepVisible
+      ? prisma.measurement.findMany({
+          where: {
+            userId,
+            deletedAt: null,
+            type: "SLEEP_DURATION",
+            measuredAt: { gte: generous.from, lte: generous.to },
+          },
+          select: {
+            value: true,
+            measuredAt: true,
+            sleepStage: true,
+            source: true,
+            deviceType: true,
+          },
+          orderBy: [{ measuredAt: "asc" }, { id: "asc" }],
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const byType = new Map<MeasurementType, DayReadingRow[]>();
+  for (const row of rows) {
+    if (!typeVisible(row.type)) continue;
+    const bucket = byType.get(row.type);
+    if (bucket) bucket.push(row);
+    else byType.set(row.type, [row]);
+  }
+  const rowsByType = new Map<MeasurementType, DayReadingRow[]>();
+  for (const [type, typeRows] of byType) {
+    const canonical = canonicalRowsOfDay(typeRows, type, day, tz, priority);
+    rowsByType.set(type, canonical as DayReadingRow[]);
+  }
+
+  const night =
+    stageRows.length === 0
+      ? null
+      : (reconstructSleepNights(
+          stageRows as unknown as SleepStageRow[],
+          tz,
+          priority,
+        ).find((n) => n.night === day) ?? null);
+  const nightSource = night
+    ? (stageRows.find(
+        (r) => r.measuredAt.getTime() === night.measuredAt.getTime(),
+      )?.source ?? null)
+    : null;
+
+  return { rowsByType, night, nightSource };
 }

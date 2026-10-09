@@ -38,7 +38,7 @@ vi.mock("@tanstack/react-query", () => ({
   }),
 }));
 
-import { AppleHealthCard } from "../apple-health-card";
+import { AppleHealthCard, ArrivalDetail } from "../apple-health-card";
 
 function render(locale: Locale = "en") {
   return renderToStaticMarkup(
@@ -402,5 +402,79 @@ describe("<AppleHealthCard> — sync progress (#778)", () => {
         expect(progress[key].length).toBeGreaterThan(0);
       }
     }
+  });
+});
+
+describe("<AppleHealthCard> — per-type arrivals (#1173)", () => {
+  const now = new Date("2026-10-08T12:00:00.000Z");
+  const hoursAgo = (h: number) =>
+    new Date(now.getTime() - h * 60 * 60 * 1000).toISOString();
+  const base = {
+    type: "RESPIRATORY_RATE",
+    lastSeenAt: hoursAgo(5),
+    stale: false,
+  };
+  const t = (key: string, params?: Record<string, string | number>) => {
+    const value = key
+      .split(".")
+      .reduce<unknown>(
+        (node, part) => (node as Record<string, unknown>)?.[part],
+        en,
+      );
+    if (typeof value !== "string") return key;
+    return value.replace(/\{(\w+)\}/g, (_, name: string) =>
+      String(params?.[name] ?? `{${name}}`),
+    );
+  };
+  const html = (entry: Parameters<typeof ArrivalDetail>[0]["entry"]) =>
+    renderToStaticMarkup(<ArrivalDetail entry={entry} t={t} now={now} />);
+
+  it("names when a type last arrived and that only Sync all carried it", () => {
+    const out = html({
+      ...base,
+      lastReceivedAt: hoursAgo(2),
+      lastTrigger: "manual",
+      lastNewSampleAt: hoursAgo(2),
+    });
+    expect(out).toContain('data-trigger="manual"');
+    expect(out).toContain("Last received 2 h ago");
+    expect(out).toContain("from Sync all");
+    // The last arrival brought something new, so no second date is needed.
+    expect(out).not.toContain("Last new value");
+  });
+
+  it("adds the last new value when the latest arrival held duplicates only", () => {
+    const out = html({
+      ...base,
+      lastReceivedAt: hoursAgo(1),
+      lastTrigger: "background",
+      lastNewSampleAt: hoursAgo(72),
+    });
+    expect(out).toContain("in the background");
+    expect(out).toContain("Last new value 3 d ago");
+  });
+
+  it("says a type has not arrived through live sync yet", () => {
+    const out = html({
+      ...base,
+      lastReceivedAt: null,
+      lastTrigger: null,
+      lastNewSampleAt: null,
+    });
+    expect(out).toContain('data-state="never"');
+    expect(out).toContain("Not received yet");
+  });
+
+  it("renders nothing when the server sent no arrival facts", () => {
+    expect(html(base)).toBe("");
+  });
+
+  it("titles the list by data type", () => {
+    statusPayload = {
+      lastSyncedAt: hoursAgo(1),
+      syncHealth: { verdict: "fresh", since: null },
+      metricFreshness: [{ ...base }],
+    };
+    expect(render()).toContain("By data type");
   });
 });

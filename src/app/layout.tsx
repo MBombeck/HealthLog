@@ -9,6 +9,7 @@ import { MonitoringBootstrap } from "@/components/monitoring/bootstrap";
 import { WebVitalsReporter } from "@/components/monitoring/web-vitals-reporter";
 import { resolveInitialLocale } from "@/lib/i18n/resolve-initial-locale";
 import { isKeyMismatch } from "@/lib/boot/key-mismatch-state";
+import { THEME_BOOT_SCRIPT, THEME_COLOR } from "@/lib/pwa/theme-color";
 import { KeyMismatchPage } from "./key-mismatch-page";
 
 const inter = Inter({
@@ -20,7 +21,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "HealthLog",
   description:
-    "Self-hosted health tracker — weight, blood pressure, glucose, mood, medications. Withings + Apple Health sync, transparent derived wellness metrics, AI Insights you own.",
+    "Self-hosted health tracker: weight, blood pressure, glucose, mood, medications. Withings + Apple Health sync, transparent derived wellness metrics, AI Insights you own.",
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.svg",
@@ -50,7 +51,7 @@ export const metadata: Metadata = {
         url: "/logo-readme.png",
         width: 1000,
         height: 1000,
-        alt: "HealthLog — your health data, your server",
+        alt: "HealthLog: your health data, your server",
       },
     ],
   },
@@ -71,14 +72,13 @@ export const viewport: Viewport = {
   // the active palette. The hex values are the resolved background of
   // `--background` from `app/globals.css` for each theme so the bar
   // edge never seams against the page on cold paint.
+  // The client rewrites both to the app's own theme once it is known
+  // (`applyThemeColor`), since that need not be the operating system's.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f3f2f5" },
-    { media: "(prefers-color-scheme: dark)", color: "#282a36" },
+    { media: "(prefers-color-scheme: light)", color: THEME_COLOR.light },
+    { media: "(prefers-color-scheme: dark)", color: THEME_COLOR.dark },
   ],
 };
-
-// Inline script to apply theme before first paint (prevents FOUC)
-const themeScript = `(function(){try{var t=localStorage.getItem("healthlog-theme");var c=(t==="light"||t==="dark")?t:(t==="system"?(window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"):"dark");document.documentElement.classList.add(c)}catch(e){document.documentElement.classList.add("dark")}})()`;
 
 export default async function RootLayout({
   children,
@@ -98,7 +98,9 @@ export default async function RootLayout({
         <script
           suppressHydrationWarning
           nonce={nonce}
-          dangerouslySetInnerHTML={{ __html: themeScript }}
+          // Applies the theme (and its status-bar colour) before
+          // first paint, so neither flashes the wrong theme.
+          dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }}
         />
         {/*
           Locale-catalog boot script (generated into public/i18n/ by
@@ -129,7 +131,9 @@ export default async function RootLayout({
           id="healthlog-i18n-boot"
           strategy="beforeInteractive"
           nonce={nonce}
-          src={`/i18n/${initialLocale}.js?v=${process.env.NEXT_PUBLIC_APP_VERSION || "dev"}`}
+          // Keyed by the catalogs' content (`next.config.ts`), not the
+          // release: the service worker serves this URL cache-first.
+          src={`/i18n/${initialLocale}.js?v=${process.env.NEXT_PUBLIC_I18N_CATALOG_VERSION || "dev"}`}
         />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>

@@ -17,6 +17,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { PageAuthGate } from "@/components/ui/page-auth-gate";
 import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh-indicator";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import { RevealWhenSettled } from "@/components/ui/reveal-when-settled";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Plus } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "@/lib/i18n/context";
@@ -65,6 +67,9 @@ export default function MeasurementsPage() {
     ? `${addParam}\u0000${returnToParam ?? ""}`
     : null;
   const [dialogOpen, setDialogOpen] = useState(() => initialAdd != null);
+  // The list's empty state carries the add action while there is nothing
+  // to list, so the header drops its own then.
+  const [listEmpty, setListEmpty] = useState(false);
   const [defaultType, setDefaultType] = useState<string | undefined>(
     () => initialAdd ?? undefined,
   );
@@ -149,7 +154,7 @@ export default function MeasurementsPage() {
         // admits, so this is the header action a delegate keeps. A read-only
         // delegate loses it entirely rather than meeting a disabled one.
         actions={
-          canAddMeasurement ? (
+          canAddMeasurement && !listEmpty ? (
             <Button
               data-slot="measurement-add"
               className="min-h-11 sm:min-h-9"
@@ -182,7 +187,7 @@ export default function MeasurementsPage() {
             setReturnTo(null);
           }
         }}
-        title={t("measurements.addMeasurement")}
+        title={t("dashboard.quickAddMeasurement")}
         footer={<div ref={setFooterEl} className="flex w-full" />}
       >
         <MeasurementForm
@@ -203,14 +208,22 @@ export default function MeasurementsPage() {
         />
       </ResponsiveSheet>
 
-      <MeasurementList
-        onAddFirst={() => {
-          setReturnTo(null);
-          setDialogOpen(true);
-        }}
-      />
+      {/* The list's height is the data's; the custom metrics sit below it.
+          Revealed together once both reads settle, so neither pushes the
+          other down the page while it loads. */}
+      <RevealWhenSettled
+        fallback={<Skeleton className="h-[28rem] w-full rounded-xl" />}
+      >
+        <MeasurementList
+          onEmptyChange={setListEmpty}
+          onAddFirst={() => {
+            setReturnTo(null);
+            setDialogOpen(true);
+          }}
+        />
 
-      <CustomMetricList />
+        <CustomMetricList />
+      </RevealWhenSettled>
     </div>
   );
 }

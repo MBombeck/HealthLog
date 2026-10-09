@@ -75,6 +75,14 @@ export const PUBLIC_PATHS = [
   // and is not an enumeration oracle — so it must reach the page without
   // an auth gate, like the `/auth/` register surface it forwards to.
   "/invite/",
+  // v1.42 (#959) — `/claim/<hlp_token>` is the managed-profile handover link.
+  // Like `/invite/` it is a shape-validated edge redirect onto
+  // `/auth/claim?token=…` (handled below), carries no session and touches no
+  // database. `/api/auth/claim` (preview + claim) authenticates by the
+  // one-time token in the request body, never by a session: the person
+  // claiming the profile has no credentials yet.
+  "/claim/",
+  "/api/auth/claim",
   // Locale-catalog boot script (`/i18n/<locale>?v=…`). The login page loads
   // it pre-auth, and the body is the same public catalog JSON that ships in
   // the repository — no tenant data, no secrets. Immutable-cacheable.
@@ -406,6 +414,29 @@ export function proxy(request: NextRequest) {
     return redirected;
   }
 
+  // v1.42 (#959) — the managed-profile handover link answers at the edge for
+  // the same reasons as the invite link above: no HTML, no hydration race, the
+  // shape gate drops anything that is not a handover token rather than
+  // reflecting it, and the hop is uncacheable, unindexable and never leaked as
+  // a `Referer`. The shape is restated from `src/lib/auth/handover-token.ts`.
+  if (pathname.startsWith("/claim/")) {
+    const token = pathname.slice("/claim/".length).split("/")[0] ?? "";
+    const target = new URL("/auth/claim", request.url);
+    if (/^hlp_[0-9a-f]{64}$/.test(token)) {
+      target.searchParams.set("token", token);
+    }
+    const redirected = applyBaselineSecurityHeaders(
+      NextResponse.redirect(target, 307),
+    );
+    redirected.headers.set(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate",
+    );
+    redirected.headers.set("X-Robots-Tag", "noindex, nofollow");
+    redirected.headers.set("Referrer-Policy", "no-referrer");
+    return redirected;
+  }
+
   // Server-side route protection for pages (not API routes — those have their own getSession checks)
   const isApiRoute = pathname.startsWith("/api/");
   const isStaticFile = /\.\w+$/.test(pathname);
@@ -718,6 +749,6 @@ export const config = {
     // the matcher and `apiHandler` performs the proxy's duties for it. The
     // alternation must stay equal to that list; `proxy-body-limit.test.ts`
     // compiles this exactly as Next does and checks.
-    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.json|robots\\.txt|sitemap\\.xml|api/(?:import(?:/csv|/apple-health-export)?|admin/import-apple-health-export|admin/backups/upload|documents/inbound|medications/intake/(?:dose-history-import|bulk)|labs/ocr/extract|user/avatar|measurements/batch|workouts/batch|insights/ecg|mood-entries/bulk|cycle/day-logs/bulk)/?$|.*\\.(?:svg|png|jpg|jpeg|gif|webp|txt|xml)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.json|robots\\.txt|sitemap\\.xml|api/(?:import(?:/csv|/apple-health-export|/health-connect-export)?|admin/import-apple-health-export|admin/backups/upload|documents/inbound|medications/intake/(?:dose-history-import|bulk)|labs/ocr/extract|user/avatar|measurements/batch|workouts/batch|insights/ecg|mood-entries/bulk|cycle/day-logs/bulk)/?$|.*\\.(?:svg|png|jpg|jpeg|gif|webp|txt|xml)$).*)",
   ],
 };

@@ -13,6 +13,8 @@
  */
 import { z } from "zod/v4";
 
+import { isCalendarDateKey } from "@/lib/tz/date-only";
+
 import { AI_UNAVAILABLE_REASONS } from "@/lib/ai/capabilities/types";
 import {
   ACTIVITY_TEXT_MAX_CHARS,
@@ -49,12 +51,14 @@ export const coachStepDomainSchema = z
     "illness",
     "cycle",
     "correlations",
+    "environment",
+    "day",
     "snapshot",
   ])
   .meta({
     id: "CoachStepDomain",
     description:
-      "The data domain a step, table or chip is about: a measurement-backed scope source, or a domain read as a whole (labs, illness, cycle, correlations, the full snapshot).",
+      "The data domain a step, table or chip is about: a measurement-backed scope source, or a domain read as a whole (labs, illness, cycle, correlations, the environment, one day of the record, the full snapshot).",
   });
 
 const coachResultGranularitySchema = z.enum(["day", "week", "month"]);
@@ -108,6 +112,13 @@ export const coachStepSchema = z
     resultRef: resultRefSchema
       .optional()
       .describe("The table this step produced (`r1`..), when it produced one."),
+    day: z
+      .string()
+      .refine(isCalendarDateKey)
+      .optional()
+      .describe(
+        "The calendar date a `get_day` step read (`YYYY-MM-DD`), so a view can offer the days an answer looked at.",
+      ),
   })
   .meta({
     id: "CoachStep",

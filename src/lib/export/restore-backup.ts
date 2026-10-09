@@ -114,6 +114,7 @@ import { restoreAwardsData } from "@/lib/export/awards-backup";
 import { restoreEnvironmentData } from "@/lib/export/environment-backup";
 import { restoreEcgData } from "@/lib/export/ecg-backup";
 import { restoreSymptomsData } from "@/lib/export/symptoms-backup";
+import { restoreLifeEventsData } from "@/lib/export/life-events-backup";
 import { restoredMedicationCreatedAt } from "@/lib/export/medication-created-at";
 import {
   encryptCategoryLabel,
@@ -122,6 +123,12 @@ import {
 } from "@/lib/medication-category";
 import { invalidateUserData } from "@/lib/cache/invalidate";
 import { TOMBSTONE_RETENTION_DAYS } from "@/lib/auth/native-client";
+import {
+  FOLDED_TYPES,
+  compactionTombstoneCoverId,
+} from "@/lib/measurements/folded-window";
+import { enqueueMeasurementFoldRepair } from "@/lib/jobs/measurement-fold-repair";
+import { resolveUserTimezone } from "@/lib/measurements/consolidation-base";
 import { stampSyncReset } from "@/lib/sync/reset";
 import {
   classifyRestoreFailure,
@@ -173,6 +180,7 @@ export interface RestoreResponse {
     encounterLinks: number;
     vaccinations: number;
     vaccinationLinks: number;
+    customVaccines: number;
     measurementReminders: number;
     measurementReminderEvents: number;
     coachConversations: number;
@@ -189,6 +197,7 @@ export interface RestoreResponse {
     environmentTravelLocations: number;
     ecgRecordings: number;
     symptomDefinitions: number;
+    lifeEvents: number;
   };
 }
 
@@ -418,14 +427,39 @@ export async function restoreBackup(
   // The measurements are the exception: `readStreamedBackup` checks each one
   // against the element schema as it goes and keeps only their count, and
   // the transaction reads them a second time, in batches, as it writes them.
+  // v1.42 — the live `stats:` ids of the folded types, gathered on the first
+  // read, so the measurement pass can tell a compaction tombstone from a
+  // person's deletion without a third read of the file. Keyed by source as
+  // well: Health Connect folds into the same `stats:` ids as Apple Health, and
+  // an Apple Health hour must not make a Health Connect deletion look folded.
+  const liveFoldStatsIds = new Set<string>();
+  const foldedTypes = new Set<string>(FOLDED_TYPES);
+  const foldSources = new Set<string>(["APPLE_HEALTH", "HEALTH_CONNECT"]);
+  const foldStatsKey = (source: string, type: string, externalId: string) =>
+    `${source}|${type}|${externalId}`;
+  const noteLiveFoldRow = (row: BackupMeasurement) => {
+    if (
+      row.deletedAt == null &&
+      row.source !== undefined &&
+      foldSources.has(row.source) &&
+      foldedTypes.has(row.type) &&
+      row.externalId?.startsWith("stats:")
+    ) {
+      liveFoldStatsIds.add(foldStatsKey(row.source, row.type, row.externalId));
+    }
+  };
+  // Set inside the transaction when the restore takes the account's fold
+  // repair marker away; the repair is queued once the transaction commits.
+  let foldRepairReset = false;
   let raw: unknown;
   let payload;
   let streamed: StreamedBackup;
   try {
     streamed = await readStreamedBackup(source, {
-      onMeasurementChecked: (checked) => {
+      onMeasurementChecked: (checked, row) => {
         progress.measurementsChecked = checked;
         report("validating");
+        noteLiveFoldRow(row);
       },
     });
     progress.measurementsTotal = streamed.measurementCount;
@@ -986,9 +1020,75 @@ export async function restoreBackup(
         // row.
         const tombstoneHorizonMs =
           Date.now() - TOMBSTONE_RETENTION_DAYS * 86_400_000;
+        //
+        // v1.42 — nor is a compaction tombstone, whatever its age: a raw
+        // sample the folds soft-deleted before v1.42, whose whole hour or day
+        // the fold had reached when it was deleted and which a live `stats:`
+        // row of the same source in the same file covers. The folds
+        // delete those outright now and the backlog purge removes the old
+        // ones, so writing one back would only hand the purge the same row
+        // again; the `folded_window` ingest guard is what keeps the sample
+        // from being uploaded again. Classified by the rule the purge and
+        // the sync feed use (`folded-window.ts`), against the `stats:` ids
+        // gathered on the file's first read and the zone the account will
+        // have after the restore. Counted with the expired ones.
+        const foldTz = resolveUserTimezone(
+          payload.accountSettings?.timezone ??
+            (
+              await tx.user.findUnique({
+                where: { id: ownerId },
+                select: { timezone: true },
+              })
+            )?.timezone ??
+            null,
+        );
+        // Only once the fold repair has been through the means this file
+        // holds. The repair recomputes a mean an older release folded from
+        // part of its day, and these tombstones are what it reads. A file
+        // exported after the account's repair finished carries repaired
+        // means, so its compaction tombstones can go. Any other file is
+        // written back whole, the account's repair marker is removed, and the
+        // repair runs again once the transaction commits; the purge then
+        // removes the tombstones as usual.
+        const foldRepair = await tx.measurementFoldRepair.findUnique({
+          where: { userId: ownerId },
+          select: { completedAt: true },
+        });
+        const dropCompactionTombstones =
+          foldRepair !== null &&
+          new Date(payload.exportedAt).getTime() >
+            foldRepair.completedAt.getTime();
+        if (!dropCompactionTombstones) {
+          await tx.measurementFoldRepair.deleteMany({
+            where: { userId: ownerId },
+          });
+          foldRepairReset = true;
+        }
+        const isCompactionTombstone = (measurement: BackupMeasurement) => {
+          if (!dropCompactionTombstones) return false;
+          if (measurement.deletedAt == null) return false;
+          const source = measurement.source ?? "MANUAL";
+          const covering = compactionTombstoneCoverId(
+            {
+              type: measurement.type,
+              source,
+              externalId: measurement.externalId ?? null,
+              measuredAt: new Date(measurement.measuredAt),
+              deletedAt: new Date(measurement.deletedAt),
+            },
+            foldTz,
+          );
+          return (
+            covering !== null &&
+            liveFoldStatsIds.has(
+              foldStatsKey(source, measurement.type, covering),
+            )
+          );
+        };
         const isExpiredTombstone = (measurement: BackupMeasurement) =>
           measurement.deletedAt != null &&
-          new Date(measurement.deletedAt).getTime() < tombstoneHorizonMs;
+          (new Date(measurement.deletedAt).getTime() < tombstoneHorizonMs ||
+            isCompactionTombstone(measurement));
         let expiredTombstonesSkipped = 0;
         report("measurements");
         await streamed.forEachMeasurementBatch(
@@ -1948,6 +2048,7 @@ export async function restoreBackup(
                 biomarker.context == null
                   ? null
                   : encryptContextToBytes(biomarker.context),
+              analyteKey: biomarker.analyteKey ?? null,
               ...(biomarker.createdAt
                 ? { createdAt: new Date(biomarker.createdAt) }
                 : {}),
@@ -2054,6 +2155,8 @@ export async function restoreBackup(
               sourceReferenceLow: lab.sourceReferenceLow ?? null,
               sourceReferenceHigh: lab.sourceReferenceHigh ?? null,
               sourceReferenceText: lab.sourceReferenceText ?? null,
+              sourceValue: lab.sourceValue ?? null,
+              sourceUnit: lab.sourceUnit ?? null,
               takenAt: new Date(lab.takenAt),
               source: lab.source,
               noteEncrypted:
@@ -2213,6 +2316,16 @@ export async function restoreBackup(
           payload,
           episodeIds,
           skips,
+        );
+
+        // The person's life events (v1.42). They reference nothing but the
+        // account, so they have no ordering constraint and sit beside the
+        // other person-made rows. Both ends live in
+        // `src/lib/export/life-events-backup.ts`.
+        const lifeEventsCleared = await restoreLifeEventsData(
+          tx,
+          ownerId,
+          payload,
         );
 
         reportSection("allergies");
@@ -2550,6 +2663,7 @@ export async function restoreBackup(
           tx,
           ownerId,
           payload,
+          skips,
         );
 
         const cleared = {
@@ -2585,6 +2699,7 @@ export async function restoreBackup(
           encounterLinks: visitsCleared.encounterLinks,
           vaccinations: vaccinationsCleared.vaccinations,
           vaccinationLinks: vaccinationsCleared.vaccinationLinks,
+          customVaccines: vaccinationsCleared.customVaccines,
           measurementReminders: remindersCleared.measurementReminders,
           measurementReminderEvents: remindersCleared.measurementReminderEvents,
           coachConversations: coachCleared.coachConversations,
@@ -2602,6 +2717,7 @@ export async function restoreBackup(
             environmentCleared.environmentTravelLocations,
           ecgRecordings: ecgCleared.ecgRecordings,
           symptomDefinitions: symptomsCleared.symptomDefinitions,
+          lifeEvents: lifeEventsCleared.lifeEvents,
         };
         assertNoNewForeignReferences(
           foreignBefore,
@@ -2732,6 +2848,24 @@ export async function restoreBackup(
   // ran past the per-request statement limit, the fold was dropped, and the
   // account's charts stayed empty until the next boot (#1031). It gets the
   // time the deadline check above keeps free for it instead.
+  // The restore took the fold repair marker away (see the measurement pass):
+  // queue the repair now that the restored rows are committed. Best-effort;
+  // the next boot's discovery queues it otherwise, and the purge waits
+  // either way.
+  if (foldRepairReset) {
+    try {
+      await enqueueMeasurementFoldRepair(ownerId);
+    } catch (err) {
+      annotate({
+        meta: {
+          fold_repair_enqueue_failed: true,
+          fold_repair_enqueue_error:
+            err instanceof Error ? err.message : String(err),
+        },
+      });
+    }
+  }
+
   if (measurementsRestored > 0) {
     try {
       await recomputeUserRollups(ownerId, {
@@ -2844,6 +2978,7 @@ export async function restoreBackup(
         encounterLinks: summary.encounterLinks,
         vaccinations: summary.vaccinations,
         vaccinationLinks: summary.vaccinationLinks,
+        customVaccines: summary.customVaccines,
         measurementReminders: summary.measurementReminders,
         measurementReminderEvents: summary.measurementReminderEvents,
       },

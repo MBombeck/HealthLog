@@ -26,7 +26,7 @@ permissions:
 jobs:
   coach-eval:
     name: Coach eval — deterministic floor (always) + live judge (opt-in)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
 
     # Map the opt-in secret to a job-level env so the live-judge steps can gate

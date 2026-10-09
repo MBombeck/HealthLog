@@ -38,6 +38,7 @@ import { toast } from "sonner";
 import { useIllnessEpisodes } from "@/components/illness/use-illness";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-button";
 import { DateField } from "@/components/ui/date-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -442,6 +443,8 @@ export function DocumentDetailSheet({
   /** Bumped on a failed write; remounts the link block onto server state. */
   const [linkResets, setLinkResets] = useState(0);
   const [shareOpen, setShareOpen] = useState(false);
+  // Delete asks first, like every other way of deleting from the vault.
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   /**
    * The visit this SESSION filed the document against, if any.
@@ -769,8 +772,9 @@ export function DocumentDetailSheet({
                 <Button
                   variant="ghost"
                   className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={() => remove.mutate(doc.id)}
+                  onClick={() => setConfirmDeleteOpen(true)}
                   disabled={remove.isPending}
+                  data-slot="document-detail-delete"
                 >
                   <Trash2 className="size-4" aria-hidden />
                   {t("documents.detail.delete")}
@@ -865,7 +869,7 @@ export function DocumentDetailSheet({
                   {doc.filename ?? title}
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  {t("documents.detail.previewUnavailable")} ·{" "}
+                  {t("documents.detail.previewUnavailable")},{" "}
                   {formatBytes(doc.byteSize, locale)}
                 </p>
                 <DocumentDownloadButton
@@ -1181,8 +1185,15 @@ export function DocumentDetailSheet({
                   date: format.date(doc.createdAt),
                   size: formatBytes(doc.byteSize, locale),
                 })}
-                {doc.filename ? ` · ${doc.filename}` : ""}
               </p>
+              {doc.filename ? (
+                <p
+                  className="text-muted-foreground truncate text-xs"
+                  title={doc.filename}
+                >
+                  {doc.filename}
+                </p>
+              ) : null}
 
               {/* Where an imported document came from (#1038). Meta, so
                   muted like the line above; the id is what the person looks
@@ -1212,6 +1223,19 @@ export function DocumentDetailSheet({
           open={shareOpen}
           onOpenChange={setShareOpen}
           documents={[{ id: doc.id, title }]}
+        />
+      ) : null}
+      {doc ? (
+        <ConfirmDialog
+          open={confirmDeleteOpen}
+          onOpenChange={setConfirmDeleteOpen}
+          title={t("documents.deleteConfirm.titleOne")}
+          body={t("documents.deleteConfirm.body")}
+          confirmLabel={t("documents.deleteConfirm.action")}
+          onConfirm={() => remove.mutate(doc.id)}
+          pending={remove.isPending}
+          slot="document-detail-delete"
+          destructive
         />
       ) : null}
     </>

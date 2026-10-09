@@ -34,7 +34,6 @@ interface CoachPrefsShape {
   nudgeVitals: boolean;
   nudgeRoutine: boolean;
   nudgeFrequency: "weekly" | "biweekly";
-  ambientSuggestions: boolean;
   nudgeAiComposed: boolean;
 }
 
@@ -51,7 +50,6 @@ const COACH_PREF_DEFAULTS: CoachPrefsShape = {
   nudgeVitals: true,
   nudgeRoutine: true,
   nudgeFrequency: "weekly",
-  ambientSuggestions: true,
   nudgeAiComposed: false,
 };
 
@@ -249,7 +247,10 @@ export function CoachNudgeCard({
               />
             </div>
           ))}
-          <div className="flex min-h-11 items-center gap-3">
+          {/* Stacked on a phone: at 16 px touch type the longest option
+              ("At most every two weeks") plus the label no longer fits one
+              row inside a 390 px card. */}
+          <div className="flex min-h-11 flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-3">
             <label
               htmlFor="coach-nudge-frequency"
               className="text-sm font-medium"
@@ -258,7 +259,7 @@ export function CoachNudgeCard({
             </label>
             <NativeSelect
               id="coach-nudge-frequency"
-              className="w-auto"
+              className="sm:w-auto"
               value={resolved.nudgeFrequency}
               disabled={!isAuthenticated || saving}
               onChange={(e) =>
@@ -303,28 +304,6 @@ export function CoachNudgeCard({
           </div>
         </div>
       )}
-      {/* v1.25.0 — proactive ambient SUGGESTIONS opt-out. Independent of the
-          push-nudge master switch above (a user can keep nudges but silence
-          the example prompts), so it sits outside the `enabled` gate and rides
-          the same `coach` prefs blob. */}
-      <div className="border-border/60 flex min-h-11 items-center justify-between gap-3 border-t pt-4">
-        <div className="min-w-0">
-          <p className="text-sm">
-            {t("notifications.coachNudge.suggestionsLabel")}
-          </p>
-          <p className="text-muted-foreground text-xs">
-            {t("notifications.coachNudge.suggestionsDesc")}
-          </p>
-        </div>
-        <Switch
-          checked={resolved.ambientSuggestions}
-          onCheckedChange={(next) =>
-            patchCoach({ ambientSuggestions: next }, null)
-          }
-          disabled={!isAuthenticated || saving}
-          aria-label={t("notifications.coachNudge.suggestionsAria")}
-        />
-      </div>
       {msg && (
         <p
           role="status"

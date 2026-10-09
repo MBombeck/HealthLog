@@ -17,13 +17,14 @@ import type { ChartOverlayKey } from "@/lib/dashboard-layout";
 import { metricFractionDigits } from "@/lib/measurements/value-domain";
 import { Button } from "@/components/ui/button";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
-import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
 import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";
 import { MetricStatusCard } from "@/components/insights/metric-status-card";
 import { MetricEmptyState } from "@/components/insights/metric-empty-state";
-import { MetricStatStrip } from "@/components/insights/metric-stat-strip";
+import {
+  MetricStatStrip,
+  MetricStatStripSkeleton,
+} from "@/components/insights/metric-stat-strip";
 import { CoachReadStrip } from "@/components/insights/derived/coach-read-strip";
 import { MeasurementDiversityNudge } from "@/components/insights/measurement-diversity-nudge";
 import { MetricTargetSummary } from "@/components/insights/metric-target-summary";
@@ -73,6 +74,16 @@ export interface HealthKitMetricPageProps {
    * `fallbackMeasurementType` is set.
    */
   fallbackMeasureLabel?: string;
+  /**
+   * v1.42 (#1110) — short label naming the PRIMARY measure (e.g. "SDNN").
+   * Since iOS 27 one account can hold both HRV measures from the same
+   * watch. They are different statistics on different scales, so when
+   * both have rows the page charts each on its own, each titled with its
+   * measure, instead of hiding the second behind the first.
+   */
+  primaryMeasureLabel?: string;
+  /** Line colour of the fallback measure's own chart; defaults to `color`. */
+  fallbackColor?: `var(--${string})`;
   /** The InsightMetric key used by `useInsightsAnalytics()`. */
   insightMetric: InsightMetric;
   /** The chart-overlay slot id. */
@@ -215,6 +226,8 @@ export function HealthKitMetricPage({
   measurementType,
   fallbackMeasurementType,
   fallbackMeasureLabel,
+  primaryMeasureLabel,
+  fallbackColor,
   insightMetric,
   chartKey,
   i18nPrefix,
@@ -253,7 +266,7 @@ export function HealthKitMetricPage({
   // v1.12.8 — shared visible-range state. The chart reports the per-type
   // Min / Max / Median / Mean for the data under its active range tab; the
   // stat strip reads it back for this page's single series.
-  const { statsByType, onVisibleStats } = useChartDomainStats();
+  const { statsByType, statsSettled, onVisibleStats } = useChartDomainStats();
 
   // v1.17.0 — fallback-type swap. When the primary type has no rows but the
   // declared fallback does (HRV: SDNN empty, RMSSD present), key the chart,
@@ -269,6 +282,11 @@ export function HealthKitMetricPage({
   const effectiveType = usingFallback
     ? (fallbackMeasurementType as string)
     : measurementType;
+  // v1.42 (#1110) — both measures present: the primary keeps the strip, the
+  // coach read and the value list, and the fallback measure gets a chart of
+  // its own beneath it. Never one line, never one hidden.
+  const bothMeasures =
+    !!fallbackMeasurementType && primaryCount > 0 && fallbackCount > 0;
 
   // v1.32.26 — resolve the display unit + scale from the user's preference for
   // a type with a registered transform (kg↔lb, cm↔in, °C↔°F). When resolved,
@@ -354,7 +372,7 @@ export function HealthKitMetricPage({
         description={description}
         explainerMetric={explainerMetric}
         explainerParams={explainerParams}
-        statStrip={<StatStripSkeleton />}
+        statStrip={<MetricStatStripSkeleton />}
       >
         <ChartSkeleton />
       </SubPageShell>
@@ -421,9 +439,14 @@ export function HealthKitMetricPage({
           summary={summary}
           unit={resolvedYAxisUnit ?? resolvedUnit ?? ""}
           fractionDigits={resolvedFractionDigits}
-          seriesLabel={title}
+          seriesLabel={
+            bothMeasures && primaryMeasureLabel
+              ? `${title} · ${primaryMeasureLabel}`
+              : title
+          }
           icon={statIcon}
           windowStats={statsByType?.[effectiveType] ?? null}
+          windowPending={!statsSettled}
           medianLabel={statMedianLabel}
         />
       }
@@ -455,7 +478,9 @@ export function HealthKitMetricPage({
         title={
           usingFallback && fallbackMeasureLabel
             ? `${t(`${i18nPrefix}.chartTitle`)} · ${fallbackMeasureLabel}`
-            : t(`${i18nPrefix}.chartTitle`)
+            : bothMeasures && primaryMeasureLabel
+              ? `${t(`${i18nPrefix}.chartTitle`)} · ${primaryMeasureLabel}`
+              : t(`${i18nPrefix}.chartTitle`)
         }
         titleIcon={statIcon}
         colors={[color]}
@@ -468,7 +493,32 @@ export function HealthKitMetricPage({
         valueOffset={resolvedOffset}
         onVisibleStats={onVisibleStats}
         showDataTable
+        dayLinks
       />
+      {bothMeasures ? (
+        <HealthChartDynamic
+          chartKey={chartKey}
+          types={[fallbackMeasurementType as string]}
+          title={
+            fallbackMeasureLabel
+              ? `${t(`${i18nPrefix}.chartTitle`)} · ${fallbackMeasureLabel}`
+              : t(`${i18nPrefix}.chartTitle`)
+          }
+          titleIcon={statIcon}
+          colors={[fallbackColor ?? color]}
+          unit={resolvedUnit}
+          yAxisUnit={resolvedYAxisUnit}
+          compareBaseline={compareBaseline}
+          userTimezone={user?.timezone}
+          valueScale={resolvedScale}
+          valueOffset={resolvedOffset}
+          // No `onVisibleStats`: the strip describes the primary measure, and
+          // two charts writing the one stats slot would replace each other's
+          // window on every render without end.
+          showDataTable
+          dayLinks
+        />
+      ) : null}
       {targetSummarySlug ? (
         <MetricTargetSummary slug={targetSummarySlug} />
       ) : null}
@@ -488,34 +538,5 @@ export function HealthKitMetricPage({
           resting-pulse + HRV pages mount the ECG cross-link here. */}
       {afterAssessment}
     </SubPageShell>
-  );
-}
-
-/**
- * v1.12.7 — layout-stable loading shell for the stat strip slot. Mirrors
- * the loaded `<MetricStatStrip>` card chrome (denser `py-3` rhythm, one
- * header row + a four-up grid) so the page does not jump when the analytics
- * read lands. Decorative — hidden from assistive tech; the chart skeleton
- * below it carries the `aria-busy` announcement.
- */
-function StatStripSkeleton() {
-  return (
-    <Card
-      data-slot="metric-stat-strip-skeleton"
-      aria-hidden="true"
-      className="gap-2 py-3 md:py-4"
-    >
-      <CardContent className="space-y-3">
-        <Skeleton className="h-5 w-32" />
-        <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="min-h-[44px] space-y-1">
-              <Skeleton className="h-3 w-12" />
-              <Skeleton className="h-5 w-16" />
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
   );
 }

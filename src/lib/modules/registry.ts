@@ -173,6 +173,19 @@ export const MODULE_KEYS = [
   // surfaces the person made content for; it does not silently retract a
   // commitment the app made to them.
   "vaccinations",
+  // v1.42 (#613) — the life timeline (`/timeline`): years at a glance, the
+  // record's conditions, medications, visits and documents in lanes beside the
+  // value series, plus the person's own life events. OPT-IN (off by default):
+  // not because it egresses (it does not), but because it is a new way of
+  // looking at the whole record, and the readiness inventory that greets the
+  // switch is the right first contact with it. The day view is NOT this
+  // module: it is core and opens for every account.
+  //
+  // Life events belong to this module. They are only created from the
+  // timeline and the day's capture sheet while it is on, and they disappear
+  // from the day with it; the `/api/life-events` row store stays reachable so
+  // a restore keeps working and re-enabling finds the events intact.
+  "timeline",
 ] as const;
 
 export type ModuleKey = (typeof MODULE_KEYS)[number];
@@ -368,6 +381,14 @@ export const MODULE_REGISTRY: Readonly<Record<ModuleKey, ModuleDefinition>> =
       category: "tracking",
       // No `optIn`: default-on. Nothing leaves the instance and the surfaces
       // are inert until the person logs a dose.
+    },
+    timeline: {
+      key: "timeline",
+      labelKey: "modules.timeline.label",
+      descriptionKey: "modules.timeline.description",
+      category: "tracking",
+      // Off by default; see the key's comment in `MODULE_KEYS`.
+      optIn: true,
     },
   });
 

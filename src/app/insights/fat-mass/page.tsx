@@ -21,10 +21,10 @@ export default function InsightsFettmassePage() {
       chartKey="fatMass"
       i18nPrefix="insights.fatMass"
       explainerMetric="fatMass"
-      color="var(--warning)"
+      color="var(--chart-5)"
       emptyStateIcon={<Droplets className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any fat mass yet — what does this metric tell me about my health, and how do I improve it?"
+      coachPrefill="I haven't logged any fat mass yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

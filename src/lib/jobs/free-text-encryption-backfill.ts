@@ -22,6 +22,16 @@
  * column holds a JSON null rather than SQL NULL has nothing to seal; it is set
  * to SQL NULL so discovery stops finding it.
  *
+ * v1.42 (#615) adds the environment module's coarse locations: the home on
+ * the user row (`homeLat` / `homeLon` / `homeLabel` -> `homeLocationEncrypted`),
+ * each dated location period and each stored day (`lat` / `lon` / label ->
+ * `locationEncrypted`), each sealed as one `{ lat, lon, label }` value under
+ * the environment-location label (`location-cipher.ts`). A row whose readable
+ * triple is incomplete (a home without a label is sealed with an empty one;
+ * a day or period cannot be incomplete, those
+ * columns were NOT NULL until migration 0382) has its readable columns
+ * cleared all the same, so it leaves discovery.
+ *
  * Modelled on `med-notes-encryption-backfill.ts`: a discovery query enqueues
  * one job per user still holding an un-migrated row, the per-user handler walks
  * that user's rows, and the pass is idempotent across reboots — once a row is
@@ -62,6 +72,7 @@ import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { encryptNote } from "@/lib/crypto/note-cipher";
 import { encryptRouteGeometry } from "@/lib/workouts/route-geometry-cipher";
+import { sealLocation } from "@/lib/environment/location-cipher";
 
 export const FREE_TEXT_ENCRYPTION_BACKFILL_QUEUE =
   "free-text-encryption-backfill";
@@ -89,6 +100,12 @@ export interface FreeTextEncryptionBackfillSummary {
   appointmentAddressesCleared: number;
   /** v1.39.4 — edit audit rows whose old phone number / address was removed. */
   contactAuditRowsScrubbed: number;
+  /** v1.42 — the account's environment home sealed (0 or 1). */
+  homeLocationsMigrated: number;
+  /** v1.42 — dated environment location periods sealed. */
+  travelLocationsMigrated: number;
+  /** v1.42 — stored environment days whose location was sealed. */
+  dayLocationsMigrated: number;
 }
 
 /** The audit action whose older rows carried contact values. */
@@ -287,6 +304,107 @@ async function migrateRouteGeometry(id: string): Promise<boolean> {
 }
 
 /**
+ * Seal one account's readable environment home into `homeLocationEncrypted`
+ * and clear the readable columns, atomically and idempotently. The user row
+ * keeps its own `updatedAt`: moving a value into ciphertext is not an edit.
+ */
+async function migrateHomeLocation(id: string): Promise<boolean> {
+  return prisma.$transaction(async (tx) => {
+    const fresh = await tx.user.findUnique({
+      where: { id },
+      select: {
+        homeLat: true,
+        homeLon: true,
+        homeLabel: true,
+        updatedAt: true,
+      },
+    });
+    if (!fresh || fresh.homeLat === null) return false;
+    const { count } = await tx.user.updateMany({
+      where: { id, updatedAt: fresh.updatedAt },
+      data: {
+        updatedAt: fresh.updatedAt,
+        ...(fresh.homeLon !== null
+          ? {
+              homeLocationEncrypted: sealLocation({
+                lat: fresh.homeLat,
+                lon: fresh.homeLon,
+                // A home stored without a label seals an empty one, which
+                // every reader shows as no label.
+                label: fresh.homeLabel ?? "",
+              }),
+            }
+          : {}),
+        homeLat: null,
+        homeLon: null,
+        homeLabel: null,
+      },
+    });
+    return count === 1;
+  });
+}
+
+/** Seal one dated location period's readable location, as above. */
+async function migrateTravelLocation(id: string): Promise<boolean> {
+  return prisma.$transaction(async (tx) => {
+    const fresh = await tx.environmentTravelLocation.findUnique({
+      where: { id },
+      select: { lat: true, lon: true, label: true, updatedAt: true },
+    });
+    if (!fresh || fresh.lat === null) return false;
+    const { count } = await tx.environmentTravelLocation.updateMany({
+      where: { id, updatedAt: fresh.updatedAt },
+      data: {
+        updatedAt: fresh.updatedAt,
+        ...(fresh.lon !== null && fresh.label !== null
+          ? {
+              locationEncrypted: sealLocation({
+                lat: fresh.lat,
+                lon: fresh.lon,
+                label: fresh.label,
+              }),
+            }
+          : {}),
+        lat: null,
+        lon: null,
+        label: null,
+      },
+    });
+    return count === 1;
+  });
+}
+
+/** Seal one stored day's readable location, as above. */
+async function migrateDayLocation(id: string): Promise<boolean> {
+  return prisma.$transaction(async (tx) => {
+    const fresh = await tx.environmentContext.findUnique({
+      where: { id },
+      select: { lat: true, lon: true, locationLabel: true, updatedAt: true },
+    });
+    if (!fresh || fresh.lat === null) return false;
+    const { count } = await tx.environmentContext.updateMany({
+      where: { id, updatedAt: fresh.updatedAt },
+      data: {
+        updatedAt: fresh.updatedAt,
+        ...(fresh.lon !== null && fresh.locationLabel !== null
+          ? {
+              locationEncrypted: sealLocation({
+                lat: fresh.lat,
+                lon: fresh.lon,
+                label: fresh.locationLabel,
+              }),
+            }
+          : {}),
+        lat: null,
+        lon: null,
+        locationLabel: null,
+      },
+    });
+    return count === 1;
+  });
+}
+
+/**
  * Walk one kind of row page by page, migrating each. `page` returns the ids
  * still holding a readable value; each migration clears it, so a migrated row
  * drops out of the next page. A page where nothing moved (every row taken by
@@ -393,6 +511,38 @@ export async function runFreeTextEncryptionBackfillForUser(
     scrubContactAuditRow,
     once,
   );
+  // v1.42 — the environment locations. The 0382 partial indexes match these
+  // predicates.
+  const homeLocationsMigrated = await drain(
+    () =>
+      prisma.user.findMany({
+        where: { id: userId, homeLat: { not: null } },
+        select: { id: true },
+        take: PAGE_SIZE,
+      }),
+    migrateHomeLocation,
+    once,
+  );
+  const travelLocationsMigrated = await drain(
+    () =>
+      prisma.environmentTravelLocation.findMany({
+        where: { userId, lat: { not: null } },
+        select: { id: true },
+        take: PAGE_SIZE,
+      }),
+    migrateTravelLocation,
+    once,
+  );
+  const dayLocationsMigrated = await drain(
+    () =>
+      prisma.environmentContext.findMany({
+        where: { userId, lat: { not: null } },
+        select: { id: true },
+        take: PAGE_SIZE,
+      }),
+    migrateDayLocation,
+    once,
+  );
 
   annotate({
     action: {
@@ -404,6 +554,9 @@ export async function runFreeTextEncryptionBackfillForUser(
         route_geometries_migrated: routeGeometriesMigrated,
         appointment_addresses_cleared: appointmentAddressesCleared,
         contact_audit_rows_scrubbed: contactAuditRowsScrubbed,
+        home_locations_migrated: homeLocationsMigrated,
+        travel_locations_migrated: travelLocationsMigrated,
+        day_locations_migrated: dayLocationsMigrated,
       },
     },
   });
@@ -415,13 +568,16 @@ export async function runFreeTextEncryptionBackfillForUser(
     routeGeometriesMigrated,
     appointmentAddressesCleared,
     contactAuditRowsScrubbed,
+    homeLocationsMigrated,
+    travelLocationsMigrated,
+    dayLocationsMigrated,
   };
 }
 
 /**
  * Discovery. Finds every user still holding a readable value in any of the
- * columns above and enqueues one backfill job per account. The 0357 and 0361
- * partial indexes match the predicates, so the scan is index-only and converges to empty.
+ * columns above and enqueues one backfill job per account. The 0357, 0361 and
+ * 0382 partial indexes match the predicates, so the scan is index-only and converges to empty.
  * The appointment-address and audit predicates have no partial index: the
  * first scans the reminder table, the second reads one action through the
  * `(action, created_at)` index; both converge to empty the same way. pg-boss
@@ -469,6 +625,15 @@ export async function enqueueBootTimeFreeTextEncryptionBackfill(
         WHERE action = ${CONTACT_AUDIT_ACTION}
           AND user_id IS NOT NULL
           AND (details LIKE '%"location":%' OR details LIKE '%"phone":%')`,
+      prisma.$queryRaw<{ user_id: string }[]>`
+        SELECT id AS user_id FROM users
+        WHERE home_lat IS NOT NULL`,
+      prisma.$queryRaw<{ user_id: string }[]>`
+        SELECT DISTINCT user_id FROM environment_travel_locations
+        WHERE lat IS NOT NULL`,
+      prisma.$queryRaw<{ user_id: string }[]>`
+        SELECT DISTINCT user_id FROM environment_contexts
+        WHERE lat IS NOT NULL`,
     ]);
 
     const userIds = new Set<string>();

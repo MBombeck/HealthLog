@@ -972,7 +972,15 @@ describe("derived response consumer guard", () => {
         `derived apiSuccess branch ${index + 1} must preserve producer lineage`,
       ).toEqual(expectedLineage);
     }
-    expect(variableCall(ROUTE_FILE, "derived")).toBe("computeDerivedMetric");
+    // v1.42 — the single read goes through the derived cache; the value is
+    // still the compute's, built inside the cache's builder.
+    const derivedProducer = variableCall(ROUTE_FILE, "derived");
+    expect(["computeDerivedMetric", "cachedSwr"]).toContain(derivedProducer);
+    if (derivedProducer === "cachedSwr") {
+      expect(readFileSync(ROUTE_FILE, "utf8")).toMatch(
+        /const derived = await cachedSwr\([\s\S]*?computeDerivedMetric\(/,
+      );
+    }
     expect(variableCall(ROUTE_FILE, "assessment")).toBe(
       "resolveDerivedAssessment",
     );

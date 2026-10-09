@@ -48,6 +48,8 @@ const NOT_SIGNED_IN: Record<string, string> = {
   "/invite/[token]":
     "an invitation landing page for somebody without an account",
   "/c/[token]": "the clinician share-link page, opened without a session",
+  "/claim/[token]":
+    "the managed-profile handover link, opened by the person without a session (covered by v142-managed-profile-handover.spec.ts)",
   "/confirm-access": "the re-proof page, reached only from a stale session",
   "/enroll-mfa": "the forced second-factor enrolment of a policy-bound account",
   "/onboarding": "the first-run setup flow; covered by setup-flow-*.spec.ts",

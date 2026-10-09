@@ -21,11 +21,11 @@ export default function InsightsKoerperwasserPage() {
       chartKey="totalBodyWater"
       i18nPrefix="insights.totalBodyWater"
       explainerMetric="bodyWater"
-      color="var(--info)"
+      color="var(--chart-4)"
       emptyStateIcon={<Droplet className="size-6" />}
       emptyStateCtaType={null}
       captureType="TOTAL_BODY_WATER"
-      coachPrefill="I haven't logged any total body water yet — what does this metric tell me about my health, and how do I improve it?"
+      coachPrefill="I haven't logged any total body water yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

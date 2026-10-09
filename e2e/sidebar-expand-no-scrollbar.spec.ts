@@ -133,7 +133,43 @@ test.describe("sidebar width transition", () => {
     });
 
     // With room to spare there is no edge: the default rail is unchanged.
+    // No native scrollbar in the rail (a classic one with arrow buttons
+    // read as a foreign body); a fade marks the edge that has more.
+    expect(
+      await nav.evaluate((el) => getComputedStyle(el).scrollbarWidth),
+    ).toBe("none");
+    expect(
+      await nav.evaluate(
+        (el) => (el as HTMLElement).offsetWidth - el.clientWidth,
+      ),
+    ).toBe(0);
+    await expect(nav).toHaveAttribute("data-fade-top", "true");
+    await expect(nav).not.toHaveAttribute("data-fade-bottom", "true");
+    await nav.evaluate((el) => {
+      el.scrollTop = 0;
+    });
+    await expect(nav).toHaveAttribute("data-fade-bottom", "true");
+    await expect(nav).not.toHaveAttribute("data-fade-top", "true");
+
     await page.setViewportSize({ width: 1280, height: 1400 });
     await expect(footer).not.toHaveAttribute("data-nav-overflows", "true");
+    await expect(nav).not.toHaveAttribute("data-fade-bottom", "true");
+  });
+
+  test("a 1366 × 768 window fits the rail without scrolling, collapsed and expanded", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    const nav = page.locator("aside nav").first();
+    const toggle = page.locator('[data-slot="sidebar-collapse-toggle"]');
+    await expect(nav).toBeVisible();
+    for (let i = 0; i < 2; i++) {
+      await expect
+        .poll(() => nav.evaluate((el) => el.scrollHeight - el.clientHeight))
+        .toBeLessThanOrEqual(0);
+      await toggle.click();
+      await page.waitForTimeout(300);
+    }
   });
 });

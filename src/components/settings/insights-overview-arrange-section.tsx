@@ -9,8 +9,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useAiCapability } from "@/hooks/use-ai-capability";
 import { useInsightsLayoutQuery } from "@/hooks/use-insights-layout";
 import { InsightsEditMode } from "@/components/insights/insights-edit-mode";
-import { SectionHeading } from "@/components/ui/section-heading";
 import { SettingsCard } from "@/components/settings/settings-card";
+import { SettingsCardHeader } from "@/components/settings/_card-header";
 import {
   INSIGHTS_SECTION_IDS,
   type InsightsSectionId,
@@ -59,29 +59,28 @@ export function InsightsOverviewArrangeSection({ id }: { id?: string }) {
       id={id}
       data-slot="insights-overview-arrange-section"
       aria-labelledby="insights-overview-arrange-title"
-      className="space-y-3"
+      className="scroll-mt-28"
     >
-      <SectionHeading
-        icon={LayoutGrid}
-        id="insights-overview-arrange-title"
-        title={t("insights.settings.overviewTitle")}
-        subtitle={t("insights.settings.overviewDescription")}
-      />
-
       {/* Gate the editor mount until the layout GET settles. The editor seeds
           its draft once from `layout` on mount, which is the canonical default
-          while in flight; mounting it early would let a "Fertig" save flush
-          defaults over the user's real saved layout (the same QA-L1 gate the
-          mother page applies to its "Anpassen" toggle). */}
+          while in flight; mounting it early would let a Save flush defaults
+          over the user's real saved layout (the same QA-L1 gate the mother
+          page applies to its "Anpassen" toggle). The loading card paints the
+          same header the loaded card carries (design standards §13), so the
+          page does not reflow under the cursor when the list arrives. */}
       {isLoading ? (
-        <SettingsCard
-          className="text-muted-foreground flex items-center gap-2 text-sm"
-          data-slot="insights-overview-arrange-loading"
-        >
-          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+        <SettingsCard data-slot="insights-overview-arrange-loading">
+          <SettingsCardHeader
+            icon={LayoutGrid}
+            title={t("insights.settings.overviewTitle")}
+            titleId="insights-overview-arrange-title"
+            description={t("insights.settings.overviewDescription")}
+          />
+          <Loader2 className="text-muted-foreground h-4 w-4 animate-spin motion-reduce:animate-none" />
         </SettingsCard>
       ) : (
         <InsightsEditMode
+          variant="settings"
           layout={layout}
           gatedOffSectionIds={gatedOffSectionIds}
           onClose={() => {}}

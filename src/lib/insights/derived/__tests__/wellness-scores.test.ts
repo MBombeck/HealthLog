@@ -313,3 +313,112 @@ describe("computeWellnessScore", () => {
     expect(where.source).toBe("COMPUTED");
   });
 });
+
+describe("computeWellnessScore — strain reads the device's day strain", () => {
+  // `/insights/recovery` charts the band's own DAY_STRAIN. The strain page
+  // must not call the same account "not enough data": with no computed proxy
+  // in the window it serves the device's day strain, on the device's scale.
+  function byType(rows: Record<string, unknown[]>) {
+    findMany.mockImplementation(
+      async (args: { where: { type: string } }) => rows[args.where.type] ?? [],
+    );
+  }
+
+  it("falls back to DAY_STRAIN when no computed strain score exists", async () => {
+    byType({
+      STRAIN_SCORE: [],
+      DAY_STRAIN: [
+        {
+          value: 10.5,
+          measuredAt: new Date("2026-06-02T04:00:00Z"),
+          source: "WHOOP",
+        },
+        {
+          value: 14.7,
+          measuredAt: new Date("2026-06-01T04:00:00Z"),
+          source: "WHOOP",
+        },
+      ],
+    });
+    const r = await computeWellnessScore("STRAIN_SCORE", "u1", PROFILE, {
+      now: NOW,
+    });
+    expect(r.status).toBe("ok");
+    if (r.status !== "ok") return;
+    const v = r.value as WellnessScoreValue;
+    expect(v.device).toEqual({ value: 10.5, scaleMax: 21 });
+    expect(v.score).toBe(50);
+    expect(v.daysInWindow).toBe(2);
+    expect(r.provenance.inputs).toEqual(["DAY_STRAIN"]);
+  });
+
+  it("counts days, not cycles, when two cycles start on one local day", async () => {
+    // Bed at 00:10 and again at 23:50 the same Berlin day: two cycle rows,
+    // one calendar day, which the recovery chart shows as one point (the
+    // day's mean).
+    byType({
+      STRAIN_SCORE: [],
+      DAY_STRAIN: [
+        {
+          value: 4,
+          measuredAt: new Date("2026-06-01T21:50:00Z"),
+          source: "WHOOP",
+        },
+        {
+          value: 12,
+          measuredAt: new Date("2026-05-31T22:10:00Z"),
+          source: "WHOOP",
+        },
+        {
+          value: 9,
+          measuredAt: new Date("2026-05-30T21:30:00Z"),
+          source: "WHOOP",
+        },
+      ],
+    });
+    const r = await computeWellnessScore("STRAIN_SCORE", "u1", PROFILE, {
+      now: NOW,
+    });
+    expect(r.status).toBe("ok");
+    if (r.status !== "ok") return;
+    const v = r.value as WellnessScoreValue;
+    expect(v.daysInWindow).toBe(2);
+    expect(v.series).toHaveLength(2);
+    expect(v.device).toEqual({ value: 8, scaleMax: 21 });
+    expect(r.coverage.historyDays).toBe(2);
+  });
+
+  it("keeps the computed proxy when one exists", async () => {
+    byType({
+      STRAIN_SCORE: [
+        {
+          value: 64,
+          measuredAt: new Date("2026-06-01T12:00:00Z"),
+          source: "COMPUTED",
+        },
+      ],
+      DAY_STRAIN: [
+        {
+          value: 10.5,
+          measuredAt: new Date("2026-06-02T04:00:00Z"),
+          source: "WHOOP",
+        },
+      ],
+    });
+    const r = await computeWellnessScore("STRAIN_SCORE", "u1", PROFILE, {
+      now: NOW,
+    });
+    expect(r.status).toBe("ok");
+    if (r.status !== "ok") return;
+    expect(r.value.score).toBe(64);
+    expect(r.value.device ?? null).toBeNull();
+  });
+
+  it("stays insufficient with neither", async () => {
+    byType({});
+    const r = await computeWellnessScore("STRAIN_SCORE", "u1", PROFILE, {
+      now: NOW,
+    });
+    expect(r.status).toBe("insufficient");
+  });
+});

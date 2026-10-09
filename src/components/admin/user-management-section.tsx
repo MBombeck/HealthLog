@@ -231,45 +231,50 @@ export function UserManagementSection() {
         <ShieldCheck className="h-3 w-3" aria-hidden="true" />
         {u.mfaEnforced ? t("admin.mfaEnforcedOn") : t("admin.mfaEnforcedOff")}
       </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="min-h-11 min-w-11 px-2 text-xs"
-        onClick={() => startEdit(u)}
-        title={t("admin.editUser")}
-        aria-label={t("admin.editUser")}
-      >
-        <Pencil className="h-3 w-3" aria-hidden="true" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="min-h-11 min-w-11 px-2 text-xs"
-        onClick={() => startReset(u)}
-        title={t("admin.resetPassword")}
-        aria-label={t("admin.resetPassword")}
-      >
-        <KeyRound className="h-3 w-3" aria-hidden="true" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="text-destructive hover:text-destructive min-h-11 min-w-11 px-2 text-xs"
-        onClick={() => setLogoutTarget(u)}
-        disabled={u.id === currentUserId}
-        title={
-          u.id === currentUserId
-            ? t("admin.section.users.cannotLogoutSelf")
-            : t("admin.section.users.forceLogout")
-        }
-        aria-label={
-          u.id === currentUserId
-            ? t("admin.section.users.cannotLogoutSelf")
-            : t("admin.section.users.forceLogout")
-        }
-      >
-        <LogOut className="h-3 w-3" aria-hidden="true" />
-      </Button>
+      {/* The three icon tools travel as one group: on a phone the row wraps
+          between the labelled toggles and the tools, never leaving the
+          sign-out icon alone on a line. */}
+      <span className="ml-auto flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="min-h-11 min-w-11 px-2 text-xs"
+          onClick={() => startEdit(u)}
+          title={t("admin.editUser")}
+          aria-label={t("admin.editUser")}
+        >
+          <Pencil className="h-3 w-3" aria-hidden="true" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="min-h-11 min-w-11 px-2 text-xs"
+          onClick={() => startReset(u)}
+          title={t("admin.resetPassword")}
+          aria-label={t("admin.resetPassword")}
+        >
+          <KeyRound className="h-3 w-3" aria-hidden="true" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground hover:text-foreground min-h-11 min-w-11 px-2 text-xs"
+          onClick={() => setLogoutTarget(u)}
+          disabled={u.id === currentUserId}
+          title={
+            u.id === currentUserId
+              ? t("admin.section.users.cannotLogoutSelf")
+              : t("admin.section.users.forceLogout")
+          }
+          aria-label={
+            u.id === currentUserId
+              ? t("admin.section.users.cannotLogoutSelf")
+              : t("admin.section.users.forceLogout")
+          }
+        >
+          <LogOut className="h-3 w-3" aria-hidden="true" />
+        </Button>
+      </span>
     </>
   );
 
@@ -306,7 +311,9 @@ export function UserManagementSection() {
         {(["all", "admin", "user"] as const).map((value) => (
           <Button
             key={value}
-            variant={filter === value ? "default" : "outline"}
+            // Neutral pills: the selected filter is a state, not a call to
+            // action, so it never takes the primary fill.
+            variant={filter === value ? "secondary" : "outline"}
             size="sm"
             className="min-h-11 min-w-11 px-3 text-xs sm:min-h-9"
             onClick={() => setFilter(value)}

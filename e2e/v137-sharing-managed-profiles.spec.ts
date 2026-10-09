@@ -503,13 +503,20 @@ test.describe.serial("scoped sharing browser journeys", () => {
     await expect(banner).toHaveAttribute("data-record-kind", "shared");
 
     await page.goto("/measurements");
-    await expect(page.locator('[data-slot="measurement-add"]')).toBeVisible();
+    // An empty list carries its add action in the empty state rather than
+    // the header, so the write grant shows whichever of the two applies.
+    const addControl = page
+      .locator(
+        '[data-slot="measurement-add"], [data-slot="measurement-add-first"]',
+      )
+      .first();
+    await expect(addControl).toBeVisible();
     const post = page.waitForResponse(
       (response) =>
         response.request().method() === "POST" &&
         new URL(response.url()).pathname === "/api/measurements",
     );
-    await page.locator('[data-slot="measurement-add"]').click();
+    await addControl.click();
     await page.locator("#sys").fill("124");
     await page.locator("#dia").fill("78");
     await page.getByRole("button", { name: /^save$/i }).click();

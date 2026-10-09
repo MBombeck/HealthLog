@@ -45,6 +45,7 @@ import {
 import { reportWorkerError } from "@/lib/jobs/report-worker-error";
 import { getWorkerPrisma } from "@/lib/jobs/reminder/shared";
 import { withBackgroundEvent } from "@/lib/logging/background";
+import { logCaught } from "@/lib/logging/signal";
 
 export const OFFHOST_PURGE_QUEUE = "offhost-backup-purge";
 /** 03:40, after the nightly upload (02:30) has had its hour. */
@@ -104,7 +105,8 @@ export async function kickOffhostPurge(): Promise<void> {
         retryDelay: 300,
       },
     );
-  } catch {
+  } catch (err) {
+    logCaught("backup.offhost_purge.kick_failed", err);
     // The cron is the backstop.
   }
 }

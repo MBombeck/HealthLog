@@ -50,6 +50,7 @@ vi.mock("@/lib/db", () => ({
     encounterLabLink: { findMany: vi.fn().mockResolvedValue([]) },
     encounterConditionLink: { findMany: vi.fn().mockResolvedValue([]) },
     vaccinationRecord: { findMany: vi.fn().mockResolvedValue([]) },
+    customVaccine: { findMany: vi.fn().mockResolvedValue([]) },
     vaccinationDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },
     // The reminder engine tables (v1.37.20, #223 / iOS #68). Empty for the
     // same reason as the visit tables above.
@@ -75,6 +76,7 @@ vi.mock("@/lib/db", () => ({
     extractedFact: { findMany: vi.fn().mockResolvedValue([]) },
     ecgRecording: { findMany: vi.fn().mockResolvedValue([]) },
     symptomDefinition: { findMany: vi.fn().mockResolvedValue([]) },
+    lifeEvent: { findMany: vi.fn().mockResolvedValue([]) },
     // v1.15.0 — cycle tables read by the full-backup helper.
     cycleProfile: { findUnique: vi.fn() },
     menstrualCycle: { findMany: vi.fn() },
@@ -158,6 +160,7 @@ beforeEach(() => {
     [] as never,
   );
   vi.mocked(prisma.vaccinationRecord.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.customVaccine.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.vaccinationDocumentLink.findMany).mockResolvedValue(
     [] as never,
   );
@@ -171,6 +174,7 @@ beforeEach(() => {
   vi.mocked(prisma.coachReminder.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.ecgRecording.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.symptomDefinition.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.lifeEvent.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.moodTagCategory.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.moodTagHidden.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.mentalHealthAssessment.findMany).mockResolvedValue(

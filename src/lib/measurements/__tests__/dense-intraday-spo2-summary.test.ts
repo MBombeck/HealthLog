@@ -13,7 +13,7 @@
  * mean to an unweighted mean-of-hourly-means) is skipped.
  *
  * This suite pins the SpO2 facet: the pre-fold (and only) DAY-rollup recompute,
- * the hourly MEAN fold + soft-delete, the no-derived-resting-row guard
+ * the hourly MEAN fold + delete, the no-derived-resting-row guard
  * (resting HR is a PULSE-only concern), idempotency, and the per-day failure
  * boundary.
  */
@@ -37,6 +37,7 @@ import { candidateLookup, createManyVia } from "./hourly-mint-mock";
 vi.mock("@/lib/export/restore-lock", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/export/restore-lock")>()),
   holdAccountAgainstRestore: vi.fn(async () => {}),
+  holdAccountFoldLock: vi.fn(async () => {}),
 }));
 
 function spo2Row(id: string, value: number, iso: string): PerSampleRow {
@@ -52,7 +53,7 @@ function spo2Row(id: string, value: number, iso: string): PerSampleRow {
 
 /**
  * Prisma mock covering the SpO2 fold flow: the scan (per-type rows), the fold
- * transaction (`create`/`update`/`findFirst`/`updateMany`), and the top-level
+ * transaction (`create`/`update`/`findFirst`/`updateMany`/`deleteMany`), and the top-level
  * surfaces a PULSE day would touch (`findFirst` for the native-resting probe,
  * `upsert` for the derived resting row) — both must stay UNCALLED for SpO2.
  */
@@ -60,7 +61,7 @@ function buildPrismaMock(opts: { spo2Rows: PerSampleRow[] }) {
   const txCreate = vi.fn().mockResolvedValue({ id: "minted-daily" });
   const txUpdate = vi.fn().mockResolvedValue({});
   const txFindFirst = vi.fn().mockResolvedValue(null);
-  const txUpdateMany = vi
+  const txDeleteMany = vi
     .fn()
     .mockResolvedValue({ count: opts.spo2Rows.length });
   const tx = {
@@ -68,14 +69,20 @@ function buildPrismaMock(opts: { spo2Rows: PerSampleRow[] }) {
       create: txCreate,
       update: txUpdate,
       findFirst: txFindFirst,
-      updateMany: txUpdateMany,
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      deleteMany: txDeleteMany,
       findMany: candidateLookup(),
       createManyAndReturn: createManyVia(txCreate),
     },
   };
 
-  const findMany = vi.fn(async (args: { where: { type: string } }) =>
-    args.where.type === "OXYGEN_SATURATION" ? opts.spo2Rows : [],
+  // The seeded rows are Apple Health's; the Health Connect walk finds none.
+  const findMany = vi.fn(
+    async (args: { where: { type: string; source: string } }) =>
+      args.where.type === "OXYGEN_SATURATION" &&
+      args.where.source === "APPLE_HEALTH"
+        ? opts.spo2Rows
+        : [],
   );
   // Native-resting probe + derived-resting upsert: PULSE-only surfaces.
   const topFindFirst = vi.fn().mockResolvedValue(null);
@@ -87,19 +94,24 @@ function buildPrismaMock(opts: { spo2Rows: PerSampleRow[] }) {
         .fn()
         .mockResolvedValue([{ id: "user-1", timezone: "Europe/Berlin" }]),
     },
-    measurement: { findMany, findFirst: topFindFirst, upsert },
+    measurement: {
+      findMany,
+      findFirst: topFindFirst,
+      upsert,
+      count: vi.fn().mockResolvedValue(0),
+    },
     $transaction: vi.fn(async (cb: (t: unknown) => Promise<unknown>) => cb(tx)),
   } as unknown as PrismaClient;
 
-  return { mock, txCreate, txUpdate, txUpdateMany, upsert, topFindFirst };
+  return { mock, txCreate, txUpdate, txDeleteMany, upsert, topFindFirst };
 }
 
 beforeEach(() => {
   recomputeBucketsForMeasurement.mockClear();
 });
 
-describe("SpO2 fold — hourly MEAN collapse + soft-delete", () => {
-  it("folds each LOCAL hour to its own MEAN row and soft-deletes the raw rows", async () => {
+describe("SpO2 fold — hourly MEAN collapse + delete", () => {
+  it("folds each LOCAL hour to its own MEAN row and deletes the raw rows", async () => {
     // Overnight dip to 91, daytime band 96..98 — four distinct local hours.
     const rows = [
       spo2Row("a", 91, "2026-05-01T03:00:00.000Z"),
@@ -107,7 +119,7 @@ describe("SpO2 fold — hourly MEAN collapse + soft-delete", () => {
       spo2Row("c", 97, "2026-05-01T13:00:00.000Z"),
       spo2Row("d", 98, "2026-05-01T19:00:00.000Z"),
     ];
-    const { mock, txCreate, txUpdateMany } = buildPrismaMock({
+    const { mock, txCreate, txDeleteMany } = buildPrismaMock({
       spo2Rows: rows,
     });
 
@@ -134,11 +146,11 @@ describe("SpO2 fold — hourly MEAN collapse + soft-delete", () => {
       expect(d.unit).toBe("%");
     }
 
-    // Soft-delete, never hard delete.
-    const updArg = txUpdateMany.mock.calls[0]?.[0] as {
-      data: { deletedAt: Date };
+    // v1.42 — the raw rows are deleted outright, no longer tombstoned.
+    const delArg = txDeleteMany.mock.calls[0]?.[0] as {
+      where: { id: { in: string[] } };
     };
-    expect(updArg.data.deletedAt).toBeInstanceOf(Date);
+    expect(delArg.where.id.in).toHaveLength(rows.length);
     expect(summary.totals.daysConsolidated).toBe(1);
     expect(summary.totals.perSampleRowsSoftDeleted).toBe(rows.length);
     expect(summary.totals.hourlyRowsUpserted).toBe(4);
@@ -191,13 +203,13 @@ describe("SpO2 fold — no resting derivation (PULSE-only concern)", () => {
 
 describe("SpO2 fold — idempotency + dry-run + no double-collapse", () => {
   it("converges to zero work when the scan returns no live rows (re-run)", async () => {
-    const { mock, txCreate, txUpdateMany } = buildPrismaMock({ spo2Rows: [] });
+    const { mock, txCreate, txDeleteMany } = buildPrismaMock({ spo2Rows: [] });
     const summary = await runDenseIntradayRetention(mock, {
       retentionDays: 0,
       log: () => {},
     });
     expect(txCreate).not.toHaveBeenCalled();
-    expect(txUpdateMany).not.toHaveBeenCalled();
+    expect(txDeleteMany).not.toHaveBeenCalled();
     expect(summary.totals.daysConsolidated).toBe(0);
     expect(recomputeBucketsForMeasurement).not.toHaveBeenCalled();
   });
@@ -264,7 +276,8 @@ describe("SpO2 fold — per-day failure boundary", () => {
             create: vi.fn().mockResolvedValue({ id: "minted" }),
             update: vi.fn(),
             findFirst: vi.fn().mockResolvedValue(null),
-            updateMany: vi.fn().mockResolvedValue({ count: 2 }),
+            updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+            deleteMany: vi.fn().mockResolvedValue({ count: 2 }),
             findMany: candidateLookup(),
             createManyAndReturn: createManyVia(
               vi.fn().mockResolvedValue({ id: "minted" }),

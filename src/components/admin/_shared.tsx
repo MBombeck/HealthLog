@@ -81,6 +81,8 @@ export interface SystemStatus {
     glitchtip: { configured: boolean; enabled: boolean } | null;
     webPush: { configured: boolean } | null;
   };
+  /** Login-IP geolocation state (admin-only since v1.42). */
+  geo: AdminGeoStatus;
 }
 
 export interface AdminSettings {
@@ -329,6 +331,8 @@ export function useAuthActionLabels(): Record<string, string> {
   return useMemo(
     () => ({
       "auth.register": t("admin.authRegister"),
+      // v1.42 (#959) — a managed profile taken over by its person.
+      "auth.claim": t("admin.authClaim"),
       "auth.login": t("admin.authLogin"),
       "auth.login.passkey": t("admin.authLoginPasskey"),
       "auth.login.password": t("admin.authLoginPassword"),
@@ -590,8 +594,31 @@ export interface PublicVersion {
   geoProviderHost?: string;
 }
 
-/** Shared `/api/version` reader — the system-status section + overview
- * summary both surface app version / build SHA / offline-geo state. */
+/** How login IPs are placed on this host, as `/api/admin/status` reports it. */
+export interface AdminGeoStatus {
+  /** `offline`, `online` or `off` (IP_GEO_LOOKUP_DISABLED). */
+  lookup: "offline" | "online" | "off";
+  /** The operator named the provider in IP_GEO_LOOKUP_URL. */
+  providerChosen: boolean;
+  /** Host of the online provider (IP_GEO_LOOKUP_URL, default ipwho.is). */
+  providerHost: string;
+}
+
+/**
+ * The geo row's state. Offline, switched off, or a provider the operator
+ * named are all decisions and read as fine; only the unconfigured default
+ * warns, because it sends every login IP to a third party nobody chose.
+ */
+export function geoLookupState(
+  geo: AdminGeoStatus,
+): "offline" | "off" | "chosen" | "default" {
+  if (geo.lookup === "offline") return "offline";
+  if (geo.lookup === "off") return "off";
+  return geo.providerChosen ? "chosen" : "default";
+}
+
+/** Shared `/api/version` reader for the version tile (version, build SHA,
+ * update check). The geo state comes from `/api/admin/status`. */
 export function usePublicVersion() {
   return useQuery({
     queryKey: queryKeys.publicVersion(),

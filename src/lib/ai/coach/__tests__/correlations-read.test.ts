@@ -100,7 +100,7 @@ describe("readCoachCorrelations", () => {
           pValue: 0.001,
           qValue: 0.02,
           interpretation:
-            "Higher time in daylight tends to go with higher next-day sleep duration in your data — a pattern worth watching, not a cause.",
+            "Higher time in daylight tends to go with higher next-day sleep duration in your data. It is a pattern to watch, not a cause.",
           lagDays: 1,
         },
       ],

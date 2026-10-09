@@ -36,7 +36,6 @@ export function SharedRecordUnavailable() {
         icon={<Lock className="size-6" />}
         title={t("recordSharing.unavailable.title")}
         description={t("recordSharing.unavailable.description")}
-        ctaSize="lg"
         action={
           <Button
             data-slot="shared-record-unavailable-leave"

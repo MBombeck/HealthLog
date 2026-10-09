@@ -3,6 +3,7 @@
 import { Sparkles } from "lucide-react";
 
 import { useTranslations } from "@/lib/i18n/context";
+import { resolveIntlLocale } from "@/lib/format-locale";
 import { useDerivedMetric } from "./use-derived-metric";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
@@ -16,15 +17,17 @@ import {
   ScoreAnatomyView,
   type AnatomyContributor,
 } from "./score-anatomy-view";
-import type { RingHue } from "./ring-hues";
+import { RING_GRADIENT, type RingHue } from "./ring-hues";
 import type { CoachLaunchScope } from "@/lib/insights/coach-launch-context";
 import { METRIC_PROVENANCE } from "./standards";
+import { ScoreHistoryChart, ScoreTrendChartDynamic } from "./score-history";
+import type { ChartOverlayKey } from "@/lib/dashboard-layout";
 
 /**
  * v1.10.0 — the data-bound wrapper that fetches a composite/persisted derived
  * score and renders the reusable `ScoreAnatomyView`. It owns the per-metric
  * presentation map (title, contributor labels, the cited standard, the
- * plain-language method + honesty caveat) so the anatomy view itself stays
+ * plain-language method) so the anatomy view itself stays
  * metric-agnostic.
  *
  * Supports the two decomposable W3 composites (`SLEEP_SCORE`, `READINESS` —
@@ -32,12 +35,10 @@ import { METRIC_PROVENANCE } from "./standards";
  * three persisted nightly scores (`RECOVERY_SCORE`, `STRESS_SCORE`,
  * `STRAIN_SCORE`). The persisted scores carry no sub-decomposition, so they
  * render the ring + coverage + the provenance surface (method + cited
- * standard + caveat) with no contributor rows — the acceptance-criterion fix
- * that gives every wellness ring a provenance surface instead of a read-only
- * dead-end. STRESS surfaces its "HRV-derived proxy, not an EDA/galvanic
- * measurement" caveat via the standards map.
+ * standard) with no contributor rows — the acceptance-criterion fix that gives
+ * every wellness ring a provenance surface instead of a read-only dead-end.
  *
- * The standard + method/caveat keys come from the single `METRIC_PROVENANCE`
+ * The standard + method keys come from the single `METRIC_PROVENANCE`
  * source map so the citation a metric exposes never drifts across surfaces.
  *
  * Client-only: `import type` for the value shapes (no server graph leaks);
@@ -98,6 +99,15 @@ const METRIC_COACH_SCOPE: Record<AnatomyMetricId, CoachLaunchScope> = {
   },
 };
 
+/** The slot each score page remembers its history chart's range tab under. */
+const METRIC_CHART_KEY: Record<AnatomyMetricId, ChartOverlayKey> = {
+  SLEEP_SCORE: "scoreSleep",
+  READINESS: "scoreReadiness",
+  RECOVERY_SCORE: "scoreRecovery",
+  STRESS_SCORE: "scoreStress",
+  STRAIN_SCORE: "scoreStrain",
+};
+
 const METRIC_HUE: Record<AnatomyMetricId, RingHue> = {
   SLEEP_SCORE: "sleep",
   READINESS: "readiness",
@@ -110,7 +120,7 @@ export function CompositeScoreAnatomy({
   metric,
   className,
 }: CompositeScoreAnatomyProps) {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
 
   const query = useDerivedMetric<
     SleepScoreValue | ReadinessValue | WellnessScoreValue
@@ -136,7 +146,15 @@ export function CompositeScoreAnatomy({
   // the displayed framing honest per-score. `null` (RECOVERY / STRESS, or no
   // cache row yet) renders nothing.
   let anchorLine: string | null = null;
-  if (metric === "STRAIN_SCORE" && data?.status === "ok" && data.value) {
+  // Strain served from the device's own day strain (no computed proxy in the
+  // window): the card says so, and the course below charts that same series.
+  const deviceStrain =
+    metric === "STRAIN_SCORE" && data?.status === "ok" && data.value
+      ? ((data.value as WellnessScoreValue).device ?? null)
+      : null;
+  if (deviceStrain) {
+    anchorLine = t("insights.derived.composite.STRAIN_SCORE.deviceSource");
+  } else if (metric === "STRAIN_SCORE" && data?.status === "ok" && data.value) {
     const anchor = (data.value as WellnessScoreValue).anchor;
     if (anchor === "personal") {
       anchorLine = t("insights.derived.composite.STRAIN_SCORE.anchorPersonal");
@@ -147,16 +165,16 @@ export function CompositeScoreAnatomy({
     }
   }
 
-  // Method copy carries an optional honesty caveat above it (STRESS proxy,
-  // descriptive-not-clinical, …) so the caveat reaches the user, not just
-  // the engine header.
-  const method = (
+  // v1.42 — the per-score "descriptive proxy, not clinical" line that sat
+  // above the method in warning colour is gone: it repeated on every score
+  // page what the method and the page explainer already say, and read as an
+  // alarm. The method copy closes the card on its own.
+  // Served from the device, the proxy's method does not describe the number
+  // on the card; the device line does, on its own.
+  const method = deviceStrain ? (
+    anchorLine
+  ) : (
     <>
-      {meta.caveatKey ? (
-        <span className="text-warning block font-medium">
-          {t(meta.caveatKey)}
-        </span>
-      ) : null}
       {t(meta.methodKey)}
       {anchorLine ? <span className="mt-1 block">{anchorLine}</span> : null}
     </>
@@ -243,7 +261,15 @@ export function CompositeScoreAnatomy({
       // READINESS component keys verbatim. STRESS / STRAIN stay row-less.
       const v = data.value as WellnessScoreValue;
       score = v.score;
-      caption = t(`insights.derived.scoreRing.band.${v.band}`);
+      caption = v.device
+        ? t("insights.derived.composite.STRAIN_SCORE.deviceCaption", {
+            value: v.device.value.toLocaleString(resolveIntlLocale(locale), {
+              minimumFractionDigits: 1,
+              maximumFractionDigits: 1,
+            }),
+            max: v.device.scaleMax,
+          })
+        : t(`insights.derived.scoreRing.band.${v.band}`);
       if (metric === "RECOVERY_SCORE" && v.components) {
         contributors = v.components
           .map((c) => ({
@@ -268,6 +294,29 @@ export function CompositeScoreAnatomy({
   // the card always renders its prose rather than the no-provider fallback.
   const assessment = data.assessment;
 
+  // v1.42 — the score's course, right under its card, with the range tabs
+  // every chart offers. A stored nightly score charts its readings; readiness
+  // and the sleep score chart the daily history the score-history route
+  // serves. Only beside a score: an account without one gets the honest
+  // insufficient card, not an empty chart under it.
+  const history =
+    data.status !== "ok" ? null : metric === "RECOVERY_SCORE" ||
+      metric === "STRESS_SCORE" ||
+      metric === "STRAIN_SCORE" ? (
+      <ScoreHistoryChart
+        type={deviceStrain ? "DAY_STRAIN" : metric}
+        hue={METRIC_HUE[metric]}
+        chartKey={METRIC_CHART_KEY[metric]}
+      />
+    ) : (
+      <ScoreTrendChartDynamic
+        score={metric}
+        chartKey={METRIC_CHART_KEY[metric]}
+        color={RING_GRADIENT[METRIC_HUE[metric]][1]}
+        label={title}
+      />
+    );
+
   return (
     <div className="space-y-3">
       <ScoreAnatomyView
@@ -284,6 +333,7 @@ export function CompositeScoreAnatomy({
         insufficient={insufficient}
         className={className}
       />
+      {history}
       {assessment ? (
         <InsightStatusCard
           title={t("insights.assessmentTitle")}

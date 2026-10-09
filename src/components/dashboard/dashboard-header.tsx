@@ -10,10 +10,11 @@
  * Extracted from the dashboard page; the page owns the open-state the
  * dropdown items set via `onQuickEntry`.
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Activity,
+  Flag,
   Footprints,
   Pill,
   Plus,
@@ -36,6 +37,7 @@ import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { hourInTz } from "@/lib/tz/format";
 import {
   CAPTURE_KIND_ORDER,
+  CapturePicker,
   visibleCaptureKinds,
 } from "@/components/layout/capture-picker";
 import type { QuickEntryDialog } from "@/components/dashboard/quick-entry-sheets";
@@ -48,6 +50,7 @@ export function DashboardHeader({
   const { t } = useTranslations();
   const { user } = useAuth();
   const mounted = useMounted();
+  const [captureOpen, setCaptureOpen] = useState(false);
   // The quick-add offers four kinds, and each one is asked about its own
   // section: a reading under `measurements`, a dose under `medications`, a
   // mood entry under `mind`, a workout in one's own record only. The coarse `canAdd` this used to gate the whole
@@ -72,6 +75,7 @@ export function DashboardHeader({
   const canAddMood = offered.includes("mood");
   const canAddSymptom = offered.includes("symptom");
   const canAddWorkout = offered.includes("workout");
+  const canAddLifeEvent = offered.includes("lifeEvent");
   const canAddAnything = offered.length > 0;
 
   // The pre-hero greeting derivation, kept hydration-safe: `user` comes
@@ -147,6 +151,26 @@ export function DashboardHeader({
               </Link>
             </Button>
           )}
+          {/* On the phone shell the add button opens the same capture
+              picker sheet the bottom nav's plus opens: one way to add a
+              thing, not a dropdown here and a sheet one thumb below. */}
+          {canAddAnything && (
+            <Button
+              size="default"
+              className="shell-desktop:hidden min-h-11"
+              onClick={() => setCaptureOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={captureOpen}
+              data-slot="dashboard-quick-add-capture"
+              data-tour-id="dashboard-quick-add"
+            >
+              <Plus className="h-4 w-4" />
+              {t("common.add")}
+            </Button>
+          )}
+          {canAddAnything && (
+            <CapturePicker open={captureOpen} onOpenChange={setCaptureOpen} />
+          )}
           {canAddAnything && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -164,7 +188,7 @@ export function DashboardHeader({
                   + label keep the same visual contract. */}
                 <Button
                   size="default"
-                  className="min-h-11 sm:min-h-9"
+                  className="shell-mobile:hidden min-h-11 sm:min-h-9"
                   data-tour-id="dashboard-quick-add"
                 >
                   <Plus className="h-4 w-4" />
@@ -188,12 +212,6 @@ export function DashboardHeader({
                     {t("dashboard.quickAddMeasurement")}
                   </DropdownMenuItem>
                 )}
-                {canAddMood && (
-                  <DropdownMenuItem onClick={() => onQuickEntry("mood")}>
-                    <Waves className="mr-2 h-4 w-4" aria-hidden="true" />
-                    {t("dashboard.quickAddMood")}
-                  </DropdownMenuItem>
-                )}
                 {/* v1.4.37 W7b — third quick-add row: medication intake.
                   Same Sheet-on-mobile / Dialog-on-desktop primitive as
                   the other two; the menu label is a self-contained
@@ -207,6 +225,12 @@ export function DashboardHeader({
                     {t("dashboard.quickAddMedicationIntake")}
                   </DropdownMenuItem>
                 )}
+                {canAddMood && (
+                  <DropdownMenuItem onClick={() => onQuickEntry("mood")}>
+                    <Waves className="mr-2 h-4 w-4" aria-hidden="true" />
+                    {t("dashboard.quickAddMood")}
+                  </DropdownMenuItem>
+                )}
                 {canAddSymptom && (
                   <DropdownMenuItem onClick={() => onQuickEntry("symptom")}>
                     <Stethoscope className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -217,6 +241,12 @@ export function DashboardHeader({
                   <DropdownMenuItem onClick={() => onQuickEntry("workout")}>
                     <Footprints className="mr-2 h-4 w-4" aria-hidden="true" />
                     {t("dashboard.quickAddWorkout")}
+                  </DropdownMenuItem>
+                )}
+                {canAddLifeEvent && (
+                  <DropdownMenuItem onClick={() => onQuickEntry("lifeEvent")}>
+                    <Flag className="mr-2 h-4 w-4" aria-hidden="true" />
+                    {t("dashboard.quickAddLifeEvent")}
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>

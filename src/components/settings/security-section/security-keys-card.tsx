@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { ApiError, apiDelete, apiPatch, apiPost } from "@/lib/api/api-fetch";
@@ -192,12 +193,13 @@ export function SecurityKeysCard({
   return (
     <SettingsCard>
       <SettingsCardHeader
+        anchor="security-keys"
         icon={Usb}
         title={t("settings.security.keys.title")}
         description={t("settings.security.keys.description")}
       />
 
-      <div>
+      <div className="space-y-4">
         {keys.length === 0 ? (
           <EmptyState
             variant="plain"
@@ -293,7 +295,7 @@ export function SecurityKeysCard({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="text-destructive min-h-11 min-w-11 sm:h-8 sm:min-h-0 sm:w-8 sm:min-w-0"
+                            className="text-muted-foreground hover:text-foreground min-h-11 min-w-11 sm:h-8 sm:min-h-0 sm:w-8 sm:min-w-0"
                             disabled={remove.isPending}
                             aria-label={t("settings.security.keys.remove")}
                           >
@@ -335,10 +337,19 @@ export function SecurityKeysCard({
           </ul>
         )}
 
-        <div className="mt-4">
+        {error && (
+          <div
+            role="alert"
+            className="text-destructive flex items-center gap-2 text-sm"
+          >
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            {error}
+          </div>
+        )}
+
+        <SettingsCardActions>
           <Button
             type="button"
-            variant="outline"
             className="min-h-11 sm:min-h-9"
             onClick={() => add.mutate(undefined)}
             disabled={add.isPending}
@@ -350,7 +361,7 @@ export function SecurityKeysCard({
             )}
             {t("settings.security.keys.add")}
           </Button>
-        </div>
+        </SettingsCardActions>
         <ExistingFactorReauthDialog
           open={reauthOpen}
           onOpenChange={(open) => {
@@ -362,16 +373,6 @@ export function SecurityKeysCard({
           error={reauthError}
           onProof={(proof) => add.mutate(proof)}
         />
-
-        {error && (
-          <div
-            role="alert"
-            className="text-destructive mt-3 flex items-center gap-2 text-sm"
-          >
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            {error}
-          </div>
-        )}
       </div>
     </SettingsCard>
   );

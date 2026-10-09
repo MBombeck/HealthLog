@@ -93,6 +93,8 @@ describe("vaccination form document links", () => {
     lotNumber: null,
     site: null,
     catalogEntry: null,
+    customVaccineId: null,
+    customVaccine: null,
     series: [],
     practitioner: null,
     encounter: null,

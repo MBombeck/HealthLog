@@ -25,16 +25,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { apiGet } from "@/lib/api/api-fetch";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
-import type {
-  MetricFreshnessEntry,
-  SyncHealth,
-} from "@/lib/integrations/sync-verdict";
+import type { HealthKitFreshnessEntry } from "@/lib/integrations/healthkit-type-sync";
+import type { SyncHealth } from "@/lib/integrations/sync-verdict";
 import { queryKeys } from "@/lib/query-keys";
 
 import { MetricFreshnessDisclosure } from "./metric-freshness-disclosure";
 import { IntegrationErrorMessage, pillStateForVerdict } from "./shared";
 
-type SyncTrigger = "foreground" | "background" | "push";
+type SyncTrigger = "foreground" | "background" | "push" | "manual";
 
 interface HealthKitStatus {
   lastSyncedAt: string | null;
@@ -43,7 +41,8 @@ interface HealthKitStatus {
   /** When data last arrived without the app being opened. */
   lastBackgroundSyncAt?: string | null;
   syncHealth?: SyncHealth;
-  metricFreshness?: MetricFreshnessEntry[];
+  /** Per type: newest sample, plus when it last arrived and how (#1173). */
+  metricFreshness?: HealthKitFreshnessEntry[];
   /** Server-side backfill progress (#778); null when the read failed. */
   syncProgress?: {
     recordsAccepted: number;
@@ -65,6 +64,7 @@ const TRIGGER_KEYS: Record<SyncTrigger, string> = {
   foreground: "settings.appleHealth.delivery.trigger.foreground",
   background: "settings.appleHealth.delivery.trigger.background",
   push: "settings.appleHealth.delivery.trigger.push",
+  manual: "settings.appleHealth.delivery.trigger.manual",
 };
 
 /**
@@ -131,6 +131,65 @@ function DeliveryDiagnostic({
         </p>
       )}
     </div>
+  );
+}
+
+/**
+ * The second line of a type's row: when a live sync last carried the type,
+ * under which trigger, and when one last brought a new value. The newest
+ * sample's time on the right of the row says when the reading was TAKEN; this
+ * says when the server RECEIVED it, which is what tells a type that only
+ * arrives on "Sync all" from one the phone delivers by itself (#1173). Nothing
+ * renders when the server sent no arrival facts (the workouts row, or a failed
+ * ledger read), so absence is never painted as "not received".
+ */
+export function ArrivalDetail({
+  entry,
+  t,
+  now,
+}: {
+  entry: HealthKitFreshnessEntry;
+  t: (key: string, params?: Record<string, string | number>) => string;
+  now?: Date;
+}) {
+  if (entry.lastReceivedAt === undefined) return null;
+  if (entry.lastReceivedAt === null) {
+    return (
+      <span data-testid="apple-health-arrival" data-state="never">
+        {t("settings.appleHealth.freshness.never")}
+      </span>
+    );
+  }
+  const reference = (now ?? new Date()).getTime();
+  const relative = (iso: string) =>
+    formatRelative(Math.max(0, reference - new Date(iso).getTime()), t);
+  const trigger = entry.lastTrigger ?? null;
+  const parts = [
+    t("settings.appleHealth.freshness.lastReceived", {
+      relative: relative(entry.lastReceivedAt),
+    }),
+    t(
+      trigger
+        ? TRIGGER_KEYS[trigger]
+        : "settings.appleHealth.delivery.trigger.unknown",
+    ),
+  ];
+  // Only worth a mention when the last arrival brought duplicates alone.
+  if (entry.lastNewSampleAt && entry.lastNewSampleAt !== entry.lastReceivedAt) {
+    parts.push(
+      t("settings.appleHealth.freshness.lastNewValue", {
+        relative: relative(entry.lastNewSampleAt),
+      }),
+    );
+  }
+  return (
+    <span
+      data-testid="apple-health-arrival"
+      data-state="received"
+      data-trigger={trigger ?? "unknown"}
+    >
+      {parts.join(" · ")}
+    </span>
   );
 }
 
@@ -268,6 +327,8 @@ export function AppleHealthCard({ enabled }: { enabled: boolean }) {
         <MetricFreshnessDisclosure
           entries={status?.metricFreshness}
           idPrefix="apple-health"
+          title={t("settings.appleHealth.freshness.title")}
+          detail={(entry) => <ArrivalDetail entry={entry} t={t} />}
         />
 
         <div className="space-y-2">

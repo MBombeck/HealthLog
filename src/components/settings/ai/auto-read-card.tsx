@@ -16,9 +16,12 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ShieldAlert } from "lucide-react";
+import { ScanText, ShieldAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { SettingsCard } from "@/components/settings/settings-card";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
+import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { Switch } from "@/components/ui/switch";
 import { apiGet, apiPatch } from "@/lib/api/api-fetch";
 import { useAiCapability } from "@/hooks/use-ai-capability";
@@ -86,27 +89,22 @@ export function AutoReadCard() {
   const checked = enabled || pendingEnable;
 
   return (
-    <div
-      data-slot="documents-auto-read-card"
-      className="bg-muted/50 space-y-4 rounded-lg p-4"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium">
-            {t("settings.ai.autoRead.title")}
-          </p>
-          <p className="text-muted-foreground text-xs">
-            {t("settings.ai.autoRead.subLabel")}
-          </p>
-        </div>
-        <Switch
-          checked={checked}
-          disabled={busy || (operatorOff && !enabled)}
-          onCheckedChange={onSwitch}
-          aria-label={t("settings.ai.autoRead.title")}
-          data-testid="documents-auto-read-enable"
-        />
-      </div>
+    <SettingsCard data-slot="documents-auto-read-card">
+      <SettingsCardHeader
+        anchor="auto-read"
+        icon={ScanText}
+        title={t("settings.ai.autoRead.title")}
+        description={t("settings.ai.autoRead.subLabel")}
+        status={
+          <Switch
+            checked={checked}
+            disabled={busy || (operatorOff && !enabled)}
+            onCheckedChange={onSwitch}
+            aria-label={t("settings.ai.autoRead.title")}
+            data-testid="documents-auto-read-enable"
+          />
+        }
+      />
 
       {operatorOff ? (
         <p
@@ -130,7 +128,17 @@ export function AutoReadCard() {
             />
             <p className="min-w-0">{t("settings.ai.autoRead.honesty")}</p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <SettingsCardActions>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="min-h-11 sm:min-h-9"
+              disabled={save.isPending}
+              onClick={() => setPendingEnable(false)}
+            >
+              {t("settings.ai.autoRead.cancel")}
+            </Button>
             <Button
               type="button"
               size="sm"
@@ -141,17 +149,7 @@ export function AutoReadCard() {
             >
               {t("settings.ai.autoRead.confirm")}
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="min-h-11 sm:min-h-9"
-              disabled={save.isPending}
-              onClick={() => setPendingEnable(false)}
-            >
-              {t("settings.ai.autoRead.cancel")}
-            </Button>
-          </div>
+          </SettingsCardActions>
         </div>
       ) : null}
 
@@ -160,6 +158,6 @@ export function AutoReadCard() {
           {t("settings.ai.errorGeneric")}
         </p>
       ) : null}
-    </div>
+    </SettingsCard>
   );
 }

@@ -189,7 +189,7 @@ function CategoryRow({
         type="button"
         variant="ghost"
         size="icon"
-        className="text-destructive hover:text-destructive size-11 sm:size-9"
+        className="text-muted-foreground hover:text-foreground size-11 sm:size-9"
         onClick={() => onDelete(category)}
         aria-label={`${t("medications.category.custom.delete")}: ${category.label}`}
         title={t("medications.category.custom.delete")}

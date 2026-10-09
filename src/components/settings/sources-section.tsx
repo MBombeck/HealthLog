@@ -69,6 +69,38 @@ import { apiGet, apiPut } from "@/lib/api/api-fetch";
 interface ResolvedPriority extends Required<MetricPriority> {
   metricPriority: Required<MetricPriority>;
   deviceTypePriority: DeviceTypePriority;
+  /**
+   * The ranked sources this account has connected or holds data from. The
+   * editor lists only these; the ladders it edits keep every source.
+   */
+  inUse?: string[];
+}
+
+type LadderSource = Required<MetricPriority>[SourcePriorityMetricKey][number];
+
+/**
+ * Move `source` one step past its nearest VISIBLE neighbour in `list`.
+ *
+ * The editor hides sources the account does not use, so an adjacent swap on
+ * the full ladder would trade places with an invisible entry and look like a
+ * button that did nothing. Swapping with the next visible entry keeps the
+ * hidden ones in their slots. Returns `null` when there is no visible
+ * neighbour in that direction.
+ */
+export function moveAmongVisible<T>(
+  list: readonly T[],
+  source: T,
+  delta: -1 | 1,
+  isVisible: (entry: T) => boolean,
+): T[] | null {
+  const from = list.indexOf(source);
+  if (from < 0) return null;
+  let to = from + delta;
+  while (to >= 0 && to < list.length && !isVisible(list[to])) to += delta;
+  if (to < 0 || to >= list.length) return null;
+  const next = [...list];
+  [next[from], next[to]] = [next[to], next[from]];
+  return next;
 }
 
 const METRIC_LABEL_KEYS: Record<SourcePriorityMetricKey, string> = {
@@ -85,6 +117,7 @@ const METRIC_LABEL_KEYS: Record<SourcePriorityMetricKey, string> = {
   bodyTemperature: "settings.sections.sources.metrics.bodyTemperature",
   spo2: "settings.sections.sources.metrics.spo2",
   hrv: "settings.sections.sources.metrics.hrv",
+  hrvRmssd: "settings.sections.sources.metrics.hrvRmssd",
   restingHeartRate: "settings.sections.sources.metrics.restingHeartRate",
   vo2Max: "settings.sections.sources.metrics.vo2Max",
   // v1.11.0 — WHOOP-overlapping metric classes + native-vs-derived recovery.
@@ -206,13 +239,13 @@ export function SourcesSection() {
 
   function moveSource(
     metric: SourcePriorityMetricKey,
-    index: number,
+    source: LadderSource,
     delta: -1 | 1,
   ) {
     if (!priority) return;
     const current =
       priority.metricPriority[metric] ?? DEFAULT_SOURCE_PRIORITY[metric];
-    const list = reorderLadder(current, index, delta);
+    const list = moveAmongVisible(current, source, delta, isSourceVisible);
     if (!list) return;
     const nextMetric = { ...priority.metricPriority, [metric]: list };
     setDraft({
@@ -261,6 +294,46 @@ export function SourcesSection() {
 
   const dirty = draft !== null && priority !== null;
 
+  // An older server sends no `inUse`; then every source stays listed.
+  const remoteInUse = remote?.inUse;
+  const inUse = useMemo(
+    () => (remoteInUse ? new Set(remoteInUse) : null),
+    [remoteInUse],
+  );
+  function isSourceVisible(source: string): boolean {
+    return inUse === null || inUse.has(source);
+  }
+
+  // The metrics worth showing: those with at least one source in use. A
+  // metric nobody delivers has nothing to rank.
+  const visibleMetrics = useMemo(() => {
+    if (!priority) return [] as SourcePriorityMetricKey[];
+    return SOURCE_PRIORITY_METRIC_KEYS.filter((metric) =>
+      (priority.metricPriority[metric] ?? DEFAULT_SOURCE_PRIORITY[metric]).some(
+        (source) => inUse === null || inUse.has(source),
+      ),
+    );
+  }, [priority, inUse]);
+
+  // Every group starts collapsed except the first, so the page opens on one
+  // worked example instead of twenty open ladders. Toggled groups are
+  // remembered by key; the first group's default is the inverse.
+  const [toggledMetrics, setToggledMetrics] = useState<
+    ReadonlySet<SourcePriorityMetricKey>
+  >(new Set());
+  function isMetricOpen(metric: SourcePriorityMetricKey): boolean {
+    const openByDefault = metric === visibleMetrics[0];
+    return toggledMetrics.has(metric) ? !openByDefault : openByDefault;
+  }
+  function toggleMetric(metric: SourcePriorityMetricKey) {
+    setToggledMetrics((prev) => {
+      const next = new Set(prev);
+      if (next.has(metric)) next.delete(metric);
+      else next.add(metric);
+      return next;
+    });
+  }
+
   // The per-metric expander shows every metric whose ladder has been
   // overridden, plus a hint when none has. Counter lives next to the
   // expander label so the section "asks" for attention proportional
@@ -296,89 +369,122 @@ export function SourcesSection() {
           icon={Layers}
           title={t("settings.sections.sources.cardTitle")}
           description={t("settings.sections.sources.help")}
-          status={
-            <ConfirmButton
-              slot="settings-sources-reset"
-              variant="ghost"
-              size="sm"
-              icon={<RotateCcw className="h-3.5 w-3.5" />}
-              label={t("settings.sections.sources.resetDefaults")}
-              title={t("settings.sections.sources.resetDefaultsTitle")}
-              body={t("settings.sections.sources.resetDefaultsBody")}
-              confirmLabel={t("settings.sections.sources.resetDefaultsConfirm")}
-              disabled={saveMutation.isPending}
-              pending={resetMutation.isPending}
-              onConfirm={() => resetMutation.mutate()}
-            />
-          }
         />
 
         <p className="text-sm">{t("settings.sections.sources.helpDetail")}</p>
 
         {isLoading || !priority ? (
           <SourcesSkeletonList />
+        ) : visibleMetrics.length === 0 ? (
+          <EmptyState
+            variant="plain"
+            size="compact"
+            data-testid="sources-none-in-use"
+            title={t("settings.sections.sources.noneInUse")}
+          />
         ) : (
           <div className="space-y-3">
-            {SOURCE_PRIORITY_METRIC_KEYS.map((metric) => {
-              const list =
+            {visibleMetrics.map((metric) => {
+              const list = (
                 priority.metricPriority[metric] ??
-                DEFAULT_SOURCE_PRIORITY[metric];
+                DEFAULT_SOURCE_PRIORITY[metric]
+              ).filter(isSourceVisible);
+              const open = isMetricOpen(metric);
+              const panelId = `sources-metric-${metric}`;
               return (
                 <div
                   key={metric}
-                  className="border-border bg-background/30 space-y-2 rounded-md border p-3"
+                  data-testid={`sources-metric-${metric}`}
+                  className="border-border bg-background/30 rounded-md border"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">
+                  <button
+                    type="button"
+                    onClick={() => toggleMetric(metric)}
+                    aria-expanded={open}
+                    aria-controls={panelId}
+                    className="hover:bg-muted/40 flex min-h-11 w-full items-center gap-2 rounded-md px-3 py-2 text-left transition-colors"
+                  >
+                    <ChevronDown
+                      aria-hidden="true"
+                      className={`text-muted-foreground size-4 shrink-0 transition-transform ${
+                        open ? "rotate-180" : ""
+                      }`}
+                    />
+                    <span className="min-w-0 flex-1 text-sm font-medium">
                       {t(METRIC_LABEL_KEYS[metric])}
                     </span>
-                  </div>
-                  <ul className="space-y-1">
-                    {list.map((source, index) => (
-                      <li
-                        key={`${metric}-${source}-${index}`}
-                        className="border-border bg-card flex items-center gap-2 rounded-md border px-2 py-1.5"
+                    {/* Collapsed, the group still says who wins. */}
+                    {!open && list[0] ? (
+                      <span
+                        data-slot="sources-metric-winner"
+                        // `truncate` needs room to give up: a shrink-0 span
+                        // never cut, and a long source name squeezed the
+                        // metric label at 390 px instead.
+                        className="text-muted-foreground max-w-[45%] min-w-0 truncate text-xs"
                       >
-                        <span className="text-muted-foreground w-5 text-xs font-medium tabular-nums">
-                          {index + 1}.
-                        </span>
-                        <span className="flex-1 text-sm">
-                          {t(MEASUREMENT_SOURCE_SETTINGS_LABEL_KEYS[source])}
-                        </span>
-                        {/* v1.4.27 R3d MB2 — stack up/down vertically on
-                            narrow viewports so each button keeps the
-                            44 px floor without crowding the row. From
-                            `sm:` up the two buttons sit side-by-side
-                            again to preserve the desktop layout. */}
-                        <div className="flex flex-col gap-1 sm:flex-row sm:gap-2">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-11 w-11"
-                            onClick={() => moveSource(metric, index, -1)}
-                            disabled={index === 0 || saveMutation.isPending}
-                            aria-label={t("settings.sections.sources.moveUp")}
+                        {t(MEASUREMENT_SOURCE_SETTINGS_LABEL_KEYS[list[0]])}
+                      </span>
+                    ) : null}
+                  </button>
+                  {/* The list stays in the tree, empty and hidden, while
+                      the group is closed, so the toggle's aria-controls
+                      always names an element. */}
+                  <ul
+                    id={panelId}
+                    hidden={!open}
+                    className="space-y-1 px-3 pb-3"
+                  >
+                    {open
+                      ? list.map((source, index) => (
+                          <li
+                            key={`${metric}-${source}`}
+                            className="border-border bg-card flex items-center gap-2 rounded-md border px-2 py-1.5"
                           >
-                            <ArrowUp className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-11 w-11"
-                            onClick={() => moveSource(metric, index, 1)}
-                            disabled={
-                              index === list.length - 1 ||
-                              saveMutation.isPending
-                            }
-                            aria-label={t("settings.sections.sources.moveDown")}
-                          >
-                            <ArrowDown className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </li>
-                    ))}
+                            <span className="text-muted-foreground w-5 text-xs font-medium tabular-nums">
+                              {index + 1}.
+                            </span>
+                            <span className="flex-1 text-sm">
+                              {t(
+                                MEASUREMENT_SOURCE_SETTINGS_LABEL_KEYS[source],
+                              )}
+                            </span>
+                            {/* Up/down sit side by side at every width: two
+                              44 px buttons leave a 390 px row ~170 px for the
+                              source name. */}
+                            <div className="flex shrink-0 gap-1 sm:gap-2">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-11 w-11"
+                                onClick={() => moveSource(metric, source, -1)}
+                                disabled={index === 0 || saveMutation.isPending}
+                                aria-label={t(
+                                  "settings.sections.sources.moveUp",
+                                )}
+                              >
+                                <ArrowUp className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-11 w-11"
+                                onClick={() => moveSource(metric, source, 1)}
+                                disabled={
+                                  index === list.length - 1 ||
+                                  saveMutation.isPending
+                                }
+                                aria-label={t(
+                                  "settings.sections.sources.moveDown",
+                                )}
+                              >
+                                <ArrowDown className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </li>
+                        ))
+                      : null}
                   </ul>
                 </div>
               );
@@ -408,46 +514,49 @@ export function SourcesSection() {
                 count: overriddenMetrics.length,
               })}
             </button>
-            {showPerMetric && (
-              <div
-                id="sources-per-metric-panel"
-                role="region"
-                className="bg-background/30 border-border space-y-3 rounded-md border p-3"
-              >
-                <p className="text-muted-foreground text-xs">
-                  {t("settings.sections.sources.perMetricHelp")}
-                </p>
-                {overriddenMetrics.length === 0 ? (
-                  <EmptyState
-                    variant="plain"
-                    size="compact"
-                    title={t("settings.sections.sources.perMetricEmpty")}
-                  />
-                ) : (
-                  <ul className="space-y-2">
-                    {overriddenMetrics.map((metric) => (
-                      <li
-                        key={metric}
-                        className="border-border bg-card flex items-center justify-between gap-3 rounded-md border px-3 py-2"
-                      >
-                        <span className="text-sm">
-                          {t(METRIC_LABEL_KEYS[metric])}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => resetMetricToDefault(metric)}
-                          disabled={saveMutation.isPending}
+            <div
+              id="sources-per-metric-panel"
+              role="region"
+              hidden={!showPerMetric}
+              className="bg-background/30 border-border space-y-3 rounded-md border p-3"
+            >
+              {showPerMetric ? (
+                <>
+                  <p className="text-muted-foreground text-xs">
+                    {t("settings.sections.sources.perMetricHelp")}
+                  </p>
+                  {overriddenMetrics.length === 0 ? (
+                    <EmptyState
+                      variant="plain"
+                      size="compact"
+                      title={t("settings.sections.sources.perMetricEmpty")}
+                    />
+                  ) : (
+                    <ul className="space-y-2">
+                      {overriddenMetrics.map((metric) => (
+                        <li
+                          key={metric}
+                          className="border-border bg-card flex items-center justify-between gap-3 rounded-md border px-3 py-2"
                         >
-                          {t("settings.sections.sources.resetMetric")}
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
+                          <span className="text-sm">
+                            {t(METRIC_LABEL_KEYS[metric])}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => resetMetricToDefault(metric)}
+                            disabled={saveMutation.isPending}
+                          >
+                            {t("settings.sections.sources.resetMetric")}
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              ) : null}
+            </div>
           </div>
         )}
 
@@ -474,78 +583,82 @@ export function SourcesSection() {
                 count: deviceTypeOverrideCount,
               })}
             </button>
-            {showDeviceType && (
-              <div
-                id="sources-device-type-panel"
-                role="region"
-                className="bg-background/30 border-border space-y-3 rounded-md border p-3"
-              >
-                <p className="text-muted-foreground text-xs">
-                  {t("settings.sections.sources.deviceTypeHelp")}
-                </p>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">
-                    {t("settings.sections.sources.deviceTypeDefault")}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={resetDeviceTypeAxis}
-                    disabled={saveMutation.isPending}
-                  >
-                    <RotateCcw className="h-3 w-3" />
-                    {t("settings.sections.sources.resetDeviceTypes")}
-                  </Button>
-                </div>
-                <ul className="space-y-1">
-                  {(
-                    priority.deviceTypePriority.default ??
-                    DEFAULT_DEVICE_TYPE_PRIORITY
-                  ).map((deviceType, index, list) => (
-                    <li
-                      key={`device-default-${deviceType}-${index}`}
-                      className="border-border bg-card flex items-center gap-2 rounded-md border px-2 py-1.5"
+            <div
+              id="sources-device-type-panel"
+              role="region"
+              hidden={!showDeviceType}
+              className="bg-background/30 border-border space-y-3 rounded-md border p-3"
+            >
+              {showDeviceType ? (
+                <>
+                  <p className="text-muted-foreground text-xs">
+                    {t("settings.sections.sources.deviceTypeHelp")}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">
+                      {t("settings.sections.sources.deviceTypeDefault")}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={resetDeviceTypeAxis}
+                      disabled={saveMutation.isPending}
                     >
-                      <span className="text-muted-foreground w-5 text-xs font-medium tabular-nums">
-                        {index + 1}.
-                      </span>
-                      <span className="flex-1 text-sm">
-                        {t(DEVICE_TYPE_LABEL_KEYS[deviceType])}
-                      </span>
-                      {/* v1.4.27 R3d MB2 — same stacked-on-mobile shape
+                      <RotateCcw className="h-3 w-3" />
+                      {t("settings.sections.sources.resetDeviceTypes")}
+                    </Button>
+                  </div>
+                  <ul className="space-y-1">
+                    {(
+                      priority.deviceTypePriority.default ??
+                      DEFAULT_DEVICE_TYPE_PRIORITY
+                    ).map((deviceType, index, list) => (
+                      <li
+                        key={`device-default-${deviceType}-${index}`}
+                        className="border-border bg-card flex items-center gap-2 rounded-md border px-2 py-1.5"
+                      >
+                        <span className="text-muted-foreground w-5 text-xs font-medium tabular-nums">
+                          {index + 1}.
+                        </span>
+                        <span className="flex-1 text-sm">
+                          {t(DEVICE_TYPE_LABEL_KEYS[deviceType])}
+                        </span>
+                        {/* v1.4.27 R3d MB2 — same stacked-on-mobile shape
                           as the metric source rows above. */}
-                      <div className="flex flex-col gap-1 sm:flex-row sm:gap-2">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-11 w-11"
-                          onClick={() => moveDeviceType(null, index, -1)}
-                          disabled={index === 0 || saveMutation.isPending}
-                          aria-label={t("settings.sections.sources.moveUp")}
-                        >
-                          <ArrowUp className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-11 w-11"
-                          onClick={() => moveDeviceType(null, index, 1)}
-                          disabled={
-                            index === list.length - 1 || saveMutation.isPending
-                          }
-                          aria-label={t("settings.sections.sources.moveDown")}
-                        >
-                          <ArrowDown className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+                        <div className="flex flex-col gap-1 sm:flex-row sm:gap-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-11 w-11"
+                            onClick={() => moveDeviceType(null, index, -1)}
+                            disabled={index === 0 || saveMutation.isPending}
+                            aria-label={t("settings.sections.sources.moveUp")}
+                          >
+                            <ArrowUp className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-11 w-11"
+                            onClick={() => moveDeviceType(null, index, 1)}
+                            disabled={
+                              index === list.length - 1 ||
+                              saveMutation.isPending
+                            }
+                            aria-label={t("settings.sections.sources.moveDown")}
+                          >
+                            <ArrowDown className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : null}
+            </div>
           </div>
         )}
 
@@ -563,32 +676,51 @@ export function SourcesSection() {
           </Link>
         </p>
 
-        {dirty && priority && (
-          <SettingsCardActions>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="min-h-11 sm:min-h-9"
-              onClick={() => setDraft(null)}
-              disabled={saveMutation.isPending}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              className="min-h-11 sm:min-h-9"
-              onClick={() => saveMutation.mutate(priority)}
-              disabled={saveMutation.isPending}
-            >
-              {saveMutation.isPending && (
-                <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-              )}
-              {t("common.save")}
-            </Button>
-          </SettingsCardActions>
-        )}
+        {/* One action row, last in the card (design standards §12). The
+            reset used to ride the header's status slot, which carries
+            status, not actions; Cancel + Save join it while a draft is open. */}
+        <SettingsCardActions>
+          <ConfirmButton
+            slot="settings-sources-reset"
+            variant="outline"
+            size="sm"
+            className="min-h-11 sm:min-h-9"
+            icon={<RotateCcw className="h-3.5 w-3.5" />}
+            label={t("settings.sections.sources.resetDefaults")}
+            title={t("settings.sections.sources.resetDefaultsTitle")}
+            body={t("settings.sections.sources.resetDefaultsBody")}
+            confirmLabel={t("settings.sections.sources.resetDefaultsConfirm")}
+            disabled={saveMutation.isPending}
+            pending={resetMutation.isPending}
+            onConfirm={() => resetMutation.mutate()}
+          />
+          {dirty && priority ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="min-h-11 sm:min-h-9"
+                onClick={() => setDraft(null)}
+                disabled={saveMutation.isPending}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="min-h-11 sm:min-h-9"
+                onClick={() => saveMutation.mutate(priority)}
+                disabled={saveMutation.isPending}
+              >
+                {saveMutation.isPending && (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+                )}
+                {t("common.save")}
+              </Button>
+            </>
+          ) : null}
+        </SettingsCardActions>
       </SettingsCard>
 
       {/* v1.28 shipped `<NutrientIntakeCard>` here; the 2026-07-17 UX/IA
@@ -602,9 +734,9 @@ export function SourcesSection() {
 
 /**
  * Skeleton placeholder rendered while `/api/auth/me/source-priority`
- * is in flight. Reserves one row per `SOURCE_PRIORITY_METRIC_KEYS`
- * entry at roughly the loaded height so the page does not jump when
- * the fetched ladder list swaps in. The pulsing animation honours
+ * is in flight. Mirrors the loaded shape: the first group open with a
+ * couple of rows, the rest collapsed to their header line, so the page does
+ * not jump when the ladders swap in. The pulsing animation honours
  * `prefers-reduced-motion` via Tailwind's `motion-reduce:animate-none`.
  */
 function SourcesSkeletonList() {
@@ -614,17 +746,15 @@ function SourcesSkeletonList() {
       data-testid="sources-skeleton"
       aria-hidden="true"
     >
-      {SOURCE_PRIORITY_METRIC_KEYS.map((metric) => (
-        <div
-          key={metric}
-          className="border-border bg-background/30 space-y-2 rounded-md border p-3"
-        >
-          <Skeleton className="h-4 w-40" />
-          <div className="space-y-1">
-            <Skeleton className="h-9 w-full rounded-md" />
-            <Skeleton className="h-9 w-full rounded-md" />
-          </div>
-        </div>
+      <div className="border-border bg-background/30 space-y-2 rounded-md border p-3">
+        <Skeleton className="h-5 w-40" />
+        <Skeleton className="h-14 w-full rounded-md" />
+        <Skeleton className="h-14 w-full rounded-md" />
+      </div>
+      {/* One collapsed line per remaining metric: the upper bound, so the
+          action row below never jumps down when the ladders arrive. */}
+      {SOURCE_PRIORITY_METRIC_KEYS.slice(1).map((metric) => (
+        <Skeleton key={metric} className="h-11 w-full rounded-md" />
       ))}
     </div>
   );

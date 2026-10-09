@@ -141,7 +141,10 @@ test.describe("v1.4.33 F2 — onboarding tour passes clicks through to the page"
     // so a naive "dim everything outside the spotlight rect" overlay
     // covers it. The fix makes the entire tour layer pointer-events:
     // none — every dim panel and the spotlight ring are visual only.
-    const quickAddButton = page.locator('[data-tour-id="dashboard-quick-add"]');
+    // One add button per shell carries the tour id; the other is hidden.
+    const quickAddButton = page
+      .locator('[data-tour-id="dashboard-quick-add"]')
+      .filter({ visible: true });
     await expect(quickAddButton).toBeVisible();
 
     // Forensic guard — at the quick-add button's centre, every element
@@ -153,9 +156,11 @@ test.describe("v1.4.33 F2 — onboarding tour passes clicks through to the page"
     // the stack is blocking, instead of just observing the symptom
     // ("button click did not toggle aria-expanded").
     const tourBlockers = await page.evaluate(() => {
-      const btn = document.querySelector<HTMLElement>(
-        '[data-tour-id="dashboard-quick-add"]',
-      );
+      const btn = [
+        ...document.querySelectorAll<HTMLElement>(
+          '[data-tour-id="dashboard-quick-add"]',
+        ),
+      ].find((el) => el.getClientRects().length > 0);
       if (!btn) return ["no-button"];
       const rect = btn.getBoundingClientRect();
       const x = rect.left + rect.width / 2;
@@ -192,7 +197,14 @@ test.describe("v1.4.33 F2 — onboarding tour passes clicks through to the page"
     await quickAddButton.click();
 
     await expect(quickAddButton).toHaveAttribute("aria-expanded", "true");
-    await expect(page.getByRole("menuitem").first()).toBeVisible();
+    // The desktop rail opens a dropdown; the phone shell opens the capture
+    // sheet the bottom nav's plus opens. Either proves the click landed.
+    await expect(
+      page
+        .getByRole("menuitem")
+        .or(page.locator('[role="dialog"][data-state="open"]'))
+        .first(),
+    ).toBeVisible();
 
     // The tour stays mounted — the click went to the underlying button,
     // not anything in the tour layer.

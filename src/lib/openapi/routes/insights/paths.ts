@@ -60,13 +60,14 @@ import {
   insightsGeneratePostResponse,
   coachReadQuery,
   coachReadStripResponse,
-  coachSeededQuestionResponse,
   narrativeQuery,
   narrativeResponse,
   glp1TimelineQuery,
   glp1TimelineResponse,
   intradayPulseQuery,
   intradayPulseResponse,
+  scoreHistoryQuery,
+  scoreHistoryResponse,
 } from "./schemas";
 import { recommendationFeedbackRequestSchema } from "@/lib/validations/recommendation-feedback";
 
@@ -391,28 +392,6 @@ export const insightsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(
                 coachReadStripResponse,
                 "CoachReadStripEnvelope",
-              ),
-            },
-          },
-        },
-        ...stdResponses,
-      },
-    },
-  },
-  "/api/insights/coach/seeded-question": {
-    get: {
-      tags: ["Insights"],
-      summary: "Today's suggested Coach opener",
-      description:
-        "Resolves today's single most notable derived wellness signal into a tappable opener for the Coach's blank-chat hero, using the same confidence-gated detector the daily briefing uses. The selection happens SERVER-side and the client renders it rather than recomputing. `signal: null` is the ordinary answer and means the hero keeps its neutral greeting — never a fabricated opener. Two different causes produce that null and are indistinguishable on the wire: nothing crossed the notability gate, or the account has turned proactive suggestions off, in which case the detector does not run at all. The opener exists only to open the Coach, so it is served only while the `coach` AI capability is available; otherwise the answer is the same neutral `signal: null` and `ai` says why. Never refused for an AI reason. Shared analytics-read budget. Cookie or Bearer auth; not delegable.",
-      responses: {
-        "200": {
-          description: "The opener, or the neutral null.",
-          content: {
-            "application/json": {
-              schema: dataEnvelope(
-                coachSeededQuestionResponse,
-                "CoachSeededQuestionEnvelope",
               ),
             },
           },
@@ -844,6 +823,32 @@ export const insightsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(
                 derivedBatchResponse,
                 "DerivedBatchResponseEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/insights/score-history": {
+    get: {
+      tags: ["Insights"],
+      summary: "A score's daily history",
+      description:
+        "v1.42 — the daily course of the health score, readiness or the sleep score over a trailing window, one point per local day, for the history chart on the score's page. Each point is the value the day view shows for that day: the stored health-score day, the nightly readiness blend filed on its wake day, the sleep score of the night that ended that morning. The health score's points carry `seamBreak` where the recipe changed, and the chart draws no line across it. `band` is the usual range behind the newest point. Readiness is gated on the `recovery` module and the sleep score on `sleep` (403 `module.disabled`); the health score is core. Pure reads, no AI. Delegable at MANAGE level over the whole record. Additive. Cookie or Bearer auth.",
+      requestParams: {
+        query: scoreHistoryQuery,
+      },
+      responses: {
+        ...recordRefusal(),
+        "200": {
+          description: "The score's daily points and usual range.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                scoreHistoryResponse,
+                "ScoreHistoryResponseEnvelope",
               ),
             },
           },

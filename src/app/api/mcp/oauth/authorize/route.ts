@@ -85,7 +85,7 @@ function badRequest(error: string, description: string): Response {
 
 function html(body: string, status = 200): Response {
   return new Response(
-    `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>HealthLog — Authorize access</title></head><body>${body}</body></html>`,
+    `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>HealthLog: Authorize access</title></head><body>${body}</body></html>`,
     {
       status,
       headers: { "content-type": "text/html; charset=utf-8" },
@@ -419,13 +419,13 @@ async function authorizeGet(request: NextRequest): Promise<Response> {
     const provenance =
       v.clientSource === "cimd"
         ? `<p>Verified origin: <code>${htmlEscape(v.clientOrigin)}</code></p>`
-        : `<p><strong>Unverified application</strong> (dynamically registered — the name above is self-reported and not verified).</p>`;
+        : `<p><strong>Unverified application</strong> (dynamically registered, the name above is self-reported and not verified).</p>`;
     // Plain-language access summary. When write is granted, say so explicitly —
     // the app will be able to READ and LOG/WRITE health data, not just read.
     const writeGranted = v.scope.split(/\s+/).includes(SCOPE_HEALTH_WRITE);
     const accessSummary = writeGranted
       ? `<p><strong>This grants read AND write access:</strong> the application will be able to read your own health records <strong>and log new measurements and mood entries</strong> to your account on your behalf. It cannot delete or change existing entries, edit medications, or reach admin functions.</p>`
-      : `<p>Scope: <code>${htmlEscape(v.scope)}</code> — read-only access to your own health records.</p>`;
+      : `<p>Scope: <code>${htmlEscape(v.scope)}</code>. Read-only access to your own health records.</p>`;
     // What a read reaches, in plain words, before the person clicks Allow.
     // Document text is named on its own because it is the widest thing a
     // connection can read (v1.39.3: search and fetch reach it).

@@ -45,7 +45,7 @@ permissions:
 jobs:
   journey:
     name: Sign in, write a reading, read it back
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
 
     steps:

@@ -53,6 +53,7 @@ process.env.ENCRYPTION_KEY ??=
 import type { PrismaClient } from "@/generated/prisma/client";
 import { decrypt, decryptBytes, encrypt, encryptBytes } from "@/lib/crypto";
 import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
+import { openLocation, sealLocation } from "@/lib/environment/location-cipher";
 import { readNote } from "@/lib/crypto/note-cipher";
 import {
   decryptFactData,
@@ -251,6 +252,7 @@ const COUNT_BACK: Record<
   SymptomDefinition: (p, userId) =>
     p.symptomDefinition.count({ where: { userId } }),
   SymptomEvent: (p, userId) => p.symptomEvent.count({ where: { userId } }),
+  LifeEvent: (p, userId) => p.lifeEvent.count({ where: { userId } }),
   IllnessSymptomLink: (p, userId) =>
     p.illnessSymptomLink.count({ where: { dayLog: { userId } } }),
   UserHealthProfile: (p, userId) =>
@@ -287,6 +289,7 @@ const COUNT_BACK: Record<
     p.vaccinationRecord.count({ where: { userId } }),
   VaccinationDocumentLink: (p, userId) =>
     p.vaccinationDocumentLink.count({ where: { userId } }),
+  CustomVaccine: (p, userId) => p.customVaccine.count({ where: { userId } }),
   MeasurementReminder: (p, userId) =>
     p.measurementReminder.count({ where: { userId } }),
   MeasurementReminderEvent: (p, userId) =>
@@ -848,6 +851,29 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
     },
   });
 
+  // v1.42 — two life events: a move known to the month, with a note, and a
+  // period known to the day.
+  await prisma.lifeEvent.create({
+    data: {
+      userId: OWNER_ID,
+      category: "HOME",
+      startDate: "2023-09-01",
+      precision: "MONTH",
+      titleEncrypted: encryptToBytes("Moved to the coast"),
+      noteEncrypted: encryptToBytes("the flat with the long hallway"),
+    },
+  });
+  await prisma.lifeEvent.create({
+    data: {
+      userId: OWNER_ID,
+      category: "WORK",
+      startDate: "2026-03-02",
+      endDate: "2026-05-29",
+      precision: "DAY",
+      titleEncrypted: encryptToBytes("Parental leave"),
+    },
+  });
+
   await prisma.userHealthProfile.create({
     data: {
       userId: OWNER_ID,
@@ -1283,10 +1309,23 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
   // the skip test below). `reminderId` used to be deliberately absent here —
   // it was the one reference that could never resolve — and is deliberately
   // present since v1.37.20, because resolving is now the behaviour under test.
+  // v1.42 (#1005) — the person's own vaccine definition the dose also names.
+  // The catalogue slug still wins on read; the reference is what has to
+  // survive the trip, and it can only if the definition comes back first.
+  const customVaccine = await prisma.customVaccine.create({
+    data: {
+      userId: OWNER_ID,
+      name: "Round-trip travel combo",
+      components: ["typhoid", "hepatitis-a"],
+      typicalSeriesDoses: 2,
+      boosterIntervalMonths: 36,
+    },
+  });
   const vaccination = await prisma.vaccinationRecord.create({
     data: {
       userId: OWNER_ID,
       occurredAt: AT("2026-05-14T00:00:00.000Z"),
+      customVaccineId: customVaccine.id,
       antigenSlug: "tdap",
       vaccineName: "Tetanus, diphtheria and pertussis",
       doseNumber: 3,
@@ -1386,14 +1425,18 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
   // it. The assertion after the restore reads the two back TOGETHER. The
   // coordinates are at 1 decimal, the precision the app stores since v1.39.4;
   // a restore rounds anything finer, so finer values would not round-trip.
+  // Since v1.42 the location is stored sealed (`locationEncrypted`), the way
+  // the writers store it; the readable columns stay empty.
   await prisma.environmentTravelLocation.create({
     data: {
       userId: OWNER_ID,
       startDate: "2026-06-10",
       endDate: "2026-06-20",
-      lat: 41.4,
-      lon: 2.2,
-      label: "Barcelona",
+      locationEncrypted: sealLocation({
+        lat: 41.4,
+        lon: 2.2,
+        label: "Barcelona",
+      }),
     },
   });
   await prisma.environmentContext.createMany({
@@ -1401,9 +1444,11 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
       {
         userId: OWNER_ID,
         date: "2026-06-15",
-        lat: 41.4,
-        lon: 2.2,
-        locationLabel: "Barcelona",
+        locationEncrypted: sealLocation({
+          lat: 41.4,
+          lon: 2.2,
+          label: "Barcelona",
+        }),
         source: "TRAVEL",
         tempMin: 19.4,
         tempMax: 28.1,
@@ -1422,9 +1467,11 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
       {
         userId: OWNER_ID,
         date: "2026-07-01",
-        lat: 52.5,
-        lon: 13.4,
-        locationLabel: "Berlin",
+        locationEncrypted: sealLocation({
+          lat: 52.5,
+          lon: 13.4,
+          label: "Berlin",
+        }),
         source: "HOME",
         tempMin: 13.1,
         tempMax: 22.7,
@@ -2088,6 +2135,7 @@ describe("every model the plan claims two-ended survives a real restore", () => 
         practitioner: { select: { name: true } },
         encounter: { select: { occurredAt: true } },
         reminder: { select: { label: true } },
+        customVaccine: true,
         documentLinks: { select: { documentId: true } },
       },
     });
@@ -2105,6 +2153,14 @@ describe("every model the plan claims two-ended survives a real restore", () => 
       // the id survived the round trip instead of dropping to NULL the way it
       // had to before the reminders travelled.
       reminder: dose.reminder?.label ?? null,
+      customVaccine: dose.customVaccine
+        ? {
+            name: dose.customVaccine.name,
+            components: dose.customVaccine.components,
+            typicalSeriesDoses: dose.customVaccine.typicalSeriesDoses,
+            boosterIntervalMonths: dose.customVaccine.boosterIntervalMonths,
+          }
+        : null,
       links: dose.documentLinks.length,
       note: dose.noteEncrypted ? decryptFromBytes(dose.noteEncrypted) : null,
     }).toEqual({
@@ -2118,6 +2174,12 @@ describe("every model the plan claims two-ended survives a real restore", () => 
       practitioner: "Round-trip practice",
       encounterAt: "2026-06-30T08:00:00.000Z",
       reminder: "Blutdruck messen",
+      customVaccine: {
+        name: "Round-trip travel combo",
+        components: ["typhoid", "hepatitis-a"],
+        typicalSeriesDoses: 2,
+        boosterIntervalMonths: 36,
+      },
       links: 1,
       note: "sore arm for a day, nothing else",
     });
@@ -2307,6 +2369,43 @@ describe("every model the plan claims two-ended survives a real restore", () => 
             episode: null,
           },
         ],
+      },
+    ]);
+
+    // v1.42 — the life events: the titles and the note decrypt to what was
+    // typed, and the dates keep their precision.
+    const restoredLifeEvents = await prisma.lifeEvent.findMany({
+      where: { userId: OWNER_ID },
+      orderBy: { startDate: "asc" },
+    });
+    expect(
+      restoredLifeEvents.map((event) => ({
+        category: event.category,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        precision: event.precision,
+        title: decryptFromBytes(event.titleEncrypted),
+        note: event.noteEncrypted
+          ? decryptFromBytes(event.noteEncrypted)
+          : null,
+      })),
+      "life events must survive the round trip",
+    ).toEqual([
+      {
+        category: "HOME",
+        startDate: "2023-09-01",
+        endDate: null,
+        precision: "MONTH",
+        title: "Moved to the coast",
+        note: "the flat with the long hallway",
+      },
+      {
+        category: "WORK",
+        startDate: "2026-03-02",
+        endDate: "2026-05-29",
+        precision: "DAY",
+        title: "Parental leave",
+        note: null,
       },
     ]);
 
@@ -2659,9 +2758,10 @@ describe("every model the plan claims two-ended survives a real restore", () => 
     expect(
       readings.map((reading) => ({
         date: reading.date,
-        lat: reading.lat,
-        lon: reading.lon,
-        locationLabel: reading.locationLabel,
+        // The sealed location, opened (v1.42).
+        ...(({ lat, lon, label }) => ({ lat, lon, locationLabel: label }))(
+          openLocation(reading.locationEncrypted!),
+        ),
         source: reading.source,
         tempMean: reading.tempMean,
         pressureDelta: reading.pressureDelta,
@@ -2710,15 +2810,17 @@ describe("every model the plan claims two-ended survives a real restore", () => 
       where: { userId: OWNER_ID },
     });
     const travelDay = readings.find((reading) => reading.source === "TRAVEL")!;
+    const tripPlace = openLocation(trip.locationEncrypted!);
+    const dayPlace = openLocation(travelDay.locationEncrypted!);
     expect(
       {
         startDate: trip.startDate,
         endDate: trip.endDate,
-        label: trip.label,
+        label: tripPlace.label,
         covers:
           travelDay.date >= trip.startDate && travelDay.date <= trip.endDate,
-        sameLat: trip.lat === travelDay.lat,
-        sameLon: trip.lon === travelDay.lon,
+        sameLat: tripPlace.lat === dayPlace.lat,
+        sameLon: tripPlace.lon === dayPlace.lon,
       },
       "the period must still explain the reading it was exported beside",
     ).toEqual({
@@ -3500,7 +3602,33 @@ const COLUMN_EXCLUSIONS: Readonly<Record<string, string>> = {
     "insert stamp of a symptom link; no reader, the day log's own timestamps travel",
   "IllnessSymptomLink.createdAt":
     "insert stamp of a symptom link; no reader, the illness day log's own timestamps travel",
+  // v1.42 (#615) — the readable copies of the sealed environment locations.
+  // The restore seals whatever location a file carries into
+  // `locationEncrypted` and writes these empty; the location itself is
+  // compared through the sealed column. They drop in v1.43.
+  "EnvironmentContext.lat":
+    "readable copy of the sealed day location; the restore seals it and writes this empty",
+  "EnvironmentContext.lon":
+    "readable copy of the sealed day location; the restore seals it and writes this empty",
+  "EnvironmentContext.locationLabel":
+    "readable copy of the sealed day location; the restore seals it and writes this empty",
+  "EnvironmentTravelLocation.lat":
+    "readable copy of the sealed period location; the restore seals it and writes this empty",
+  "EnvironmentTravelLocation.lon":
+    "readable copy of the sealed period location; the restore seals it and writes this empty",
+  "EnvironmentTravelLocation.label":
+    "readable copy of the sealed period location; the restore seals it and writes this empty",
 };
+
+/**
+ * Columns a release adds ahead of the backup ends that carry them, so the
+ * packages built in parallel on its branch each own their own section of the
+ * export and the restore. NOT an exclusion: each entry names the package that
+ * carries it, and the companion assertion fails as soon as an entry's column
+ * starts coming back, so the entry has to go in the change that carries it.
+ * The list is empty again before the release is tagged.
+ */
+const RELEASE_PENDING_COLUMNS: Readonly<Record<string, string>> = {};
 
 /**
  * Columns every reader parses through one function before using, compared
@@ -3662,6 +3790,8 @@ const BYTE_OPENERS: ReadonlyArray<(value: Uint8Array) => string> = [
   decryptFromBytes,
   decryptNoteFromBytes,
   decryptContextFromBytes,
+  // v1.42 — the sealed environment locations, under their own label.
+  (value) => JSON.stringify(openLocation(value)),
   (value) => decryptBytes(Buffer.from(value)).toString("base64"),
 ];
 
@@ -3915,10 +4045,14 @@ describe("every column of every two-ended model survives a real restore", () => 
     // data model that stopped being read.
     expect(compared).toBeGreaterThanOrEqual(620);
     expect(
-      lost,
+      lost.filter((key) => !(key in RELEASE_PENDING_COLUMNS)),
       "these columns left with a value and came back without it. Carry each " +
         "through the export and the restore, or name it in COLUMN_EXCLUSIONS " +
         "with the reason the restore is right to drop it",
+    ).toEqual([]);
+    expect(
+      Object.keys(RELEASE_PENDING_COLUMNS).filter((key) => !lost.includes(key)),
+      "these RELEASE_PENDING_COLUMNS entries come back now — drop them",
     ).toEqual([]);
   });
 
@@ -3958,6 +4092,7 @@ describe("every column of every two-ended model survives a real restore", () => 
     );
     const stale = [
       ...Object.keys(COLUMN_EXCLUSIONS),
+      ...Object.keys(RELEASE_PENDING_COLUMNS),
       ...Object.keys(READ_THROUGH),
       ...Object.keys(FILL_OVERRIDES),
     ].filter((key) => !known.has(key));
@@ -3998,6 +4133,20 @@ const USER_FILL_OVERRIDES: Readonly<Record<string, unknown>> = {
     return bytes;
   },
   "User.avatarContentType": "image/png",
+  // v1.42 — a sealed home the way the writers seal it, so it opens.
+  "User.homeLocationEncrypted": () =>
+    sealLocation({ lat: 2.5, lon: 2.5, label: "round-trip home" }),
+};
+
+/**
+ * v1.42 (#615) — readable setting columns the restore seals into another
+ * column and writes empty. The value they held is compared through the sealed
+ * column (`homeLocationEncrypted`).
+ */
+const SEALED_ON_RESTORE: Readonly<Record<string, string>> = {
+  homeLat: "sealed into homeLocationEncrypted",
+  homeLon: "sealed into homeLocationEncrypted",
+  homeLabel: "sealed into homeLocationEncrypted",
 };
 
 /**
@@ -4136,8 +4285,15 @@ describe("the account's own settings survive a real restore", () => {
     })) as unknown as Record<string, unknown>;
 
     const lost = [...settings].filter(
-      (name) => opened(after[name]) !== opened(source[name]),
+      (name) =>
+        !Object.hasOwn(SEALED_ON_RESTORE, name) &&
+        opened(after[name]) !== opened(source[name]),
     );
+    // The readable home columns come back empty by design; the home itself
+    // came back sealed, compared above through `homeLocationEncrypted`.
+    for (const name of Object.keys(SEALED_ON_RESTORE)) {
+      expect(after[name], name).toBeNull();
+    }
     expect(
       lost,
       "these settings left with a value and came back without it",

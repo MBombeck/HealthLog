@@ -66,7 +66,7 @@ import {
   resolveGlucoseUnit,
   type GlucoseUnit,
 } from "@/lib/glucose";
-import { getUnitForType } from "@/lib/validations/measurement";
+import { getUnitForType } from "@/lib/measurements/unit-map";
 
 export type UnitPreference = "metric" | "imperial";
 

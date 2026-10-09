@@ -177,7 +177,130 @@ const jsonImportStats = z
     description: "Per-section outcome counts of a JSON import.",
   });
 
+// v1.42 (#972) — Android Health Connect export import.
+const healthConnectImportJob = z
+  .object({
+    jobId: z.string(),
+    status: z
+      .string()
+      .describe(
+        "`queued`, `unpacking`, `parsing`, `upserting`, `done` or `failed`. A plain string, like the Apple Health status.",
+      ),
+    startedAt: z.iso.datetime({ offset: true }),
+    completedAt: z.iso.datetime({ offset: true }).nullable(),
+    uploadBytes: z.number().int(),
+    progress: z
+      .record(z.string(), z.unknown())
+      .describe("Free-form phase progress. Shape is not part of the contract."),
+    result: z
+      .record(z.string(), z.unknown())
+      .nullable()
+      .describe(
+        "The worker's outcome summary, null until it finishes. Counts only: `perType` (read / inserted / updated / unchanged / skipped per measurement type), `perApp` (records per Android package, `leftOut` for an app whose integration the account has connected), `workouts`, `sleep`, `cycle`, `nutrients`, `skipped` (reason → count), `warnings` (codes for tables or columns the importer could not read), `totals`. Never a value, a timestamp or text from the file.",
+      ),
+    failureReason: z
+      .string()
+      .nullable()
+      .describe(
+        "Why the job failed. Starts with a code the client can key on when the file was refused — `unsupported_version` (database older than version 9), `not_health_connect` (no `health_connect_export.db`, or not a Health Connect database), `unsafe_schema` (a record table is a view), `too_large`, `staging_missing` — else free text.",
+      ),
+  })
+  .meta({ id: "HealthConnectImportJob" });
+
 export const importPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+  "/api/import/health-connect-export": {
+    post: {
+      tags: ["Import"],
+      summary: "Upload a Health Connect export for background import",
+      description:
+        "Takes the ZIP the Android Health Connect app writes (it holds `health_connect_export.db`) and hands it to a background worker. The response is **202 with a `jobId`**; poll `GET /api/import/health-connect-export/status`. Body is `multipart/form-data` with the file under `file`, streamed to disk after authentication like the Apple Health upload. Re-uploading the same bytes resolves to the still-viable job and returns `idempotent: true`. Imported rows carry `source = HEALTH_CONNECT`. Cookie or wildcard Bearer.",
+      requestBody: {
+        required: true,
+        content: {
+          "multipart/form-data": {
+            schema: z.object({
+              file: z
+                .string()
+                .describe(
+                  "The Health Connect export ZIP, under the field name `file`.",
+                ),
+            }),
+          },
+        },
+      },
+      responses: {
+        "202": {
+          description:
+            "Accepted and queued, or matched to a job already carrying these bytes.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({
+                  jobId: z.string(),
+                  status: z.enum([
+                    "queued",
+                    "unpacking",
+                    "parsing",
+                    "upserting",
+                    "done",
+                  ]),
+                  idempotent: z.boolean().optional(),
+                }),
+                "HealthConnectImportKickoffEnvelope",
+              ),
+            },
+          },
+        },
+        "400": {
+          description: "The request carried no body at all.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "409": {
+          description:
+            "An import for this account (Health Connect or Apple Health) is already queued or running. The upload was discarded. `errorCode` is `import.apple_health.busy` for either kind, `jobId` names the running job.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "413": {
+          description:
+            "The declared `Content-Length` exceeds the 1 GiB upload cap.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        "422": {
+          description:
+            "The multipart body could not be read: no `file` part, a malformed body, or more bytes than the cap. Whether the ZIP is a readable Health Connect export is decided by the worker and reported on the job (`status: failed`, `failureReason`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "503": {
+          description:
+            "No background worker is bound, or the queue did not take the job, so nothing would run the import.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+      },
+    },
+  },
+  "/api/import/health-connect-export/status": {
+    get: {
+      tags: ["Import"],
+      summary: "The caller's latest Health Connect import",
+      description:
+        "The most recent Health Connect import job of the caller, or `null` when there has never been one.",
+      responses: {
+        "200": {
+          description: "The latest job, or null.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ job: healthConnectImportJob.nullable() }),
+                "HealthConnectImportStatusEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
   "/api/import/csv": {
     post: {
       tags: ["Import"],

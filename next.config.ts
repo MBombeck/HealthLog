@@ -1,7 +1,30 @@
+import { createHash } from "node:crypto";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import type { NextConfig } from "next";
 import bundleAnalyzer from "@next/bundle-analyzer";
 
 import { version as PKG_VERSION } from "./package.json";
+
+/**
+ * The message catalogs' content hash, the cache key of the boot script
+ * (`/i18n/<locale>.js?v=…`, `src/app/layout.tsx`). The service worker serves
+ * that URL cache-first, so a key that does not move with the catalog keeps
+ * an old catalog alive: keyed by the package version, every build of one
+ * release (a beta, a redeploy) shared one URL, and a key added since the
+ * first of them read as its raw name.
+ */
+function catalogVersion(): string {
+  const dir = join(process.cwd(), "messages");
+  const hash = createHash("sha256");
+  for (const file of readdirSync(dir)
+    .filter((f) => f.endsWith(".json"))
+    .sort()) {
+    hash.update(file).update(readFileSync(join(dir, file)));
+  }
+  return hash.digest("hex").slice(0, 16);
+}
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -20,6 +43,7 @@ const nextConfig: NextConfig = {
   // had to discover "pull-to-refresh" themselves after every release.
   env: {
     NEXT_PUBLIC_APP_VERSION: PKG_VERSION,
+    NEXT_PUBLIC_I18N_CATALOG_VERSION: catalogVersion(),
   },
   // v1.4.33 IW2 — strip `console.*` calls from the production bundle
   // (keep `console.error` + `console.warn` so the GlitchTip reporter

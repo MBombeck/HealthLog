@@ -67,7 +67,7 @@ export function RecoveryMetricBlock({
 }: RecoveryMetricBlockProps) {
   const { user, isAuthenticated } = useAuth();
   const { compareBaseline } = useInsightsLayoutPrefs(isAuthenticated);
-  const { statsByType, onVisibleStats } = useChartDomainStats();
+  const { statsByType, statsSettled, onVisibleStats } = useChartDomainStats();
 
   return (
     <section data-slot={`recovery-block-${type}`} className="space-y-3">
@@ -86,6 +86,7 @@ export function RecoveryMetricBlock({
         titleAs="h2"
         description={explainer}
         windowStats={statsByType?.[type] ?? null}
+        windowPending={!statsSettled}
       />
 
       <HealthChartDynamic
@@ -99,6 +100,9 @@ export function RecoveryMetricBlock({
         compareBaseline={compareBaseline}
         userTimezone={user?.timezone}
         onVisibleStats={onVisibleStats}
+        // v1.42 — the same doors to the day every metric page's chart has.
+        showDataTable
+        dayLinks
       />
 
       <MetricStatusCard

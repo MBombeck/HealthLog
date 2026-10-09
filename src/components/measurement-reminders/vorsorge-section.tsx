@@ -456,7 +456,11 @@ export function VorsorgeSection({
           actions={
             <>
               {wrenchButton}
-              {addButton}
+              {/* The empty state carries the add action while there is
+                  nothing to list. */}
+              {!isLoading && !isError && (reminders?.length ?? 0) === 0
+                ? null
+                : addButton}
             </>
           }
         />
@@ -480,7 +484,6 @@ export function VorsorgeSection({
             ? "measurementReminders.form.editTitle"
             : "measurementReminders.form.createTitle",
         )}
-        description={t("measurementReminders.sectionDescription")}
         footer={
           <>
             <Button type="button" variant="outline" onClick={closeSheet}>
@@ -1003,7 +1006,6 @@ function VorsorgeCard({
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          variant="destructive"
           disabled={busy}
           onSelect={() => setConfirmDelete(true)}
         >

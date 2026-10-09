@@ -243,7 +243,132 @@ const adminReminderCheckResult = z
       "What the sweep found and what it sent. `notificationsSent` counts DISPATCHES, not deliveries — each one enters the channel cascade and the per-channel verdict lands in the `push_attempts` ledger the notification diagnostic surfaces.",
   });
 
+// v1.42 — operator-triggered maintenance of the measurements table.
+const adminMeasurementMaintenanceRequest = z
+  .object({
+    vacuum: z
+      .boolean()
+      .default(true)
+      .describe("Run `VACUUM (ANALYZE)` on `measurements`."),
+    reindex: z
+      .boolean()
+      .default(true)
+      .describe(
+        "Rebuild every index of `measurements` with `REINDEX INDEX CONCURRENTLY`, largest first, one at a time.",
+      ),
+  })
+  .strict()
+  .meta({ id: "AdminMeasurementMaintenanceRequest" });
+
+const adminMeasurementMaintenanceResult = z
+  .object({
+    enqueued: z
+      .boolean()
+      .describe(
+        "False when a maintenance run is already queued or running; nothing new was queued.",
+      ),
+  })
+  .meta({ id: "AdminMeasurementMaintenanceResult" });
+
+const adminMeasurementMaintenanceStatus = z
+  .object({
+    available: z
+      .boolean()
+      .describe(
+        "False when there is no background queue to ask (a web-only deployment); nothing can be started then.",
+      ),
+    purgePending: z
+      .boolean()
+      .describe(
+        "The compaction-tombstone purge is queued or running. A run started now finishes at once with `refused_purge_running`.",
+      ),
+    run: z
+      .object({
+        state: z.enum(["queued", "running", "completed", "failed"]),
+        requestedAt: z.iso.datetime(),
+        startedAt: z.iso.datetime().nullable(),
+        finishedAt: z.iso.datetime().nullable(),
+        outcome: z
+          .enum(["completed", "refused_purge_running", "already_running"])
+          .nullable()
+          .describe(
+            "How a `completed` run ended: `completed` did the work, the two refusals finished without touching the table. Null for any other state.",
+          ),
+      })
+      .nullable()
+      .describe(
+        "The newest run pg-boss still keeps (terminal rows live seven days), or null when there is none.",
+      ),
+    sizes: z
+      .object({
+        tableBytes: z
+          .number()
+          .int()
+          .describe("`measurements` with its indexes and TOAST."),
+        indexBytes: z.number().int().describe("Its indexes alone."),
+      })
+      .nullable(),
+  })
+  .meta({ id: "AdminMeasurementMaintenanceStatus" });
+
 export const adminDiagnosticPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+  "/api/admin/maintenance/measurements": {
+    get: {
+      tags: ["Admin"],
+      summary: "Where measurement table maintenance stands",
+      description:
+        "The newest maintenance run and its state, whether the compaction-tombstone purge is still at work, and the table's size right now. The admin card polls it while a run is queued or running. Cookie auth only: `requireAdmin()` refuses every Bearer caller.",
+      responses: {
+        "200": {
+          description: "The status.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                adminMeasurementMaintenanceStatus,
+                "AdminMeasurementMaintenanceStatusResponse",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+    post: {
+      tags: ["Admin"],
+      summary: "Queue measurement table maintenance",
+      description:
+        "Queues one `VACUUM (ANALYZE)` and `REINDEX INDEX CONCURRENTLY` pass over the `measurements` table, for after a large purge. Runs in the background worker, one statement at a time; pick a quiet window, because a rebuild needs free disk the size of the index it rebuilds. At most one run at a time. Cookie auth only: `requireAdmin()` refuses every Bearer caller. Runbook: `docs/ops/measurement-maintenance.md`.",
+      requestBody: {
+        required: false,
+        content: {
+          "application/json": { schema: adminMeasurementMaintenanceRequest },
+        },
+      },
+      responses: {
+        "202": {
+          description: "Queued, or already queued.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                adminMeasurementMaintenanceResult,
+                "AdminMeasurementMaintenanceResponse",
+              ),
+            },
+          },
+        },
+        "403": {
+          description: "Caller is not an admin.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "503": {
+          description:
+            "No background worker is bound, so nothing would run it.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
   "/api/admin/notifications/reminder-check": {
     post: {
       tags: ["Admin"],

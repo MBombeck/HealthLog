@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { moodTagIcon } from "@/components/mood/mood-tag-icons";
 
 /**
@@ -28,10 +28,10 @@ export interface MoodStructuredTagRow {
 }
 
 function colorForScore(score: number): string {
-  if (score < 2) return "var(--dracula-red)";
-  if (score < 3) return "var(--dracula-orange)";
+  if (score < 2) return "var(--destructive)";
+  if (score < 3) return "var(--warning)";
   if (score < 3.5) return "var(--dracula-yellow)";
-  return "var(--dracula-green)";
+  return "var(--success)";
 }
 
 export function MoodStructuredTagBreakdown({
@@ -40,6 +40,7 @@ export function MoodStructuredTagBreakdown({
   tags: MoodStructuredTagRow[];
 }) {
   const { t } = useTranslations();
+  const nf = useFormatters();
   const maxCount = tags.reduce((m, row) => Math.max(m, row.count), 0) || 1;
 
   return (
@@ -74,7 +75,7 @@ export function MoodStructuredTagBreakdown({
               style={{ color: colorForScore(row.avgScore) }}
               title={t("insights.mood.tagAvgMood")}
             >
-              {row.avgScore.toFixed(1)}
+              {nf.number(row.avgScore, 1)}
             </span>
           </li>
         );

@@ -193,6 +193,11 @@ const MODULE_ROUTE_TREES_BY_KEY: Readonly<
   // data-layer-gated: every `/api/vaccinations/*` route is raw CRUD over the
   // person's own doses, so all six are EXEMPT below under the same reasoning.
   vaccinations: ["src/app/api/vaccinations"],
+  // v1.42 (#613) — the life timeline. The timeline reads and the readiness
+  // inventory gate on `timeline`; the life-event row store beside them is
+  // EXEMPT below under the data-layer reasoning. The day view is not this
+  // module's: it is core and lives under `/api/day`, which no key owns.
+  timeline: ["src/app/api/timeline", "src/app/api/life-events"],
 };
 
 /** Every declared tree, de-duplicated — the set this inventory walks. */
@@ -402,12 +407,25 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   "src/app/api/vaccinations/[id]/route.ts",
   "src/app/api/vaccinations/[id]/restore/route.ts",
   "src/app/api/vaccinations/[id]/links/route.ts",
+  // v1.42 (#1005) — the record's own vaccine definitions. Same posture: a
+  // restore must bring back the definitions its doses point at with the
+  // surface hidden.
+  "src/app/api/vaccinations/custom/route.ts",
+  "src/app/api/vaccinations/custom/[id]/route.ts",
   // The booster mint and the upload suggestion are the same posture: a restore
   // or an import that arms a booster, or a document review that files a scan,
   // must keep working with the surface hidden, so the data routes stay exempt
   // while the nav entry, the picker and the report leaf hide.
   "src/app/api/vaccinations/[id]/booster/route.ts",
   "src/app/api/vaccinations/suggest/route.ts",
+  // ── DATA LAYER (timeline) ─────────────────────────────────────────
+  // v1.42 (#613) — the record's life events. Raw CRUD over the person's own
+  // rows: the module decides whether they SURFACE (the timeline, the day's
+  // life-event line, the capture entry), not whether the store accepts them.
+  // A restore must bring them back with the module off, and re-enabling must
+  // find every event where it was.
+  "src/app/api/life-events/route.ts",
+  "src/app/api/life-events/[id]/route.ts",
   // ── INFRA / CREDENTIALS (mcp) ─────────────────────────────────────
   // The remote MCP endpoint itself is `src/app/mcp/route.ts`, outside `/api`,
   // and it carries the gate: an account with the module off gets a 404 there

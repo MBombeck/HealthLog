@@ -91,7 +91,7 @@ const syncMeasurementTombstone = z
   .meta({
     id: "SyncMeasurementTombstone",
     description:
-      "A soft-deleted measurement. Apply tombstones BEFORE upserts within a page to avoid resurrecting a row.",
+      "A soft-deleted measurement. Apply tombstones BEFORE upserts within a page to avoid resurrecting a row. Since v1.42 only deletions a person makes appear here; the nightly fold that condenses raw samples into `stats:` rows deletes them outright and lists nothing.",
   });
 
 const syncMoodUpsert = z

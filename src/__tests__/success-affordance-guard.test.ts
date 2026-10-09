@@ -82,6 +82,9 @@ const PINNED_AFFORDANCES: Record<
   // the two status grids used to spell the tint at every call site and now
   // name a tone instead, so the marker lives here once.
   "src/components/admin/_shared.tsx": { "text-success": 3, "toast.success": 1 },
+  // v1.42: the readiness inventory's "carries" status icon, one arm of the
+  // carries / thin / empty tone table, beside its spoken status label.
+  "src/components/timeline/readiness-inventory.tsx": { "text-success": 1 },
   "src/components/admin/ai-server-key-section.tsx": { "toast.success": 1 },
   "src/components/admin/api-token-overview-section.tsx": { "text-success": 1 },
   "src/components/admin/app-log-preview-section.tsx": {
@@ -97,6 +100,11 @@ const PINNED_AFFORDANCES: Record<
     "toast.success": 1,
   },
   "src/components/admin/glitchtip-section.tsx": { "toast.success": 1 },
+  // Fires only when the route answered `enqueued: true`; a run already queued
+  // reads as an info toast instead, and the outcome itself is the status line.
+  "src/components/admin/measurement-maintenance-card.tsx": {
+    "toast.success": 1,
+  },
   "src/components/admin/invite-tokens-section.tsx": {
     "text-success": 2,
     "toast.success": 3,
@@ -371,10 +379,9 @@ const PINNED_AFFORDANCES: Record<
     "text-success": 2,
   },
   "src/components/settings/mcp-section.tsx": {
-    "text-success": 5,
+    "text-success": 4,
     "toast.success": 2,
   },
-  "src/components/settings/modules-section.tsx": { "toast.success": 1 },
   "src/components/settings/notification-status-card.tsx": {
     CheckCircle2: 2,
     "text-success": 1,

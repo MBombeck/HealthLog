@@ -137,11 +137,6 @@ export const AI_ROUTES: Readonly<Record<string, AiRouteEntry>> = {
     capabilities: ["coach"],
     why: "The unread signal of a Coach that is unavailable is the quiet empty shape, never a refusal.",
   },
-  "src/app/api/insights/coach/seeded-question/route.ts": {
-    kind: "mixed",
-    capabilities: ["coach"],
-    why: "The opener exists only to open the Coach: `signal: null` while it is unavailable.",
-  },
   "src/app/api/coach/about-me/route.ts": {
     kind: "mixed",
     capabilities: ["aboutMeQuestions"],
@@ -215,6 +210,8 @@ export const DATA_ROUTES: Readonly<Record<string, string>> = {
   "src/app/api/insights/ecg/[id]/route.ts": "One device recording's waveform.",
   "src/app/api/insights/rhythm-events/route.ts":
     "The device's own flagged events, verbatim.",
+  "src/app/api/insights/score-history/route.ts":
+    "A score's stored or computed daily values; no model text.",
   "src/app/api/insights/cards/route.ts":
     "Rule alerts from the threshold engine; `provider` is `rules`.",
   "src/app/api/insights/correlations/route.ts":

@@ -207,6 +207,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
   const heroDescriptionId = useId();
   const heroNotificationNoteId = useId();
   const heroContentSelectId = useId();
+  const todayCardSwitchId = useId();
   // v1.34 — the "Today highlights" fieldset below is gated on `layout`,
   // which can be truthy on the very first client render whenever a
   // returning visitor's browser already has a warm, offline-persisted
@@ -404,6 +405,12 @@ export function DashboardLayoutSection({ id }: { id: string }) {
     });
   }
 
+  /** v1.42 — the server-persisted on/off switch for the dashboard's top card. */
+  function setTodayCardVisible(visible: boolean) {
+    if (!layout) return;
+    setDraft({ ...layout, todayCardVisible: visible });
+  }
+
   /**
    * Hero primary content — the server-persisted `hero` field on the layout
    * blob. The value set is closed ("score" | "reminders"); anything else a
@@ -483,6 +490,20 @@ export function DashboardLayoutSection({ id }: { id: string }) {
           <p id={heroDescriptionId} className="text-muted-foreground text-xs">
             {t("dashboard.heroItemsDescription")}
           </p>
+          {/* v1.42 — the top card itself can be switched off. Shown is the
+              default; the choices below shape the card while it is shown. */}
+          <div className="flex min-h-11 items-center justify-between gap-3">
+            <Label htmlFor={todayCardSwitchId} className="text-sm font-medium">
+              {t("dashboard.todayCardVisible")}
+            </Label>
+            <Switch
+              id={todayCardSwitchId}
+              checked={layout.todayCardVisible !== false}
+              onCheckedChange={setTodayCardVisible}
+              disabled={saveMutation.isPending}
+              data-slot="today-card-switch"
+            />
+          </div>
           {/* Hero primary content — a single labelled select beside the
               highlight toggles. "score" keeps the health-score read;
               "reminders" promotes the highlight rail into the hero slot. */}
@@ -758,6 +779,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
             <Button
               size="sm"
               className="min-h-11 sm:min-h-9"
+              data-slot="settings-dashboard-layout-save"
               onClick={() => layout && saveMutation.mutate(layout)}
               disabled={saveMutation.isPending}
             >
@@ -777,7 +799,8 @@ export function DashboardLayoutSection({ id }: { id: string }) {
             JSON.stringify(DEFAULT_DASHBOARD_LAYOUT.widgets) &&
           JSON.stringify(layout.enabledHeroItemKinds ?? PRIORITY_ITEM_KINDS) ===
             JSON.stringify(DEFAULT_DASHBOARD_LAYOUT.enabledHeroItemKinds) &&
-          (layout.hero ?? "score") === DEFAULT_DASHBOARD_LAYOUT.hero
+          (layout.hero ?? "score") === DEFAULT_DASHBOARD_LAYOUT.hero &&
+          layout.todayCardVisible !== false
             ? t("dashboard.layoutUsingDefaults")
             : t("dashboard.layoutCustomized")}
         </p>
@@ -877,7 +900,7 @@ function SortableWidgetRow({
         type="button"
         {...attributes}
         {...listeners}
-        aria-label={`${labels.dragHandle} — ${labels.widgetLabel}`}
+        aria-label={`${labels.dragHandle}: ${labels.widgetLabel}`}
         // v1.4.47 W4 — `aria-describedby` is set after `{...attributes}`
         // so our shared hint paragraph wins over dnd-kit's own announcer
         // hookup. The announcer still fires on drag-start / drag-over /
@@ -907,7 +930,7 @@ function SortableWidgetRow({
         <Switch
           checked={tileChecked}
           onCheckedChange={(v) => onToggleTile(widget.id, v)}
-          aria-label={`${labels.widgetLabel} — ${labels.tileColumn}`}
+          aria-label={`${labels.widgetLabel}: ${labels.tileColumn}`}
           disabled={disabled}
           data-slot="widget-tile-switch"
         />
@@ -916,7 +939,7 @@ function SortableWidgetRow({
         <Switch
           checked={widget.visible}
           onCheckedChange={(v) => onToggleChart(widget.id, v)}
-          aria-label={`${labels.widgetLabel} — ${labels.chartColumn}`}
+          aria-label={`${labels.widgetLabel}: ${labels.chartColumn}`}
           disabled={disabled}
           data-slot="widget-chart-switch"
         />
@@ -989,7 +1012,7 @@ function StaticWidgetRow({
         <Switch
           checked={tileChecked}
           onCheckedChange={(v) => onToggleTile(widget.id, v)}
-          aria-label={`${labels.widgetLabel} — ${labels.tileColumn}`}
+          aria-label={`${labels.widgetLabel}: ${labels.tileColumn}`}
           disabled={disabled}
           data-slot="widget-tile-switch"
         />
@@ -998,7 +1021,7 @@ function StaticWidgetRow({
         <Switch
           checked={widget.visible}
           onCheckedChange={(v) => onToggleChart(widget.id, v)}
-          aria-label={`${labels.widgetLabel} — ${labels.chartColumn}`}
+          aria-label={`${labels.widgetLabel}: ${labels.chartColumn}`}
           disabled={disabled}
           data-slot="widget-chart-switch"
         />

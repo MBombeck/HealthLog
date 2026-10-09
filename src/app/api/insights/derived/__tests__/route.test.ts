@@ -90,6 +90,7 @@ import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { computeDerivedMetric } from "@/lib/insights/derived";
 import { DERIVED_MAX_WINDOW_DAYS } from "@/lib/insights/derived/types";
+import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -119,6 +120,8 @@ function makeReqWith(params: Record<string, string>): NextRequest {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // v1.42 — the route reads through the derived cache now.
+  __resetAllCachesForTests();
   vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null as never);
   vi.mocked(prisma.user.findUnique).mockResolvedValue({
     dateOfBirth: new Date("1986-01-01"),
@@ -268,5 +271,36 @@ describe("GET /api/insights/derived — windowDays", () => {
       expect(res.status, `windowDays=${windowDays}`).toBe(422);
       expect(computeDerivedMetric).not.toHaveBeenCalled();
     }
+  });
+});
+
+// v1.42 — the single-score read was the one derived surface with no cache:
+// every open of a score's detail recomputed it over the rollup tier.
+describe("GET /api/insights/derived — read-through cache (v1.42)", () => {
+  it("serves a repeat read from the cache, per metric, type and window", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    await callGet(makeReq("VITALS_BASELINE", "RESTING_HEART_RATE"));
+    await callGet(makeReq("VITALS_BASELINE", "RESTING_HEART_RATE"));
+    expect(computeDerivedMetric).toHaveBeenCalledTimes(1);
+
+    await callGet(makeReq("VITALS_BASELINE", "WEIGHT"));
+    await callGet(
+      makeReqWith({
+        metric: "VITALS_BASELINE",
+        type: "RESTING_HEART_RATE",
+        windowDays: "7",
+      }),
+    );
+    expect(computeDerivedMetric).toHaveBeenCalledTimes(3);
+  });
+
+  it("recomputes after the account's measurements change", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const { invalidateUserMeasurements } =
+      await import("@/lib/cache/invalidate");
+    await callGet(makeReq("VITALS_BASELINE", "RESTING_HEART_RATE"));
+    invalidateUserMeasurements("user-1");
+    await callGet(makeReq("VITALS_BASELINE", "RESTING_HEART_RATE"));
+    expect(computeDerivedMetric).toHaveBeenCalledTimes(2);
   });
 });

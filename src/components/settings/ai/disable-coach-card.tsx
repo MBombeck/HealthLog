@@ -149,6 +149,7 @@ export function DisableCoachCard({
       data-testid="settings-disable-coach-card"
     >
       <SettingsCardHeader
+        anchor="coach-activate"
         icon={MessageCircleHeart}
         title={t("settings.coach.activate.title")}
         titleId="settings-coach-activate-title"

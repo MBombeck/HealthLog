@@ -79,6 +79,10 @@ const UNAUTHENTICATED: Readonly<Record<string, string>> = {
     "Says whether single sign-on is configured, so the sign-in screen can offer it.",
   "/api/notifications/vapid":
     "The instance's public Web Push key. Public by definition.",
+  "/api/auth/claim/preview":
+    "Previews a managed-profile handover link for a person who has no credential yet; the one-time token in the body is the credential.",
+  "/api/auth/claim":
+    "Turns a managed profile into the claimant's own account and creates their first credential; the one-time token in the body authorises it.",
   // The tombstones, sourced from the registry rather than restated one by one.
   // A retired path answers 410 from the proxy before any handler runs, and that
   // answer never reads the request's cookies or Authorization header — so it is

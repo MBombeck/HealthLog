@@ -971,6 +971,14 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "profile",
     why: "Which of the record's doses a scanned page dated around a given day belongs to. A read over the same rows the immunization list serves, reduced to a verdict — the caller learns nothing it could not learn from the list itself, and the anchor it passes is a date rather than an id, so it cannot address a row.",
   },
+  "app/api/vaccinations/custom/route.ts": {
+    domain: "profile",
+    why: "The record's own vaccine definitions: a name, the antigens from the catalogue's closed list, a series length and a booster interval. Part of the immunization history the dose list already shows a `profile` grant, and it names no credential, no integration and no notification channel. Every row is read and written under the resolved user id. The create arm is a delegable write.",
+  },
+  "app/api/vaccinations/custom/[id]/route.ts": {
+    domain: "profile",
+    why: "One of the record's own vaccine definitions, fetch-then-guard against the resolved user. Reached only through its MANAGE arms; a definition another record holds is a 404 like any foreign id.",
+  },
   "app/api/practitioners/route.ts": {
     domain: "profile",
     why: "The record's own address book of doctors and practices. Record content, not account configuration — it touches no credential, no integration and no notification channel, which is the fence the classification turns on. The create arm is a delegable write.",
@@ -1006,6 +1014,36 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   "app/api/symptoms/events/[id]/route.ts": {
     domain: "illness",
     why: "One symptom occurrence of the record, fetch-then-guard against the resolved user. Reached only through this module's MANAGE arm.",
+  },
+  // v1.42 (#613) — the day, its index and the visit preparation are admitted
+  // on the readings and narrowed section by section after that: every other
+  // section is read only when the grant also covers that section's own
+  // domain (`actingDomainVisibility`), and a section it does not cover is
+  // named `not_shared` and never read. The section-to-domain map
+  // (`src/lib/day/sections.ts`) is the one the routes serving those rows
+  // declare here, so the day never shows more of a section than its own list
+  // would. The timeline and its readiness lay every section side by side and
+  // stay whole-record reads; their lanes are narrowed the same way all the
+  // same.
+  "app/api/day/[date]/route.ts": {
+    domain: "measurements",
+    why: "One local day of the record: the readings in its window, and the other sections only where the grant covers each one's own domain, the rest named not_shared and never read. Read-only, every row scoped to the resolved user, decrypted only for the session that resolved it.",
+  },
+  "app/api/day/index/route.ts": {
+    domain: "measurements",
+    why: "Which days of a bounded window hold anything, by section key, narrowed per section like the day. Dates and section names only, no values and no free text; every read scoped to the resolved user.",
+  },
+  "app/api/day/notable/route.ts": {
+    domain: "measurements",
+    why: "The preparation of the next visit: notable days of the readings and the context changes of the sections the grant covers, as keys and the record's own names. Read-only, scoped to the resolved user, narrowed per section like the day.",
+  },
+  "app/api/timeline/route.ts": {
+    domain: "record",
+    why: "The record over the years: spans and points from every section plus value series. Read-only, scoped to the resolved user, module-gated on the record's own `timeline` switch.",
+  },
+  "app/api/timeline/readiness/route.ts": {
+    domain: "record",
+    why: "Counts per timeline lane with an in-app link per gap. Counts only, no record content; scoped to the resolved user and module-gated like the timeline.",
   },
   "app/api/workouts/route.ts": {
     domain: "measurements",
@@ -1143,6 +1181,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   "app/api/documents/inbound/usage/route.ts": {
     domain: "documents",
     why: "The record's vault state: quota, the filter bar's condition chips, and index coverage. Without it the admitted list loses its filters. The `assistAvailable` boolean is the same integration-adjacent availability flag `nutrients` already returns — no credential, endpoint or token — and every AI action it would gate stays refused. No write arm exists.",
+  },
+  "app/api/documents/inbound/layout/route.ts": {
+    domain: "documents",
+    why: "The record's vault presentation, read only: two closed enums (card or list view, stacked or flowing months) and nothing else. The admitted list renders through it, so a refused read would leave a delegate's vault waiting on a shape it can never learn. The PUT stays bare — how the owner's vault is laid out is the owner's choice, the same split `/api/medications/layout` keeps.",
   },
 
   /* ------------------------------------------------------------------ */
@@ -1372,6 +1414,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "record",
     why: "Rhythm events over the record's own recordings. Reached only through this module's MANAGE arm; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
   },
+  "app/api/insights/score-history/route.ts": {
+    domain: "record",
+    why: "A score's daily course: the stored health-score days, the nightly readiness rows, the per-night sleep score. Reached only through this module's MANAGE arm; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
+  },
   "app/api/insights/targets/route.ts": {
     domain: "record",
     why: "The record's resolved targets. Reached only through this module's MANAGE arm; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
@@ -1457,6 +1503,8 @@ const DELEGABLE_WRITE_ROUTES: Record<string, string> = {
     "Logging a dose. Every id the body may carry — the practitioner, the visit, the pages to file it against — is re-narrowed to the resolved record before anything is written, so a delegate cannot attach one record's scan to another's dose. The booster reminders it clears are the RECORD's, which is correct: it is the owner's booster plan, and a helper transcribing an Impfpass is doing exactly the work that should settle it.",
   "app/api/vaccinations/[id]/booster/route.ts":
     "Confirming the booster reminder a dose suggests. The reminder is minted under the RECORD and keyed on the antigen the server reads from the dose's catalogue entry, never from the body, so a delegate cannot point it at an antigen the dose does not contain; a second confirmation re-anchors the one reminder rather than minting another.",
+  "app/api/vaccinations/custom/route.ts":
+    "Adding a vaccine definition to the record. It lands under the RECORD, which is correct: it is the owner's Impfpass a helper is transcribing, and the doses logged against it are the owner's. The rate bucket keys on the ACTOR, and a name the record already holds is the ordinary 409 the owner would hit themselves.",
   "app/api/medications/[id]/side-effects/route.ts":
     "Recording a side effect. Admitted on one condition, met at the call site: the POST rate bucket keys on the ACTOR, so a delegate burns their own allowance rather than the owner's and cannot collect a fresh one by switching records.",
   "app/api/medications/route.ts":
@@ -1602,6 +1650,11 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
     domain: "profile",
     conditions: [],
     why: "Reopening a deleted dose. The document links survived the tombstone, so it comes back with its page still filed against it.",
+  },
+  "app/api/vaccinations/custom/[id]/route.ts": {
+    domain: "profile",
+    conditions: ["C4"],
+    why: "Correcting and removing one vaccine definition. The removal soft-deletes it and lets go of the doses that named it, each keeping a name, so no dose leaves the record; the audit row names the definition and how many doses it let go. C4 on the edit: the antigens, the series length and the booster interval are filed before and after, and a rename is named, never quoted. Neither verb re-runs the booster satisfy matcher, so a delegate cannot move a booster's due date by correcting a definition.",
   },
   "app/api/illness/episodes/[id]/resolve/route.ts": {
     domain: "illness",
@@ -1883,6 +1936,11 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
     conditions: [],
     why: "Rhythm events over the record's own recordings.",
   },
+  "app/api/insights/score-history/route.ts": {
+    domain: "record",
+    conditions: [],
+    why: "A score's daily course, read from the same rows the score pages and the day view read. Deterministic, no provider, nothing enqueued.",
+  },
   "app/api/insights/targets/route.ts": {
     domain: "record",
     conditions: [],
@@ -2010,8 +2068,33 @@ const ACTOR_ROUTES: Record<string, string> = {
  * list, the occurrence create on the write literal, and the definition create,
  * the definition edit/delete and the occurrence edit/delete on the manage
  * literal. 232 -> 242 with both.
+ *
+ * v1.42 -- the person's own vaccine definitions (#1005) add four: both
+ * modules on the record list, the create on the write literal and the
+ * edit/delete on the manage literal. 242 -> 246.
+ *
+ * v1.42 -- the day view and the timeline add five reads on the record list:
+ * the day, the day index, the timeline, its readiness inventory and the
+ * life-event list in `profile`. 246 -> 251.
+ *
+ * v1.42 -- the visit preparation joins the record list beside the day, and
+ * the life-event writes join it with their audit rows: the edit/delete module
+ * on the record list, the create and the edit/delete on the manage literal.
+ * 251 -> 255.
+ *
+ * v1.42 -- the document vault's presentation read joins the record list
+ * beside the rest of the vault; its PUT stays bare. 255 -> 256.
+ *
+ * v1.42 -- life events leave every list: they are owner-only in this
+ * release (no share level was worded for them), so both modules take a bare
+ * `requireAuth()` and drop off the record list and the manage literal.
+ * 256 -> 252.
+ *
+ * v1.42 — the score-history read joins the record list and the manage
+ * literal (a score's daily course, MANAGE like the derived score itself).
+ * 252 -> 254.
  */
-const FROZEN_ENTRY_COUNT = 242;
+const FROZEN_ENTRY_COUNT = 254;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
@@ -2772,7 +2855,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
   it("keeps the admitted mutation inventory complete and discoverable", () => {
     expect(ADMITTED_MUTATING_HANDLERS.length).toBeGreaterThan(0);
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(84);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(87);
 
     const expected = ADMITTED_MUTATING_HANDLERS.map(
       ({ handlerModule, action, level }) =>

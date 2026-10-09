@@ -16,6 +16,7 @@ import { maybeAutoStageLabFacts } from "@/lib/documents/auto-stage-labs";
 import { indexDocumentContent } from "@/lib/documents/index-document";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
+import { caughtAs, logCaught } from "@/lib/logging/signal";
 
 export const DOCUMENT_INDEX_QUEUE = "document-index";
 
@@ -63,7 +64,9 @@ export async function runDocumentIndex(
   // A deferred import stages nothing: lab staging is an AI read, and the
   // person asked for those to wait.
   if (outcome.indexed && !localOnly) {
-    await maybeAutoStageLabFacts(userId, documentId).catch(() => {});
+    await maybeAutoStageLabFacts(userId, documentId).catch(
+      caughtAs("documents.auto_index.lab_staging_failed"),
+    );
   }
 }
 
@@ -101,6 +104,7 @@ export async function enqueueDocumentIndex(
       action: { name: "documents.autoIndex.enqueueFailed" },
       meta: { documentId, reason: err instanceof Error ? err.name : "unknown" },
     });
+    logCaught("documents.auto_index.enqueue_failed", err);
     return { enqueued: false };
   }
 }

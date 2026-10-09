@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { apiGet } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
+import { HEALTHLOG_CACHE_NAME_RE } from "@/lib/pwa/sw-cache-policy";
 
 /**
  * v1.4.38.4 — runtime self-heal for the stale-shell post-deploy
@@ -27,13 +28,23 @@ import { useTranslations } from "@/lib/i18n/context";
  * Reload — an in-progress form or chat draft is never destroyed by a
  * silent mid-session reload. On that click:
  *
- *   1. Unregister every active service worker so the next page load
- *      doesn't reinstall the old SW.
- *   2. Delete every CacheStorage entry so the precached root HTML
- *      and the `/_next/static/*` chunks from the previous deploy
- *      can't be served back.
+ *   1. Ask the service worker registration to update, so the new
+ *      deploy's worker (its `sw-version.js` changed) installs and takes
+ *      over; it activates at once (`skipWaiting` + `clients.claim`) and
+ *      drops the previous release's caches itself.
+ *   2. Delete HealthLog's CacheStorage entries so the `/_next/static/*`
+ *      chunks and page shells from the previous deploy can't be served
+ *      back while that happens.
  *   3. `window.location.reload()` — fetches the fresh shell + new
  *      chunk graph.
+ *
+ * v1.42 — the worker is updated, never unregistered. Unregistering a
+ * registration ends its Web Push subscription, and nothing re-creates one:
+ * every click on Reload silently switched off push reminders in the
+ * installed app (the server kept the dead endpoint, the settings card
+ * showed push as off). An update keeps the registration and with it the
+ * subscription. The page navigation is network-first in the worker, so the
+ * reload reaches the new shell whichever worker answers it.
  *
  * The toast is shown once per detected version (the poll keeps
  * running, but a repeated mismatch against a version we already
@@ -90,7 +101,28 @@ async function fetchLiveVersion(signal: AbortSignal): Promise<string | null> {
 // to break the loop within one document lifetime.
 let inMemoryReloadGuard: string | null = null;
 
-async function evictAndReload(targetVersion: string): Promise<void> {
+/**
+ * The worker caches the "new version" reload clears: every HealthLog cache
+ * except the target release's own. `registration.update()` resolves as soon
+ * as the new worker starts installing, so its freshly precached logos and
+ * favicon (`healthlog-static-v<target>`) may already exist by then; deleting
+ * them left the installed app without them offline until they were fetched
+ * again. Cache names carry the version with a `v`, the version endpoint may
+ * answer without one.
+ */
+export function cachesToEvict(
+  keys: readonly string[],
+  targetVersion: string,
+): string[] {
+  const target = targetVersion.replace(/^v/, "");
+  return keys.filter((key) => {
+    if (!HEALTHLOG_CACHE_NAME_RE.test(key)) return false;
+    const version = key.replace(HEALTHLOG_CACHE_NAME_RE, "").replace(/^v/, "");
+    return version !== target;
+  });
+}
+
+export async function evictAndReload(targetVersion: string): Promise<void> {
   inMemoryReloadGuard = targetVersion;
   try {
     sessionStorage.setItem(SESSION_GUARD_KEY, targetVersion);
@@ -102,16 +134,18 @@ async function evictAndReload(targetVersion: string): Promise<void> {
   if ("serviceWorker" in navigator) {
     try {
       const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map((r) => r.unregister()));
+      await Promise.all(regs.map((r) => r.update()));
     } catch {
-      /* best effort */
+      /* best effort — the reload below still fetches the new shell */
     }
   }
 
   if (typeof caches !== "undefined") {
     try {
       const keys = await caches.keys();
-      await Promise.all(keys.map((k) => caches.delete(k)));
+      await Promise.all(
+        cachesToEvict(keys, targetVersion).map((k) => caches.delete(k)),
+      );
     } catch {
       /* best effort */
     }

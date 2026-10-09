@@ -61,11 +61,13 @@ import { Prisma } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/db";
 import {
+  HOURLY_MEAN_DAY_TYPES,
   usesHourlyMeanDay,
   windowWeighting,
 } from "@/lib/measurements/day-statistic";
 import {
   SESSION_DAY_FRAME,
+  dayValue,
   dayWeightedRows,
   dayWeightedRowsSql,
   foldMeanSql,
@@ -104,6 +106,9 @@ import {
   type SleepStageRow,
 } from "@/lib/analytics/sleep-night";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
+import { userDayKey } from "@/lib/tz/format";
+import { localDayWindow } from "@/lib/tz/local-day";
+import { canonicalRowsOfDay } from "@/lib/mood/linked-context";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -333,7 +338,10 @@ export async function computeSummariesSlice(
   // brand-new-type case stays correct.
   const coverage = precomputedCoverage ?? (await probeRollupCoverage(userId));
   if (isFullyCovered(coverage)) {
-    return withSleepNightTotals(userId, await computeFromRollups(userId));
+    return withLatestDayValues(
+      userId,
+      await withSleepNightTotals(userId, await computeFromRollups(userId)),
+    );
   }
   // v1.4.38.7 — annotate the live fallback with the per-type
   // coverage map so the operator can see WHICH type stranded the
@@ -355,7 +363,63 @@ export async function computeSummariesSlice(
       },
     },
   });
-  return withSleepNightTotals(userId, await computeFromLiveAggregate(userId));
+  return withLatestDayValues(
+    userId,
+    await withSleepNightTotals(userId, await computeFromLiveAggregate(userId)),
+  );
+}
+
+/**
+ * `latest` of an hourly-mean type (pulse) is the value of its latest local
+ * day, not its latest single reading.
+ *
+ * The dashboard's pulse tile led with the last reading a watch happened to
+ * take, while the day view showed the day's pulse as the mean of its hours'
+ * means (`day-mean.ts`). Both say "Pulse"; both now mean the same statistic:
+ * the latest day's value, read through the same canonical-source pick and
+ * the same day-mean helper the day view uses, in the person's own zone.
+ */
+async function withLatestDayValues(
+  userId: string,
+  slice: SummariesSlice,
+): Promise<SummariesSlice> {
+  const types = [...HOURLY_MEAN_DAY_TYPES].filter(
+    (type) =>
+      slice.summaries[type]?.latest != null && slice.lastSeenByType[type],
+  );
+  if (types.length === 0) return slice;
+  const [tz, priorityJson] = await Promise.all([
+    resolveUserTimezone(userId),
+    loadUserSourcePriority(userId),
+  ]);
+  await Promise.all(
+    types.map(async (type) => {
+      const seen = slice.lastSeenByType[type]!;
+      const day = userDayKey(new Date(seen.lastSeenAt), tz);
+      const { dayStart, dayEnd } = localDayWindow(day, tz);
+      const rows = await prisma.measurement.findMany({
+        where: {
+          userId,
+          type,
+          deletedAt: null,
+          measuredAt: { gte: dayStart, lt: dayEnd },
+        },
+        select: {
+          type: true,
+          value: true,
+          unit: true,
+          measuredAt: true,
+          source: true,
+          deviceType: true,
+        },
+        orderBy: [{ measuredAt: "asc" }, { id: "asc" }],
+      });
+      const canonical = canonicalRowsOfDay(rows, type, day, tz, priorityJson);
+      const value = dayValue(type, canonical, tz);
+      if (value !== null) slice.summaries[type].latest = value;
+    }),
+  );
+  return slice;
 }
 
 /**

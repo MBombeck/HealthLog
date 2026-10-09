@@ -2,8 +2,6 @@ export const GAMIFICATION_ROLLOUT_AT = new Date("2026-02-20T00:00:00.000Z");
 
 export type AchievementMetricKey =
   | "totalTakenIntakes"
-  | "overIntakeCount"
-  | "skippedIntakeCount"
   | "bmiGreenStreak"
   | "bpGreenStreak"
   | "pulseGreenStreak"
@@ -117,8 +115,6 @@ export interface EarnabilityFlags {
 function categoryForMetric(metric: AchievementMetricKey): AchievementCategory {
   switch (metric) {
     case "totalTakenIntakes":
-    case "overIntakeCount":
-    case "skippedIntakeCount":
     case "onTimePerfectDayStreak":
     case "compliance80DayStreak":
     case "missFreeDayStreak":
@@ -172,8 +168,6 @@ export const ACHIEVEMENT_CATEGORY_ORDER: readonly AchievementCategory[] = [
 
 export interface AchievementMetrics {
   totalTakenIntakes: number;
-  overIntakeCount: number;
-  skippedIntakeCount: number;
   bmiGreenStreak: number;
   bpGreenStreak: number;
   pulseGreenStreak: number;
@@ -317,26 +311,6 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
     icon: "Trophy",
     tTitle: "achievements.badges.intakeTotal300.title",
     tDescription: "achievements.badges.intakeTotal300.description",
-    format: "count",
-  }),
-  define({
-    id: "over-intake-1",
-    metric: "overIntakeCount",
-    target: 1,
-    points: 0,
-    icon: "AlertTriangle",
-    tTitle: "achievements.badges.overIntake1.title",
-    tDescription: "achievements.badges.overIntake1.description",
-    format: "count",
-  }),
-  define({
-    id: "skipped-intake-1",
-    metric: "skippedIntakeCount",
-    target: 1,
-    points: 0,
-    icon: "SkipForward",
-    tTitle: "achievements.badges.skippedIntake1.title",
-    tDescription: "achievements.badges.skippedIntake1.description",
     format: "count",
   }),
   define({
@@ -897,8 +871,6 @@ function isEarnable(
 ): boolean {
   switch (metric) {
     case "totalTakenIntakes":
-    case "overIntakeCount":
-    case "skippedIntakeCount":
     case "onTimePerfectDayStreak":
     case "compliance80DayStreak":
     case "missFreeDayStreak":

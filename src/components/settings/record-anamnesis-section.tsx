@@ -36,8 +36,8 @@ import { useTranslations } from "@/lib/i18n/context";
  * relatives, and often enough the delegate IS that relative, asserting a
  * condition about themselves into somebody else's record. The route's own
  * comment named that discomfort and left it for the surface to say out loud,
- * because no route comment can. The sentence under the card is where it gets
- * said.
+ * because no route comment can. The sentence at the top of the card body,
+ * above the list, is where it gets said.
  *
  * The cache is not a concern here and the reason is worth naming: switching
  * records clears the whole query client, so the allergy and family-history
@@ -50,6 +50,7 @@ export function RecordAnamnesisSection() {
     <div className="space-y-6" data-slot="record-anamnesis-section">
       <SettingsCard>
         <SettingsCardHeader
+          anchor="allergies"
           icon={ShieldAlert}
           title={t("records.allergies.cardTitle")}
           description={t("records.allergies.cardDescription")}
@@ -59,17 +60,20 @@ export function RecordAnamnesisSection() {
 
       <SettingsCard>
         <SettingsCardHeader
+          anchor="family-history"
           icon={Users}
           title={t("records.family.cardTitle")}
           description={t("records.family.cardDescription")}
         />
-        <FamilyHistoryManager />
+        {/* Above the list: the manager closes with its action row, and
+            nothing follows a card's actions (design standards §12). */}
         <p
           data-slot="record-anamnesis-relative-note"
           className="text-foreground text-sm"
         >
           {t("recordSharing.anamnesis.relativeNote")}
         </p>
+        <FamilyHistoryManager />
       </SettingsCard>
 
       <p className="text-muted-foreground text-xs">{t("records.disclaimer")}</p>

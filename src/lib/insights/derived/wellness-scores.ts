@@ -24,6 +24,8 @@ import { computeReadiness, type ReadinessComponent } from "./readiness";
 import { resolveCanonicalRecovery } from "./recovery-resolve";
 import { SPARKLINE_MAX_POINTS, type Derived } from "./types";
 import { dateOnlyKey } from "@/lib/tz/date-only";
+import { dayKeyForUserTz } from "@/lib/measurements/consolidation-tz";
+import { resolveUserTimezone } from "@/lib/measurements/consolidation-base";
 
 /** A 0–100 wellness score band. Higher is better for recovery; for stress a
  *  higher score is worse, so the band direction flips (see `WELLNESS_DIR`). */
@@ -68,7 +70,23 @@ export interface WellnessScoreValue {
    * non-breaking).
    */
   components?: ReadinessComponent[] | null;
+  /**
+   * STRAIN only — set when the score is the device's own day strain rather
+   * than the server's computed proxy: no proxy row exists in the window, but
+   * the band delivered `DAY_STRAIN` (WHOOP's 0–21 scale). `value` is the
+   * device's latest reading on its own scale; `score` is that reading as a
+   * share of `scaleMax`, so the ring and the band keep their 0–100 contract.
+   * Absent whenever the computed proxy is the source.
+   */
+  device?: { value: number; scaleMax: number } | null;
 }
+
+/**
+ * The device-native day-strain scale. WHOOP reports cycle strain on 0–21;
+ * the ingest validation (`DAY_STRAIN: { min: 0, max: 21 }`) pins the same
+ * bound, so a stored reading can never exceed it.
+ */
+export const DEVICE_STRAIN_SCALE_MAX = 21;
 
 /** The three persisted score types this engine serves. */
 export const WELLNESS_SCORE_TYPES = {
@@ -176,6 +194,37 @@ export async function computeWellnessScore(
       )
     : rawRows;
 
+  // STRAIN has a second, device-native source: the band's own DAY_STRAIN,
+  // which `/insights/recovery` charts. Without a computed proxy in the window
+  // the strain page reads that same series instead of reporting "not enough
+  // data" for an account the recovery page shows weeks of strain for.
+  if (rows.length === 0 && type === "STRAIN_SCORE") {
+    const deviceRows = await prisma.measurement.findMany({
+      where: {
+        userId,
+        type: "DAY_STRAIN",
+        deletedAt: null,
+        measuredAt: { gte: cutoff, lte: now },
+      },
+      select: { value: true, measuredAt: true, source: true },
+      orderBy: { measuredAt: "desc" },
+    });
+    if (deviceRows.length > 0) {
+      if (timezone === null) {
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { timezone: true },
+        });
+        timezone = user?.timezone ?? null;
+      }
+      return buildDeviceStrain(
+        deviceStrainDays(deviceRows, timezone),
+        windowDays,
+        computedAt,
+      );
+    }
+  }
+
   if (rows.length === 0) {
     return buildInsufficient<WellnessScoreValue>({
       coverage: {
@@ -251,6 +300,7 @@ export async function computeWellnessScore(
         .reverse(),
       anchor,
       components,
+      device: null,
     },
     coverage: {
       requiredInputs: 1,
@@ -264,6 +314,94 @@ export async function computeWellnessScore(
     confidence: { score: 90, band: "high" },
     provenance: {
       inputs: [type],
+      source: "DAY",
+      windowDays,
+      computedAt,
+    },
+  });
+}
+
+/** A device day-strain reading as a 0–100 share of the device scale. */
+function deviceStrainShare(value: number): number {
+  const clamped = Math.min(Math.max(value, 0), DEVICE_STRAIN_SCALE_MAX);
+  return Math.round((clamped / DEVICE_STRAIN_SCALE_MAX) * 100);
+}
+
+/**
+ * One row per local calendar day from the band's DAY_STRAIN rows. The band
+ * writes one row per physiological cycle, stamped at the cycle's start, and
+ * a bedtime either side of midnight puts two cycle starts on one calendar
+ * day. Counted as rows, those days were counted twice and the sparkline
+ * carried an extra point the recovery page's daily chart does not have. The
+ * day's value is the mean of its rows, which is the chart's own daily value;
+ * the day stands at its latest row. Newest day first.
+ */
+export function deviceStrainDays(
+  rows: readonly { value: number; measuredAt: Date }[],
+  timezone: string | null,
+): { value: number; measuredAt: Date }[] {
+  const tz = resolveUserTimezone(timezone);
+  const byDay = new Map<
+    string,
+    { sum: number; count: number; measuredAt: Date }
+  >();
+  for (const row of rows) {
+    const key = dayKeyForUserTz(row.measuredAt, tz);
+    const day = byDay.get(key);
+    if (!day) {
+      byDay.set(key, { sum: row.value, count: 1, measuredAt: row.measuredAt });
+      continue;
+    }
+    day.sum += row.value;
+    day.count += 1;
+    if (row.measuredAt.getTime() > day.measuredAt.getTime()) {
+      day.measuredAt = row.measuredAt;
+    }
+  }
+  return [...byDay.values()]
+    .map((day) => ({ value: day.sum / day.count, measuredAt: day.measuredAt }))
+    .sort((a, b) => b.measuredAt.getTime() - a.measuredAt.getTime());
+}
+
+function buildDeviceStrain(
+  rows: { value: number; measuredAt: Date }[],
+  windowDays: number,
+  computedAt: string,
+): Derived<WellnessScoreValue> {
+  const latest = rows[0];
+  const score = deviceStrainShare(latest.value);
+  const prior = rows.slice(1).map((r) => deviceStrainShare(r.value));
+  const trendDelta =
+    prior.length > 0
+      ? Math.round(score - prior.reduce((s, v) => s + v, 0) / prior.length)
+      : null;
+  return buildOk<WellnessScoreValue>({
+    value: {
+      score,
+      band: bandWellnessScore("STRAIN_SCORE", score),
+      trendDelta,
+      daysInWindow: rows.length,
+      asOf: latest.measuredAt.toISOString(),
+      series: rows
+        .slice(0, SPARKLINE_MAX_POINTS)
+        .map((r) => deviceStrainShare(r.value))
+        .reverse(),
+      anchor: null,
+      components: null,
+      device: {
+        value: Math.round(latest.value * 10) / 10,
+        scaleMax: DEVICE_STRAIN_SCALE_MAX,
+      },
+    },
+    coverage: {
+      requiredInputs: 1,
+      presentInputs: 1,
+      historyDays: rows.length,
+      missing: [],
+    },
+    confidence: { score: 90, band: "high" },
+    provenance: {
+      inputs: ["DAY_STRAIN"],
       source: "DAY",
       windowDays,
       computedAt,

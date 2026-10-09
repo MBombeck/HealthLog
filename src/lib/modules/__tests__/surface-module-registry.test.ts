@@ -67,6 +67,7 @@ import {
 } from "@/lib/insights/sub-page-metric";
 import { TREND_CHART_CONFIG } from "@/lib/insights/trend-chart-select";
 import { SYMPTOM_CHANNEL_PREFIX } from "@/lib/symptoms/shared";
+import { DAY_SECTION_KEYS, TIMELINE_LANE_KEYS } from "@/lib/day/contract";
 import {
   SURFACE_KINDS,
   SURFACE_MODULE,
@@ -153,6 +154,20 @@ describe("every surface id names a surface that exists", () => {
     const ids = new Set<string>(LAYOUT_GROUP_IDS);
     for (const id of localIds("settings-layout")) {
       expect(ids.has(id), id).toBe(true);
+    }
+  });
+
+  it("day-section: a section the day view renders", () => {
+    const keys = new Set<string>(DAY_SECTION_KEYS);
+    for (const id of localIds("day-section")) {
+      expect(keys.has(id), id).toBe(true);
+    }
+  });
+
+  it("timeline-lane: a lane the timeline renders", () => {
+    const keys = new Set<string>(TIMELINE_LANE_KEYS);
+    for (const id of localIds("timeline-lane")) {
+      expect(keys.has(id), id).toBe(true);
     }
   });
 
@@ -264,11 +279,16 @@ describe("every surface that shows a module's data is owned by it", () => {
     ["capture:medication", "medications"],
     ["capture:workout", "workouts"],
     ["capture:symptom", "illness"],
+    ["capture:lifeEvent", "timeline"],
     ["trend:mood", "mood"],
     ["widget:medications", "medications"],
     ["correlation:MEDICATION_COMPLIANCE", "medications"],
     ["correlation:SYMPTOM_SEVERITY", "illness"],
     ["correlation:LAB_DRAWS", "labs"],
+    ["nav:/timeline", "timeline"],
+    ["day-section:lifeEvents", "timeline"],
+    ["day-section:symptoms", "illness"],
+    ["timeline-lane:documents", "inboundDocuments"],
   ])("%s is owned by %s", (id, owner) => {
     expect(surfaceModule(id)).toBe(owner);
   });

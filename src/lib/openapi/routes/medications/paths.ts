@@ -88,6 +88,7 @@ import {
   medicationCadenceResponse,
   medicationComplianceResponse,
   medicationComplianceSummaryEntry,
+  medicationComplianceAggregate,
   scheduleRevisionResource,
   scheduleRevisionListResponse,
   medicationExtractRequest,
@@ -212,7 +213,12 @@ const bulkIntakeEntryResult = z
       .describe(
         "`inserted`/`updated`/`duplicate` — the row landed (advance the cursor). `skipped` — not stored; see `reason`.",
       ),
-    reason: z.string().optional(),
+    reason: z
+      .string()
+      .optional()
+      .describe(
+        "Why a `skipped` entry was not stored. Among others: `medication_not_found`, `unstable_external_id`, `force_slot_invalid`, `force_slot_occupied`, `injection_site_not_allowed`, and (v1.42.0) `intake_not_tracked` for an entry against a medication kept as a record only (`trackIntake: false`), the per-entry form of `medication.intake.notTracked`. A skip is final: resending the entry gives the same answer.",
+      ),
     id: z.string().optional().describe("The landed row id (absent on skips)."),
   })
   .meta({ id: "BulkMedicationIntakeEntryResult" });
@@ -312,7 +318,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "422": {
           description:
-            "Body validation failed (multi-issue envelope, breadcrumbed as `medications.intake.update.validation-failed`), or `meta.errorCode` = `medications.intake.injection_site.disallowed` when the site is outside the medication's effective allowed set, or `medications.intake.force_slot.invalid` when `forceSlotInstant` is not a real slot of the medication. The latter two carry no issue list — branch on the code.",
+            "Body validation failed (multi-issue envelope, breadcrumbed as `medications.intake.update.validation-failed`), or `meta.errorCode` = `medications.intake.injection_site.disallowed` when the site is outside the medication's effective allowed set, or `medications.intake.force_slot.invalid` when `forceSlotInstant` is not a real slot of the medication, or (v1.42.0) `medication.intake.notTracked` when the event is still open and its medication is kept as a record only (`trackIntake: false`): resolving or snoozing it would record a new dose that is counted nowhere. Correcting an event that is already taken or skipped stays open. The coded refusals carry no issue list — branch on the code.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "401": stdResponses["401"],
@@ -1437,6 +1443,11 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...stdResponses,
         ...recordWriteRateLimitResponse,
+        "422": {
+          description:
+            "Body validation failed (multi-issue envelope), or `meta.errorCode` names the refusal: `medications.intake.injection_site.disallowed`, `medications.intake.force_slot.invalid`, or (v1.42.0) `medication.intake.notTracked` when the medication is kept as a record only (`trackIntake: false`). Its stored history stays; a new dose is refused rather than stored and counted nowhere. The check runs after ownership, so a foreign medication is still a 404.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
     get: {
@@ -1699,17 +1710,49 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Medications"],
       summary: "Batched adherence read for every medication of the caller",
       description:
-        "Returns one compact row per non-PRN medication. A scheduled medication with no local schedule remains in the array with applicable=false and reason NO_LOCAL_SCHEDULE. compliance7/compliance30 stay non-null as all-zero compatibility placeholders for released clients; aware clients must ignore those percentages when applicable=false. complianceDisplay is null.",
+        "Returns one compact row per non-PRN medication. A scheduled medication with no local schedule remains in the array with applicable=false and reason NO_LOCAL_SCHEDULE. compliance7/compliance30 stay non-null as all-zero compatibility placeholders for released clients; aware clients must ignore those percentages when applicable=false. complianceDisplay is null.\n\n" +
+        "v1.42.0, additive: `meta.aggregate` carries one figure for the whole account (`MedicationComplianceAggregate`, weighted by expected doses across the applicable medications; `null` when none applies), so a client never averages the rows itself. `days` (30, 60, 90, 180 or 365) adds a `complianceN` block in the same shape to every row and to the aggregate, for a report that covers its own window; `meta.days` echoes it. Any other `days` is a 422 rather than a rounded window.",
+      requestParams: {
+        query: z.object({
+          days: z
+            .enum(["30", "60", "90", "180", "365"])
+            .optional()
+            .describe(
+              "Report window in days. 30 is already `compliance30`; the others add `compliance60` / `compliance90` / `compliance180` / `compliance365`.",
+            ),
+        }),
+      },
       responses: {
         ...recordRefusal(),
         "200": {
-          description: "One adherence row per medication.",
+          description:
+            "One adherence row per medication, and the account aggregate in `meta`.",
           content: {
             "application/json": {
-              schema: dataEnvelope(
-                z.array(medicationComplianceSummaryEntry),
-                "ListMedicationComplianceResponse",
-              ),
+              schema: z
+                .object({
+                  data: z.array(medicationComplianceSummaryEntry),
+                  error: z.null(),
+                  meta: z
+                    .object({
+                      aggregate: medicationComplianceAggregate.nullable(),
+                      days: z
+                        .union([
+                          z.literal(30),
+                          z.literal(60),
+                          z.literal(90),
+                          z.literal(180),
+                          z.literal(365),
+                        ])
+                        .optional()
+                        .describe("The `days` the request asked for."),
+                      requestId: z.string().optional(),
+                    })
+                    .describe(
+                      "Absent on servers older than v1.42.0; a client that reads it treats absence as no aggregate.",
+                    ),
+                })
+                .meta({ id: "ListMedicationComplianceResponse" }),
             },
           },
         },

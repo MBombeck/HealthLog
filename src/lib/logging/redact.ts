@@ -37,7 +37,16 @@
  * Add a new entry whenever a route exposes a secret in its URL path
  * (rather than headers, body, or query). Tested in `redact.test.ts`.
  */
-export const PATH_SECRET_PATHS: ReadonlyArray<{ prefix: string }> = [
+export const PATH_SECRET_PATHS: ReadonlyArray<{
+  prefix: string;
+  /**
+   * Match the prefix only where a path STARTS with it, not inside a longer
+   * path. Needed when the prefix is also the tail of an unrelated route:
+   * `/claim/` is both the handover link and the end of `/api/auth/claim/`,
+   * whose `preview` segment is a route name, not a secret.
+   */
+  pathStart?: true;
+}> = [
   // Withings webhook entrypoint: `WITHINGS_WEBHOOK_SECRET` travels as
   // the trailing path segment (v1.4.25 W17a). Without this rule the
   // secret lands in every Wide Event's `http.path` / `http.route`.
@@ -51,17 +60,26 @@ export const PATH_SECRET_PATHS: ReadonlyArray<{ prefix: string }> = [
   // the trailing path segment (mirrors Withings). Without this rule the
   // secret lands in every Wide Event's `http.path` / `http.route`.
   { prefix: "/api/whoop/webhook/" },
+  // v1.42 (#959) — managed-profile handover link. The raw `hlp_` token rides
+  // as the trailing path segment of `/claim/<token>` until the proxy turns it
+  // into `/auth/claim?token=…` (scrubbed by the `token=` query rule below);
+  // it is a one-time credential that turns a profile into an account.
+  // `pathStart`, because `/api/auth/claim/preview` ends in the same prefix
+  // and its last segment is a route name. A full URL carrying the token is
+  // still scrubbed, by the `hlp_` rule in `redactSecrets`.
+  { prefix: "/claim/", pathStart: true },
 ];
 
 function redactPathSegments(input: string): string {
   let out = input;
-  for (const { prefix } of PATH_SECRET_PATHS) {
+  for (const { prefix, pathStart } of PATH_SECRET_PATHS) {
     // Match `<prefix><segment>` where `<segment>` is one or more
     // non-`/` non-`?` chars, then preserve anything after (next path
     // segment, query string, hash). Capture group 1 is the optional
     // trailing context starting with `/`, `?`, or `#`.
     const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const re = new RegExp(`${escaped}[^/?#\\s]+([/?#][^\\s]*)?`, "g");
+    const start = pathStart ? "(?<![A-Za-z0-9_.-])" : "";
+    const re = new RegExp(`${start}${escaped}[^/?#\\s]+([/?#][^\\s]*)?`, "g");
     out = out.replace(re, (_match, tail: string | undefined) => {
       return `${prefix}[REDACTED]${tail ?? ""}`;
     });
@@ -85,12 +103,13 @@ export function redactSecrets(input: string): string {
       .replace(/(^|[^A-Za-z0-9])sk-(?:ant-)?[A-Za-z0-9_-]{8,}/g, "$1[REDACTED]")
       // HealthLog hex-bodied credentials: `hlk_` access token, `hlr_` refresh
       // token, `hls_` session cookie secret (v1.30.32) and clinician share
-      // token, `hle_` step-up elevation (v1.30.34), `hlv_` registration invite.
+      // token, `hle_` step-up elevation (v1.30.34), `hlv_` registration invite,
+      // `hlp_` managed-profile handover link (v1.42).
       // Same boundary-aware shape as the `sk-` rule. The
       // idempotency replay-cache already rejects bodies containing
       // these prefixes (CLAUDE.md headless-client-API patterns); this
       // is the matching egress guard for log/error surfaces.
-      .replace(/(^|[^A-Za-z0-9])hl[kresv]_[A-Fa-f0-9]{32,}/g, "$1[REDACTED]")
+      .replace(/(^|[^A-Za-z0-9])hl[kpresv]_[A-Fa-f0-9]{32,}/g, "$1[REDACTED]")
       // v1.22.0 — the MCP OAuth bridge artifacts: the authorization code
       // (`hlac_`), refresh token (`hlrt_`), and DCR client id (`hlc_`). All
       // are signed, base64url-bodied, and credential-bearing, so they are

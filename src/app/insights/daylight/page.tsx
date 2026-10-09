@@ -21,12 +21,12 @@ export default function InsightsTageslichtPage() {
       chartKey="timeInDaylight"
       i18nPrefix="insights.timeInDaylight"
       explainerMetric="daylight"
-      color="var(--success)"
+      color="var(--chart-2)"
       unit="min"
       yAxisUnit="min"
       emptyStateIcon={<Sun className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any time spent in daylight yet — what does this metric tell me about my health, and how do I improve it?"
+      coachPrefill="I haven't logged any time spent in daylight yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

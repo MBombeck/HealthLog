@@ -86,6 +86,10 @@ import type { InjectionSiteKey } from "@/lib/medications/injection-sites";
 import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
 import { dispatchMedicationIntakeWebClearBulk } from "@/lib/notifications/web-push-clear";
 import { countOutstandingDosesToday } from "@/lib/medications/outstanding-doses";
+import {
+  INTAKE_NOT_TRACKED_REASON,
+  isRecordOnly,
+} from "@/lib/medications/intake-tracking";
 
 const MAX_ENTRIES_PER_BATCH = 500;
 const BATCH_RATE_LIMIT_MAX = 60;
@@ -256,6 +260,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
       trackInjectionSites: true,
       allowedInjectionSites: true,
       externalSource: true,
+      trackIntake: true,
     },
   });
   const ownedSet = new Set(ownedMedications.map((m) => m.id));
@@ -361,6 +366,16 @@ async function postBulk(request: NextRequest): Promise<Response> {
 
     if (!ownedSet.has(entry.medicationId)) {
       const reason = "medication_not_found";
+      skipped.push({ index: i, reason });
+      results.push({ index: i, status: "skipped", reason });
+      continue;
+    }
+
+    // A record-only medication takes no new dose (iOS #116, item 15). The
+    // single-dose routes answer 422 `medication.intake.notTracked`; here the
+    // same decision is one entry's outcome, so the rest of the batch lands.
+    if (isRecordOnly(medById.get(entry.medicationId) ?? {})) {
+      const reason = INTAKE_NOT_TRACKED_REASON;
       skipped.push({ index: i, reason });
       results.push({ index: i, status: "skipped", reason });
       continue;

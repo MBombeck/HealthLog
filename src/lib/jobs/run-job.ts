@@ -29,6 +29,8 @@ import {
 } from "./job-outcome";
 import { reportWorkerError } from "./report-worker-error";
 import { observeJob } from "./job-observer";
+import { readConsecutiveRunFailures } from "./job-failures";
+import { emitSignal } from "@/lib/logging/signal";
 
 /** A converted handler: it says what it did instead of just finishing. */
 export type JobHandler<T> = (jobs: Job<T>[]) => Promise<JobOutcome>;
@@ -68,13 +70,33 @@ function factMeta(did: JobFacts | undefined): Record<string, JobFact> {
 }
 
 /**
+ * The failed run's own line: `job.run.failed` at `error`, naming the queue and
+ * how many runs of it in a row have now failed. Every queue reaches it, so
+ * the repeated-failure alert keys on one action and one number instead of on
+ * the handler's own task name, which differs per queue, or on the stderr line
+ * `reportWorkerError` writes, which is not structured.
+ */
+async function signalRunFailed(
+  queue: string,
+  reason: string,
+  error: unknown,
+): Promise<void> {
+  const consecutiveFailures = await readConsecutiveRunFailures(queue);
+  emitSignal({
+    action: "job.run.failed",
+    level: "error",
+    meta: { queue, reason, consecutiveFailures },
+    error,
+  });
+}
+
+/**
  * Wrap a handler for `boss.work`. Resolves with the bounded, redacted
  * persistence representation on `ok: true`; reports and rethrows on
  * `ok: false`.
  *
- * A handler that throws is left alone — the throw already fails the job, and
- * re-wrapping it would only bury the original stack. `runJob` exists for the
- * case the throw never happens.
+ * A handler that throws keeps its own error — re-wrapping it would only bury
+ * the original stack — but its run still gets the `job.run.failed` line.
  */
 export function runJob<J>(
   queue: string,
@@ -83,11 +105,17 @@ export function runJob<J>(
   return async (jobs: J[]): Promise<SerializedJobOutcome> => {
     // Observed, so a long run, an expiry and a cut-off leave a line in the
     // log naming the queue and how far it got (see `job-observer.ts`).
-    const outcome = await observeJob(
-      queue,
-      jobs as ReadonlyArray<{ id?: string; expireInSeconds?: number }>,
-      () => handler(jobs),
-    );
+    let outcome: JobOutcome;
+    try {
+      outcome = await observeJob(
+        queue,
+        jobs as ReadonlyArray<{ id?: string; expireInSeconds?: number }>,
+        () => handler(jobs),
+      );
+    } catch (error) {
+      await signalRunFailed(queue, "handler_threw", error);
+      throw error;
+    }
     if (outcome.ok) return serializeJobOutcome(outcome);
 
     const failure = new JobFailure(queue, outcome.reason, outcome.cause);
@@ -102,6 +130,7 @@ export function runJob<J>(
       ...factMeta(outcome.did),
       ...(causeMessage === undefined ? {} : { cause: causeMessage }),
     });
+    await signalRunFailed(queue, outcome.reason, failure);
 
     throw failure;
   };

@@ -40,6 +40,8 @@ import type {
 import { prisma } from "@/lib/db";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
+import { shiftDateKey } from "@/lib/tz/format";
+import { startOfLocalDayKey } from "@/lib/tz/local-day";
 import {
   reconstructSleepNights,
   type SleepStageRow,
@@ -52,7 +54,7 @@ import {
   nowProvenanceTimestamp,
 } from "./coverage";
 import type { BaselineProfile } from "./baseline";
-import type { Derived } from "./types";
+import { SPARKLINE_MAX_POINTS, type Derived } from "./types";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** Default trailing window for the consistency/timing baseline (days). */
@@ -93,6 +95,14 @@ export interface SleepScoreValue {
   subScores: SleepSubScore[];
   /** Nights in the window that backed the consistency/timing baseline. */
   windowNights: number;
+  /**
+   * v1.42 — the score of every scorable night in the window (oldest → newest,
+   * capped to `SPARKLINE_MAX_POINTS`), so a surface can show the score's
+   * course rather than one night. Each night is scored by the same blend as
+   * the headline, against the same window's habitual midpoint, so the last
+   * point IS `score`. Additive; older clients ignore it.
+   */
+  series: number[];
 }
 
 // ── pure scorers (exported for tests) ─────────────────────────────────
@@ -421,6 +431,14 @@ export interface SleepScoreOpts {
    * user's stored zone (the production path); pass explicitly in tests.
    */
   tz?: string;
+  /**
+   * The exclusive upper end of the read. A reader asking about a past night
+   * passes the end of that day so a later night cannot become "the most
+   * recent" one; omitted, every row from the window start on is read.
+   */
+  until?: Date;
+  /** The record's source priority, when the caller already holds it. */
+  priorityJson?: unknown;
 }
 
 /**
@@ -443,7 +461,10 @@ export async function computeSleepScore(
   // The canonical writer-dedup ladder needs the user's source priority — read
   // it alongside so a multi-source night collapses to the SAME writer the
   // dashboard / hypnogram pick.
-  const priorityJson = await loadUserSourcePriority(userId);
+  const priorityJson =
+    opts.priorityJson !== undefined
+      ? opts.priorityJson
+      : await loadUserSourcePriority(userId);
   const inputs = ["SLEEP_DURATION"];
   const required = 1;
   const since = new Date(now.getTime() - windowDays * MS_PER_DAY);
@@ -453,7 +474,7 @@ export async function computeSleepScore(
       userId,
       type: "SLEEP_DURATION" satisfies MeasurementType,
       deletedAt: null,
-      measuredAt: { gte: since },
+      measuredAt: { gte: since, ...(opts.until ? { lt: opts.until } : {}) },
     },
     orderBy: { measuredAt: "asc" },
     // `source` + `deviceType` feed the canonical writer-dedup so a multi-source
@@ -530,6 +551,26 @@ export async function computeSleepScore(
   };
 
   const { score, subScores } = blendSleepSubScores(raw);
+
+  // The same blend over every scorable night in the window. Consistency is a
+  // window-level figure and timing reads against the window's habitual
+  // midpoint, so every night is judged by the yardstick the headline uses.
+  const consistency = scoreConsistency(midpoints);
+  const series = scorableNights.slice(-SPARKLINE_MAX_POINTS).map(
+    (night) =>
+      blendSleepSubScores({
+        sufficiency: scoreSufficiency(night.asleepMinutes, needMinutes),
+        efficiency: scoreEfficiency(night.asleepMinutes, night.inBedMinutes),
+        consistency,
+        timing: scoreTiming(night.midpoint, habitualMidpoint, midpoints.length),
+        composition: scoreComposition(
+          night.remMinutes,
+          night.deepMinutes,
+          night.asleepMinutes,
+          night.hasStageBreakdown,
+        ),
+      }).score,
+  );
   const presentCount = subScores.filter((s) => s.value !== null).length;
   const missing = subScores.filter((s) => s.value === null).map((s) => s.key);
 
@@ -557,6 +598,7 @@ export async function computeSleepScore(
         latest.inBedMinutes === null ? null : Math.round(latest.inBedMinutes),
       subScores,
       windowNights: scorableNights.length,
+      series,
     },
     coverage,
     confidence,
@@ -567,4 +609,98 @@ export async function computeSleepScore(
       computedAt,
     },
   });
+}
+
+// ── history ─────────────────────────────────────────────────────────────
+
+/**
+ * Each night's Sleep Score as the headline would have shown it the morning
+ * after: the night's own sufficiency, efficiency and composition, with
+ * consistency and timing read against the nights of the trailing window that
+ * ends on it. That is the yardstick the headline uses for its latest night,
+ * applied to every night in turn, so the newest point of a history equals the
+ * score on the card and a past point equals what the card said that day.
+ *
+ * `nights` must be ascending by wake day and scorable (asleep minutes > 0).
+ * Only nights on or after `fromDay` are returned; earlier ones serve as the
+ * window behind the first returned night. Pure.
+ */
+export function scoreNightsAgainstTrailingWindow(
+  nights: readonly NightSummary[],
+  needMinutes: number,
+  fromDay: string,
+  windowDays: number = DEFAULT_WINDOW_DAYS,
+): Array<{ night: string; score: number }> {
+  const out: Array<{ night: string; score: number }> = [];
+  let start = 0;
+  for (let i = 0; i < nights.length; i += 1) {
+    const night = nights[i]!;
+    const windowStart = shiftDateKey(night.night, -(windowDays - 1));
+    while (start < i && nights[start]!.night < windowStart) start += 1;
+    if (night.night < fromDay) continue;
+    const midpoints = nights
+      .slice(start, i + 1)
+      .map((n) => n.midpoint)
+      .filter((m): m is number => m != null);
+    const habitualMidpoint = circularMeanMinutes(midpoints);
+    out.push({
+      night: night.night,
+      score: blendSleepSubScores({
+        sufficiency: scoreSufficiency(night.asleepMinutes, needMinutes),
+        efficiency: scoreEfficiency(night.asleepMinutes, night.inBedMinutes),
+        consistency: scoreConsistency(midpoints),
+        timing: scoreTiming(night.midpoint, habitualMidpoint, midpoints.length),
+        composition: scoreComposition(
+          night.remMinutes,
+          night.deepMinutes,
+          night.asleepMinutes,
+          night.hasStageBreakdown,
+        ),
+      }).score,
+    });
+  }
+  return out;
+}
+
+/**
+ * The Sleep Score of every night from `fromDay` (a wake-day key) to now, one
+ * value per night, oldest first. Reads the sleep rows once, from a window
+ * before `fromDay` so the first night has its yardstick behind it.
+ */
+export async function computeSleepScoreHistory(
+  userId: string,
+  profile: BaselineProfile,
+  opts: { fromDay: string; now: Date; tz: string; priorityJson: unknown },
+): Promise<Array<{ night: string; score: number }>> {
+  // The wake day of a night can sit a day after the instant its first row
+  // starts, so the read opens one day earlier than the window strictly needs.
+  const since = startOfLocalDayKey(
+    shiftDateKey(opts.fromDay, -(DEFAULT_WINDOW_DAYS + 1)),
+    opts.tz,
+  );
+  const rows = (await prisma.measurement.findMany({
+    where: {
+      userId,
+      type: "SLEEP_DURATION" satisfies MeasurementType,
+      deletedAt: null,
+      measuredAt: { gte: since, lte: opts.now },
+    },
+    orderBy: { measuredAt: "asc" },
+    select: {
+      value: true,
+      measuredAt: true,
+      sleepStage: true,
+      source: true,
+      deviceType: true,
+    },
+  })) as SleepRow[];
+  if (rows.length === 0) return [];
+  const nights = reconstructNights(rows, opts.tz, opts.priorityJson)
+    .filter((n) => n.asleepMinutes > 0)
+    .sort((a, b) => (a.night < b.night ? -1 : a.night > b.night ? 1 : 0));
+  return scoreNightsAgainstTrailingWindow(
+    nights,
+    sleepNeedMinutes(profile.ageYears),
+    opts.fromDay,
+  );
 }

@@ -29,6 +29,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
+import { EmptyState } from "@/components/ui/empty-state";
 import { formatDate } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
@@ -188,16 +190,19 @@ export function PasskeyListSection({
   return (
     <SettingsCard>
       <SettingsCardHeader
+        anchor="passkeys"
         icon={Fingerprint}
         title={t("settings.passkeys")}
         description={t("settings.passkeysDescription")}
       />
 
-      <div>
+      <div className="space-y-4">
         {!passkeys || passkeys.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            {t("settings.noPasskeys")}
-          </p>
+          <EmptyState
+            variant="plain"
+            size="compact"
+            title={t("settings.noPasskeys")}
+          />
         ) : (
           <ul className="space-y-2" data-testid="passkeys-list">
             {passkeys.map((pk) => (
@@ -299,7 +304,7 @@ export function PasskeyListSection({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="text-destructive min-h-11 min-w-11 sm:h-8 sm:min-h-0 sm:w-8 sm:min-w-0"
+                            className="text-muted-foreground hover:text-foreground min-h-11 min-w-11 sm:h-8 sm:min-h-0 sm:w-8 sm:min-w-0"
                             disabled={remove.isPending}
                             aria-label={t("settings.deletePasskey")}
                           >
@@ -341,6 +346,16 @@ export function PasskeyListSection({
           </ul>
         )}
 
+        {msg && !reauthOpen && (
+          <div
+            role="alert"
+            className="text-destructive flex items-center gap-2 text-sm"
+          >
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            {msg}
+          </div>
+        )}
+
         <AlertDialog
           open={reauthOpen}
           onOpenChange={(open) => {
@@ -349,11 +364,10 @@ export function PasskeyListSection({
             if (open) setMsg(null);
           }}
         >
-          <div className="mt-4">
+          <SettingsCardActions>
             <AlertDialogTrigger asChild>
               <Button
                 type="button"
-                variant="outline"
                 className="min-h-11 sm:min-h-9"
                 disabled={add.isPending}
               >
@@ -365,7 +379,7 @@ export function PasskeyListSection({
                 {t("settings.addPasskey")}
               </Button>
             </AlertDialogTrigger>
-          </div>
+          </SettingsCardActions>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>
@@ -475,16 +489,6 @@ export function PasskeyListSection({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
-        {msg && !reauthOpen && (
-          <div
-            role="alert"
-            className="text-destructive mt-3 flex items-center gap-2 text-sm"
-          >
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            {msg}
-          </div>
-        )}
       </div>
     </SettingsCard>
   );

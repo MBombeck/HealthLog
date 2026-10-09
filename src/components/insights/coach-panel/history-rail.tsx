@@ -25,7 +25,6 @@ import { useLoadMoreSentinel } from "@/hooks/use-load-more-sentinel";
 import type { CoachConversationDTO } from "@/lib/ai/coach/types";
 import { groupConversationsByRecency } from "@/lib/insights/coach-conversation-groups";
 
-import { COACH_SCROLLBAR } from "./message-thread";
 import { ConversationRename } from "./conversation-rename";
 import {
   useCoachConversationHistory,
@@ -122,8 +121,9 @@ export function HistoryRail({
       action: {
         label: t("common.undo"),
         onClick: () => {
-          undoDelete(id);
-          if (wasActive) onUndoDeleteActive?.(id);
+          // A delete already committed (window over, or the page was
+          // hidden meanwhile) has nothing to reopen.
+          if (undoDelete(id) && wasActive) onUndoDeleteActive?.(id);
         },
       },
     });
@@ -149,12 +149,7 @@ export function HistoryRail({
       <div
         ref={setListNode}
         data-slot="coach-history-list"
-        className={cn(
-          // `pb-20` keeps the last row clear of the panel's floating New
-          // chat button; it pads this list's own scroll area, not `main`.
-          "-mx-1 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-1 pb-20",
-          COACH_SCROLLBAR,
-        )}
+        className="-mx-1 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-1"
       >
         {isLoading && visible.length === 0 ? (
           <p
@@ -340,7 +335,6 @@ function HistoryRow({
               {t("insights.coach.frame.rename")}
             </DropdownMenuItem>
             <DropdownMenuItem
-              variant="destructive"
               data-slot="coach-history-delete"
               onSelect={() => onDelete(c.id)}
             >

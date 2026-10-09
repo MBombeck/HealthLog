@@ -46,8 +46,14 @@ import {
   stdResponses,
   errorEnvelope,
   loginPasswordSchema,
+  validationIssue,
 } from "./shared";
 import { passkeyLoginOptionsSchema } from "@/lib/validations/auth";
+import {
+  claimPreviewSchema,
+  claimSchema,
+} from "@/lib/validations/managed-profile-handover";
+import { HANDOVER_ACCESS_LEVELS } from "@/lib/managed-profiles/handover-access";
 
 // ── Sub-schemas owned here (route-specific shapes) ───────────────────
 
@@ -632,13 +638,7 @@ const authProfileUpdateResponse = z
         "Whether an insurance number is stored. The number itself is encrypted at rest and is never returned — only its presence.",
       ),
     rejectedFields: z
-      .array(
-        z.object({
-          path: z.string(),
-          code: z.string(),
-          message: z.string(),
-        }),
-      )
+      .array(validationIssue)
       .optional()
       .describe(
         "Present only on a PARTIAL success: the fields that were skipped while the rest of the patch was written. A 200 carrying this key means the save was incomplete — surface it, do not treat the response as a clean save. `code` is the validator code for a field that failed validation, or `rate_limited` for an email-address change that has spent the account's hourly budget; that one is not a bad value and the same address will be accepted once the window rolls over.",
@@ -697,7 +697,133 @@ const codexDevicePollResponse = z
   })
   .meta({ id: "CodexDevicePollResponse" });
 
+// v1.42 (#959) — claiming a managed profile through its handover link.
+const claimPreviewRequest = claimPreviewSchema.meta({
+  id: "ProfileClaimPreviewRequest",
+  description:
+    "`token` is the `hlp_` token from the handover link. Sent in the body, never in a URL.",
+});
+
+const claimAccess = z
+  .enum(HANDOVER_ACCESS_LEVELS)
+  .meta({ id: "ProfileClaimGuardianAccess" });
+
+const claimPreview = z
+  .object({
+    displayName: z
+      .string()
+      .nullable()
+      .describe("The profile's name, as its guardians set it."),
+    expiresAt: z.iso.datetime({ offset: true }),
+    guardians: z
+      .array(
+        z.object({
+          displayName: z
+            .string()
+            .nullable()
+            .describe(
+              "The guardian's display name; null when they set none. Never a login name or an id: the holder of the link has proved nothing yet.",
+            ),
+          proposal: claimAccess,
+        }),
+      )
+      .describe(
+        "Each guardian and the access they keep after the claim, as proposed. The new owner confirms or changes it after signing in.",
+      ),
+  })
+  .meta({ id: "ProfileClaimPreview" });
+
+const claimRequest = claimSchema.meta({
+  id: "ProfileClaimRequest",
+  description:
+    "`token` is the `hlp_` token from the handover link, in the body. `username` follows the registration rules and may not start with `managed-`; `email` is required, because the account needs a way back in; `password` follows the registration password policy.",
+});
+
 export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+  "/api/auth/claim/preview": {
+    post: {
+      // No credential: the person claiming the profile has none yet. The
+      // one-time token in the body is the credential.
+      security: [],
+      tags: ["Auth"],
+      summary: "Preview a managed-profile handover link",
+      description:
+        "What a handover link would hand over: the profile's display name, the link's expiry, and each guardian's proposal. Anonymous; the token travels in the body. An unknown, expired, used or withdrawn token, and a link whose creator lost access, all answer the same 404. Rate-limited per source address.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: claimPreviewRequest } },
+      },
+      responses: {
+        "200": {
+          description: "The preview.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(claimPreview, "ProfileClaimPreviewEnvelope"),
+            },
+          },
+        },
+        "403": {
+          description:
+            "The instance allows single sign-on only (`meta.errorCode: profile_claim.oidc_only_unsupported`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "404": {
+          description:
+            "No usable link behind this token (`meta.errorCode: profile_claim.invalid`). Every failure class answers identically.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "409": {
+          description:
+            "The request carries a signed-in session (`meta.errorCode: auth.already_authenticated`); sign out first.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/auth/claim": {
+    post: {
+      // No credential: see the preview above.
+      security: [],
+      tags: ["Auth"],
+      summary: "Claim a managed profile",
+      description:
+        "Turns the managed profile behind a handover link into the claimant's own account, in one transaction: sets the username, email and password on the profile's record, clears the managed marker, withdraws pending invitations, applies each guardian's proposed access, and resets the disclaimer, onboarding and AI consent so the new owner gives them personally. The new owner then decides each guardian's access on first sign-in (`/api/account/handover-decision`). No data moves. Signs the new owner in. Anonymous; the token travels in the body, every token failure answers the same 404, and five attempts per fifteen minutes per source address are allowed.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: claimRequest } },
+      },
+      responses: {
+        "201": {
+          description: "Claimed; the response sets the session cookie.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ userId: z.string(), username: z.string() }),
+                "ProfileClaimEnvelope",
+              ),
+            },
+          },
+        },
+        "403": {
+          description:
+            "The instance allows single sign-on only (`meta.errorCode: profile_claim.oidc_only_unsupported`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "404": {
+          description:
+            "No usable link behind this token (`meta.errorCode: profile_claim.invalid`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "409": {
+          description:
+            "The request carries a signed-in session (`meta.errorCode: auth.already_authenticated`), or the username or email is taken (`meta.errorCode: profile_claim.taken`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
   "/api/auth/login": {
     post: {
       // No credential: this operation is reachable before one exists.
@@ -1315,10 +1441,20 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "404": {
           description:
-            "The assertion resolved to a user row that no longer exists.",
+            "`meta.errorCode` = `passkey.unknown` (v1.42.0): no passkey with this credential id is registered on this server — it was removed here, or belongs to another server. Tell the person to sign in another way. Without a code: the assertion resolved to a user row that no longer exists.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
+        "401": {
+          description:
+            "The sign-in did not prove anything (v1.42.0 codes; before, the first case answered 500). `meta.errorCode` = `passkey.challenge.expired` when the challenge is gone — it expired after five minutes, was already used, or was begun for a different account — so start a new sign-in; `passkey.verification.failed` when the assertion was checked and refused (signature, origin, relying-party id or challenge mismatch).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "422": {
+          description:
+            "`challengeId` or `credential` is missing, or (`meta.errorCode` = `passkey.response.invalid`, v1.42.0) `credential` is not a WebAuthn authentication response.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },

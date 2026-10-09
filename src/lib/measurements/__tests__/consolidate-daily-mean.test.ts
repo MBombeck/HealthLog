@@ -22,6 +22,7 @@ import type { MeasurementType, PrismaClient } from "@/generated/prisma/client";
 vi.mock("@/lib/export/restore-lock", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/export/restore-lock")>()),
   holdAccountAgainstRestore: vi.fn(async () => {}),
+  holdAccountFoldLock: vi.fn(async () => {}),
 }));
 
 function row(
@@ -94,16 +95,28 @@ describe("consolidateDailyMean — drain flow (mocked Prisma)", () => {
   function buildPrismaMock(rowsByType: Record<string, unknown[]>) {
     const upsert = vi.fn().mockResolvedValue({});
     const updateMany = vi.fn().mockResolvedValue({ count: 0 });
+    const deleteMany = vi.fn().mockResolvedValue({ count: 0 });
     const update = vi.fn().mockResolvedValue({});
     // Canonical-slot probe inside the write transaction — defaults to an
     // unoccupied slot (the pre-collision-fix happy path).
     const txFindFirst = vi.fn().mockResolvedValue(null);
+    // The fold leftovers of a day that already has a live daily row.
+    const txFindMany = vi.fn().mockResolvedValue([]);
     const findManyMeasurement = vi.fn(
       async (args: { where: { type: string } }) =>
         rowsByType[args.where.type] ?? [],
     );
     const tx = {
-      measurement: { upsert, updateMany, update, findFirst: txFindFirst },
+      measurement: {
+        upsert,
+        updateMany,
+        deleteMany,
+        update,
+        findFirst: txFindFirst,
+        findMany: txFindMany,
+      },
+      // The fold repair has not been through the account.
+      measurementFoldRepair: { findUnique: vi.fn().mockResolvedValue(null) },
     };
     return {
       mock: {
@@ -121,6 +134,7 @@ describe("consolidateDailyMean — drain flow (mocked Prisma)", () => {
       },
       upsert,
       updateMany,
+      deleteMany,
       update,
       txFindFirst,
       findManyMeasurement,
@@ -141,12 +155,12 @@ describe("consolidateDailyMean — drain flow (mocked Prisma)", () => {
     }
   });
 
-  it("upserts the per-day mean and soft-deletes the source rows", async () => {
+  it("upserts the per-day mean and deletes the source rows", async () => {
     const walkingSpeedRows = [
       row("a", 1.0, "2026-05-01T08:00:00.000Z"),
       row("b", 1.4, "2026-05-01T09:00:00.000Z"),
     ];
-    const { mock, upsert, updateMany } = buildPrismaMock({
+    const { mock, upsert, updateMany, deleteMany } = buildPrismaMock({
       WALKING_SPEED: walkingSpeedRows,
     });
 
@@ -161,11 +175,12 @@ describe("consolidateDailyMean — drain flow (mocked Prisma)", () => {
     // Unit is read straight off the day's rows (no separate query).
     expect(upsertArg.create.unit).toBe("m/s");
 
-    // soft-delete: updateMany sets deletedAt, never a hard delete.
-    const updArg = updateMany.mock.calls[0]?.[0] as {
-      data: { deletedAt: Date };
+    // v1.42 — the folded rows are deleted outright, no longer tombstoned.
+    const delArg = deleteMany.mock.calls[0]?.[0] as {
+      where: { id: { in: string[] } };
     };
-    expect(updArg.data.deletedAt).toBeInstanceOf(Date);
+    expect(delArg.where.id.in).toEqual(["a", "b"]);
+    expect(updateMany).not.toHaveBeenCalled();
     expect(summary.totals.daysConsolidated).toBe(1);
 
     // T3 — the rollup DAY bucket must be recomputed for the touched
@@ -277,14 +292,26 @@ describe("consolidateDailyMean — canonical-slot collision (second unique index
   function buildPrismaMock(rowsByType: Record<string, unknown[]>) {
     const upsert = vi.fn().mockResolvedValue({});
     const updateMany = vi.fn().mockResolvedValue({ count: 0 });
+    const deleteMany = vi.fn().mockResolvedValue({ count: 0 });
     const update = vi.fn().mockResolvedValue({});
     const txFindFirst = vi.fn().mockResolvedValue(null);
+    // The fold leftovers of a day that already has a live daily row.
+    const txFindMany = vi.fn().mockResolvedValue([]);
     const findManyMeasurement = vi.fn(
       async (args: { where: { type: string } }) =>
         rowsByType[args.where.type] ?? [],
     );
     const tx = {
-      measurement: { upsert, updateMany, update, findFirst: txFindFirst },
+      measurement: {
+        upsert,
+        updateMany,
+        deleteMany,
+        update,
+        findFirst: txFindFirst,
+        findMany: txFindMany,
+      },
+      // The fold repair has not been through the account.
+      measurementFoldRepair: { findUnique: vi.fn().mockResolvedValue(null) },
     };
     return {
       mock: {
@@ -300,8 +327,10 @@ describe("consolidateDailyMean — canonical-slot collision (second unique index
       } as unknown as PrismaClient,
       upsert,
       updateMany,
+      deleteMany,
       update,
       txFindFirst,
+      txFindMany,
     };
   }
 
@@ -311,8 +340,21 @@ describe("consolidateDailyMean — canonical-slot collision (second unique index
     occupant: { id: string; externalId: string | null; deletedAt: Date | null },
   ) {
     txFindFirst.mockImplementation(
-      async (args: { where: { measuredAt: Date } }) =>
-        args.where.measuredAt.getTime() === noon.getTime() ? occupant : null,
+      async (args: {
+        where: { measuredAt?: Date; externalId?: string; deletedAt?: null };
+      }) => {
+        // The live-daily-row lookup (no instant): the occupant answers it
+        // when it is the live daily row itself.
+        if (args.where.measuredAt === undefined) {
+          return occupant.externalId === args.where.externalId &&
+            occupant.deletedAt === null
+            ? { id: occupant.id }
+            : null;
+        }
+        return args.where.measuredAt.getTime() === noon.getTime()
+          ? occupant
+          : null;
+      },
     );
   }
 
@@ -397,26 +439,166 @@ describe("consolidateDailyMean — canonical-slot collision (second unique index
     expect(summary.totals.daysFailed).toBe(0);
   });
 
-  it("re-run path: a slot row already carrying the target externalId is updated in place", async () => {
-    const { mock, upsert, update, txFindFirst } = buildPrismaMock({
-      WALKING_SPEED: [row("late", 1.2, "2026-05-01T18:00:00.000Z")],
-    });
-    occupySlot(txFindFirst, {
-      id: "mean-1",
-      externalId: targetExternalId,
-      deletedAt: null,
-    });
+  /** The live daily row the stored-day branch finds, with its value. */
+  function storedDay(
+    txFindFirst: ReturnType<typeof vi.fn>,
+    stored: { id: string; value: number },
+  ) {
+    txFindFirst.mockImplementation(
+      async (args: { where: { measuredAt?: Date; externalId?: string } }) =>
+        args.where.measuredAt === undefined &&
+        args.where.externalId === targetExternalId
+          ? stored
+          : null,
+    );
+  }
 
-    await consolidateDailyMean(mock, { log: () => {} });
+  /** Live samples and fold leftovers of the day, told apart by `deletedAt`. */
+  function daySamples(
+    txFindMany: ReturnType<typeof vi.fn>,
+    liveRows: Array<{ id: string; value: number; iso: string }>,
+    leftovers: Array<{ id: string; value: number; iso: string }>,
+    deletedAt: Date,
+  ) {
+    txFindMany.mockImplementation(
+      async (args: { where: { deletedAt: null | { not: null } } }) =>
+        args.where.deletedAt === null
+          ? liveRows.map((r) => ({
+              id: r.id,
+              value: r.value,
+              measuredAt: new Date(r.iso),
+            }))
+          : leftovers.map((r) => ({
+              id: r.id,
+              value: r.value,
+              measuredAt: new Date(r.iso),
+              externalId: `uuid-${r.id}`,
+              deletedAt,
+              syncVersion: 1,
+            })),
+    );
+  }
 
-    // No shift, no yield — the upsert's update branch owns the row.
-    expect(update).not.toHaveBeenCalled();
-    const upsertArg = upsert.mock.calls[0]?.[0] as {
-      create: { measuredAt: Date };
-    };
-    expect(upsertArg.create.measuredAt.getTime()).toBe(noon.getTime());
-    // Only the single slot probe ran — no free-instant search.
-    expect(txFindFirst).toHaveBeenCalledTimes(1);
+  it("a day with a live daily row inside the horizon gets the mean over every sample, and its live rows stay as leftovers", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-05-04T03:00:00.000Z"));
+    try {
+      const {
+        mock,
+        upsert,
+        update,
+        updateMany,
+        deleteMany,
+        txFindFirst,
+        txFindMany,
+      } = buildPrismaMock({
+        WALKING_SPEED: [row("late", 1.2, "2026-05-01T18:00:00.000Z")],
+      });
+      storedDay(txFindFirst, { id: "mean-1", value: 1.2 });
+      updateMany.mockResolvedValue({ count: 1 });
+      daySamples(
+        txFindMany,
+        [{ id: "late", value: 1.2, iso: "2026-05-01T18:00:00.000Z" }],
+        [{ id: "early", value: 1.0, iso: "2026-05-01T07:00:00.000Z" }],
+        new Date("2026-05-03T03:00:00.000Z"),
+      );
+
+      const summary = await consolidateDailyMean(mock, { log: () => {} });
+
+      // Not re-minted, not the late sample alone: the whole day.
+      expect(upsert).not.toHaveBeenCalled();
+      expect(update).toHaveBeenCalledTimes(1);
+      const updArg = update.mock.calls[0]?.[0] as {
+        where: { id: string };
+        data: { value: number };
+      };
+      expect(updArg.where.id).toBe("mean-1");
+      expect(updArg.data.value).toBeCloseTo(1.1, 9);
+      // The live sample becomes a leftover, never deleted outright.
+      expect(deleteMany).not.toHaveBeenCalled();
+      const absorbArg = updateMany.mock.calls[0]?.[0] as {
+        where: { id: { in: string[] } };
+        data: { deletedAt: Date };
+      };
+      expect(absorbArg.where.id.in).toEqual(["late"]);
+      expect(absorbArg.data.deletedAt).toBeInstanceOf(Date);
+      expect(summary.totals.daysLeftAsStored).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a day with a live daily row inside the horizon but no fold leftovers is left as stored", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-05-04T03:00:00.000Z"));
+    try {
+      const {
+        mock,
+        upsert,
+        update,
+        updateMany,
+        deleteMany,
+        txFindFirst,
+        txFindMany,
+      } = buildPrismaMock({
+        WALKING_SPEED: [row("late", 1.2, "2026-05-01T18:00:00.000Z")],
+      });
+      storedDay(txFindFirst, { id: "mean-1", value: 1.0 });
+      daySamples(
+        txFindMany,
+        [{ id: "late", value: 1.2, iso: "2026-05-01T18:00:00.000Z" }],
+        [],
+        new Date("2026-05-03T03:00:00.000Z"),
+      );
+
+      const summary = await consolidateDailyMean(mock, { log: () => {} });
+
+      expect(upsert).not.toHaveBeenCalled();
+      expect(update).not.toHaveBeenCalled();
+      expect(updateMany).not.toHaveBeenCalled();
+      expect(deleteMany).not.toHaveBeenCalled();
+      expect(summary.totals.daysLeftAsStored).toBe(1);
+      expect(summary.totals.daysConsolidated).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a day with a live daily row before the horizon keeps its mean and its live rows, whatever the leftovers", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    // 2026-05-01 lies about 160 days back: tombstones of it may be purged.
+    vi.setSystemTime(new Date("2026-10-08T03:00:00.000Z"));
+    try {
+      const {
+        mock,
+        upsert,
+        update,
+        updateMany,
+        deleteMany,
+        txFindFirst,
+        txFindMany,
+      } = buildPrismaMock({
+        WALKING_SPEED: [row("late", 9, "2026-05-01T18:00:00.000Z")],
+      });
+      storedDay(txFindFirst, { id: "mean-1", value: 1.0 });
+      daySamples(
+        txFindMany,
+        [{ id: "late", value: 9, iso: "2026-05-01T18:00:00.000Z" }],
+        [{ id: "early", value: 9, iso: "2026-05-01T07:00:00.000Z" }],
+        new Date("2026-09-01T03:00:00.000Z"),
+      );
+
+      const summary = await consolidateDailyMean(mock, { log: () => {} });
+
+      expect(upsert).not.toHaveBeenCalled();
+      expect(update).not.toHaveBeenCalled();
+      expect(updateMany).not.toHaveBeenCalled();
+      expect(deleteMany).not.toHaveBeenCalled();
+      expect(summary.totals.daysLeftAsStored).toBe(1);
+      expect(recomputeBucketsForMeasurement).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("a failing day bucket does not abort the pass — later buckets still consolidate", async () => {

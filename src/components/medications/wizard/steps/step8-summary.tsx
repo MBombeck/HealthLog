@@ -121,7 +121,7 @@ export function Step8Summary({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="text-muted-foreground hover:text-destructive h-8 gap-1 px-2 text-xs"
+                  className="text-muted-foreground hover:text-foreground h-8 gap-1 px-2 text-xs"
                   onClick={() => onRemoveSchedule(index)}
                   disabled={!canRemove}
                   data-slot="wizard-schedule-remove"

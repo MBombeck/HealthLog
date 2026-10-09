@@ -54,6 +54,9 @@ export const WIPE_MODELS = [
   // record and nothing else holds it, so a wipe that leaves it behind leaves
   // behind an account's activity pattern.
   "IntradayCumulativeProfile",
+  // That the fold repair went through this account's means. With the readings
+  // gone it describes nothing; without it the repair simply runs once more.
+  "MeasurementFoldRepair",
   // The health score as it was shown, one row per local day. Not a cache of
   // the live computation — nothing can rebuild a past day once the readings
   // behind it have moved — so leaving it behind leaves behind a record of how
@@ -114,6 +117,9 @@ export const WIPE_MODELS = [
   // ahead of both.
   "VaccinationDocumentLink",
   "VaccinationRecord",
+  // v1.42 (#1005) — the person's own vaccine definitions. After the doses,
+  // which point at them with SetNull, so neither count reads short.
+  "CustomVaccine",
 
   // ── Clinical record ─────────────────────────────────────────────────────
   "MentalHealthAssessment",
@@ -130,6 +136,8 @@ export const WIPE_MODELS = [
   "IllnessDayLog",
   // Before its definition and before the episode it may point at (SetNull).
   "SymptomEvent",
+  // v1.42 — the person's life events. Nothing points at them.
+  "LifeEvent",
   "EcgRecording",
   "NutrientIntakeDay",
 
@@ -173,6 +181,14 @@ export const WIPE_MODELS = [
   // was read off it; a child of the document, so it goes before it.
   "DocumentAiRun",
   "ImportJob",
+  // v1.42 (#1173) — when each HealthKit type last arrived. Diagnostic, but a
+  // record of what the account's phone sent and when.
+  "HealthKitTypeSync",
+  // v1.42 (#959) — handover links, on both sides: the ones minted for this
+  // profile, and the ones this account minted for a profile it looks after.
+  // The second is the AccountGrant argument: an account that asked for
+  // everything of its own to be deleted must not leave a live link behind.
+  "ManagedProfileHandover",
 
   // ── AI ──────────────────────────────────────────────────────────────────
   "CoachConversation",
@@ -360,6 +376,9 @@ export const USER_RESET = {
   homeLabel: null,
   homeTimezone: null,
   homeSince: null,
+  homeLocationEncrypted: null,
+  environmentAirQualityEnabled: true,
+  environmentAqHistoryJson: Prisma.DbNull,
 
   // Derived AI output cached on the row
   insightsPrivacyMode: "aggregated",
@@ -439,6 +458,7 @@ export const USER_RESET = {
   dashboardWidgetsJson: Prisma.DbNull,
   medicationListLayoutJson: Prisma.DbNull,
   moodTagLayoutJson: Prisma.DbNull,
+  documentsLayoutJson: Prisma.DbNull,
   reportSelectionJson: Prisma.DbNull,
   modulePreferencesJson: Prisma.DbNull,
   healthScoreConfigJson: Prisma.DbNull,
@@ -512,6 +532,7 @@ export const WIPE_OWNER_FIELDS: Readonly<Record<string, readonly string[]>> = {
   MedicationIntakeImportJob: ["recordUserId"],
   NotificationEvent: ["recordUserId"],
   NotificationEgressAuthorization: ["recordUserId", "recipientUserId"],
+  ManagedProfileHandover: ["profileId", "createdById"],
   // Both sides. Wiping only the grantor side would leave the account still
   // holding read access to other people's records after it asked for
   // everything of its own to be deleted.

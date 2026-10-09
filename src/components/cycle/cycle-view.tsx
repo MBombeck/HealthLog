@@ -271,7 +271,14 @@ export function CycleView() {
                           days: verdict.overdueDays,
                         })
                       : t("cycle.ring.periodOverdue")
-                    : t("cycle.ring.caption")}
+                    : // The ring shows the bare number; the caption under it
+                      // reads as a whole phrase ("Tag 9 deines Zyklus"), not
+                      // a fragment hanging off the ring.
+                      verdict?.dayOfCycle != null
+                      ? t("cycle.insightsSummary.currentDay", {
+                          day: verdict.dayOfCycle,
+                        })
+                      : t("cycle.ring.caption")}
                 </p>
               ) : null}
               {/* Log CTA — first period when no cycle exists yet, next period

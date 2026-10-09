@@ -67,6 +67,10 @@ const DELIBERATELY_OPEN: Record<string, { count: number; reason: string }> = {
     reason: "hand-built query object",
   },
   "insights/derived/route.ts": { count: 1, reason: "hand-built query object" },
+  "insights/score-history/route.ts": {
+    count: 1,
+    reason: "hand-built query object",
+  },
   "insights/metric-status/route.ts": {
     count: 1,
     reason: "hand-built query object",
@@ -116,6 +120,14 @@ const DELIBERATELY_OPEN: Record<string, { count: number; reason: string }> = {
     reason: "read filter over whole searchParams",
   },
   "medications/[id]/dose-history/route.ts": {
+    count: 1,
+    reason: "read filter over whole searchParams",
+  },
+  "medications/compliance/route.ts": {
+    count: 1,
+    reason: "read filter over whole searchParams",
+  },
+  "mood/insights/route.ts": {
     count: 1,
     reason: "read filter over whole searchParams",
   },

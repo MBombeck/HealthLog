@@ -200,9 +200,15 @@ export function BottomNav() {
           `bg-card` + `border-t` give the bar a clean visual edge so page
           content that scrolls under the bar is occluded, not bleeding
           through. */}
+      {/* The side insets keep the outer tabs clear of the notch on a phone
+          held sideways. `data-keyboard-hide`: while the on-screen keyboard
+          is open the bar steps aside (globals.css) instead of floating
+          over the field being typed into. */}
       <nav
         aria-label={t("nav.mobileNavigation")}
-        className="bg-card border-border fixed bottom-0 left-0 z-50 min-h-16 w-full border-t pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
+        data-slot="bottom-nav"
+        data-keyboard-hide=""
+        className="bg-card border-border shell-desktop:hidden fixed bottom-0 left-0 z-50 min-h-16 w-full border-t pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] backdrop-blur-md"
       >
         <div className="mx-auto flex h-16 max-w-lg items-stretch justify-around px-1">
           {primaryLeft.map(renderPrimary)}
@@ -268,7 +274,7 @@ export function BottomNav() {
           // The sheet auto-sizes to its content; padding-bottom respects
           // the iOS safe area so the inner buttons stay reachable above
           // the home-indicator on iPhone-X-class devices.
-          className="mx-auto max-w-md rounded-t-xl pb-[calc(env(safe-area-inset-bottom)+1rem)] md:hidden"
+          className="shell-desktop:hidden mx-auto max-w-md rounded-t-xl pb-[calc(env(safe-area-inset-bottom)+1rem)]"
           data-testid="bottom-nav-more-sheet"
         >
           <SheetHeader>

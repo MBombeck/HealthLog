@@ -19,6 +19,7 @@
 import { z } from "zod/v4";
 
 import {
+  applyDisplayTransform,
   getQuantityTransform,
   invertDisplayTransform,
   type UnitPreference,
@@ -59,8 +60,24 @@ export interface ManualWorkoutDraft {
 export type ManualWorkoutField =
   "sportType" | "start" | "duration" | "distance" | "energyKcal";
 
+/**
+ * The columns of a hand-entered workout the form has no field for. The batch
+ * route's overwrite of a `manual:` row replaces EVERY overwritable column,
+ * nulling the ones a re-post leaves out, so an edit sends these back exactly
+ * as stored. A MANUAL row can carry them when a client other than this form
+ * wrote it (a phone shortcut posting heart rate or steps).
+ */
+export interface ManualWorkoutCarried {
+  avgHeartRate?: number;
+  maxHeartRate?: number;
+  minHeartRate?: number;
+  stepCount?: number;
+  elevationM?: number;
+  pauseDurationSec?: number;
+}
+
 /** The one entry of the `POST /api/workouts/batch` body this form sends. */
-export interface ManualWorkoutEntry {
+export interface ManualWorkoutEntry extends ManualWorkoutCarried {
   sportType: WorkoutSportType;
   startedAt: string;
   endedAt: string;
@@ -70,6 +87,23 @@ export interface ManualWorkoutEntry {
   totalEnergyKcal?: number;
 }
 
+/**
+ * The stored row an edit starts from (#1162): the draft it was shown as, and
+ * the stored values behind it. A field whose text the person left as shown
+ * sends the stored value, not the value re-parsed from that text, so opening
+ * and saving an edit never moves a start by its seconds or a distance by the
+ * rounding of its display (5 000 m shown as 3.11 mi would come back as
+ * 5 005.1 m).
+ */
+export interface ManualWorkoutOriginal {
+  draft: ManualWorkoutDraft;
+  startedAt: string;
+  endedAt: string;
+  totalDistanceM: number | null;
+  totalEnergyKcal: number | null;
+  carried: ManualWorkoutCarried;
+}
+
 export interface ManualWorkoutContext {
   /** The profile timezone the start is read in. */
   timezone: string;
@@ -77,6 +111,8 @@ export interface ManualWorkoutContext {
   /** The id this form instance sends with every submit. */
   externalId: string;
   now: Date;
+  /** Set when the form edits a stored workout rather than logging one. */
+  original?: ManualWorkoutOriginal;
 }
 
 export type ManualWorkoutResult =
@@ -104,6 +140,90 @@ export function canLogWorkout(
   modules?: SurfaceModuleMap | null,
 ): boolean {
   return !caps.inSharedRecord && isSurfaceVisible("capture:workout", modules);
+}
+
+/**
+ * Whether a workout can be edited from its detail page (#1162): one entered
+ * by hand through the form, in one's own record. The edit is a re-post of the
+ * row's own `manual:` id through `POST /api/workouts/batch`, which the route
+ * treats as an overwrite of that row and of nothing else, so a MANUAL row
+ * without such an id (none is expected; the form has always minted one) can
+ * still be deleted but not edited.
+ */
+export function canEditWorkout(
+  workout: { source: string; externalId: string | null },
+  caps: { inSharedRecord: boolean },
+): boolean {
+  return (
+    workout.source === "MANUAL" &&
+    typeof workout.externalId === "string" &&
+    workout.externalId.startsWith("manual:") &&
+    !caps.inSharedRecord
+  );
+}
+
+/** The stored workout an edit opens from, in the detail read's field names. */
+export interface StoredManualWorkout {
+  sportType: string;
+  startedAt: string;
+  endedAt: string;
+  durationSec: number;
+  distanceM: number | null;
+  activeEnergyKcal: number | null;
+  minHr: number | null;
+  stepCount: number | null;
+  elevationM: number | null;
+  pauseDurationSec: number | null;
+  /** The row's own heart rate, before any twin filled it in. */
+  storedAvgHr: number | null;
+  storedMaxHr: number | null;
+}
+
+/**
+ * The draft a stored workout is shown as, and the stored values behind it.
+ * The start reads in the profile timezone to the minute, the duration in
+ * whole minutes, the distance in the reader's unit at its display precision.
+ */
+export function manualWorkoutOriginalFromRow(
+  row: StoredManualWorkout,
+  opts: { timezone: string; unitPreference: UnitPreference },
+): ManualWorkoutOriginal {
+  const sport = workoutSportTypeEnum.safeParse(row.sportType);
+  const totalMinutes = Math.max(0, Math.round(row.durationSec / 60));
+  const distance =
+    row.distanceM === null
+      ? ""
+      : String(
+          applyDisplayTransform(
+            row.distanceM,
+            getQuantityTransform("distance", opts.unitPreference),
+          ),
+        );
+  const carried: ManualWorkoutCarried = {};
+  if (row.storedAvgHr !== null) carried.avgHeartRate = row.storedAvgHr;
+  if (row.storedMaxHr !== null) carried.maxHeartRate = row.storedMaxHr;
+  if (row.minHr !== null) carried.minHeartRate = row.minHr;
+  if (row.stepCount !== null) carried.stepCount = row.stepCount;
+  if (row.elevationM !== null) carried.elevationM = row.elevationM;
+  if (row.pauseDurationSec !== null) {
+    carried.pauseDurationSec = row.pauseDurationSec;
+  }
+  return {
+    draft: {
+      sportType: sport.success ? sport.data : "",
+      start: wallClockNow(new Date(row.startedAt), opts.timezone),
+      hours: String(Math.floor(totalMinutes / 60)),
+      minutes: String(totalMinutes % 60),
+      distance,
+      energyKcal:
+        row.activeEnergyKcal === null ? "" : String(row.activeEnergyKcal),
+    },
+    startedAt: new Date(row.startedAt).toISOString(),
+    endedAt: new Date(row.endedAt).toISOString(),
+    totalDistanceM: row.distanceM,
+    totalEnergyKcal: row.activeEnergyKcal,
+    carried,
+  };
 }
 
 /** A fresh id for one opened form. The prefix says where the row came from. */
@@ -306,26 +426,51 @@ export function buildManualWorkoutEntry(
   }
 
   // Every branch below was proven by the schema above.
+  const original = ctx.original;
   const durationSec =
     ((parseWhole(draft.hours) ?? 0) * 60 + (parseWhole(draft.minutes) ?? 0)) *
     60;
-  const startedAt =
-    draft.start.trim() === ""
+  // An edit whose start and duration read as shown keeps the stored instants
+  // to the second; changing either re-derives both from the fields.
+  const timesAsShown =
+    original !== undefined &&
+    draft.start === original.draft.start &&
+    draft.hours === original.draft.hours &&
+    draft.minutes === original.draft.minutes;
+  const startedAt = timesAsShown
+    ? new Date(original.startedAt)
+    : draft.start.trim() === ""
       ? new Date(ctx.now.getTime() - durationSec * 1000)
       : startToUtc(draft.start, ctx.timezone)!;
+  const endedAt = timesAsShown
+    ? new Date(original.endedAt)
+    : new Date(startedAt.getTime() + durationSec * 1000);
   const distance = parseDecimal(draft.distance);
   const energy = parseDecimal(draft.energyKcal);
 
   const entry: ManualWorkoutEntry = {
     sportType: draft.sportType as WorkoutSportType,
     startedAt: startedAt.toISOString(),
-    endedAt: new Date(startedAt.getTime() + durationSec * 1000).toISOString(),
+    endedAt: endedAt.toISOString(),
     source: "MANUAL",
     externalId: ctx.externalId,
+    // Everything the form has no field for goes back as stored, because the
+    // overwrite nulls whatever a re-post leaves out.
+    ...(original?.carried ?? {}),
   };
-  if (distance !== null) {
+  if (original && draft.distance === original.draft.distance) {
+    if (original.totalDistanceM !== null) {
+      entry.totalDistanceM = original.totalDistanceM;
+    }
+  } else if (distance !== null) {
     entry.totalDistanceM = toMetres(distance, ctx.unitPreference);
   }
-  if (energy !== null) entry.totalEnergyKcal = energy;
+  if (original && draft.energyKcal === original.draft.energyKcal) {
+    if (original.totalEnergyKcal !== null) {
+      entry.totalEnergyKcal = original.totalEnergyKcal;
+    }
+  } else if (energy !== null) {
+    entry.totalEnergyKcal = energy;
+  }
   return { ok: true, entry };
 }

@@ -11,6 +11,7 @@
  * without passing one of those checks.
  */
 import type { Locale } from "@/lib/i18n/config";
+import { isCalendarDateKey } from "@/lib/tz/date-only";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import type { AiToolCall } from "@/lib/ai/types";
 import {
@@ -84,6 +85,8 @@ const TOOL_DOMAIN: Readonly<Record<CoachToolName, CoachStepDomain | null>> = {
   get_cycle: "cycle",
   get_correlations: "correlations",
   get_metric_table: null,
+  get_environment: "environment",
+  get_day: "day",
 };
 
 /**
@@ -105,6 +108,9 @@ const TOOL_WINDOW: Readonly<
   get_cycle: null,
   get_correlations: null,
   get_metric_table: "fallback",
+  get_environment: "fallback",
+  // One date, no window.
+  get_day: null,
 };
 
 /**
@@ -293,6 +299,14 @@ export function toStep(args: {
 
   const settled = settle(tool, result);
   const resultRef = producedRef(result);
+  // The date a day read named, held to a real calendar date like every
+  // other field here.
+  const day =
+    tool === "get_day" &&
+    typeof parsedArgs?.date === "string" &&
+    isCalendarDateKey(parsedArgs.date)
+      ? parsedArgs.date
+      : undefined;
   return {
     id: `s${index + 1}`,
     tool,
@@ -305,6 +319,7 @@ export function toStep(args: {
     ...(settled.count !== undefined ? { count: settled.count } : {}),
     ...(settled.reason ? { reason: settled.reason } : {}),
     ...(resultRef ? { resultRef } : {}),
+    ...(day ? { day } : {}),
   };
 }
 

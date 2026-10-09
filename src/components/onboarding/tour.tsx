@@ -102,12 +102,26 @@ interface SpotlightRect {
  * not in the DOM or has zero dimensions — caller renders a centred
  * tooltip in that case.
  */
+/**
+ * The rendered element carrying a tour id. A control can exist twice with the
+ * same id, one per shell (the dashboard's add button is a dropdown on the
+ * desktop rail and a sheet trigger on the phone shell), with the other one
+ * hidden; the stop anchors on the one that is actually laid out.
+ */
+function findTourTarget(targetId: string): HTMLElement | null {
+  const all = document.querySelectorAll<HTMLElement>(
+    `[data-tour-id="${CSS.escape(targetId)}"]`,
+  );
+  for (const el of all) {
+    if (el.getClientRects().length > 0) return el;
+  }
+  return all[0] ?? null;
+}
+
 function measureTarget(targetId: string | null): SpotlightRect | null {
   if (!targetId) return null;
   if (typeof document === "undefined") return null;
-  const el = document.querySelector<HTMLElement>(
-    `[data-tour-id="${CSS.escape(targetId)}"]`,
-  );
+  const el = findTourTarget(targetId);
   if (!el) return null;
   const rect = el.getBoundingClientRect();
   if (rect.width === 0 || rect.height === 0) return null;
@@ -356,11 +370,7 @@ export function OnboardingTour({
     const MAX_ATTEMPTS = 40;
     const settleAndMeasure = () => {
       if (cancelled) return;
-      const el = stop.targetId
-        ? document.querySelector<HTMLElement>(
-            `[data-tour-id="${CSS.escape(stop.targetId)}"]`,
-          )
-        : null;
+      const el = stop.targetId ? findTourTarget(stop.targetId) : null;
       if (el) {
         // Bring the anchor into view BEFORE measuring — anchors below the
         // fold positioned the popover under the viewport bottom otherwise.

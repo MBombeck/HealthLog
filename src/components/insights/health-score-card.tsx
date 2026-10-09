@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, ChevronDown, RotateCw } from "lucide-react";
+import { AlertTriangle, ChevronDown, History, RotateCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { InfoPopover } from "@/components/ui/info-popover";
@@ -24,6 +24,11 @@ import {
   type PillarDetailContext,
 } from "@/components/insights/health-score-pillar-detail";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  DAY_LINK_SLOT,
+  DayLink,
+  withDayLinkSlot,
+} from "@/components/day/day-link";
 import { formatDate } from "@/lib/date-format";
 import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
@@ -426,14 +431,25 @@ export function HealthScoreCard({
         >
           {t("insights.healthScore.label")}
         </p>
-        {report.delta != null && report.delta > 0 ? (
-          <span
-            data-slot="health-score-card-delta-chip"
-            className="bg-success/15 text-success shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums"
+        <div className="flex shrink-0 items-center gap-2">
+          {report.delta != null && report.delta > 0 ? (
+            <span
+              data-slot="health-score-card-delta-chip"
+              className="bg-success/15 text-success shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums"
+            >
+              +{report.delta}
+            </span>
+          ) : null}
+          {/* v1.42 — the way to the score's course over time. */}
+          <Link
+            href="/insights/health-score"
+            data-slot="health-score-history-link"
+            className="text-foreground/80 hover:text-foreground focus-visible:ring-ring/50 -my-3 inline-flex items-center gap-1 rounded-md py-3 text-xs underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:outline-none"
           >
-            +{report.delta}
-          </span>
-        ) : null}
+            <History className="size-3.5" aria-hidden="true" />
+            {t("insights.healthScore.historyLink")}
+          </Link>
+        </div>
       </div>
 
       {/* 2 — the number. The reason the panel exists. */}
@@ -530,18 +546,30 @@ export function HealthScoreCard({
             data-slot="health-score-rest-mode"
             className="text-muted-foreground text-xs"
           >
-            {t("insights.healthScore.restMode", {
-              since: report.restMode.since
-                ? formatDate(
-                    userDayKey(
+            {/* v1.42 — the date opens the day rest mode began. */}
+            {report.restMode.since
+              ? withDayLinkSlot(
+                  t("insights.healthScore.restMode", { since: DAY_LINK_SLOT }),
+                  <DayLink
+                    date={userDayKey(
                       new Date(report.restMode.since),
                       user?.timezone || DEFAULT_TIMEZONE,
-                    ),
-                    dateFormat,
-                    locale,
-                  )
-                : t("insights.healthScore.none"),
-            })}
+                    )}
+                    size="xs"
+                  >
+                    {formatDate(
+                      userDayKey(
+                        new Date(report.restMode.since),
+                        user?.timezone || DEFAULT_TIMEZONE,
+                      ),
+                      dateFormat,
+                      locale,
+                    )}
+                  </DayLink>,
+                )
+              : t("insights.healthScore.restMode", {
+                  since: t("insights.healthScore.none"),
+                })}
           </p>
         ) : null}
         {tensionLine ? (

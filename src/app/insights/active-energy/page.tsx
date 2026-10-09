@@ -22,12 +22,12 @@ export default function InsightsActiveEnergyPage() {
       chartKey="activeEnergy"
       i18nPrefix="insights.activeEnergy"
       explainerMetric="activeEnergy"
-      color="var(--warning)"
+      color="var(--chart-5)"
       unit="kcal"
       yAxisUnit="kcal"
       emptyStateIcon={<Flame className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any active energy yet — what's a reasonable daily target, and how does it compare to total calories?"
+      coachPrefill="I haven't logged any active energy yet. What's a reasonable daily target, and how does it compare to total calories?"
     />
   );
 }

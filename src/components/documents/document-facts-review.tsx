@@ -80,7 +80,7 @@ function factHeadline(fact: ExtractedFactDto): string {
     return (fact.data as ConditionFactData).label;
   }
   const data = fact.data as MedicationStatementFactData;
-  return data.dose ? `${data.name} · ${data.dose}` : data.name;
+  return data.dose ? `${data.name} ${data.dose}` : data.name;
 }
 
 /** The date the fact states, if any (YYYY-MM-DD). */
@@ -262,18 +262,16 @@ function FactRow({
           </p>
           <p className="text-muted-foreground text-xs">
             {typeLabel}
-            {date ? ` · ${calendarDate(date)}` : ""}
-            {isObservation &&
-            (fact.data as ObservationFactData).referenceText ? (
-              <>
-                {" · "}
-                {t("documents.review.statedRange", {
-                  range: (fact.data as ObservationFactData)
-                    .referenceText as string,
-                })}
-              </>
-            ) : null}
+            {date ? `, ${calendarDate(date)}` : ""}
           </p>
+          {isObservation && (fact.data as ObservationFactData).referenceText ? (
+            <p className="text-muted-foreground text-xs break-words">
+              {t("documents.review.statedRange", {
+                range: (fact.data as ObservationFactData)
+                  .referenceText as string,
+              })}
+            </p>
+          ) : null}
           {fact.provenance.anchored && fact.provenance.sourceText ? (
             <p className="text-muted-foreground text-xs break-words italic">
               “{fact.provenance.sourceText}”

@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { TileHeader } from "@/components/insights/tile-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { CorrelationResult } from "@/lib/analytics/correlations";
 import { MoodExplainerIcon } from "./mood-explainer-icon";
 
@@ -106,6 +106,7 @@ function MoodCorrelationCard({
   className?: string;
 }) {
   const { t } = useTranslations();
+  const nf = useFormatters();
   const hasResult = data.result != null;
 
   // Three different silences, and the reader deserves to know which one they
@@ -164,7 +165,7 @@ function MoodCorrelationCard({
                   label={t("insights.mood.correlation.sourceLabel")}
                   detail={t("insights.mood.correlation.source", {
                     n: data.n,
-                    r: data.result.r.toFixed(2),
+                    r: nf.number(data.result.r, 2),
                   })}
                 />
               </div>
@@ -179,7 +180,7 @@ function MoodCorrelationCard({
             label={t("insights.mood.correlation.sourceLabel")}
             detail={t("insights.mood.correlation.source", {
               n: data.n,
-              r: data.result.r.toFixed(2),
+              r: nf.number(data.result.r, 2),
             })}
           />
         ) : null}

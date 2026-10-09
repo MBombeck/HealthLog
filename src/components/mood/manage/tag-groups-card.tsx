@@ -432,7 +432,7 @@ function SortableGroupRow({
         type="button"
         {...attributes}
         {...listeners}
-        aria-label={`${t("dashboard.dragHandle")} — ${name}`}
+        aria-label={`${t("dashboard.dragHandle")}: ${name}`}
         aria-describedby={dragHintId}
         title={t("dashboard.dragHandle")}
         disabled={disabled}
@@ -461,7 +461,7 @@ function SortableGroupRow({
         className="size-11 sm:size-9"
         onClick={() => onMove(groupKey, -1)}
         disabled={index === 0 || disabled}
-        aria-label={`${t("mood.manage.moveUp")} — ${name}`}
+        aria-label={`${t("mood.manage.moveUp")}: ${name}`}
       >
         <ArrowUp className="h-4 w-4" />
       </Button>
@@ -472,7 +472,7 @@ function SortableGroupRow({
         className="size-11 sm:size-9"
         onClick={() => onMove(groupKey, 1)}
         disabled={index === total - 1 || disabled}
-        aria-label={`${t("mood.manage.moveDown")} — ${name}`}
+        aria-label={`${t("mood.manage.moveDown")}: ${name}`}
       >
         <ArrowDown className="h-4 w-4" />
       </Button>
@@ -484,7 +484,7 @@ function SortableGroupRow({
               variant="ghost"
               size="icon"
               className="size-11 sm:size-9"
-              aria-label={`${t("common.moreOptions")} — ${name}`}
+              aria-label={`${t("common.moreOptions")}: ${name}`}
             >
               <MoreHorizontal className="h-4 w-4" />
             </Button>
@@ -494,7 +494,7 @@ function SortableGroupRow({
               <Pencil className="mr-2 h-4 w-4" />
               {t("common.edit")}
             </DropdownMenuItem>
-            <DropdownMenuItem variant="destructive" onClick={onDelete}>
+            <DropdownMenuItem onClick={onDelete}>
               <Trash2 className="mr-2 h-4 w-4" />
               {t("common.delete")}
             </DropdownMenuItem>

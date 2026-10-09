@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Save, User } from "lucide-react";
+import { Languages, Loader2, Save, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
@@ -62,7 +62,7 @@ import { dateOnlyKey } from "@/lib/tz/date-only";
 export { resolveInitialTimezone } from "./account-section-utils";
 
 export function AccountSection() {
-  const { t, locale, setLocale, pendingLocale } = useTranslations();
+  const { t } = useTranslations();
   const { user, isLoading, isAuthenticated, refetch } = useAuth();
   // v1.16.4 — see `useMounted`: keeps the hydration render identical to
   // the SSR HTML when this boundary hydrates after `/api/auth/me`
@@ -383,7 +383,11 @@ export function AccountSection() {
     // spinner (reference: admin/coach-feedback-section).
     return (
       <SettingsCard>
-        <SettingsCardHeader icon={User} title={t("settings.profile")} />
+        <SettingsCardHeader
+          anchor="profile"
+          icon={User}
+          title={t("settings.profile")}
+        />
         <div className="flex items-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
           <span className="text-muted-foreground text-sm">
@@ -517,12 +521,10 @@ export function AccountSection() {
             </div>
           </div>
 
-          {/* Date of birth + language share one paired grid row so the
-              profile form keeps a single rhythm (every row two cells
-              wide on sm+). Date of birth is the bottom of the
-              biological-profile block; language is the only UI
-              preference on this card. They sit together to close the
-              "single-cell row" gap that broke the form's grid. */}
+          {/* Date of birth + timezone share one paired grid row. The
+              timezone stays on this card because it saves with the form
+              (its own PUT runs beside the profile PUT); the display
+              preferences that save on change live in their own card below. */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="dob">{t("settings.dateOfBirth")}</Label>
@@ -544,44 +546,7 @@ export function AccountSection() {
               </p>
               <FieldError id="dob-error" message={fieldErrors.dateOfBirth} />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="language-select">{t("settings.language")}</Label>
-              {/* While a switch waits on its message bundle (dynamic
-                  import per locale), show the target value and lock the
-                  control — the context only flips locale + strings
-                  together once the bundle arrived. */}
-              <NativeSelect
-                id="language-select"
-                value={pendingLocale ?? locale}
-                disabled={pendingLocale !== null}
-                aria-busy={pendingLocale !== null}
-                onChange={(e) => setLocale(e.target.value as Locale)}
-              >
-                {locales.map((loc) => (
-                  <option key={loc} value={loc}>
-                    {localeLabels[loc as Locale]}
-                  </option>
-                ))}
-              </NativeSelect>
-              <p className="text-muted-foreground text-xs">
-                {t("settings.languageDescription")}
-              </p>
-            </div>
-          </div>
-
-          {/* Timezone, unit system, glucose unit and the date/hour formats
-              share one grid block — all personal display preferences (like
-              language above). The glucose unit is its own dropdown rather
-              than a branch of the unit system because metric countries are
-              split on which unit they read glucose in. Every dropdown here
-              PATCHes its own endpoint on change; the timezone saves through
-              the form's submit handler. */}
-          <div className="grid gap-4 sm:grid-cols-2">
             <TimezonePicker value={timezone} onChange={setTimezone} />
-            <UnitPreferenceSelect isAuthenticated={isAuthenticated} />
-            <GlucoseUnitSelect isAuthenticated={isAuthenticated} />
-            <TimeFormatSelect isAuthenticated={isAuthenticated} />
-            <DateFormatSelect isAuthenticated={isAuthenticated} />
           </div>
 
           {/* v1.7.0 — optional patient-identity fields surfaced on the
@@ -702,6 +667,8 @@ export function AccountSection() {
         {recentProof.dialog}
       </SettingsCard>
 
+      <DisplayPreferencesCard isAuthenticated={isAuthenticated} />
+
       {/* v1.18.0 (S5) — injection-site exclusions moved to the dedicated
           Medikamente settings section, where every medication-specific
           preference now lives. */}
@@ -732,5 +699,62 @@ export function AccountSection() {
         onCancel={profileDismissal.cancelDiscard}
       />
     </div>
+  );
+}
+
+/**
+ * Language, units and formats: every control here saves the moment it
+ * changes (each PATCHes its own endpoint), so they sit in a card with no save
+ * button. Inside the profile form they read as if the form's Save covered
+ * them, and a person who changed the language and then cancelled the form
+ * found it changed anyway.
+ */
+export function DisplayPreferencesCard({
+  isAuthenticated,
+}: {
+  isAuthenticated: boolean;
+}) {
+  const { t, locale, setLocale, pendingLocale } = useTranslations();
+  return (
+    <SettingsCard data-testid="settings-display-card">
+      <SettingsCardHeader
+        anchor="display"
+        icon={Languages}
+        title={t("settings.displayCard.title")}
+        description={t("settings.displayCard.description")}
+      />
+      {/* The glucose unit is its own dropdown rather than a branch of the
+          unit system because metric countries are split on which unit they
+          read glucose in. */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="language-select">{t("settings.language")}</Label>
+          {/* While a switch waits on its message bundle (dynamic import per
+              locale), show the target value and lock the control — the
+              context only flips locale + strings together once the bundle
+              arrived. */}
+          <NativeSelect
+            id="language-select"
+            value={pendingLocale ?? locale}
+            disabled={pendingLocale !== null}
+            aria-busy={pendingLocale !== null}
+            onChange={(e) => setLocale(e.target.value as Locale)}
+          >
+            {locales.map((loc) => (
+              <option key={loc} value={loc}>
+                {localeLabels[loc as Locale]}
+              </option>
+            ))}
+          </NativeSelect>
+          <p className="text-muted-foreground text-xs">
+            {t("settings.languageDescription")}
+          </p>
+        </div>
+        <UnitPreferenceSelect isAuthenticated={isAuthenticated} />
+        <GlucoseUnitSelect isAuthenticated={isAuthenticated} />
+        <TimeFormatSelect isAuthenticated={isAuthenticated} />
+        <DateFormatSelect isAuthenticated={isAuthenticated} />
+      </div>
+    </SettingsCard>
   );
 }

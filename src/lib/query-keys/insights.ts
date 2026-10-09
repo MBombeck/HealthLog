@@ -121,6 +121,13 @@ export const insightsKeys = {
   insightsDerivedBatch: (tokens: readonly string[]) =>
     ["insights", "derived", "batch", [...tokens].sort().join(",")] as const,
   /**
+   * v1.42 — one score's daily history (`/api/insights/score-history`), per
+   * score and window. Under the `["insights"]` prefix so the measurement-write
+   * invalidation fan-out reaches it with the derived reads.
+   */
+  insightsScoreHistory: (score: string, days: number) =>
+    ["insights", "score-history", score, days] as const,
+  /**
    * v1.10.0 — FDR-controlled correlation discovery
    * (`/api/insights/correlations`). Read-only descriptive surface; the
    * `["insights"]` prefix keeps it in the existing invalidation fan-out.

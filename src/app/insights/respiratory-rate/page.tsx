@@ -21,11 +21,11 @@ export default function InsightsAtemfrequenzPage() {
       chartKey="respiratoryRate"
       i18nPrefix="insights.respiratoryRate"
       explainerMetric="respiratoryRate"
-      color="var(--info)"
+      color="var(--chart-4)"
       unitKey="insights.units.respiratoryRate"
       emptyStateIcon={<Wind className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any respiratory rate yet — what does this metric tell me about my health, and how do I improve it?"
+      coachPrefill="I haven't logged any respiratory rate yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

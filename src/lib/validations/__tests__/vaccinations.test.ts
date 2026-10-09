@@ -183,13 +183,23 @@ describe("an edit names what it changes", () => {
     ).toBe(true);
   });
 
-  it("refuses an edit that clears both identity arms at once", () => {
+  it("refuses an edit that clears every identity arm at once", () => {
+    expect(
+      vaccinationUpdateSchema.safeParse({
+        antigenSlug: null,
+        vaccineName: null,
+        customVaccineId: null,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("leaves clearing the slug and the name to the merged-row check, because an own vaccine may remain", () => {
     expect(
       vaccinationUpdateSchema.safeParse({
         antigenSlug: null,
         vaccineName: null,
       }).success,
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("allows clearing one arm, because the other may still be there", () => {

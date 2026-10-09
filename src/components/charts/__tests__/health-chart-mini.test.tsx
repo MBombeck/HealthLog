@@ -101,6 +101,20 @@ describe("<HealthChart mini>", () => {
     expect(html).toMatch(/data-slot="chart-range-tab"/);
   });
 
+  it("keeps the range tabs but drops the overlay dropdown with overlayControls off", () => {
+    // v1.42 — the score histories bind a key to remember their range only.
+    const html = render(
+      <HealthChart
+        types={["WEIGHT"]}
+        title="Score"
+        chartKey="scoreRecovery"
+        overlayControls={false}
+      />,
+    );
+    expect(html.match(/data-slot="chart-range-tab"/g)).toHaveLength(4);
+    expect(html).not.toContain("chart-overlay-controls-trigger");
+  });
+
   it("renders the overlay-controls trigger when chartKey is supplied", () => {
     const html = render(
       <HealthChart types={["WEIGHT"]} title="Weight" chartKey="weight" />,

@@ -26,6 +26,8 @@ function record(
     lotNumber: null,
     site: null,
     catalogEntry: null,
+    customVaccineId: null,
+    customVaccine: null,
     practitioner: null,
     encounter: null,
     reminderId: null,

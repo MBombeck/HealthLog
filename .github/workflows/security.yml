@@ -17,7 +17,7 @@ permissions:
 jobs:
   quality:
     name: Lint, Typecheck & Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.event_name != 'schedule'
 
     steps:
@@ -100,7 +100,7 @@ jobs:
   # published image daily.
   dependency-audit:
     name: Dependency Audit
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Runs on pull requests too, but advisory: an advisory published against a
     # dependency the branch did not touch must not block the branch. The push
     # run on main and the daily schedule stay blocking, and a tag is only ever
@@ -130,7 +130,7 @@ jobs:
 
   secret-scan:
     name: Secret Scanning
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.event_name != 'schedule'
 
     steps:
@@ -145,7 +145,7 @@ jobs:
 
   docker-security:
     name: Container Security
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:

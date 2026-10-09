@@ -101,6 +101,13 @@ interface TrendCardProps {
    * before (no reserved space, no layout shift).
    */
   valueAdornment?: React.ReactNode;
+  /**
+   * Decimal places for the headline, the averages and the deltas. Defaults
+   * to 1. A whole-number metric (steps, mmHg, bpm, mg/dL) passes 0 so the
+   * tile reads "121 mmHg", not "121,0 mmHg" — the precision its own
+   * insights page uses.
+   */
+  fractionDigits?: number;
 }
 
 export function TrendCard({
@@ -123,6 +130,7 @@ export function TrendCard({
   staleDays = null,
   emptyHint = null,
   valueAdornment = null,
+  fractionDigits = 1,
 }: TrendCardProps) {
   const { t, tCount } = useTranslations();
   const fmt = useFormatters();
@@ -152,7 +160,7 @@ export function TrendCard({
   const arrowSentiment = getTrendSentiment(primarySignal, directionSentiment);
   const trendColor = sentimentColorClass(arrowSentiment);
 
-  const formatValue = (value: number) => fmt.number(value, 1);
+  const formatValue = (value: number) => fmt.number(value, fractionDigits);
 
   // v1.4.15 Fix 4 — the 7-day delta now shares the arrow's colour so
   // both elements communicate the same sentiment for the same signal.
@@ -171,9 +179,10 @@ export function TrendCard({
   const comparisonDeltaColor = sentimentColorClass(comparisonSentiment);
 
   const formatDelta = (value: number): string => {
-    if (Math.abs(value) < 0.05) return `±0`;
+    // Below half a step of the shown precision the delta prints as zero.
+    if (Math.abs(value) < 0.5 * 10 ** -fractionDigits) return `±0`;
     const sign = value > 0 ? "+" : "−";
-    return `${sign}${fmt.number(Math.abs(value), 1)}`;
+    return `${sign}${fmt.number(Math.abs(value), fractionDigits)}`;
   };
 
   // The label flips from "7d" / "7T" (mean) to "7d trend" / "7T-Trend"

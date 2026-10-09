@@ -142,7 +142,7 @@ export function ThresholdsEditorSection({ id }: { id: string }) {
           at all. The page subtitle is the one that goes. */}
       <SettingsCardHeader
         icon={SlidersHorizontal}
-        title={t("settings.sections.thresholds.title")}
+        title={t("thresholds.cardTitle")}
       />
 
       {isLoading || !data ? (
@@ -307,6 +307,13 @@ function MetricRow({
     minNum < maxNum;
 
   const defaultRange = effective?.default;
+  // A bound reads at its own precision: "120–129 mmHg", "8,000–15,000 steps",
+  // "61.3–82.5 kg". A fixed one decimal printed "120.0–129.0" and
+  // "8,000.0–15,000.0" for metrics that are whole numbers by nature.
+  const formatBound = (value: number) => {
+    const rounded = Math.round(value * 10) / 10;
+    return fmt.number(rounded, Number.isInteger(rounded) ? 0 : 1);
+  };
 
   return (
     <div className="border-border space-y-3 rounded-lg border p-4">
@@ -315,7 +322,7 @@ function MetricRow({
           <p className="text-sm font-medium">{t(METRIC_LABEL_KEYS[metric])}</p>
           <p className="text-muted-foreground text-xs">
             {defaultRange
-              ? `${t("thresholds.defaultLabel")}: ${fmt.number(units.toDisplay(defaultRange.greenMin), 1)}–${fmt.number(units.toDisplay(defaultRange.greenMax), 1)} ${bounds.unit}`
+              ? `${t("thresholds.defaultLabel")}: ${formatBound(units.toDisplay(defaultRange.greenMin))}–${formatBound(units.toDisplay(defaultRange.greenMax))} ${bounds.unit}`
               : t("thresholds.unsetExplanation")}
           </p>
         </div>

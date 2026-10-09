@@ -41,7 +41,6 @@ import { ChartErrorState } from "./chart-error-state";
 import { TileHeader } from "@/components/insights/tile-header";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
 import { computePaddedYDomain } from "@/lib/insights/chart-y-domain";
-import { Button } from "@/components/ui/button";
 import {
   useDateFormatPreference,
   useTranslations,
@@ -68,6 +67,7 @@ import { bucketCaptionKey } from "@/lib/charts/bucket-caption";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { ChartOverlayControls } from "./chart-overlay-controls";
 import { ChartDataTable, type ChartDataTableColumn } from "./chart-data-table";
+import { ChartFooterReserve } from "./chart-skeleton";
 import { useChartOverlayPrefs } from "@/hooks/use-chart-overlay-prefs";
 import { useViewportWidth } from "@/hooks/use-viewport-width";
 import { computeTickPositions } from "@/lib/charts/x-axis-density";
@@ -76,53 +76,23 @@ import {
   type MetricWindowStats,
 } from "@/lib/charts/window-stats";
 import { shouldFireDataReady } from "@/lib/charts/data-ready-latch";
-import { axisUnitSuffix } from "@/lib/charts/axis-unit";
+import { axisTickUnitSuffix } from "@/lib/charts/axis-unit";
+import { chartPointDayKey } from "@/components/day/chart-day";
+import {
+  ChartDayFooter,
+  OPEN_DAY_LINE,
+  useChartDayLinks,
+} from "@/components/day/chart-day-links";
+import { isWholeNumberType } from "@/components/day/use-day-value-format";
+import {
+  ChartRangeTabs,
+  DEFAULT_CHART_RANGE,
+  rangeWindowDays,
+} from "./chart-range-tabs";
 
-// The range tabs select a CALENDAR-DAY window ending now — `days: 7` is
-// "the last 7 days", not "the last 7 readings". The labels said "points"
-// until v1.37.29 while the fetch below always treated the value as a day
-// window; a user who weighs in twice a week picked "7 pts" and saw two.
-// The persisted preference field keeps its historical name `rangePoints`
-// (it crosses the chart-overlay-prefs wire), but its value has always
-// been days.
-const TIME_RANGES_KEYS = [
-  {
-    labelKey: "charts.days7Label",
-    days: 7,
-    titleKey: "charts.days7Title",
-  },
-  {
-    labelKey: "charts.days30Label",
-    days: 30,
-    titleKey: "charts.days30Title",
-  },
-  {
-    labelKey: "charts.days90Label",
-    days: 90,
-    titleKey: "charts.days90Title",
-  },
-  {
-    labelKey: "charts.daysAllLabel",
-    days: 0,
-    titleKey: "charts.daysAllTitle",
-  },
-] as const;
-
-/**
- * v1.19.0 — day-span the "All" range tab (`rangePoints === 0`) fetches.
- * A generous fixed bound (~10 years) that is clearly larger than any
- * other range tab, so "All" means "all of my history" rather than the
- * old silent 365-day truncation. Fixed (not per-account derived) so the
- * fetch-window cache key stays stable across the session.
- *
- * v1.19.2 — the server's daily-aggregate reader now steps UP the bucket
- * tier (DAY → WEEK → MONTH) for windows wider than the DAY cap, so a
- * multi-year "All" range returns whole-history coverage downsampled to
- * the tier the chart's `bucketTimeSeries` would render anyway, instead of
- * truncating to the most recent ~365 daily buckets. The render cost stays
- * flat — the coarse tier bounds the point count.
- */
-const ALL_RANGE_DAYS = 3650;
+// The range tabs (7 / 30 / 90 / All, a calendar-day window ending now) and
+// the "All" tab's ten-year fetch span live with the shared
+// `<ChartRangeTabs>`, so every chart drawn in days offers the same choice.
 
 interface HealthChartProps {
   types: string[];
@@ -183,6 +153,13 @@ interface HealthChartProps {
    * its toggles default to OFF (clean line).
    */
   chartKey?: ChartOverlayKey;
+  /**
+   * v1.42 — whether a chart bound to a `chartKey` also shows the overlay
+   * dropdown. Off for a chart that persists only its range tab (the score
+   * histories), so binding a key to remember the range does not add
+   * controls the chart never had. Defaults to on.
+   */
+  overlayControls?: boolean;
   /**
    * v1.4.20 phase B4 — additive storyboard annotations.
    *
@@ -321,6 +298,15 @@ interface HealthChartProps {
    * bury the dashboard it is meant to summarise.
    */
   showDataTable?: boolean;
+  /**
+   * v1.42 — the chart is a door to its days. A click on a point opens that
+   * day over the page (on a touch screen the tooltip offers it), the open day
+   * is marked with a dashed line, and a row of dots under the axis marks the
+   * days that hold anything. Only while the chart is drawn in days, and never
+   * in `mini` mode: a tile's sparkline has its own destination and targets
+   * too small to hit. The metric sub-pages turn it on; the dashboard does not.
+   */
+  dayLinks?: boolean;
 }
 
 interface ChartDataPoint {
@@ -532,15 +518,22 @@ export interface ResolvedVerticalMarker {
 
 export function resolveVerticalMarkerPositions(
   markers: Array<{ date: string; label?: string; color?: string }> | undefined,
-  chartData: Array<{ date: string }> | undefined,
+  chartData: Array<{ date: string; timestamp?: number }> | undefined,
 ): ResolvedVerticalMarker[] {
   if (!markers || !chartData || chartData.length === 0) return [];
   const indexByDate = new Map<string, number>();
   for (const [i, point] of chartData.entries()) {
     // Last-write-wins — multiple bucket-aggregated points should never
     // share the same day key, but defensively keep the latest if they
-    // do.
-    indexByDate.set(point.date, i);
+    // do. A drawn point's `date` is its display label ("12.03."), so the
+    // day key comes from its timestamp, which a daily point holds at noon
+    // UTC of its day; a bare `{ date }` (the pure-helper tests) is the key.
+    indexByDate.set(
+      typeof point.timestamp === "number"
+        ? chartPointDayKey(point.timestamp)
+        : point.date,
+      i,
+    );
   }
   const out: ResolvedVerticalMarker[] = [];
   for (const marker of markers) {
@@ -645,6 +638,7 @@ export function HealthChart({
   windowOverride,
   compareBaseline = "none",
   chartKey,
+  overlayControls = true,
   annotations,
   verticalMarkers,
   userTimezone: userTimezoneProp,
@@ -656,6 +650,7 @@ export function HealthChart({
   preloadedSeries,
   preloadedCoverageDays,
   showDataTable = false,
+  dayLinks = false,
 }: HealthChartProps) {
   const { isAuthenticated, user } = useAuth();
   // A mount without the prop used to pin Europe/Berlin, so those charts
@@ -690,7 +685,7 @@ export function HealthChart({
   // hides the range tabs, so the user can't change it.
   const initialRangePoints = windowOverride
     ? resolveMiniRangePoints(windowOverride)
-    : 30;
+    : DEFAULT_CHART_RANGE;
   const [rangePoints, setRangePoints] = useState(initialRangePoints);
 
   // v1.4.18 — three overlay toggles (showTrendIndicator / showTrendArrow
@@ -787,7 +782,7 @@ export function HealthChart({
   // cache key) and moves on by itself after midnight.
   const todayKey = localDayKeyFor(new Date(), userTimezone);
   const fetchWindow = useMemo(() => {
-    const windowDays = rangePoints > 0 ? rangePoints : ALL_RANGE_DAYS;
+    const windowDays = rangeWindowDays(rangePoints);
     const compareShift =
       effectiveCompareBaseline === "lastMonth"
         ? 30
@@ -1285,10 +1280,13 @@ export function HealthChart({
   // Report the visible-range stats up to the sub-page so the shared
   // `<MetricStatStrip>` can read them. Effect (not render-time call) so the
   // parent state update never fires during this component's render.
+  // Only once the read has settled: a report during the initial fetch would
+  // tell the strip "no window" and it would paint the full-range summary
+  // first. A failed read settles too, so the strip never waits forever.
   useEffect(() => {
-    if (mini) return;
-    onVisibleStats?.(visibleStatsByType);
-  }, [mini, visibleStatsByType, onVisibleStats]);
+    if (mini || isLoading) return;
+    onVisibleStats?.(isError ? null : visibleStatsByType);
+  }, [mini, isLoading, isError, visibleStatsByType, onVisibleStats]);
 
   // v1.4.16 phase B8 — comparison overlay.
   //
@@ -1702,6 +1700,44 @@ export function HealthChart({
     chartData,
   );
 
+  // v1.42 — the chart as a door to its days (`dayLinks`). Daily points only:
+  // a week or month point averages many days and has no one day to open.
+  const dayLinksActive = dayLinks && !mini && activeBucket === "day";
+  // What the day shows at its top when it is opened from a point: the
+  // chart's own name and the point's value as the tooltip reads it.
+  const dayFocusFor = (point: ChartDataPoint | undefined) => {
+    if (!point) return null;
+    const parts = types
+      .map((type) => ({ type, v: point[type] }))
+      .filter((p): p is { type: string; v: number } => typeof p.v === "number");
+    if (parts.length === 0) return null;
+    return {
+      label: title,
+      // A pressure or a pulse reads in whole numbers on the day, as in every
+      // list; the rest keep the tooltip's one decimal.
+      value: parts
+        .map(({ type, v }) =>
+          valueMode === "raw" && isWholeNumberType(type)
+            ? fmt.number(Math.round(v), 0)
+            : formatTooltipValue(v),
+        )
+        .join("/"),
+      unit,
+      types: valueMode === "raw" ? types : [],
+    };
+  };
+  const dayLinkSource = chartDataWithCompare ?? chartData;
+  const chartDays = useChartDayLinks({
+    enabled: dayLinksActive,
+    days: dayLinksActive
+      ? (dayLinkSource ?? []).map((point) => chartPointDayKey(point.timestamp))
+      : [],
+    focusFor: (index) => dayFocusFor(dayLinkSource?.[index]),
+  });
+  const openDayIndex = chartDays.openIndex;
+  const openDayPoint =
+    openDayIndex !== undefined ? chartData?.[openDayIndex] : undefined;
+
   const showContextDetails = showMA || showTrend || showBands;
   const animationsEnabled = !prefersReducedMotion();
 
@@ -1815,40 +1851,30 @@ export function HealthChart({
             className="flex flex-nowrap items-center justify-end gap-1 self-end sm:self-auto"
             data-slot="chart-header-controls"
           >
-            {TIME_RANGES_KEYS.map((r) => (
-              <Button
-                key={r.labelKey}
-                variant={rangePoints === r.days ? "default" : "ghost"}
-                aria-pressed={rangePoints === r.days}
-                size="sm"
-                className="min-h-11 px-2 text-xs sm:px-3"
-                onClick={() => {
-                  // v1.12.8 — a range-tab change re-slices `chartData`; the
-                  // visible-range stats memo recomputes off the new slice and
-                  // the stat strip follows automatically.
-                  setRangeHydrated(true);
-                  setRangePoints(r.days);
-                  // v1.30.1 M2 — persist the pick per chart, same model
-                  // as the overlay toggles, so the range survives a
-                  // remount instead of resetting to 30 d every visit.
-                  if (chartKey && !windowOverride) {
-                    overlayPrefs.setPrefs({
-                      ...overlayPrefs.prefs,
-                      rangePoints: r.days,
-                    });
-                  }
-                }}
-                title={t(r.titleKey)}
-                data-slot="chart-range-tab"
-              >
-                {t(r.labelKey)}
-              </Button>
-            ))}
+            <ChartRangeTabs
+              value={rangePoints}
+              onChange={(days) => {
+                // v1.12.8 — a range-tab change re-slices `chartData`; the
+                // visible-range stats memo recomputes off the new slice and
+                // the stat strip follows automatically.
+                setRangeHydrated(true);
+                setRangePoints(days);
+                // v1.30.1 M2 — persist the pick per chart, same model
+                // as the overlay toggles, so the range survives a
+                // remount instead of resetting to 30 d every visit.
+                if (chartKey && !windowOverride) {
+                  overlayPrefs.setPrefs({
+                    ...overlayPrefs.prefs,
+                    rangePoints: days,
+                  });
+                }
+              }}
+            />
             {/* v1.4.18 — overlay-controls dropdown anchored next to
                 the range tabs. Only painted when the chart is bound
                 to a persistent chartKey; ad-hoc usages keep the
                 clean-line default. */}
-            {chartKey ? (
+            {chartKey && overlayControls ? (
               <ChartOverlayControls
                 prefs={overlayPrefs.prefs}
                 onChange={overlayPrefs.setPrefs}
@@ -1880,7 +1906,15 @@ export function HealthChart({
         // card height never jumps when the data lands — the dashboard's
         // shared-reveal overlay and every insights mount stay
         // layout-shift-free.
-        <Skeleton className={`w-full ${chartHeightClass}`} />
+        <>
+          <Skeleton className={`w-full ${chartHeightClass}`} />
+          {mini ? null : (
+            <ChartFooterReserve
+              dayLinks={dayLinksActive}
+              dataTable={showDataTable}
+            />
+          )}
+        </>
       ) : isError ? (
         // v1.16.8 — a failed query paints as an ERROR with a retry
         // affordance, not as the "no data in this range" empty state.
@@ -1958,7 +1992,8 @@ export function HealthChart({
               // gate on; this slot is rendered by the data branch only, so it
               // says the same thing without depending on Recharts' markup.
               data-slot="chart-plot"
-              className="relative z-10 h-full touch-pan-y"
+              {...chartDays.plotProps}
+              className={`relative z-10 h-full touch-pan-y ${chartDays.plotClassName}`}
               role="img"
               aria-label={chartAriaLabel}
             >
@@ -1967,6 +2002,7 @@ export function HealthChart({
                   data={chartDataWithCompare ?? chartData}
                   margin={{ top: 10, right: 8, bottom: 8, left: 8 }}
                   accessibilityLayer
+                  onClick={chartDays.onChartClick}
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -2014,7 +2050,7 @@ export function HealthChart({
                     }
                     unit={
                       showYAxisUnit
-                        ? axisUnitSuffix(yAxisUnit ?? unit)
+                        ? axisTickUnitSuffix(yAxisUnit ?? unit)
                         : undefined
                     }
                   />
@@ -2129,6 +2165,34 @@ export function HealthChart({
                         ifOverflow="discard"
                       />
                     ))}
+                  {/* v1.42 — the open day: a dashed line through it and a
+                    ring on each of its values, so the point the day panel
+                    describes stays in sight beside it. */}
+                  {openDayIndex !== undefined ? (
+                    <ReferenceLine
+                      key="open-day"
+                      x={openDayIndex}
+                      {...OPEN_DAY_LINE}
+                    />
+                  ) : null}
+                  {openDayIndex !== undefined && openDayPoint
+                    ? types.map((type, i) => {
+                        const v = openDayPoint[type];
+                        if (typeof v !== "number") return null;
+                        return (
+                          <ReferenceDot
+                            key={`open-day-${type}`}
+                            x={openDayIndex}
+                            y={v}
+                            r={6.5}
+                            fill="var(--card)"
+                            stroke={colors[i % colors.length]}
+                            strokeWidth={2.5}
+                            ifOverflow="discard"
+                          />
+                        );
+                      })
+                    : null}
                   {/* v1.4.18 — personal-baseline reference line is now
                     opt-in via the Trend toggle. the maintainer rejected the
                     always-on dashed mean line; it now only paints when
@@ -2166,6 +2230,9 @@ export function HealthChart({
                     })}
                   <Tooltip
                     filterNull={false}
+                    // v1.42 — on a touch screen the tooltip is the way to the
+                    // day: it stays where the tap put it and takes taps.
+                    {...chartDays.tooltipProps}
                     cursor={{
                       stroke: "var(--muted-foreground)",
                       strokeOpacity: 0.3,
@@ -2309,6 +2376,11 @@ export function HealthChart({
                               : dateLabel
                           }
                           rows={rows}
+                          action={chartDays.tooltipAction(
+                            hoverPoint
+                              ? dayLinkSource?.indexOf(hoverPoint)
+                              : undefined,
+                          )}
                         />
                       );
                     }}
@@ -2444,6 +2516,16 @@ export function HealthChart({
               </p>
             ) : null}
           </div>
+          {chartData ? (
+            <ChartDayFooter
+              links={chartDays}
+              points={chartData}
+              // The plot's margin (8) + the y axis + the x axis padding
+              // (10) on the left, margin + padding on the right.
+              insetLeft={8 + yAxisWidth + 10}
+              insetRight={8 + 10}
+            />
+          ) : null}
           {/* The points the chart just drew, as a table. Reads the SAME
               expression `<ComposedChart data>` is handed above, so the two
               cannot disagree. Sits inside this branch on purpose: an empty
@@ -2459,6 +2541,7 @@ export function HealthChart({
               formatDate={tzFmt.date}
               bucket={visibleSlice?.bucketType ?? "day"}
               metricLabel={getTypeLabel(primaryType, valueMode, t)}
+              dayLinks={dayLinksActive}
             />
           ) : null}
         </>

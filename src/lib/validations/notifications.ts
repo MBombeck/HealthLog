@@ -398,7 +398,7 @@ export function webhookSettingsSchemaWith(
       .enum(WEBHOOK_PAYLOAD_FORMATS)
       .optional()
       .describe(
-        "Body shape. `generic` sends HealthLog's own JSON envelope; `gotify` sends the body Gotify's `POST /message` expects, with an integer priority. Omitted keeps the stored choice, which is `generic` for a config saved before the choice existed.",
+        "Body shape. `generic` sends HealthLog's own JSON envelope (`title`, `message`, `eventType`, `priority`, plus `content` and `text` so a Discord or Slack webhook URL accepts it as is); `gotify` sends the body Gotify's `POST /message` expects, with an integer priority. Omitted keeps the stored choice, which is `generic` for a config saved before the choice existed.",
       ),
     enabled: z.boolean(),
   });
