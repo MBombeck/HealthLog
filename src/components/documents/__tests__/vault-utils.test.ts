@@ -518,13 +518,13 @@ describe("buildProcedureChoices", () => {
       {
         encounterId: "enc-knee",
         name: "Knee arthroscopy",
-        detail: "Knee (left) · 2025-10-02",
+        detail: "Knee (left), 2025-10-02",
       },
       { encounterId: "enc-2", name: "Day clinic", detail: "2025-10-02" },
       {
         encounterId: "enc-3",
         name: "Procedure or surgery",
-        detail: "Knee · 2025-10-02",
+        detail: "Knee, 2025-10-02",
       },
     ]);
   });

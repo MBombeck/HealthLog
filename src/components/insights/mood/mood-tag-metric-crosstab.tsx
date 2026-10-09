@@ -139,6 +139,10 @@ export function MoodTagMetricCrosstab({
           const metricLabel = t(
             METRIC_LABEL_KEY[row.metricKey] ?? row.metricKey,
           );
+          const pairLabel = t("insights.mood.crosstab.pairLabel", {
+            tag: tagLabel,
+            metric: metricLabel,
+          });
           const unit = t(UNIT_KEY[row.display]);
           const up = row.delta >= 0;
           const deltaText = `${up ? "+" : ""}${formatValue(row.delta, row.display, nf)} ${unit}`;
@@ -160,12 +164,9 @@ export function MoodTagMetricCrosstab({
                 )}
                 <span
                   className="text-foreground min-w-0 flex-1 truncate"
-                  title={`${tagLabel} · ${metricLabel}`}
+                  title={pairLabel}
                 >
-                  {t("insights.mood.crosstab.pairLabel", {
-                    tag: tagLabel,
-                    metric: metricLabel,
-                  })}
+                  {pairLabel}
                 </span>
                 <span className="text-foreground shrink-0 text-sm font-semibold tabular-nums">
                   {deltaText}

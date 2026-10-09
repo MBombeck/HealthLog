@@ -413,7 +413,7 @@ describe("after the answer", () => {
     );
     expect(html).toContain('data-state="done"');
     expect(html).toMatch(
-      /data-slot="coach-turn-steps-done"[^>]*>Thought process · 5 steps</,
+      /data-slot="coach-turn-steps-done"[^>]*>Thought process \(5 steps\)</,
     );
     expect(html).not.toContain("text-shimmer");
     expect(html).not.toContain("waiting-dot");
@@ -428,7 +428,7 @@ describe("after the answer", () => {
       <CoachTurnActivity activity={[ANSWER_DONE]} steps={[]} active={false} />,
       "de",
     );
-    expect(de).toContain("Denkprozess · 1 Schritt<");
+    expect(de).toContain("Denkprozess (1 Schritt)<");
     const pl = render(
       <CoachTurnActivity
         activity={[THINKING_DONE, FETCH_BP, ANSWER_DONE]}
@@ -437,7 +437,7 @@ describe("after the answer", () => {
       />,
       "pl",
     );
-    expect(pl).toContain("Tok myślenia · 3 kroki<");
+    expect(pl).toContain("Tok myślenia (3 kroki)<");
   });
 
   it("an older message counts its steps, or the areas it drew on", () => {
@@ -445,7 +445,7 @@ describe("after the answer", () => {
       render(
         <CoachTurnActivity activity={[]} steps={[BP, SLEEP]} active={false} />,
       ),
-    ).toContain("Thought process · 2 steps<");
+    ).toContain("Thought process (2 steps)<");
     expect(
       render(
         <CoachTurnActivity
@@ -455,7 +455,7 @@ describe("after the answer", () => {
           areas={["bp"]}
         />,
       ),
-    ).toContain("Thought process · 1 step<");
+    ).toContain("Thought process (1 step)<");
   });
 
   it("says an answer is needed while a question waits, without shimmer", () => {
@@ -681,7 +681,7 @@ describe("the visible row text", () => {
           ),
         ),
       ),
-    ).toBe("Thought process · 5 steps");
+    ).toBe("Thought process (5 steps)");
     expect(
       textOf(
         rowHtml(render(<CoachTurnActivity activity={[]} steps={[]} active />)),

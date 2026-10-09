@@ -79,7 +79,7 @@ describe("the list", () => {
     );
     expect(html).toContain('data-antigen="typhoid"');
     expect(html).toContain('data-antigen="hepatitis-a"');
-    expect(html.match(/· Travel combo/g)).toHaveLength(2);
+    expect(html.match(/>Travel combo</g)).toHaveLength(2);
   });
 });
 

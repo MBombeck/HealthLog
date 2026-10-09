@@ -33,7 +33,7 @@ import {
  *   3. Nothing opens by itself: the row stays closed (`aria-expanded`
  *      false) in every state, after the answer and after a reload; a row
  *      opened during the run closes when the answer is done.
- *   4. After the answer the row reads "Thought process · 4 steps" and the
+ *   4. After the answer the row reads "Thought process (4 steps)" and the
  *      table the answer points at renders as its chart.
  *   5. A tap opens the steps; a reasoning round shows its summary under
  *      its title.
@@ -435,7 +435,7 @@ test.describe("Coach live trail", () => {
         await expect(settled).toHaveAttribute("data-state", "done");
         await expect(
           settled.locator('[data-slot="coach-turn-steps-done"]'),
-        ).toHaveText("Thought process · 4 steps");
+        ).toHaveText("Thought process (4 steps)");
         await expect(settled.locator(".text-shimmer")).toHaveCount(0);
         const settledToggle = settled.locator(
           '[data-slot="coach-turn-steps-toggle"]',
@@ -506,7 +506,7 @@ test.describe("Coach live trail", () => {
         await expect(reloaded).toHaveAttribute("data-state", "done");
         await expect(
           reloaded.locator('[data-slot="coach-turn-steps-done"]'),
-        ).toHaveText("Thought process · 4 steps");
+        ).toHaveText("Thought process (4 steps)");
         const reloadedToggle = reloaded.locator(
           '[data-slot="coach-turn-steps-toggle"]',
         );

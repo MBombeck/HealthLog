@@ -23,8 +23,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { TagChip } from "@/components/ui/tag-chip";
 import {
   LIFE_EVENT_CATEGORIES,
+  type DateKey,
   type DayEvent,
   type DayEventKind,
   type DayNotable,
@@ -32,6 +34,7 @@ import {
   type DayRunningKind,
   type DayValue,
 } from "@/lib/day/contract";
+import { resolveIntlLocale } from "@/lib/format-locale";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
@@ -138,7 +141,7 @@ export function DayNotableLines({
           <Sparkles className="mt-px size-3.5 shrink-0" aria-hidden="true" />
           <span>
             {withMetric && notable.type
-              ? `${labelFor(tileKeyOf(notable.type))} · `
+              ? `${labelFor(tileKeyOf(notable.type))}: `
               : null}
             {text(notable)}
           </span>
@@ -200,28 +203,59 @@ function dayMeta(
   return meta;
 }
 
-export function DayRunning({ items }: { items: readonly DayRunningItem[] }) {
-  const { t } = useTranslations();
-  const fmt = useFormatters();
+/** Running kinds whose `sub` is a dose and reads as part of the name. */
+const DOSE_SUB_KINDS: ReadonlySet<DayRunningKind> = new Set([
+  "medication",
+  "medicationCourse",
+]);
+
+export function DayRunning({
+  items,
+  date,
+}: {
+  items: readonly DayRunningItem[];
+  /** The viewed day; a start date in another year names its year. */
+  date?: DateKey;
+}) {
+  const { t, locale } = useTranslations();
   if (items.length === 0) return null;
+  const viewedYear = date
+    ? date.slice(0, 4)
+    : String(new Date().getUTCFullYear());
+  const intlLocale = resolveIntlLocale(locale);
+  const sinceText = (since: string): string =>
+    new Intl.DateTimeFormat(intlLocale, {
+      day: "numeric",
+      month: "long",
+      ...(since.slice(0, 4) === viewedYear ? {} : { year: "numeric" }),
+      timeZone: "UTC",
+    }).format(new Date(`${since}T12:00:00.000Z`));
   return (
     <section className="space-y-2" data-slot="day-running">
       <h3 className={DAY_SECTION_LABEL}>{t("day.groups.running")}</h3>
       <ul>
         {items.map((item) => {
-          const parts = [
-            item.sub === null ? null : dayMeta(item.kind, item.sub, t),
+          const title = dayTitle(item.kind, item.title, t);
+          const doseInName = item.sub !== null && DOSE_SUB_KINDS.has(item.kind);
+          const name = doseInName ? `${title} ${item.sub}` : title;
+          const chip =
+            item.sub !== null && !doseInName
+              ? dayMeta(item.kind, item.sub, t)
+              : null;
+          const since =
+            item.dayCount === null && item.since !== null
+              ? sinceText(item.since)
+              : null;
+          const detail =
             item.dayIndex !== null
               ? item.dayCount !== null
                 ? t("day.dayOf", { n: item.dayIndex, m: item.dayCount })
-                : t("day.dayN", { n: item.dayIndex })
-              : null,
-            item.dayCount === null && item.since !== null
-              ? t("day.since", {
-                  date: fmt.dateShortSmartCalendar(item.since),
-                })
-              : null,
-          ].filter((part): part is string => !!part);
+                : since !== null
+                  ? t("day.dayNSince", { n: item.dayIndex, date: since })
+                  : t("day.dayN", { n: item.dayIndex })
+              : since !== null
+                ? t("day.sinceDate", { date: since })
+                : null;
           const body = (
             <>
               <span
@@ -230,12 +264,17 @@ export function DayRunning({ items }: { items: readonly DayRunningItem[] }) {
                 style={{ backgroundColor: RUNNING_COLOR[item.kind] }}
               />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium">
-                  {dayTitle(item.kind, item.title, t)}
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="min-w-0 truncate text-sm font-medium">
+                    {name}
+                  </span>
+                  {chip ? <TagChip className="shrink-0">{chip}</TagChip> : null}
                 </span>
-                <span className="text-muted-foreground block truncate text-xs">
-                  {parts.join(" · ")}
-                </span>
+                {detail ? (
+                  <span className="text-muted-foreground block truncate text-xs">
+                    {detail}
+                  </span>
+                ) : null}
               </span>
               {item.href ? (
                 <ChevronRight

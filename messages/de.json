@@ -206,7 +206,7 @@
     "colExpected": "Erwartet",
     "colComplianceRate": "Therapietreue",
     "moodTitle": "Stimmungsverlauf",
-    "moodSummary": "Durchschnitt: {avg} / 5,0 · Einträge: {count} · Bereich: {min}–{max}",
+    "moodSummary": "Durchschnitt {avg} / 5,0, {count} Einträge, Bereich {min}–{max}",
     "colMood": "Stimmung",
     "colCount": "Anzahl",
     "colShare": "Anteil",
@@ -579,8 +579,8 @@
     "sleepShort": "Schlaf",
     "stepsShort": "Schritte",
     "vo2MaxShort": "VO₂ max",
-    "bpInTargetWindow90": "BD-Ziel · 90 T",
-    "bpInTargetWindowDynamic": "BD-Ziel · {days} T",
+    "bpInTargetWindow90": "BD-Ziel (90 T)",
+    "bpInTargetWindowDynamic": "BD-Ziel ({days} T)",
     "bpInTargetCollecting": "sammelt noch Daten",
     "medications": "Medikamente",
     "quickAddMeasurement": "Messung erfassen",
@@ -1336,7 +1336,7 @@
     "complianceInfoLabel": "Was bedeutet Therapietreue?",
     "lastIntake": "Letzte Einnahme:",
     "nextIntake": "Nächste Einnahme:",
-    "nextIntakeOverdue": "Überfällig · {time} — noch nachholbar",
+    "nextIntakeOverdue": "Überfällig seit {time}, noch nachholbar",
     "dayStreak": "Tage Serie",
     "dayStreakOne": "Tag Serie",
     "cycleDueToday": "Heute fällig",
@@ -1737,7 +1737,7 @@
       "empty": "Noch keine Dosis-Steigerungsschritte erfasst. Datierte Dosisänderungen hinzufügen, um den Plan abzubilden.",
       "youAreHere": "Du bist hier",
       "doseStep": "{dose} {unit}",
-      "plannedFor": "Geplant · {date}"
+      "plannedFor": "Geplant für {date}"
     },
     "injectionSiteBodyOutlineAriaLabel": "Körperumriss",
     "injectionSitePickerAriaLabel": "Injektionsstelle auswählen",
@@ -1788,7 +1788,7 @@
     "intakeHistoryStatusSkipped": "Übersprungen",
     "intakeHistorySortByTaken": "Nach Einnahme-Zeitpunkt sortieren",
     "intakeHistorySortByScheduled": "Nach geplantem Zeitpunkt sortieren",
-    "intakeHistoryPageInfo": "Seite {page} von {total} · {count} Einträge",
+    "intakeHistoryPageInfo": "Seite {page} von {total}, {count} Einträge",
     "intakeHistoryPrev": "Zurück",
     "intakeHistoryNext": "Weiter",
     "glp1": {
@@ -1888,7 +1888,7 @@
         "markAsTaken": "Als genommen markieren",
         "markAsSkipped": "Als übersprungen markieren",
         "adHocTag": "außerplanmäßig",
-        "takenDetail": "geplant {planned} · genommen {taken}",
+        "takenDetail": "geplant {planned}, genommen {taken}",
         "doseTaken": "Dosis: {dose}",
         "status": {
           "taken_on_time": "pünktlich",
@@ -2594,31 +2594,31 @@
         "ENV_POLLEN_MAX": "der Pollenflug"
       },
       "daily": {
-        "high": "Wenn {behaviour} höher liegt, fällt {outcome} am Folgetag in deinen Daten tendenziell {direction} aus — ein Muster, das Beachtung verdient, keine Ursache.",
-        "moderate": "Wenn {behaviour} höher liegt, scheint {outcome} am Folgetag nach bisheriger Datenlage eher {direction} auszufallen — ein Muster, das Beachtung verdient, keine Ursache.",
-        "faint": "Wenn {behaviour} höher liegt, gibt es in deinen Daten allenfalls einen schwachen Hinweis darauf, dass {outcome} am Folgetag {direction} ausfällt — zu gering, um sich darauf zu verlassen, niemals eine Ursache."
+        "high": "Wenn {behaviour} höher liegt, fällt {outcome} am Folgetag in deinen Daten tendenziell {direction} aus. Das ist ein Muster, das Beachtung verdient, keine Ursache.",
+        "moderate": "Wenn {behaviour} höher liegt, scheint {outcome} am Folgetag nach bisheriger Datenlage eher {direction} auszufallen. Das ist ein Muster, das Beachtung verdient, keine Ursache.",
+        "faint": "Wenn {behaviour} höher liegt, gibt es in deinen Daten allenfalls einen schwachen Hinweis darauf, dass {outcome} am Folgetag {direction} ausfällt. Das ist zu gering, um sich darauf zu verlassen, und niemals eine Ursache."
       },
       "lab": {
-        "default": "Höhere {lab}-Werte gehen in deinen Daten damit einher, dass {outcome} im selben Zeitraum {direction} ausfällt — ein Zusammenhang, den du ärztlich im Blick behalten solltest, niemals eine Ursache.",
-        "faint": "Höhere {lab}-Werte deuten in deinen Daten allenfalls schwach darauf hin, dass {outcome} im selben Zeitraum {direction} ausfällt — zu gering, um sich darauf zu verlassen, ein Zusammenhang, den du ärztlich abklären lassen solltest, niemals eine Ursache."
+        "default": "Höhere {lab}-Werte gehen in deinen Daten damit einher, dass {outcome} im selben Zeitraum {direction} ausfällt, ein Zusammenhang, den du ärztlich im Blick behalten solltest, niemals eine Ursache.",
+        "faint": "Höhere {lab}-Werte deuten in deinen Daten allenfalls schwach darauf hin, dass {outcome} im selben Zeitraum {direction} ausfällt. Das ist zu gering, um sich darauf zu verlassen, und niemals eine Ursache, aber ärztlich abklärenswert."
       },
       "hypothesis": {
         "bpCompliance": {
-          "support": "Höhere Medikamententreue geht mit niedrigeren systolischen Werten einher — ein Muster, das Beachtung verdient.",
-          "surprising": "Medikamententreue und systolischer Wert bewegen sich in deinen Daten gemeinsam — überraschend; sprich mit deiner Ärztin oder deinem Arzt, bevor du etwas änderst.",
+          "support": "Höhere Medikamententreue geht mit niedrigeren systolischen Werten einher, ein Muster, das Beachtung verdient.",
+          "surprising": "Medikamententreue und systolischer Wert bewegen sich in deinen Daten gemeinsam, das ist überraschend. Sprich mit deiner Ärztin oder deinem Arzt, bevor du etwas änderst.",
           "none": "Medikamententreue und systolischer Wert bewegen sich in diesem Zeitraum nicht deutlich gemeinsam."
         },
         "moodPulse": {
-          "support": "Tage mit schlechterer Stimmung gehen mit höherem Ruhepuls einher — ein Muster, das Beachtung verdient.",
-          "surprising": "Tage mit besserer Stimmung gehen in deinen Daten mit höherem Ruhepuls einher — überraschend.",
+          "support": "Tage mit schlechterer Stimmung gehen mit höherem Ruhepuls einher, ein Muster, das Beachtung verdient.",
+          "surprising": "Tage mit besserer Stimmung gehen in deinen Daten mit höherem Ruhepuls einher, das ist überraschend.",
           "none": "Stimmung und Ruhepuls bewegen sich in diesem Zeitraum nicht deutlich gemeinsam."
         },
-        "weightWeekday": "Das Gewicht am {weekday} liegt {delta} kg {direction} deinem Durchschnitt der übrigen Tage — ein Muster, das Beachtung verdient."
+        "weightWeekday": "Das Gewicht am {weekday} liegt {delta} kg {direction} deinem Durchschnitt der übrigen Tage, ein Muster, das Beachtung verdient."
       },
       "dailySameDay": {
-        "high": "Mehr {behaviour} am selben Tag und am Vortag geht in deinen Daten tendenziell mit {direction} {outcome} einher — ein Muster, das sich zu beobachten lohnt, keine Ursache.",
-        "moderate": "Mehr {behaviour} am selben Tag und am Vortag scheint in deinen Daten nach bisheriger Lage mit {direction} {outcome} einherzugehen — ein Muster, das sich zu beobachten lohnt, keine Ursache.",
-        "faint": "Mehr {behaviour} am selben Tag und am Vortag zeigt in deinen Daten allenfalls einen schwachen Hinweis auf {direction} {outcome} — zu klein, um sich darauf zu stützen, nie eine Ursache."
+        "high": "Mehr {behaviour} am selben Tag und am Vortag geht in deinen Daten tendenziell mit {direction} {outcome} einher. Das ist ein Muster, das sich zu beobachten lohnt, keine Ursache.",
+        "moderate": "Mehr {behaviour} am selben Tag und am Vortag scheint in deinen Daten nach bisheriger Lage mit {direction} {outcome} einherzugehen. Das ist ein Muster, das sich zu beobachten lohnt, keine Ursache.",
+        "faint": "Mehr {behaviour} am selben Tag und am Vortag zeigt in deinen Daten allenfalls einen schwachen Hinweis auf {direction} {outcome}. Das ist zu klein, um sich darauf zu stützen, und nie eine Ursache."
       }
     },
     "emptyTitle": "Noch nicht genug Daten",
@@ -2730,7 +2730,7 @@
       "referenceSleep": "Mindestens {low} Minuten pro Nacht; längerer Schlaf wird nicht abgewertet",
       "referenceAdiposity": "Taille-zu-Körpergröße-Verhältnis unter {high}",
       "referenceHba1c": "HbA1c {low} bis {high} %",
-      "referenceDetail": "{label} · {source} · {kind} · {low} bis {high}",
+      "referenceDetail": "{label}: {low} bis {high} ({kind}, {source})",
       "openBound": "offen",
       "laboratoryReferenceSource": "Referenzbereiche des auswertenden Labors",
       "personalTargetSource": "Persönliches Ziel",
@@ -2824,7 +2824,7 @@
       "experimentCta": "7-Tage-Experiment starten",
       "experimentTooltip": "Bald verfügbar",
       "emptyTitle": "Mehr Daten nötig, um diesen Zusammenhang zu zeigen",
-      "sourceChip": "basierend auf {n} gepaarten Messungen · {window}",
+      "sourceChip": "basierend auf {n} gepaarten Messungen ({window})",
       "sourceWindowLast30": "letzte 30 Tage",
       "confidenceHigh": "Hohe Konfidenz",
       "confidenceModerate": "Mittlere Konfidenz",
@@ -3004,23 +3004,23 @@
       "cluster": {
         "cardio": {
           "label": "Herz-Kreislauf",
-          "hint": "Blutdruck · Puls · HRV · Ruhe- & Geh-Herzfrequenz"
+          "hint": "Blutdruck, Puls, HRV, Ruhe- und Geh-Herzfrequenz"
         },
         "body": {
           "label": "Körperzusammensetzung",
-          "hint": "Gewicht · Körperfett · Muskeln · BMI"
+          "hint": "Gewicht, Körperfett, Muskeln und BMI"
         },
         "activity": {
           "label": "Aktivität",
-          "hint": "Schritte · Energie · Distanz · VO₂max"
+          "hint": "Schritte, Energie, Distanz und VO₂max"
         },
         "workouts": {
           "label": "Workouts",
-          "hint": "Läufe · Radtouren · Einheiten"
+          "hint": "Läufe, Radtouren und Einheiten"
         },
         "sleep": {
           "label": "Schlaf",
-          "hint": "Dauer · Phasen"
+          "hint": "Dauer und Phasen"
         },
         "mood": {
           "label": "Stimmung",
@@ -3032,15 +3032,15 @@
         },
         "medication": {
           "label": "Medikation",
-          "hint": "Therapietreue · GLP-1-Kontext"
+          "hint": "Therapietreue und GLP-1-Kontext"
         },
         "mobility": {
           "label": "Mobilität & Gang",
-          "hint": "Stabilität · Asymmetrie · Gangbild"
+          "hint": "Stabilität, Asymmetrie und Gangbild"
         },
         "environment": {
           "label": "Umgebung",
-          "hint": "Lärm · Tageslicht · Hauttemperatur"
+          "hint": "Lärm, Tageslicht und Hauttemperatur"
         }
       },
       "settingsClustersLabel": "Daten, die der Coach sieht",
@@ -3214,9 +3214,9 @@
           "cap": "Viele Schritte, fasst jetzt zusammen",
           "noProgress": "Keine neuen Daten mehr, fasst zusammen"
         },
-        "thoughtProcessOne": "Denkprozess · {count} Schritt",
-        "thoughtProcessFew": "Denkprozess · {count} Schritte",
-        "thoughtProcessOther": "Denkprozess · {count} Schritte",
+        "thoughtProcessOne": "Denkprozess ({count} Schritt)",
+        "thoughtProcessFew": "Denkprozess ({count} Schritte)",
+        "thoughtProcessOther": "Denkprozess ({count} Schritte)",
         "awaitingAnswer": "Antwort nötig"
       },
       "memory": {
@@ -4049,7 +4049,7 @@
       "distributionDaysUnit": "Tage",
       "weekdayTitle": "Durchschnitt nach Wochentag",
       "weekdayNoData": "Keine Daten",
-      "weekdayBestWorst": "Bester Tag: {best} · Schwerster Tag: {worst}",
+      "weekdayBestWorst": "Bester Tag: {best}, schwerster Tag: {worst}",
       "tagsTitle": "Tags und Auslöser",
       "tagAvgMood": "Durchschnittliche Stimmung mit diesem Tag",
       "correlationsTitle": "Stimmung und andere Werte",
@@ -4065,7 +4065,7 @@
         "strengthModerate": "Moderat",
         "strengthWeak": "Schwach",
         "strengthNone": "Keine",
-        "source": "{n} gepaarte Tage · r = {r}",
+        "source": "{n} gepaarte Tage, r = {r}",
         "emptyTitle": "Noch nicht genug gepaarte Daten",
         "emptyDescription": "Erfasse Stimmung und diesen Wert an denselben Tagen, um einen Zusammenhang zu sehen.",
         "pendingDescription": "{n} von {needed} gepaarten Tagen. Ein Zusammenhang erscheint, sobald genug Tage da sind, um Muster von Zufall zu unterscheiden.",
@@ -4124,7 +4124,7 @@
       "crosstab": {
         "title": "Tags und deine Gesundheitswerte",
         "description": "Wie sich ein Gesundheitswert an Tagen mit einem Tag von Tagen ohne diesen Tag unterscheidet.",
-        "pairLabel": "{tag} · {metric}",
+        "pairLabel": "{metric} an Tagen mit {tag}",
         "metricActiveEnergy": "Aktive Energie",
         "metricSleepDuration": "Schlaf",
         "metricNextDayRecovery": "Erholung am Folgetag",
@@ -4141,7 +4141,7 @@
       "factorCrosstab": {
         "title": "Deine bewerteten Faktoren und deine Vitalwerte",
         "description": "Wie sich ein Vitalwert an den Tagen unterscheidet, an denen du einen Faktor niedrig bewertet hast, verglichen mit den Tagen mit hoher Bewertung.",
-        "pairLabel": "{factor} · {metric}",
+        "pairLabel": "{metric} an Tagen mit {factor}",
         "metricSleepDuration": "Schlaf",
         "metricSteps": "Schritte",
         "metricRestingHeartRate": "Ruhepuls",
@@ -4167,7 +4167,7 @@
         "moodDown": "Höheres {factor} geht in deinen Daten tendenziell mit schlechterer Stimmung am Folgetag einher.",
         "outcomeUp": "Bessere Stimmung geht in deinen Daten tendenziell mit höherem {factor} am Folgetag einher.",
         "outcomeDown": "Bessere Stimmung geht in deinen Daten tendenziell mit niedrigerem {factor} am Folgetag einher.",
-        "stat": "{n} gepaarte Tage · r = {r} · q = {q}",
+        "stat": "{n} gepaarte Tage, r = {r}, q = {q}",
         "statLabel": "Wie das berechnet wurde",
         "explainerLabel": "Wie das berechnet wurde"
       },
@@ -4211,11 +4211,11 @@
     },
     "derived": {
       "coverage": {
-        "summary": "{present} von {required} Eingaben · {percent}%",
+        "summary": "{present} von {required} Eingaben ({percent}%)",
         "ratioLabel": "{present}/{required}",
         "historyDays": "Basiert auf {count} Tagen Verlauf",
         "missing": "Erfasse diese, um den Wert zu schärfen: {list}",
-        "summaryLabelled": "{label} · {percent}%"
+        "summaryLabelled": "{label} ({percent}%)"
       },
       "scoreRing": {
         "aria": "Wert {score} von 100, {band}",
@@ -4233,7 +4233,7 @@
         "inputsLabel": "Eingaben",
         "noInputs": "Noch keine Eingaben für diesen Wert vorhanden.",
         "methodLabel": "Methode",
-        "window": "Aus deinen letzten {days} Tagen · {source}-Daten",
+        "window": "Aus deinen letzten {days} Tagen mit {source}-Daten",
         "asOf": "Stand {date}",
         "standardLink": "Standard: {name}"
       },
@@ -4275,7 +4275,7 @@
       "anatomy": {
         "outOf": "/100",
         "contributorsLabel": "Faktoren",
-        "contributorValue": "{value} · {weight}% Gewicht",
+        "contributorValue": "{value}, Gewichtung {weight}%",
         "contributorMissing": "keine Daten",
         "insufficient": "Noch nicht genug Daten für eine Bewertung. Tracke weiter, dann erscheint sie hier."
       },
@@ -4743,10 +4743,10 @@
       "dismiss": "Nicht jetzt"
     },
     "bmiHeight": {
-      "coachPrefill": "Ich habe meine Körpergröße noch nicht eingetragen — warum ist der BMI wichtig, und was sollte ich wissen, bevor ich sie eintrage?"
+      "coachPrefill": "Ich habe meine Körpergröße noch nicht eingetragen. Warum ist der BMI wichtig, und was sollte ich wissen, bevor ich sie eintrage?"
     },
     "medicationsEmpty": {
-      "coachPrefill": "Ich habe noch keine Medikamente angelegt — was sollte ich wissen, bevor ich hier anfange, meine Therapietreue zu verfolgen?"
+      "coachPrefill": "Ich habe noch keine Medikamente angelegt. Was sollte ich wissen, bevor ich hier anfange, meine Therapietreue zu verfolgen?"
     }
   },
   "thresholds": {
@@ -5508,7 +5508,7 @@
             "dropHint": "oder zum Auswählen klicken",
             "fileInputLabel": "Eine Apple-Health-export.zip-Datei auswählen",
             "choose": "Datei auswählen",
-            "idempotencyNote": "Ein erneuter Upload desselben Archivs führt zusammen — es entstehen keine Duplikate. Große Archive werden im Hintergrund verarbeitet.",
+            "idempotencyNote": "Ein erneuter Upload desselben Archivs führt die Daten zusammen, ohne Duplikate. Große Archive werden im Hintergrund verarbeitet.",
             "uploading": "Wird hochgeladen…",
             "uploadFailed": "Upload fehlgeschlagen. Bitte erneut versuchen.",
             "rateLimited": "Zu viele Uploads. Bitte kurz warten und erneut versuchen.",
@@ -5517,7 +5517,7 @@
             "failureInterrupted": "Der Import wurde unterbrochen, bevor er fertig war, meist durch einen Server-Neustart oder Speichermangel. Die Daten sind sicher; das Archiv einfach erneut hochladen.",
             "failureInsufficientMemory": "Das Speicherlimit des Servers ist für ein Archiv dieser Größe zu niedrig. Bitte die Betreiberin oder den Betreiber das Node.js-Heap-Limit erhöhen lassen (NODE_OPTIONS=--max-old-space-size) und das Archiv danach erneut hochladen.",
             "rowsImported": "Bisher {count} Einträge importiert",
-            "doneSummary": "Fertig — {imported} von {read} Datensätzen importiert, {skipped} klinische Datensätze übersprungen.",
+            "doneSummary": "Fertig: {imported} von {read} Datensätzen importiert, {skipped} klinische Datensätze übersprungen.",
             "doneNothing": "Aus diesem Archiv wurde nichts importiert: 0 von {read} Datensätzen sind angekommen.",
             "writtenByHealthLogOne": "{count} Eintrag, den HealthLog selbst in Apple Health geschrieben hat, wurde ausgelassen, weil er schon in deinen Daten ist.",
             "writtenByHealthLogOther": "{count} Einträge, die HealthLog selbst in Apple Health geschrieben hat, wurden ausgelassen, weil sie schon in deinen Daten sind.",
@@ -5530,12 +5530,12 @@
               "parsing": "Export wird gelesen…",
               "upserting": "Datensätze werden importiert…"
             },
-            "skipUnsupported": "{count} Samples übersprungen — Datentypen, die HealthLog nicht importiert.",
+            "skipUnsupported": "{count} Samples übersprungen: Datentypen, die HealthLog nicht importiert.",
             "skipRefused": "{count} Samples konnten nicht geschrieben werden (unlesbar, außerhalb des Wertebereichs oder Speichern fehlgeschlagen).",
             "skipBreakdown": "Aufschlüsselung anzeigen ({count} Typen)",
             "skipBreakdownMore": "+ {count} weitere Typen",
             "cycleSummary": "{samples} Zyklus-Samples zu {days} Tagesprotokollen zusammengeführt.",
-            "cycleModuleOff": "{count} Zyklus-Samples übersprungen — Zyklus-Tracking ist für dieses Konto deaktiviert.",
+            "cycleModuleOff": "{count} Zyklus-Samples übersprungen, weil Zyklus-Tracking für dieses Konto deaktiviert ist.",
             "cycleDaysFailed": "{count} Zyklustage konnten nicht geschrieben werden: {reason}"
           },
           "json": {
@@ -5620,8 +5620,8 @@
             "failed": "Der Import ist fehlgeschlagen. Es wurde nichts geschrieben.",
             "columnsHeading": "Was mit jeder Spalte passiert",
             "jsonOnly": "nur JSON",
-            "previewLine": "Zeilen gelesen: {rows} · würde importieren: {queued} · abgewiesen: {refused}",
-            "submittedLine": "Zeilen gelesen: {rows} · zum Import eingereiht: {queued}",
+            "previewLine": "{rows} Zeilen gelesen, {queued} würden importiert, {refused} abgewiesen",
+            "submittedLine": "{rows} Zeilen gelesen, {queued} zum Import eingereiht",
             "unmatched": "Kein Medikament im Bestand passt zu: {names}",
             "ambiguous": "Passt auf mehr als ein Medikament: {names}",
             "mirrored": "Aus einer anderen App gespiegelt, daher keine Dosis ergänzbar: {names}",
@@ -5786,19 +5786,20 @@
         "storedDays": "{count} Tage Wetter gespeichert.",
         "home": {
           "title": "Heimatort",
-          "description": "Ein grober Standort auf Stadtebene — niemals eine genaue Spur. Wetter und Tageslicht werden für diesen Ort an Tagen ohne Ortszeitraum abgerufen, ab dem Tag der Festlegung.",
+          "description": "Ein grober Standort auf Stadtebene, niemals eine genaue Spur. Wetter und Tageslicht werden für diesen Ort an Tagen ohne Ortszeitraum abgerufen, ab dem Tag der Festlegung.",
           "current": "Aktuell: {label}",
           "none": "Noch kein Heimatort festgelegt.",
           "since": "Wetter wird ab {date} erfasst. Frühere Tage bleiben leer, bis du einen Ortszeitraum hinzufügst."
         },
         "travel": {
           "title": "Ortszeiträume",
-          "description": "Füge einen Ort und einen Zeitraum hinzu — eine Reise oder einen früheren Abschnitt deiner Verlaufsdaten. Der Zeitraum überschreibt für seine Tage deinen Wohnort, damit das Wetter zu deinem tatsächlichen Aufenthalt passt. So korrigierst du die Vergangenheit.",
+          "description": "Füge einen Ort und einen Zeitraum hinzu, etwa eine Reise oder einen früheren Abschnitt deiner Verlaufsdaten. Der Zeitraum überschreibt für seine Tage deinen Wohnort, damit das Wetter zu deinem tatsächlichen Aufenthalt passt. So korrigierst du die Vergangenheit.",
           "none": "Noch keine Ortszeiträume.",
           "add": "{label} hinzufügen",
           "remove": "Ortszeitraum entfernen",
           "removeConfirmTitle": "Diese Reise entfernen?",
-          "removeConfirmBody": "Messwerte aus diesem Zeitraum bleiben erhalten; nur der Reise-Eintrag verschwindet."
+          "removeConfirmBody": "Messwerte aus diesem Zeitraum bleiben erhalten; nur der Reise-Eintrag verschwindet.",
+          "range": "{start} bis {end}"
         },
         "backfill": {
           "title": "Vergangene Tage nacherfassen",
@@ -6506,7 +6507,7 @@
     },
     "integrationFreshness": {
       "title": "Empfangene Daten",
-      "summary": "{count} Datentypen · neuestes {relative}",
+      "summary": "{count} Datentypen, neuestes {relative}",
       "quiet": "{count} still",
       "workouts": "Workouts"
     },
@@ -7051,7 +7052,7 @@
     },
     "appleHealth": {
       "title": "Apple Health",
-      "description": "Die Live-Synchronisierung erfolgt über die HealthLog-iOS-App — nicht über eine Web- oder OAuth-Verbindung.",
+      "description": "Die Live-Synchronisierung erfolgt über die HealthLog-iOS-App, nicht über eine Web- oder OAuth-Verbindung.",
       "status": {
         "unavailable": "Apple-Health-Status nicht verfügbar"
       },
@@ -7065,14 +7066,14 @@
         "title": "Sync-Fortschritt",
         "receivedLabel": "Empfangene Datensätze",
         "oldestLabel": "Älteste erreichte Messung",
-        "flowing": "In der letzten Stunde sind Daten angekommen — die iPhone-App liefert weiter.",
-        "waiting": "Warten auf weitere Daten von der iPhone-App. Die Übertragung läuft weiter, wenn die App geöffnet ist oder iOS ihr Hintergrundzeit gewährt — eine ruhige Phase während des ersten großen Abgleichs ist normal, kein Fehler."
+        "flowing": "In der letzten Stunde sind Daten angekommen. Die iPhone-App liefert weiter.",
+        "waiting": "Warten auf weitere Daten von der iPhone-App. Die Übertragung läuft weiter, wenn die App geöffnet ist oder iOS ihr Hintergrundzeit gewährt. Eine ruhige Phase während des ersten großen Abgleichs ist normal, kein Fehler."
       },
       "delivery": {
         "title": "Übermittlung",
         "lastTriggerLabel": "Letzte Synchronisierung kam",
         "lastBackgroundLabel": "Letzte Hintergrund-Synchronisierung",
-        "backgroundNever": "Nie — bisher kam jede Synchronisierung bei geöffneter App an",
+        "backgroundNever": "Nie: bisher kam jede Synchronisierung bei geöffneter App an",
         "noSyncYet": "Es ist noch keine Synchronisierung angekommen, daher gibt es hier nichts zu berichten.",
         "trigger": {
           "foreground": "bei geöffneter App",
@@ -8072,19 +8073,19 @@
         "description": "Nimm an einem Tag alle Medikamente im Zeitfenster ein."
       },
       "compliance801": {
-        "title": "Treue 80% · 1T",
+        "title": "80% Treue für 1 Tag",
         "description": "Erreiche an einem Tag eine 30-Tage-Therapietreue von mindestens 80%."
       },
       "bmiGreen1": {
-        "title": "BMI im Grün · 1T",
+        "title": "BMI 1 Tag im Grün",
         "description": "Halte deinen BMI an einem Tag im Normalbereich."
       },
       "bpGreen1": {
-        "title": "Blutdruck im Grün · 1T",
+        "title": "Blutdruck 1 Tag im Grün",
         "description": "Halte deinen Blutdruck an einem Tag im Normalbereich."
       },
       "pulseGreen1": {
-        "title": "Puls im Grün · 1T",
+        "title": "Puls 1 Tag im Grün",
         "description": "Halte deinen Ruhepuls an einem Tag im Normalbereich."
       },
       "onTimePerfect7": {
@@ -8092,19 +8093,19 @@
         "description": "Nimm 7 Tage in Folge alle Medikamente im Zeitfenster ein."
       },
       "compliance807": {
-        "title": "Treue 80% · 7T",
+        "title": "80% Treue für 7 Tage",
         "description": "Erreiche 7 Tage in Folge eine 30-Tage-Therapietreue von mindestens 80%."
       },
       "bmiGreen7": {
-        "title": "BMI im Grün · 7T",
+        "title": "BMI 7 Tage im Grün",
         "description": "Halte deinen BMI 7 Tage in Folge im Normalbereich."
       },
       "bpGreen7": {
-        "title": "Blutdruck im Grün · 7T",
+        "title": "Blutdruck 7 Tage im Grün",
         "description": "Halte deinen Blutdruck 7 Tage in Folge im Normalbereich."
       },
       "pulseGreen7": {
-        "title": "Puls im Grün · 7T",
+        "title": "Puls 7 Tage im Grün",
         "description": "Halte deinen Ruhepuls 7 Tage in Folge im Normalbereich."
       },
       "onTimePerfect30": {
@@ -8112,19 +8113,19 @@
         "description": "Nimm 30 Tage in Folge alle Medikamente im Zeitfenster ein."
       },
       "compliance8030": {
-        "title": "Treue 80% · 30T",
+        "title": "80% Treue für 30 Tage",
         "description": "Erreiche 30 Tage in Folge eine 30-Tage-Therapietreue von mindestens 80%."
       },
       "bmiGreen30": {
-        "title": "BMI im Grün · 30T",
+        "title": "BMI 30 Tage im Grün",
         "description": "Halte deinen BMI 30 Tage in Folge im Normalbereich."
       },
       "bpGreen30": {
-        "title": "Blutdruck im Grün · 30T",
+        "title": "Blutdruck 30 Tage im Grün",
         "description": "Halte deinen Blutdruck 30 Tage in Folge im Normalbereich."
       },
       "pulseGreen30": {
-        "title": "Puls im Grün · 30T",
+        "title": "Puls 30 Tage im Grün",
         "description": "Halte deinen Ruhepuls 30 Tage in Folge im Normalbereich."
       },
       "onTimePerfect180": {
@@ -8132,19 +8133,19 @@
         "description": "Nimm 180 Tage in Folge alle Medikamente im Zeitfenster ein."
       },
       "compliance80180": {
-        "title": "Treue 80% · 180T",
+        "title": "80% Treue für 180 Tage",
         "description": "Erreiche 180 Tage in Folge eine 30-Tage-Therapietreue von mindestens 80%."
       },
       "bmiGreen180": {
-        "title": "BMI im Grün · 180T",
+        "title": "BMI 180 Tage im Grün",
         "description": "Halte deinen BMI 180 Tage in Folge im Normalbereich."
       },
       "bpGreen180": {
-        "title": "Blutdruck im Grün · 180T",
+        "title": "Blutdruck 180 Tage im Grün",
         "description": "Halte deinen Blutdruck 180 Tage in Folge im Normalbereich."
       },
       "pulseGreen180": {
-        "title": "Puls im Grün · 180T",
+        "title": "Puls 180 Tage im Grün",
         "description": "Halte deinen Ruhepuls 180 Tage in Folge im Normalbereich."
       },
       "onTimePerfect360": {
@@ -8152,19 +8153,19 @@
         "description": "Nimm 360 Tage in Folge alle Medikamente im Zeitfenster ein."
       },
       "compliance80360": {
-        "title": "Treue 80% · 360T",
+        "title": "80% Treue für 360 Tage",
         "description": "Erreiche 360 Tage in Folge eine 30-Tage-Therapietreue von mindestens 80%."
       },
       "bmiGreen360": {
-        "title": "BMI im Grün · 360T",
+        "title": "BMI 360 Tage im Grün",
         "description": "Halte deinen BMI 360 Tage in Folge im Normalbereich."
       },
       "bpGreen360": {
-        "title": "Blutdruck im Grün · 360T",
+        "title": "Blutdruck 360 Tage im Grün",
         "description": "Halte deinen Blutdruck 360 Tage in Folge im Normalbereich."
       },
       "pulseGreen360": {
-        "title": "Puls im Grün · 360T",
+        "title": "Puls 360 Tage im Grün",
         "description": "Halte deinen Ruhepuls 360 Tage in Folge im Normalbereich."
       },
       "moodFirst": {
@@ -8248,15 +8249,15 @@
         "description": "Du hast die App-Sprache mindestens einmal gewechselt."
       },
       "missFree7": {
-        "title": "Lückenlos · 7T",
+        "title": "7 Tage lückenlos",
         "description": "7 Tage in Folge ohne eine verpasste Dosis."
       },
       "missFree30": {
-        "title": "Lückenlos · 30T",
+        "title": "30 Tage lückenlos",
         "description": "30 Tage in Folge ohne eine verpasste Dosis."
       },
       "missFree90": {
-        "title": "Lückenlos · 90T",
+        "title": "90 Tage lückenlos",
         "description": "90 Tage in Folge ohne eine verpasste Dosis."
       },
       "measurementWeeks4": {
@@ -8268,7 +8269,7 @@
         "description": "Alle vier Felder der Selbstauskunft ausgefüllt — der Coach kennt deinen Kontext."
       },
       "sleepLog7": {
-        "title": "Schlafprotokoll · 7T",
+        "title": "7 Tage Schlafprotokoll",
         "description": "An 7 Tagen in Folge Schlafdaten erfasst."
       }
     },
@@ -8775,7 +8776,7 @@
       },
       "crosstab": {
         "description": "Wie sich jeder Messwert zwischen deiner Luteal- und Follikelphase vergleicht — auf deinen eigenen Daten.",
-        "pairLabel": "{metric} · Luteal vs. Follikel",
+        "pairLabel": "{metric}: Luteal- vs. Follikelphase",
         "detail": "Luteal {lutealAvg} {unit} ({lutealDays} Tage) vs. Follikel {follicularAvg} {unit} ({follicularDays} Tage).",
         "metricRestingHeartRate": "Ruhepuls",
         "metricHrv": "Herzfrequenzvariabilität",
@@ -8995,7 +8996,7 @@
       "temperatureSection": "Temperatur & Eisprung",
       "intimacySection": "Intimität & Verhütung",
       "testsSection": "Tests",
-      "phaseDayHeader": "Tag {day} · {phase}",
+      "phaseDayHeader": "Tag {day}, {phase}",
       "bbtHint": "Miss sie morgens als Erstes, noch vor dem Aufstehen.",
       "titleForDate": "Eintrag für {date}",
       "descriptionToday": "Heute. Stärke, Symptome und Notizen.",
@@ -9172,10 +9173,10 @@
       "VISCERAL_FAT": "Viszeralfett",
       "BODY_MASS_INDEX": "Body-Mass-Index (BMI)",
       "WAIST_CIRCUMFERENCE": "Taillenumfang",
-      "PHQ9_SCORE": "PHQ-9 · Stimmung",
-      "GAD7_SCORE": "GAD-7 · Sorgen",
-      "WHO5_SCORE": "WHO-5 · Wohlbefinden",
-      "SCI_SCORE": "SCI · Schlaf"
+      "PHQ9_SCORE": "PHQ-9 (Stimmung)",
+      "GAD7_SCORE": "GAD-7 (Sorgen)",
+      "WHO5_SCORE": "WHO-5 (Wohlbefinden)",
+      "SCI_SCORE": "SCI (Schlaf)"
     },
     "typeGroups": {
       "vitals": "Vitalwerte",
@@ -9738,7 +9739,7 @@
     },
     "empty": {
       "title": "Noch keine Impfung erfasst",
-      "description": "Übertrage deinen Impfpass Zeile für Zeile — Datum und Impfstoff genügen."
+      "description": "Übertrage deinen Impfpass Zeile für Zeile. Datum und Impfstoff genügen."
     },
     "catalog": {
       "tetanus": "Tetanus (Wundstarrkrampf)",
@@ -10272,10 +10273,10 @@
     "saved": "Gespeichert",
     "error": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
     "instrument": {
-      "phq9": "PHQ-9 · Stimmung",
-      "gad7": "GAD-7 · Sorgen",
-      "who5": "WHO-5 · Wohlbefinden",
-      "sci": "SCI · Schlaf"
+      "phq9": "PHQ-9 (Stimmung)",
+      "gad7": "GAD-7 (Sorgen)",
+      "who5": "WHO-5 (Wohlbefinden)",
+      "sci": "SCI (Schlaf)"
     },
     "instrumentSub": {
       "phq9": "Depressions-Screening, 9 Fragen",
@@ -10743,7 +10744,7 @@
   },
   "documents": {
     "title": "Dokumente",
-    "subtitle": "Jeder Brief, Befund und Scan an einem durchsuchbaren Ort — verschlüsselt gespeichert.",
+    "subtitle": "Jeder Brief, Befund und Scan an einem durchsuchbaren Ort, verschlüsselt gespeichert.",
     "pageUpload": "Hochladen",
     "ownerOnlyUpload": "Dokumente kann nur die Inhaberin oder der Inhaber der Akte hinzufügen.",
     "kind": {
@@ -10785,15 +10786,15 @@
     },
     "error": {
       "fileTooLarge": "Diese Datei ist größer als das Limit von {maxSize}.",
-      "quotaExceeded": "Der Speicher ist voll — {used} von {quota} belegt.",
+      "quotaExceeded": "Der Speicher ist voll: {used} von {quota} belegt.",
       "unsupportedType": "Dieser Dateityp wird nicht unterstützt.",
       "purged": "Dieses Dokument wurde endgültig entfernt und kann nicht wiederhergestellt werden.",
       "duplicateExists": "Ein identisches Dokument ist bereits gespeichert.",
-      "rateLimited": "Zu viele Uploads — versuche es in ein paar Minuten erneut.",
+      "rateLimited": "Zu viele Uploads. Versuche es in ein paar Minuten erneut.",
       "generic": "Upload fehlgeschlagen. Bitte erneut versuchen."
     },
     "toast": {
-      "duplicate": "Bereits gespeichert — das vorhandene Dokument wird hervorgehoben.",
+      "duplicate": "Bereits gespeichert. Das vorhandene Dokument ist hervorgehoben.",
       "deleted": "Dokument gelöscht",
       "restoreFailed": "Das Dokument konnte nicht wiederhergestellt werden."
     },
@@ -10816,7 +10817,7 @@
     },
     "empty": {
       "title": "Dein Dokumenten-Tresor ist leer",
-      "description": "Bewahre Arztbriefe, Laborbefunde, Bildgebung, Rezepte und Impfnachweise auf — verschlüsselt und durchsuchbar nach Typ, Erkrankung und Jahr.",
+      "description": "Bewahre Arztbriefe, Laborbefunde, Bildgebung, Rezepte und Impfnachweise auf. Sie werden verschlüsselt gespeichert und sind nach Typ, Erkrankung und Jahr durchsuchbar.",
       "action": "Erstes Dokument hochladen",
       "noMatchesTitle": "Keine passenden Dokumente",
       "noMatchesDescription": "Nichts entspricht der aktuellen Suche und den Filtern."
@@ -10856,9 +10857,9 @@
       "linkCondition": "Verknüpfen",
       "noConditions": "Mit keiner Erkrankung verknüpft",
       "previewUnavailable": "Keine Inline-Vorschau für diesen Dateityp",
-      "uploadedMeta": "Hinzugefügt am {date} · {size}",
+      "uploadedMeta": "Hinzugefügt am {date}, {size}",
       "importedFrom": "Importiert aus {system}",
-      "importedFromWithId": "Importiert aus {system} · ID {id}",
+      "importedFromWithId": "Importiert aus {system}, ID {id}",
       "sourceOther": "einem anderen System",
       "share": "Teilen",
       "labValuesLink": "{count} Laborwerte ansehen",
@@ -10925,7 +10926,7 @@
       "errorNotIndexed": "Lies das Dokument zuerst aus, dann extrahiere.",
       "errorLocalOcrDisabled": "Aktiviere zuerst die lokale Texterkennung in den KI-Einstellungen.",
       "errorProvider": "Dafür ist kein KI-Anbieter eingerichtet.",
-      "errorTextImageOnly": "Lokale Texterkennung liest nur Bilder — nicht diese Datei.",
+      "errorTextImageOnly": "Lokale Texterkennung liest nur Bilder, nicht diese Datei.",
       "errorConsent": "Für das Lesen von Dokumenten mit KI brauchst du zuerst deine Einwilligung.",
       "errorUnavailable": "Das Lesen von Dokumenten mit KI ist hier gerade nicht verfügbar."
     },
@@ -10958,7 +10959,7 @@
         "CONDITION": "Erkrankung",
         "MEDICATION_STATEMENT": "Medikament"
       },
-      "statedRange": "angegebener Bereich {range}",
+      "statedRange": "Angegebener Bereich {range}",
       "needsCheck": "Prüfe diesen Wert gegen das Dokument und speichere ihn dann.",
       "verify": "Prüfen",
       "verifySave": "Wert speichern",
@@ -11228,14 +11229,14 @@
       }
     },
     "hydration": {
-      "referenceMeta": "Richtwert {value} {unit}/Tag · EFSA"
+      "referenceMeta": "Richtwert {value} {unit}/Tag (EFSA)"
     },
     "caffeine": {
-      "ceilingMeta": "Sichere Obergrenze {value} {unit}/Tag · EFSA"
+      "ceilingMeta": "Sichere Obergrenze {value} {unit}/Tag (EFSA)"
     },
     "micronutrients": {
       "title": "Vitamine & Mineralstoffe",
-      "rowMeta": "{days} von {window} Tagen · Richtwert {value} {unit} (EFSA)",
+      "rowMeta": "{days} von {window} Tagen, Richtwert {value} {unit} (EFSA)",
       "rowMetaNoRef": "{days} von {window} Tagen",
       "footer": "{tracked} von {total} erfassten Mikronährstoffen haben Daten in diesem Zeitraum.",
       "emptyTitle": "Noch keine Mikronährstoffdaten synchronisiert",
@@ -11250,7 +11251,7 @@
     },
     "push": {
       "title": "Dein Morgenüberblick",
-      "bodyProvisional": "{line} · Der Schlaf von letzter Nacht fehlt noch."
+      "bodyProvisional": "{line}\nDer Schlaf von letzter Nacht fehlt noch."
     },
     "item": {
       "doseWindow": {
@@ -11638,7 +11639,7 @@
     "managed": {
       "title": "Profile, die du betreust",
       "description": "Gesundheitsakten ohne eigenen Login.",
-      "explainer": "Ein verwaltetes Profil ist eine Gesundheitsakte für jemanden, der sich nicht selbst anmeldet — ein Kind oder eine Person, um die du dich kümmerst. Es hat keinen Login und keine E-Mail-Adresse, und du wirst die erste betreuende Person. Später kannst du weitere hinzufügen, und ihr alle könnt in die Akte wechseln, um sie zu pflegen.",
+      "explainer": "Ein verwaltetes Profil ist eine Gesundheitsakte für jemanden, der sich nicht selbst anmeldet, etwa ein Kind oder eine Person, um die du dich kümmerst. Es hat keinen Login und keine E-Mail-Adresse, und du wirst die erste betreuende Person. Später kannst du weitere hinzufügen, und ihr alle könnt in die Akte wechseln, um sie zu pflegen.",
       "nameLabel": "Name",
       "namePlaceholder": "Der Name, an dem du diese Akte erkennst",
       "nameHint": "Bis zu 80 Zeichen. Wird überall dort angezeigt, wo diese Akte auftaucht.",
@@ -11660,7 +11661,7 @@
       "creating": "Wird angelegt…",
       "created": "{name} ist eingerichtet. Über das Kontomenü kannst du in diese Akte wechseln.",
       "errorStepUp": "Bestätige deinen zweiten Faktor und versuche es erneut.",
-      "errorOffline": "Das hat den Server nicht erreicht. Es hat sich nichts geändert — prüfe deine Verbindung und versuche es erneut.",
+      "errorOffline": "Das hat den Server nicht erreicht. Es hat sich nichts geändert. Prüfe deine Verbindung und versuche es erneut.",
       "errorInvalid": "Der Server hat diese Angaben abgelehnt. Prüfe Name, Datum und Zeitzone.",
       "errorFailed": "Das Profil konnte nicht angelegt werden.",
       "edit": "Bearbeiten",
@@ -11671,7 +11672,7 @@
       "editErrorFailed": "Die Änderungen konnten nicht gespeichert werden.",
       "delete": "Profil löschen",
       "deleteTitle": "{name} löschen?",
-      "deleteBody": "Alles, was für {name} erfasst wurde, verschwindet mit dem Profil — Messwerte, Medikamente, Dokumente und Notizen. Das lässt sich nicht rückgängig machen.",
+      "deleteBody": "Alles, was für {name} erfasst wurde, verschwindet mit dem Profil: Messwerte, Medikamente, Dokumente und Notizen. Das lässt sich nicht rückgängig machen.",
       "deleteGuardiansOne": "{count} Person betreut diese Akte derzeit und verliert sie.",
       "deleteGuardiansFew": "{count} Personen betreuen diese Akte derzeit und verlieren sie.",
       "deleteGuardiansOther": "{count} Personen betreuen diese Akte derzeit und verlieren sie.",
@@ -11686,7 +11687,7 @@
       "guardianRemoveBody": "{name} kann {profile} dann nicht mehr öffnen. Was diese Person eingetragen hat, bleibt in der Akte.",
       "guardianWithdrawBody": "Die Einladung an {name} wird zurückgezogen. Die Person hat {profile} nie geöffnet, in der Akte ändert sich nichts.",
       "guardianRemoveConfirm": "Zugriff beenden",
-      "soleGuardian": "Du bist die einzige Person, die sich um {name} kümmert — hier gibt es also keinen Zugriff, den du beenden könntest. Lade jemanden ein und warte auf die Annahme, gib deinen eigenen Zugriff unter „Akten, die ich öffnen kann“ zurück, oder lösche das Profil.",
+      "soleGuardian": "Du bist die einzige Person, die sich um {name} kümmert. Hier gibt es also keinen Zugriff, den du beenden könntest. Lade jemanden ein und warte auf die Annahme, gib deinen eigenen Zugriff unter „Akten, die ich öffnen kann“ zurück, oder lösche das Profil.",
       "guardianInviteLabel": "Weitere betreuende Person einladen",
       "guardianInvite": "Einladung senden",
       "guardianInviting": "Wird gesendet…",
@@ -11957,7 +11958,7 @@
       "both": "Beidseitig",
       "none": "Keine Angabe"
     },
-    "bodySiteWithSide": "{site} · {side}",
+    "bodySiteWithSide": "{site} ({side})",
     "sectionTitle": "Termine",
     "sectionDescription": "Arztbesuche und gebuchte Termine an einem Ort.",
     "add": "Termin",
@@ -12211,7 +12212,6 @@
     "loadFailed": "Dieser Tag konnte nicht geladen werden.",
     "dayOf": "Tag {n} von {m}",
     "dayN": "Tag {n}",
-    "since": "seit {date}",
     "usualRange": "Üblich {lo} bis {hi}",
     "groups": {
       "running": "Laufend an diesem Tag",
@@ -12242,11 +12242,11 @@
     "description": "Alles, was deine Einträge für diesen Tag enthalten.",
     "openDocument": "Dokument öffnen",
     "previousReading": "Vorher, {date}",
-    "rugLegend": "Punkte unter der Achse: Tage mit Einträgen · Ring: auffälliger Tag",
+    "rugLegend": "Punkte unter der Achse markieren Tage mit Einträgen, ein Ring einen auffälligen Tag.",
     "sheetExpand": "Auf volle Höhe aufziehen",
     "sheetShrink": "Verkleinern",
     "usualLabel": "Deine 30 Tage davor",
-    "valuesLegend": "Punkt: dieser Tag · Strich: deine 30 Tage davor",
+    "valuesLegend": "Punkt für diesen Tag, Strich für die 30 Tage davor",
     "valuesAllOne": "Alle Werte",
     "valuesAllFew": "Alle {count} Werte",
     "valuesAllOther": "Alle {count} Werte",
@@ -12272,7 +12272,9 @@
       "note": "Zusammengestellt aus deinen Einträgen, ohne Bewertung. Jedes Datum öffnet den ganzen Tag.",
       "report": "Arztbericht {date} bis heute"
     },
-    "travel": "Unterwegs"
+    "travel": "Unterwegs",
+    "dayNSince": "Tag {n}, seit {date}",
+    "sinceDate": "Seit {date}"
   },
   "timeline": {
     "title": "Zeitleiste",
@@ -12346,9 +12348,9 @@
         "vaccinationsOne": "{count} Impfung",
         "vaccinationsFew": "{count} Impfungen",
         "vaccinationsOther": "{count} Impfungen",
-        "visitsOne": "{count} Besuch · {procedures} mit Eingriff",
-        "visitsFew": "{count} Besuche · {procedures} mit Eingriff",
-        "visitsOther": "{count} Besuche · {procedures} mit Eingriff",
+        "visitsOne": "{count} Besuch, {procedures} mit Eingriff",
+        "visitsFew": "{count} Besuche, {procedures} mit Eingriff",
+        "visitsOther": "{count} Besuche, {procedures} mit Eingriff",
         "visitsPlannedOne": "{count} Besuch, nur geplant",
         "visitsPlannedFew": "{count} Besuche, nur geplant",
         "visitsPlannedOther": "{count} Besuche, nur geplant",
@@ -12451,8 +12453,8 @@
       "months": "Monate",
       "years": "Jahre",
       "groupingLabel": "Gruppierung",
-      "gap": "{from} bis {to} · keine Einträge",
-      "gapSingle": "{period} · keine Einträge",
+      "gap": "{from} bis {to} ohne Einträge",
+      "gapSingle": "{period} ohne Einträge",
       "ended": "{label} vorbei",
       "afterDaysOne": "nach einem Tag",
       "afterDaysFew": "nach {count} Tagen",

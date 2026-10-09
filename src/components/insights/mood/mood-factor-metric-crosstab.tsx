@@ -132,6 +132,10 @@ export function MoodFactorMetricCrosstab({
           const metricLabel = t(
             METRIC_LABEL_KEY[row.metricKey] ?? row.metricKey,
           );
+          const pairLabel = t("insights.mood.factorCrosstab.pairLabel", {
+            factor: factorLabel,
+            metric: metricLabel,
+          });
           // v1.32.26 — the weight ("kg") row follows the metric/imperial
           // preference: the unit symbol + the values (averages + delta, all in
           // kg, offset-free) convert together. Every other display is unitless
@@ -168,12 +172,9 @@ export function MoodFactorMetricCrosstab({
                 )}
                 <span
                   className="text-foreground min-w-0 flex-1 truncate"
-                  title={`${factorLabel} · ${metricLabel}`}
+                  title={pairLabel}
                 >
-                  {t("insights.mood.factorCrosstab.pairLabel", {
-                    factor: factorLabel,
-                    metric: metricLabel,
-                  })}
+                  {pairLabel}
                 </span>
                 <span className="text-foreground shrink-0 text-sm font-semibold tabular-nums">
                   {deltaText}

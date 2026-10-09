@@ -546,7 +546,7 @@ export function buildProcedureChoices(
         procedure.reason?.trim() ||
         procedure.practitionerName?.trim() ||
         labels.kindName,
-      detail: site ? `${site} · ${date}` : date,
+      detail: site ? `${site}, ${date}` : date,
     };
   });
 }

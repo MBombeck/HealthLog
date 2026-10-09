@@ -188,8 +188,12 @@ describe("<DayView>", () => {
     const html = await render();
     expect(html).toContain("Running that day");
     expect(html).toContain("Common cold");
-    expect(html).toContain("Day 4 · since");
-    expect(html).toContain("Winter course · Day 64 of 151");
+    // Name first, the quiet day count below; an open span names its start
+    // as a date, its year left out when it is the viewed day's year.
+    expect(html).toContain("Day 4, since December 31");
+    expect(html).toContain("Vitamin D 1,000 IU Winter course");
+    expect(html).toContain("Day 64 of 151");
+    expect(html).not.toContain("ongoing");
     expect(html).toContain('href="/illness/ep1"');
   });
 
@@ -228,10 +232,11 @@ describe("<DayView>", () => {
     const html = await render();
     const rows = html.split('data-slot="day-running-item"').slice(1);
     const med = rows.find((row) => row.includes("Levothyroxine")) ?? "";
-    expect(med).toContain("50 µg");
+    expect(med).toContain("Levothyroxine 50 µg");
     expect(med.split("</li>")[0]).not.toMatch(/Day \d|since/);
     const leave = rows.find((row) => row.includes("Parental leave")) ?? "";
-    expect(leave).toContain("Family · Day 34 of 90");
+    expect(leave).toMatch(/data-slot="tag-chip"[^>]*>Family</);
+    expect(leave).toContain("Day 34 of 90");
     expect(leave).not.toContain("FAMILY");
   });
 

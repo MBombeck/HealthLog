@@ -38,7 +38,7 @@ const okResult: CorrelationResult = {
   pValue: 0.001,
   confidenceBand: { low: -0.85, high: -0.39, label: "high" },
   interpretation:
-    "Higher medication compliance lines up with lower systolic readings — a pattern worth watching.",
+    "Higher medication compliance lines up with lower systolic readings, a pattern worth watching.",
   points: [
     { x: 60, y: 140 },
     { x: 70, y: 135 },

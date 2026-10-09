@@ -588,7 +588,7 @@ export function DocumentSourcePicker({
                   : null,
               ]
                 .filter(Boolean)
-                .join(" · ");
+                .join(", ");
               return (
                 <li key={row.sourceId}>
                   <button
