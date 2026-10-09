@@ -143,7 +143,7 @@ describe("chronicle", () => {
         )}
       />,
     );
-    expect(html).toContain("April bis Oktober 2026 · keine Einträge");
+    expect(html).toContain("April bis Oktober 2026 ohne Einträge");
     expect(html).toContain("Dauerhaft");
     expect(html).toContain("2 Allergien");
     expect(html).toContain("Erkältung vorbei");

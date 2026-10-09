@@ -215,13 +215,11 @@ export function DayRunning({
 }: {
   items: readonly DayRunningItem[];
   /** The viewed day; a start date in another year names its year. */
-  date?: DateKey;
+  date: DateKey;
 }) {
   const { t, locale } = useTranslations();
   if (items.length === 0) return null;
-  const viewedYear = date
-    ? date.slice(0, 4)
-    : String(new Date().getUTCFullYear());
+  const viewedYear = date.slice(0, 4);
   const intlLocale = resolveIntlLocale(locale);
   const sinceText = (since: string): string =>
     new Intl.DateTimeFormat(intlLocale, {

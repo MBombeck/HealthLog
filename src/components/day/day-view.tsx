@@ -332,7 +332,7 @@ export function DayView({
           </p>
         ) : (
           <>
-            <DayRunning items={data.running} />
+            <DayRunning items={data.running} date={date} />
             {data.values.length > 0 ? (
               <div className="space-y-2.5">
                 <DayValues values={data.values} focusTypes={focusTypes} />
