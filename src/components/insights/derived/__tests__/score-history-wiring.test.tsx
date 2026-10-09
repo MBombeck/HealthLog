@@ -7,9 +7,10 @@ import { renderToStaticMarkup } from "react-dom/server";
  * longer rides above the method.
  *
  * The stored nightly scores (recovery, stress, strain) get the full metric
- * chart over their measurement type; the two composites draw the course their
- * value carries, and nothing when it carries fewer than two points. The chart
- * and the card are stubbed to probes that state what they were given.
+ * chart over their measurement type; the two composites chart the daily
+ * history the score-history route serves. Every one of them remembers its
+ * range tab under its own slot. The charts and the card are stubbed to probes
+ * that state what they were given.
  */
 
 vi.mock("@/lib/i18n/context", () => ({
@@ -32,20 +33,30 @@ vi.mock("../score-anatomy-view", () => ({
 }));
 
 vi.mock("../score-history", () => ({
-  ScoreHistoryChart: ({ type }: { type: string }) => (
-    <div data-slot="history-chart-probe" data-type={type} />
-  ),
-  ScoreHistoryCard: ({
-    series,
-    windowDays,
+  ScoreHistoryChart: ({
+    type,
+    chartKey,
   }: {
-    series: number[];
-    windowDays: number;
+    type: string;
+    chartKey: string;
   }) => (
     <div
-      data-slot="history-card-probe"
-      data-points={series.length}
-      data-window={windowDays}
+      data-slot="history-chart-probe"
+      data-type={type}
+      data-chart-key={chartKey}
+    />
+  ),
+  ScoreTrendChartDynamic: ({
+    score,
+    chartKey,
+  }: {
+    score: string;
+    chartKey: string;
+  }) => (
+    <div
+      data-slot="trend-chart-probe"
+      data-score={score}
+      data-chart-key={chartKey}
     />
   ),
 }));
@@ -85,7 +96,7 @@ describe("score detail history", () => {
       expect(html).toContain(
         `data-slot="history-chart-probe" data-type="${metric}"`,
       );
-      expect(html).not.toContain("history-card-probe");
+      expect(html).not.toContain("trend-chart-probe");
       // Under the score card, not somewhere else on the page.
       expect(html.indexOf("history-chart-probe")).toBeGreaterThan(
         html.indexOf("anatomy-probe"),
@@ -93,15 +104,30 @@ describe("score detail history", () => {
     },
   );
 
-  it.each(["SLEEP_SCORE", "READINESS"] as const)(
-    "%s draws the course its value carries, over its window",
-    (metric) => {
+  it.each([
+    ["SLEEP_SCORE", "scoreSleep"],
+    ["READINESS", "scoreReadiness"],
+  ] as const)(
+    "%s charts its daily history from the score-history route",
+    (metric, chartKey) => {
       const html = render(metric, [55, 61, 70]);
-      expect(html).toContain('data-points="3"');
-      expect(html).toContain('data-window="30"');
+      expect(html).toContain(
+        `data-slot="trend-chart-probe" data-score="${metric}" data-chart-key="${chartKey}"`,
+      );
       expect(html).not.toContain("history-chart-probe");
+      expect(html.indexOf("trend-chart-probe")).toBeGreaterThan(
+        html.indexOf("anatomy-probe"),
+      );
     },
   );
+
+  it.each([
+    ["RECOVERY_SCORE", "scoreRecovery"],
+    ["STRESS_SCORE", "scoreStress"],
+    ["STRAIN_SCORE", "scoreStrain"],
+  ] as const)("%s remembers its range under %s", (metric, chartKey) => {
+    expect(render(metric)).toContain(`data-chart-key="${chartKey}"`);
+  });
 
   it("an account without a score gets no empty chart under the insufficient card", () => {
     derived.current = {
@@ -123,9 +149,11 @@ describe("score detail history", () => {
     expect(html).not.toContain("history-chart-probe");
   });
 
-  it("a composite with fewer than two points draws no course", () => {
-    expect(render("READINESS", [70])).not.toContain("history-card-probe");
-    expect(render("READINESS")).not.toContain("history-card-probe");
+  it("a composite charts its history even when its value carries no series", () => {
+    // The course no longer rides the value: one point, or none, still gets
+    // the chart, whose own range decides what it shows.
+    expect(render("READINESS", [70])).toContain("trend-chart-probe");
+    expect(render("READINESS")).toContain("trend-chart-probe");
   });
 
   it("no score page carries the caveat line above its method", () => {

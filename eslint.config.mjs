@@ -153,6 +153,7 @@ const eslintConfig = defineConfig([
       "src/components/charts/workout-hr-chart.tsx",
       "src/components/charts/workout-elevation-chart.tsx",
       "src/components/insights/coach-panel/result-chart.tsx",
+      "src/components/insights/derived/score-trend-chart.tsx",
     ],
     rules: {
       "no-restricted-imports": [

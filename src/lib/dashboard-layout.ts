@@ -328,6 +328,14 @@ export const CHART_OVERLAY_KEYS = [
   "painNrs",
   "waistCircumference",
   "waistToHeight",
+  // v1.42 — the score pages' history charts. Each remembers only its range
+  // tab (the charts mount no overlay dropdown), one slot per score page.
+  "scoreHealth",
+  "scoreReadiness",
+  "scoreRecovery",
+  "scoreSleep",
+  "scoreStress",
+  "scoreStrain",
 ] as const;
 export type ChartOverlayKey = (typeof CHART_OVERLAY_KEYS)[number];
 
@@ -609,6 +617,15 @@ export interface DashboardLayout {
    * `"score"`.
    */
   hero?: HeroPrimaryContent;
+  /**
+   * v1.42 — whether the dashboard shows its top card (the Today card above
+   * the tiles) at all. Optional and additive: missing resolves to `true`,
+   * and the serializer omits the default, so an untouched account's blob
+   * stays as it was and clients that predate the field round-trip it
+   * untouched. Deliberately not `heroVisible`: that name belonged to the
+   * retired opt-in hero and old blobs may still carry it.
+   */
+  todayCardVisible?: boolean;
 }
 
 /**
@@ -643,6 +660,7 @@ export const LAYOUT_FIELD_MERGE_DISPOSITION = {
   heroRingOrder: "preserve",
   enabledHeroItemKinds: "preserve",
   hero: "preserve",
+  todayCardVisible: "preserve",
 } as const satisfies Record<keyof DashboardLayout, "replace" | "preserve">;
 
 /**
@@ -717,6 +735,7 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayout = {
   heroRingOrder: [...DEFAULT_HERO_RING_ORDER],
   enabledHeroItemKinds: [...PRIORITY_ITEM_KINDS],
   hero: DEFAULT_HERO_PRIMARY_CONTENT,
+  todayCardVisible: true,
   widgets: [
     { id: "weight", visible: true, tileVisible: true, order: 0 },
     { id: "bp", visible: true, tileVisible: true, order: 1 },
@@ -891,6 +910,8 @@ export function resolveDashboardLayout(raw: unknown): DashboardLayout {
     // default "score" so a stale client cannot swap the hero to a
     // composition the renderer doesn't know how to draw.
     hero: coerceHeroPrimaryContent(candidate.hero),
+    // Only an explicit `false` hides the top card; anything else shows it.
+    todayCardVisible: candidate.todayCardVisible !== false,
   };
 }
 
@@ -944,5 +965,7 @@ export function serializeDashboardLayout(
     // contract as `enabledHeroItemKinds`), so an untouched account's blob
     // is byte-identical to the pre-field shape.
     ...(hero === DEFAULT_HERO_PRIMARY_CONTENT ? {} : { hero }),
+    // Shown is the default and is omitted the same way.
+    ...(layout.todayCardVisible === false ? { todayCardVisible: false } : {}),
   };
 }

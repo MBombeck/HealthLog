@@ -366,6 +366,19 @@ describe("<HealthScoreCard> disclosure", () => {
   });
 });
 
+describe("<HealthScoreCard> history", () => {
+  it("links the score to its course over time, at rest", () => {
+    const html = render(<HealthScoreCard report={scoredReport()} />);
+    const rest = atRest(html);
+    const link = rest.match(
+      /<a[^>]*data-slot="health-score-history-link"[^>]*>[\s\S]*?<\/a>/,
+    );
+    expect(link).not.toBeNull();
+    expect(link![0]).toContain('href="/insights/health-score"');
+    expect(link![0]).toContain("History");
+  });
+});
+
 describe("<HealthScoreCard> pillars", () => {
   it("gives a row to the scored pillars only, never to a gated one", () => {
     const html = render(<HealthScoreCard report={scoredReport()} />);

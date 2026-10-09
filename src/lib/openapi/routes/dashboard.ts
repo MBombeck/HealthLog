@@ -78,11 +78,17 @@ const dashboardLayoutSchema = z
       .describe(
         'Primary hero-card content on the dashboard: "score" (the health-score read, default) or "reminders" (the Today-highlight rail promoted into the hero slot). Missing resolves to "score"; the stored default is omitted from responses.',
       ),
+    todayCardVisible: z
+      .boolean()
+      .optional()
+      .describe(
+        "v1.42 — whether the dashboard shows its top card (the Today card above the tiles). Missing resolves to `true`; only an explicit `false` hides it. The stored default is omitted. A layout reset (DELETE) shows it again. Additive.",
+      ),
   })
   .meta({
     id: "DashboardLayoutBody",
     description:
-      "Per-user dashboard widget layout. `widgets` is the ordered tile and chart list. `comparisonBaseline`, `chartOverlayPrefs`, `selectedScoreRings`, `heroRingOrder`, `enabledHeroItemKinds`, and `hero` are additive dashboard preferences. Every field except `version` is optional on input and preserved when absent from PUT. Missing `enabledHeroItemKinds` resolves to every current kind, while an empty array hides every Today highlight. Widget ids use the closed dashboard catalogue; unknown ids are dropped before validation.",
+      "Per-user dashboard widget layout. `widgets` is the ordered tile and chart list. `comparisonBaseline`, `chartOverlayPrefs`, `selectedScoreRings`, `heroRingOrder`, `enabledHeroItemKinds`, `hero`, and `todayCardVisible` are additive dashboard preferences. Every field except `version` is optional on input and preserved when absent from PUT. Missing `enabledHeroItemKinds` resolves to every current kind, while an empty array hides every Today highlight. Widget ids use the closed dashboard catalogue; unknown ids are dropped before validation.",
   });
 
 const dashboardLayoutPutBody = dashboardLayoutSchema

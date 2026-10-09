@@ -1061,6 +1061,7 @@ describe("layout field merge disposition", () => {
     heroRingOrder: ["HEALTH_SCORE", "MED_COMPLIANCE"],
     enabledHeroItemKinds: [...PRIORITY_ITEM_KINDS],
     hero: "reminders",
+    todayCardVisible: false,
   };
 
   it("assigns a disposition to every top-level layout field", () => {
@@ -1087,6 +1088,7 @@ describe("layout field merge disposition", () => {
       "hero",
       "heroRingOrder",
       "selectedScoreRings",
+      "todayCardVisible",
       "widgets",
     ]);
   });
@@ -1224,5 +1226,57 @@ describe("resolveDashboardLayout() — hero primary content", () => {
     });
     expect(serialized.hero).toBe("reminders");
     expect(resolveDashboardLayout(serialized).hero).toBe("reminders");
+  });
+});
+
+describe("todayCardVisible — the dashboard top card switch", () => {
+  const base = {
+    version: 1,
+    widgets: [{ id: "weight", visible: true, order: 0 }],
+  };
+
+  it("shows the top card by default", () => {
+    expect(DEFAULT_DASHBOARD_LAYOUT.todayCardVisible).toBe(true);
+    expect(resolveDashboardLayout(base).todayCardVisible).toBe(true);
+    expect(resolveDashboardLayout(null).todayCardVisible).toBe(true);
+  });
+
+  it("hides it only on an explicit false", () => {
+    expect(
+      resolveDashboardLayout({ ...base, todayCardVisible: false })
+        .todayCardVisible,
+    ).toBe(false);
+    for (const value of [true, "false", 0, null]) {
+      expect(
+        resolveDashboardLayout({ ...base, todayCardVisible: value })
+          .todayCardVisible,
+      ).toBe(true);
+    }
+  });
+
+  it("is not driven by the retired heroVisible flag", () => {
+    expect(
+      resolveDashboardLayout({ ...base, heroVisible: false }).todayCardVisible,
+    ).toBe(true);
+  });
+
+  it("stores false and omits the default", () => {
+    const hidden = serializeDashboardLayout(
+      resolveDashboardLayout({ ...base, todayCardVisible: false }),
+    );
+    expect(hidden.todayCardVisible).toBe(false);
+    const shown = serializeDashboardLayout(resolveDashboardLayout(base));
+    expect(shown).not.toHaveProperty("todayCardVisible");
+  });
+
+  it("round-trips through serialize and resolve", () => {
+    const stored = serializeDashboardLayout({
+      ...resolveDashboardLayout(base),
+      todayCardVisible: false,
+    });
+    expect(
+      resolveDashboardLayout(JSON.parse(JSON.stringify(stored)))
+        .todayCardVisible,
+    ).toBe(false);
   });
 });

@@ -270,6 +270,25 @@ export const DAY_DOORS_STORAGE_STATE_PATH = resolve(
   "e2e/setup/storageStateDayDoors.json",
 );
 
+/**
+ * The score-history journey's own account (`score-history.spec.ts`).
+ *
+ * It switches the dashboard's top card off and back on and remembers a range
+ * tab per score page, both per-account preferences; on a shared account a
+ * parallel spec would find its dashboard without the card it asserts.
+ */
+export const E2E_SCORE_HISTORY = {
+  email: "e2e-score-history@healthlog.test",
+  username: "e2e-score-history",
+  password: "Sh7!Vn2qLp9xWc4R",
+  role: "USER",
+} as const;
+
+export const SCORE_HISTORY_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateScoreHistory.json",
+);
+
 export const AI_OPTIONAL_STORAGE_STATE_PATH = resolve(
   process.cwd(),
   "e2e/setup/storageStateAiOptional.json",
@@ -995,6 +1014,32 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       ],
     );
 
+    // The score-history journey's account. Every module on, a fresh layout:
+    // the journey moves its top card and range tabs, so a re-run starts from
+    // the defaults.
+    await pool.query(
+      `INSERT INTO users
+        (id, username, email, password_hash, role, created_at, updated_at,
+         onboarding_completed_at, onboarding_tour_completed,
+         module_preferences_json)
+       VALUES ($1, $2, $3, $4, 'USER', $5, $5, $5, true, NULL)
+       ON CONFLICT (username) DO UPDATE SET
+         email = EXCLUDED.email,
+         password_hash = EXCLUDED.password_hash,
+         updated_at = EXCLUDED.updated_at,
+         onboarding_completed_at = EXCLUDED.onboarding_completed_at,
+         onboarding_tour_completed = EXCLUDED.onboarding_tour_completed,
+         module_preferences_json = NULL,
+         dashboard_widgets_json = NULL`,
+      [
+        cuid(),
+        E2E_SCORE_HISTORY.username,
+        E2E_SCORE_HISTORY.email,
+        await hashPassword(E2E_SCORE_HISTORY.password),
+        now,
+      ],
+    );
+
     // The notification-dispatch journey's account. Seeded like the others;
     // its channels, devices, ledger rows and preferences are reset by
     // `e2e/setup/notification-fixture.ts` before every test, because the
@@ -1604,6 +1649,9 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     // The day-doors journey's jar, then its record — see `E2E_DAY_DOORS`.
     await capture(E2E_DAY_DOORS, DAY_DOORS_STORAGE_STATE_PATH);
     await seedDayDoorsRecord(baseURL, DAY_DOORS_STORAGE_STATE_PATH);
+
+    // The score-history journey's jar — see `E2E_SCORE_HISTORY`.
+    await capture(E2E_SCORE_HISTORY, SCORE_HISTORY_STORAGE_STATE_PATH);
 
     await capture(E2E_SCOPE_DELEGATE, SCOPE_DELEGATE_STORAGE_STATE_PATH);
     await capture(E2E_SCOPE_DELEGATE, SCOPE_A11Y_STORAGE_STATE_PATH);

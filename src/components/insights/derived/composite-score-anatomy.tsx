@@ -17,10 +17,11 @@ import {
   ScoreAnatomyView,
   type AnatomyContributor,
 } from "./score-anatomy-view";
-import type { RingHue } from "./ring-hues";
+import { RING_GRADIENT, type RingHue } from "./ring-hues";
 import type { CoachLaunchScope } from "@/lib/insights/coach-launch-context";
 import { METRIC_PROVENANCE } from "./standards";
-import { ScoreHistoryCard, ScoreHistoryChart } from "./score-history";
+import { ScoreHistoryChart, ScoreTrendChartDynamic } from "./score-history";
+import type { ChartOverlayKey } from "@/lib/dashboard-layout";
 
 /**
  * v1.10.0 — the data-bound wrapper that fetches a composite/persisted derived
@@ -96,6 +97,15 @@ const METRIC_COACH_SCOPE: Record<AnatomyMetricId, CoachLaunchScope> = {
     also: ["active_energy", "resting_hr"],
     window: "last7days",
   },
+};
+
+/** The slot each score page remembers its history chart's range tab under. */
+const METRIC_CHART_KEY: Record<AnatomyMetricId, ChartOverlayKey> = {
+  SLEEP_SCORE: "scoreSleep",
+  READINESS: "scoreReadiness",
+  RECOVERY_SCORE: "scoreRecovery",
+  STRESS_SCORE: "scoreStress",
+  STRAIN_SCORE: "scoreStrain",
 };
 
 const METRIC_HUE: Record<AnatomyMetricId, RingHue> = {
@@ -284,13 +294,10 @@ export function CompositeScoreAnatomy({
   // the card always renders its prose rather than the no-provider fallback.
   const assessment = data.assessment;
 
-  // v1.42 — the score's course, right under its card. A stored nightly score
-  // gets the full chart; a composite draws the course its value carries.
-  const series =
-    data.status === "ok" && data.value
-      ? (data.value as { series?: number[] }).series
-      : undefined;
-  // Only beside a score: an account without one gets the honest
+  // v1.42 — the score's course, right under its card, with the range tabs
+  // every chart offers. A stored nightly score charts its readings; readiness
+  // and the sleep score chart the daily history the score-history route
+  // serves. Only beside a score: an account without one gets the honest
   // insufficient card, not an empty chart under it.
   const history =
     data.status !== "ok" ? null : metric === "RECOVERY_SCORE" ||
@@ -299,14 +306,16 @@ export function CompositeScoreAnatomy({
       <ScoreHistoryChart
         type={deviceStrain ? "DAY_STRAIN" : metric}
         hue={METRIC_HUE[metric]}
+        chartKey={METRIC_CHART_KEY[metric]}
       />
-    ) : series && series.length >= 2 ? (
-      <ScoreHistoryCard
-        series={series}
-        windowDays={data.provenance.windowDays}
-        hue={METRIC_HUE[metric]}
+    ) : (
+      <ScoreTrendChartDynamic
+        score={metric}
+        chartKey={METRIC_CHART_KEY[metric]}
+        color={RING_GRADIENT[METRIC_HUE[metric]][1]}
+        label={title}
       />
-    ) : null;
+    );
 
   return (
     <div className="space-y-3">

@@ -67,6 +67,10 @@ const DELIBERATELY_OPEN: Record<string, { count: number; reason: string }> = {
     reason: "hand-built query object",
   },
   "insights/derived/route.ts": { count: 1, reason: "hand-built query object" },
+  "insights/score-history/route.ts": {
+    count: 1,
+    reason: "hand-built query object",
+  },
   "insights/metric-status/route.ts": {
     count: 1,
     reason: "hand-built query object",

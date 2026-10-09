@@ -42,6 +42,7 @@ export { HostMetricsChart } from "@/components/admin/host-metrics-chart";
 export { CustomMetricChart } from "@/components/custom-metrics/custom-metric-chart";
 export { BbtChart } from "@/components/cycle/bbt-chart";
 export { DeltaSparkline } from "@/components/insights/derived/delta-sparkline";
+export { ScoreTrendChart } from "@/components/insights/derived/score-trend-chart";
 export { MoodDimensionTrends } from "@/components/insights/mood/mood-dimension-trends";
 export { MoodDistributionChart } from "@/components/insights/mood/mood-distribution-chart";
 export { MoodTimeOfDayChart } from "@/components/insights/mood/mood-time-of-day-chart";

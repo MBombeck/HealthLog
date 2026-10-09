@@ -41,7 +41,6 @@ import { ChartErrorState } from "./chart-error-state";
 import { TileHeader } from "@/components/insights/tile-header";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
 import { computePaddedYDomain } from "@/lib/insights/chart-y-domain";
-import { Button } from "@/components/ui/button";
 import {
   useDateFormatPreference,
   useTranslations,
@@ -85,52 +84,15 @@ import {
   useChartDayLinks,
 } from "@/components/day/chart-day-links";
 import { isWholeNumberType } from "@/components/day/use-day-value-format";
+import {
+  ChartRangeTabs,
+  DEFAULT_CHART_RANGE,
+  rangeWindowDays,
+} from "./chart-range-tabs";
 
-// The range tabs select a CALENDAR-DAY window ending now — `days: 7` is
-// "the last 7 days", not "the last 7 readings". The labels said "points"
-// until v1.37.29 while the fetch below always treated the value as a day
-// window; a user who weighs in twice a week picked "7 pts" and saw two.
-// The persisted preference field keeps its historical name `rangePoints`
-// (it crosses the chart-overlay-prefs wire), but its value has always
-// been days.
-const TIME_RANGES_KEYS = [
-  {
-    labelKey: "charts.days7Label",
-    days: 7,
-    titleKey: "charts.days7Title",
-  },
-  {
-    labelKey: "charts.days30Label",
-    days: 30,
-    titleKey: "charts.days30Title",
-  },
-  {
-    labelKey: "charts.days90Label",
-    days: 90,
-    titleKey: "charts.days90Title",
-  },
-  {
-    labelKey: "charts.daysAllLabel",
-    days: 0,
-    titleKey: "charts.daysAllTitle",
-  },
-] as const;
-
-/**
- * v1.19.0 — day-span the "All" range tab (`rangePoints === 0`) fetches.
- * A generous fixed bound (~10 years) that is clearly larger than any
- * other range tab, so "All" means "all of my history" rather than the
- * old silent 365-day truncation. Fixed (not per-account derived) so the
- * fetch-window cache key stays stable across the session.
- *
- * v1.19.2 — the server's daily-aggregate reader now steps UP the bucket
- * tier (DAY → WEEK → MONTH) for windows wider than the DAY cap, so a
- * multi-year "All" range returns whole-history coverage downsampled to
- * the tier the chart's `bucketTimeSeries` would render anyway, instead of
- * truncating to the most recent ~365 daily buckets. The render cost stays
- * flat — the coarse tier bounds the point count.
- */
-const ALL_RANGE_DAYS = 3650;
+// The range tabs (7 / 30 / 90 / All, a calendar-day window ending now) and
+// the "All" tab's ten-year fetch span live with the shared
+// `<ChartRangeTabs>`, so every chart drawn in days offers the same choice.
 
 interface HealthChartProps {
   types: string[];
@@ -191,6 +153,13 @@ interface HealthChartProps {
    * its toggles default to OFF (clean line).
    */
   chartKey?: ChartOverlayKey;
+  /**
+   * v1.42 — whether a chart bound to a `chartKey` also shows the overlay
+   * dropdown. Off for a chart that persists only its range tab (the score
+   * histories), so binding a key to remember the range does not add
+   * controls the chart never had. Defaults to on.
+   */
+  overlayControls?: boolean;
   /**
    * v1.4.20 phase B4 — additive storyboard annotations.
    *
@@ -669,6 +638,7 @@ export function HealthChart({
   windowOverride,
   compareBaseline = "none",
   chartKey,
+  overlayControls = true,
   annotations,
   verticalMarkers,
   userTimezone: userTimezoneProp,
@@ -715,7 +685,7 @@ export function HealthChart({
   // hides the range tabs, so the user can't change it.
   const initialRangePoints = windowOverride
     ? resolveMiniRangePoints(windowOverride)
-    : 30;
+    : DEFAULT_CHART_RANGE;
   const [rangePoints, setRangePoints] = useState(initialRangePoints);
 
   // v1.4.18 — three overlay toggles (showTrendIndicator / showTrendArrow
@@ -812,7 +782,7 @@ export function HealthChart({
   // cache key) and moves on by itself after midnight.
   const todayKey = localDayKeyFor(new Date(), userTimezone);
   const fetchWindow = useMemo(() => {
-    const windowDays = rangePoints > 0 ? rangePoints : ALL_RANGE_DAYS;
+    const windowDays = rangeWindowDays(rangePoints);
     const compareShift =
       effectiveCompareBaseline === "lastMonth"
         ? 30
@@ -1881,40 +1851,30 @@ export function HealthChart({
             className="flex flex-nowrap items-center justify-end gap-1 self-end sm:self-auto"
             data-slot="chart-header-controls"
           >
-            {TIME_RANGES_KEYS.map((r) => (
-              <Button
-                key={r.labelKey}
-                variant={rangePoints === r.days ? "default" : "ghost"}
-                aria-pressed={rangePoints === r.days}
-                size="sm"
-                className="min-h-11 px-2 text-xs sm:px-3"
-                onClick={() => {
-                  // v1.12.8 — a range-tab change re-slices `chartData`; the
-                  // visible-range stats memo recomputes off the new slice and
-                  // the stat strip follows automatically.
-                  setRangeHydrated(true);
-                  setRangePoints(r.days);
-                  // v1.30.1 M2 — persist the pick per chart, same model
-                  // as the overlay toggles, so the range survives a
-                  // remount instead of resetting to 30 d every visit.
-                  if (chartKey && !windowOverride) {
-                    overlayPrefs.setPrefs({
-                      ...overlayPrefs.prefs,
-                      rangePoints: r.days,
-                    });
-                  }
-                }}
-                title={t(r.titleKey)}
-                data-slot="chart-range-tab"
-              >
-                {t(r.labelKey)}
-              </Button>
-            ))}
+            <ChartRangeTabs
+              value={rangePoints}
+              onChange={(days) => {
+                // v1.12.8 — a range-tab change re-slices `chartData`; the
+                // visible-range stats memo recomputes off the new slice and
+                // the stat strip follows automatically.
+                setRangeHydrated(true);
+                setRangePoints(days);
+                // v1.30.1 M2 — persist the pick per chart, same model
+                // as the overlay toggles, so the range survives a
+                // remount instead of resetting to 30 d every visit.
+                if (chartKey && !windowOverride) {
+                  overlayPrefs.setPrefs({
+                    ...overlayPrefs.prefs,
+                    rangePoints: days,
+                  });
+                }
+              }}
+            />
             {/* v1.4.18 — overlay-controls dropdown anchored next to
                 the range tabs. Only painted when the chart is bound
                 to a persistent chartKey; ad-hoc usages keep the
                 clean-line default. */}
-            {chartKey ? (
+            {chartKey && overlayControls ? (
               <ChartOverlayControls
                 prefs={overlayPrefs.prefs}
                 onChange={overlayPrefs.setPrefs}

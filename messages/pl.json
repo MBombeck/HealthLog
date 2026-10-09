@@ -702,7 +702,8 @@
       "body": "Bez kopii klucza Twoich danych nie da się odzyskać po ponownej instalacji. To zajmie minutę.",
       "action": "Otwórz krok"
     },
-    "quickAddSymptom": "Zapisz objaw"
+    "quickAddSymptom": "Zapisz objaw",
+    "todayCardVisible": "Pokaż górną kartę"
   },
   "measurements": {
     "title": "Pomiary",
@@ -2765,7 +2766,8 @@
       "coverage": {
         "recommendedMet": "Pokrywa trzy obszary zalecane przez wynik",
         "areas": "{present} z {required} obszarów zdrowia"
-      }
+      },
+      "historyLink": "Przebieg"
     },
     "dailyBriefing": {
       "title": "Briefing dnia",
@@ -4747,6 +4749,13 @@
     },
     "medicationsEmpty": {
       "coachPrefill": "Nie dodałem jeszcze żadnych leków. Co powinienem wiedzieć, zanim zacznę tu śledzić przestrzeganie zaleceń?"
+    },
+    "scoreHistory": {
+      "healthTitle": "Przebieg wyniku zdrowia",
+      "healthDescription": "Twój wynik zdrowia dzień po dniu, taki jak był pokazywany każdego dnia.",
+      "emptyDescription": "W tym okresie nie zapisano jeszcze żadnego wyniku.",
+      "usualRange": "Zacieniowane: twój zwykły zakres, od {lo} do {hi}.",
+      "seam": "Linia przerywa się tam, gdzie zmieniło się to, co liczy się do wyniku."
     }
   },
   "thresholds": {

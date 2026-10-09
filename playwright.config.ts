@@ -289,6 +289,11 @@ export default defineConfig({
         // account under the first. They prove server state through stable
         // data-slots, not a mobile layout, so they run in one project.
         "ai-optional-account.spec.ts",
+        // The score-history journey moves its account's top card and range
+        // tabs; two projects on that one account would flip them under each
+        // other. It checks the phone width by resizing inside the desktop
+        // project.
+        "score-history.spec.ts",
       ],
       use: {
         // Pixel 5 — Chromium-based mobile profile so CI only needs

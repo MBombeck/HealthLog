@@ -954,7 +954,10 @@ export default function DashboardPageClient({
         // rehydrates from disk. The error / empty branches stay reachable only
         // post-mount. DO NOT add `["daily", …]` to that allowlist, or render
         // the hero from any client-only source, without revisiting this gate.
-        digestQuery.data ? (
+        // v1.42 — the top card can be switched off in the layout settings;
+        // only an explicit `false` hides it, and with it its skeleton and
+        // its error card.
+        layout.todayCardVisible === false ? null : digestQuery.data ? (
           <TodayHero
             digest={digestQuery.data}
             renderFilteredAllClear={renderFilteredHeroAllClear}

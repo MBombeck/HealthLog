@@ -46,7 +46,7 @@ vi.mock("../score-anatomy-view", () => ({
 // about the assessment's hand-off, so the course is a probe here.
 vi.mock("../score-history", () => ({
   ScoreHistoryChart: () => <div data-slot="score-history-probe" />,
-  ScoreHistoryCard: () => <div data-slot="score-history-probe" />,
+  ScoreTrendChartDynamic: () => <div data-slot="score-history-probe" />,
 }));
 
 import { CompositeScoreAnatomy } from "../composite-score-anatomy";

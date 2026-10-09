@@ -21,6 +21,10 @@ import { ANALYTICS_RANGES } from "@/lib/analytics/range-delta";
 import { providerChainPutSchema } from "@/lib/validations/ai-provider";
 import { PERIOD_DAYS } from "@/lib/insights/narrative/period-narrative";
 import { aiCapabilityState } from "../profile";
+import {
+  SCORE_HISTORY_IDS,
+  SCORE_HISTORY_MAX_DAYS,
+} from "@/lib/insights/score-history-ids";
 
 /** The retrospective periods the narrative route accepts, read off the engine. */
 const NARRATIVE_PERIOD_VALUES = Object.keys(PERIOD_DAYS);
@@ -2956,4 +2960,62 @@ export const intradayPulseResponse = z
     id: "IntradayPulseResponse",
     description:
       "One local day's intraday heart-rate shape, plus at most one cautious elevated-at-rest window. Computed from raw samples through the read-swap pattern rather than persisted as ten-minute rollups for all history. Awareness only, never a diagnosis.",
+  });
+
+export const scoreHistoryQuery = z
+  .object({
+    score: z
+      .enum(SCORE_HISTORY_IDS)
+      .describe(
+        "The score to chart. `HEALTH_SCORE` reads the stored day scores, `READINESS` the nightly readiness blend, `SLEEP_SCORE` the per-night sleep score. The nightly recovery, stress and strain scores are stored measurements and chart through the measurement series instead.",
+      ),
+    days: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(SCORE_HISTORY_MAX_DAYS)
+      .describe(
+        `Trailing window in local calendar days ending today (1–${SCORE_HISTORY_MAX_DAYS}). The web chart sends 7, 30, 90, or ${SCORE_HISTORY_MAX_DAYS} for its "All" tab. Out of range is a 422, never a silent clamp.`,
+      ),
+  })
+  .meta({ id: "ScoreHistoryQuery" });
+
+export const scoreHistoryResponse = z
+  .object({
+    score: z.enum(SCORE_HISTORY_IDS),
+    days: z.number().int().describe("The window the request asked for."),
+    points: z
+      .array(
+        z.object({
+          day: z
+            .string()
+            .describe(
+              "The local calendar day the value describes, `YYYY-MM-DD`; the day the day view opens for it.",
+            ),
+          value: z.number().int().min(0).max(100),
+          seamBreak: z
+            .boolean()
+            .describe(
+              "True on the first day scored under a different recipe (what counts, or the algorithm version) than the day before. Draw no line from the previous point to this one: the values either side are averages of different things. Only the health score has seams; never true on the first point.",
+            ),
+        }),
+      )
+      .describe(
+        "One point per day that has a value, oldest first. A day without one is absent, never zero.",
+      ),
+    band: z
+      .object({
+        lo: z.number().int(),
+        hi: z.number().int(),
+        n: z.number().int().describe("Days the range was formed from."),
+      })
+      .nullable()
+      .describe(
+        "The person's usual range behind the newest point: median and scaled MAD of the values in the 30 days before it, from its own side of the last seam. Null with fewer than seven such days. Describes, does not grade.",
+      ),
+  })
+  .meta({
+    id: "ScoreHistoryResponse",
+    description:
+      "One score's daily course over a trailing window, for a history chart with a day per point.",
   });

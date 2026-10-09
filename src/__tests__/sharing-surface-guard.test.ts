@@ -1414,6 +1414,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "record",
     why: "Rhythm events over the record's own recordings. Reached only through this module's MANAGE arm; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
   },
+  "app/api/insights/score-history/route.ts": {
+    domain: "record",
+    why: "A score's daily course: the stored health-score days, the nightly readiness rows, the per-night sleep score. Reached only through this module's MANAGE arm; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
+  },
   "app/api/insights/targets/route.ts": {
     domain: "record",
     why: "The record's resolved targets. Reached only through this module's MANAGE arm; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
@@ -1932,6 +1936,11 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
     conditions: [],
     why: "Rhythm events over the record's own recordings.",
   },
+  "app/api/insights/score-history/route.ts": {
+    domain: "record",
+    conditions: [],
+    why: "A score's daily course, read from the same rows the score pages and the day view read. Deterministic, no provider, nothing enqueued.",
+  },
   "app/api/insights/targets/route.ts": {
     domain: "record",
     conditions: [],
@@ -2080,8 +2089,12 @@ const ACTOR_ROUTES: Record<string, string> = {
  * release (no share level was worded for them), so both modules take a bare
  * `requireAuth()` and drop off the record list and the manage literal.
  * 256 -> 252.
+ *
+ * v1.42 — the score-history read joins the record list and the manage
+ * literal (a score's daily course, MANAGE like the derived score itself).
+ * 252 -> 254.
  */
-const FROZEN_ENTRY_COUNT = 252;
+const FROZEN_ENTRY_COUNT = 254;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
