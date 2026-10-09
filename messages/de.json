@@ -12209,6 +12209,8 @@
     "previousDay": "Vortag",
     "nextDay": "Folgetag",
     "close": "Tag schließen",
+    "hidePanel": "Tag ausblenden",
+    "showPanel": "{date} einblenden",
     "openDay": "Tag öffnen",
     "viewWholeDay": "Ganzen Tag ansehen",
     "captureForDay": "Für diesen Tag erfassen",

@@ -261,6 +261,9 @@ export function LayoutCoachFab() {
           // the page and never over the day's footer actions. The `:has()`
           // gate keys off the docked panel's slot, like the yields below.
           "[body:has([data-slot=day-panel][data-shell=docked])_&]:right-[calc(26.25rem+2rem)]",
+          // Collapsed, the day keeps a 3 rem edge on the right; the launcher
+          // stays clear of it the same way.
+          "[body:has([data-slot=day-rail])_&]:right-[calc(3rem+2rem)]",
           // Yield to the data-list selection bar: its delete action lands
           // in the same lower-right band, and the destructive control
           // wins. The `:has()` gate keys off the bar's `data-slot`.

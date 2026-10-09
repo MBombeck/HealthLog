@@ -23,13 +23,14 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import type {
-  DayEvent,
-  DayEventKind,
-  DayNotable,
-  DayRunningItem,
-  DayRunningKind,
-  DayValue,
+import {
+  LIFE_EVENT_CATEGORIES,
+  type DayEvent,
+  type DayEventKind,
+  type DayNotable,
+  type DayRunningItem,
+  type DayRunningKind,
+  type DayValue,
 } from "@/lib/day/contract";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
@@ -157,7 +158,6 @@ const RUNNING_COLOR: Record<DayRunningKind, string> = {
   restMode: "var(--chart-5)",
   cyclePhase: "var(--chart-3)",
   travel: "var(--chart-4)",
-  lifestyle: "var(--muted-foreground)",
   lifeEvent: "var(--chart-2)",
 };
 
@@ -181,6 +181,10 @@ export function dayTitle(
 
 const FLOW_LEVELS = new Set(["NONE", "SPOTTING", "LIGHT", "MEDIUM", "HEAVY"]);
 
+const LIFE_EVENT_CATEGORY_SET: ReadonlySet<string> = new Set(
+  LIFE_EVENT_CATEGORIES,
+);
+
 function dayMeta(
   kind: string,
   meta: string,
@@ -188,6 +192,10 @@ function dayMeta(
 ): string {
   if (kind === "cycleDayLog" && FLOW_LEVELS.has(meta)) {
     return `${t("cycle.flow.label")}: ${t(`cycle.flow.${meta}`)}`;
+  }
+  // A life event's second line is its category, a closed code.
+  if (kind === "lifeEvent" && LIFE_EVENT_CATEGORY_SET.has(meta)) {
+    return t(`lifeEvents.category.${meta}`);
   }
   return meta;
 }
@@ -202,13 +210,13 @@ export function DayRunning({ items }: { items: readonly DayRunningItem[] }) {
       <ul>
         {items.map((item) => {
           const parts = [
-            item.sub,
+            item.sub === null ? null : dayMeta(item.kind, item.sub, t),
             item.dayIndex !== null
               ? item.dayCount !== null
                 ? t("day.dayOf", { n: item.dayIndex, m: item.dayCount })
                 : t("day.dayN", { n: item.dayIndex })
               : null,
-            item.dayCount === null
+            item.dayCount === null && item.since !== null
               ? t("day.since", {
                   date: fmt.dateShortSmartCalendar(item.since),
                 })

@@ -47,8 +47,14 @@ function byTime(a: DayEvent, b: DayEvent): number {
   return a.at.localeCompare(b.at);
 }
 
+/** Oldest start first; an item without a start date follows the dated ones. */
 function bySince(a: DayRunningItem, b: DayRunningItem): number {
-  return a.since.localeCompare(b.since) || a.title.localeCompare(b.title);
+  if (a.since !== b.since) {
+    if (a.since === null) return 1;
+    if (b.since === null) return -1;
+    return a.since.localeCompare(b.since);
+  }
+  return a.title.localeCompare(b.title);
 }
 
 export interface LoadDayArgs {

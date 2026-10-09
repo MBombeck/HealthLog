@@ -32,8 +32,8 @@ import type { ShareDomain } from "@/lib/sharing/scope";
  *
  * Mirrors the declarations of the routes that serve the same rows: readings,
  * sleep, workouts and check-up reminders are `measurements`; mood and the
- * screeners are `mind`; allergies, visits, vaccinations and the anamnesis
- * facts are `profile`; symptoms ride `illness`. Life events, like the
+ * screeners are `mind`; allergies, visits and vaccinations are
+ * `profile`; symptoms ride `illness`. Life events, like the
  * environment rows, are owner-only in v1.42: their routes take no delegate
  * at any level, so no share (a `profile` one, a legacy whole-record one, or
  * MANAGE) shows them here either.
@@ -57,7 +57,6 @@ export const DAY_SECTION_SHARE_DOMAIN: Readonly<
   workouts: "measurements",
   cycle: "cycle",
   environment: null,
-  lifestyle: "profile",
   lifeEvents: null,
 });
 

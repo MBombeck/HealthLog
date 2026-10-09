@@ -217,6 +217,65 @@ describe("MCP tool registry — surface", () => {
     );
   });
 
+  it("get_day's outputSchema admits a running item without a start date", async () => {
+    // A medication filed without a start date reaches the model with
+    // `since: null` and no day count; the MCP SDK validates every structured
+    // result against the advertised shape, so a non-null `since` there would
+    // turn that day into a tool error.
+    const { z } = await import("zod/v4");
+    const def = MCP_TOOLS.find((t) => t.name === "get_day");
+    const shape = z.object(def?.outputShape ?? {});
+    const parsed = shape.safeParse({
+      present: true,
+      data: {
+        date: "2026-03-29",
+        counts: { values: 0, entries: 0 },
+        running: [
+          {
+            kind: "medication",
+            section: "medications",
+            title: "Ramipril",
+            sub: "5 mg",
+            since: null,
+            until: null,
+            dayIndex: null,
+            dayCount: null,
+          },
+        ],
+        values: [],
+        events: [],
+        notable: [],
+        unavailable: [],
+      },
+    });
+    expect(parsed.success, JSON.stringify(parsed.error?.issues)).toBe(true);
+    expect(
+      shape.safeParse({
+        present: true,
+        data: {
+          date: "2026-03-29",
+          counts: { values: 0, entries: 0 },
+          running: [
+            {
+              kind: "lifestyle",
+              section: "lifestyle",
+              title: "SMOKING_STATUS",
+              sub: null,
+              since: "2026-03-17",
+              until: null,
+              dayIndex: 13,
+              dayCount: null,
+            },
+          ],
+          values: [],
+          events: [],
+          notable: [],
+          unavailable: [],
+        },
+      }).success,
+    ).toBe(false);
+  });
+
   it("every read tool declares a structured outputSchema", () => {
     for (const def of MCP_TOOLS) {
       expect(def.outputShape, `${def.name} lacks outputShape`).toBeDefined();

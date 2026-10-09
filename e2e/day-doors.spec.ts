@@ -266,7 +266,7 @@ test.describe("the dashboard and the list of all values", () => {
     );
   });
 
-  test("the docked day moves the Coach button off its footer", async ({
+  test("the docked day, open or collapsed, moves the Coach button off it", async ({
     page,
   }, testInfo) => {
     test.skip(isPhone(testInfo), "docked from 1280 px");
@@ -290,6 +290,16 @@ test.describe("the dashboard and the list of all values", () => {
         return b.x + b.width;
       })
       .toBeLessThanOrEqual(panelBox.x);
+
+    // Collapsed, the day keeps a narrow edge; the launcher stays clear of it.
+    await page.locator('[data-slot="day-close"]').click();
+    const edge = (await page.locator('[data-slot="day-rail"]').boundingBox())!;
+    await expect
+      .poll(async () => {
+        const b = (await fab.boundingBox())!;
+        return b.x + b.width;
+      })
+      .toBeLessThanOrEqual(edge.x);
   });
 });
 

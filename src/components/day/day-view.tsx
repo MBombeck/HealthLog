@@ -96,14 +96,15 @@ const ICON_BUTTON =
   "text-muted-foreground hover:text-foreground size-11 shrink-0 pointer-fine:size-9";
 
 /**
- * The close control is the Coach panel's own toggle, in the same place: the
- * panel's top-left corner, the panel icon mirrored so it points the way the
- * panel goes. Same size and glyph as `PANEL_HEADER_BUTTON` there (kept as a
- * copy so the day layer does not pull the Coach's panel into the shell).
+ * The collapse control is the Coach panel's own toggle, in the same place:
+ * the panel's top-left corner, the panel icon mirrored so it points the way
+ * the panel goes. Same size and glyph as `PANEL_HEADER_BUTTON` there (kept as
+ * a copy so the day layer does not pull the Coach's panel into the shell).
+ * The collapsed edge's control in `day-layer.tsx` takes the same pair.
  */
-const PANEL_TOGGLE =
+export const PANEL_TOGGLE =
   "text-muted-foreground hover:text-foreground size-11 shrink-0 pointer-fine:size-7";
-const PANEL_TOGGLE_ICON = "size-5 pointer-fine:size-4";
+export const PANEL_TOGGLE_ICON = "size-5 pointer-fine:size-4";
 
 export function DayView({
   date,
@@ -178,6 +179,7 @@ export function DayView({
       ].join(" · ")
     : null;
   const compact = shell === "bottom";
+  const closeLabel = shell === "docked" ? t("day.hidePanel") : t("day.close");
 
   return (
     <div
@@ -194,14 +196,16 @@ export function DayView({
           headerClassName,
         )}
       >
-        {/* Top left, where the Coach panel keeps its toggle: the way out. */}
+        {/* Top left, where the Coach panel keeps its toggle: the way out.
+            Docked, it collapses the day to the edge; a sheet closes. */}
         <Button
           type="button"
           variant="ghost"
           size="icon"
           data-slot="day-close"
-          aria-label={t("day.close")}
-          title={t("day.close")}
+          aria-label={closeLabel}
+          aria-expanded={shell === "docked" ? true : undefined}
+          title={closeLabel}
           onClick={onClose}
           className={PANEL_TOGGLE}
         >

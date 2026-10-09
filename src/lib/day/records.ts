@@ -32,7 +32,6 @@ import { prisma } from "@/lib/db";
 import { listTargetsBySource } from "@/lib/links/link-service";
 import { getEvent } from "@/lib/logging/context";
 import { lastDayCovered } from "@/lib/life-events/dates";
-import { decryptHealthProfileFactValue } from "@/lib/profile/health-facts";
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 import { effectiveMoodTz } from "@/lib/mood/date-key";
 import { dateOnlyKey, dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
@@ -84,18 +83,26 @@ export function dayIndexOf(since: string, day: string): number | null {
   return n >= 1 ? n : null;
 }
 
+/**
+ * A running item with its day count. `since` is the record's own start date,
+ * never the day the entry was made: a record that holds no start (a
+ * medication filed without one) has no "day n" and no length to state, so it
+ * says neither rather than counting from when it was typed in.
+ */
 function running(
   frame: DayFrame,
   item: Omit<DayRunningItem, "dayIndex" | "dayCount">,
 ): DayRunningItem {
+  const { since, until } = item;
+  if (since === null) return { ...item, dayIndex: null, dayCount: null };
   return {
     ...item,
-    dayIndex: dayIndexOf(item.since, frame.day),
+    dayIndex: dayIndexOf(since, frame.day),
     // An end before the start (a hand-edited row) has no length to state.
     dayCount:
-      item.until === null || item.until < item.since
+      until === null || until < since
         ? null
-        : daysBetweenDateKeys(item.since, item.until) + 1,
+        : daysBetweenDateKeys(since, until) + 1,
   };
 }
 
@@ -205,14 +212,17 @@ async function medicationsPart(frame: DayFrame): Promise<SectionPart> {
 
   const out: SectionPart = { running: [], events: [] };
   for (const med of meds) {
-    const since =
-      dateKeyOrNull(med.startsOn) ?? userDayKey(med.createdAt, frame.tz);
+    const since = dateKeyOrNull(med.startsOn);
+    // Without a start date the entry's own date is the earliest the record
+    // knows the medication; it bounds which days show it, but it is not a
+    // start, so it never reaches the item.
+    const shownFrom = since ?? userDayKey(med.createdAt, frame.tz);
     // An ended medication without an end date stopped when it was last
     // changed; that is the only date the record holds for it.
     const until =
       dateKeyOrNull(med.endsOn) ??
       (med.active ? null : userDayKey(med.updatedAt, frame.tz));
-    if (since > day || (until !== null && until < day)) continue;
+    if (shownFrom > day || (until !== null && until < day)) continue;
     const href = `/medications/${med.id}`;
     out.running.push(
       running(frame, {
@@ -503,7 +513,7 @@ async function symptomsPart(frame: DayFrame): Promise<SectionPart> {
   };
 }
 
-/* ─── profile: allergies, visits, vaccinations, lifestyle ─────────────────── */
+/* ─── profile: allergies, visits, vaccinations ───────────────────────────── */
 
 async function allergiesPart(frame: DayFrame): Promise<SectionPart> {
   const rows = await prisma.allergy.findMany({
@@ -615,47 +625,6 @@ async function vaccinationsPart(frame: DayFrame): Promise<SectionPart> {
       }),
     ),
   };
-}
-
-async function lifestylePart(frame: DayFrame): Promise<SectionPart> {
-  const rows = await prisma.healthProfileFactRevision.findMany({
-    where: {
-      userId: frame.userId,
-      supersededByRevisionId: null,
-      validFrom: { lt: frame.dayEnd },
-      OR: [{ validUntil: null }, { validUntil: { gt: frame.dayStart } }],
-    },
-    select: {
-      id: true,
-      kind: true,
-      valueEncrypted: true,
-      validFrom: true,
-      validUntil: true,
-    },
-    orderBy: { validFrom: "desc" },
-  });
-  // One revision per kind: the one in force on the day.
-  const seen = new Set<string>();
-  const out: SectionPart = { running: [], events: [] };
-  for (const row of rows) {
-    if (seen.has(row.kind)) continue;
-    seen.add(row.kind);
-    out.running.push(
-      running(frame, {
-        kind: "lifestyle",
-        section: "lifestyle",
-        id: row.id,
-        // The fact's kind is the title and its value the second line, both
-        // closed codes the client words (`SHIFT_SCHEDULE` / `NIGHT`).
-        title: row.kind,
-        sub: decryptHealthProfileFactValue(row.kind, row.valueEncrypted).value,
-        since: userDayKey(row.validFrom, frame.tz),
-        until: row.validUntil ? userDayKey(row.validUntil, frame.tz) : null,
-        href: "/profile",
-      }),
-    );
-  }
-  return out;
 }
 
 /* ─── labs, check-ups, documents ──────────────────────────────────────────── */
@@ -1061,6 +1030,5 @@ export const RECORD_SECTION_READERS: Readonly<
   workouts: workoutsPart,
   cycle: cyclePart,
   environment: environmentPart,
-  lifestyle: lifestylePart,
   lifeEvents: lifeEventsPart,
 });

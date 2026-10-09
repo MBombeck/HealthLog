@@ -41,7 +41,8 @@ export interface ModelDayRunning {
   section: DaySectionKey;
   title: string;
   sub: string | null;
-  since: string;
+  /** Null when the record holds no start date; never the entry's date. */
+  since: string | null;
   until: string | null;
   dayIndex: number | null;
   dayCount: number | null;

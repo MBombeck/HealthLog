@@ -12209,6 +12209,8 @@
     "previousDay": "Previous day",
     "nextDay": "Next day",
     "close": "Close day",
+    "hidePanel": "Hide day",
+    "showPanel": "Show {date}",
     "openDay": "Open day",
     "viewWholeDay": "View the whole day",
     "captureForDay": "Add for this day",
