@@ -71,8 +71,8 @@ export function NotificationChannelsPanel() {
           <WebPushCard />
         </div>
       )}
-      {/* v1.17.1 — generic outbound webhook (Gotify / Discord / Slack /
-          Matrix / Home Assistant in one channel). */}
+      {/* v1.17.1 — generic outbound webhook (Discord / Slack / Gotify /
+          Home Assistant / n8n in one channel). */}
       <div id="webhook" className="scroll-mt-28">
         <WebhookCard isAuthenticated={isAuthenticated} />
       </div>

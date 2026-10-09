@@ -209,11 +209,11 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
                   {t("settings.webhookFormatGotify")}
                 </option>
               </NativeSelect>
-              {format === "gotify" && (
-                <p className="text-muted-foreground text-xs">
-                  {t("settings.webhookFormatGotifyHint")}
-                </p>
-              )}
+              <p className="text-muted-foreground text-xs">
+                {format === "gotify"
+                  ? t("settings.webhookFormatGotifyHint")
+                  : t("settings.webhookFormatGenericHint")}
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="webhook-header-name">

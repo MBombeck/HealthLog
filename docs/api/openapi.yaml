@@ -29670,9 +29670,10 @@ components:
             - type: string
               const: ""
         format:
-          description: Body shape. `generic` sends HealthLog's own JSON envelope; `gotify` sends the body Gotify's `POST /message`
-            expects, with an integer priority. Omitted keeps the stored choice, which is `generic` for a config saved
-            before the choice existed.
+          description: Body shape. `generic` sends HealthLog's own JSON envelope (`title`, `message`, `eventType`, `priority`,
+            plus `content` and `text` so a Discord or Slack webhook URL accepts it as is); `gotify` sends the body
+            Gotify's `POST /message` expects, with an integer priority. Omitted keeps the stored choice, which is
+            `generic` for a config saved before the choice existed.
           type: string
           enum:
             - generic

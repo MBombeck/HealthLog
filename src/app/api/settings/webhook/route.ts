@@ -42,8 +42,7 @@ const NOT_GRANTABLE_REFUSAL =
  * GET: current config (header value redacted — only presence flagged).
  * PUT: upsert config.
  *
- * Covers Gotify / Discord / Slack / Matrix-bridge / Home Assistant in one
- * channel: the user supplies a URL and an optional shared-secret header. SSRF
+ * Covers Discord / Slack / Gotify / Home Assistant / n8n in one channel: the user supplies a URL and an optional shared-secret header. SSRF
  * is enforced at input time (the schema's target predicate) and again at
  * dispatch time (`safeFetch` with the connect-time pin); a private origin
  * passes both only when the operator listed it in

@@ -43,7 +43,7 @@ vi.mock("@/lib/notifications/senders/push-attempt-record", () => ({
   ) => recordPushAttemptMock(attempt),
 }));
 
-import { sendViaWebhook } from "../webhook";
+import { buildWebhookBody, sendViaWebhook } from "../webhook";
 import { SafeFetchError } from "@/lib/safe-fetch";
 
 const config = {
@@ -345,30 +345,39 @@ function sentBody(): string {
   return (safeFetchMock.mock.calls[0][1] as { body: string }).body;
 }
 
+// The chat-target fields appended after the four original ones (v1.42.0).
+const CHAT_TAIL =
+  ',"content":"Title\\nBody","text":"Title\\nBody","allowed_mentions":{"parse":[]}}';
+
 describe("sendViaWebhook — generic body stays byte for byte", () => {
   // Literal strings, not re-parsed objects: a Home Assistant or n8n rule
   // that matches on the raw body must keep matching after the format choice
-  // was added.
+  // was added. The four original fields keep their values and their order;
+  // the Discord and Slack fields only follow them.
   it.each([
     [
       "a routine event",
       {},
-      '{"title":"Title","message":"Body","eventType":"SYSTEM_ALERT","priority":"default"}',
+      '{"title":"Title","message":"Body","eventType":"SYSTEM_ALERT","priority":"default"' +
+        CHAT_TAIL,
     ],
     [
       "a medication reminder",
       { eventType: "MEDICATION_REMINDER" },
-      '{"title":"Title","message":"Body","eventType":"MEDICATION_REMINDER","priority":"high"}',
+      '{"title":"Title","message":"Body","eventType":"MEDICATION_REMINDER","priority":"high"' +
+        CHAT_TAIL,
     ],
     [
       "an urgent event",
       { urgent: true },
-      '{"title":"Title","message":"Body","eventType":"SYSTEM_ALERT","priority":"urgent"}',
+      '{"title":"Title","message":"Body","eventType":"SYSTEM_ALERT","priority":"urgent"' +
+        CHAT_TAIL,
     ],
     [
       "a discreet cycle event",
       { eventType: "CYCLE_PERIOD_SOON", discreet: true },
-      '{"title":"Title","message":"Body","eventType":"reminder","priority":"default"}',
+      '{"title":"Title","message":"Body","eventType":"reminder","priority":"default"' +
+        CHAT_TAIL,
     ],
   ])("%s", async (_label, over, expected) => {
     safeFetchMock.mockResolvedValue({ ok: true, status: 200 });
@@ -379,6 +388,107 @@ describe("sendViaWebhook — generic body stays byte for byte", () => {
     );
 
     expect(sentBody()).toBe(expected);
+  });
+});
+
+describe("buildWebhookBody — Discord and Slack", () => {
+  const generic = { format: "generic" as const };
+
+  it("carries content for Discord and text for Slack, as plain title and message", () => {
+    const body = JSON.parse(
+      buildWebhookBody(
+        generic,
+        payload({ title: "Reminder", message: "<b>Take</b> your dose" }),
+      ),
+    );
+
+    expect(body.content).toBe("Reminder\nTake your dose");
+    expect(body.text).toBe("Reminder\nTake your dose");
+    expect(body).toMatchObject({
+      title: "Reminder",
+      message: "Take your dose",
+      eventType: "SYSTEM_ALERT",
+      priority: "default",
+    });
+  });
+
+  it("tells Discord to resolve no mentions", () => {
+    const body = JSON.parse(
+      buildWebhookBody(
+        generic,
+        payload({ message: "@everyone @here <@123456789012345678>" }),
+      ),
+    );
+
+    expect(body.allowed_mentions).toEqual({ parse: [] });
+    // The text itself is left alone; the empty parse list is what disarms it.
+    expect(body.content).toContain("@everyone");
+  });
+
+  it("keeps content within Discord's 2000 characters, ending in an ellipsis", () => {
+    const long = "x".repeat(5000);
+    const body = JSON.parse(
+      buildWebhookBody(generic, payload({ message: long })),
+    );
+
+    expect(Array.from(body.content as string)).toHaveLength(2000);
+    expect(body.content.startsWith("Title\nxxx")).toBe(true);
+    expect(body.content.endsWith("\u2026")).toBe(true);
+    // Slack and the relay fields keep the whole message.
+    expect(body.text).toBe(`Title\n${long}`);
+    expect(body.message).toBe(long);
+  });
+
+  it("leaves content alone at exactly 2000 characters", () => {
+    const message = "y".repeat(2000 - "Title\n".length);
+    const body = JSON.parse(buildWebhookBody(generic, payload({ message })));
+
+    expect(body.content).toBe(`Title\n${message}`);
+    expect(body.content).not.toContain("\u2026");
+  });
+
+  it("never splits a surrogate pair when it cuts", () => {
+    const body = JSON.parse(
+      buildWebhookBody(
+        generic,
+        payload({
+          eventType: "SYSTEM_ALERT",
+          message: "\u{1F600}".repeat(3000),
+        }),
+      ),
+    );
+
+    const points = Array.from(body.content as string);
+    expect(points).toHaveLength(2000);
+    expect(body.content).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/);
+  });
+
+  it("puts only the masked text into content and text in discreet mode", () => {
+    // The dispatcher masks title and message upstream; the body must not
+    // reintroduce the cycle event anywhere.
+    const raw = buildWebhookBody(
+      generic,
+      payload({
+        eventType: "CYCLE_PERIOD_SOON",
+        discreet: true,
+        title: "HealthLog",
+        message: "HealthLog reminder",
+      }),
+    );
+    const body = JSON.parse(raw);
+
+    expect(raw).not.toContain("CYCLE");
+    expect(body.eventType).toBe("reminder");
+    expect(body.content).toBe("HealthLog\nHealthLog reminder");
+    expect(body.text).toBe("HealthLog\nHealthLog reminder");
+  });
+
+  it("leaves the Gotify body without the chat fields", () => {
+    const body = JSON.parse(buildWebhookBody({ format: "gotify" }, payload()));
+
+    expect(body).not.toHaveProperty("content");
+    expect(body).not.toHaveProperty("text");
+    expect(body).not.toHaveProperty("allowed_mentions");
   });
 });
 
