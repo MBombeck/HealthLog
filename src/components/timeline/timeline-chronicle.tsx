@@ -2,9 +2,10 @@
 
 /**
  * The timeline on a phone (v1.42, #613): an "Ongoing" block that folds away,
- * then the chronicle, newest first, with the month's means beside each
- * month, thin rails beside the rows an episode or a course spans, and empty
- * stretches named rather than skipped. Built from `chronicle-model.ts`.
+ * then the chronicle, newest first, with the bucket means beside the month
+ * headers (a quarter named once, at its newest month, with its span), thin
+ * rails beside the rows an episode or a course spans, and empty stretches
+ * named rather than skipped. Built from `chronicle-model.ts`.
  *
  * A dated row opens its day (the same `?day=` layer the chart hands off to);
  * a life event opens its edit sheet instead, because the event is the
@@ -47,9 +48,8 @@ import {
   formatMonthYear,
 } from "./timeline-dates";
 import { LANE_COLOR } from "./timeline-geometry";
-import { laneDotStyle } from "./timeline-chart";
-import { monthMeans } from "./selection-bar";
-import { formatMonthMeans } from "./series-format";
+import { bucketText, laneDotStyle } from "./timeline-chart";
+import { chronicleMeans, formatMeans } from "./series-format";
 
 const KIND_ICON: Partial<Record<TimelineItemKind, LucideIcon>> = {
   lifeEvent: Flag,
@@ -141,6 +141,16 @@ export function TimelineChronicle({
   const [standingOpen, setStandingOpen] = useState(true);
   const chips = standingChips(timeline);
   const rows = buildChronicle(timeline, today, grouping);
+  // The means ride on the month headers, each bucket on the newest month it
+  // overlaps; the year view lists none.
+  const means =
+    grouping === "month"
+      ? chronicleMeans(
+          timeline.series,
+          timeline.bucket,
+          rows.flatMap((r) => (r.type === "header" ? [r.group] : [])),
+        )
+      : new Map<string, never>();
 
   const groupLabel = (group: string) =>
     grouping === "month" ? formatMonthYear(group, intl) : group.slice(0, 4);
@@ -244,10 +254,10 @@ export function TimelineChronicle({
             );
           }
           if (row.type === "header") {
-            const means =
-              grouping === "month"
-                ? monthMeans(timeline.series, row.group)
-                : [];
+            const bucketMeans = means.get(row.group);
+            const line = bucketMeans
+              ? formatMeans(bucketMeans.values, fmt)
+              : "";
             return (
               <li
                 key={`h-${row.group}`}
@@ -259,9 +269,15 @@ export function TimelineChronicle({
                 <h3 className="text-sm font-semibold">
                   {groupLabel(row.group)}
                 </h3>
-                {means.length > 0 && (
-                  <span className="text-muted-foreground text-xs tabular-nums">
-                    {formatMonthMeans(means, fmt)}
+                {bucketMeans && line && (
+                  <span
+                    className="text-muted-foreground text-xs tabular-nums"
+                    data-slot="timeline-chronicle-means"
+                    data-bucket={bucketMeans.start}
+                  >
+                    {timeline.bucket === "month"
+                      ? line
+                      : `${bucketText(bucketMeans.start, timeline.bucket, intl, t)}: ${line}`}
                   </span>
                 )}
               </li>

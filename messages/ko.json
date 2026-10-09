@@ -12284,7 +12284,6 @@
   "timeline": {
     "title": "타임라인",
     "subtitle": "언제 무엇이 있었는지, 내 수치와 나란히.",
-    "legend": "위아래로 놓인 것은 같은 시기라는 뜻이지, 원인과 결과가 아니에요.",
     "standing": "지속",
     "startMissing": "시작일 없음",
     "openDay": "{date} 열기",
@@ -12406,7 +12405,10 @@
     },
     "legendSpan": "기간",
     "legendEvent": "사건",
-    "legendMean": "월평균",
+    "legendMeanQuarter": "분기 평균",
+    "legendMeanMonth": "월평균",
+    "legendMeanWeek": "주간 평균",
+    "legendThin": "측정 3회 미만",
     "today": "오늘",
     "noDataYet": "아직 데이터 없음",
     "layers": "레이어",
@@ -12420,20 +12422,27 @@
       "description": "날짜가 있는 기록이 생기면 여기에 나타나요."
     },
     "values": {
-      "menuLabel": "최대 세 가지 수치",
+      "menuLabel": "최대 여섯 가지 수치",
       "none": "수치 없음",
       "noneInWindow": "이 기간에 수치 없음",
       "series": {
         "BLOOD_PRESSURE_SYS": "수축기 혈압",
         "BLOOD_PRESSURE_DIA": "이완기 혈압"
-      }
+      },
+      "noValue": "값 없음",
+      "bloodPressure": "혈압",
+      "readingsOne": "측정 1회",
+      "readingsFew": "측정 {count}회 평균",
+      "readingsOther": "측정 {count}회 평균"
     },
     "table": {
       "caption": "타임라인 기록",
       "lane": "줄",
       "entry": "기록",
       "start": "시작",
-      "end": "끝"
+      "end": "끝",
+      "seriesCaption": "기간별 평균",
+      "period": "기간"
     },
     "selection": {
       "empty": "이번 달 기록 없음",

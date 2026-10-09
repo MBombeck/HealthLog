@@ -12284,7 +12284,6 @@
   "timeline": {
     "title": "Cronología",
     "subtitle": "Qué pasó y cuándo, junto a tus valores.",
-    "legend": "Uno debajo de otro significa al mismo tiempo, no causa y efecto.",
     "standing": "Permanente",
     "startMissing": "Falta la fecha de inicio",
     "openDay": "Abrir {date}",
@@ -12406,7 +12405,10 @@
     },
     "legendSpan": "Periodo",
     "legendEvent": "Evento",
-    "legendMean": "Media mensual",
+    "legendMeanQuarter": "Media trimestral",
+    "legendMeanMonth": "Media mensual",
+    "legendMeanWeek": "Media semanal",
+    "legendThin": "Menos de 3 mediciones",
     "today": "Hoy",
     "noDataYet": "Aún sin datos",
     "layers": "Capas",
@@ -12420,20 +12422,27 @@
       "description": "Las entradas con fecha aparecerán aquí en cuanto haya alguna."
     },
     "values": {
-      "menuLabel": "Hasta tres valores",
+      "menuLabel": "Hasta seis valores",
       "none": "Sin valores",
       "noneInWindow": "Sin valores en este periodo",
       "series": {
         "BLOOD_PRESSURE_SYS": "Presión sistólica",
         "BLOOD_PRESSURE_DIA": "Presión diastólica"
-      }
+      },
+      "noValue": "sin valor",
+      "bloodPressure": "Presión arterial",
+      "readingsOne": "1 medición",
+      "readingsFew": "media de {count} mediciones",
+      "readingsOther": "media de {count} mediciones"
     },
     "table": {
       "caption": "Entradas de la cronología",
       "lane": "Pista",
       "entry": "Entrada",
       "start": "Inicio",
-      "end": "Fin"
+      "end": "Fin",
+      "seriesCaption": "Medias por periodo",
+      "period": "Periodo"
     },
     "selection": {
       "empty": "Sin entradas este mes",

@@ -2,7 +2,7 @@
 
 /**
  * The two menus above the chart (v1.42, #613): which value lines run under
- * the lanes (at most three), and which lanes show, with the way back into
+ * the lanes (at most six, the server's cap), and which lanes show, with the way back into
  * the readiness inventory ("Data coverage").
  */
 import { ChartLine, ChevronDown, Layers } from "lucide-react";
@@ -17,11 +17,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { TimelineLaneKey } from "@/lib/day/contract";
+import { TIMELINE_MAX_SERIES, type TimelineLaneKey } from "@/lib/day/contract";
 import { useTranslations } from "@/lib/i18n/context";
 
 /** The most value lines the chart runs under its lanes. */
-export const MAX_VALUE_SERIES = 3;
+export const MAX_VALUE_SERIES = TIMELINE_MAX_SERIES;
 
 export function ValueSeriesMenu({
   options,

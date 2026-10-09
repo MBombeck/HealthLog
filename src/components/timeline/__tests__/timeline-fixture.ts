@@ -235,31 +235,31 @@ export function fullTimeline(): TimelineResponse {
       },
     ],
     standing: [],
+    bucket: "month",
     series: [
       {
         key: "BLOOD_PRESSURE_SYS",
         unit: "mmHg",
-        granularity: "month",
         points: [
-          { t: "2025-10-01", mean: 127 },
-          { t: "2025-11-01", mean: 128 },
-          { t: "2025-12-01", mean: 130 },
-          { t: "2026-01-01", mean: 129 },
-          // Nothing for February to June.
-          { t: "2026-07-01", mean: 131 },
+          { t: "2025-10-01", mean: 127, count: 6 },
+          { t: "2025-11-01", mean: 128, count: 5 },
+          { t: "2025-12-01", mean: 130, count: 4 },
+          { t: "2026-01-01", mean: 129, count: 4 },
+          // Nothing in February: one missing month, bridged.
+          { t: "2026-03-01", mean: 133, count: 2 },
+          // Nothing from April to June: three missing months, broken.
+          { t: "2026-07-01", mean: 131, count: 1 },
         ],
       },
       {
         key: "BLOOD_PRESSURE_DIA",
         unit: "mmHg",
-        granularity: "month",
-        points: [{ t: "2026-01-01", mean: 82 }],
+        points: [{ t: "2026-01-01", mean: 82, count: 4 }],
       },
       {
         key: "WEIGHT",
         unit: "kg",
-        granularity: "month",
-        points: [{ t: "2026-01-01", mean: 82.6 }],
+        points: [{ t: "2026-01-01", mean: 82.6, count: 3 }],
       },
     ],
     notable: [{ date: "2026-01-04", kind: "extremeHigh" }],

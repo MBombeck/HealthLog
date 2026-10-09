@@ -10,8 +10,11 @@
  *      day.
  *   4. A life event is entered through the sheet and posted in the
  *      contract's shape.
- *   5. On a phone the chronicle replaces the chart, says its empty months
- *      out loud, and a row opens its day.
+ *   5. The value lines: quarterly means over the years, a missing quarter
+ *      left out, a short gap bridged dashed, a thin quarter hollow, and up
+ *      to six lines.
+ *   6. On a phone the chronicle replaces the chart, says its empty months
+ *      out loud, names each quarter's means once, and a row opens its day.
  *
  * The timeline's server routes are mocked with the contract's shapes
  * (`utils/mock-timeline.ts`); the module switch is the real one. Every
@@ -22,7 +25,7 @@ import type { Page } from "@playwright/test";
 
 import { TIMELINE_STORAGE_STATE_PATH } from "./setup/global-setup";
 import { expect, test } from "./setup/test";
-import { mockTimeline } from "./utils/mock-timeline";
+import { SYS_MISSING, SYS_THIN, mockTimeline } from "./utils/mock-timeline";
 
 test.use({ storageState: TIMELINE_STORAGE_STATE_PATH });
 test.describe.configure({ mode: "serial" });
@@ -119,11 +122,10 @@ test("the timeline hands the selected day to the day view through ?day=", async 
   await expect(page.locator('svg [data-lane="illness"]')).toHaveCount(1);
   await expect(
     page.locator('[data-slot="timeline-legend-causality"]'),
-  ).toBeVisible();
-  // At most three value lines are asked for.
+  ).toHaveCount(0);
   const asked = log.timelineQueries.at(-1)?.get("values")?.split(",") ?? [];
   expect(asked.length).toBeGreaterThan(0);
-  expect(asked.length).toBeLessThanOrEqual(3);
+  expect(asked.length).toBeLessThanOrEqual(6);
 
   // The keyboard: one step back and Enter opens that day.
   const before = await page
@@ -155,6 +157,69 @@ test("the timeline hands the selected day to the day view through ?day=", async 
   await page.locator('[data-slot="timeline-zoom"] [data-value="year"]').click();
   await open.click();
   await expect(page).toHaveURL(/[?&]day=\d{4}-\d{2}-\d{2}/);
+});
+
+test("value lines: quarterly means, gaps kept, short ones bridged, up to six lines", async ({
+  page,
+}) => {
+  await setTimelineModuleOn(page);
+  const log = await mockTimeline(page, "full", TODAY);
+  await page.goto("/timeline");
+  const sys = page.locator('svg [data-series="BLOOD_PRESSURE_SYS"]');
+  await expect(sys).toBeVisible({ timeout: 20_000 });
+  await expect(
+    page.locator('[data-slot="timeline-legend-mean"]'),
+  ).toHaveAttribute("data-bucket", "quarter");
+
+  const point = (t: string) =>
+    sys.locator(`[data-slot="timeline-series-point"][data-t="${t}"]`);
+  // A missing quarter stays missing: no point is drawn for it.
+  for (const t of SYS_MISSING) await expect(point(t)).toHaveCount(0);
+  // The quarters around Q2 2023 are joined by a dashed bridge; the three
+  // missing quarters of 2021 are not (one bridge in the whole line).
+  await expect(sys.locator('[data-slot="timeline-series-bridge"]')).toHaveCount(
+    1,
+  );
+  await expect(point("2023-01-01")).toHaveCount(1);
+  await expect(point("2023-07-01")).toHaveCount(1);
+  // Two readings: drawn hollow; four and more: filled.
+  await expect(point(SYS_THIN)).toHaveAttribute("data-thin", "true");
+  await expect(point("2023-01-01")).toHaveAttribute("data-thin", "false");
+
+  // The value table keeps the missing quarter as a row of its own.
+  await expect(
+    page.locator(
+      '[data-slot="timeline-series-table"] [data-bucket="2023-04-01"]',
+    ),
+  ).toBeAttached();
+
+  // Six value lines can be chosen; a seventh cannot.
+  await page.locator('[data-slot="timeline-values-trigger"]').click();
+  const options = page.locator('[data-slot="timeline-values-option"]');
+  await expect(options.first()).toBeVisible();
+  const count = await options.count();
+  for (let i = 0; i < count; i++) {
+    const checked = page.locator(
+      '[data-slot="timeline-values-option"][aria-checked="true"]',
+    );
+    if ((await checked.count()) >= 6) break;
+    const option = options.nth(i);
+    if ((await option.getAttribute("aria-checked")) === "true") continue;
+    await option.click();
+  }
+  await expect(
+    page.locator('[data-slot="timeline-values-option"][aria-checked="true"]'),
+  ).toHaveCount(6);
+  await expect(
+    page.locator(
+      '[data-slot="timeline-values-option"][aria-checked="false"][data-disabled]',
+    ),
+  ).toHaveCount(count - 6);
+  await page.keyboard.press("Escape");
+  await expect
+    .poll(() => log.timelineQueries.at(-1)?.get("values")?.split(",").length)
+    .toBe(6);
+  await expect(page.locator("svg [data-series]")).toHaveCount(6);
 });
 
 async function setTimelineModuleOn(page: Page) {
@@ -218,6 +283,15 @@ test("on a phone the chronicle replaces the chart and opens a day per row", asyn
   await expect(
     page.locator('[data-slot="timeline-chronicle-gap"]').first(),
   ).toBeVisible();
+  // Quarterly means, each quarter named once, at its newest listed month.
+  const means = page.locator('[data-slot="timeline-chronicle-means"]');
+  await expect(means.first()).toBeVisible();
+  const buckets = await means.evaluateAll((els) =>
+    els.map((el) => el.getAttribute("data-bucket") ?? ""),
+  );
+  expect(buckets.length).toBeGreaterThan(0);
+  expect(new Set(buckets).size).toBe(buckets.length);
+  for (const b of buckets) expect(b).toMatch(/^\d{4}-(01|04|07|10)-01$/);
 
   await page
     .locator(

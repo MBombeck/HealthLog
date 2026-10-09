@@ -22,6 +22,7 @@ import {
   LIFE_EVENT_NOTE_MAX,
   LIFE_EVENT_PRECISIONS,
   LIFE_EVENT_TITLE_MAX,
+  TIMELINE_BUCKETS,
   TIMELINE_ITEM_KINDS,
   TIMELINE_LANE_KEYS,
   TIMELINE_READINESS_KEYS,
@@ -273,7 +274,7 @@ export const timelineQuerySchema = z.object({
     .string()
     .optional()
     .describe(
-      "Comma-separated value series to include, as `MeasurementType` names or `MOOD`.",
+      "Comma-separated value series to include, as `MeasurementType` names or `MOOD`, at most 6. More, or an unknown name, answers 422.",
     ),
 });
 
@@ -310,8 +311,27 @@ const timelineSeries = z
   .object({
     key: z.string().describe("A `MeasurementType` or `MOOD`."),
     unit: z.string().nullable(),
-    granularity: z.enum(["month", "week", "day"]),
-    points: z.array(z.object({ t: dateKeySchema, mean: z.number() })),
+    points: z
+      .array(
+        z.object({
+          t: dateKeySchema.describe("The bucket's first day."),
+          mean: z
+            .number()
+            .describe(
+              "The mean of the bucket's day values, each day weighing one (a cumulative type's days are its day totals, a pulse-like type's its hourly-mean day value).",
+            ),
+          count: z
+            .number()
+            .int()
+            .min(1)
+            .describe(
+              "Readings behind the mean. Clients draw a point from fewer than three as thin.",
+            ),
+        }),
+      )
+      .describe(
+        "Buckets with at least one reading, oldest first. A bucket without one is absent, never interpolated.",
+      ),
   })
   .meta({ id: "TimelineSeries" });
 
@@ -334,6 +354,11 @@ export const timelineResponseSchema = z
     standing: z
       .array(timelineStanding)
       .describe("Things without a start: shown once as standing."),
+    bucket: z
+      .enum(TIMELINE_BUCKETS)
+      .describe(
+        "The span every series point averages: `quarter` for a multi-year `all`, `month` for `year` and an `all` under two years, `week` for `quarter`.",
+      ),
     series: z.array(timelineSeries),
     notable: z.array(
       z.object({ date: dateKeySchema, kind: z.enum(DAY_NOTABLE_KINDS) }),

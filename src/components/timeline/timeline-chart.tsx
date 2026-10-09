@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 
 import type {
+  TimelineBucket,
   TimelineLaneKey,
   TimelineResponse,
   TimelineZoom,
@@ -51,7 +52,10 @@ import { resolveIntlLocale } from "@/lib/format-locale";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 
 import {
+  bucketAfter,
+  bucketStart,
   formatAtPrecision,
+  formatBucket,
   formatMonthShort,
   formatMonthYear,
   dayNumber,
@@ -145,11 +149,12 @@ export function TimelineChart({
             window,
             lanes,
             series: timeline.series,
+            bucket: timeline.bucket,
             startMissing: t("timeline.startMissing"),
             today,
           })
         : null,
-    [width, window, lanes, timeline.series, t, today],
+    [width, window, lanes, timeline.series, timeline.bucket, t, today],
   );
 
   const floor = timeline.range.dataFrom ?? window.from;
@@ -228,6 +233,7 @@ export function TimelineChart({
               today={today}
               selected={selected}
               dataFrom={timeline.range.dataFrom}
+              bucket={timeline.bucket}
               seriesLabel={seriesLabel}
               intl={intl}
               t={t}
@@ -243,6 +249,12 @@ export function TimelineChart({
         hiddenLanes={hiddenLanes}
         intl={intl}
       />
+      <SeriesTable
+        timeline={timeline}
+        window={window}
+        seriesLabel={seriesLabel}
+        intl={intl}
+      />
     </div>
   );
 }
@@ -254,6 +266,7 @@ interface ChartBodyProps {
   today: string;
   selected: string | null;
   dataFrom: string | null;
+  bucket: TimelineBucket;
   seriesLabel: (key: string) => string;
   intl: string;
   t: ReturnType<typeof useTranslations>["t"];
@@ -267,11 +280,13 @@ function ChartBody({
   today,
   selected,
   dataFrom,
+  bucket,
   seriesLabel,
   intl,
   t,
   fmt,
 }: ChartBodyProps) {
+  const { tCount } = useTranslations();
   const { scale, height, width } = layout;
   const todayInWindow = today >= window.from && today <= window.to;
   const todayX = scale.xMid(today);
@@ -461,14 +476,37 @@ function ChartBody({
               strokeLinecap="round"
             />
           )}
-          {series.points.length === 1 && (
-            <circle
-              cx={series.points[0].x}
-              cy={series.points[0].y}
-              r={2.5}
-              fill="var(--foreground)"
+          {series.bridges && (
+            <path
+              d={series.bridges}
+              data-slot="timeline-series-bridge"
+              fill="none"
+              stroke="var(--foreground)"
+              strokeWidth={1.2}
+              strokeOpacity={0.6}
+              strokeDasharray="3 3"
+              strokeLinecap="round"
             />
           )}
+          {series.points.map((point) => (
+            <circle
+              key={point.t}
+              data-slot="timeline-series-point"
+              data-t={point.t}
+              data-count={point.count}
+              data-thin={point.thin ? "true" : "false"}
+              cx={point.x}
+              cy={point.y}
+              r={point.thin ? 2.75 : 2.5}
+              fill={point.thin ? "var(--card)" : "var(--foreground)"}
+              stroke="var(--foreground)"
+              strokeWidth={point.thin ? 1.4 : 0}
+            >
+              <title>
+                {`${bucketText(point.t, bucket, intl, t)}: ${formatSeriesValue(series.key, point.mean, series.unit, fmt)}, ${tCount("timeline.values.readings", point.count)}`}
+              </title>
+            </circle>
+          ))}
         </g>
       ))}
 
@@ -754,6 +792,90 @@ function TimelineTable({
                   ? formatAtPrecision(item.end, item.precision, intl)
                   : ""}
             </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+/** "Januar 2026", "Jan bis März 2026", "5. Jan. bis 11. Jan. 2026". */
+export function bucketText(
+  start: string,
+  bucket: TimelineBucket,
+  intl: string,
+  t: ReturnType<typeof useTranslations>["t"],
+): string {
+  const label = formatBucket(start, bucket, intl);
+  return typeof label === "string"
+    ? label
+    : t("timeline.selection.range", label);
+}
+
+/**
+ * The value lines as a table, for a screen reader: one row per bucket from
+ * the first to the last with a reading in the window, one column per
+ * series. A bucket without a reading says so; nothing is filled in.
+ */
+function SeriesTable({
+  timeline,
+  window,
+  seriesLabel,
+  intl,
+}: {
+  timeline: TimelineResponse;
+  window: { from: string; to: string };
+  seriesLabel: (key: string) => string;
+  intl: string;
+}) {
+  const { t, tCount } = useTranslations();
+  const fmt = useFormatters();
+  const { bucket, series } = timeline;
+  const inWindow = (start: string) =>
+    start <= window.to && bucketAfter(start, bucket) > window.from;
+  const starts = series
+    .flatMap((s) => s.points.map((p) => p.t))
+    .filter(inWindow)
+    .sort();
+  if (starts.length === 0) return null;
+  const rows: string[] = [];
+  for (
+    let start = bucketStart(starts[0], bucket);
+    start <= starts[starts.length - 1];
+    start = bucketAfter(start, bucket)
+  ) {
+    rows.push(start);
+  }
+  const byKey = new Map(
+    series.map((s) => [s.key, new Map(s.points.map((p) => [p.t, p]))]),
+  );
+  return (
+    <table className="sr-only" data-slot="timeline-series-table">
+      <caption>{t("timeline.table.seriesCaption")}</caption>
+      <thead>
+        <tr>
+          <th scope="col">{t("timeline.table.period")}</th>
+          {series.map((s) => (
+            <th key={s.key} scope="col">
+              {seriesLabel(s.key)}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.reverse().map((start) => (
+          <tr key={start} data-bucket={start}>
+            <th scope="row">{bucketText(start, bucket, intl, t)}</th>
+            {series.map((s) => {
+              const point = byKey.get(s.key)?.get(start);
+              return (
+                <td key={s.key}>
+                  {point
+                    ? `${formatSeriesValue(s.key, point.mean, s.unit, fmt)}, ${tCount("timeline.values.readings", point.count)}`
+                    : t("timeline.values.noValue")}
+                </td>
+              );
+            })}
           </tr>
         ))}
       </tbody>

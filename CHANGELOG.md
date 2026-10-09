@@ -26,8 +26,9 @@ an earlier fold computed from part of a day.
 - **Timeline module (#613).** Opt-in. One SVG time axis from 768 px with
   lanes for life events, conditions, allergies, medications, vaccinations,
   visits and procedures, labs and documents, a year, month or week grid and
-  up to three monthly-mean value lines; a chronicle, newest first, on a
-  phone. Switching the module on opens a readiness inventory that rates
+  up to six value lines of quarterly, monthly or weekly means by zoom (a
+  short gap dashed, a longer one left open, a mean from fewer than three
+  readings drawn hollow); a chronicle, newest first, on a phone. Switching the module on opens a readiness inventory that rates
   each lane and links each gap; it stays available as Data coverage.
 - **Life events.** Title, kind (family, home, work, loss, other), a start
   at day, month or year precision, optional end and note; title and note

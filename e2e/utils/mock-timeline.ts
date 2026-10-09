@@ -46,75 +46,141 @@ function rng(seed: number) {
   };
 }
 
-function monthly(
-  from: string,
-  to: string,
-  value: (i: number, monthKey: string) => number,
-) {
-  const out: Array<{ t: string; mean: number }> = [];
+type Bucket = "quarter" | "month" | "week";
+
+/** The bucket the server picks for a zoom (`timelineBucket`). */
+export function bucketFor(zoom: string): Bucket {
+  return zoom === "quarter" ? "week" : zoom === "year" ? "month" : "quarter";
+}
+
+function dayNum(key: string): number {
+  const [y, m, d] = key.split("-").map(Number);
+  return Math.round(Date.UTC(y, m - 1, d) / 86_400_000);
+}
+
+function dayStr(n: number): string {
+  return new Date(n * 86_400_000).toISOString().slice(0, 10);
+}
+
+/** Bucket starts from the one holding `from` to the one holding `to`. */
+function bucketStarts(from: string, to: string, bucket: Bucket): string[] {
+  const out: string[] = [];
+  if (bucket === "week") {
+    const n = dayNum(from);
+    // 1970-01-01 was a Thursday: day 4 is the first Monday.
+    for (let d = n - ((((n - 4) % 7) + 7) % 7); d <= dayNum(to); d += 7) {
+      out.push(dayStr(d));
+    }
+    return out;
+  }
+  const step = bucket === "quarter" ? 3 : 1;
   let [y, m] = from.split("-").map(Number);
+  m -= (m - 1) % step;
   const [ty, tm] = to.split("-").map(Number);
-  let i = 0;
   while (y < ty || (y === ty && m <= tm)) {
-    const key = `${y}-${String(m).padStart(2, "0")}-01`;
-    out.push({ t: key, mean: Math.round(value(i, key) * 10) / 10 });
-    i++;
-    m++;
+    out.push(`${y}-${String(m).padStart(2, "0")}-01`);
+    m += step;
     if (m > 12) {
-      m = 1;
+      m -= 12;
       y++;
     }
   }
   return out;
 }
 
-function series(dataFrom: string, today: string) {
+/**
+ * Systolic pressure leaves gaps the chart has to show honestly: in the
+ * quarterly view one missing quarter (Q2 2023, bridged dashed) and three
+ * (2021, the line breaks). Q1 2022 rests on two readings in every series.
+ */
+export const SYS_MISSING = new Set([
+  "2021-01-01",
+  "2021-04-01",
+  "2021-07-01",
+  "2023-04-01",
+]);
+export const SYS_THIN = "2022-01-01";
+
+function points(
+  from: string,
+  to: string,
+  bucket: Bucket,
+  value: (i: number, key: string) => number,
+  skip: (key: string) => boolean = () => false,
+) {
+  const starts = bucketStarts(from, to, bucket);
+  return starts
+    .map((key, i) => ({
+      t: key,
+      mean: Math.round(value(i / starts.length, key) * 10) / 10,
+      count: key === SYS_THIN ? 2 : 4 + (i % 9),
+    }))
+    .filter((p) => !skip(p.t));
+}
+
+function series(dataFrom: string, today: string, bucket: Bucket) {
   const r = rng(11);
-  const months = monthly(dataFrom, today, () => 0).length;
   return [
     {
       key: "BLOOD_PRESSURE_SYS",
       unit: "mmHg",
-      granularity: "month",
-      points: monthly(
+      points: points(
         dataFrom,
         today,
-        (i) => 147 - (18 * i) / months + (r() - 0.5) * 4,
+        bucket,
+        (f) => 147 - 18 * f + (r() - 0.5) * 4,
+        (t) => bucket === "quarter" && SYS_MISSING.has(t),
       ),
     },
     {
       key: "BLOOD_PRESSURE_DIA",
       unit: "mmHg",
-      granularity: "month",
-      points: monthly(
+      points: points(
         dataFrom,
         today,
-        (i) => 92 - (10 * i) / months + (r() - 0.5) * 3,
+        bucket,
+        (f) => 92 - 10 * f + (r() - 0.5) * 3,
       ),
     },
     {
       key: "WEIGHT",
       unit: "kg",
-      granularity: "month",
-      points: monthly(
+      points: points(
         dataFrom,
         today,
-        (i) => 89 - (6.5 * i) / months + (r() - 0.5) * 0.6,
+        bucket,
+        (f) => 89 - 6.5 * f + (r() - 0.5) * 0.6,
       ),
     },
     {
       key: "RESTING_HEART_RATE",
       unit: "bpm",
-      granularity: "month",
-      points: monthly(dataFrom, today, (i, k) => {
+      points: points(dataFrom, today, bucket, (f, k) => {
         const month = Number(k.slice(5, 7));
         return (
-          68 -
-          (5 * i) / months +
-          Math.sin((month / 12) * 6.28) * 1.2 +
-          (r() - 0.5) * 1.2
+          68 - 5 * f + Math.sin((month / 12) * 6.28) * 1.2 + (r() - 0.5) * 1.2
         );
       }),
+    },
+    {
+      key: "PULSE",
+      unit: "bpm",
+      points: points(dataFrom, today, bucket, (f) => 74 - 4 * f + r()),
+    },
+    {
+      key: "BODY_FAT",
+      unit: "%",
+      points: points(dataFrom, today, bucket, (f) => 24 - 3 * f + r() * 0.4),
+    },
+    {
+      key: "ACTIVITY_STEPS",
+      unit: "steps",
+      points: points(
+        dataFrom,
+        today,
+        bucket,
+        (f) => 7200 + 900 * f + r() * 400,
+      ),
     },
   ];
 }
@@ -350,7 +416,8 @@ export function fullTimeline(today: string) {
       },
     ],
     standing: [],
-    series: series("2019-01-01", today),
+    bucket: "quarter" as Bucket,
+    series: series("2019-01-01", today, "quarter"),
     notable: [{ date: "2026-01-04", kind: "extremeHigh" }],
   };
 }
@@ -468,7 +535,8 @@ export function readyTimeline(today: string) {
       },
     ],
     standing: [],
-    series: series("2024-05-01", today).filter(
+    bucket: "quarter" as Bucket,
+    series: series("2024-05-01", today, "quarter").filter(
       (s) => s.key !== "RESTING_HEART_RATE",
     ),
     notable: [],
@@ -673,10 +741,24 @@ export async function mockTimeline(
     const values = (url.searchParams.get("values") ?? "")
       .split(",")
       .filter(Boolean);
+    const zoom = url.searchParams.get("zoom") ?? "all";
+    const bucket = bucketFor(zoom);
+    const dataFrom = state === "full" ? "2019-01-01" : "2024-05-01";
+    const all =
+      bucket === body.bucket ? body.series : series(dataFrom, today, bucket);
     return json(route, 200, {
       ...body,
-      zoom: url.searchParams.get("zoom") ?? "all",
-      series: body.series.filter((s) => values.includes(s.key)),
+      zoom,
+      bucket,
+      // Any other value the menu offers answers a flat line of its own.
+      series: values.map(
+        (key) =>
+          all.find((s) => s.key === key) ?? {
+            key,
+            unit: null,
+            points: points(dataFrom, today, bucket, (f) => 50 + 10 * f),
+          },
+      ),
     });
   });
   await page.route(/\/api\/life-events(\/[^/?]+)?(\?|$)/, async (route) => {
