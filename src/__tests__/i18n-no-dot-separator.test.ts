@@ -66,9 +66,7 @@ describe("message bundles carry no ' · ', ' — ' or ' – ' separator", () => 
 
     it(`${file} has no dot or dash separator outside the allowlist`, () => {
       const offenders = [...values]
-        .filter(
-          ([key, value]) => hasSeparator(value) && !(key in ALLOWED),
-        )
+        .filter(([key, value]) => hasSeparator(value) && !(key in ALLOWED))
         .map(([key, value]) => `${key} = ${JSON.stringify(value)}`);
       expect(offenders).toEqual([]);
     });
