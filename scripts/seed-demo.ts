@@ -1045,6 +1045,112 @@ async function seed() {
       }
     }
 
+    // ── Readiness and health-score history ────
+    // The day view reads readiness from the COMPUTED `RECOVERY_SCORE` row the
+    // nightly job files for the night that ended (noon UTC of the day before
+    // the wake morning, `recovery:<day>`), and the health score from the
+    // `health_score_records` row of each local day. Neither job reaches back,
+    // so a fresh seed carried both for today at most; mint the history the
+    // jobs would have written over the window.
+    console.log("Creating readiness and health-score history...");
+    const shiftKey = (key: string, by: number) =>
+      new Date(Date.parse(`${key}T12:00:00Z`) + by * 86_400_000)
+        .toISOString()
+        .slice(0, 10);
+    const readinessRows: unknown[][] = [];
+    for (let i = 1; i < span; i++) {
+      const wakeKey = berlinDayKey(daysAgoAt(days - i, 7, 0));
+      const endedKey = shiftKey(wakeKey, -1);
+      const at = new Date(`${endedKey}T12:00:00.000Z`);
+      const value = Math.round(
+        Math.min(100, Math.max(0, recovery[i] * 0.7 + 20 + jitter(4))),
+      );
+      readinessRows.push([
+        cuid(),
+        userId,
+        "RECOVERY_SCORE",
+        value,
+        "score",
+        "COMPUTED",
+        `recovery:${endedKey}`,
+        at,
+        at,
+        at,
+      ]);
+    }
+    await bulkInsert(
+      client,
+      "measurements",
+      [
+        "id",
+        "user_id",
+        "type",
+        "value",
+        "unit",
+        "source",
+        "external_id",
+        "measured_at",
+        "created_at",
+        "updated_at",
+      ],
+      readinessRows,
+    );
+    const PILLAR_BASE: Record<string, number> = {
+      BLOOD_PRESSURE: 86,
+      GLYCAEMIA: 98,
+      ACTIVITY: 95,
+      SLEEP: 76,
+      ADIPOSITY: 97,
+      WELLBEING: 76,
+      LIPIDS: 100,
+    };
+    const composites = randomWalk(87, 90, 60, 3, { min: 80, max: 96 });
+    const scoreRows: unknown[][] = [];
+    for (let n = 60; n >= 1; n--) {
+      const pillars = Object.fromEntries(
+        Object.entries(PILLAR_BASE).map(([k, v]) => [
+          k,
+          Math.round(Math.min(100, Math.max(40, v + jitter(5)))),
+        ]),
+      );
+      const at = daysAgoAt(n, 4, 50);
+      scoreRows.push([
+        cuid(),
+        userId,
+        berlinDayKey(at),
+        "Europe/Berlin",
+        Math.round(composites[60 - n]),
+        "green",
+        4,
+        Object.keys(PILLAR_BASE),
+        JSON.stringify(pillars),
+        createHash("sha256").update(`demo-health-score:${n}`).digest("hex"),
+        0,
+        at,
+        at,
+      ]);
+    }
+    await bulkInsert(
+      client,
+      "health_score_records",
+      [
+        "id",
+        "user_id",
+        "day_key",
+        "timezone",
+        "composite",
+        "band",
+        "score_version",
+        "composition",
+        "pillar_scores",
+        "input_fingerprint",
+        "config_version",
+        "computed_at",
+        "created_at",
+      ],
+      scoreRows,
+    );
+
     // ── Workouts ──────────────────────────────
     // ~3–4 sessions/week across the window: a mix of running, strength, and
     // cycling, with the fields the workout tiles render — duration, energy,
@@ -1195,9 +1301,9 @@ async function seed() {
     // Medication 3: Magnesium (evening)
     const med3Id = cuid();
     await client.query(
-      `INSERT INTO medications (id, user_id, name, dose, active, notifications_enabled, created_at, updated_at)
-       VALUES ($1, $2, 'Magnesium', '400mg', true, true, $3, $3)`,
-      [med3Id, userId, daysAgo(60)],
+      `INSERT INTO medications (id, user_id, name, dose, active, notifications_enabled, starts_on, created_at, updated_at)
+       VALUES ($1, $2, 'Magnesium', '400mg', true, true, $3, $4, $4)`,
+      [med3Id, userId, formatDate(daysAgo(60)), daysAgo(60)],
     );
     const sched3Id = cuid();
     await client.query(
