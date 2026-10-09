@@ -1094,21 +1094,24 @@ export async function renameConversation(
 }
 
 /**
- * Delete a conversation and every message under it. Returns false when
- * the conversation does not exist or is not owned by `userId` — the
- * route should map both to 404.
+ * Delete a conversation and every message under it (the foreign keys
+ * cascade). Returns false when the conversation does not exist or is not
+ * owned by `userId` — the route should map both to 404.
+ *
+ * One owner-scoped statement, like `renameConversation`: a client re-sends a
+ * delete it could not confirm (a reload inside the undo window), so two
+ * requests for the same row are expected. A find-then-delete pair let both
+ * find the row and the slower one fail with a 500; here one deletes it and
+ * the other reads 404.
  */
 export async function deleteConversation(
   userId: string,
   conversationId: string,
 ): Promise<boolean> {
-  const row = await prisma.coachConversation.findFirst({
+  const { count } = await prisma.coachConversation.deleteMany({
     where: { id: conversationId, userId },
-    select: { id: true },
   });
-  if (!row) return false;
-  await prisma.coachConversation.delete({ where: { id: row.id } });
-  return true;
+  return count === 1;
 }
 
 // ─── S7: coach-conversation attachments ─────────────────────────────────────
