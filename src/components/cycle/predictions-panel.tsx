@@ -99,7 +99,7 @@ export function PredictionsPanel({
                 <Row
                   hue={FERTILE_HUE}
                   label={t("cycle.predictions.fertileWindow")}
-                  value={`${formatDate(prediction.fertileWindowStart, fmt)} – ${formatDate(
+                  value={`${formatDate(prediction.fertileWindowStart, fmt)}–${formatDate(
                     prediction.fertileWindowEnd,
                     fmt,
                   )}`}
@@ -264,7 +264,7 @@ function HistoryCard({
                   >
                     <span className="text-foreground tabular-nums">
                       {formatDate(c.startDate, fmt)}
-                      {" – "}
+                      {"–"}
                       {c.endDate
                         ? formatDate(c.endDate, fmt)
                         : t("cycle.history.ongoing")}

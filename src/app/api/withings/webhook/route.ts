@@ -66,7 +66,7 @@ async function checkAndWarn(
   }
   if (auth.via === "query") {
     getEvent()?.addWarning(
-      `withings webhook secret received via legacy URL query — migrate to ${MIGRATION_URL} (re-subscribe with the path-segment token form)`,
+      `withings webhook secret received via legacy URL query. Migrate to ${MIGRATION_URL} (re-subscribe with the path-segment token form)`,
     );
   }
   return null;

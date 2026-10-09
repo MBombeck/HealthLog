@@ -402,7 +402,7 @@ function EcgManagerRow({
         onClick={onToggle}
         disabled={disabled}
         aria-pressed={visible}
-        aria-label={`${visible ? hideLabel : showLabel} — ${title}`}
+        aria-label={`${visible ? hideLabel : showLabel}: ${title}`}
         title={visible ? hideLabel : showLabel}
         data-slot="insights-pill-order-eye"
         data-visible={visible ? "true" : "false"}
@@ -463,7 +463,7 @@ function SortablePillRow({
         type="button"
         {...attributes}
         {...listeners}
-        aria-label={`${dragHandleLabel} — ${title}`}
+        aria-label={`${dragHandleLabel}: ${title}`}
         title={dragHandleLabel}
         disabled={disabled}
         data-slot="insights-pill-order-handle"
@@ -481,7 +481,7 @@ function SortablePillRow({
         onClick={() => onToggle(id, !visible)}
         disabled={disabled}
         aria-pressed={visible}
-        aria-label={`${visible ? hideLabel : showLabel} — ${title}`}
+        aria-label={`${visible ? hideLabel : showLabel}: ${title}`}
         title={visible ? hideLabel : showLabel}
         data-slot="insights-pill-order-eye"
         data-visible={visible ? "true" : "false"}

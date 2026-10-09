@@ -25,7 +25,7 @@ export default function InsightsStockwerkePage() {
       unitKey="insights.units.flights"
       emptyStateIcon={<TrendingUp className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any flights climbed yet — what does this metric tell me about my health, and how do I improve it?"
+      coachPrefill="I haven't logged any flights climbed yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

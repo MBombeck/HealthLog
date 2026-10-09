@@ -307,10 +307,8 @@ describe("no cap on value lines", () => {
               layout={layout}
               width={1200}
               selectedBucket={null}
-              bucket="month"
               seriesLabel={(key) => `Line ${key}`}
               seriesColor={(key) => colours.get(key)!}
-              intl="en-GB"
               t={(key) => key}
               fmt={format}
             />
@@ -326,7 +324,15 @@ describe("no cap on value lines", () => {
       expect(SERIES_PALETTE).toContain(colour);
     }
     expect(html).not.toContain('var(--foreground)" color');
-    for (const s of series) expect(text(html)).toContain(`Line ${s.key}`);
+    // A name too long for one line wraps onto two (a tspan each).
+    // A name too long for one line wraps onto two, the second cut if it
+    // must: every line is still named at its left.
+    for (const s of series) {
+      const group = html.slice(html.indexOf(`data-series="${s.key}"`));
+      const name = group.slice(0, group.indexOf("</text>"));
+      expect(name).toContain("Line");
+      expect(name).toContain(s.key.slice(0, 12));
+    }
   });
 });
 

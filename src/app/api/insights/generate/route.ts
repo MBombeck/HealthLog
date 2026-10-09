@@ -810,7 +810,7 @@ export const POST = apiHandler((request: NextRequest) =>
       // bounds cost. 429 with a distinct code so the client can say so.
       if (e instanceof BriefingBudgetExceededError) {
         return apiError(
-          "Daily AI token budget reached — insights will be available again tomorrow.",
+          "Daily AI token budget reached. Insights will be available again tomorrow.",
           429,
           { errorCode: "insights.generate.budgetExceeded" },
         );
@@ -859,7 +859,7 @@ export const POST = apiHandler((request: NextRequest) =>
         );
         if (allAuth) {
           return apiError(
-            "AI provider rejected the request — check your API key in Settings > AI",
+            "AI provider rejected the request. Check your API key in Settings > AI",
             422,
           );
         }
@@ -881,7 +881,7 @@ export const POST = apiHandler((request: NextRequest) =>
         );
         if (allTransport) {
           return apiError(
-            "AI provider connection failed — check your AI settings",
+            "AI provider connection failed. Check your AI settings",
             422,
           );
         }
@@ -907,7 +907,7 @@ export const POST = apiHandler((request: NextRequest) =>
       const status = err.httpStatus ?? 0;
       if (status === 401 || status === 403) {
         return apiError(
-          "AI provider rejected the request — check your API key in Settings > AI",
+          "AI provider rejected the request. Check your API key in Settings > AI",
           422,
         );
       }
@@ -921,7 +921,7 @@ export const POST = apiHandler((request: NextRequest) =>
         );
       }
       return apiError(
-        "AI provider connection failed — check your AI settings",
+        "AI provider connection failed. Check your AI settings",
         422,
       );
     }
@@ -945,7 +945,7 @@ export const POST = apiHandler((request: NextRequest) =>
       if (result.finishReason === "length") {
         annotate({ meta: { insights_response_truncated: true } });
         return apiError(
-          "AI response was cut off before the JSON completed — raise the token limit (INSIGHTS_MAX_TOKENS)",
+          "AI response was cut off before the JSON completed. Raise the token limit (INSIGHTS_MAX_TOKENS)",
           422,
           { errorCode: "ai_response_truncated" },
         );

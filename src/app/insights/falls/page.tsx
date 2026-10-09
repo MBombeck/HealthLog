@@ -23,7 +23,7 @@ export default function InsightsFallsPage() {
       unitKey="insights.units.falls"
       emptyStateIcon={<PersonStanding className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any fall data yet — what does this metric tell me about my health, and how do I lower my fall risk?"
+      coachPrefill="I haven't logged any fall data yet. What does this metric tell me about my health, and how do I lower my fall risk?"
     />
   );
 }

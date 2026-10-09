@@ -36,8 +36,14 @@ type TranslateCount = (
 export interface ItemWords {
   /** What the item is called. */
   label: string;
-  /** Its second line (a category, a dose, a count), or null when none. */
+  /** Its second line (a dose, a count), or null when none. */
   sub: string | null;
+  /**
+   * A category set apart from the name (a life event's "Home"): shown as a
+   * chip or on its own muted line, never run on after the name, where
+   * "Moved into a bigger flat Home" read as one title.
+   */
+  tag?: string | null;
 }
 
 export type ItemWordsFn = (item: TimelineItem) => ItemWords;
@@ -80,7 +86,8 @@ export function makeItemWords(
       case "lifeEvent":
         return {
           label: item.label,
-          sub: worded(t, LIFE_EVENT_CATEGORY_KEY, item.sub),
+          sub: null,
+          tag: worded(t, LIFE_EVENT_CATEGORY_KEY, item.sub),
         };
       case "travel":
         return { label: t("day.travel"), sub: null };

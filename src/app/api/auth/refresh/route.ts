@@ -96,14 +96,14 @@ export const POST = apiHandler(async (request: NextRequest) => {
     //     the token and re-authenticates.
     if (result.reason === "already_used") {
       return apiError(
-        "Refresh token reuse detected — please log in again.",
+        "Refresh token reuse detected. Please log in again.",
         401,
         { errorCode: "auth.refresh.reuse" },
       );
     }
     if (result.reason === "revoked") {
       return apiError(
-        "Refresh token has been revoked — please log in again.",
+        "Refresh token has been revoked. Please log in again.",
         401,
         { errorCode: "auth.refresh.revoked" },
       );

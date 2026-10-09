@@ -24,7 +24,7 @@ export default function InsightsBodyTemperaturePage() {
       color="var(--chart-3)"
       emptyStateIcon={<Thermometer className="size-6" />}
       emptyStateCtaType="BODY_TEMPERATURE"
-      coachPrefill="I haven't logged any body temperature yet — what's the healthy range, and what should I do if it drifts?"
+      coachPrefill="I haven't logged any body temperature yet. What's the healthy range, and what should I do if it drifts?"
     />
   );
 }

@@ -25,7 +25,7 @@ export default function InsightsAtemfrequenzPage() {
       unitKey="insights.units.respiratoryRate"
       emptyStateIcon={<Wind className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any respiratory rate yet — what does this metric tell me about my health, and how do I improve it?"
+      coachPrefill="I haven't logged any respiratory rate yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

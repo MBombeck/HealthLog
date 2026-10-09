@@ -72,7 +72,7 @@ describe("chart isError rendering — error state, not empty state", () => {
     expect(html).toContain("Pulse");
     // The retry button carries the chart title in its accessible name
     // so several failed charts on one page stay distinguishable.
-    expect(html).toContain('aria-label="Erneut versuchen – Pulse"');
+    expect(html).toContain('aria-label="Erneut versuchen: Pulse"');
     // The empty-state copy must NOT paint — an outage is not "no data".
     expect(html).not.toContain("Keine Daten in diesem Zeitraum");
 
@@ -169,7 +169,7 @@ describe("<ChartErrorState> — announcement, sizing, accessible name", () => {
 
   it("joins the action context into the retry button's accessible name", async () => {
     const html = await renderState({ actionContext: "Pulse" });
-    expect(html).toContain('aria-label="Retry – Pulse"');
+    expect(html).toContain('aria-label="Retry: Pulse"');
   });
 
   it("omits the aria-label without a context so the label is the name", async () => {

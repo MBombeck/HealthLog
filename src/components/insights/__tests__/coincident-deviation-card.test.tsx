@@ -194,7 +194,7 @@ describe("<CoincidentDeviationCard>", () => {
     expect(html).toContain('data-state="fired"');
     expect(html).toContain('data-slot="coincident-factors"');
     // The load-bearing framing line.
-    expect(html).toContain("Possible factors — never a cause");
+    expect(html).toContain("Possible factors (never a cause)");
     expect(html).toContain("not a diagnosis");
     // At most amber — never destructive/red.
     expect(html).toContain("border-warning");
@@ -226,7 +226,7 @@ describe("<CoincidentDeviationCard>", () => {
     expect(html).toContain('data-state="fired"');
     // The reframe line replaces the open-ended "possible factors" copy.
     expect(html).toContain("the condition you logged");
-    expect(html).not.toContain("Possible factors — never a cause");
+    expect(html).not.toContain("Possible factors (never a cause)");
     // Annotate, don't escalate: no new destructive colour beyond the amber the
     // fired state already carries.
     expect(html).not.toContain("text-destructive");

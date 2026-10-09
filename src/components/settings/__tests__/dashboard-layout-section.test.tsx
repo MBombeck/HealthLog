@@ -336,8 +336,8 @@ describe("<DashboardLayoutSection> — native-only widget group (issue #581)", (
     const html = render(<DashboardLayoutSection id="dashboard-layout" />);
 
     expect(html).toContain('data-widget-id="bmi"');
-    expect(html).toContain('aria-label="BMI — Tile"');
-    expect(html).toContain('aria-label="BMI — Chart"');
+    expect(html).toContain('aria-label="BMI: Tile"');
+    expect(html).toContain('aria-label="BMI: Chart"');
     // Reflects the stored flags rather than inventing a default.
     const row = html.match(
       /data-widget-id="bmi"[\s\S]*?(?=data-slot="native-widget-row"|$)/,
@@ -448,7 +448,7 @@ describe("<DashboardLayoutSection> — iOS-pin-only ids hidden from web (v1.11.2
       html.indexOf('data-slot="native-only-widgets"'),
     );
     for (const id of IOS_PIN_ONLY_WIDGET_IDS) {
-      expect(sortableList).not.toContain(`${pinOnlyLabels[id]} — `);
+      expect(sortableList).not.toContain(`${pinOnlyLabels[id]}: `);
       // ...and each is reachable exactly once, in the native-only group.
       expect(html).toContain(`data-widget-id="${id}"`);
     }
@@ -465,11 +465,11 @@ describe("<DashboardLayoutSection> — iOS-pin-only ids hidden from web (v1.11.2
 describe("<DashboardLayoutSection> — disabled-module widget toggles", () => {
   // The achievements widget label drives its switch aria-label; it is the
   // canonical disabled-module probe (label resolves to "Achievements").
-  const ACHIEVEMENTS_ARIA = "Achievements — ";
+  const ACHIEVEMENTS_ARIA = "Achievements: ";
   // Mood is a module-owned widget too; weight is a core widget with NO module
   // entry, so it must survive any module-off state.
-  const MOOD_ARIA = "Mood — ";
-  const WEIGHT_ARIA = "Weight — ";
+  const MOOD_ARIA = "Mood: ";
+  const WEIGHT_ARIA = "Weight: ";
 
   it("hides a widget toggle whose owning module is disabled", () => {
     authState.modules = { achievements: false };

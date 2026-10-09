@@ -11,7 +11,12 @@
  *
  * Empty stretches are said out loud: "No entries from April to August
  * 2025" rather than months silently skipped, so a gap reads as a gap and not
- * as a list that forgot something.
+ * as a list that forgot something. The chronicle lists events, not
+ * readings or intakes, so "empty" means empty: a month without an event
+ * but with values keeps its header (the month's means ride on it), and a
+ * month in which a medication was taken is passed over without a line,
+ * because "no entries" would read as nothing having happened while the
+ * intakes say otherwise. Only a month with none of the three is a gap.
  *
  * A medication is listed once per thing that happened to it
  * (`medicationListItems`): its start with the dose taken then, each later
@@ -27,12 +32,18 @@ import type {
 } from "@/lib/day/contract";
 
 import {
+  addMonths,
+  bucketAfter,
   dayNumber,
   endOfMonth,
   monthsBetween,
   startOfMonth,
 } from "./timeline-dates";
-import { groupKey, medicationListItems } from "./medication-rows";
+import {
+  groupKey,
+  medicationGroups,
+  medicationListItems,
+} from "./medication-rows";
 import { LANE_ORDER, isSpan } from "./timeline-geometry";
 
 export type ChronicleGrouping = "month" | "year";
@@ -200,7 +211,13 @@ export function chronicleEntries(
       }
     }
   }
+  // One line per kind of notable on a day: two metrics seen for the first
+  // time on one day are one "First value" line, not two identical ones.
+  const notables = new Set<string>();
   for (const n of timeline.notable) {
+    const key = `${n.date}:${n.kind}`;
+    if (notables.has(key)) continue;
+    notables.add(key);
     out.push({ kind: "notable", date: n.date, notable: n.kind });
   }
   const laneRank = (e: ChronicleEntry) =>
@@ -260,16 +277,62 @@ export function railsAt(
 }
 
 /**
+ * An entry of a rail lane always shows its own lane's colour beside it: a
+ * dot on its lane's rail when no period of that lane passes the row. Without
+ * it a medication listed inside an illness carried only the illness's rail,
+ * and read as the illness's colour.
+ */
+function ownRail(rails: ChronicleRails, entry: ChronicleEntry): ChronicleRails {
+  if (entry.kind !== "item") return rails;
+  const lane = entry.lane as RailLane;
+  if (!(RAIL_LANES as readonly string[]).includes(lane) || rails[lane]) {
+    return rails;
+  }
+  return { ...rails, [lane]: "point" };
+}
+
+/**
  * The rows: a header per group, its entries, and one gap row for every run
  * of groups without an entry. Groups run from `today`'s back to the oldest
  * entry, or to `dataFrom` when the record reaches further.
  */
 export function buildChronicle(
-  timeline: Pick<TimelineResponse, "lanes" | "notable" | "range">,
+  timeline: Pick<
+    TimelineResponse,
+    "lanes" | "notable" | "range" | "series" | "bucket"
+  >,
   today: string,
   grouping: ChronicleGrouping,
 ): ChronicleRow[] {
   const entries = chronicleEntries(timeline, today);
+  const groupAfter = (group: string) =>
+    grouping === "month" ? addMonths(group, 1) : addMonths(group, 12);
+  /** A value line has a reading in the group (its bucket overlaps it). */
+  const valued = (group: string) =>
+    timeline.series.some((s) =>
+      s.points.some(
+        (p) =>
+          p.count > 0 &&
+          p.t < groupAfter(group) &&
+          bucketAfter(p.t, timeline.bucket) > group,
+      ),
+    );
+  /**
+   * A medication was taken through the group (its intakes are not on the
+   * timeline, its stretch is). A paused stretch does not count.
+   */
+  const medications = timeline.lanes.find((l) => l.key === "medications");
+  const taken = medications
+    ? medicationGroups(medications.items).flatMap((g) => g.periods)
+    : [];
+  const running = (group: string) => {
+    const end = groupEnd(group, grouping);
+    return taken.some(
+      (item) =>
+        item.start <= end &&
+        (item.open ? today : (item.end ?? item.start)) >= group,
+    );
+  };
   const spans = railSpans(timeline.lanes);
   const oldest = [
     entries.at(-1)?.date,
@@ -309,6 +372,22 @@ export function buildChronicle(
   for (const group of groupsBetween(first, today, grouping)) {
     const list = byGroup.get(group);
     if (!list) {
+      if (valued(group)) {
+        // No event, but readings: the header carries the month's means.
+        flushGap();
+        const end = groupEnd(group, grouping);
+        rows.push({
+          type: "header",
+          group,
+          rails: railsAt(spans, end < today ? end : today),
+        });
+        continue;
+      }
+      if (running(group)) {
+        // Something was under way: not empty, and nothing to list either.
+        flushGap();
+        continue;
+      }
       // Groups run newest first: the first empty one is the gap's newest end.
       gapTo = gapTo ?? group;
       gapFrom = group;
@@ -322,7 +401,11 @@ export function buildChronicle(
       rails: railsAt(spans, end < today ? end : today),
     });
     for (const entry of list) {
-      rows.push({ type: "entry", entry, rails: railsAt(spans, entry.date) });
+      rows.push({
+        type: "entry",
+        entry,
+        rails: ownRail(railsAt(spans, entry.date), entry),
+      });
     }
   }
   flushGap();

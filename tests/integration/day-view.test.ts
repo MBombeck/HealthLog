@@ -248,6 +248,93 @@ describe("a local day across a clock change", () => {
     expect(before.running).toEqual([]);
   });
 
+  it("lists a medication once, with its course and the dose of that day", async () => {
+    const db = getPrismaClient();
+    const owner = await makeUser("once");
+    const glp = await db.medication.create({
+      data: {
+        userId: owner.id,
+        name: "Mounjaro",
+        dose: "7.5 mg",
+        startsOn: dayKeyAsUtcMidnight("2026-01-15"),
+      },
+    });
+    await db.medicationCourse.create({
+      data: {
+        userId: owner.id,
+        medicationId: glp.id,
+        startsOn: dayKeyAsUtcMidnight("2026-01-15"),
+      },
+    });
+    for (const [from, value] of [
+      ["2026-01-15", 2.5],
+      ["2026-02-12", 5],
+      ["2026-04-09", 7.5],
+    ] as const) {
+      await db.medicationDoseChange.create({
+        data: {
+          medicationId: glp.id,
+          effectiveFrom: new Date(`${from}T08:00:00.000Z`),
+          doseValue: value,
+          doseUnit: "mg",
+        },
+      });
+    }
+    const ace = await db.medication.create({
+      data: {
+        userId: owner.id,
+        name: "Ramipril",
+        dose: "5 mg",
+        startsOn: dayKeyAsUtcMidnight("2026-03-12"),
+      },
+    });
+    await db.medicationCourse.create({
+      data: {
+        userId: owner.id,
+        medicationId: ace.id,
+        startsOn: dayKeyAsUtcMidnight("2026-03-12"),
+      },
+    });
+    const pausedMed = await db.medication.create({
+      data: {
+        userId: owner.id,
+        name: "Metformin",
+        dose: "500 mg",
+        startsOn: dayKeyAsUtcMidnight("2026-01-01"),
+      },
+    });
+    await db.medicationPauseEra.create({
+      data: {
+        userId: owner.id,
+        medicationId: pausedMed.id,
+        pausedAt: new Date("2026-03-01T08:00:00.000Z"),
+        resumedAt: new Date("2026-03-20T08:00:00.000Z"),
+      },
+    });
+    await signIn(owner.id);
+
+    const march = await json<Day>(await getDay("2026-03-15"));
+    const names = march.running.map((r) => r.title).sort();
+    expect(names).toEqual(["Metformin", "Mounjaro", "Ramipril"]);
+    const mj = march.running.find((r) => r.title === "Mounjaro");
+    // The course lends its days; the dose is the one in effect that day.
+    expect(mj).toMatchObject({ kind: "medicationCourse", sub: "5 mg" });
+    expect(march.running.find((r) => r.title === "Ramipril")).toMatchObject({
+      kind: "medicationCourse",
+      sub: "5 mg",
+    });
+    // Paused that day: one entry, the paused one.
+    expect(march.running.find((r) => r.title === "Metformin")).toMatchObject({
+      kind: "medicationPause",
+      sub: null,
+    });
+
+    const january = await json<Day>(await getDay("2026-01-20"));
+    expect(january.running.filter((r) => r.title === "Mounjaro")).toEqual([
+      expect.objectContaining({ sub: "2.5 mg" }),
+    ]);
+  });
+
   it("holds 25 hours on the fall-back day", async () => {
     const db = getPrismaClient();
     const owner = await makeUser("fall");

@@ -7,7 +7,7 @@
  *   - every column renders from the SAME payloads the cards consume
  *     (the list row's `nextDueAt` / `stockDosesRemaining`, the batched
  *     compliance-summary cache entry the cards share);
- *   - the action buttons are per-row labelled ("Take – {name}") and the
+ *   - the action buttons are per-row labelled ("Take {name}") and the
  *     row rides the cards' shared intake hook (source-level guard);
  *   - tri-state sorting semantics incl. `aria-sort` and null-last
  *     ordering, with `null` sort = the manual order the page passed in;
@@ -254,8 +254,8 @@ describe("<MedicationTable> — structure + shared payloads", () => {
       client,
     );
 
-    expect(html).toContain('aria-label="Take – Ramipril"');
-    expect(html).toContain('aria-label="Skip – Ramipril"');
+    expect(html).toContain('aria-label="Take Ramipril"');
+    expect(html).toContain('aria-label="Skip Ramipril"');
     // 44-px mobile floor on the action buttons (shrinks at sm).
     expect(html).toContain("size-11 sm:size-9");
   });
@@ -345,7 +345,7 @@ describe("<MedicationTable> — structure + shared payloads", () => {
     expect(html).toContain("opacity-60");
     expect(html).toContain("Inactive");
     // No take/skip affordance on the inactive row.
-    expect(html).not.toContain('aria-label="Take – Amoxicillin"');
+    expect(html).not.toContain('aria-label="Take Amoxicillin"');
   });
 
   // v1.29.x — the Today digest's "Log dose" deep-link
@@ -407,7 +407,7 @@ describe("<MedicationTable> — structure + shared payloads", () => {
     );
 
     expect(html).toContain("Mounjaro");
-    expect(html).toContain('aria-label="Take – Mounjaro"');
+    expect(html).toContain('aria-label="Take Mounjaro"');
     expect(html).toContain("4 doses");
   });
 
@@ -436,12 +436,12 @@ describe("<MedicationTable> — structure + shared payloads", () => {
       client,
     );
 
-    expect(html).not.toContain('aria-label="Take – Amoxicillin"');
-    expect(html).not.toContain('aria-label="Skip – Amoxicillin"');
+    expect(html).not.toContain('aria-label="Take Amoxicillin"');
+    expect(html).not.toContain('aria-label="Skip Amoxicillin"');
     expect(html).toContain('data-slot="medication-table-course-ended-marker"');
     expect(html).toContain(">Ended<");
-    expect(html).toContain('aria-label="Take – Prednisolone"');
-    expect(html).toContain('aria-label="Skip – Prednisolone"');
+    expect(html).toContain('aria-label="Take Prednisolone"');
+    expect(html).toContain('aria-label="Skip Prednisolone"');
   });
 
   it("renders an as-needed row: calm marker, no compliance bars (v1.16.11 #316)", () => {
@@ -476,7 +476,7 @@ describe("<MedicationTable> — structure + shared payloads", () => {
     // Compliance column shows the en-dash, not bars or a skeleton.
     expect(html).not.toContain("Adherence (");
     // The quick actions stay — an as-needed dose is loggable inline.
-    expect(html).toContain('aria-label="Take – Ibuprofen"');
+    expect(html).toContain('aria-label="Take Ibuprofen"');
     // Stock column still renders (inventory tracking works for PRN).
     expect(html).toContain("10 doses");
   });

@@ -44,7 +44,7 @@ export const dynamic = "force-dynamic";
 const LAST_UPDATED = "2026-08-02";
 
 export const metadata: Metadata = {
-  title: "About — HealthLog",
+  title: "About | HealthLog",
   description:
     "Open-source credits and third-party data attributions for the HealthLog project.",
   robots: { index: true, follow: true },

@@ -40,7 +40,7 @@ import {
   DayValues,
 } from "./day-sections";
 import { DayScores } from "./day-scores";
-import { curateDayValues, tileKeyOf } from "./day-values-model";
+import { tileKeyOf } from "./day-values-model";
 import { shiftDateKey } from "./day-url";
 import { useDay, usePrefetchDay } from "./use-day";
 import { useDayValueFormat } from "./use-day-value-format";
@@ -124,7 +124,7 @@ export function DayView({
   above,
   headerClassName,
 }: DayViewProps) {
-  const { t, tCount } = useTranslations();
+  const { t } = useTranslations();
   const longLabel = useLongDayLabel();
   // "Mo., 5. Okt. 2026" in the phone sheet's header: a September Thursday
   // spelled out in full does not fit beside the arrows at 360 px, and a
@@ -132,7 +132,7 @@ export function DayView({
   const shortLabel = useLongDayLabel("short");
   const pathname = usePathname();
   const day = useDay(date);
-  const { labelFor, formatTile } = useDayValueFormat();
+  const { labelFor } = useDayValueFormat();
   const timelineOn = useModuleEnabled("timeline");
   const coach = useAiCapability("coach");
   const capabilities = useRecordCapabilities();
@@ -163,12 +163,6 @@ export function DayView({
     data?.notable.filter(
       (n) => !(n.type !== null && focusKeys.has(tileKeyOf(n.type))),
     ) ?? [];
-  const focusTile =
-    focus && data
-      ? curateDayValues(data.values, focusTypes).curated.find((tile) =>
-          focusKeys.has(tile.key),
-        )
-      : undefined;
   const isEmpty =
     data !== undefined &&
     data.values.length === 0 &&
@@ -178,12 +172,6 @@ export function DayView({
   const notShared = data
     ? Object.values(data.sections).some((s) => s?.reason === "not_shared")
     : false;
-  const meta = data
-    ? [
-        tCount("day.countValues", data.counts.values),
-        tCount("day.countEntries", data.counts.entries),
-      ].join(", ")
-    : null;
   const compact = shell === "bottom";
   const closeLabel = shell === "docked" ? t("day.hidePanel") : t("day.close");
 
@@ -299,20 +287,9 @@ export function DayView({
           compact ? "gap-6 px-4 pt-0.5 pb-4" : "gap-6 px-6 pt-4 pb-6",
         )}
       >
-        {/* What the day holds, as meta under the header. The line keeps its
-            height while the day loads, so nothing below it moves. */}
-        <p
-          className="text-muted-foreground -mb-3 text-xs tabular-nums"
-          data-slot="day-meta"
-        >
-          {meta ?? <span className="invisible">0</span>}
-        </p>
         {focus ? (
           <div className="space-y-2.5">
-            <DayFocusCard
-              focus={focus}
-              usual={focusTile ? formatTile(focusTile).usual : null}
-            />
+            <DayFocusCard focus={focus} />
             <DayNotableLines
               notables={focusNotables}
               labelFor={labelFor}

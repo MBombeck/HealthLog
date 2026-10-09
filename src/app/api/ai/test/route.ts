@@ -276,13 +276,13 @@ function classifyTestFailure(
     return {
       reasonCode: "credentials",
       reason:
-        "Provider rejected the credentials — re-authenticate in AI settings.",
+        "Provider rejected the credentials. Re-authenticate in AI settings.",
     };
   }
   if (status === 429) {
     return {
       reasonCode: "rate_limited",
-      reason: "Provider rate-limited the request — try again shortly.",
+      reason: "Provider rate-limited the request. Try again shortly.",
     };
   }
   if (status >= 500) {
@@ -298,7 +298,7 @@ function classifyTestFailure(
   if (status >= 400 && status < 500) {
     return {
       reasonCode: "bad_request",
-      reason: `The provider rejected the request (HTTP ${status}) — the endpoint answered, so this is a request-shape or model-name problem, not connectivity.`,
+      reason: `The provider rejected the request (HTTP ${status}). The endpoint answered, so this is a request-shape or model-name problem, not connectivity.`,
     };
   }
   return {

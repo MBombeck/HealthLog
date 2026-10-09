@@ -69,7 +69,7 @@ export default function InsightsBmiPage() {
               </Link>
             </Button>
           }
-          coachPrefill="I haven't recorded any weight yet — why does BMI matter for me, and what should I know before I start tracking it?"
+          coachPrefill="I haven't recorded any weight yet. Why does BMI matter for me, and what should I know before I start tracking it?"
         />
       </SubPageShell>
     );

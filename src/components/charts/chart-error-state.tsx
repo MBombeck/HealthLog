@@ -82,7 +82,7 @@ export function ChartErrorState({
         size="sm"
         onClick={onAction}
         aria-label={
-          actionContext ? `${actionLabel} – ${actionContext}` : undefined
+          actionContext ? `${actionLabel}: ${actionContext}` : undefined
         }
       >
         <RotateCw className="h-3.5 w-3.5" aria-hidden="true" />

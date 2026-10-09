@@ -153,7 +153,7 @@ export function ArchivedTagsCard({ catalog }: ArchivedTagsCardProps) {
                   size="icon"
                   className="text-muted-foreground hover:text-foreground size-11 sm:size-9"
                   onClick={() => setPurgeTag(tag)}
-                  aria-label={`${t("mood.manage.purgeAction")} — ${name}`}
+                  aria-label={`${t("mood.manage.purgeAction")}: ${name}`}
                   title={t("mood.manage.purgeAction")}
                 >
                   <Trash2 className="h-4 w-4" aria-hidden="true" />

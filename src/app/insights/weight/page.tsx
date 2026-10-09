@@ -129,7 +129,7 @@ export default function InsightsGewichtPage() {
               </Link>
             </Button>
           }
-          coachPrefill="I haven't recorded any weight yet — why does it matter, and what should I know before I start tracking?"
+          coachPrefill="I haven't recorded any weight yet. Why does it matter, and what should I know before I start tracking?"
         />
       </SubPageShell>
     );

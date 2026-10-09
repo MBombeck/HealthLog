@@ -1,5 +1,6 @@
 "use client";
 
+import { MEASUREMENT_TYPE_LABEL_KEYS } from "@/lib/measurements/type-label-keys";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import React, { Suspense, useCallback, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -448,6 +449,19 @@ export default function DashboardPageClient({
   const rhr = data?.summaries?.RESTING_HEART_RATE;
   const hasRestingHr = (rhr?.count ?? 0) > 0;
   const pulseTileSummary = hasRestingHr ? rhr : p;
+  // The pulse widget shows ONE of two statistics, and its name says which:
+  // with resting rows it is the resting heart rate (one figure a day, the
+  // same series the day view names "Resting heart rate"); without them it
+  // is the pulse, whose latest value is the latest day's pulse (the mean of
+  // its hours' means, `summaries-slice.ts`), the number the day view shows
+  // as "Pulse" for that day. Calling the resting figure "Pulse" put 62 on
+  // the dashboard beside a day view reading 77 for the same name.
+  const pulseLabel = hasRestingHr
+    ? t(MEASUREMENT_TYPE_LABEL_KEYS.RESTING_HEART_RATE)
+    : t("dashboard.pulseShort");
+  const pulseTitle = hasRestingHr
+    ? t(MEASUREMENT_TYPE_LABEL_KEYS.RESTING_HEART_RATE)
+    : t("dashboard.pulse");
   const bf = data?.summaries?.BODY_FAT;
   const sleepSummary = data?.summaries?.SLEEP_DURATION;
   // v1.11.4 — `summaries.SLEEP_DURATION` now carries per-NIGHT time-asleep
@@ -1131,7 +1145,7 @@ export default function DashboardPageClient({
               <TrendCard
                 key="pulse"
                 fractionDigits={0}
-                label={t("dashboard.pulseShort")}
+                label={pulseLabel}
                 latest={pulseTileSummary?.latest ?? null}
                 unit="bpm"
                 avg7={pulseTileSummary?.avg7 ?? null}
@@ -1809,7 +1823,7 @@ export default function DashboardPageClient({
                 // rate WITHOUT the resting-band overlay (it would mark
                 // expected-high workout HR as "outside target").
                 types={hasRestingHr ? ["RESTING_HEART_RATE"] : ["PULSE"]}
-                title={t("dashboard.pulse")}
+                title={pulseTitle}
                 colors={["var(--success)"]}
                 unit="bpm"
                 valueBands={hasRestingHr ? pulseBands : undefined}

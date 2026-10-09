@@ -191,7 +191,7 @@ export function TimelineChronicle({
       };
     }
     const { item, role } = entry;
-    const { label, sub } = words(item);
+    const { label, sub, tag } = words(item);
     if (role === "end") {
       // A pause that ends is the medication taken up again, not ended.
       return {
@@ -204,7 +204,11 @@ export function TimelineChronicle({
           : null,
       };
     }
-    const meta = [sub, item.startKnown ? null : t("timeline.startUnknown")]
+    // A life event's category sits on the muted line under its title.
+    const meta = [
+      sub ?? tag ?? null,
+      item.startKnown ? null : t("timeline.startUnknown"),
+    ]
       .filter(Boolean)
       .join(", ");
     return { title: label, meta: meta || null };
@@ -331,8 +335,17 @@ export function TimelineChronicle({
               <span className="text-muted-foreground text-xs leading-5 whitespace-nowrap tabular-nums">
                 {dateText}
               </span>
+              {/* Every entry of a kind carries its lane's colour, as on the
+                  chart: a medication is the medication colour wherever it
+                  is listed, never the colour of a rail passing beside it. */}
               <Icon
                 className="text-muted-foreground mt-0.5 size-4"
+                style={
+                  entry.kind === "item"
+                    ? { color: LANE_COLOR[entry.lane] }
+                    : undefined
+                }
+                data-lane={entry.kind === "item" ? entry.lane : undefined}
                 aria-hidden="true"
               />
               <span className="min-w-0">

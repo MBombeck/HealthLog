@@ -282,8 +282,8 @@ describe("<MetricTargetSummary>", () => {
       expect(html).toContain("Source: ADA 2024 / DDG");
       // The i18n label keys resolve to EN context headings (rendered
       // upper-cased by the heading style but kept as text content).
-      expect(html).toContain("Glucose — fasting");
-      expect(html).toContain("Glucose — post-meal");
+      expect(html).toContain("Glucose (fasting)");
+      expect(html).toContain("Glucose (post-meal)");
     });
 
     it("converts the glucose bands to mmol/L when the profile prefers it", () => {

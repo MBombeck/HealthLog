@@ -132,7 +132,7 @@ export function InstrumentCard({
         type="button"
         onClick={onOpenDetail}
         data-slot="instrument-card-open"
-        aria-label={`${title} — ${t("mentalHealth.openDetail")}`}
+        aria-label={`${title}: ${t("mentalHealth.openDetail")}`}
         className="focus-visible:ring-ring block w-full rounded-t-xl text-left focus-visible:ring-2 focus-visible:outline-none"
       >
         <MedicationCardHeader

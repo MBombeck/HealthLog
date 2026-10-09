@@ -84,7 +84,7 @@ const handler = apiHandler(
         details: { reason: "missing_confirmation", backupId: id },
       });
       return apiError(
-        "Confirmation token missing — replacing an account's data requires confirm: 'RESTORE'",
+        "Confirmation token missing. Replacing an account's data requires confirm: 'RESTORE'",
         422,
       );
     }

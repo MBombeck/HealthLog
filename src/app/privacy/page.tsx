@@ -50,7 +50,7 @@ const LAST_UPDATED_EN = new Intl.DateTimeFormat("en-GB", {
 }).format(LAST_UPDATED_DATE);
 
 export const metadata: Metadata = {
-  title: "Datenschutzerklärung / Privacy Policy — HealthLog",
+  title: "Datenschutzerklärung / Privacy Policy | HealthLog",
   description:
     "Wie HealthLog personenbezogene Gesundheitsdaten verarbeitet, Auftragsverarbeiter, DSGVO-Rechte und die EU-MDR-Medizinprodukte-Grenze. Bilingual DE/EN.",
   robots: { index: true, follow: true },

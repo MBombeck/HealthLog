@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   Suspense,
   useCallback,
@@ -27,8 +27,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { DAY_QUERY_PARAM, type DateKey } from "@/lib/day/contract";
 import {
+  readDayOpen,
   readLastDay,
   subscribeLastDay,
+  writeDayClosed,
   writeLastDay,
 } from "@/lib/day/last-day";
 import { getRecordScope } from "@/lib/query-keys/record-scope";
@@ -155,6 +157,34 @@ function DayLayer() {
     () => readLastDay(owner),
     () => null,
   );
+  const leftOpen = useSyncExternalStore(
+    subscribeLastDay,
+    () => readDayOpen(owner),
+    () => false,
+  );
+  // Every way the person folds or closes the day goes through here, so a page
+  // change (which drops `?day=` too) is never mistaken for one.
+  const closeByPerson = useCallback(() => {
+    if (owner !== null) writeDayClosed(owner);
+    closeDay();
+  }, [owner]);
+
+  // `?day=` gone while the page stayed the same is the person leaving the
+  // day (Back past the step that opened it); gone with a page change is
+  // only the URL of another page, and the day comes with it. Declared
+  // before the effects that read the flag, so they see the close.
+  const pathname = usePathname();
+  const openOn = useRef<string | null>(null);
+  useEffect(() => {
+    if (date !== null) {
+      openOn.current = pathname;
+      return;
+    }
+    if (openOn.current !== null && openOn.current === pathname) {
+      if (owner !== null) writeDayClosed(owner);
+    }
+    openOn.current = null;
+  }, [date, pathname, owner]);
 
   const wide = useWideViewport();
   const phone = useIsMobile();
@@ -191,8 +221,26 @@ function DayLayer() {
 
   const collapse = useCallback(() => {
     collapsing.current = true;
-    closeDay();
-  }, []);
+    closeByPerson();
+  }, [closeByPerson]);
+
+  // Open stays open across pages: a page reached without `?day=` while the
+  // day was left open puts the remembered day back in its URL, on every page
+  // that docks it. Restoring is not opening, so focus stays with the page.
+  const restoring = useRef(false);
+  useEffect(() => {
+    if (shell !== "docked" || raw !== null || !leftOpen || railDay === null) {
+      return;
+    }
+    // Read again, not from the render: a Back on this page has just closed it.
+    if (!readDayOpen(owner)) return;
+    restoring.current = true;
+    window.history.replaceState(
+      null,
+      "",
+      withDayHref(window.location.pathname, window.location.search, railDay),
+    );
+  }, [shell, raw, leftOpen, railDay, owner]);
 
   // What the polite region says: the day that just opened or was stepped to.
   const announcement = date !== null ? longLabel(date) : "";
@@ -202,15 +250,25 @@ function DayLayer() {
     previous.current = date;
     if (date !== null) {
       // Opening moves focus to the day's heading; a step keeps it where it is
-      // (on the arrow the person pressed).
-      if (before === null && shell === "docked") {
+      // (on the arrow the person pressed), and so does a day restored on a
+      // new page.
+      if (before === null && shell === "docked" && !restoring.current) {
         titleRef.current?.focus({ preventScroll: true });
       }
+      restoring.current = false;
       return;
     }
     if (before !== null && shell === "docked") {
-      // Collapsed for a neighbouring panel: focus stays where it was.
+      // Collapsed for a neighbouring panel: focus stays where it was, and the
+      // day counts as folded by the person, who opened the other panel.
       if (takeDayYield()) {
+        if (owner !== null) writeDayClosed(owner);
+        collapsing.current = false;
+        return;
+      }
+      // Gone from the URL by a page change, not by the person: the day comes
+      // back on the new page, and focus stays with the page.
+      if (readDayOpen(owner)) {
         collapsing.current = false;
         return;
       }
@@ -223,7 +281,7 @@ function DayLayer() {
       }
     }
     collapsing.current = false;
-  }, [date, shell]);
+  }, [date, shell, owner]);
 
   const onStep = useCallback(
     (delta: number) => {
@@ -260,7 +318,7 @@ function DayLayer() {
       if (event.key === "Escape" && shell === "docked") {
         if (modalSurfaceOpen() && !inside) return;
         event.preventDefault();
-        closeDay();
+        closeByPerson();
         return;
       }
       if (
@@ -276,7 +334,7 @@ function DayLayer() {
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [date, shell, onStep, prefetchDay, today]);
+  }, [date, shell, onStep, prefetchDay, today, closeByPerson]);
 
   const live = (
     <p
@@ -357,7 +415,7 @@ function DayLayer() {
       today={today}
       focus={focus}
       shell={shell}
-      onClose={shell === "docked" ? collapse : closeDay}
+      onClose={shell === "docked" ? collapse : closeByPerson}
       onStep={onStep}
       onPick={onPick}
       Title={Title}
@@ -400,6 +458,7 @@ function DayLayer() {
         shell={shell}
         panelRef={panelRef}
         titleRef={titleRef}
+        onDismiss={closeByPerson}
         render={(extra) => view(SheetTitle, extra)}
       />
     </>
@@ -494,11 +553,14 @@ function DaySheet({
   shell,
   panelRef,
   titleRef,
+  onDismiss,
   render,
 }: {
   shell: "sheet" | "bottom";
   panelRef: React.RefObject<HTMLElement | null>;
   titleRef: React.RefObject<HTMLHeadingElement | null>;
+  /** The person closed the sheet (a swipe down, Escape, the overlay). */
+  onDismiss: () => void;
   render: (extra: Partial<Parameters<typeof DayView>[0]>) => React.ReactNode;
 }) {
   const { t } = useTranslations();
@@ -530,7 +592,7 @@ function DaySheet({
         if (dy < -40) setFull(true);
         else if (dy > 60) {
           if (full) setFull(false);
-          else closeDay();
+          else onDismiss();
         }
       }}
       onClick={() => {
@@ -551,7 +613,7 @@ function DaySheet({
     <Sheet
       open
       onOpenChange={(open) => {
-        if (!open) closeDay();
+        if (!open) onDismiss();
       }}
     >
       <SheetContent

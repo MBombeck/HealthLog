@@ -21,7 +21,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "HealthLog",
   description:
-    "Self-hosted health tracker — weight, blood pressure, glucose, mood, medications. Withings + Apple Health sync, transparent derived wellness metrics, AI Insights you own.",
+    "Self-hosted health tracker: weight, blood pressure, glucose, mood, medications. Withings + Apple Health sync, transparent derived wellness metrics, AI Insights you own.",
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.svg",
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
         url: "/logo-readme.png",
         width: 1000,
         height: 1000,
-        alt: "HealthLog — your health data, your server",
+        alt: "HealthLog: your health data, your server",
       },
     ],
   },

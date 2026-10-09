@@ -17,7 +17,8 @@ import {
   medicationPeriodItem,
   strayDoses,
 } from "../medication-rows";
-import { item } from "./timeline-fixture";
+import { layoutTimeline } from "../timeline-geometry";
+import { item, wordsIn } from "./timeline-fixture";
 
 const TODAY = "2025-12-31";
 
@@ -229,5 +230,127 @@ describe("medicationPeriodItem", () => {
     expect(
       medicationPeriodItem(mj, "2025-01-01", "2025-01-31", TODAY),
     ).toMatchObject({ sub: "2.5 mg", start: "2025-01-06" });
+  });
+});
+
+/**
+ * Every medication still taken is drawn, on exactly one row, whatever its
+ * items look like: no course, an open course, dose changes, a pause, or
+ * courses that all ended while the medication stayed active. A medication
+ * that is over is drawn only where its stretch lies. This is the guard for
+ * an active medication silently missing from the chart while the day view
+ * lists it as running.
+ */
+describe("every medication still taken has one row in the current window", () => {
+  const today = "2026-10-09";
+  const med = (id: string, over: Partial<TimelineItem> = {}): TimelineItem =>
+    item({
+      id,
+      group: id,
+      kind: "medication",
+      start: "2026-01-15",
+      open: true,
+      label: id,
+      sub: "5 mg",
+      ...over,
+    });
+  const of = (
+    group: string,
+    kind: TimelineItem["kind"],
+    over: Partial<TimelineItem>,
+  ) =>
+    item({
+      id: `${group}-${kind}-${over.start}`,
+      group,
+      kind,
+      label: group,
+      ...over,
+    } as never);
+
+  const cases: Array<[string, TimelineItem[], boolean]> = [
+    ["no course, open", [med("plain")], true],
+    ["no course, start unknown", [med("unknown", { startKnown: false })], true],
+    [
+      "an open course",
+      [
+        med("course"),
+        of("course", "course", { start: "2026-01-15", open: true }),
+      ],
+      true,
+    ],
+    [
+      "an open course and three dose changes",
+      [
+        med("doses"),
+        of("doses", "course", { start: "2026-01-15", open: true }),
+        of("doses", "doseChange", { start: "2026-01-15", sub: "2.5 mg" }),
+        of("doses", "doseChange", { start: "2026-02-12", sub: "5 mg" }),
+        of("doses", "doseChange", { start: "2026-04-09", sub: "7.5 mg" }),
+      ],
+      true,
+    ],
+    [
+      "a running pause",
+      [
+        med("paused"),
+        of("paused", "pause", { start: "2026-09-01", open: true }),
+      ],
+      true,
+    ],
+    [
+      "courses that all ended, medication still active",
+      [
+        med("stale"),
+        of("stale", "course", { start: "2026-01-15", end: "2026-03-01" }),
+      ],
+      true,
+    ],
+    [
+      "ended before the window",
+      [med("over", { open: false, end: "2026-02-01" })],
+      false,
+    ],
+  ];
+
+  for (const [name, items, drawn] of cases) {
+    it(`${name}: ${drawn ? "one row" : "no row"} in the last three months`, () => {
+      const layout = layoutTimeline({
+        width: 1200,
+        window: { from: "2026-07-11", to: today },
+        lanes: [{ key: "medications", items }],
+        series: [],
+        bucket: "week",
+        words: wordsIn("en"),
+        startMissing: "?",
+        today,
+      });
+      const lane = layout.lanes.find((l) => l.key === "medications");
+      if (!drawn) {
+        expect(lane).toBeUndefined();
+        return;
+      }
+      expect(lane?.rows).toBe(1);
+      expect(new Set(lane?.spans.map((s) => s.row))).toEqual(new Set([0]));
+      // The bar reaches today.
+      const right = Math.max(...(lane?.spans ?? []).map((s) => s.xEnd));
+      expect(right).toBeGreaterThan(layout.scale.x(today));
+    });
+  }
+
+  it("draws all of them together, one row each", () => {
+    const items = cases.filter(([, , drawn]) => drawn).flatMap(([, i]) => i);
+    const layout = layoutTimeline({
+      width: 1200,
+      window: { from: "2026-07-11", to: today },
+      lanes: [{ key: "medications", items }],
+      series: [],
+      bucket: "week",
+      words: wordsIn("en"),
+      startMissing: "?",
+      today,
+    });
+    const lane = layout.lanes.find((l) => l.key === "medications")!;
+    expect(lane.rows).toBe(6);
+    expect(new Set(lane.spans.map((s) => s.row)).size).toBe(6);
   });
 });

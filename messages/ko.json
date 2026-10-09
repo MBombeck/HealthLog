@@ -167,7 +167,7 @@
     "anamnesisShiftSchedule": "근무 일정",
     "anamnesisColFact": "프로필 항목",
     "anamnesisColValue": "기록된 값",
-    "subtitle": "HealthLog — 개인 건강 리포트",
+    "subtitle": "HealthLog: 개인 건강 리포트",
     "patient": "환자",
     "dateOfBirth": "생년월일",
     "gender": "성별",
@@ -213,18 +213,18 @@
       "contacts": "비상 연락처",
       "notes": "추가 메모"
     },
-    "vitalsTitle": "활력징후 — 요약",
+    "vitalsTitle": "활력징후: 요약",
     "colParameter": "항목",
     "colCurrent": "현재",
     "colAvgPeriod": "기간 평균",
     "colMin": "최소",
     "colMax": "최대",
     "colN": "건수",
-    "bpClassificationTitle": "혈압 — ESH 분류 (2023)",
+    "bpClassificationTitle": "혈압: ESH 분류 (2023)",
     "avgBp": "평균 혈압",
     "classification": "분류",
     "bmiTitle": "체질량지수 (BMI)",
-    "bmiRow": "BMI: {bmi} kg/m² — 분류: {class} (WHO)",
+    "bmiRow": "BMI: {bmi} kg/m², 분류: {class} (WHO)",
     "complianceTitle": "복약 순응도",
     "glp1Title": "GLP-1 치료",
     "glp1WeightSummary": "리포트 기간 체중: {start} kg → {end} kg ({delta} kg)",
@@ -272,8 +272,8 @@
     "typeGlucoseRandom": "혈당 (임의)",
     "typeGlucoseBedtime": "혈당 (취침 전)",
     "typeGlucoseUnspecified": "혈당 (미지정)",
-    "glucoseClassificationTitle": "혈당 — 참고 범위 (ADA 2024 / DDG)",
-    "glucoseRow": "{label}: 평균 {avg} {unit} (목표 {rangeMin}–{rangeMax}) — {class}",
+    "glucoseClassificationTitle": "혈당: 참고 범위 (ADA 2024 / DDG)",
+    "glucoseRow": "{label}: 평균 {avg} {unit} (목표 {rangeMin}–{rangeMax}), {class}",
     "glucoseInTarget": "목표 범위 내",
     "glucoseBelowTarget": "목표 미만",
     "glucoseAboveTarget": "목표 초과",
@@ -378,12 +378,12 @@
     "backToDashboard": "대시보드로 돌아가기"
   },
   "offlineBanner": {
-    "message": "연결 없음 — 온라인으로 돌아올 때까지 저장할 수 없어요.",
-    "saveFailed": "저장하지 못했어요 — 오프라인 상태예요. 온라인으로 돌아온 뒤 다시 시도해 주세요.",
+    "message": "연결이 없어요. 온라인으로 돌아올 때까지 저장할 수 없어요.",
+    "saveFailed": "저장하지 못했어요. 오프라인 상태예요. 온라인으로 돌아온 뒤 다시 시도해 주세요.",
     "showingCached": "마지막으로 동기화한 데이터를 보여주고 있어요."
   },
   "demoBanner": {
-    "message": "데모 모드 — 변경 내용은 저장되지 않아요."
+    "message": "데모 모드: 변경 내용은 저장되지 않아요."
   },
   "nav": {
     "dashboard": "대시보드",
@@ -458,7 +458,7 @@
     "hasAccount": "이미 계정이 있나요?",
     "loginFailed": "로그인 실패",
     "registerFailed": "회원가입 실패",
-    "invitedBanner": "초대를 받았어요 — 회원가입이 닫혀 있어도 계정을 만들 수 있어요.",
+    "invitedBanner": "초대를 받았어요. 회원가입이 닫혀 있어도 계정을 만들 수 있어요.",
     "alreadySignedIn": {
       "title": "이미 로그인되어 있습니다",
       "body": "{username} 계정으로 로그인되어 있습니다. 초대는 새 계정을 만듭니다. 초대를 수락하려면 로그아웃하세요.",
@@ -775,7 +775,7 @@
     "formReset": "양식 초기화",
     "saveError": "저장하지 못했어요",
     "duplicateTimestamp": "선택한 시각에 같은 유형의 측정이 이미 있어요.",
-    "serverOwnedSource": "연동된 출처의 값은 수정할 수 없어요 — 시간과 메모는 수정할 수 있어요.",
+    "serverOwnedSource": "연동된 출처의 값은 수정할 수 없어요. 시간과 메모는 수정할 수 있어요.",
     "deleteError": "삭제하지 못했어요",
     "deletedToast": "측정을 삭제했어요",
     "restoredToast": "측정을 복원했어요",
@@ -887,7 +887,7 @@
     },
     "watchdog": {
       "title": "자동 감시",
-      "description": "HealthLog는 백그라운드에서도 조용히 지켜봐요 — 연결된 워치의 불규칙 리듬·호흡 장애 알림, 기준값 이탈 건강 상태 경고, 최근 두 번의 검사 패널 사이의 눈에 띄는 변화를 보고, 특별한 게 있을 때만 카드를 보여줘요. 이런 원본이 하나라도 연결돼 있다면 카드가 없는 건 기능 누락이 아니라 좋은 신호예요. 아직 아무것도 연결하지 않았다면 감시할 대상 자체가 없어요."
+      "description": "HealthLog는 백그라운드에서도 조용히 지켜봐요. 연결된 워치의 불규칙 리듬·호흡 장애 알림, 기준값 이탈 건강 상태 경고, 최근 두 번의 검사 패널 사이의 눈에 띄는 변화를 보고, 특별한 게 있을 때만 카드를 보여줘요. 이런 원본이 하나라도 연결돼 있다면 카드가 없는 건 기능 누락이 아니라 좋은 신호예요. 아직 아무것도 연결하지 않았다면 감시할 대상 자체가 없어요."
     }
   },
   "mood": {
@@ -1069,7 +1069,7 @@
     },
     "sectionMoreTags": "태그 더 보기",
     "sectionNoteDetails": "메모·상세",
-    "quickTagsHelp": "자주 쓰는 태그 — 한 번만 누르면 돼요",
+    "quickTagsHelp": "자주 쓰는 태그: 한 번만 누르면 돼요",
     "quickTagsExpand": "더 보기",
     "loadError": "기분 기록을 불러오지 못했어요.",
     "sectionLevelA": "마음 상태",
@@ -1247,8 +1247,8 @@
       "dialogDescription": "지금 복용할 약이에요. 확인하면 모두 복용으로 기록해요.",
       "confirm": "모두 복용 ({count})",
       "successToast": "{count}건 복용을 기록했어요",
-      "partialToast": "{taken}건 기록, {failed}건 실패 – 다시 시도해 주세요",
-      "failedToast": "복용을 기록하지 못했어요 – 다시 시도해 주세요"
+      "partialToast": "{taken}건 기록, {failed}건 실패. 다시 시도해 주세요",
+      "failedToast": "복용을 기록하지 못했어요. 다시 시도해 주세요"
     },
     "logIntake": {
       "dialogTitle": "복용 기록",
@@ -1346,10 +1346,10 @@
     "skipped": "건너뜀",
     "intakeToastTaken": "복용으로 기록함: {name}",
     "intakeToastSkipped": "건너뜀: {name}",
-    "intakeToastFailed": "기록하지 못했어요: {name} — 다시 시도해 주세요",
+    "intakeToastFailed": "기록하지 못했어요: {name}. 다시 시도해 주세요",
     "intakeUndo": "실행 취소",
     "intakeUndone": "기록을 되돌렸어요",
-    "intakeUndoFailed": "되돌리지 못했어요 — 기록에서 수정해 주세요",
+    "intakeUndoFailed": "되돌리지 못했어요. 기록에서 수정해 주세요",
     "glp1LastInjection": "{label}",
     "glp1NextInjectionDays": "{label} ({days}일 후)",
     "glp1NextInjectionToday": "오늘",
@@ -1431,10 +1431,10 @@
         "error": {
           "empty": "설명을 먼저 입력해 주세요.",
           "tooLong": "설명은 2000자 이내로 적어 주세요.",
-          "rateLimit": "요청이 너무 많아요 — 잠시 후 다시 시도해 주세요.",
-          "noProvider": "AI 제공자가 설정되지 않았어요 — 설정에서 등록해 주세요.",
-          "budget": "오늘 AI 사용 한도를 다 썼어요 — 내일 다시 시도해 주세요.",
-          "network": "AI 제공자에 연결하지 못했어요 — 다시 시도해 주세요.",
+          "rateLimit": "요청이 너무 많아요. 잠시 후 다시 시도해 주세요.",
+          "noProvider": "AI 제공자가 설정되지 않았어요. 설정에서 등록해 주세요.",
+          "budget": "오늘 AI 사용 한도를 다 썼어요. 내일 다시 시도해 주세요.",
+          "network": "AI 제공자에 연결하지 못했어요. 다시 시도해 주세요.",
           "consent": "AI로 설명을 읽으려면 먼저 동의가 필요합니다.",
           "unavailable": "지금 여기에서는 AI로 설명을 읽을 수 없습니다."
         }
@@ -1508,7 +1508,7 @@
           "night": "밤"
         },
         "max": {
-          "reached": "최대 개수에 도달했어요 — 다른 시각을 삭제한 뒤 추가하세요."
+          "reached": "최대 개수에 도달했어요. 다른 시각을 삭제한 뒤 추가하세요."
         }
       },
       "courseWindow": {
@@ -1584,7 +1584,7 @@
           },
           "dosesPerUnitLabel": "단위당 투여 횟수",
           "dosesPerUnitPlaceholder": "예: 4",
-          "dosesPerUnitHint": "펜/바이알당 투여 횟수 — 재고 추적이 필요 없으면 비워 두세요.",
+          "dosesPerUnitHint": "펜/바이알당 투여 횟수예요. 재고 추적이 필요 없으면 비워 두세요.",
           "short": "용량",
           "unitsPerDoseLabel": "1회 복용 단위 수",
           "unitsPerDoseHint": "예: 4mg 용량이면 2mg 2정, 반으로 나눠 먹으면 ½정"
@@ -1596,7 +1596,7 @@
         },
         "step5": {
           "title": "얼마나 자주 복용하나요?",
-          "subline": "주기를 고르세요 — 세부 설정은 다음 단계에서 해요.",
+          "subline": "주기를 고르세요. 세부 설정은 다음 단계에서 해요.",
           "short": "주기"
         },
         "step6": {
@@ -1618,7 +1618,7 @@
         },
         "step7": {
           "title": "하루 중 언제 복용하나요?",
-          "subline": "하루 한 번 이상 — 알림은 이 목록을 따라요.",
+          "subline": "하루 한 번 이상이에요. 알림은 이 목록을 따라요.",
           "presetsLabel": "시간대 프리셋",
           "presets": {
             "morning": "아침",
@@ -1626,7 +1626,7 @@
             "evening": "저녁",
             "night": "밤"
           },
-          "overrideHint": "선택 사항 — 이 시간대에만 다른 용량이나 단위 수를 지정해요. 비워 두면 약의 기본값을 써요.",
+          "overrideHint": "선택 사항: 이 시간대에만 다른 용량이나 단위 수를 지정해요. 비워 두면 약의 기본값을 써요.",
           "doseOverrideLabel": "이 시간대 용량 (선택)",
           "doseOverridePlaceholder": "예: 반 알",
           "unitsOverrideLabel": "이 시간대에 복용하는 단위 수",
@@ -1634,10 +1634,10 @@
           "short": "시간"
         },
         "step8": {
-          "title": "다 됐어요 — HealthLog가 알림을 보낼까요?",
+          "title": "다 됐어요. HealthLog가 알림을 보낼까요?",
           "subline": "저장하기 전에 아래 내용을 확인해 주세요.",
           "remindersLabel": "알림 켜기",
-          "remindersDescription": "푸시, Telegram, ntfy — 설정에 따라 보내요.",
+          "remindersDescription": "푸시, Telegram, ntfy 중 설정에 따라 보내요.",
           "noChannelHint": "알림을 보내려면 알림 채널이 필요한데, 지금은 켜진 채널이 없어요.",
           "noChannelHintLink": "알림 설정하기",
           "short": "완료"
@@ -1722,7 +1722,7 @@
         }
       },
       "errors": {
-        "submitFailed": "약을 저장하지 못했어요 — 다시 시도해 주세요."
+        "submitFailed": "약을 저장하지 못했어요. 다시 시도해 주세요."
       }
     },
     "doseStrength": {
@@ -1742,7 +1742,7 @@
     },
     "injectionSiteBodyOutlineAriaLabel": "신체 윤곽",
     "injectionSitePickerAriaLabel": "주사 부위 선택기",
-    "injectionSiteRecommendedAriaLabel": "{site} — 다음 권장 부위",
+    "injectionSiteRecommendedAriaLabel": "{site}: 다음 권장 부위",
     "injectionSiteLegendAriaLabel": "마커 범례",
     "injectionSiteLegendRecommended": "다음 권장 부위",
     "injectionSiteLegendLastUsed": "마지막 사용 부위",
@@ -1818,7 +1818,7 @@
         "emptyState": "아직 복용 기록이 없어요.",
         "emptyStateCta": "용량을 기록하면 예상 농도 곡선이 그려져요.",
         "estimateNote": "EMA가 공개한 집단 약동학 자료를 바탕으로 한 참고용 추정치예요. 실제 측정값이 아니에요.",
-        "unknownDrug": "{name} — EMA 승인 GLP-1 목록에 없어서 HealthLog가 집단 약동학 곡선을 그릴 수 없어요."
+        "unknownDrug": "{name}: EMA 승인 GLP-1 목록에 없어서 HealthLog가 집단 약동학 곡선을 그릴 수 없어요."
       }
     },
     "detail": {
@@ -1830,7 +1830,7 @@
       "cadence": {
         "oneShotOn": "{date}에 1회 복용해요.",
         "oneShotPending": "1회 복용 예정이에요.",
-        "asNeeded": "필요시 복용 — 정해진 일정 없어요."
+        "asNeeded": "필요시 복용: 정해진 일정 없어요."
       },
       "intake": {
         "title": "복용 기록",
@@ -1857,7 +1857,7 @@
           "dialogTitle": "복용 기록 편집",
           "takenAtLabel": "복용 시각",
           "scheduledForHint": "예정: {dateTime}",
-          "farFromScheduledWarning": "예정 시각과 많이 떨어져 있어요 — 날짜를 확인해 주세요.",
+          "farFromScheduledWarning": "예정 시각과 많이 떨어져 있어요. 날짜를 확인해 주세요.",
           "skippedLabel": "건너뜀",
           "save": "저장",
           "cancel": "취소",
@@ -1901,10 +1901,10 @@
         },
         "addDialog": {
           "title": "복용 기록 추가",
-          "description": "복용을 기록해요 — 지난 날짜나 일정 외 복용도 괜찮아요.",
+          "description": "복용을 기록해요. 지난 날짜나 일정 외 복용도 괜찮아요.",
           "takenAtLabel": "복용 시각",
           "skippedLabel": "건너뜀",
-          "nudgeHint": "{slot} 시간대와 가까워요 — 저장할 때 그 시간대에 배정할지 물어볼게요.",
+          "nudgeHint": "{slot} 시간대와 가까워요. 저장할 때 그 시간대에 배정할지 물어볼게요.",
           "cancel": "취소",
           "submit": "저장"
         },
@@ -1973,7 +1973,7 @@
           "title": "복약 종료",
           "helper": "알림을 끄고 이 약을 종료 상태로 표시해요. 기록은 계속 볼 수 있어요.",
           "button": "종료",
-          "dialogTitle": "종료: {name} — 알림을 끄고, 기록은 계속 볼 수 있어요",
+          "dialogTitle": "종료: {name} (알림을 끄고, 기록은 계속 볼 수 있어요)",
           "dialogBody": "알림이 더 이상 오지 않아요. 이전 기록은 타임라인에 남아요.",
           "toast": "복약을 종료했어요",
           "failed": "복약을 종료하지 못했어요."
@@ -1991,7 +1991,7 @@
           "title": "약 삭제",
           "helper": "약과 관련된 모든 기록을 삭제해요.",
           "button": "삭제",
-          "dialogTitle": "{name} — 삭제할까요?",
+          "dialogTitle": "{name}: 삭제할까요?",
           "dialogBody": "약과 일정, 복용 기록, API 토큰, 단계 설정, 알림이 모두 영구히 삭제돼요.",
           "toast": "약을 삭제했어요",
           "failed": "약을 삭제하지 못했어요."
@@ -2011,7 +2011,7 @@
         "copyFailed": "복사하지 못했어요.",
         "tokenCopied": "토큰을 복사했어요",
         "copyToken": "토큰 복사",
-        "mintedHint": "지금 토큰을 복사해 주세요 — 한 번만 보여줘요."
+        "mintedHint": "지금 토큰을 복사해 주세요. 한 번만 보여줘요."
       },
       "advanced": {
         "dataPortability": {
@@ -2051,9 +2051,9 @@
         "statusTitle": "상태",
         "nextDoseLabel": "다음 복용",
         "nextDoseNone": "예정된 복용이 없어요.",
-        "nextDoseAsNeeded": "필요시 복용 — 예정된 복용이 없어요.",
+        "nextDoseAsNeeded": "필요시 복용: 예정된 복용이 없어요.",
         "nextDoseNotTracked": "복용을 기록하지 않아요. 기록으로만 남겨요.",
-        "pausedHint": "일시중지 — 알림이 오지 않아요.",
+        "pausedHint": "일시중지: 알림이 오지 않아요.",
         "reminderLabel": "알림",
         "reminderOn": "켜짐",
         "reminderOff": "꺼짐",
@@ -2124,7 +2124,7 @@
         "packagingDefaultPack": "기본 포장 크기: {units}개",
         "packagingNoDefaultPack": "기본 포장 크기가 설정되지 않았어요",
         "packagingEdit": "편집",
-        "packagingDescription": "1회분에 몇 개를 쓰는지, 새 포장이 보통 몇 개인지 설정해요 — 예를 들어 제조사가 바뀌어 포장 크기가 달라졌을 때요.",
+        "packagingDescription": "1회분에 몇 개를 쓰는지, 새 포장이 보통 몇 개인지 설정해요. 예를 들어 제조사가 바뀌어 포장 크기가 달라졌을 때요.",
         "packagingUnitsPerDoseLabel": "1회분당 개수",
         "packagingUnitsPerDoseHelper": "예: 4mg 복용에 2mg 정제 2개, 한 알 반이면 1.5 (0 초과, 100 이하). 이미 기록된 복용은 그대로예요.",
         "packagingDefaultPackLabel": "기본 포장 크기 (개)",
@@ -2175,11 +2175,11 @@
           "hideEras": "이전 구간 숨기기",
           "addEra": "이전 구간 추가",
           "addEraTitle": "이전 구간 추가",
-          "addEraDescription": "예전에 이 약을 복용하던 시각을 기록해요 — 예를 들어 여기서 일정을 바꾸기 전 시각이요.",
+          "addEraDescription": "예전에 이 약을 복용하던 시각을 기록해요. 예를 들어 여기서 일정을 바꾸기 전 시각이요.",
           "editAria": "구간 편집",
           "editEraTitle": "구간 편집",
           "editEraDescription": "이 구간의 복용 시각과 기간을 조정해요.",
-          "archivedEditHint": "이 구간은 자동으로 기록됐어요 — 수정하면 기록된 이력이 바로잡히고, 원본은 내부에 기록으로 남아요.",
+          "archivedEditHint": "이 구간은 자동으로 기록됐어요. 수정하면 기록된 이력이 바로잡히고, 원본은 내부에 기록으로 남아요.",
           "updatedToast": "구간을 수정했어요",
           "updateError": "구간을 수정하지 못했어요. 다른 구간과 겹치지 않고, 현재 일정보다 먼저 끝나야 해요.",
           "timesLabel": "복용 시각",
@@ -2205,7 +2205,7 @@
         "saved": "일정을 저장했어요",
         "failed": "일정을 저장하지 못했어요",
         "window": {
-          "intro": "복용마다 정시로 인정되는 범위를 정해요 — 정확한 시각(±1h)이나 07:00–09:00 같은 직접 지정 범위로요.",
+          "intro": "복용마다 정시로 인정되는 범위를 정해요. 정확한 시각(±1h)이나 07:00–09:00 같은 직접 지정 범위로요.",
           "explicitToggle": "직접 범위 지정",
           "startLabel": "범위 시작",
           "endLabel": "범위 종료",
@@ -2218,10 +2218,10 @@
       }
     },
     "logInjectionSiteTitle": "주사 부위 기록",
-    "logInjectionSiteDescription": "{name} — 어디에 주사했나요? 선택 사항이라 건너뛰어도 돼요.",
+    "logInjectionSiteDescription": "{name}: 어디에 주사했나요? 선택 사항이라 건너뛰어도 돼요.",
     "logInjectionSiteSkip": "건너뛰기",
     "logInjectionSiteConfirm": "부위 저장",
-    "logInjectionSiteNoneAvailable": "쓸 수 있는 주사 부위가 없어요 — 설정에서 모든 부위를 제외했어요.",
+    "logInjectionSiteNoneAvailable": "쓸 수 있는 주사 부위가 없어요. 설정에서 모든 부위를 제외했어요.",
     "logInjectionSiteSaveFailed": "주사 부위를 저장하지 못했어요. 다시 시도해 주세요.",
     "perSlotUnits": "1회분당 {units}",
     "trackInjectionSitesToggle": "주사 부위 기록하기",
@@ -2246,9 +2246,9 @@
     "tableStockDoses": "{count}회분",
     "tableStockRunway": "약 {days}일 남음",
     "cardLowStockRunway": "재고: 약 {days}일",
-    "takeActionFor": "복용 – {name}",
-    "skipActionFor": "건너뛰기 – {name}",
-    "reorderDescription": "약의 순서를 정하세요 – 카드 보기와 표 보기 모두에 적용돼요.",
+    "takeActionFor": "복용: {name}",
+    "skipActionFor": "건너뛰기: {name}",
+    "reorderDescription": "카드 보기와 표 보기 모두에 적용되는 약의 순서를 정하세요.",
     "reorderSaved": "순서를 저장했어요",
     "reorderSaveFailed": "순서를 저장하지 못했어요",
     "customize": "복약 맞춤 설정",
@@ -2267,7 +2267,7 @@
       "levelShift": "{date} 무렵에 수준 변화가 감지됐어요.",
       "plateau": {
         "title": "현재 용량에서 체중 정체",
-        "evidence": "최근 {window}일 동안 체중이 {delta}{unit} 움직였어요({readings}개 측정값) — {dose}로 {days}일."
+        "evidence": "최근 {window}일 동안 체중이 {delta}{unit} 움직였어요({readings}개 측정값). {dose}로 {days}일째예요."
       },
       "retarget": {
         "label": "맞는 측정값이 아닌가요?",
@@ -2277,16 +2277,16 @@
         "error": "변경 내용을 저장하지 못했어요. 다시 시도해 주세요."
       },
       "beforeAfter": {
-        "summary": "시작 전 평균 {before} → 이후 평균 {after} — {delta} 변화.",
+        "summary": "시작 전 평균 {before} → 이후 평균 {after}, {delta} 변화.",
         "counts": "시작 전 {beforeCount}개, 이후 {afterCount}개 측정값을 기준으로 했어요.",
-        "needBefore": "시작 전 측정값이 아직 부족해요 — 비교하려면 전후로 약 {weeks}주씩 필요해요.",
-        "needAfter": "시작 이후 측정값이 아직 부족해요 — 비교하려면 전후로 약 {weeks}주씩 필요해요.",
+        "needBefore": "시작 전 측정값이 아직 부족해요. 비교하려면 전후로 약 {weeks}주씩 필요해요.",
+        "needAfter": "시작 이후 측정값이 아직 부족해요. 비교하려면 전후로 약 {weeks}주씩 필요해요.",
         "needStart": "시작일을 설정하면 복용 전후 측정값을 비교할 수 있어요.",
-        "needData": "측정값이 아직 부족해요 — 비교하려면 시작 전후로 약 {weeks}주씩 필요해요."
+        "needData": "측정값이 아직 부족해요. 비교하려면 시작 전후로 약 {weeks}주씩 필요해요."
       },
       "insights": {
         "title": "약 효과",
-        "subtitle": "약이 목표로 하는 측정값과 무엇이 함께 움직였는지 보여줘요 — 연관성일 뿐 판단이 아니에요.",
+        "subtitle": "약이 목표로 하는 측정값과 무엇이 함께 움직였는지 보여줘요. 연관성일 뿐 판단이 아니에요.",
         "link": "효과 보기 열기",
         "empty": "약과 목표 측정값을 연결하기에는 데이터가 아직 부족해요."
       },
@@ -2320,7 +2320,7 @@
       "reasonMissingMedication": "행에 약 이름이 없어요",
       "reasonUnreadableDosage": "복용량이 숫자가 아니에요",
       "reasonUnreadableRow": "행의 열 개수가 머리글보다 적어요",
-      "reasonStatusNoDoseInformation": "파일에 그 복용에 대한 기록이 없어요 — 응답도 없었고 기록된 것도 없어요",
+      "reasonStatusNoDoseInformation": "파일에 그 복용에 대한 기록이 없어요. 응답도 없었고 기록된 것도 없어요",
       "reasonStatusReminderEvent": "행이 미뤄 둔 알림에 관한 내용이라 복용에 대해 알려주는 게 없어요",
       "reasonStatusNotificationNotSent": "행은 알림이 발송되지 않았다는 기록이라 복용이 아니라 앱에 관한 내용이에요"
     },
@@ -2392,7 +2392,7 @@
   },
   "charts": {
     "loadingLabel": "차트 불러오는 중…",
-    "loadingSlowHint": "분석을 계산하는 중이에요 — 잠시 걸릴 수 있어요.",
+    "loadingSlowHint": "분석을 계산하는 중이에요. 잠시 걸릴 수 있어요.",
     "weight": "체중",
     "bloodPressure": "혈압",
     "pulse": "맥박",
@@ -2471,8 +2471,8 @@
       "columnDate": "날짜",
       "noValue": "값 없음",
       "captionDay": "{metric} 하루당 한 행, 차트가 그리는 값과 같아요.",
-      "captionWeek": "{metric} 한 주당 한 행, 그 주 일별 평균 — 차트가 그리는 값과 같아요.",
-      "captionMonth": "{metric} 한 달당 한 행, 그달 일별 평균 — 차트가 그리는 값과 같아요.",
+      "captionWeek": "{metric} 한 주당 한 행, 그 주 일별 평균이에요. 차트가 그리는 값과 같아요.",
+      "captionMonth": "{metric} 한 달당 한 행, 그달 일별 평균이에요. 차트가 그리는 값과 같아요.",
       "hourlyMeanNote": "{metric}은(는) 하루의 평균이며 각 시간을 한 번씩만 반영하므로, 운동이 하루의 나머지보다 더 크게 반영되지 않습니다."
     },
     "personalBaseline": "내 평소값",
@@ -2542,8 +2542,8 @@
     },
     "tooltipPrior": "이전 기간",
     "unavailable": {
-      "lastMonth": "비교 불가 — 지난달 데이터가 아직 없어요",
-      "lastYear": "비교 불가 — 작년 데이터가 아직 없어요"
+      "lastMonth": "비교 불가: 지난달 데이터가 아직 없어요",
+      "lastYear": "비교 불가: 작년 데이터가 아직 없어요"
     },
     "notAvailableForCompliance": "복약 순응도는 비교 불가"
   },
@@ -2751,7 +2751,7 @@
         "unavailable": "이 항목은 지금 반영 대상이 아니에요"
       },
       "tension": "컨디션 신호가 엇갈려요. 좋은 쪽: {positive}. 부담이 큰 쪽: {negative}.",
-      "returnToBand": "{metric} — {days}일째 평소 범위 안으로 돌아와 있어요.",
+      "returnToBand": "{metric}: {days}일째 평소 범위 안으로 돌아와 있어요.",
       "weightGoal": {
         "title": "개인 체중 목표",
         "value": "지금 {current}{unit}. 목표 {min}~{max}{unit}. 목표까지 {distance}{unit}.",
@@ -2841,14 +2841,14 @@
       }
     },
     "coach": {
-      "refusalOutOfScope": "기록에 있는 건강 지표 — 측정값, 약, 기분, 추이 — 만 도와드릴 수 있어요. 그 밖의 질문에는 답할 수 없어요.",
-      "refusalInjection": "제 지시를 덮어쓰려는 표현이 보였어요. 저는 HealthLog 코치이고 회원님의 건강 데이터만 정리해 드려요 — 그 범위로 질문을 다시 적어 주세요.",
+      "refusalOutOfScope": "기록에 있는 건강 지표(측정값, 약, 기분, 추이)만 도와드릴 수 있어요. 그 밖의 질문에는 답할 수 없어요.",
+      "refusalInjection": "제 지시를 덮어쓰려는 표현이 보였어요. 저는 HealthLog 코치이고 회원님의 건강 데이터만 정리해 드려요. 그 범위로 질문을 다시 적어 주세요.",
       "errorBudget": "오늘 코치 사용 한도에 도달했어요. 사용량은 UTC 자정에 초기화돼요.",
       "errorProvider": "지금은 코치가 인사이트 제공자에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.",
       "errorDemo": "데모에서는 코치가 답하지 않아요.",
-      "errorNoProvider": "코치는 기록된 건강 데이터를 읽고 그에 대한 질문에 답해요(의학적 조언은 아니에요). 그러려면 HealthLog에 AI 제공자가 필요해요 — 직접 발급한 키나 로컬 모델을 연결해 주세요.",
+      "errorNoProvider": "코치는 기록된 건강 데이터를 읽고 그에 대한 질문에 답해요(의학적 조언은 아니에요). 그러려면 HealthLog에 AI 제공자가 필요해요. 직접 발급한 키나 로컬 모델을 연결해 주세요.",
       "errorNoProviderAction": "AI 제공자 연결",
-      "errorNetwork": "인터넷에 연결되어 있지 않아요 — 다시 연결되면 시도해 주세요.",
+      "errorNetwork": "인터넷에 연결되어 있지 않아요. 다시 연결되면 시도해 주세요.",
       "prefsSaveError": "코치 설정을 저장하지 못했어요. 다시 시도해 주세요.",
       "errorCredentialExpired": "AI 제공자 연결이 만료됐어요. 코치를 계속 쓰려면 설정에서 다시 연결해 주세요.",
       "tagline": "내 데이터에 기반한 개인 건강 코치.",
@@ -2867,7 +2867,7 @@
       "thinking": "생각 중…",
       "unverifiedFiguresNotice": "일부 수치는 데이터와 대조하지 못해 제외했어요.",
       "composerPlaceholder": "무엇이든 물어보세요…",
-      "nudgeBubbleLabel": "코치의 새 메시지 — 대화 열기",
+      "nudgeBubbleLabel": "코치의 새 메시지: 대화 열기",
       "fabLabel": "코치 열기",
       "readAloud": "소리내어 읽기",
       "readAloudStop": "읽기 중지",
@@ -2891,7 +2891,7 @@
       "guided": {
         "offerTitle": "코치가 물어볼 후속 질문이 {count}개 있어요",
         "offerTitleOne": "코치가 물어볼 후속 질문이 있어요",
-        "offerBody": "짧은 답변이 셀프 컨텍스트를 더 정확하게 만들어요 — 여기 대화에서 한 번에 하나씩 물어볼게요.",
+        "offerBody": "짧은 답변이 셀프 컨텍스트를 더 정확하게 만들어요. 여기 대화에서 한 번에 하나씩 물어볼게요.",
         "offerStart": "지금 답하기",
         "offerLater": "나중에",
         "offerDismiss": "다시 묻지 않기",
@@ -2901,7 +2901,7 @@
         "later": "나중에",
         "dismissRemaining": "다시 묻지 않기",
         "answerPlaceholder": "답변을 입력하세요…",
-        "summaryTitle": "다 됐어요 — 답변 고마워요!",
+        "summaryTitle": "다 됐어요. 답변 고마워요!",
         "summaryAnswered": "{total}개 중 {answered}개 답변",
         "summaryAdopted": "셀프 컨텍스트에 {adopted}개 추가",
         "summaryAdoptedNone": "셀프 컨텍스트에 새로 추가된 건 없어요",
@@ -2983,7 +2983,7 @@
       "settingsVerbosityBrief": "짧게",
       "settingsVerbosityDefault": "기본",
       "settingsVerbosityDetailed": "자세히",
-      "settingsVerbosityConciseHint": "간결한 말투는 이미 답변을 짧게 유지해요 — 켜 두는 동안 답변 길이는 '짧게'로 고정돼요.",
+      "settingsVerbosityConciseHint": "간결한 말투는 이미 답변을 짧게 유지해요. 켜 두는 동안 답변 길이는 '짧게'로 고정돼요.",
       "settingsSourcesSummary": "코치는 데이터 영역 {total}개 중 {count}개를 {window} 전까지 봐요.",
       "settingsSourcesSummaryAll": "코치는 데이터 영역 {total}개 중 {count}개를 처음 기록부터 봐요.",
       "settingsSourcesPointerLink": "코치 설정 열기",
@@ -3075,22 +3075,22 @@
       "askAboutThis": "코치에게 물어보기",
       "readStrip": {
         "label": "평소 범위",
-        "baselineWithin": "평소 범위: {low}–{high} {unit}. 오늘 값 {value} — 범위 안이에요.",
-        "baselineAbove": "평소 범위: {low}–{high} {unit}. 오늘 값 {value} — 범위 위예요.",
-        "baselineBelow": "평소 범위: {low}–{high} {unit}. 오늘 값 {value} — 범위 아래예요.",
-        "sameHoursWithin": "이 시간대까지 평소 범위: {low}–{high} {unit}. 오늘 지금까지 {value} — 범위 안이에요.",
-        "sameHoursAbove": "이 시간대까지 평소 범위: {low}–{high} {unit}. 오늘 지금까지 {value} — 범위 위예요.",
-        "sameHoursBelow": "이 시간대까지 평소 범위: {low}–{high} {unit}. 오늘 지금까지 {value} — 범위 아래예요.",
-        "steadyWithin": "평소 값: {low} {unit}. 오늘 값 {value} — 평소와 같아요.",
-        "steadyAbove": "평소 값: {low} {unit}. 오늘 값 {value} — 평소보다 높아요.",
-        "steadyBelow": "평소 값: {low} {unit}. 오늘 값 {value} — 평소보다 낮아요.",
-        "latestWithin": "평소 범위: {low}–{high} {unit}. 마지막 측정({date}) 값 {value} — 범위 안이었어요.",
-        "latestAbove": "평소 범위: {low}–{high} {unit}. 마지막 측정({date}) 값 {value} — 범위보다 높았어요.",
-        "latestBelow": "평소 범위: {low}–{high} {unit}. 마지막 측정({date}) 값 {value} — 범위 아래였어요.",
-        "steadyLatestWithin": "평소 값: {low} {unit}. 마지막 측정({date}) 값 {value} — 평소와 같았어요.",
-        "steadyLatestAbove": "평소 값: {low} {unit}. 마지막 측정({date}) 값 {value} — 평소보다 높았어요.",
-        "steadyLatestBelow": "평소 값: {low} {unit}. 마지막 측정({date}) 값 {value} — 평소보다 낮았어요.",
-        "insufficient": "아직 평소 범위를 배우는 중이에요 — 며칠 더 기록해 주세요.",
+        "baselineWithin": "평소 범위: {low}–{high} {unit}. 오늘 값 {value}, 범위 안이에요.",
+        "baselineAbove": "평소 범위: {low}–{high} {unit}. 오늘 값 {value}, 범위 위예요.",
+        "baselineBelow": "평소 범위: {low}–{high} {unit}. 오늘 값 {value}, 범위 아래예요.",
+        "sameHoursWithin": "이 시간대까지 평소 범위: {low}–{high} {unit}. 오늘 지금까지 {value}, 범위 안이에요.",
+        "sameHoursAbove": "이 시간대까지 평소 범위: {low}–{high} {unit}. 오늘 지금까지 {value}, 범위 위예요.",
+        "sameHoursBelow": "이 시간대까지 평소 범위: {low}–{high} {unit}. 오늘 지금까지 {value}, 범위 아래예요.",
+        "steadyWithin": "평소 값: {low} {unit}. 오늘 값 {value}, 평소와 같아요.",
+        "steadyAbove": "평소 값: {low} {unit}. 오늘 값 {value}, 평소보다 높아요.",
+        "steadyBelow": "평소 값: {low} {unit}. 오늘 값 {value}, 평소보다 낮아요.",
+        "latestWithin": "평소 범위: {low}–{high} {unit}. 마지막 측정({date}) 값 {value}, 범위 안이었어요.",
+        "latestAbove": "평소 범위: {low}–{high} {unit}. 마지막 측정({date}) 값 {value}, 범위보다 높았어요.",
+        "latestBelow": "평소 범위: {low}–{high} {unit}. 마지막 측정({date}) 값 {value}, 범위 아래였어요.",
+        "steadyLatestWithin": "평소 값: {low} {unit}. 마지막 측정({date}) 값 {value}, 평소와 같았어요.",
+        "steadyLatestAbove": "평소 값: {low} {unit}. 마지막 측정({date}) 값 {value}, 평소보다 높았어요.",
+        "steadyLatestBelow": "평소 값: {low} {unit}. 마지막 측정({date}) 값 {value}, 평소보다 낮았어요.",
+        "insufficient": "아직 평소 범위를 배우는 중이에요. 며칠 더 기록해 주세요.",
         "driver": "{note}"
       },
       "scope": {
@@ -3104,39 +3104,39 @@
         "groupEarlier": "이전"
       },
       "seed": {
-        "bloodPressure": "최근 30일 혈압 추이를 설명해 주세요 — 눈여겨볼 게 있나요?",
+        "bloodPressure": "최근 30일 혈압 추이를 설명해 주세요. 눈여겨볼 게 있나요?",
         "weight": "요즘 체중 추이가 어떤가요? 그 방향이 신경 쓸 만한가요?",
         "bmi": "제 BMI 추이는 무엇을 말해 주나요? 어떻게 읽어야 하나요?",
-        "pulse": "제 맥박 측정값을 설명해 주세요 — 평소와 다른 점이 있나요?",
+        "pulse": "제 맥박 측정값을 설명해 주세요. 평소와 다른 점이 있나요?",
         "restingHr": "안정 시 심박수 추이는 어떤가요? 제 체력에 대해 뭘 알려 주나요?",
         "hrv": "요즘 제 심박변이도는 회복과 스트레스에 대해 뭘 말해 주나요?",
-        "sleep": "최근 수면을 설명해 주세요 — 수면 시간, 규칙성, 바꿀 만한 점까지.",
+        "sleep": "최근 수면을 설명해 주세요. 수면 시간, 규칙성, 바꿀 만한 점까지.",
         "mood": "최근 몇 주 동안 제 기분에서 어떤 패턴이 보이나요?",
         "medications": "제 복약 순응도는 어떤가요? 요즘 컨디션과 맞물리나요?",
         "steps": "걸음 수로 볼 때 요즘 얼마나 활동적이었나요? 건강한 기준값과 비교하면 어떤가요?",
         "activeEnergy": "활동 에너지 추이는 요즘 제 활동량에 대해 뭘 말해 주나요?",
         "cardioFitness": "심폐 체력(VO₂ max) 추이는 무슨 뜻인가요? 어떻게 하면 좋은 방향으로 올릴 수 있나요?",
-        "bloodGlucose": "최근 혈당 측정값을 설명해 주세요 — 건강한 범위 안인가요?",
+        "bloodGlucose": "최근 혈당 측정값을 설명해 주세요. 건강한 범위 안인가요?",
         "oxygenSaturation": "제 산소포화도(SpO₂) 추이는 무엇을 말해 주나요?",
         "respiratoryRate": "제 호흡수 추이는 건강에 대해 뭘 말해 주나요?",
-        "workouts": "최근 운동을 설명해 주세요 — 운동량, 빈도, 사이사이 회복까지.",
+        "workouts": "최근 운동을 설명해 주세요. 운동량, 빈도, 사이사이 회복까지.",
         "recoveryPage": "지금 제 회복 상태가 이런 이유는 뭔가요? 무엇이 영향을 주고 있나요?",
-        "briefing": "오늘 브리핑을 설명해 주세요 — 무엇에 집중해야 하고, 지금 할 만한 일이 있나요?",
+        "briefing": "오늘 브리핑을 설명해 주세요. 무엇에 집중해야 하고, 지금 할 만한 일이 있나요?",
         "healthScore": "제 건강 점수가 100점 중 {score}점인 이유는 뭔가요? 무엇을 바꾸면 가장 크게 오를까요?",
-        "periodWeek": "지난주 건강 지표들이 어땠는지 설명해 주세요 — 눈에 띄는 게 있나요?",
-        "periodMonth": "지난달 건강 지표들이 어땠는지 설명해 주세요 — 눈에 띄는 게 있나요?",
+        "periodWeek": "지난주 건강 지표들이 어땠는지 설명해 주세요. 눈에 띄는 게 있나요?",
+        "periodMonth": "지난달 건강 지표들이 어땠는지 설명해 주세요. 눈에 띄는 게 있나요?",
         "correlationBpCompliance": "제 복약 순응도가 혈압과 어떤 관계인가요? 이 상관관계가 저에게 어떤 의미인지 설명해 주세요.",
         "correlationMoodPulse": "제 기분과 맥박 사이에 실제로 연관이 있나요? 이 상관관계를 읽는 법을 알려 주세요.",
         "correlationWeightWeekday": "제 체중이 주간 패턴을 따르나요? 이 요일별 상관관계는 무엇을 말해 주나요?",
-        "recommendation": "이 추천에 대해 더 알려 주세요: '{text}' — 왜 저에게 해당하고, 무엇을 하면 되나요?"
+        "recommendation": "이 추천에 대해 더 알려 주세요: '{text}'. 왜 저에게 해당하고, 무엇을 하면 되나요?"
       },
-      "assessmentPrompt": "제 {metric} 평가를 설명해 주세요 — 무슨 뜻이고 무엇을 하면 되나요?",
+      "assessmentPrompt": "제 {metric} 평가를 설명해 주세요. 무슨 뜻이고 무엇을 하면 되나요?",
       "attach": {
         "menuChooseFromDocuments": "문서에서 선택",
         "menuUploadNew": "새 문서 업로드",
         "trigger": "문서 첨부",
         "pickerTitle": "문서 첨부",
-        "pickerDescription": "코치는 첨부한 문서만 읽어요 — 건강 데이터는 읽지 않아요.",
+        "pickerDescription": "코치는 첨부한 문서만 읽어요. 건강 데이터는 읽지 않아요.",
         "pickerSearchPlaceholder": "문서 검색…",
         "pickerEmpty": "보관함에 문서가 아직 없어요.",
         "pickerNotIndexed": "아직 색인되지 않음",
@@ -3144,13 +3144,13 @@
         "pickerConfirm": "첨부 ({count})",
         "pillRemove": "제거: {title}",
         "indexing": "색인 중…",
-        "indexingHint": "아직 색인 중인 문서가 있어요 — 준비되면 보낼 수 있어요.",
-        "fencedHint": "이 대화는 건강 데이터에 접근하지 않아요 — 코치는 첨부한 문서만 읽어요.",
+        "indexingHint": "아직 색인 중인 문서가 있어요. 준비되면 보낼 수 있어요.",
+        "fencedHint": "이 대화는 건강 데이터에 접근하지 않아요. 코치는 첨부한 문서만 읽어요.",
         "documentsAttachedOne": "문서 1개 첨부됨",
         "documentsAttachedOther": "문서 {count}개 첨부됨",
         "railBadge": "문서 전용 대화",
         "uploadError": "업로드하지 못했어요. 다시 시도해 주세요.",
-        "notFoundError": "그 문서 링크는 더 이상 유효하지 않아요 — 일반 대화로 시작할게요."
+        "notFoundError": "그 문서 링크는 더 이상 유효하지 않아요. 일반 대화로 시작할게요."
       },
       "interrupted": {
         "note": "이 답변은 끝나기 전에 중단됐어요.",
@@ -3321,7 +3321,7 @@
     },
     "hrv": {
       "title": "심박변이도",
-      "description": "시간에 따른 심박변이도 — 신경계 회복 신호로, Apple Watch 등 호환 웨어러블이 수면 중에 측정해요.",
+      "description": "시간에 따른 심박변이도예요. 신경계 회복 신호로, Apple Watch 등 호환 웨어러블이 수면 중에 측정해요.",
       "chartTitle": "심박변이도",
       "emptyState": {
         "title": "아직 심박변이도 기록이 없어요",
@@ -3330,17 +3330,17 @@
     },
     "restingHr": {
       "title": "안정 시 심박수",
-      "description": "심장이 하루 중 내려앉는 최저치예요 — 맥박 페이지의 단발 측정값과는 달라요. Apple Health는 하루에 한 값을 제공해요.",
+      "description": "심장이 하루 중 내려앉는 최저치예요. 맥박 페이지의 단발 측정값과는 달라요. Apple Health는 하루에 한 값을 제공해요.",
       "chartTitle": "안정 시 심박수",
       "emptyState": {
         "title": "아직 안정 시 심박수가 없어요",
         "description": "Apple Watch나 호환 Withings 기기를 조용한 하루 동안 착용하면 안정 시 심박수가 들어와요."
       },
-      "coachPrefill": "아직 안정 시 심박수를 기록한 적이 없어요 — 하루 안정 시 값이 단발 맥박과 왜 다른가요? 어떻게 개선하나요?"
+      "coachPrefill": "아직 안정 시 심박수를 기록한 적이 없어요. 하루 안정 시 값이 단발 맥박과 왜 다른가요? 어떻게 개선하나요?"
     },
     "oxygenSaturation": {
       "title": "산소포화도",
-      "description": "혈중 산소(SpO₂) — 임상 정상 범위는 95–100 %이고, 목표 구간을 차트에 음영으로 표시해요.",
+      "description": "혈중 산소(SpO₂)예요. 임상 정상 범위는 95–100 %이고, 목표 구간을 차트에 음영으로 표시해요.",
       "chartTitle": "산소포화도",
       "emptyState": {
         "title": "아직 SpO₂ 기록이 없어요",
@@ -3349,7 +3349,7 @@
     },
     "bodyTemperature": {
       "title": "체온",
-      "description": "심부 체온 추이 — 섭씨. Withings의 피부 온도 측정값은 별도 지표로 따로 있어요.",
+      "description": "심부 체온 추이(섭씨)예요. Withings의 피부 온도 측정값은 별도 지표로 따로 있어요.",
       "chartTitle": "체온",
       "emptyState": {
         "title": "아직 체온 기록이 없어요",
@@ -3359,7 +3359,7 @@
     },
     "steps": {
       "title": "걸음 수",
-      "description": "하루 걸음 수 — 하루에 한 줄씩, Apple Health나 연결된 활동 기기에서 가져와요.",
+      "description": "하루 걸음 수예요. 하루에 한 줄씩, Apple Health나 연결된 활동 기기에서 가져와요.",
       "chartTitle": "하루 걸음 수",
       "emptyState": {
         "title": "아직 걸음 수 데이터가 없어요",
@@ -3368,7 +3368,7 @@
     },
     "activeEnergy": {
       "title": "활동 에너지",
-      "description": "하루 활동 에너지 합계(kcal) — 하루에 한 줄씩, Apple Health나 Withings 활동에서 가져와요.",
+      "description": "하루 활동 에너지 합계(kcal)예요. 하루에 한 줄씩, Apple Health나 Withings 활동에서 가져와요.",
       "chartTitle": "활동 에너지",
       "emptyState": {
         "title": "아직 활동 에너지 데이터가 없어요",
@@ -3388,27 +3388,27 @@
       },
       "explainer": {
         "bloodPressureBody": "혈압은 혈액이 동맥 벽에 가하는 힘이고, 수축기 분의 이완기로 적어요(심박 중 최고치와 박동 사이의 안정값). 높은 측정값이 계속되면 시간이 지나며 심장과 혈관에 부담이 쌓여요.",
-        "pulseBody": "맥박은 심장이 1분에 몇 번 뛰는지예요. 한 번의 측정값은 그 순간 무엇을 하고 있었는지를 반영해요 — 안정 시에는 보통 분당 60~100회이고, 움직임·스트레스·카페인에 따라 자연스럽게 올라가요.",
+        "pulseBody": "맥박은 심장이 1분에 몇 번 뛰는지예요. 한 번의 측정값은 그 순간 무엇을 하고 있었는지를 반영해요. 안정 시에는 보통 분당 60~100회이고, 움직임·스트레스·카페인에 따라 자연스럽게 올라가요.",
         "weightBody": "체중은 장기적인 에너지 균형과 전반적인 건강을 보여주는 가장 단순한 신호 중 하나예요. 수분·음식·시간대에 따라 흔들리는 한 번의 측정값보다 몇 주에 걸친 추이가 훨씬 중요해요.",
         "bmiBody": "BMI는 체중을 키의 제곱으로 나눈 값으로, 넓은 체중 범주를 알려주는 하나의 숫자예요. 진단이 아니라 인구 집단 수준의 선별 지표이고, 근육과 지방을 구분하지 못해요.",
         "sleepBody": "수면 시간은 밤새 실제로 잠든 시간이고, 얕은 수면·깊은 수면·REM 단계로 나뉘어요. 대부분의 성인은 대략 7~9시간이 필요하고, 꾸준한 양과 질 모두가 회복·기분·대사를 뒷받침해요.",
         "moodBody": "기분 기록은 간단한 척도로 시간에 따른 기분을 남겨요. 꾸준히 기록하면 수면·활동·약이 기분과 어떻게 맞물리는지, 하루만 봐서는 절대 보이지 않는 패턴이 드러나요.",
         "medicationsBody": "복약 순응도는 처방대로 약을 얼마나 꾸준히 복용하는지이고, 여기서는 예정된 복용 중 실제로 기록한 비율로 보여줘요. 치료가 의도대로 효과를 내려면 꾸준한 복용이 관건인 경우가 많아요.",
-        "restingHrBody": "안정 시 심박수는 완전히 쉬고 있을 때의 심박수로, 보통 밤사이에 측정해요 — 활동 중 맥박과는 달라요. 안정 시 심박수가 낮을수록 대체로 심폐 체력이 좋다는 뜻이고, 올라가는 추이는 스트레스나 질병의 초기 신호일 수 있어요. 일반적인 기준으로 성인의 정상 안정 시 심박수는 분당 60~100회예요(AHA 2024). 단련된 심장은 40~60회에 머물러도 문제없어요.",
+        "restingHrBody": "안정 시 심박수는 완전히 쉬고 있을 때의 심박수로, 보통 밤사이에 측정해요. 활동 중 맥박과는 달라요. 안정 시 심박수가 낮을수록 대체로 심폐 체력이 좋다는 뜻이고, 올라가는 추이는 스트레스나 질병의 초기 신호일 수 있어요. 일반적인 기준으로 성인의 정상 안정 시 심박수는 분당 60~100회예요(AHA 2024). 단련된 심장은 40~60회에 머물러도 문제없어요.",
         "hrvBody": "심박변이도는 연속된 심장 박동 사이 시간의 미세한 변동이에요. 변동이 클수록 대체로 잘 회복되고 적응력 있는 신경계를 뜻하고, 지속적으로 떨어지면 피로·스트레스·회복 부족의 신호일 수 있어요.",
         "oxygenSaturationBody": "SpO₂는 산소를 실어 나르는 적혈구의 비율이에요. 안정 시 95~100%는 정상이고, 90% 아래에 계속 머무르면 살펴볼 필요가 있어요. 다만 밤중에 잠깐 떨어지는 건 흔해요.",
         "bodyTemperatureBody": "체온은 몸의 심부 열 상태를 반영해요. 일반적인 기준으로 인구 평균은 37.0°C가 아니라 약 36.6°C이고, 구강 정상 범위는 대략 35.7~37.4°C, 발열은 38.0°C부터예요(J Gen Intern Med 2019). 하루 사이 약 0.5°C 오르내리고 측정 부위에 따라 최대 1°C가량 차이 나니 어디서 쟀는지 태그해 두세요. 밤사이 손목 측정값은 임상적 발열 수치가 아니라 상대적인 변화를 따라가요.",
         "activeEnergyBody": "활동 에너지는 몸이 쉴 때 쓰는 기본량 위에, 움직임으로 태운 칼로리예요. 하루를 얼마나 몸을 움직였는지 직접 보여주는 지표예요.",
         "workoutsBody": "운동은 기기가 기록한 구조화된 운동 세션으로, 종류·시간·에너지가 함께 남아요. 기록해 두면 꾸준한 훈련이 몇 주에 걸쳐 어떻게 쌓이는지, 다른 건강 신호와 어떻게 연결되는지 보여요.",
-        "respiratoryRateBody": "호흡수는 1분에 숨을 몇 번 쉬는지예요. 일반적인 기준으로 안정 시 대부분의 성인은 분당 12~20회 호흡해요(American Lung Association). 정말 쉬고 있거나 잠든 상태에서만 의미가 있어요. 본인의 밤사이 기준값보다 +3 정도 지속해서 올라가면 질병의 초기 신호일 수 있어요 — 임상 경보 기준치는 병원용 도구이지 자가 경보용이 아니에요.",
+        "respiratoryRateBody": "호흡수는 1분에 숨을 몇 번 쉬는지예요. 일반적인 기준으로 안정 시 대부분의 성인은 분당 12~20회 호흡해요(American Lung Association). 정말 쉬고 있거나 잠든 상태에서만 의미가 있어요. 본인의 밤사이 기준값보다 +3 정도 지속해서 올라가면 질병의 초기 신호일 수 있어요. 임상 경보 기준치는 병원용 도구이지 자가 경보용이 아니에요.",
         "bodyWaterBody": "체수분 총량은 세포 안팎의 수분이 체중에서 차지하는 비율이에요. 수분 섭취·음식·활동에 따라 움직이니 한 번의 측정값보다 몇 주 추이가 더 많은 걸 알려줘요.",
         "boneMassBody": "골량은 뼈에 들어 있는 무기질의 추정 무게예요. 체중계 기반 추정은 대략적이지만, 유지되거나 올라가는 추이는 장기적인 뼈 건강에 도움이 돼요.",
-        "fatFreeMassBody": "제지방량은 몸에서 지방이 아닌 전부 — 근육·뼈·장기·수분이에요. 체중을 줄이면서도 이걸 유지하거나 늘리면 대체로 더 건강한 체성분을 뜻해요.",
+        "fatFreeMassBody": "제지방량은 몸에서 지방이 아닌 전부(근육·뼈·장기·수분)예요. 체중을 줄이면서도 이걸 유지하거나 늘리면 대체로 더 건강한 체성분을 뜻해요.",
         "fatMassBody": "체지방량은 몸속 지방의 총 무게예요. 지방은 호르몬과 에너지 저장에 어느 정도 꼭 필요하지만, 특히 복부에 너무 많으면 장기적인 건강 위험이 올라가요(WHO 2024).",
         "bodyFatBody": "체지방률은 체중 중 지방이 차지하는 비율이에요. 건강한 범위는 성별과 나이에 따라 다르고, 체중계는 생체 전기 임피던스로 추정하므로 한 번의 측정값보다 몇 주간의 추이가 더 많은 걸 알려줘요.",
         "muscleMassBody": "근육량은 몸속 근육의 추정 무게예요. 근육이 많을수록 근력·대사·활동성에 도움이 되고, 나이가 들수록 유지하려면 적극적인 노력이 필요해요.",
         "visceralFatBody": "내장지방은 복부 깊숙이 장기 주변에 쌓이는 지방이에요. 피부 밑 지방과 달리 수치가 높으면 심장병과 2형 당뇨병에 밀접하게 연결되니 대체로 낮을수록 좋아요.",
-        "leanBodyMassBody": "제지방 체중은 전체 체중에서 체지방을 뺀 값 — 근육·뼈·장기·수분을 합친 거예요. 체중과 함께 보면 변화가 근육에서 왔는지 지방에서 왔는지 알 수 있어요.",
+        "leanBodyMassBody": "제지방 체중은 전체 체중에서 체지방을 뺀 값으로, 근육·뼈·장기·수분을 합친 거예요. 체중과 함께 보면 변화가 근육에서 왔는지 지방에서 왔는지 알 수 있어요.",
         "flightsClimbedBody": "오른 층수는 하루에 올라간 층을 세고, 한 층은 대략 3m의 고도 상승이에요. 일상 속 활동량과 하체 사용을 보여주는 단순한 지표예요.",
         "walkingDistanceBody": "걷기·달리기 거리는 하루에 두 발로 이동한 거리예요. 얼마나 자주 걸었는지뿐 아니라 얼마나 멀리 움직였는지를 보여줘서 걸음 수를 보완해요.",
         "walkingSteadinessBody": "보행 안정성은 걸음걸이가 얼마나 안정적이고 균형 잡혔는지를 양호부터 낮음까지로 추정해요. 등급이 낮을수록 낙상 가능성이 높다는 뜻이니 임상의와 상의해 볼 만해요.",
@@ -3423,30 +3423,30 @@
         "headphoneAudioBody": "헤드폰 음량은 이어폰이나 헤드폰으로 얼마나 크게 듣는지를 dB로 기록해요. 볼륨을 낮추고 중간중간 쉬어 주면 오래도록 청력을 지킬 수 있어요.",
         "audioEventsBody": "큰 소리 이벤트는 주변 소음이 충분히 노출될 경우 청력을 해칠 수 있는 수준에 도달한 순간을 표시해요. 자주 발생한다면 더 조용한 환경을 찾거나 청력 보호구를 쓰라는 신호예요.",
         "daylightBody": "햇빛 노출 시간은 하루에 야외 빛 속에서 보낸 시간이에요. 규칙적인 햇빛은 건강한 수면-각성 리듬과 기분에 도움이 되고(CDC 2024), 야외에서 보내는 시간은 눈 건강과도 연결돼요.",
-        "bloodGlucoseBody": "혈당은 몸의 주된 에너지원인 혈액 속 당의 양이에요. 식후에 올라가고 식사 사이에 가라앉아요. 당뇨가 없는 성인의 일반적인 기준으로 공복 혈당 {prediabetesFrom} {unit} 미만이 정상, {prediabetesFrom}~{prediabetesTo}는 당뇨 전 단계, {diabetesFrom} 이상은 당뇨 범위예요(ADA 2024). 한 번 높게 나왔다고 진단되지는 않아요 — 임상의가 재검으로 확인하고, 당뇨를 관리하는 사람은 임상의가 정한 다른 목표를 써요.",
+        "bloodGlucoseBody": "혈당은 몸의 주된 에너지원인 혈액 속 당의 양이에요. 식후에 올라가고 식사 사이에 가라앉아요. 당뇨가 없는 성인의 일반적인 기준으로 공복 혈당 {prediabetesFrom} {unit} 미만이 정상, {prediabetesFrom}~{prediabetesTo}는 당뇨 전 단계, {diabetesFrom} 이상은 당뇨 범위예요(ADA 2024). 한 번 높게 나왔다고 진단되지는 않아요. 임상의가 재검으로 확인하고, 당뇨를 관리하는 사람은 임상의가 정한 다른 목표를 써요.",
         "skinTemperatureBody": "여기서 피부 온도는 절대적인 발열 수치가 아니라 본인 기준값 대비 밤사이 손목 온도의 작은 변화예요. 이 변화는 수면·환경·질병·생리 주기 단계를 반영할 수 있어요.",
         "cardioFitnessBody": "VO₂ max는 최대 노력에서 몸이 쓸 수 있는 산소량으로, 유산소 체력의 가장 좋은 실험실 지표이고 웨어러블은 이를 간접 추정해요. 값이 높거나 올라가는 추이는 심혈관 건강의 강력한 신호예요.",
         "cardioRecoveryBody": "심박 회복은 격한 운동을 멈춘 뒤 1분 동안 심박수가 분당 몇 회 떨어지는지예요. 많이 떨어질수록 심장이 더 빨리 안정된다는 뜻이고, 체력이 좋다는 신호예요.",
         "wristTemperatureBody": "손목 온도는 자는 동안 측정하고 절대값이 아니라 본인 기준값과의 차이로 보여줘요. 값이 일정하면 정상이고, 지속적으로 올라가면 질병·고강도 훈련·생리 주기 변화를 암시할 수 있어요.",
         "fallsBody": "웨어러블이 감지한 심한 낙상 횟수를 세요. 0이 목표이고, 횟수가 늘어나면 활동성 위험 신호이니 특히 고령자라면 임상의와 이야기해 볼 만해요(CDC STEADI 2024).",
-        "sixMinuteWalkBody": "6분 동안 걸을 수 있는 거리의 추정치예요 — 활동성과 심폐 지구력을 보는 오래된 임상 검사죠. 웨어러블 수치는 감독하에 진행하는 임상 검사가 아니라 대리 지표이니, 유지되거나 올라가는 추이를 보는 게 쓸모 있어요.",
+        "sixMinuteWalkBody": "6분 동안 걸을 수 있는 거리의 추정치예요. 활동성과 심폐 지구력을 보는 오래된 임상 검사죠. 웨어러블 수치는 감독하에 진행하는 임상 검사가 아니라 대리 지표이니, 유지되거나 올라가는 추이를 보는 게 쓸모 있어요.",
         "stairAscentSpeedBody": "계단 한 층을 얼마나 빨리 올라가는지예요. 다리 근력과 활동성을 민감하게 보여주는 지표라, 속도가 유지되거나 빨라지면 좋은 신호이고 느려지면 지켜볼 만해요.",
-        "stairDescentSpeedBody": "계단 한 층을 얼마나 빨리 내려가는지예요. 오르는 속도와 함께 보면 다리 조절력과 균형을 알 수 있어요 — 속도가 일정하면 좋은 신호이고 느려지면 지켜볼 만해요.",
+        "stairDescentSpeedBody": "계단 한 층을 얼마나 빨리 내려가는지예요. 오르는 속도와 함께 보면 다리 조절력과 균형을 알 수 있어요. 속도가 일정하면 좋은 신호이고 느려지면 지켜볼 만해요.",
         "breathingDisturbancesBody": "웨어러블은 자는 동안 호흡이 얼마나 자주 끊겼는지 추정할 수 있어요. 지수가 낮을수록 좋고, 여러 밤에 걸쳐 높게 표시되면 임상의와 이야기해 볼 만해요. 수면무호흡 진단이 아니라 선별용 대리 지표예요.",
         "stepsBody": "걸음 수는 하루에 걷는 총 걸음으로, 일상 활동량을 보는 가장 단순한 지표예요. 하루 크게 걷는 것보다 꾸준한 습관이 더 중요하고, 딱 떨어지는 1만 걸음 목표는 연구가 아니라 마케팅 문구예요.",
-        "readinessBody": "준비도는 안정 시 심박수·심박변이도·수면을 묶어 하루를 감당할 몸 상태가 얼마나 준비됐는지 하나로 보여줘요. 임상 지표가 아니라 본인 기준값에 맞춘 기기 대리 지표예요 — 점수가 높으면 회복됐다는 뜻이고, 낮으면 조금 쉬어 가라는 부드러운 신호예요.",
-        "sleepScoreBody": "수면 점수는 하룻밤 전체를 하나의 숫자로 압축해요 — 시간·효율·규칙성, 그리고 얕은 수면·깊은 수면·REM의 균형이에요. 하룻밤의 완벽한 점수를 쫓기보다 몇 주에 걸친 패턴을 보세요.",
+        "readinessBody": "준비도는 안정 시 심박수·심박변이도·수면을 묶어 하루를 감당할 몸 상태가 얼마나 준비됐는지 하나로 보여줘요. 임상 지표가 아니라 본인 기준값에 맞춘 기기 대리 지표예요. 점수가 높으면 회복됐다는 뜻이고, 낮으면 조금 쉬어 가라는 부드러운 신호예요.",
+        "sleepScoreBody": "수면 점수는 하룻밤 전체를 하나의 숫자로 압축해요: 시간·효율·규칙성, 그리고 얕은 수면·깊은 수면·REM의 균형이에요. 하룻밤의 완벽한 점수를 쫓기보다 몇 주에 걸친 패턴을 보세요.",
         "recoveryBody": "회복도는 심박변이도와 안정 시 심박수 같은 밤사이 신호를 바탕으로 몸이 얼마나 잘 회복했는지 보여줘요. 임상 지표가 아니라 본인 기준값에 견줘 읽는 기기 유래 대리 지표이고, 기기끼리 비교할 수 없어요. 점수가 높으면 밀어붙여도 좋다는 신호이고, 낮으면 몸이 아직 회복 중이라는 뜻이에요.",
         "strainBody": "부하는 운동부터 종일 서서 활동한 하루까지, 몸에 실린 심혈관·신체 부담이 얼마나 되는지 담아요. 임상 지표가 아니라 본인의 평소 노력에 견줘 판단하는 기기 유래 지수이고, 대표 숫자는 기기끼리 비교할 수 없어요.",
         "stressBody": "여기서 스트레스는 코르티솔 측정이나 스스로 느끼는 감정이 아니라 심박변이도 패턴에서 끌어낸 기기 추정값이고, 임상 스트레스 점수도 아니에요. 본인 기준값에 견줘 읽으세요. 기기끼리 비교할 수 없어요. 점수가 낮으면 차분하고 잘 조절된 상태이고, 높으면 회복 시간을 넣으라는 신호예요.",
         "recoveryPageBody": "회복도는 웨어러블이 기록한 밤사이 신호(재충전, 부하, 누적 부담, 그날의 심박·에너지 합계)를 모아 몸이 얼마나 잘 회복했는지 보여줘요. 하나의 숫자보다 며칠에 걸친 패턴을 보세요. 낮은 값은 경보가 아니라 조금 쉬어 가라는 신호예요.",
         "pulsePressureBody": "맥압은 수축기와 이완기 측정값의 차이예요(수축기 빼기 이완기). 일반적인 기준으로 안정 시 40mmHg 정도가 보통이고, 중년에서 약 60mmHg가 넘게 벌어지면 동맥이 뻣뻣해지고 있음을 반영할 수 있어요. 반대로 약 25mmHg 아래로 좁으면 심박출량이 적은 상태와 함께 나타날 수 있어요(StatPearls/NIH 2023). 진단이 아니라 이야기를 시작해 볼 거리예요.",
         "meanArterialPressureBody": "평균 동맥압은 심장 박동 한 주기 동안 장기가 받는 평균 압력으로, 대략 이완기에 수축기까지 차이의 3분의 1을 더한 값이에요. 일반적인 기준으로 안정 시 값은 70~100mmHg 정도예요(StatPearls/NIH 2023). 흔히 인용되는 60mmHg 하한선은 급성기 진료 개념이지 소비자용 자가 경보가 아니에요.",
-        "cycleEducationBody": "생리 주기는 호르몬 변화가 이끄는 네 단계로 흘러가고, 주기 길이와 규칙성은 전반적인 건강을 들여다보는 손쉬운 창이에요. 일반적인 기준으로 성인의 주기는 보통 21~35일(임상 자료는 24~38일)이고 출혈은 5일 안팎이에요(ACOG 2015). 황체기가 일정한 기준점이라 배란은 다음 예정 생리에서 거꾸로 세어 추정하는 게 가장 좋아요 — 고정된 '14일째'는 절대 아니에요. 예측된 가임기는 여러 주기가 기록돼야 나오는 추정치이고 여전히 대략적이에요. 기초 체온은 배란을 예측하는 게 아니라 지나간 뒤에 확인해 줘요. 이건 피임 방법이 아니에요.",
+        "cycleEducationBody": "생리 주기는 호르몬 변화가 이끄는 네 단계로 흘러가고, 주기 길이와 규칙성은 전반적인 건강을 들여다보는 손쉬운 창이에요. 일반적인 기준으로 성인의 주기는 보통 21~35일(임상 자료는 24~38일)이고 출혈은 5일 안팎이에요(ACOG 2015). 황체기가 일정한 기준점이라 배란은 다음 예정 생리에서 거꾸로 세어 추정하는 게 가장 좋아요. 고정된 '14일째'는 절대 아니에요. 예측된 가임기는 여러 주기가 기록돼야 나오는 추정치이고 여전히 대략적이에요. 기초 체온은 배란을 예측하는 게 아니라 지나간 뒤에 확인해 줘요. 이건 피임 방법이 아니에요.",
         "sleepHygieneBody": "수면에 도움이 되는 근거 기반 습관 몇 가지예요. 주말을 포함해 잠자리에 드는 시각과 일어나는 시각을 일정하게 유지하고, 아침에는 밝은 햇빛을 쬐고 저녁에는 조명을 낮추고, 방은 시원하고 어둡고 조용하게 하고, 오후 카페인·늦은 술·늦은 과식을 피하세요(CDC 2024). 규칙성은 수면 시간만큼이나 건강을 잘 예측하고, 웨어러블의 총 수면 시간은 깊은 수면·얕은 수면·REM 구분보다 훨씬 믿을 만해요."
       },
       "bpDerived": {
-        "pulsePressure": "맥압(측정값 사이의 차이)은 약 {value}mmHg예요 — 안정 시에는 40 정도가 보통이에요.",
+        "pulsePressure": "맥압(측정값 사이의 차이)은 약 {value}mmHg예요. 안정 시에는 40 정도가 보통이에요.",
         "meanArterialPressure": "평균 동맥압(장기가 받는 평균)은 약 {value}mmHg로, 보통 70~100 정도예요.",
         "caveat": "이 값들은 가장 최근 측정값에서 계산한 일반적인 참고 정보이고, 진단이 아니에요."
       },
@@ -3458,7 +3458,7 @@
         "mean": "평균"
       },
       "showAllValues": "모든 측정값 보기",
-      "valuesPageTitle": "{metric} — 전체 측정값",
+      "valuesPageTitle": "{metric}: 전체 측정값",
       "valuesPageDescription": "이 지표를 이루는 모든 측정값이에요. 기록을 바로 편집하거나 삭제할 수 있어요.",
       "diversity": {
         "trigger": "측정 팁",
@@ -3498,7 +3498,7 @@
         "inBed": "침대에 있음",
         "nap": "낮잠",
         "napCount": "낮잠 {count}회",
-        "unavailable": "아직 단계 데이터가 없어요 — 연결된 소스가 보내주는 대로 수면 단계가 여기에 나타나요."
+        "unavailable": "아직 단계 데이터가 없어요. 연결된 소스가 보내주는 대로 수면 단계가 여기에 나타나요."
       },
       "empty": {
         "title": "아직 수면 데이터가 없어요",
@@ -3511,21 +3511,21 @@
         "caption": "최근 {nights}일 밤 동안 부족한 수면",
         "clearValue": "모두 채웠어요",
         "clearCaption": "최근 {nights}일 밤 동안 부족한 수면이 없어요",
-        "learning": "아직 수면을 익히는 중이에요 — 지금까지 {counted}일 밤, 믿을 만한 부족분을 읽으려면 {remaining}일 밤이 더 필요해요.",
+        "learning": "아직 수면을 익히는 중이에요. 지금까지 {counted}일 밤, 믿을 만한 부족분을 읽으려면 {remaining}일 밤이 더 필요해요.",
         "computedInfo": "이건 HealthLog가 자체적으로 낸 추정치예요. 최근 밤들의 필요 수면에서 실제 수면을 뺀 누적 잔액이고, 보충 수면이 이를 갚아 나가요. 자체 필요 수면 모델을 쓰는 웨어러블의 수면 부채 수치와는 다를 수 있어요."
       },
       "average": {
         "title": "밤 평균",
         "value": "{hours}시간 {minutes}분",
         "caption": "최근 {nights}일 밤의 평균 수면",
-        "learning": "아직 수면을 익히는 중이에요 — 지금까지 {counted}일 밤, 믿을 만한 평균을 내려면 {remaining}일 밤이 더 필요해요."
+        "learning": "아직 수면을 익히는 중이에요. 지금까지 {counted}일 밤, 믿을 만한 평균을 내려면 {remaining}일 밤이 더 필요해요."
       },
       "chronotype": {
         "title": "크로노타입",
-        "learning": "아직 리듬을 익히는 중이에요 — 자유로운 밤 {total}일 중 {counted}일이에요. 크로노타입은 알람 없이 맞은 아침이 몇 번은 쌓여야 의미가 생겨요.",
+        "learning": "아직 리듬을 익히는 중이에요. 자유로운 밤 {total}일 중 {counted}일이에요. 크로노타입은 알람 없이 맞은 아침이 몇 번은 쌓여야 의미가 생겨요.",
         "advancedToggle": "고급",
         "socialJetlagValue": "사회적 시차 {hours}시간 {minutes}분",
-        "socialJetlagCaption": "일하는 날과 쉬는 날의 수면 시각 차이예요 — 매주 작은 시차를 겪는 셈이죠.",
+        "socialJetlagCaption": "일하는 날과 쉬는 날의 수면 시각 차이예요. 매주 작은 시차를 겪는 셈이죠.",
         "msfScValue": "보정 수면 중간 시각 {clock}",
         "msfScCaption": "주말에 보충한 수면을 반영해 보정한 값이에요(MSFsc).",
         "dayTypeNote": "날짜 유형 기록이 추가되기 전까지는 쉬는 날을 주말로 가정해요.",
@@ -3732,10 +3732,10 @@
       "clinical": {
         "title": "혈당 개요",
         "subtitle": "최근 {days}일, 측정값 {count}개를 바탕으로 읽은 결과예요.",
-        "spotCaveat": "연속 혈당 측정 프로필이 아니라 개별 측정에서 낸 단발 추정치예요 — 임상적 판정이 아니라 흐름의 방향으로 읽어 주세요.",
+        "spotCaveat": "연속 혈당 측정 프로필이 아니라 개별 측정에서 낸 단발 추정치예요. 임상적 판정이 아니라 흐름의 방향으로 읽어 주세요.",
         "labsLink": "검사 결과가 있나요? 채혈 HbA1c나 공복 혈당은 검사에 기록해 주세요.",
         "learningTitle": "아직 혈당을 익히는 중이에요",
-        "learningBody": "지금까지 {days} 동안 {count} — 기록이 조금만 더 쌓이면 더 온전한 그림이 잡혀요. 계속 기록하거나 연결된 기기가 채우게 두세요.",
+        "learningBody": "지금까지 {days} 동안 {count}. 기록이 조금만 더 쌓이면 더 온전한 그림이 잡혀요. 계속 기록하거나 연결된 기기가 채우게 두세요.",
         "learningBodyEmpty": "직접 기록하든 기기에서 동기화되든 측정값이 몇 개 들어오면, 목표 범위 내 시간·평균·변동성이 여기에 자리를 잡아요.",
         "readingsCount": "측정값 {count}개",
         "readingsCountOne": "측정값 1개",
@@ -3774,7 +3774,7 @@
           "intro": "더 깊이 들여다보는 연구 수준의 복합 지표예요. 각각 측정값을 위험 가중치를 매긴 하나의 숫자로 압축해요.",
           "jIndex": {
             "label": "J 지수",
-            "help": "평균과 그 퍼짐 정도를 합친 하나의 점수예요 — 낮을수록 더 촘촘한 관리로 읽혀요."
+            "help": "평균과 그 퍼짐 정도를 합친 하나의 점수예요. 낮을수록 더 촘촘한 관리로 읽혀요."
           },
           "lbgi": {
             "label": "저혈당 위험(LBGI)",
@@ -3891,7 +3891,7 @@
     "navSkinTemperature": "피부 온도",
     "pulseWaveVelocity": {
       "title": "맥파 전파 속도",
-      "description": "시간에 따른 동맥 맥파 전파 속도예요(m/s) — 값이 높을수록 동맥이 뻣뻣하다는 뜻이에요.",
+      "description": "시간에 따른 동맥 맥파 전파 속도예요(m/s), 값이 높을수록 동맥이 뻣뻣하다는 뜻이에요.",
       "chartTitle": "맥파 전파 속도",
       "emptyState": {
         "title": "아직 맥파 전파 속도 데이터가 없어요",
@@ -4084,7 +4084,7 @@
       "inTargetCaption": "최근 날들 중 기분 좋음 범위에 든 비율",
       "narrative": {
         "title": "눈에 띄는 점",
-        "weekdayDip": "{weekday}에 기분이 가장 많이 떨어져요 — 한 주 평균보다 {delta} 낮아요.",
+        "weekdayDip": "{weekday}에 기분이 가장 많이 떨어져요. 한 주 평균보다 {delta} 낮아요.",
         "weekdayPeak": "꾸준히 가장 좋은 요일은 {weekday}, 평균 {value}.",
         "trendUp": "최근 {days}일 동안 기분이 올라가는 추세예요(이전 기간 대비 +{delta}).",
         "trendDown": "최근 {days}일 동안 기분이 내려가는 추세예요(이전 기간 대비 -{delta}).",
@@ -4093,8 +4093,8 @@
         "tagLift": "'{tag}' 태그가 붙은 날은 전체 평균보다 {delta} 높아요.",
         "tagDrop": "'{tag}' 태그가 붙은 날은 평균보다 {delta} 낮아요.",
         "inTarget": "최근 30일 중 {pct}%는 기분 좋음 범위에 있었어요.",
-        "streak": "{days}일 연속으로 기분을 기록했어요 — 계속 이어가 보세요.",
-        "timeOfDay": "기분이 가장 좋은 시간대는 {bucket} — 평균 {value}."
+        "streak": "{days}일 연속으로 기분을 기록했어요. 계속 이어가 보세요.",
+        "timeOfDay": "기분이 가장 좋은 시간대는 {bucket}, 평균 {value}."
       },
       "timeOfDay": {
         "title": "시간대별 기분",
@@ -4164,7 +4164,7 @@
         "title": "눈에 띄는 점",
         "subheading": "발견된 관계",
         "footer": "모든 지표에서 검정한 일자별 조합 {tested}개 중 허위 발견 보정을 거쳐 추려낸 결과예요.",
-        "disclaimer": "통계로 걸러냈지만 여전히 관찰 결과예요 — 원인이 아니라 지켜볼 만한 패턴이에요.",
+        "disclaimer": "통계로 걸러냈지만 여전히 관찰 결과예요. 원인이 아니라 지켜볼 만한 패턴이에요.",
         "moodUp": "{factor} 값이 높으면 다음 날 기분도 높은 편이에요.",
         "moodDown": "{factor} 값이 높으면 다음 날 기분은 낮은 편이에요.",
         "outcomeUp": "기분이 좋으면 다음 날 {factor} 값도 높은 편이에요.",
@@ -4203,8 +4203,8 @@
         "deviationAbove": "내 평가는 그 범위보다 {amount}점 높아요.",
         "deviationBelow": "내 평가는 그 범위보다 {amount}점 낮아요.",
         "weightedTitle": "이날 비교에서 가장 크게 작용한 것",
-        "weightedUp": "{label} — 예상값을 높이는 쪽으로 작용했어요",
-        "weightedDown": "{label} — 예상값을 낮추는 쪽으로 작용했어요",
+        "weightedUp": "{label}: 예상값을 높이는 쪽으로 작용했어요",
+        "weightedDown": "{label}: 예상값을 낮추는 쪽으로 작용했어요",
         "caveat": "이건 내 지난 날들과의 비교일 뿐, 그날이 왜 그렇게 흘러갔는지에 대한 설명은 아니에요.",
         "learning": "학습 중이에요: {threshold}일 중 {entries}일 기록했어요. 충분히 모이면 비교가 나타나요.",
         "noPattern": "지금까지 기록한 {entries}일 중에는 하루를 견줄 만큼 일정한 패턴이 없어요. 하루의 맥락까지 함께 남기면 비교할 수 있는 게 늘어나요.",
@@ -4221,7 +4221,7 @@
       },
       "scoreRing": {
         "aria": "점수 100점 만점에 {score}점, {band}",
-        "ariaProvisional": "아직 점수를 낼 수 없어요 — 데이터가 부족해요",
+        "ariaProvisional": "아직 점수를 낼 수 없어요. 데이터가 부족해요",
         "provisionalCaption": "아직 데이터가 부족해요",
         "band": {
           "green": "좋음",
@@ -4245,7 +4245,7 @@
         "loadingLabel": "생체 지표 불러오는 중",
         "loadError": "지금은 생체 지표를 불러오지 못했어요.",
         "infoLabel": "어떻게 계산하나요?",
-        "building": "내 일반 범위를 만드는 중 — {target}일 중 {count}일",
+        "building": "내 일반 범위를 만드는 중: {target}일 중 {count}일",
         "typicalRange": "내 일반 범위: {low}–{high}",
         "fitnessYounger": "약 {years}세 젊은 사람 수준의 심폐 체력",
         "fitnessOlder": "실제 나이보다 약 {years}세 높은 심폐 체력",
@@ -4307,7 +4307,7 @@
           }
         },
         "VITALS_BASELINE": {
-          "method": "개인 일반 범위는 해당 기간 일별 값의 중앙값에 견고한 산포(중앙절대편차를 보정한 값)를 더하고 뺀 구간이에요. 인구 평균이 아니라 내 측정값을 따라가요 — 그래서 이 범위 안이면 나에게는 평소 수준이에요."
+          "method": "개인 일반 범위는 해당 기간 일별 값의 중앙값에 견고한 산포(중앙절대편차를 보정한 값)를 더하고 뺀 구간이에요. 인구 평균이 아니라 내 측정값을 따라가요. 그래서 이 범위 안이면 나에게는 평소 수준이에요."
         },
         "HRV_BALANCE": {
           "method": "최근 심박변이도(SDNN) 평균을 내 이동 기준값(중앙값 ± 견고한 산포)과 비교해요. 균형은 개인 범위 안에 있다는 뜻이고, 이 범위는 인구 기준선이 아니라 내 데이터로 만들어요."
@@ -4320,12 +4320,12 @@
         },
         "VASCULAR_AGE_DELTA": {
           "method": "기기가 추정한 혈관 나이 / 맥파 속도를 실제 나이와 비교해 연 단위 차이로 보여줘요. 추정은 기기가 하고, HealthLog는 다시 보여줄 뿐이에요.",
-          "caveat": "기기가 추정한 값을 다시 보여주는 것뿐이에요 — 설명용이고 임상 혈관 평가가 아니에요.",
+          "caveat": "기기가 추정한 값을 다시 보여주는 것뿐이에요. 설명용이고 임상 혈관 평가가 아니에요.",
           "description": "기기가 추정한 혈관 나이가 실제 나이와 어떻게 비교되는지 보여줘요."
         },
         "COINCIDENT_DEVIATION": {
           "method": "같은 날 생체 지표 두 개 이상이 개인 일반 범위를 벗어나면 표시해요. 각 범위는 내 기록의 중앙값 ± k·MAD로 만들어서 인구 기준선이 아니라 나에게 맞춰져요.",
-          "caveat": "내 기준값에서 나온 알아차림 신호예요 — 설명용이고 진단이나 임상 경고가 아니에요."
+          "caveat": "내 기준값에서 나온 알아차림 신호예요. 설명용이고 진단이나 임상 경고가 아니에요."
         },
         "RECOVERY_SCORE": {
           "method": "심박변이도, 안정 시 심박수, 수면을 내 기준값과 비교해 섞은 밤마다의 0–100 회복 지표예요. 높을수록 더 잘 회복된 거예요. 매일 밤 한 번 계산해 두고 여기서 그대로 읽어와요.",
@@ -4337,7 +4337,7 @@
         },
         "STRAIN_SCORE": {
           "method": "심박수로 가중한 활동 부하(TRIMP 방식 훈련 자극 모델)로 매일 밤 내는 0–100 부하 지표예요. 높을수록 힘든 하루였다는 뜻이에요.",
-          "anchorPersonal": "최근 운동한 날의 부하를 기준으로 삼아요 — 평소 강도와 비교해 점수를 매기니 나에게 정말 힘든 날이 높게 나와요.",
+          "anchorPersonal": "최근 운동한 날의 부하를 기준으로 삼아요. 평소 강도와 비교해 점수를 매기니 나에게 정말 힘든 날이 높게 나와요.",
           "anchorPopulation": "운동 기록이 쌓이는 동안에는 일반 기준으로 점수를 매기고, 충분히 모이면 내 평소 강도 기준으로 바뀌어요.",
           "description": "심박수로 가중한 운동 강도를 평소 강도와 비교해 매일 밤 계산하는 활동 부하 지표예요.",
           "deviceCaption": "기기의 일일 부하: {max} 중 {value}",
@@ -4345,23 +4345,23 @@
         },
         "WRIST_TEMPERATURE_BASELINE": {
           "method": "밤사이 손목 온도의 일반 범위는 해당 기간 야간 측정값의 중앙값에 견고한 산포(중앙절대편차를 보정한 값)를 더하고 뺀 구간이에요. 내 측정값을 따라가기 때문에, 지난밤은 인구 평균이 아니라 내 기준값에서 얼마나 벗어났는지로 보여줘요.",
-          "caveat": "개인 편차 범위일 뿐이에요 — 설명용이고 질병, 발열, 생리 주기 신호가 아니에요. 해석은 직접 해 주세요."
+          "caveat": "개인 편차 범위일 뿐이에요. 설명용이고 질병, 발열, 생리 주기 신호가 아니에요. 해석은 직접 해 주세요."
         },
         "STAIR_ASCENT_SPEED_BASELINE": {
           "method": "계단 오르는 속도의 일반 범위는 해당 기간 일별 값의 중앙값에 견고한 산포(중앙절대편차를 보정한 값)를 더하고 뺀 구간이에요. 계단 모양과 다리 길이에 따라 속도가 달라져 인구 기준선이 없기 때문에, 범위는 내 데이터로만 만들어요.",
-          "caveat": "개인 이동성 추이 범위예요 — 설명용이고 노쇠나 낙상 위험 평가가 아니에요."
+          "caveat": "개인 이동성 추이 범위예요. 설명용이고 노쇠나 낙상 위험 평가가 아니에요."
         },
         "STAIR_DESCENT_SPEED_BASELINE": {
           "method": "계단 내려가는 속도의 일반 범위는 해당 기간 일별 값의 중앙값에 견고한 산포(중앙절대편차를 보정한 값)를 더하고 뺀 구간이에요. 계단 모양과 다리 길이에 따라 속도가 달라져 인구 기준선이 없기 때문에, 범위는 내 데이터로만 만들어요.",
-          "caveat": "개인 이동성 추이 범위예요 — 설명용이고 노쇠나 낙상 위험 평가가 아니에요."
+          "caveat": "개인 이동성 추이 범위예요. 설명용이고 노쇠나 낙상 위험 평가가 아니에요."
         },
         "SIX_MINUTE_WALK_BAND": {
           "method": "기기가 추정한 6분 보행 거리를 나이, 키, 체중, 성별에 맞춘 Enright & Sherrill 기준과 비교해 예측치 대비 백분율로 보여줘요. 거리는 기기의 추정값이고 여기서 다시 계산하지 않아요. 나이, 키, 체중, 성별이 없으면 백분율은 숨기고 거리와 추이만 보여줘요.",
-          "caveat": "발표된 기준과 비교해 다시 보여준 추정값이에요 — 신체 기능을 알아차리기 위한 신호이고 임상 6분 보행 검사나 진단이 아니에요. 이 기준은 40–80세를 대상으로 만들어졌고, 그 범위를 벗어나면 예측치는 외삽한 값이에요."
+          "caveat": "발표된 기준과 비교해 다시 보여준 추정값이에요. 신체 기능을 알아차리기 위한 신호이고 임상 6분 보행 검사나 진단이 아니에요. 이 기준은 40–80세를 대상으로 만들어졌고, 그 범위를 벗어나면 예측치는 외삽한 값이에요."
         },
         "TRAJECTORY": {
           "method": "최근 일별 값에 최소제곱 직선을 맞춰 짧은 기간 앞으로 이어 그리고, 멀어질수록 넓어지는 표준 예측 구간을 함께 보여줘요. 최근 추이가 충분히 뚜렷하고 기록이 길고 최신일 때만 계산하고, 그렇지 않으면 선을 그리지 않아요.",
-          "caveat": "최근 추이를 그대로 이어 그린 것이에요 — 예측이나 목표, 임상 전망이 아니에요. 최근 패턴이 이어질 때만 맞고, 음영 구간은 그 확신이 얼마나 빨리 흐려지는지 보여줘요."
+          "caveat": "최근 추이를 그대로 이어 그린 것이에요. 예측이나 목표, 임상 전망이 아니에요. 최근 패턴이 이어질 때만 맞고, 음영 구간은 그 확신이 얼마나 빨리 흐려지는지 보여줘요."
         },
         "SAME_TIME_BASELINE": {
           "method": "오늘 누적값을 최근 4주 동안 같은 시각의 중앙값과 비교하고, 그 주위에 중앙값 ± MAD 범위를 함께 보여줘요. 기록이 충분한 날만 계산에 넣고, 그런 날이 14일 이상 모이기 전에는 비교를 보여주지 않아요.",
@@ -4390,29 +4390,29 @@
         "watch": "오늘 지표 하나가 평소 범위를 벗어났어요.",
         "watchVital": "범위 밖: {vital}. 대개는 한 번뿐이지만 며칠 지켜볼 만해요.",
         "firedHeadline": "오늘 생체 지표 {count}개가 개인 범위를 벗어났어요.",
-        "factors": "가능한 요인 — 원인은 아니에요: 힘든 운동, 부족한 수면, 음주, 고도, 스트레스, 아픈 날. 내 기준값에서 나온 알아차림 신호이고 진단이 아니에요.",
-        "building": "개인 기준값을 만드는 중이에요 — 며칠 더 기록하면 여기에 표시돼요.",
+        "factors": "가능한 요인(원인은 아니에요): 힘든 운동, 부족한 수면, 음주, 고도, 스트레스, 아픈 날. 내 기준값에서 나온 알아차림 신호이고 진단이 아니에요.",
+        "building": "개인 기준값을 만드는 중이에요. 며칠 더 기록하면 여기에 표시돼요.",
         "illnessExplained": "이 변화는 기록해 둔 상태 때문일 가능성이 커요."
       },
       "trajectory": {
         "cardTitle": "단기 전망",
-        "headline": "이 패턴이 이어진다면 — 앞으로 {days}일",
+        "headline": "이 패턴이 이어진다면: 앞으로 {days}일",
         "range": "{days}일 뒤 예상 범위: 약 {low}–{high} {unit}.",
         "caveat": "최근 추이를 그대로 이어 그린 것이고 예측이 아니에요. 음영 구간은 불확실성이 얼마나 빨리 커지는지 보여줘요.",
-        "insufficient": "아직 전망을 그릴 만큼 추이가 뚜렷하지 않아요 — 계속 기록해서 최근 패턴이 뚜렷해지면 전망이 표시돼요.",
+        "insufficient": "아직 전망을 그릴 만큼 추이가 뚜렷하지 않아요. 계속 기록해서 최근 패턴이 뚜렷해지면 전망이 표시돼요.",
         "daysNeeded": "전망이 나오려면 {count}일쯤 더 기록해야 해요."
       },
       "sameTime": {
         "sectionTitle": "오늘 지금까지",
         "sectionSubtitle": "이 시각의 평소 수준과 비교한 오늘 누적값",
-        "learning": "평소 하루를 익히는 중 — {target}일 중 {count}일",
+        "learning": "평소 하루를 익히는 중: {target}일 중 {count}일",
         "framing": "{time}까지 평소: {typical} {unit}",
         "comparisonLabel": "평소 하루"
       }
     },
     "cardioFitness": {
       "title": "심폐 체력",
-      "description": "시간에 따른 VO₂ max — 유산소 체력을 대표하는 지표예요.",
+      "description": "시간에 따른 VO₂ max로, 유산소 체력을 대표하는 지표예요.",
       "chartTitle": "VO₂ max (mL/(kg·min))",
       "emptyState": {
         "title": "아직 심폐 체력 데이터가 없어요",
@@ -4537,13 +4537,13 @@
       "detail": "숨긴 상세 페이지는 상단 탐색에서도 사라져요."
     },
     "customize": "인사이트 맞춤 설정",
-    "regenerateRateLimited": "새로고침 한도에 도달했어요 — 잠시 후 다시 시도해 주세요.",
-    "regenerateUnavailable": "새 분석이 도착하지 않았어요 — 잠시 후 다시 시도해 주세요.",
-    "regenerateError": "아직 새로고침 중이에요 — 잠시 후 다시 시도해 주세요.",
+    "regenerateRateLimited": "새로고침 한도에 도달했어요. 잠시 후 다시 시도해 주세요.",
+    "regenerateUnavailable": "새 분석이 도착하지 않았어요. 잠시 후 다시 시도해 주세요.",
+    "regenerateError": "아직 새로고침 중이에요. 잠시 후 다시 시도해 주세요.",
     "regenerateSettling": "평가를 아직 준비하고 있어요",
     "regenerateSettleFailed": "새로고침을 마치지 못했어요. 잠시 후 다시 시도해 주세요.",
     "deviceScore": {
-      "learning": "아직 기준값을 익히는 중이에요 — 며칠 밤 더 지나면 추이가 채워져요.",
+      "learning": "아직 기준값을 익히는 중이에요. 며칠 밤 더 지나면 추이가 채워져요.",
       "average": "30일 평균 {value}",
       "unitScore": "점",
       "unitMinutes": "min",
@@ -4556,14 +4556,14 @@
     },
     "recovery": {
       "title": "회복",
-      "description": "몸이 얼마나 회복했는지 — 웨어러블이 밤사이 기록한 회복·부하 신호예요.",
+      "description": "몸이 얼마나 회복했는지: 웨어러블이 밤사이 기록한 회복·부하 신호예요.",
       "scoreCrossLink": "종합 회복 점수 보기",
       "emptyTitle": "아직 회복 데이터가 없어요",
       "empty": "아직 회복 데이터가 없어요. WHOOP, Polar, Oura 계정을 연결하면 기기가 동기화될 때 점수가 채워져요.",
       "block": {
-        "ansChargeExplainer": "오늘 하루를 맞을 자율신경계의 충전 상태예요 — 밤사이 심장·호흡 신호에서 읽어낸 재충전 지표예요.",
+        "ansChargeExplainer": "오늘 하루를 맞을 자율신경계의 충전 상태예요. 밤사이 심장·호흡 신호에서 읽어낸 재충전 지표예요.",
         "dayStrainExplainer": "기기의 부하 척도로 본 하루 전체의 심혈관 부하예요. 그 자체를 목표로 삼지 말고 회복과 견줘 보세요.",
-        "workoutStrainExplainer": "같은 부하 척도에서 운동 하나가 얼마나 힘들었는지 — 그 세션의 심혈관 비용이에요.",
+        "workoutStrainExplainer": "같은 부하 척도에서 운동 하나가 얼마나 힘들었는지: 그 세션의 심혈관 비용이에요.",
         "cardioLoadExplainer": "쌓인 급성 심혈관 부하를 따라가는 훈련 부하 지표예요. 내 최근 며칠과 비교해 보세요.",
         "averageHeartRateExplainer": "웨어러블이 보고한 하루 또는 주기 전체의 평균 심박수예요.",
         "maxHeartRateExplainer": "웨어러블이 보고한 하루 또는 주기 전체의 최고 심박수예요.",
@@ -4576,7 +4576,7 @@
     },
     "resilience": {
       "explainer": "최근 며칠간의 밤사이 신호로 읽은, 몸이 하루의 부하와 회복을 얼마나 잘 맞추고 있는지예요.",
-      "learning": "아직 회복탄력성을 익히는 중이에요 — 며칠 더 지나면 범위가 자리 잡아요.",
+      "learning": "아직 회복탄력성을 익히는 중이에요. 며칠 더 지나면 범위가 자리 잡아요.",
       "band": {
         "limited": "제한적",
         "adequate": "충분",
@@ -4602,10 +4602,10 @@
     "healthStatus": {
       "sectionTitle": "달라진 점",
       "subtitle": "평소 범위에서 벗어나고 있는 신호예요.",
-      "deviationAbove": "{vital} — 일반 범위보다 높아요.",
-      "deviationBelow": "{vital} — 일반 범위보다 낮아요.",
-      "shiftUp": "{vital} — 최근 평소 수준보다 올라갔어요.",
-      "shiftDown": "{vital} — 최근 평소 수준보다 내려갔어요.",
+      "deviationAbove": "{vital}: 일반 범위보다 높아요.",
+      "deviationBelow": "{vital}: 일반 범위보다 낮아요.",
+      "shiftUp": "{vital}: 최근 평소 수준보다 올라갔어요.",
+      "shiftDown": "{vital}: 최근 평소 수준보다 내려갔어요.",
       "rangeContext": "지금 {value}, 평소 {low}–{high}.",
       "rangeContextTimeOfDay": "지금 {value}, 이 시간대 평소 {low}–{high}.",
       "shiftContext": "이전엔 약 {before}, 이후엔 {after}."
@@ -4621,7 +4621,7 @@
       "nights": "{count}일 밤 기록",
       "indexLine": "최근 평균 지수 {value}",
       "eventsFlagged": "기기가 표시한 이벤트 {count}건",
-      "disclaimer": "진단이 아니라 선별 신호예요 — 임상의와 상의해 주세요."
+      "disclaimer": "진단이 아니라 선별 신호예요. 임상의와 상의해 주세요."
     },
     "labsChanges": {
       "sectionTitle": "지난 검사 이후",
@@ -4637,14 +4637,14 @@
     "navWaistToHeight": "허리-키 비율",
     "gripStrength": {
       "title": "악력",
-      "description": "최대 악력 — 전신 근력을 잘 대변하는 지표예요. 성별 기준선(남성 27kg, 여성 16kg) 아래면 근감소증 가능성을 뜻해요. 해석은 내 추이가 우선이에요.",
+      "description": "최대 악력으로, 전신 근력을 잘 대변하는 지표예요. 성별 기준선(남성 27kg, 여성 16kg) 아래면 근감소증 가능성을 뜻해요. 해석은 내 추이가 우선이에요.",
       "chartTitle": "악력",
       "emptyState": {
         "title": "아직 악력 기록이 없어요",
         "description": "악력계로 잰 값을 기록해 보세요. 몇 번 쥐어 본 값 중 가장 좋은 값을 남기면 추이가 여기에 표시돼요.",
         "cta": "악력 기록"
       },
-      "coachPrefill": "아직 악력을 기록한 적이 없어요 — 악력은 내 근육 건강에 대해 무엇을 알려주고, 어떻게 재고 어떻게 키우나요?"
+      "coachPrefill": "아직 악력을 기록한 적이 없어요. 악력은 내 근육 건강에 대해 무엇을 알려주고, 어떻게 재고 어떻게 키우나요?"
     },
     "pain": {
       "title": "통증 (0–10)",
@@ -4655,36 +4655,36 @@
         "description": "지금 느끼는 통증을 0–10 척도로 기록하면 추이가 여기에 표시돼요.",
         "cta": "통증 점수 기록"
       },
-      "coachPrefill": "아직 통증 점수를 기록한 적이 없어요 — 0–10 척도로 통증을 어떻게 기록해야 하고, 어느 정도가 의미 있는 변화인가요?"
+      "coachPrefill": "아직 통증 점수를 기록한 적이 없어요. 0–10 척도로 통증을 어떻게 기록해야 하고, 어느 정도가 의미 있는 변화인가요?"
     },
     "waist": {
       "title": "허리둘레",
-      "description": "센티미터로 잰 허리둘레 — 복부 지방의 지표예요. WHO 위험 증가 기준선은 성별에 따라 달라요(남성 94cm, 여성 80cm). 해석은 내 추이가 우선이에요.",
+      "description": "센티미터로 잰 허리둘레로, 복부 지방의 지표예요. WHO 위험 증가 기준선은 성별에 따라 달라요(남성 94cm, 여성 80cm). 해석은 내 추이가 우선이에요.",
       "chartTitle": "허리둘레",
       "emptyState": {
         "title": "아직 허리둘레 측정값이 없어요",
         "description": "가장 아래 갈비뼈와 골반뼈의 중간 지점에서, 숨을 편히 내쉰 끝에 허리를 재서 기록해 주세요.",
         "cta": "허리둘레 기록"
       },
-      "coachPrefill": "아직 허리둘레를 기록한 적이 없어요 — 허리둘레는 어떻게 정확히 재고, 그 숫자가 건강에 어떤 의미인가요?"
+      "coachPrefill": "아직 허리둘레를 기록한 적이 없어요. 허리둘레는 어떻게 정확히 재고, 그 숫자가 건강에 어떤 의미인가요?"
     },
     "waistToHeight": {
       "title": "허리-키 비율",
-      "description": "허리둘레를 키로 나눈 값 — 인종에 관계없이 통하는 단일 지표예요. 0.5 미만(허리둘레가 키의 절반 아래)으로 유지하는 게 간단한 목표예요.",
+      "description": "허리둘레를 키로 나눈 값으로, 인종에 관계없이 통하는 단일 지표예요. 0.5 미만(허리둘레가 키의 절반 아래)으로 유지하는 게 간단한 목표예요.",
       "chartTitle": "허리-키 비율",
       "emptyState": {
         "title": "아직 허리-키 비율이 없어요",
         "description": "허리-키 비율을 기록하면 추이가 여기에 표시돼요. 요령은 간단해요. 허리둘레를 키의 절반 아래로 유지하세요.",
         "cta": "허리-키 비율 기록"
       },
-      "coachPrefill": "아직 허리-키 비율을 기록한 적이 없어요 — 이 숫자가 왜 유용하고, 어떻게 0.5 미만으로 유지하나요?"
+      "coachPrefill": "아직 허리-키 비율을 기록한 적이 없어요. 이 숫자가 왜 유용하고, 어떻게 0.5 미만으로 유지하나요?"
     },
     "ecg": {
       "sectionTitle": "심전도 기록",
       "loadError": "심전도 기록을 불러오지 못했어요.",
       "backToList": "기록 목록으로",
       "clinicianNote": "결과가 걱정된다면 이 기록을 임상의와 상의해 보세요.",
-      "resultAttribution": "기록된 결과: {result} — 측정 기기가 보고한 값이에요.",
+      "resultAttribution": "기록된 결과: {result}. 측정 기기가 보고한 값이에요.",
       "result": {
         "irregular": "심방세동 감지",
         "notDetected": "심방세동 징후 없음",
@@ -4720,7 +4720,7 @@
     "intradayPulse": {
       "title": "하루 동안의 맥박",
       "caption": "10분 단위로 평균했어요.",
-      "hourlyNote": "이 날짜는 시간별 평균으로 보여줘요 — 최근 며칠은 10분 단위까지 자세히 볼 수 있어요.",
+      "hourlyNote": "이 날짜는 시간별 평균으로 보여줘요. 최근 며칠은 10분 단위까지 자세히 볼 수 있어요.",
       "empty": "이 날짜는 심박수 측정값이 적어서 아직 흐름을 보여줄 수 없어요.",
       "coverageOne": "{hours}h 동안 모은 측정값 1개를 기준으로 했어요.",
       "coverageMany": "{hours}h 동안 모은 측정값 {count}개를 기준으로 했어요.",
@@ -4729,10 +4729,10 @@
       "previousDay": "이전 날짜",
       "nextDay": "다음 날짜",
       "tension": {
-        "morning": "오늘 아침에 안정 시 심박수가 높은 구간이 이어졌어요 — 긴장이 있었을 수 있어요.",
-        "afternoon": "오늘 오후에 안정 시 심박수가 높은 구간이 이어졌어요 — 긴장이 있었을 수 있어요.",
-        "evening": "오늘 저녁에 안정 시 심박수가 높은 구간이 이어졌어요 — 긴장이 있었을 수 있어요.",
-        "night": "밤사이 안정 시 심박수가 높은 구간이 이어졌어요 — 긴장이 있었을 수 있어요."
+        "morning": "오늘 아침에 안정 시 심박수가 높은 구간이 이어졌어요. 긴장이 있었을 수 있어요.",
+        "afternoon": "오늘 오후에 안정 시 심박수가 높은 구간이 이어졌어요. 긴장이 있었을 수 있어요.",
+        "evening": "오늘 저녁에 안정 시 심박수가 높은 구간이 이어졌어요. 긴장이 있었을 수 있어요.",
+        "night": "밤사이 안정 시 심박수가 높은 구간이 이어졌어요. 긴장이 있었을 수 있어요."
       }
     },
     "navEcg": "심전도",
@@ -4785,14 +4785,14 @@
     "metricBodyFat": "체지방",
     "metricSleep": "수면 시간",
     "metricSteps": "하루 걸음 수",
-    "metricGlucoseFasting": "혈당 — 공복",
-    "metricGlucosePostprandial": "혈당 — 식후",
-    "metricGlucoseRandom": "혈당 — 임의",
-    "metricGlucoseBedtime": "혈당 — 취침 전",
+    "metricGlucoseFasting": "혈당 (공복)",
+    "metricGlucosePostprandial": "혈당 (식후)",
+    "metricGlucoseRandom": "혈당 (임의)",
+    "metricGlucoseBedtime": "혈당 (취침 전)",
     "metricBodyWater": "체수분",
     "metricBoneMass": "골량",
     "metricOxygenSaturation": "산소포화도(SpO₂)",
-    "unsetExplanation": "사용자 설정 없음 — 계산된 기본값을 써요.",
+    "unsetExplanation": "사용자 설정 없음: 계산된 기본값을 써요.",
     "cardTitle": "지표별 범위"
   },
   "onboarding": {
@@ -4806,7 +4806,7 @@
       "steps": {
         "dashboardOverview": {
           "title": "내 대시보드",
-          "body": "대시보드는 모든 모듈을 한눈에 모아 보여줘요. 타일을 길게 누르면 순서를 바꾸거나 숨길 수 있어요(설정 → 대시보드 레이아웃). 타일은 그 뒤에 쌓인 데이터만큼만 말해 줘요 — 앞으로 나올 모듈들이 그 데이터를 채워요."
+          "body": "대시보드는 모든 모듈을 한눈에 모아 보여줘요. 타일을 길게 누르면 순서를 바꾸거나 숨길 수 있어요(설정 → 대시보드 레이아웃). 타일은 그 뒤에 쌓인 데이터만큼만 말해 줘요. 앞으로 나올 모듈들이 그 데이터를 채워요."
         },
         "quickAdd": {
           "title": "몇 초면 기록 끝",
@@ -4838,7 +4838,7 @@
         },
         "mood": {
           "title": "기분",
-          "body": "기분은 지금 느낌과 태그를 2초 만에 남겨요. 강점: 나만의 태그. 기분 추이는 수면, 약, 주기와 맞물리고 — 코치가 그 패턴을 찾아 줘요."
+          "body": "기분은 지금 느낌과 태그를 2초 만에 남겨요. 강점: 나만의 태그. 기분 추이는 수면, 약, 주기와 맞물리고, 코치가 그 패턴을 찾아 줘요."
         },
         "insights": {
           "title": "인사이트",
@@ -4850,15 +4850,15 @@
         },
         "integrations": {
           "title": "연동",
-          "body": "연동하면 Withings, WHOOP, Polar, Oura, Apple Health가 자동으로 동기화돼요. 체중, 수면, 회복이 직접 입력 없이 채워지고 — 그게 다시 인사이트와 코치로 이어져요."
+          "body": "연동하면 Withings, WHOOP, Polar, Oura, Apple Health가 자동으로 동기화돼요. 체중, 수면, 회복이 직접 입력 없이 채워지고, 그게 다시 인사이트와 코치로 이어져요."
         },
         "export": {
           "title": "진료용 리포트",
-          "body": "진료용 리포트는 측정값, 약, 검사 수치, 건강검진을 PDF나 FHIR로 묶어 진료에 가져갈 수 있게 해 줘요. 모든 모듈이 여기서 만나요 — 잘 쌓인 데이터라야 온전한 리포트가 나와요."
+          "body": "진료용 리포트는 측정값, 약, 검사 수치, 건강검진을 PDF나 FHIR로 묶어 진료에 가져갈 수 있게 해 줘요. 모든 모듈이 여기서 만나요. 잘 쌓인 데이터라야 온전한 리포트가 나와요."
         },
         "achievements": {
           "title": "업적",
-          "body": "업적은 꾸준함에 보상을 줘요 — 연속 기록과 이정표. 계속하기 쉽게 만드는 작은 동기 장치예요."
+          "body": "업적은 꾸준함에 보상을 줘요: 연속 기록과 이정표. 계속하기 쉽게 만드는 작은 동기 장치예요."
         },
         "wrapUp": {
           "title": "둘러보기 끝",
@@ -4910,13 +4910,13 @@
     "anamnesis": {
       "title": "건강에 대해 (선택)",
       "subtitle": "HealthLog가 내 숫자를 더 공정하게 읽도록 약간의 맥락을 알려 주세요.",
-      "intro": "원하는 만큼만 알려 주세요 — 모든 항목은 선택이고, 설정에서 언제든 바꿀 수 있어요.",
+      "intro": "원하는 만큼만 알려 주세요. 모든 항목은 선택이고, 설정에서 언제든 바꿀 수 있어요.",
       "conditionsLabel": "앓고 있는 질환",
       "conditionsPlaceholder": "예: 고혈압, 2형 당뇨",
       "conditionsHint": "당연한 값을 경고로 띄우는 대신, 맥락 속에서 측정값을 보게 해 줘요.",
       "allergiesLabel": "알레르기나 불내성",
       "allergiesPlaceholder": "예: 페니실린, 유당",
-      "privacyNote": "암호화해 저장하고, 더 나은 맥락을 주는 데만 써요. 여기서 약은 묻지 않아요 — 복약 페이지에서 언제든 추가하면 돼요."
+      "privacyNote": "암호화해 저장하고, 더 나은 맥락을 주는 데만 써요. 여기서 약은 묻지 않아요. 복약 페이지에서 언제든 추가하면 돼요."
     },
     "ai": {
       "panelTitle": "인사이트가 어떤 모습인지 보기",
@@ -4925,18 +4925,18 @@
       "sampleTitle": "데일리 브리핑",
       "sampleTag": "예시",
       "sampleAriaLabel": "데일리 브리핑 예시",
-      "sampleBody": "2주 동안 체중 1.2kg 감소. 안정 시 맥박은 58bpm으로 꾸준해요. 혈압은 7일 중 6일 범위 안 — 높았던 하루는 늦은 시간의 짠 저녁 식사 다음이었어요.",
+      "sampleBody": "2주 동안 체중 1.2kg 감소. 안정 시 맥박은 58bpm으로 꾸준해요. 혈압은 7일 중 6일 범위 안, 높았던 하루는 늦은 시간의 짠 저녁 식사 다음이었어요.",
       "sampleCaption": "예시일 뿐 내 데이터가 아니에요. 인사이트를 켜면 브리핑이 이런 식으로 읽혀요.",
       "ladderTitle": "켜는 방법 세 가지",
-      "ladderLocalTitle": "로컬 모델 — AI 요청이 내 네트워크 안에 머물러요",
-      "ladderLocalBody": "내 컴퓨터의 Ollama나 LM Studio를 HealthLog에 연결해요. 무료이고 완전히 비공개 — 가장 마음 편한 기본값이에요.",
+      "ladderLocalTitle": "로컬 모델: AI 요청이 내 네트워크 안에 머물러요",
+      "ladderLocalBody": "내 컴퓨터의 Ollama나 LM Studio를 HealthLog에 연결해요. 무료이고 완전히 비공개라서 가장 마음 편한 기본값이에요.",
       "ladderByokTitle": "내 API 키 사용",
       "ladderByokBody": "본인의 OpenAI나 Anthropic 키를 쓰면 돼요. 내 계정과 결제로 돌아가고, API 등급은 기본적으로 데이터를 학습에 쓰지 않아요.",
       "ladderOauthTitle": "구독 계정으로 로그인",
       "ladderOauthBody": "ChatGPT 계정을 연결해요. 토큰당 비용은 없지만 소비자 등급 약관은 내용을 학습에 쓸 수 있어서, 건강 데이터에는 기본값이 아니라 신중히 고를 선택이에요.",
-      "keylessLine": "AI 없이도 HealthLog는 충분히 쓸모 있어요. 타일, 차트, 추이, 내보내기 모두 그대로 작동하고 — AI는 그 위에 쉬운 말 해설을 더할 뿐이에요.",
+      "keylessLine": "AI 없이도 HealthLog는 충분히 쓸모 있어요. 타일, 차트, 추이, 내보내기 모두 그대로 작동하고, AI는 그 위에 쉬운 말 해설을 더할 뿐이에요.",
       "setupCta": "설정하기 (1분 정도)",
-      "sharedKeyNote": "이 인스턴스에는 이미 공용 AI 제공자가 있어서 지금 바로 인사이트를 쓸 수 있어요 — 따로 설정할 게 없어요.",
+      "sharedKeyNote": "이 인스턴스에는 이미 공용 AI 제공자가 있어서 지금 바로 인사이트를 쓸 수 있어요. 따로 설정할 게 없어요.",
       "offer": {
         "title": "이 인스턴스가 요약을 쉬운 말로 써 줄 수 있습니다.",
         "body": "운영자가 제공하는 공급자가 지난 24시간 안에 마지막으로 정상 동작했습니다. 한 번만 누르면 쉬운 말 요약이 켜지며, 그러면 데이터는 그 하나의 공급자에게만 전달되고 다른 어느 곳에도 가지 않습니다.",
@@ -5162,7 +5162,7 @@
       "dataSourceDescription": "Withings, WHOOP, Oura, Polar, Nightscout, Fitbit, Apple Health에서 체중·혈압·수면 등을 자동으로 동기화해요.",
       "dataSourceCta": "연결",
       "notificationsTitle": "알림 설정하기",
-      "notificationsDescription": "HealthLog가 어떻게 알려줄지 고르세요 — Telegram, ntfy, 웹 푸시.",
+      "notificationsDescription": "HealthLog가 어떻게 알려줄지 고르세요: Telegram, ntfy, 웹 푸시.",
       "notificationsCta": "알림 열기",
       "insightsTitle": "인사이트 켜기(선택)",
       "insightsDescription": "로컬 모델이나 내 AI 키를 넣으면 일일 브리핑과 코치가 열려요.",
@@ -5388,7 +5388,7 @@
         "resetSuccess": "소스 우선순위를 기본값으로 되돌렸어요",
         "perMetricToggle": "지표별 재정의 ({count})",
         "perMetricHelp": "기본 순서에서 직접 바꾼 지표예요. 다른 지표는 그대로 두고 하나만 기본값으로 되돌릴 때 이 목록을 쓰세요.",
-        "perMetricEmpty": "지표별 재정의가 없어요 — 모든 지표가 위의 전체 순서를 써요.",
+        "perMetricEmpty": "지표별 재정의가 없어요. 모든 지표가 위의 전체 순서를 써요.",
         "resetMetric": "되돌리기",
         "deviceTypeToggle": "기기 유형 우선순위 ({count})",
         "deviceTypeHelp": "한 소스 안에서 어느 기기를 쓸지예요. Apple Watch와 iPhone이 모두 걸음 수를 기록하면 순위가 높은 기기 유형의 측정값을 대표값으로 써요.",
@@ -5452,7 +5452,7 @@
           "daysWithData": "{days}일 중 {count}일",
           "moduleHint": "동기화는 영양 섭취 모듈에서 조절해요.",
           "moduleHintLink": "모듈 관리",
-          "detail": "읽기 전용 — 숫자는 원본 앱이 관리해요."
+          "detail": "읽기 전용이에요. 숫자는 원본 앱이 관리해요."
         },
         "helpDetail": "나머지는 감사 기록용으로 그대로 보관해요. 연결했거나 데이터가 있는 소스만 보여요.",
         "noneInUse": "아직 순위를 정할 소스가 없어요. 연동에서 연결하거나 값을 기록해 보세요."
@@ -5501,7 +5501,7 @@
             "encryptToggle": "암호문구로 암호화",
             "passphrasePlaceholder": "암호문구 (12자 이상)",
             "passphraseHelp": "Argon2id로 보관 파일 키를 만들고 AES-256-GCM으로 봉인해요. 파일은 .hlx 확장자로 저장해 주세요.",
-            "noRecoveryWarning": "복구 수단이 없어요 — 이 암호문구를 잃어버리면 보관 파일을 열 수 없어요. 안전한 곳에 보관해 주세요.",
+            "noRecoveryWarning": "복구 수단이 없어요. 이 암호문구를 잃어버리면 보관 파일을 열 수 없어요. 안전한 곳에 보관해 주세요.",
             "detail": "주간 자동 백업과 같은 형식이에요. 아직 담기지 않는 기록 유형이 있고, 파일의 매니페스트에 무엇이 들었는지 적혀 있어요.",
             "contents": "측정, 복약, 기분, 생리 주기, 검사, 아픈 날 에피소드, 알레르기, 가족력, 영양, 운동, 건강 프로필, 사용자 지표를 JSON 파일 하나에."
           }
@@ -5745,7 +5745,7 @@
         "error": "저장하지 못했어요. 다시 시도해 주세요.",
         "toggleable": {
           "title": "기록할 항목",
-          "description": "끈 모듈은 내비게이션, 타일, 인사이트에서 빠져요 — 데이터는 그대로 남아요."
+          "description": "끈 모듈은 내비게이션, 타일, 인사이트에서 빠지지만 데이터는 그대로 남아요."
         },
         "manageIn": "{section}에서 관리",
         "operatorDisabled": "서버 전체에서 꺼짐",
@@ -5865,7 +5865,7 @@
         "omitted": "{count}개 항목은 기록이 꺼져 있어서 목록에 없어요. 모듈을 다시 켜면 해당 항목도 돌아와요.",
         "omittedLink": "모듈 열기",
         "refusal": {
-          "empty": "건강 점수에는 점수를 매길 건강 영역이 최소 하나 필요해요. 하나는 선택해 두세요 — 점수가 어떤 영역을 바탕으로 하는지 알려 줘요."
+          "empty": "건강 점수에는 점수를 매길 건강 영역이 최소 하나 필요해요. 하나는 선택해 두세요. 점수가 어떤 영역을 바탕으로 하는지 알려 줘요."
         },
         "notice": {
           "upgrade": {
@@ -6048,7 +6048,7 @@
     "rawDataWarning": "자세한 기록이 켜져 있어요. 분석할 때마다 최근 90일의 일별 평균, 그 이전 1년의 주별 평균, 최대 5년 전까지의 월별 평균이 추가로 전송돼요.",
     "regenerateInsights": "리포트 다시 생성",
     "regenerateSuccess": "리포트를 다시 생성했어요",
-    "regenerateRateLimit": "잠시만 기다려 주세요 — 시간당 분석 한도에 도달했어요.",
+    "regenerateRateLimit": "잠시만 기다려 주세요. 시간당 분석 한도에 도달했어요.",
     "lastGeneratedAt": "마지막 생성",
     "ai": {
       "chatgptConnectedBadge": "ChatGPT 연결됨",
@@ -6058,11 +6058,11 @@
       "deviceCodeHeading": "chatgpt.com에서 연결을 마무리하세요",
       "deviceCodeStep1": "아무 기기에서나 이 링크를 여세요:",
       "deviceCodeStep2": "이 일회용 코드를 입력하세요:",
-      "deviceCodeStep3": "연결을 승인하세요 — 이 페이지는 자동으로 갱신돼요.",
+      "deviceCodeStep3": "연결을 승인하세요. 이 페이지는 자동으로 갱신돼요.",
       "deviceCodeCopy": "복사",
       "deviceCodeWaiting": "승인을 기다리는 중…",
       "deviceCodeCancel": "취소",
-      "oauthNotConfigured": "이 인스턴스에는 ChatGPT OAuth가 설정돼 있지 않아요 — 아래에서 직접 발급한 API 키를 쓰세요.",
+      "oauthNotConfigured": "이 인스턴스에는 ChatGPT OAuth가 설정돼 있지 않아요. 아래에서 직접 발급한 API 키를 쓰세요.",
       "modelLabel": "모델",
       "modelOptionDefault": "— 기본값 —",
       "modelOptionCustom": "직접 입력…",
@@ -6070,7 +6070,7 @@
       "anthropicKeyLabel": "Anthropic API 키",
       "baseUrlLabel": "기본 URL",
       "localKeyLabel": "API 키 (선택)",
-      "localDescription": "OpenAI 호환 엔드포인트라면 무엇이든 쓸 수 있어요 — 로컬 모델(Ollama, LM Studio)은 물론 LiteLLM, OpenRouter, vLLM 같은 게이트웨이도요. 기본 URL은 /v1로 끝나고, API 키는 선택이에요.",
+      "localDescription": "OpenAI 호환 엔드포인트라면 무엇이든 쓸 수 있어요. 로컬 모델(Ollama, LM Studio)은 물론 LiteLLM, OpenRouter, vLLM 같은 게이트웨이도요. 기본 URL은 /v1로 끝나고, API 키는 선택이에요.",
       "savedPreview": "(저장됨: {preview})",
       "savedShort": "(저장됨)",
       "saveCta": "저장",
@@ -6110,7 +6110,7 @@
         "admin-openai": "관리자가 제공하는 OpenAI"
       },
       "compat": {
-        "description": "OpenAI /v1/chat/completions API를 쓰는 엔드포인트라면 무엇이든 정식 제공자로 쓸 수 있어요: LiteLLM, OpenRouter, vLLM 같은 게이트웨이요. 기본 URL은 /v1로 끝나고, API 키는 선택이며, 모델은 게이트웨이가 연결해 주는 것을 쓰면 돼요. OpenAI 키는 이 엔드포인트에 절대 전달되지 않아요 — 이 제공자는 자체 키를 써요.",
+        "description": "OpenAI /v1/chat/completions API를 쓰는 엔드포인트라면 무엇이든 정식 제공자로 쓸 수 있어요: LiteLLM, OpenRouter, vLLM 같은 게이트웨이요. 기본 URL은 /v1로 끝나고, API 키는 선택이며, 모델은 게이트웨이가 연결해 주는 것을 쓰면 돼요. OpenAI 키는 이 엔드포인트에 절대 전달되지 않아요. 이 제공자는 자체 키를 써요.",
         "keyLabel": "API 키 (선택)",
         "modelHint": "게이트웨이가 기대하는 모델 이름이에요. 비워 두면 다른 제공자에 저장한 모델을 쓰고, 둘 다 없으면 이 제공자는 건너뛰어요."
       },
@@ -6146,13 +6146,13 @@
         "notConfigured": "운영자가 이 인스턴스에 공용 OpenAI 키를 설정하지 않았어요."
       },
       "testProvider": "사용 중인 제공자 테스트",
-      "testSuccess": "정상 — {provider} ({model})",
+      "testSuccess": "정상: {provider} ({model})",
       "testFailedShort": "테스트 실패: {message}",
-      "testUnexpectedResponse": "AI 제공자 연결에 실패했어요 — 서버에서 예상 밖의 응답이 왔어요.",
-      "testReasonCredentials": "제공자가 인증 정보를 거부했어요 — AI 설정에서 다시 인증해 주세요.",
-      "testReasonRateLimited": "제공자가 요청 빈도를 제한했어요 — 잠시 뒤 다시 시도해 주세요.",
+      "testUnexpectedResponse": "AI 제공자 연결에 실패했어요. 서버에서 예상 밖의 응답이 왔어요.",
+      "testReasonCredentials": "제공자가 인증 정보를 거부했어요. AI 설정에서 다시 인증해 주세요.",
+      "testReasonRateLimited": "제공자가 요청 빈도를 제한했어요. 잠시 뒤 다시 시도해 주세요.",
       "testReasonServerError": "AI 제공자가 서버 오류를 반환했어요.",
-      "testReasonBadRequest": "제공자가 요청을 거부했어요(HTTP {status}) — 엔드포인트는 응답했으니 연결 문제가 아니라 요청 형식이나 모델 이름 문제예요.",
+      "testReasonBadRequest": "제공자가 요청을 거부했어요(HTTP {status}), 엔드포인트는 응답했으니 연결 문제가 아니라 요청 형식이나 모델 이름 문제예요.",
       "testReasonUnreachable": "AI 제공자에 연결하지 못했어요.",
       "coachMemory": {
         "title": "코치가 기억하는 것",
@@ -6240,15 +6240,15 @@
       "autoRead": {
         "title": "AI로 문서 자동 읽기",
         "subLabel": "문서마다 따로 누르지 않아도 설정한 AI 제공자가 문서를 읽고 색인해요.",
-        "honesty": "켜 두면 올리는 문서마다 설정한 AI 제공자에게 전송되어 읽히고, 설명이 붙고, 검색용으로 색인돼요 — 문서별 확인 절차는 없어요. 켜는 순간 과거 문서에도 적용돼요. 이미 올렸지만 아직 요약이 없는 문서도 켤 때마다 최대 200개까지 함께 전송돼요. 이 작업은 서버에서 이뤄지고 문서 내용은 이 기기를 떠나 그 제공자에게 전달돼요. 설정한 제공자가 구독 연결(API 키가 아니라 로그인한 AI 계정)이라면 그 제공자의 데이터 정책이 적용돼요 — 구독 제공자는 내용을 모델 개선에 쓸 수 있고, 이를 보호하는 데이터 처리 계약도 없어요. 셀프 호스팅 로컬 모델이 읽은 문서는 서버 밖으로 나가지 않아요. 기본값은 꺼짐이고, 이 조건을 받아들일 때만 켜세요.",
-        "confirm": "이해했어요 — 켜기",
+        "honesty": "켜 두면 올리는 문서마다 설정한 AI 제공자에게 전송되어 읽히고, 설명이 붙고, 검색용으로 색인돼요. 문서별 확인 절차는 없어요. 켜는 순간 과거 문서에도 적용돼요. 이미 올렸지만 아직 요약이 없는 문서도 켤 때마다 최대 200개까지 함께 전송돼요. 이 작업은 서버에서 이뤄지고 문서 내용은 이 기기를 떠나 그 제공자에게 전달돼요. 설정한 제공자가 구독 연결(API 키가 아니라 로그인한 AI 계정)이라면 그 제공자의 데이터 정책이 적용돼요. 구독 제공자는 내용을 모델 개선에 쓸 수 있고, 이를 보호하는 데이터 처리 계약도 없어요. 셀프 호스팅 로컬 모델이 읽은 문서는 서버 밖으로 나가지 않아요. 기본값은 꺼짐이고, 이 조건을 받아들일 때만 켜세요.",
+        "confirm": "이해했어요, 켜기",
         "cancel": "취소"
       },
       "centralCodex": {
         "title": "서버의 공용 AI 연결 사용",
         "subLabel": "AI 요청을 서버의 공유 연결로 보내고, 내 제공자는 대체 수단으로 써요.",
-        "honesty": "공용 연결은 운영자가 이 서버의 모든 사용자를 위해 연결해 둔 로그인 AI 계정 하나예요 — 내 키가 아니에요. 이 연결로 보낸 요청은 기본적으로 제공자의 학습에 쓰이고 이를 보호하는 데이터 처리 계약도 없으며, 계정의 시간당·주당 한도를 사용을 선택한 다른 모든 사용자와 나눠 써요. 내가 설정한 제공자는 여전히 먼저 시도돼요. 이 조건을 받아들일 때만 켜세요.",
-        "confirm": "이해했어요 — 연결 사용",
+        "honesty": "공용 연결은 운영자가 이 서버의 모든 사용자를 위해 연결해 둔 로그인 AI 계정 하나예요. 내 키가 아니에요. 이 연결로 보낸 요청은 기본적으로 제공자의 학습에 쓰이고 이를 보호하는 데이터 처리 계약도 없으며, 계정의 시간당·주당 한도를 사용을 선택한 다른 모든 사용자와 나눠 써요. 내가 설정한 제공자는 여전히 먼저 시도돼요. 이 조건을 받아들일 때만 켜세요.",
+        "confirm": "이해했어요, 연결 사용",
         "cancel": "취소"
       },
       "consent": {
@@ -6324,8 +6324,8 @@
     "withingsClientId": "클라이언트 ID",
     "withingsClientSecret": "클라이언트 시크릿",
     "withingsCredentialsSaved": "자격 증명을 저장했어요",
-    "withingsCredentialsSavedPlaceholder": "저장됨 — 바꾸려면 새로 입력",
-    "withingsCredentialsSavedPlaceholderSecret": "저장됨 — 바꾸려면 새로 입력",
+    "withingsCredentialsSavedPlaceholder": "저장됨: 바꾸려면 새로 입력",
+    "withingsCredentialsSavedPlaceholderSecret": "저장됨: 바꾸려면 새로 입력",
     "withingsSaveCredentials": "저장",
     "configured": "설정됨",
     "withingsSync": "지금 동기화",
@@ -6340,7 +6340,7 @@
     },
     "withingsFullSyncResult": "측정값 {count}개를 전체 동기화했어요",
     "withingsSyncFailed": "동기화에 실패했어요",
-    "withingsOauthConnected": "Withings를 연결했어요 — 첫 동기화가 백그라운드에서 시작돼요.",
+    "withingsOauthConnected": "Withings를 연결했어요. 첫 동기화가 백그라운드에서 시작돼요.",
     "withingsOauthFailed": "Withings 연결에 실패했어요",
     "withingsOauthError": {
       "csrf1": "브라우저 쿠키가 없어서 보안 확인에 실패했어요. 같은 브라우저에서 연결을 다시 시작해 주세요.",
@@ -6365,8 +6365,8 @@
     "whoopClientId": "클라이언트 ID",
     "whoopClientSecret": "클라이언트 시크릿",
     "whoopCredentialsSaved": "자격 증명을 저장했어요",
-    "whoopCredentialsSavedPlaceholder": "저장됨 — 바꾸려면 새로 입력",
-    "whoopCredentialsSavedPlaceholderSecret": "저장됨 — 바꾸려면 새로 입력",
+    "whoopCredentialsSavedPlaceholder": "저장됨: 바꾸려면 새로 입력",
+    "whoopCredentialsSavedPlaceholderSecret": "저장됨: 바꾸려면 새로 입력",
     "whoopSaveCredentials": "저장",
     "whoopSync": "지금 동기화",
     "whoopFullSync": "전체 데이터 동기화",
@@ -6381,7 +6381,7 @@
     "whoopConnect": "WHOOP으로 연결",
     "whoopNoCredentials": "WHOOP을 연결하려면 위에 API 자격 증명을 입력해 주세요.",
     "whoopBackfillInProgress": "WHOOP 기록을 백그라운드에서 가져오는 중이에요…",
-    "whoopOauthConnected": "WHOOP을 연결했어요 — 첫 동기화가 백그라운드에서 시작돼요.",
+    "whoopOauthConnected": "WHOOP을 연결했어요. 첫 동기화가 백그라운드에서 시작돼요.",
     "whoopOauthFailed": "WHOOP 연결에 실패했어요",
     "whoopOauthError": {
       "csrf1": "브라우저 쿠키가 없어서 보안 확인에 실패했어요. 같은 브라우저에서 연결을 다시 시작해 주세요.",
@@ -6395,14 +6395,14 @@
     },
     "fitbit": "Fitbit",
     "fitbitTag": "Fitbit & Pixel",
-    "fitbitDescription": "Fitbit을 연결하면 Fitbit과 Pixel Watch의 건강 지표를 동기화해요 — 체중, 심박수 등.",
+    "fitbitDescription": "Fitbit을 연결하면 Fitbit과 Pixel Watch의 건강 지표를 동기화해요: 체중, 심박수 등.",
     "fitbitExperimentalBadge": "실험 기능",
     "fitbitCredentials": "API 자격 증명",
     "fitbitClientId": "클라이언트 ID",
     "fitbitClientSecret": "클라이언트 시크릿",
     "fitbitCredentialsSaved": "자격 증명을 저장했어요",
-    "fitbitCredentialsSavedPlaceholder": "저장됨 — 바꾸려면 새로 입력",
-    "fitbitCredentialsSavedPlaceholderSecret": "저장됨 — 바꾸려면 새로 입력",
+    "fitbitCredentialsSavedPlaceholder": "저장됨: 바꾸려면 새로 입력",
+    "fitbitCredentialsSavedPlaceholderSecret": "저장됨: 바꾸려면 새로 입력",
     "fitbitSaveCredentials": "저장",
     "fitbitSync": "지금 동기화",
     "fitbitFullSync": "전체 데이터 동기화",
@@ -6417,7 +6417,7 @@
     "fitbitConnect": "Fitbit으로 연결",
     "fitbitNoCredentials": "Fitbit을 연결하려면 위에 API 자격 증명을 입력해 주세요.",
     "fitbitBackfillInProgress": "Fitbit 기록을 백그라운드에서 가져오는 중이에요…",
-    "fitbitOauthConnected": "Fitbit을 연결했어요 — 첫 동기화가 백그라운드에서 시작돼요.",
+    "fitbitOauthConnected": "Fitbit을 연결했어요. 첫 동기화가 백그라운드에서 시작돼요.",
     "fitbitOauthFailed": "Fitbit 연결에 실패했어요",
     "googleHealth": "Google Health",
     "googleHealthTag": "Fitbit & Pixel",
@@ -6427,8 +6427,8 @@
     "googleHealthClientId": "클라이언트 ID",
     "googleHealthClientSecret": "클라이언트 시크릿",
     "googleHealthCredentialsSaved": "자격 증명을 저장했어요",
-    "googleHealthCredentialsSavedPlaceholder": "저장됨 — 바꾸려면 새로 입력",
-    "googleHealthCredentialsSavedPlaceholderSecret": "저장됨 — 바꾸려면 새로 입력",
+    "googleHealthCredentialsSavedPlaceholder": "저장됨: 바꾸려면 새로 입력",
+    "googleHealthCredentialsSavedPlaceholderSecret": "저장됨: 바꾸려면 새로 입력",
     "googleHealthSaveCredentials": "저장",
     "googleHealthSync": "지금 동기화",
     "googleHealthSyncCheckStatus": "상태 새로고침",
@@ -6462,9 +6462,9 @@
     "googleHealthConnect": "Google로 연결",
     "googleHealthNoCredentials": "Google Health를 연결하려면 위에 API 자격 증명을 입력해 주세요.",
     "googleHealthBackfillInProgress": "Google Health 기록을 백그라운드에서 가져오는 중이에요…",
-    "googleHealthReauthBanner": "Google이 연결을 만료시켰어요 — OAuth 앱이 테스트 모드로 있는 동안 주기적으로 생기는 일이에요. 다시 연결하면 동기화가 이어져요.",
+    "googleHealthReauthBanner": "Google이 연결을 만료시켰어요. OAuth 앱이 테스트 모드로 있는 동안 주기적으로 생기는 일이에요. 다시 연결하면 동기화가 이어져요.",
     "googleHealthReconnect": "다시 연결",
-    "googleHealthOauthConnected": "Google Health를 연결했어요 — 첫 동기화가 백그라운드에서 시작돼요.",
+    "googleHealthOauthConnected": "Google Health를 연결했어요. 첫 동기화가 백그라운드에서 시작돼요.",
     "googleHealthOauthFailed": "Google Health 연결에 실패했어요",
     "googleHealthOauthError": {
       "csrf1": "브라우저 쿠키가 없어서 보안 확인에 실패했어요. 같은 브라우저에서 연결을 다시 시작해 주세요.",
@@ -6499,10 +6499,10 @@
     },
     "integrationPill": {
       "connected": "연결됨",
-      "errorReconnect": "오류 — 다시 연결",
+      "errorReconnect": "오류: 다시 연결",
       "warningServerError": "동기화 실패 중",
       "failureCount": "{count}/{threshold}",
-      "parkedReconnect": "일시중지 — 다시 연결",
+      "parkedReconnect": "일시중지: 다시 연결",
       "notConnected": "연결 안 됨",
       "justNow": "방금",
       "minutesAgo": "{count}분 전",
@@ -6557,7 +6557,7 @@
       "namePlaceholder": "이름 (예: Paperless-ngx)"
     },
     "tokenMintMovedDescription": "토큰은 쓰이는 곳에서 발급돼요. 측정값, 운동, 문서는 위에서, 특정 약은 그 약의 API 엔드포인트에서 만들 수 있어요.",
-    "tokenCreated": "토큰을 만들었어요 — 지금 복사하세요! 다시 보여주지 않아요.",
+    "tokenCreated": "토큰을 만들었어요. 지금 복사하세요! 다시 보여주지 않아요.",
     "tokenCopy": "토큰 복사",
     "tokenCopied": "토큰을 클립보드에 복사했어요",
     "tokenCopyFailed": "토큰을 복사하지 못했어요",
@@ -6596,7 +6596,7 @@
     "deleteAccountCta": "계정 삭제",
     "deleteAccountConfirmTitle": "계정을 영구히 삭제할까요?",
     "deleteAccountConfirmDescription": "계정과 모든 건강 데이터, 패스키, 세션, 감사 기록이 영구히 삭제돼요. 삭제 직후 로그아웃돼요.",
-    "deleteAccountSuccess": "계정을 삭제했어요 — 로그아웃할게요.",
+    "deleteAccountSuccess": "계정을 삭제했어요. 로그아웃할게요.",
     "deleteAccountFailed": "계정을 삭제하지 못했어요",
     "deleteAccountFinal": "영구 삭제",
     "saved": "저장됨",
@@ -6619,7 +6619,7 @@
       "testing": "테스트 중…",
       "ok": "연결됨 (지연 {latency}ms)",
       "errors": {
-        "credentials_rejected": "자격 증명이 거부됐어요 — 토큰을 확인해 주세요",
+        "credentials_rejected": "자격 증명이 거부됐어요. 토큰을 확인해 주세요",
         "rate_limited": "상대 서버에서 요청 수를 제한했어요",
         "timeout": "요청 시간이 초과됐어요",
         "upstream_error": "상대 서버가 오류를 반환했어요",
@@ -6630,7 +6630,7 @@
         "private_origin_not_approved": "비공개 네트워크 대상이에요. 운영자가 NOTIFICATION_PRIVATE_ORIGINS에 이 출처를 등록해야 해요",
         "private_origin_not_grantable": "이 주소는 링크 로컬, 메타데이터 또는 미지정 주소예요. 운영자 등록으로도 열 수 없으니 릴레이가 실제로 수신하는 주소를 사용해 주세요",
         "url_invalid": "URL이 올바르지 않아요",
-        "redirected": "엔드포인트가 리디렉션돼요 — URL을 확인해 주세요",
+        "redirected": "엔드포인트가 리디렉션돼요. URL을 확인해 주세요",
         "endpoint_not_found": "해당 URL에 엔드포인트가 없어요",
         "credentials_unreadable": "자격 증명을 복호화할 수 없어요",
         "upstream_invalid_json": "상대 서버가 잘못된 JSON을 보냈어요",
@@ -6641,7 +6641,7 @@
     },
     "notificationStatus": {
       "title": "발송 상태",
-      "description": "채널별 상태예요 — '자동 비활성화'는 영구 오류가 이어져 재시도를 멈췄다는 뜻이에요.",
+      "description": "채널별 상태이며, '자동 비활성화'는 영구 오류가 이어져 재시도를 멈췄다는 뜻이에요.",
       "emptyDescription": "설정 › 연동 › 발송 채널에서 채널을 설정해 주세요.",
       "stateActive": "사용 중",
       "stateAutoDisabled": "자동 비활성화",
@@ -6667,7 +6667,7 @@
     },
     "healthRecord": {
       "title": "건강 기록 내보내기",
-      "description": "의사에게 보여줄 전체 기록 — PDF, FHIR, 또는 둘 다.",
+      "description": "의사에게 보여줄 전체 기록: PDF, FHIR, 또는 둘 다.",
       "format": "형식",
       "format_pdf": "PDF",
       "format_fhir": "구조화 (FHIR)",
@@ -6699,7 +6699,7 @@
       "createTitle": "새 공유 링크",
       "createDescription": "링크는 읽기 전용이고 유효 기간이 있어요.",
       "label": "라벨",
-      "labelPlaceholder": "예: 김 선생님 — 건강검진",
+      "labelPlaceholder": "예: 김 선생님, 건강검진",
       "range": "공유할 기록 기간(일)",
       "rangeHint": "공유 범위가 과거 며칠까지 포함될지 정해요.",
       "expiry": "만료까지(일)",
@@ -6719,7 +6719,7 @@
       "statusRevoked": "해지됨",
       "statusExpired": "만료됨",
       "inactiveTitle": "해지·만료됨 ({count})",
-      "shownOnce": "한 번만 보여줘요. 지금 QR 코드와 암호를 저장해 두세요 — 나중에는 둘 다 복구할 수 없어요.",
+      "shownOnce": "한 번만 보여줘요. 지금 QR 코드와 암호를 저장해 두세요. 나중에는 둘 다 복구할 수 없어요.",
       "qrAlt": "공유 링크와 암호가 담긴 QR 코드",
       "linkLabel": "링크",
       "passphraseLabel": "암호",
@@ -6730,12 +6730,12 @@
       "attachTitle": "문서 첨부",
       "attachButton": "문서 선택",
       "attachCount": "{max}개 중 {count}개 선택됨",
-      "attachFrozen": "링크를 만들면 문서 구성이 고정돼요 — 나중에 문서를 추가하거나 뺄 수 없어요.",
+      "attachFrozen": "링크를 만들면 문서 구성이 고정돼요. 나중에 문서를 추가하거나 뺄 수 없어요.",
       "attachRemove": "제거: {title}",
       "exifNote": "공유할 때 JPEG, PNG, WebP 이미지에서는 카메라 메타데이터(EXIF/GPS)를 제거해요. PDF, TIFF, HEIC, Office 파일은 그대로 전달돼요.",
       "documentCount": "첨부한 문서: {count}개",
       "qrScanTitle": "다른 기기에서 열려면 스캔하세요",
-      "qrScanHint": "휴대폰 카메라로 코드를 비추면 공유된 기록이 열려요 — 암호는 이미 포함돼 있어요.",
+      "qrScanHint": "휴대폰 카메라로 코드를 비추면 공유된 기록이 열려요. 암호는 이미 포함돼 있어요.",
       "pickerTitle": "문서 첨부",
       "pickerDescription": "보관함에서 검색해 공유할 문서를 고르세요. 최대 {max}개예요.",
       "pickerSearch": "문서 검색",
@@ -6748,7 +6748,7 @@
       "statusNeedsReselect": "내용 다시 선택",
       "reselectReason": "이 링크는 선택한 적 없는 범위를 제공하고 있어서 닫았어요. 새로 만들고 담을 내용을 골라 주세요.",
       "reselectAction": "새 링크 만들기",
-      "createDetail": "토큰은 만들 때 한 번만 보여줘요 — 그때 저장해 두세요. 복구할 수 없어요.",
+      "createDetail": "토큰은 만들 때 한 번만 보여줘요. 그때 저장해 두세요. 복구할 수 없어요.",
       "activeDescription": "공유한 링크와 만료 시점, 열람 횟수를 보여줘요."
     },
     "genderOther": "기타",
@@ -6757,10 +6757,10 @@
     "nightscoutDescription": "직접 운영하는 Nightscout 사이트를 연결해 연속 혈당 측정값을 혈당 패널로 동기화해요.",
     "nightscoutViewData": "혈당 보기",
     "nightscoutUrl": "Nightscout URL",
-    "nightscoutUrlSavedPlaceholder": "저장됨 — 바꾸려면 새 URL을 입력하세요",
+    "nightscoutUrlSavedPlaceholder": "저장됨: 바꾸려면 새 URL을 입력하세요",
     "nightscoutToken": "API 토큰",
     "nightscoutTokenOptional": "공개 사이트라면 선택 사항이에요",
-    "nightscoutTokenSavedPlaceholder": "저장됨 — 바꾸려면 새 토큰을 입력하세요",
+    "nightscoutTokenSavedPlaceholder": "저장됨: 바꾸려면 새 토큰을 입력하세요",
     "nightscoutTokenHelp": "Nightscout 관리자 도구에서 발급한 액세스 토큰을 붙여 넣으세요. 사이트를 누구나 읽을 수 있다면 비워 두세요.",
     "nightscoutPrivateOperatorTitle": "비공개 Nightscout에 접근하려면 서버 운영자의 승인이 필요해요.",
     "nightscoutPrivateOperatorDescription": "서버 운영자에게 이 Nightscout 출처를 그대로 승인해 달라고 요청하세요.",
@@ -6781,7 +6781,7 @@
     "polarClientId": "클라이언트 ID",
     "polarClientSecret": "클라이언트 시크릿",
     "polarCredentialsSaved": "자격 증명을 저장했어요",
-    "polarCredentialsSavedPlaceholder": "저장됨 — 바꾸려면 새로 입력하세요",
+    "polarCredentialsSavedPlaceholder": "저장됨: 바꾸려면 새로 입력하세요",
     "polarSaveCredentials": "저장",
     "polarUnavailable": "이 서버에는 Polar가 설정돼 있지 않아요. 위에 직접 Polar OAuth 자격 증명을 넣거나, 관리자에게 공용 앱 설정을 요청하세요.",
     "polarConnect": "Polar 연결",
@@ -6791,7 +6791,7 @@
     "polarDisconnect": "연결 해제",
     "polarDisconnectTitle": "Polar 연결을 해제할까요?",
     "polarDisconnectDescription": "앞으로 동기화가 멈춰요. 이미 가져온 측정값은 기록에 그대로 남아요.",
-    "polarOauthConnected": "Polar를 연결했어요 — 첫 동기화가 백그라운드에서 시작돼요.",
+    "polarOauthConnected": "Polar를 연결했어요. 첫 동기화가 백그라운드에서 시작돼요.",
     "polarOauthFailed": "Polar 연결에 실패했어요",
     "polarOauthError": {
       "csrf1": "브라우저 쿠키가 없어서 보안 확인에 실패했어요. 같은 브라우저에서 연결을 다시 시작해 주세요.",
@@ -6810,7 +6810,7 @@
     "ouraClientId": "클라이언트 ID",
     "ouraClientSecret": "클라이언트 시크릿",
     "ouraCredentialsSaved": "자격 증명을 저장했어요",
-    "ouraCredentialsSavedPlaceholder": "저장됨 — 바꾸려면 새로 입력하세요",
+    "ouraCredentialsSavedPlaceholder": "저장됨: 바꾸려면 새로 입력하세요",
     "ouraSaveCredentials": "저장",
     "ouraUnavailable": "이 서버에는 Oura가 설정돼 있지 않아요. 위에 직접 Oura OAuth 자격 증명을 넣거나, 관리자에게 공용 앱 설정을 요청하세요.",
     "ouraConnect": "Oura 연결",
@@ -6820,7 +6820,7 @@
     "ouraDisconnect": "연결 해제",
     "ouraDisconnectTitle": "Oura 연결을 해제할까요?",
     "ouraDisconnectDescription": "앞으로 동기화가 멈춰요. 이미 가져온 측정값은 기록에 그대로 남아요.",
-    "ouraOauthConnected": "Oura를 연결했어요 — 첫 동기화가 백그라운드에서 시작돼요.",
+    "ouraOauthConnected": "Oura를 연결했어요. 첫 동기화가 백그라운드에서 시작돼요.",
     "ouraOauthFailed": "Oura 연결에 실패했어요",
     "ouraOauthError": {
       "csrf1": "브라우저 쿠키가 없어서 보안 확인에 실패했어요. 같은 브라우저에서 연결을 다시 시작해 주세요.",
@@ -6851,7 +6851,7 @@
       }
     },
     "integrationRedirectGuide": {
-      "intro": "직접 만든 {provider} 개발자 앱으로 연결해요 — 설정에 5분쯤 걸려요:",
+      "intro": "직접 만든 {provider} 개발자 앱으로 연결해요. 설정에 5분쯤 걸려요:",
       "step1": "{provider} 개발자 포털에서 앱을 만드세요.",
       "step2": "리디렉션/콜백 URL을 다음으로 설정하세요:",
       "step3": "발급받은 클라이언트 ID와 클라이언트 시크릿을 위에 붙여 넣으세요."
@@ -6939,7 +6939,7 @@
       },
       "passkeyNudge": {
         "title": "패스키를 추가하면 더 빠르게 로그인해요",
-        "body": "패스키로 지문, 얼굴, 기기 PIN을 써서 로그인할 수 있어요 — 비밀번호를 외울 필요가 없어요."
+        "body": "패스키로 지문, 얼굴, 기기 PIN을 써서 로그인할 수 있어요. 비밀번호를 외울 필요가 없어요."
       },
       "trustedDevices": {
         "title": "신뢰하는 기기",
@@ -6958,7 +6958,7 @@
         "revokeAllConfirmBody": "이 기기를 포함해 모든 기기에서 다음에 로그인할 때 2단계 인증을 다시 물어봐요."
       },
       "revokeSessionConfirmTitle": "이 기기를 로그아웃할까요?",
-      "revokeSessionConfirmBody": "{device} — 다시 로그인해야 해요. 기기에 기록된 내용은 영향받지 않아요.",
+      "revokeSessionConfirmBody": "{device}: 다시 로그인해야 해요. 기기에 기록된 내용은 영향받지 않아요.",
       "signOutEverywhereConfirmTitle": "다른 기기를 모두 로그아웃할까요?",
       "signOutEverywhereConfirmBody": "다른 모든 기기, 연결된 모든 AI 어시스턴트와 모든 API 토큰은 다시 로그인하거나 다시 설정해야 합니다. 이 기기는 로그인 상태로 유지됩니다. 기록한 내용에는 영향이 없습니다.",
       "signOutEverywhereShareLinks": "의료진 공유 링크도 종료",
@@ -7014,7 +7014,7 @@
       "endpointLabel": "커넥터 URL",
       "connectDescription": "어시스턴트의 커스텀 커넥터 설정에 이 URL을 붙여 넣고, 아래 토큰으로 인증하거나 안내가 나오면 로그인하세요.",
       "tokensTitle": "커넥터 토큰",
-      "tokensDescription": "어시스턴트를 연결할 토큰을 발급하세요 — 아래에서 기록을 허용하지 않으면 읽기 전용이에요.",
+      "tokensDescription": "어시스턴트를 연결할 토큰을 발급하세요, 아래에서 기록을 허용하지 않으면 읽기 전용이에요.",
       "scopeNote": "새 토큰은 본인 기록만 읽을 수 있어요. 쓰기 권한(health:write)은 아래 토글로 토큰마다 따로 부여해요. 토큰은 관리자 기능에 절대 접근할 수 없어요.",
       "writeScopeToggleLabel": "기록 허용 (health:write)",
       "writeScopeNote": "health:write 범위를 추가해 어시스턴트가 새 측정값과 기분 기록을 계정에 남길 수 있게 해요. 모든 쓰기는 먼저 확인을 거쳐요. 그래도 토큰은 기존 기록을 삭제하거나 수정할 수 없고, 약을 바꾸거나 REST·관리자 기능에 접근할 수도 없어요. 읽기 전용으로 쓰려면 꺼 두세요.",
@@ -7038,7 +7038,7 @@
     "stravaClientId": "클라이언트 ID",
     "stravaClientSecret": "클라이언트 시크릿",
     "stravaCredentialsSaved": "자격 증명을 저장했어요",
-    "stravaCredentialsSavedPlaceholder": "저장됨 — 바꾸려면 새로 입력하세요",
+    "stravaCredentialsSavedPlaceholder": "저장됨: 바꾸려면 새로 입력하세요",
     "stravaSaveCredentials": "저장",
     "stravaUnavailable": "이 서버에는 Strava가 설정돼 있지 않아요. 위에 직접 Strava API 자격 증명을 넣거나, 관리자에게 공용 앱 설정을 요청하세요.",
     "stravaConnect": "Strava 연결",
@@ -7048,7 +7048,7 @@
     "stravaDisconnect": "연결 해제",
     "stravaDisconnectTitle": "Strava 연결을 해제할까요?",
     "stravaDisconnectDescription": "앞으로 동기화가 멈춰요. 이미 가져온 활동은 기록에 그대로 남아요.",
-    "stravaOauthConnected": "Strava를 연결했어요 — 첫 동기화가 백그라운드에서 시작돼요.",
+    "stravaOauthConnected": "Strava를 연결했어요. 첫 동기화가 백그라운드에서 시작돼요.",
     "stravaOauthFailed": "Strava 연결에 실패했어요",
     "stravaOauthError": {
       "csrf1": "브라우저 쿠키가 없어서 보안 확인에 실패했어요. 같은 브라우저에서 연결을 다시 시작해 주세요.",
@@ -7190,20 +7190,20 @@
       "memUsedPercent": "메모리",
       "diskBusyPercent": "디스크 I/O",
       "last2hours": "최근 2시간",
-      "empty": "샘플링을 시작했어요 — 1–2분 뒤에 데이터가 나타나요.",
+      "empty": "샘플링을 시작했어요. 1–2분 뒤에 데이터가 나타나요.",
       "loadError": "호스트 지표를 불러오지 못했어요. 페이지를 새로고침해 보세요."
     },
     "aiServerKey": {
       "title": "AI 서버 키",
       "description": "자기 키를 설정하지 않은 계정을 위한 운영자 키예요.",
-      "byokHint": "사용자 본인 키(BYOK, ChatGPT 로그인, 로컬 제공자)가 항상 우선해요 — 서버 키는 제공자 체인의 마지막 단계예요.",
+      "byokHint": "사용자 본인 키(BYOK, ChatGPT 로그인, 로컬 제공자)가 항상 우선해요. 서버 키는 제공자 체인의 마지막 단계예요.",
       "consentHint": "서버 키로 나가는 요청에는 사용자의 유효한 AI 동의가 필요해요. 동의 기록이 없으면 아무것도 전송하지 않아요.",
       "baseUrlHint": "기본 URL이 API를 결정합니다. https://api.anthropic.com/v1 같은 Anthropic 주소는 인식되며, 그 밖의 호스트는 OpenAI 호환 API로 호출됩니다.",
       "statusConfigured": "설정됨",
       "statusNotConfigured": "설정 안 됨",
       "keyLabel": "API 키",
       "keyPlaceholder": "sk-...",
-      "keyPlaceholderSet": "저장됨 ({preview}) — 바꾸려면 새 키를 입력하세요",
+      "keyPlaceholderSet": "저장됨 ({preview}): 바꾸려면 새 키를 입력하세요",
       "modelLabel": "모델",
       "baseUrlLabel": "Base URL",
       "save": "저장",
@@ -7222,7 +7222,7 @@
       "title": "인사이트 품질",
       "loading": "피드백 요약 불러오는 중…",
       "loadError": "인사이트 품질 요약을 불러오지 못했어요. 페이지를 새로고침해 보세요.",
-      "empty": "아직 피드백이 없어요. 집계는 매일 04:00에 돌아요 — 사용자가 추천을 평가하기 시작하면 도움됨 비율 구간이 여기에 나타나요.",
+      "empty": "아직 피드백이 없어요. 집계는 매일 04:00에 돌아요. 사용자가 추천을 평가하기 시작하면 도움됨 비율 구간이 여기에 나타나요.",
       "windowLabel": "최근 {days}일",
       "generatedAtLabel": "생성 시각",
       "colSeverity": "심각도",
@@ -7237,7 +7237,7 @@
       "title": "코치 피드백",
       "loading": "코치 피드백 요약 불러오는 중…",
       "loadError": "코치 피드백 요약을 불러오지 못했어요. 페이지를 새로고침해 보세요.",
-      "empty": "아직 코치 피드백이 없어요. 집계는 매일 04:00에 돌아요 — 사용자가 코치 답변을 평가하면 도움됨 비율 구간이 여기에 나타나요.",
+      "empty": "아직 코치 피드백이 없어요. 집계는 매일 04:00에 돌아요. 사용자가 코치 답변을 평가하면 도움됨 비율 구간이 여기에 나타나요.",
       "windowLabel": "최근 {days}일",
       "generatedAtLabel": "생성 시각",
       "colPromptVersion": "프롬프트 버전",
@@ -7256,7 +7256,7 @@
     "appSettingsDescription": "회원가입, 언어, 새 계정 시간대의 전역 기본값이에요.",
     "registrationEnabled": "회원가입 허용",
     "registrationEnabledDescription": "끄면 새 사용자가 가입할 수 없어요.",
-    "registrationOpenHint": "회원가입이 열려 있어요 — 이 인스턴스에 접근할 수 있는 누구나 계정을 만들 수 있어요. 필요한 사람이 다 가입했으면 여기서 닫으세요.",
+    "registrationOpenHint": "회원가입이 열려 있어요. 이 인스턴스에 접근할 수 있는 누구나 계정을 만들 수 있어요. 필요한 사람이 다 가입했으면 여기서 닫으세요.",
     "defaultLanguage": "기본 언어",
     "defaultLanguageDescription": "새 사용자와 대체값으로 쓰여요.",
     "defaultUserTimezone": "새 계정의 기본 시간대",
@@ -7270,7 +7270,7 @@
     "integrationWebPush": "웹 푸시",
     "offlineGeoLabel": "위치 데이터",
     "offlineGeoEnabled": "오프라인 (GeoLite2)",
-    "offlineGeoFallback": "온라인 ({host}) — GeoLite2 데이터베이스를 마운트하고 GEOLITE2_DIR을 설정하세요",
+    "offlineGeoFallback": "온라인 ({host}). GeoLite2 데이터베이스를 마운트하고 GEOLITE2_DIR을 설정하세요",
     "offlineGeoOff": "꺼짐",
     "offlineGeoChosen": "온라인 ({host})",
     "apiGlobal": "API 엔드포인트와 API 토큰을 허용해요.",
@@ -7363,7 +7363,7 @@
       "createdToast": "초대를 만들었어요",
       "createError": "초대를 만들지 못했어요.",
       "tokenTitle": "초대 링크",
-      "tokenOnceHint": "지금만 복사할 수 있어요 — 링크를 복사하거나 QR 코드를 스캔하게 하세요.",
+      "tokenOnceHint": "지금만 복사할 수 있어요. 링크를 복사하거나 QR 코드를 스캔하게 하세요.",
       "hashExplainer": "링크의 해시만 저장하기 때문에 나중에 다시 보여줄 수 없어요. 잃어버렸다면 초대를 취소하고 새로 만드세요.",
       "copyLink": "링크 복사",
       "copiedToast": "링크를 복사했어요",
@@ -7425,7 +7425,7 @@
     "tokenName": "이름",
     "tokenPermissions": "권한",
     "tokenPermissionAll": "전체",
-    "tokenPermissionAllTooltip": "와일드카드 권한 — 이 토큰은 모든 API 경로를 호출할 수 있어요.",
+    "tokenPermissionAllTooltip": "와일드카드 권한: 이 토큰은 모든 API 경로를 호출할 수 있어요.",
     "tokenStatus": "상태",
     "tokenLastUsed": "마지막 사용",
     "tokenCreated": "생성",
@@ -7564,7 +7564,7 @@
         "forceLogout": "강제 로그아웃",
         "forceLogoutConfirmTitle": "{name} 강제 로그아웃할까요?",
         "forceLogoutConfirmBody": "이 사용자의 활성 세션이 모두 해제돼요. 모든 기기에서 다시 로그인해야 해요.",
-        "forceLogoutSuccess": "{name} — 세션 {count}개에서 로그아웃했어요",
+        "forceLogoutSuccess": "{name}: 세션 {count}개에서 로그아웃했어요",
         "forceLogoutFailed": "강제 로그아웃하지 못했어요",
         "cannotLogoutSelf": "자기 자신은 강제 로그아웃할 수 없어요",
         "emptyTitle": "이 화면에 사용자가 없어요",
@@ -7603,7 +7603,7 @@
       "app-logs": {
         "title": "앱 로그",
         "subtitle": "이 프로세스가 남긴 최근 구조화 wide-event를 실시간으로 봐요.",
-        "processNote": "앱 프로세스 로그만 보여줘요 — 워커 프로세스 로그는 Loki 연동을 설정하면 그쪽으로 가요.",
+        "processNote": "앱 프로세스 로그만 보여주며, 워커 프로세스 로그는 Loki 연동을 설정하면 그쪽으로 가요.",
         "filterTraceId": "추적 ID",
         "filterAction": "동작 포함…",
         "filterLevel": "레벨",
@@ -7638,7 +7638,7 @@
         "loading": "백업을 불러오는 중…",
         "loadError": "백업을 불러오지 못했어요.",
         "emptyTitle": "아직 백업이 없어요",
-        "emptyDescription": "백업은 매주 일요일 03:00에 자동으로 돌아요 — 지금 실행해서 첫 스냅샷을 만들 수도 있어요.",
+        "emptyDescription": "백업은 매주 일요일 03:00에 자동으로 돌아요. 지금 실행해서 첫 스냅샷을 만들 수도 있어요.",
         "colUser": "사용자",
         "colType": "유형",
         "typeWeeklyAuto": "주간 (자동)",
@@ -7674,11 +7674,11 @@
         "restoreTitle": "백업에서 복원",
         "restoreDescription": "{username}의 현재 데이터 전체를 {when} 스냅샷으로 바꿔요. 기존 측정, 약, 복용 기록, 기분 기록, 알림 채널, 푸시 구독, 대기 중인 Telegram 삭제 항목이 지워져요.",
         "restoreInstanceSettingsLabel": "인스턴스 설정도 함께 복원",
-        "restoreInstanceSettingsHint": "가입, MFA 필수 여부, 기본 언어, 모듈 사용 여부, 알림과 AI 설정 — 스냅샷에서 가져와 이 설치본의 모든 사용자에게 적용돼요. 이 계정만 복원하려면 선택하지 마세요.",
+        "restoreInstanceSettingsHint": "가입, MFA 필수 여부, 기본 언어, 모듈 사용 여부, 알림과 AI 설정은 스냅샷에서 가져와 이 설치본의 모든 사용자에게 적용돼요. 이 계정만 복원하려면 선택하지 마세요.",
         "restorePromptLabel": "계속하려면 RESTORE를 입력해 주세요",
         "previewTitle": "이 백업에 담긴 내용",
         "previewLoading": "내용을 읽는 중…",
-        "previewUnavailable": "내용을 읽지 못했어요 — 복원은 그래도 할 수 있어요.",
+        "previewUnavailable": "내용을 읽지 못했어요. 복원은 그래도 할 수 있어요.",
         "previewStillReading": "이 백업은 이전 버전에서 만들어져서 내용을 처음부터 끝까지 읽고 있어요. 기록이 많으면 시간이 좀 걸려요. 몇 분 뒤에 이 창을 다시 열면 내용이 보여요. 복원은 이것과 상관없이 할 수 있어요.",
         "previewEmpty": "파일에 기록이 없어요.",
         "previewOther": "기타 기록",
@@ -7698,7 +7698,7 @@
         "restoreInProgress": "복원 중…",
         "restoreSuccess": "복원을 마쳤어요",
         "restoreFailed": "복원하지 못했어요",
-        "restoreSkippedToast": "복원을 마쳤어요 — 되돌리지 못한 증상 연결: {links}",
+        "restoreSkippedToast": "복원을 마쳤어요. 되돌리지 못한 증상 연결: {links}",
         "restoreSkippedTitle": "복원하지 못한 연결: {links}",
         "restoreSkippedDescription": "파일이 이 설치본에 없는 기록을 가리키고 있어요. 나머지는 모두 복원했어요. 같은 목록이 감사 로그에도 남아 있어요.",
         "restoreSkippedLinks": "연결 {count}개",
@@ -7721,7 +7721,7 @@
         "restoreSkippedMedicationTarget": "약 목표 분석물",
         "restoreSkippedScheduleRevisionLink": "일정 개정 연결",
         "restoreSkippedAccountSetting": "계정 설정",
-        "restoreMissingTitle": "복원을 중단했어요 — 파일이 불완전해요",
+        "restoreMissingTitle": "복원을 중단했어요. 파일이 불완전해요",
         "restoreMissingDescription": "파일의 매니페스트에는 아래 항목이 들어 있다고 적혀 있는데 실제로는 없어요. 아무것도 바꾸지 않았어요. 복원은 해당 기록 전체를 갈아엎기 때문에, 파일에 없는 항목을 되돌리면 그 항목이 통째로 비워졌을 거예요.",
         "restoreMissingRemedy": "재해 복구용 스냅샷을 쓰거나, 계정을 다시 내보내서 새 파일을 업로드해 주세요. 매니페스트가 처음부터 '빠졌다'고 표시한 항목은 다른 경우라 정상적으로 복원돼요.",
         "restoreMissingDocuments": "문서",
@@ -7845,7 +7845,7 @@
           "completed": "완료",
           "failed": "실패"
         },
-        "coverageDetail": "키 id와 개수만 보여줘요 — 키 자체는 절대 표시하지 않아요.",
+        "coverageDetail": "키 id와 개수만 보여줘요. 키 자체는 절대 표시하지 않아요.",
         "backupsTitle": "백업에 아직 필요한 키",
         "backupsDescription": "아래 백업 중 하나라도 표시하는 동안 폐기한 키는 계속 필요합니다.",
         "backupsStoredLine": "키 {key}: 저장된 복사본 {count}개, 가장 오래된 것은 {when}",
@@ -7923,13 +7923,13 @@
       "connectedSince": "연결 시작: {when}",
       "connected": "공용 AI 연결을 등록했어요",
       "disconnected": "공용 AI 연결을 해제했어요",
-      "error": "문제가 생겼어요 — 다시 시도해 주세요"
+      "error": "문제가 생겼어요. 다시 시도해 주세요"
     },
     "failingJobs": {
       "title": "백그라운드 작업",
       "description": "재시도를 다 쓰고 포기한 작업이 있는 큐예요.",
       "none": "최근 {hours}시간 동안 실패한 작업이 없어요.",
-      "unavailable": "읽을 작업 큐가 없어요 — 이 배포본은 백그라운드 워커 없이 돌고 있어요.",
+      "unavailable": "읽을 작업 큐가 없어요. 이 배포본은 백그라운드 워커 없이 돌고 있어요.",
       "countOne": "실패 {count}건",
       "countFew": "실패 {count}건",
       "countOther": "실패 {count}건",
@@ -8276,7 +8276,7 @@
       },
       "selfContextComplete": {
         "title": "자기 보고 완성",
-        "description": "자기 보고 항목 네 가지를 모두 채웠어요 — 코치가 상황을 알아요."
+        "description": "자기 보고 항목 네 가지를 모두 채웠어요. 코치가 상황을 알아요."
       },
       "sleepLog7": {
         "title": "7일간 수면 기록",
@@ -8307,7 +8307,7 @@
     "dashboardCard": {
       "title": "최근 달성",
       "viewAll": "전체 보기",
-      "empty": "아직 업적이 없어요 — 기록을 이어가 첫 업적을 달성해 보세요."
+      "empty": "아직 업적이 없어요. 기록을 이어가 첫 업적을 달성해 보세요."
     }
   },
   "notifications": {
@@ -8490,7 +8490,7 @@
       }
     },
     "edit": {
-      "title": "목표 범위 편집 — {metric}",
+      "title": "목표 범위 편집: {metric}",
       "description": "차트·인사이트·진료용 리포트에 쓰이는 목표 범위를 조정해요. 값 단위는 {unit}.",
       "derivedHint": "이 카드는 다른 지표에서 계산돼요. 기준이 되는 목표(예: 혈압이나 체중)를 편집해 주세요.",
       "minLabel": "최소",
@@ -8522,11 +8522,11 @@
     "aboveTarget": "목표보다 {delta} {unit} 높음",
     "belowTarget": "목표보다 {delta} {unit} 낮음",
     "diastolic": "이완기",
-    "glucoseFasting": "혈당 — 공복",
-    "glucosePostprandial": "혈당 — 식후",
-    "glucoseRandom": "혈당 — 무작위",
-    "glucoseBedtime": "혈당 — 취침 전",
-    "glucoseUnspecified": "혈당 — 미지정",
+    "glucoseFasting": "혈당 (공복)",
+    "glucosePostprandial": "혈당 (식후)",
+    "glucoseRandom": "혈당 (무작위)",
+    "glucoseBedtime": "혈당 (취침 전)",
+    "glucoseUnspecified": "혈당 (미지정)",
     "status": {
       "underweight": "저체중",
       "normal": "정상",
@@ -8589,11 +8589,11 @@
     "errorUnknownAction": "알 수 없는 동작이에요.",
     "snoozeOneHour": "1시간",
     "snoozeThreeHours": "3시간",
-    "snoozedFor": "{name} — {duration} 동안 미뤘어요.",
-    "skipped": "{name} — 건너뛰었어요.",
-    "alreadyRecorded": "{name} — 이미 기록돼 있어요.",
-    "recordedAsTaken": "{name} — 복용으로 기록했어요.",
-    "confirmed": "{name} — 확인했어요.",
+    "snoozedFor": "{name}: {duration} 동안 미뤘어요.",
+    "skipped": "{name}: 건너뛰었어요.",
+    "alreadyRecorded": "{name}: 이미 기록돼 있어요.",
+    "recordedAsTaken": "{name}: 복용으로 기록했어요.",
+    "confirmed": "{name}: 확인했어요.",
     "genericConfirmed": "확인했어요.",
     "cancelled": "취소했어요.",
     "moodLogged": "기록함: {score}/5",
@@ -8612,7 +8612,7 @@
     "askMedicationName": "약을 지정해 주세요. 예: <b>taken 라미프릴</b>.",
     "medicationNotFoundExact": "약을 찾지 못했어요. HealthLog에 있는 이름 그대로 보내 주세요.",
     "helpHeader": "<b>사용할 수 있는 명령:</b>",
-    "helpBody": "/help — 이 도움말 보기\n/add — 복용 기록하기\n/start — 봇 시작하기\n\n<b>텍스트 명령:</b>\ntaken &lt;이름&gt; — 복용 확인\n\n<b>알림 속 버튼:</b>\n• 복용 — 복용 확인\n• 🕐 1h / 🕐 3h — 알림 미루기\n• ⏭ 건너뛰기 — 복용 건너뛰기\n• ✓ 확인 — 놓친 복용 확인",
+    "helpBody": "/help: 이 도움말 보기\n/add: 복용 기록하기\n/start: 봇 시작하기\n\n<b>텍스트 명령:</b>\ntaken &lt;이름&gt;: 복용 확인\n\n<b>알림 속 버튼:</b>\n• 복용: 복용 확인\n• 🕐 1h / 🕐 3h: 알림 미루기\n• ⏭ 건너뛰기: 복용 건너뛰기\n• ✓ 확인: 놓친 복용 확인",
     "measureValuePrompt": "값을 답장으로 보내면 기록해요(선택).",
     "buttonMeasureValue": "값…",
     "measureValueSaved": "측정값을 저장했어요.",
@@ -8637,9 +8637,9 @@
   },
   "lowStockReminders": {
     "title": "재고 부족: {medName}",
-    "bodyToday": "{medName}: {units}개 남았어요 — 하루치도 안 돼요.",
-    "bodyReorder": "{medName}: {units}개 남았어요. {runsOutOn}쯤 소진돼요 — {reorderBy}까지 재주문하세요.",
-    "bodyLastDose": "{medName}: {units}개 남았어요 — 마지막 복용분이에요. {runsOutOn}쯤 소진돼요.",
+    "bodyToday": "{medName}: {units}개 남았어요. 하루치도 안 돼요.",
+    "bodyReorder": "{medName}: {units}개 남았어요. {runsOutOn}쯤 소진돼요. {reorderBy}까지 재주문하세요.",
+    "bodyLastDose": "{medName}: {units}개 남았어요. 마지막 복용분이에요. {runsOutOn}쯤 소진돼요.",
     "bodyExpired": "{medName}: 쓸 수 있는 재고가 없어요. {units}개가 유효기간 만료로 표시돼 있어요.",
     "bodyAsNeeded": "{medName}: {units}개만 남았어요. 다음에 필요하기 전에 재주문하세요."
   },
@@ -8666,11 +8666,11 @@
     "questionConditions": "코치가 알아야 할 만성 질환이 있나요?",
     "questionFocus": "코치가 특별히 신경 써야 할 부분이 있나요?",
     "questionAllergies": "알레르기나 불내증이 있나요?",
-    "questionAboutMe": "코치에게 자신에 대해 조금 알려줄래요 — 생활 루틴, 목표, 상황 같은 것?"
+    "questionAboutMe": "코치에게 생활 루틴, 목표, 상황 같은 자신의 이야기를 조금 알려줄래요?"
   },
   "clinicianView": {
     "title": "공유된 건강 기록",
-    "period": "보고 기간: {start} – {end}",
+    "period": "보고 기간: {start}–{end}",
     "expires": "이 링크는 {date}에 만료돼요.",
     "provenance": "본인이 직접 기록한 HealthLog 데이터에서 내보낸 읽기 전용 요약이에요. 값은 본인이 기록한 것이고 기기에서 동기화된 측정값이 섞여 있을 수 있어요. 임상 검사가 아니라 환자가 보고한 자료로 봐 주세요.",
     "labs": "검사 수치",
@@ -8694,7 +8694,7 @@
       "strain": "부하 점수",
       "score": "웰니스 점수"
     },
-    "footer": "HealthLog에서 공유했어요 — 셀프 호스팅 개인 건강 기록 앱.",
+    "footer": "HealthLog(셀프 호스팅 개인 건강 기록 앱)에서 공유했어요.",
     "unlock": {
       "title": "암호 입력",
       "description": "이 공유 건강 기록은 보호돼 있어요. 전달받은 암호를 입력해 주세요.",
@@ -8909,8 +8909,8 @@
       "ariaUnknown": "아직 진행 중인 주기가 없어요",
       "caption": "주기 중",
       "firstPeriodCta": "첫 생리 기록하기",
-      "periodOverdue": "생리가 평소보다 늦어지고 있어요 — 다음 생리를 기록할 때까지 날짜 세기를 멈춰요.",
-      "periodOverdueDays": "생리가 평소보다 {days}일 늦어지고 있어요 — 다음 생리를 기록할 때까지 날짜 세기를 멈춰요.",
+      "periodOverdue": "생리가 평소보다 늦어지고 있어요. 다음 생리를 기록할 때까지 날짜 세기를 멈춰요.",
+      "periodOverdueDays": "생리가 평소보다 {days}일 늦어지고 있어요. 다음 생리를 기록할 때까지 날짜 세기를 멈춰요.",
       "logPeriodCta": "생리 기록"
     },
     "calendar": {
@@ -8922,7 +8922,7 @@
       "prevMonth": "이전 달",
       "nextMonth": "다음 달",
       "loading": "캘린더를 불러오는 중…",
-      "learning": "주기를 배우는 중이에요 — 전체 주기를 세 번 이상 기록하면 가임기, 배란, 단계가 채워져요. 그때까지 캘린더에는 기록한 것만 보여요.",
+      "learning": "주기를 배우는 중이에요. 전체 주기를 세 번 이상 기록하면 가임기, 배란, 단계가 채워져요. 그때까지 캘린더에는 기록한 것만 보여요.",
       "legendSymptom": "증상",
       "legendOvulationConfirmed": "확인된 배란",
       "flowSpotting": "점상 출혈",
@@ -8935,7 +8935,7 @@
     "predictions": {
       "title": "다음에 올 일",
       "nextPeriod": "다음 생리",
-      "nextPeriodWindow": "{low} – {high}",
+      "nextPeriodWindow": "{low}–{high}",
       "fertileWindow": "가임기",
       "ovulation": "예상 배란일",
       "confidenceHigh": "높음",
@@ -8944,7 +8944,7 @@
       "stillLearning": "아직 배우는 중",
       "stillLearningBody": "전체 주기를 세 번 이상 기록하면 예측이 더 정확해져요. 그때까지는 대략적인 추정이에요.",
       "rawMode": "예측 꺼짐",
-      "rawModeBody": "예측을 꺼 두셨어요 — 예보 없이 기록한 데이터만 보여요.",
+      "rawModeBody": "예측을 꺼 두셨어요. 예보 없이 기록한 데이터만 보여요.",
       "none": "아직 예측이 없어요. 생리를 기록하고 시작해 보세요.",
       "ovulationConfirmed": "배란 (확인됨)"
     },
@@ -8977,7 +8977,7 @@
       "symptoms": "증상",
       "temperature": "기초 체온",
       "temperatureDisturbed": "측정값을 방해받음으로 표시",
-      "temperatureDisturbedHint": "발열, 아픈 날, 음주, 늦은 측정 — 체온 평가에서 제외돼요.",
+      "temperatureDisturbedHint": "발열, 아픈 날, 음주, 늦은 측정은 체온 평가에서 제외돼요.",
       "ovulationTest": "배란 테스트",
       "mucus": "자궁경부 점액",
       "cervix": "자궁경부",
@@ -9073,7 +9073,7 @@
     "fieldInfo": {
       "bbt": "아침에 일어나기 전 가장 먼저 재는 안정 시 체온이에요. 배란 후에는 약 0.2~0.3°C 올라가요.",
       "bbtLabel": "기초 체온이 뭔가요?",
-      "mucus": "질 분비물은 주기에 따라 달라져요 — 건조하거나 끈적한 상태에서 크림 같은 상태로, 가장 가임력이 높은 날 무렵에는 물 같고 달걀흰자 같은 상태로 바뀌어요.",
+      "mucus": "질 분비물은 주기에 따라 달라져요. 건조하거나 끈적한 상태에서 크림 같은 상태로, 가장 가임력이 높은 날 무렵에는 물 같고 달걀흰자 같은 상태로 바뀌어요.",
       "mucusLabel": "자궁경부 점액이 뭔가요?",
       "ovulationTest": "LH 급상승을 잡아내는 가정용 소변 검사예요. LH는 배란 약 24~36h 전에 치솟는 호르몬이고, 양성이면 가장 가임력이 높은 시기라는 뜻이에요.",
       "ovulationTestLabel": "배란 테스트가 뭔가요?",
@@ -9081,7 +9081,7 @@
       "spottingLabel": "생리 사이 출혈이 뭔가요?",
       "pregnancyTest": "가정용 임신(hCG) 테스트 결과예요.",
       "pregnancyTestLabel": "임신 테스트가 뭔가요?",
-      "progesteroneTest": "배란이 일어났는지 확인하는 검사예요 — 배란 후에 프로게스테론이 올라가요.",
+      "progesteroneTest": "배란이 일어났는지 확인하는 검사예요. 배란 후에 프로게스테론이 올라가요.",
       "progesteroneTestLabel": "프로게스테론 검사가 뭔가요?",
       "intercourse": "이 날 성관계가 있었는지 기록해요.",
       "intercourseLabel": "성관계 항목은 무엇을 기록하나요?",
@@ -9134,7 +9134,7 @@
     "postpone": {
       "menuItem": "미루기…",
       "title": "예정일 미루기",
-      "description": "이번 예정일만 옮겨요 — 반복 주기는 그대로예요.",
+      "description": "이번 예정일만 옮겨요. 반복 주기는 그대로예요.",
       "chip": "+{days}일",
       "dateLabel": "새 날짜",
       "confirm": "미루기"
@@ -9326,7 +9326,7 @@
       "sourceRangePlaceholder": "예: 3.5 - 5.0 또는 < 5",
       "sourceRangeAdd": "+ 결과지의 범위 추가",
       "sourceRangeHint": "선택 사항이에요. 이 측정값에만 적용되고, 저장된 범위는 그대로예요.",
-      "sourceRangeUnparsed": "적은 그대로 뒀어요 — 수치 범위를 읽지 못했어요."
+      "sourceRangeUnparsed": "적은 그대로 뒀어요. 수치 범위를 읽지 못했어요."
     },
     "backToLabs": "검사 결과로 돌아가기",
     "hasNote": "메모",
@@ -9344,7 +9344,7 @@
       "emptyDescription": "값을 추가하면 이 바이오마커의 추이를 볼 수 있어요.",
       "title": "바이오마커",
       "genericDescription": "기록 중인 검사 바이오마커예요. 측정값을 추가하면 참고 범위와 비교한 추이를 볼 수 있어요.",
-      "valuesTitle": "{marker} — 전체 측정값",
+      "valuesTitle": "{marker}: 전체 측정값",
       "valuesDescription": "이 바이오마커의 모든 측정값이에요. 항목을 바로 편집하거나 삭제할 수 있어요.",
       "backToMarker": "{marker} 화면으로 돌아가기",
       "latestResult": "최근 결과"
@@ -9383,7 +9383,7 @@
       "form": {
         "seedLabel": "자주 쓰는 마커에서 시작",
         "seedPlaceholder": "마커 선택 (선택 사항)",
-        "seedHint": "하나를 고르면 아래 항목이 채워져요 — 범위는 검사실에 맞게 조정하세요.",
+        "seedHint": "하나를 고르면 아래 항목이 채워져요. 범위는 검사실에 맞게 조정하세요.",
         "name": "이름",
         "namePlaceholder": "예: LDL 콜레스테롤",
         "unit": "단위",
@@ -9397,7 +9397,7 @@
         "upperPlaceholder": "상한값",
         "context": "설명",
         "contextPlaceholder": "이 마커에 대한 메모 (선택)",
-        "rangeHint": "하한과 상한 중 하나는 비워도 돼요 — 한쪽만 있는 범위가 돼요 (예: LDL < 116).",
+        "rangeHint": "하한과 상한 중 하나는 비워도 돼요. 한쪽만 있는 범위가 돼요 (예: LDL < 116).",
         "requiredError": "이름과 단위는 필수예요.",
         "rangeOrderError": "하한은 상한보다 클 수 없어요.",
         "save": "바이오마커 저장",
@@ -9515,12 +9515,12 @@
       "dateLabel": "날짜",
       "refLowLabel": "참고 하한",
       "refHighLabel": "참고 상한",
-      "newBiomarker": "새 바이오마커 — 새로 만들어요",
+      "newBiomarker": "새 바이오마커: 새로 만들어요",
       "linksExisting": "기존 {name} 항목에 연결돼요",
       "duplicateWarning": "같은 측정값이 이미 있어요",
       "lowConfidence": "이 값은 다시 확인해 주세요",
       "lowConfidenceBadge": "확신 낮음",
-      "valueUnreadable": "값을 읽지 못했어요 — 직접 입력해 주세요",
+      "valueUnreadable": "값을 읽지 못했어요. 직접 입력해 주세요",
       "saveSelected": "선택한 {count}개 저장",
       "discardAll": "모두 버리기",
       "savedToast": "검사 결과 {count}개를 저장했어요",
@@ -9903,7 +9903,7 @@
     },
     "correlation": {
       "title": "어떻게 진행됐나",
-      "learning": "아직 학습 중이에요 — 며칠 더 기록하면 패턴이 보여요.",
+      "learning": "아직 학습 중이에요. 며칠 더 기록하면 패턴이 보여요.",
       "preOnsetTitle": "어떤 신호가 먼저 왔나",
       "preOnsetBody": "시작일로 표시하기 전에 기준값에서 벗어났던 신호예요.",
       "nadirTitle": "무엇이 달라졌나",
@@ -9930,7 +9930,7 @@
       "countOne": "이 기간에 에피소드를 1개 기록했어요.",
       "countOther": "이 기간에 에피소드를 {count}개 기록했어요.",
       "typicalGap": "평균 회복 시차: 몸이 나아지고 수치가 안정되기까지 {days}일.",
-      "typicalGapWithDriver": "평균 회복 시차: {days}일 — {vital} 안정보다 몸이 먼저 나아지는 편이에요.",
+      "typicalGapWithDriver": "평균 회복 시차: {days}일, {vital} 안정보다 몸이 먼저 나아지는 편이에요.",
       "typicalGapLearning": "종료된 에피소드가 몇 개 더 쌓이면 평균 회복 시차가 나와요.",
       "none": "이 기간에 기록한 에피소드가 없어요.",
       "analyze": "회복 시차 분석"
@@ -9991,8 +9991,8 @@
       "stop": "충분히 측정하고 있어요",
       "accepted": "알림을 설정했어요",
       "dismissed": "알겠어요, 다시 제안하지 않을게요",
-      "stopped": "알겠어요 — 알림 제안은 그만할게요",
-      "failed": "설정하지 못했어요 — 다시 시도해 주세요",
+      "stopped": "알겠어요. 알림 제안은 그만할게요",
+      "failed": "설정하지 못했어요. 다시 시도해 주세요",
       "cadence": {
         "weightDaily": "매일 비슷한 시간에 체중을 재세요",
         "bp722": "일주일 동안 하루 두 번 혈압을 재세요",
@@ -10004,7 +10004,7 @@
       "dismiss": "나중에",
       "applied": "추가했어요",
       "dismissed": "닫았어요",
-      "failed": "추가하지 못했어요 — 다시 시도해 주세요",
+      "failed": "추가하지 못했어요. 다시 시도해 주세요",
       "checkup": {
         "title": "건강검진 알림을 추가할까요?"
       },
@@ -10032,9 +10032,9 @@
       "reviewPrefix": "점검: {when}",
       "accept": "계획 수락",
       "decline": "거절",
-      "accepted": "계획을 수락했어요 — 코치가 기억할게요.",
+      "accepted": "계획을 수락했어요. 코치가 기억할게요.",
       "declined": "제안을 거절했어요.",
-      "failed": "잘 안 됐어요 — 다시 시도해 주세요.",
+      "failed": "잘 안 됐어요. 다시 시도해 주세요.",
       "markMet": "목표 달성",
       "abandon": "계획 종료",
       "remove": "삭제",
@@ -10055,8 +10055,8 @@
       }
     },
     "refusal": {
-      "outOfScope": "저는 기록에 있는 건강 지표만 도와드릴 수 있어요 — 측정값, 약, 기분, 추이 같은 것들이요. 그 범위 밖의 질문에는 답할 수 없어요.",
-      "promptInjection": "제 지침을 무시하게 만들려는 표현이 보였어요. 저는 HealthLog 코치이고 본인의 건강 데이터만 정리해 드려요 — 그 범위에 맞게 다시 질문해 주세요.",
+      "outOfScope": "저는 기록에 있는 건강 지표만 도와드릴 수 있어요. 측정값, 약, 기분, 추이 같은 것들이요. 그 범위 밖의 질문에는 답할 수 없어요.",
+      "promptInjection": "제 지침을 무시하게 만들려는 표현이 보였어요. 저는 HealthLog 코치이고 본인의 건강 데이터만 정리해 드려요. 그 범위에 맞게 다시 질문해 주세요.",
       "conversationPoisoned": "이 대화의 앞선 메시지에 제 지침을 무시하게 만드는 표현이 있어요. 새 대화를 시작해 주세요."
     },
     "noRecordedData": "물어보신 내용에 대해 기록된 측정값이 없어서 수치를 알려드릴 수 없어요. 기록을 남기신 뒤에 다시 물어보시면 본인 수치로 답해 드릴게요.",
@@ -10307,7 +10307,7 @@
       "2": "많이 어려웠다",
       "3": "매우 많이 어려웠다"
     },
-    "functionalOptionalHint": "선택 사항이에요 — 이 문항에 답하지 않아도 제출할 수 있어요.",
+    "functionalOptionalHint": "선택 사항이에요. 이 문항에 답하지 않아도 제출할 수 있어요.",
     "result": {
       "title": "내 결과",
       "totalLabel": "총점",
@@ -10360,7 +10360,7 @@
         "3": "잠이 들거나 계속 잠을 자는 것이 어려움, 또는 잠을 너무 많이 잠",
         "4": "피곤하다고 느끼거나 기운이 거의 없음",
         "5": "입맛이 없거나 과식을 함",
-        "6": "자신을 부정적으로 봄 — 혹은 자신이 실패자라고 느끼거나 자신 또는 가족을 실망시킴",
+        "6": "자신을 부정적으로 봄, 혹은 자신이 실패자라고 느끼거나 자신 또는 가족을 실망시킴",
         "7": "신문을 읽거나 텔레비전 보는 것과 같은 일에 집중하는 것이 어려움",
         "8": "다른 사람들이 주목할 정도로 너무 느리게 움직이거나 말을 함. 또는 반대로 평상시보다 많이 움직여서, 너무 안절부절 못하거나 들떠 있음",
         "9": "자신이 죽는 것이 더 낫다고 생각하거나 어떤 식으로든 자신을 해칠 것이라고 생각함"
@@ -10497,7 +10497,7 @@
     },
     "openDetail": "자세히 보기",
     "historyLoadError": "검사 기록을 불러오지 못했어요",
-    "historyLoadErrorHint": "결과가 없다는 뜻은 아니에요 — 목록을 가져오지 못했을 뿐이에요. 다시 시도해 주세요.",
+    "historyLoadErrorHint": "결과가 없다는 뜻은 아니에요. 목록을 가져오지 못했을 뿐이에요. 다시 시도해 주세요.",
     "privacyNote": "답변은 암호화되어 저장되고, AI 코치에게는 전달되지 않아요."
   },
   "records": {
@@ -11186,7 +11186,7 @@
       "genericDescription": "직접 기록하는 측정이에요. 값을 추가하면 시간에 따른 변화를 볼 수 있어요.",
       "emptyTitle": "아직 값이 없어요",
       "emptyDescription": "첫 값을 추가하면 이 지표를 차트로 볼 수 있어요.",
-      "valuesTitle": "{metric} — 전체 값",
+      "valuesTitle": "{metric}: 전체 값",
       "valuesDescription": "이 지표에 기록된 모든 값이에요.",
       "backToMetric": "돌아가기: {metric}"
     }
@@ -11252,7 +11252,7 @@
       "emptyTitle": "아직 동기화된 미량영양소 데이터가 없어요",
       "loadError": "영양소 데이터를 불러오지 못했어요"
     },
-    "sparseNote": "여기 수치가 낮은 건 보통 결핍이 아니라 기록이 드물다는 뜻이에요 — Apple Health의 하루 합계는 앱이 기록한 양만 반영하고, 전체 식이 섭취량은 아니에요."
+    "sparseNote": "여기 수치가 낮은 건 보통 결핍이 아니라 기록이 드물다는 뜻이에요. Apple Health의 하루 합계는 앱이 기록한 양만 반영하고, 전체 식이 섭취량은 아니에요."
   },
   "daily": {
     "line": {
@@ -11267,39 +11267,39 @@
       "doseWindow": {
         "title": "복약 시간",
         "body": "곧 복용할 시간이에요.",
-        "bodyNamed": "{name} — 곧 복용할 시간이에요.",
+        "bodyNamed": "{name}: 곧 복용할 시간이에요.",
         "overdueTitle": "복약 시간 지남",
         "overdueBody": "복용 시간이 지났어요.",
-        "overdueBodyNamed": "{name} — 복용 시간이 지났어요."
+        "overdueBodyNamed": "{name}: 복용 시간이 지났어요."
       },
       "preventiveCare": {
         "title": "건강검진 시기",
-        "body": "{label} — 받을 때가 됐어요.",
+        "body": "{label}: 받을 때가 됐어요.",
         "bodyManyNamed": "받을 때가 된 건강검진: {labels}"
       },
       "syncIssue": {
         "title": "동기화 확인이 필요해요",
-        "body": "{integration} 동기화가 멈췄어요 — 데이터를 최신으로 유지하려면 다시 연결해 주세요."
+        "body": "{integration} 동기화가 멈췄어요. 데이터를 최신으로 유지하려면 다시 연결해 주세요."
       },
       "coachCheckin": {
         "title": "계획을 점검할 때예요",
-        "body": "이 계획을 세운 지 일주일쯤 됐어요 — 계속할지, 조정할지, 놓아줄지 정해 보세요. 어느 쪽이든 부담 갖지 않아도 돼요.",
-        "bodyPlan": "일주일쯤 전에 이렇게 정했어요: “{plan}”. 계속할지, 조정할지, 놓아줄지 정해 보세요 — 어느 쪽이든 부담 갖지 않아도 돼요.",
+        "body": "이 계획을 세운 지 일주일쯤 됐어요. 계속할지, 조정할지, 놓아줄지 정해 보세요. 어느 쪽이든 부담 갖지 않아도 돼요.",
+        "bodyPlan": "일주일쯤 전에 이렇게 정했어요: “{plan}”. 계속할지, 조정할지, 놓아줄지 정해 보세요. 어느 쪽이든 부담 갖지 않아도 돼요.",
         "adjustPrompt": "점검 계획을 조정하고 싶어요.",
         "adjustPromptPlan": "이 계획을 조정하고 싶어요: “{plan}”"
       },
       "tensionWindow": {
         "title": "오늘 긴장이 있었을 수 있어요",
         "body": {
-          "morning": "오늘 아침 가만히 있는 동안에도 심박수가 안정 시 기준값 위로 한동안 유지됐어요 — 긴장이 있었을 수 있어요.",
-          "afternoon": "오늘 오후 가만히 있는 동안에도 심박수가 안정 시 기준값 위로 한동안 유지됐어요 — 긴장이 있었을 수 있어요.",
-          "evening": "오늘 저녁 가만히 있는 동안에도 심박수가 안정 시 기준값 위로 한동안 유지됐어요 — 긴장이 있었을 수 있어요.",
-          "night": "밤사이 가만히 있는 동안에도 심박수가 안정 시 기준값 위로 한동안 유지됐어요 — 긴장이 있었을 수 있어요."
+          "morning": "오늘 아침 가만히 있는 동안에도 심박수가 안정 시 기준값 위로 한동안 유지됐어요. 긴장이 있었을 수 있어요.",
+          "afternoon": "오늘 오후 가만히 있는 동안에도 심박수가 안정 시 기준값 위로 한동안 유지됐어요. 긴장이 있었을 수 있어요.",
+          "evening": "오늘 저녁 가만히 있는 동안에도 심박수가 안정 시 기준값 위로 한동안 유지됐어요. 긴장이 있었을 수 있어요.",
+          "night": "밤사이 가만히 있는 동안에도 심박수가 안정 시 기준값 위로 한동안 유지됐어요. 긴장이 있었을 수 있어요."
         }
       },
       "ecgNewRecording": {
         "title": "새 심전도 기록",
-        "body": "기기가 새 심전도를 기록했어요 — 지금 볼 수 있어요.",
+        "body": "기기가 새 심전도를 기록했어요. 지금 볼 수 있어요.",
         "bodyVerdict": "기기가 새 심전도를 기록하고 이렇게 알렸어요: {verdict}.",
         "verdict": {
           "irregular": "불규칙한 리듬 가능성",
@@ -11319,9 +11319,9 @@
       },
       "upcomingVisit": {
         "title": "다가오는 예약",
-        "bodyToday": "{what} — 오늘",
-        "bodyTomorrow": "{what} — 내일",
-        "bodyDayAfterTomorrow": "{what} — 모레"
+        "bodyToday": "{what}: 오늘",
+        "bodyTomorrow": "{what}: 내일",
+        "bodyDayAfterTomorrow": "{what}: 모레"
       }
     },
     "action": {
@@ -11379,7 +11379,7 @@
       },
       "record": {
         "title": "{metric} 최고 기록",
-        "body": "오늘 {metric} 개인 최고 기록이에요 — 조용히 적어 뒀어요, 하실 일은 없어요."
+        "body": "오늘 {metric} 개인 최고 기록이에요. 조용히 적어 뒀어요, 하실 일은 없어요."
       },
       "returnToBaseline": {
         "title": "범위 복귀: {metric}",
@@ -11541,7 +11541,7 @@
       "canManage": "열람, 추가, 그리고 있는 내용의 수정·삭제까지 가능",
       "entireRecord": "기록 전체가 대상",
       "sections": "대상: {sections}",
-      "noSections": "대상 없음 — 이 권한으로는 기록의 어떤 부분도 열 수 없어요",
+      "noSections": "대상 없음: 이 권한으로는 기록의 어떤 부분도 열 수 없어요",
       "invited": "초대",
       "accepted": "수락",
       "expires": "만료",
@@ -11983,7 +11983,7 @@
     "created": "진료를 저장했어요",
     "updated": "진료를 수정했어요",
     "saveFailed": "진료를 저장하지 못했어요.",
-    "checkupNotClosed": "진료를 저장했어요. 건강검진은 열린 채로 남아요 — 권한이 거기까지는 미치지 않아요.",
+    "checkupNotClosed": "진료를 저장했어요. 건강검진은 열린 채로 남아요. 권한이 거기까지는 미치지 않아요.",
     "status": {
       "planned": "예정",
       "done": "방문함",
@@ -12000,7 +12000,7 @@
       "dateDerivesStatusHint": "미래 날짜는 잡아 둔 예약으로 처리돼요.",
       "status": "상태",
       "practitioner": "병원 또는 의사",
-      "practitionerHint": "선택 — 이름은 나중에 추가해도 돼요.",
+      "practitionerHint": "선택: 이름은 나중에 추가해도 돼요.",
       "practitionerNone": "지정 안 함",
       "practitionerSearch": "이름이나 병원 검색",
       "practitionerNoMatch": "항목을 찾지 못했어요.",
@@ -12058,7 +12058,7 @@
   },
   "practitioners": {
     "title": "병원과 의사",
-    "description": "나만의 주소록이에요 — 병원을 한 번만 입력하면 어디서든 골라 쓸 수 있어요.",
+    "description": "나만의 주소록이에요. 병원을 한 번만 입력하면 어디서든 골라 쓸 수 있어요.",
     "linkLabel": "주소록",
     "searchPlaceholder": "이름, 병원, 진료과 검색",
     "loadError": "주소록을 불러오지 못했어요.",
@@ -12260,15 +12260,11 @@
     "rugLegend": "축 아래 점은 기록이 있는 날을, 고리는 눈에 띄는 날을 표시해요.",
     "sheetExpand": "전체 높이로 펼치기",
     "sheetShrink": "줄이기",
-    "usualLabel": "직전 30일",
     "valuesLegend": "점은 이 날, 막대는 직전 30일",
     "valuesAllOne": "모든 수치",
     "valuesAllFew": "수치 {count}개 모두",
     "valuesAllOther": "수치 {count}개 모두",
     "valuesFewer": "수치 줄여 보기",
-    "countValuesOne": "수치 1개",
-    "countValuesFew": "수치 {count}개",
-    "countValuesOther": "수치 {count}개",
     "countEntriesOne": "기록 1개",
     "countEntriesFew": "기록 {count}개",
     "countEntriesOther": "기록 {count}개",
@@ -12308,7 +12304,6 @@
     "subtitle": "언제 무엇이 있었는지, 내 수치와 나란히.",
     "standing": "지속",
     "startUnknown": "시작일 미상",
-    "openDay": "{date} 열기",
     "zoom": {
       "all": "전체",
       "year": "12개월",

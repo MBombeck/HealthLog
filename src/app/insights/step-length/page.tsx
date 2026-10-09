@@ -26,7 +26,7 @@ export default function InsightsSchrittlaengePage() {
       yAxisUnit="m"
       emptyStateIcon={<Footprints className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any walking step length yet — what does this metric tell me about my health, and how do I improve it?"
+      coachPrefill="I haven't logged any walking step length yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

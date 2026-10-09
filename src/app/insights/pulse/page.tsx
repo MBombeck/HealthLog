@@ -114,7 +114,7 @@ export default function InsightsPulsPage() {
               </Link>
             </Button>
           }
-          coachPrefill="I haven't recorded any resting pulse yet — why does it matter, and what should I know before I start?"
+          coachPrefill="I haven't recorded any resting pulse yet. Why does it matter, and what should I know before I start?"
         />
       </SubPageShell>
     );

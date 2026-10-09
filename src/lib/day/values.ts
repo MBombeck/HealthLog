@@ -23,6 +23,7 @@ import { readLocalDailyStats } from "@/lib/day/daily-stats";
 import { buildBaselineBand } from "@/lib/insights/derived/baseline";
 import { HIGH_FREQUENCY_MEAN_TYPES } from "@/lib/measurements/apple-health-mapping";
 import { isCumulativeDaySumType } from "@/lib/measurements/cumulative-day-sum";
+import { dayValue } from "@/lib/measurements/day-mean";
 import { HOURLY_MEAN_DAY_TYPES } from "@/lib/measurements/day-statistic";
 import type { DayReadingRow, DayReadings } from "@/lib/mood/linked-context";
 import { startOfLocalDayKey } from "@/lib/tz/local-day";
@@ -51,28 +52,22 @@ export function dayValueShape(
   return readingCount > MAX_READINGS_PER_TYPE ? "dayValue" : "readings";
 }
 
-/** The day value of a type's readings, as `daily-stats.ts` computes it. */
+/**
+ * The day value of a type's readings, as `daily-stats.ts` computes it: a
+ * day total for a cumulative type, the mean of the local hours' means for an
+ * hourly-mean type (pulse, through `day-mean.ts`, the statistic every pulse
+ * reader shares, so the dashboard's latest pulse and this day's pulse are the
+ * same number), the plain mean otherwise.
+ */
 export function dayValueOf(
   type: MeasurementType,
   rows: readonly DayReadingRow[],
+  tz: string,
 ): number {
   if (isCumulativeDaySumType(type)) {
     return rows.reduce((sum, r) => sum + r.value, 0);
   }
-  if (HOURLY_MEAN_DAY_TYPES.has(type)) {
-    const hours = new Map<number, { total: number; count: number }>();
-    for (const r of rows) {
-      const hour = Math.floor(r.measuredAt.getTime() / 3_600_000);
-      const cell = hours.get(hour) ?? { total: 0, count: 0 };
-      cell.total += r.value;
-      cell.count += 1;
-      hours.set(hour, cell);
-    }
-    let sum = 0;
-    for (const cell of hours.values()) sum += cell.total / cell.count;
-    return sum / hours.size;
-  }
-  return rows.reduce((sum, r) => sum + r.value, 0) / rows.length;
+  return dayValue(type, rows, tz) ?? 0;
 }
 
 /** Round to a precision that keeps a reading readable and a mean honest. */
@@ -88,6 +83,8 @@ export function shapeDayValues(
   readings: DayReadings,
   bands: ReadonlyMap<MeasurementType, DayValue["band"]>,
   includeSleep: boolean,
+  /** The record's zone: a pulse day is the mean of its local hours. */
+  tz: string,
 ): DayValue[] {
   const out: DayValue[] = [];
   for (const [type, rows] of readings.rowsByType) {
@@ -109,7 +106,7 @@ export function shapeDayValues(
     } else {
       out.push({
         type,
-        value: tidy(dayValueOf(type, rows)),
+        value: tidy(dayValueOf(type, rows, tz)),
         unit: last.unit,
         at: last.measuredAt.toISOString(),
         source: last.source,

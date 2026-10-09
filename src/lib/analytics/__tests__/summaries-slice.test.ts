@@ -20,7 +20,7 @@ vi.mock("@/lib/db", () => ({
     // `sourcePriorityJson` to build the rank ladders. `null` here →
     // default ladders.
     user: { findUnique: vi.fn() },
-    measurement: { findFirst: vi.fn() },
+    measurement: { findFirst: vi.fn(), findMany: vi.fn(async () => []) },
     // v1.4.36 — slim slice reads DAY buckets from `measurement_rollups`
     // on the happy path. The freshness watermark inside
     // `ensureUserRollupsFresh` also pokes `measurementRollup.findFirst`;

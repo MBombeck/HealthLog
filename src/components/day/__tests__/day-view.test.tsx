@@ -179,10 +179,12 @@ beforeEach(() => {
 });
 
 describe("<DayView>", () => {
-  it("names the day and counts what it holds", async () => {
+  it("names the day and carries no count line", async () => {
     const html = await render();
     expect(html).toContain("Saturday, January 3, 2026");
-    expect(html).toContain("3 values, 2 entries");
+    // The sections say what the day holds; a count above them repeated it.
+    expect(html).not.toContain("3 values, 2 entries");
+    expect(html).not.toContain('data-slot="day-meta"');
   });
 
   it("lists what ran through the day with its running count", async () => {
@@ -264,6 +266,26 @@ describe("<DayView>", () => {
     expect(weightTile.split("</li>")[0]).not.toContain("day-number-line");
   });
 
+  it("leads each value tile with a page of its own to that page", async () => {
+    const html = await render();
+    expect(html).toMatch(
+      /data-type="WEIGHT"[^>]*>\s*<a[^>]*href="\/insights\/weight"[^>]*data-slot="day-value-link"|data-type="WEIGHT"[^>]*><a[^>]*href="\/insights\/weight"/,
+    );
+    expect(html).toMatch(
+      /data-type="BLOOD_PRESSURE"[^>]*><a[^>]*href="\/insights\/blood-pressure"/,
+    );
+    // A 44 px target and a visible focus ring, like every other link here.
+    expect(html).toMatch(/data-slot="day-value-link"[^>]*min-h-11/);
+    expect(html).toMatch(/data-slot="day-value-link"[^>]*focus-visible:ring/);
+  });
+
+  it("keeps an event's time on one line", async () => {
+    const html = await render();
+    const times = html.match(/data-slot="day-event-time"[^>]*>/g) ?? [];
+    expect(times.length).toBeGreaterThan(0);
+    for (const tag of times) expect(tag).toContain("whitespace-nowrap");
+  });
+
   it("lists what happened, each entry linking to its source", async () => {
     const html = await render();
     expect(html).toContain("What happened");
@@ -284,8 +306,9 @@ describe("<DayView>", () => {
       },
     });
     expect(html).toContain('data-slot="day-focus"');
-    expect(html).toContain("Your 30 days before");
-    expect(html).toContain("121–134/78–86");
+    // The usual range is the tiles' to draw, not repeated beside the value.
+    expect(html).not.toContain("Your 30 days before");
+    expect(html).not.toContain('data-slot="day-focus-compare"');
     expect(html).toContain('data-selected="true"');
     expect(html).toContain("Highest daily value since March 2025");
   });

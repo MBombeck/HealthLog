@@ -88,7 +88,7 @@ const healthScoreConfigPatchSchema = z
  */
 const BREADTH_REFUSAL = {
   no_pillars_selected:
-    "A health score needs at least one area of health to score. Keep one selected — the score will say which areas it is built from.",
+    "A health score needs at least one area of health to score. Keep one selected. The score will say which areas it is built from.",
 } as const;
 
 export const GET = apiHandler(async () => {

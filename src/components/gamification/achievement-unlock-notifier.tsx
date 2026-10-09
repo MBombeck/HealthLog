@@ -125,7 +125,7 @@ export function AchievementUnlockNotifier({
       // card) so the surprise lands.
       if (achievement.isHidden) {
         toast(t("achievements.hiddenUnlockToast.title"), {
-          description: `${t(achievement.titleKey)} — ${t(achievement.descriptionKey)}`,
+          description: `${t(achievement.titleKey)}: ${t(achievement.descriptionKey)}`,
           icon: <Sparkles className="size-4" />,
           duration: 8000,
         });

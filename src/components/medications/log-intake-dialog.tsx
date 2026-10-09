@@ -292,7 +292,7 @@ export function LogIntakeDialog({
               >
                 {medications.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.dose ? `${m.name} — ${formatDose(m.dose, t)}` : m.name}
+                    {m.dose ? `${m.name} ${formatDose(m.dose, t)}` : m.name}
                   </option>
                 ))}
               </NativeSelect>

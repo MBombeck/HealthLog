@@ -135,7 +135,7 @@ export const DELETE = apiHandler(
 
     if (passkeyCount <= 1 && !hasPassword) {
       return apiError(
-        "Cannot delete — at least one authentication method must remain",
+        "Cannot delete. At least one authentication method must remain",
         400,
       );
     }

@@ -26,7 +26,7 @@ export default function InsightsKopfhoererpegelPage() {
       yAxisUnit="dBA"
       emptyStateIcon={<Headphones className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any headphone audio exposure yet — what does this metric tell me about my health, and how do I improve it?"
+      coachPrefill="I haven't logged any headphone audio exposure yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

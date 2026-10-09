@@ -160,7 +160,7 @@ interface LinkedRow {
  * untouched, which is the picker's own pass-through and is correct for a type
  * no two sources compete over.
  */
-function canonicalRowsOfDay(
+export function canonicalRowsOfDay(
   rows: readonly LinkedRow[],
   type: MeasurementType,
   day: string,
