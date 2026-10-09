@@ -12207,6 +12207,8 @@
     "previousDay": "전날",
     "nextDay": "다음 날",
     "close": "하루 닫기",
+    "hidePanel": "하루 숨기기",
+    "showPanel": "{date} 보기",
     "openDay": "하루 열기",
     "viewWholeDay": "하루 전체 보기",
     "captureForDay": "이 날에 기록하기",

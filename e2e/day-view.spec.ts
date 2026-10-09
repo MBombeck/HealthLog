@@ -21,11 +21,14 @@ import { MOBILE_ROUTES_ANALYTE } from "./setup/mobile-routes-fixture";
  *   - `?day=` opens the layer on any page, Back and Escape close it, a date in
  *     the future is dropped;
  *   - stepping to the neighbouring days never adds history entries;
+ *   - docked, the day collapses to a narrow edge that brings it back on any
+ *     page; a sheet closes for good;
  *   - the dashboard's today area offers no door; its charts below do.
  *
  * Stable data attributes only: `day-panel` (+ `data-shell`), `day-link`,
  * `chart-plot[data-day-links]`, `chart-tooltip-open-day`, `day-prev` /
- * `day-next` / `day-close`.
+ * `day-next` / `day-close`, and the collapsed edge `day-rail` (+ `data-day`)
+ * with its `day-expand`.
  */
 
 const panel = (page: Page) => page.locator('[data-slot="day-panel"]');
@@ -115,6 +118,68 @@ test.describe("the day view", () => {
     await page.keyboard.press("Escape");
     await expect(panel(page)).toHaveCount(0);
     await expect(page).toHaveURL(/\/mood$/);
+  });
+
+  test("the docked day collapses to an edge and comes back on another page", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium-desktop",
+      "docked from 1280 px",
+    );
+    const day = isoDaysAgo(3);
+    await page.goto(`/mood?day=${day}`);
+    await expect(panel(page)).toHaveAttribute("data-shell", "docked");
+
+    await page.locator('[data-slot="day-close"]').click();
+    await expect(panel(page)).toHaveCount(0);
+    await expect(page).toHaveURL(/\/mood$/);
+    // A narrow edge stays, holding the day, and focus waits on its button.
+    const rail = page.locator('[data-slot="day-rail"]');
+    const expand = page.locator('[data-slot="day-expand"]');
+    await expect(rail).toHaveAttribute("data-day", day);
+    await expect(expand).toBeFocused();
+    await expect(expand).toHaveAttribute("aria-expanded", "false");
+    expect(await expand.getAttribute("aria-label")).toMatch(/^Show /);
+    expect((await rail.boundingBox())!.width).toBeLessThanOrEqual(48);
+
+    // Another page: the edge is still there and brings the same day back,
+    // from the keyboard too.
+    await page.goto("/labs");
+    await expect(rail).toHaveAttribute("data-day", day);
+    await expand.focus();
+    await page.keyboard.press("Enter");
+    await expect(panel(page)).toHaveAttribute("data-shell", "docked");
+    await expect(page.locator('[data-slot="day-view"]')).toHaveAttribute(
+      "data-day",
+      day,
+    );
+    await expect(page).toHaveURL(new RegExp(`/labs\\?day=${day}$`));
+    await expect(panel(page).locator("h2").first()).toBeFocused();
+    await expect(rail).toHaveCount(0);
+  });
+
+  test("a sheet closes for good and leaves no edge behind", async ({
+    page,
+  }, testInfo) => {
+    const desktop = testInfo.project.name === "chromium-desktop";
+    // Below 1280 px the day is a sheet from the right; on a phone, from the
+    // bottom. Neither collapses.
+    if (desktop) await page.setViewportSize({ width: 1024, height: 800 });
+    const day = isoDaysAgo(3);
+    await page.goto(`/mood?day=${day}`);
+    await expect(panel(page)).toHaveAttribute(
+      "data-shell",
+      desktop ? "sheet" : "bottom",
+    );
+    await expect(page.locator('[data-slot="day-close"]')).toHaveAttribute(
+      "aria-label",
+      "Close day",
+    );
+    await page.locator('[data-slot="day-close"]').click();
+    await expect(panel(page)).toHaveCount(0);
+    await expect(page).toHaveURL(/\/mood$/);
+    await expect(page.locator('[data-slot="day-rail"]')).toHaveCount(0);
   });
 
   test("a future or malformed ?day= is dropped without a word", async ({

@@ -27,6 +27,7 @@ import type { CoachReasoningState } from "@/lib/ai/reasoning/resolve";
 import type { ModuleAccessState } from "@/lib/sharing/module-disclosure";
 import type { OnboardingStateDto } from "@/lib/onboarding/needs";
 import type { TourProgress } from "@/lib/onboarding/tour-progress";
+import { clearLastDay } from "@/lib/day/last-day";
 import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
 import {
   setRecordScope,
@@ -621,6 +622,8 @@ export function clearCachesForSessionEnd(queryClient: QueryClient): void {
   // end the next cold offline launch must land on the login gate, not the
   // cached shell.
   clearWasAuthenticated();
+  // The day the layer last showed is a date of this account's record.
+  clearLastDay();
   void clearOfflineCachesForSessionEnd();
 }
 

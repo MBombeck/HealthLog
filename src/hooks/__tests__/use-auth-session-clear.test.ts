@@ -23,6 +23,12 @@ vi.mock("@/lib/pwa/query-persister", () => ({
   clearOfflineCachesForSessionEnd: () => clearOfflineCachesForSessionEnd(),
 }));
 
+// The day layer's remembered date is a date of the ending account's record.
+const clearLastDay = vi.fn();
+vi.mock("@/lib/day/last-day", () => ({
+  clearLastDay: () => clearLastDay(),
+}));
+
 // `use-auth` pulls in the typed fetch wrapper, the router, and the i18n
 // context at module load. None of them matter for the pure session-end
 // helper, so stub them so the import is side-effect free in the test env.
@@ -41,6 +47,7 @@ import { clearCachesForSessionEnd } from "../use-auth";
 
 afterEach(() => {
   clearOfflineCachesForSessionEnd.mockClear();
+  clearLastDay.mockClear();
 });
 
 describe("clearCachesForSessionEnd — cross-user in-memory wipe", () => {
@@ -67,5 +74,10 @@ describe("clearCachesForSessionEnd — cross-user in-memory wipe", () => {
     // The persisted IndexedDB + SW caches are still wiped alongside the
     // in-memory clear — the existing offline-leak guard stays intact.
     expect(clearOfflineCachesForSessionEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it("forgets the day the layer last showed", () => {
+    clearCachesForSessionEnd(new QueryClient());
+    expect(clearLastDay).toHaveBeenCalledTimes(1);
   });
 });

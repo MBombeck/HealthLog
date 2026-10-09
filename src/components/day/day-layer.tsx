@@ -12,21 +12,32 @@ import {
   useSyncExternalStore,
 } from "react";
 
+import { PanelRightOpen } from "lucide-react";
+
 import { ShellSidePanel } from "@/components/layout/shell-side-panel";
 import { SHELL_HEADER_BAND } from "@/components/layout/shell-metrics";
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { DAY_QUERY_PARAM, type DateKey } from "@/lib/day/contract";
+import {
+  readLastDay,
+  subscribeLastDay,
+  writeLastDay,
+} from "@/lib/day/last-day";
+import { getRecordScope } from "@/lib/query-keys/record-scope";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
 import {
   closeDay,
+  openDay,
   peekDayTriggerAt,
   publishOpenDay,
   stepDay,
@@ -34,7 +45,12 @@ import {
   useDayFocus,
 } from "./day-layer-controller";
 import { parseDayParam, shiftDateKey, withDayHref } from "./day-url";
-import { DayView, useLongDayLabel } from "./day-view";
+import {
+  DayView,
+  PANEL_TOGGLE,
+  PANEL_TOGGLE_ICON,
+  useLongDayLabel,
+} from "./day-view";
 import { usePrefetchDay } from "./use-day";
 import { useTodayKey } from "./use-today-key";
 
@@ -47,7 +63,10 @@ import { useTodayKey } from "./use-today-key";
  *   - from 1280 px, a column docked beside the page, the same place and the
  *     same breakpoint as the Coach's conversations panel. Not modal: the
  *     chart beside it stays usable, and another point swaps the day. It is a
- *     landmark (`complementary`) named by the date.
+ *     landmark (`complementary`) named by the date. It collapses like a
+ *     sidebar instead of going away: hidden, a narrow edge stays on the
+ *     right with a button that brings the last day back, on this page or any
+ *     other (`last-day.ts` remembers it per browser and account).
  *   - from 768 px, a sheet from the right, modal.
  *   - on a phone, a sheet from the bottom at a bit over half the height, so
  *     the chart stays in view above it; dragging the handle up (or tapping
@@ -57,7 +76,9 @@ import { useTodayKey } from "./use-today-key";
  * there is never more than one docked panel: the day opens as a sheet there.
  *
  * The parameter is the state. A date that is not a calendar date, or lies in
- * the future, is removed from the URL without a word.
+ * the future, is removed from the URL without a word. Collapsing the docked
+ * day removes the parameter like closing does; only the remembered date
+ * stays, and expanding opens it again.
  */
 export function DayLayerMount() {
   // `useSearchParams` suspends a statically rendered route until the client
@@ -120,6 +141,18 @@ function DayLayer() {
   }, [date]);
   useEffect(() => () => publishOpenDay(null), []);
 
+  // The last open day, bound to the account and the record it belongs to.
+  const { user } = useAuth();
+  const owner = user ? `${user.id}:${getRecordScope() ?? "own"}` : null;
+  useEffect(() => {
+    if (date !== null && owner !== null) writeLastDay(owner, date);
+  }, [date, owner]);
+  const lastDay = useSyncExternalStore(
+    subscribeLastDay,
+    () => readLastDay(owner),
+    () => null,
+  );
+
   const wide = useWideViewport();
   const phone = useIsMobile();
   const shell: "docked" | "sheet" | "bottom" = phone
@@ -136,9 +169,27 @@ function DayLayer() {
   const prefetchDay = usePrefetchDay();
   const focus = useDayFocus(date);
   const longLabel = useLongDayLabel();
+  const shortLabel = useLongDayLabel("short");
+  const { t } = useTranslations();
   const titleId = useId();
   const titleRef = useRef<HTMLHeadingElement>(null);
   const panelRef = useRef<HTMLElement>(null);
+  const expandRef = useRef<HTMLButtonElement>(null);
+  // Set by the collapse control: focus then lands on the control that
+  // brings the day back, in the same place, as a sidebar's toggle does.
+  const collapsing = useRef(false);
+
+  // The collapsed edge: the docked frame only, and only with a day to bring
+  // back that is still a day the layer would open.
+  const railDay =
+    shell === "docked" && date === null && lastDay !== null
+      ? parseDayParam(lastDay, today)
+      : null;
+
+  const collapse = useCallback(() => {
+    collapsing.current = true;
+    closeDay();
+  }, []);
 
   // What the polite region says: the day that just opened or was stepped to.
   const announcement = date !== null ? longLabel(date) : "";
@@ -154,7 +205,16 @@ function DayLayer() {
       }
       return;
     }
-    if (before !== null && shell === "docked") returnFocus();
+    if (before !== null && shell === "docked") {
+      const rail = expandRef.current;
+      if (collapsing.current && rail) {
+        takeDayTrigger();
+        rail.focus({ preventScroll: true });
+      } else {
+        returnFocus(rail);
+      }
+    }
+    collapsing.current = false;
   }, [date, shell]);
 
   const onStep = useCallback(
@@ -213,7 +273,64 @@ function DayLayer() {
     </p>
   );
 
-  if (date === null) return live;
+  if (date === null) {
+    if (railDay === null) return live;
+    const label = t("day.showPanel", { date: longLabel(railDay) });
+    const expand = () =>
+      openDay(railDay, { trigger: expandRef.current ?? undefined });
+    return (
+      <>
+        {live}
+        <ShellSidePanel>
+          <div
+            data-slot="day-rail"
+            data-day={railDay}
+            className="bg-card text-card-foreground border-border flex h-full w-12 shrink-0 flex-col border-l"
+          >
+            {/* The top bar's band, so the two bottom borders draw one line;
+                the control sits where the open day keeps its own. */}
+            <div
+              className={cn(
+                SHELL_HEADER_BAND,
+                "border-border flex shrink-0 items-center justify-center",
+              )}
+            >
+              <Button
+                ref={expandRef}
+                type="button"
+                variant="ghost"
+                size="icon"
+                data-slot="day-expand"
+                aria-expanded={false}
+                aria-label={label}
+                title={label}
+                onClick={expand}
+                className={PANEL_TOGGLE}
+              >
+                <PanelRightOpen
+                  className={cn(PANEL_TOGGLE_ICON, "-scale-x-100")}
+                  aria-hidden="true"
+                />
+              </Button>
+            </div>
+            {/* The rest of the edge takes a click too and names the day it
+                holds; the keyboard has the button above. */}
+            <button
+              type="button"
+              tabIndex={-1}
+              aria-hidden="true"
+              onClick={expand}
+              className="hover:bg-muted/60 text-muted-foreground flex min-h-0 flex-1 cursor-pointer flex-col items-center justify-start pt-4 text-xs transition-colors"
+            >
+              <span className="[writing-mode:vertical-rl]">
+                {shortLabel(railDay)}
+              </span>
+            </button>
+          </div>
+        </ShellSidePanel>
+      </>
+    );
+  }
 
   const view = (
     Title: Parameters<typeof DayView>[0]["Title"],
@@ -224,7 +341,7 @@ function DayLayer() {
       today={today}
       focus={focus}
       shell={shell}
-      onClose={closeDay}
+      onClose={shell === "docked" ? collapse : closeDay}
       onStep={onStep}
       Title={Title}
       titleId={titleId}
@@ -334,11 +451,18 @@ function DockedTitle({
   return <h2 ref={ref} {...props} />;
 }
 
-/** Return focus to whatever opened the day, or to the page. */
-function returnFocus() {
+/**
+ * Return focus to whatever opened the day; failing that, to `fallback` (the
+ * collapsed edge's control), or to the page.
+ */
+function returnFocus(fallback?: HTMLElement | null) {
   const trigger = takeDayTrigger();
   if (trigger && trigger.isConnected) {
     trigger.focus({ preventScroll: true });
+    return;
+  }
+  if (fallback && fallback.isConnected) {
+    fallback.focus({ preventScroll: true });
     return;
   }
   document.getElementById("main-content")?.focus({ preventScroll: true });
