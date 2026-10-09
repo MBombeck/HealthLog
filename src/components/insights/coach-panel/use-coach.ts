@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   useInfiniteQuery,
   useMutation,
@@ -31,6 +38,7 @@ import type {
 import type { CoachSuggestedAction } from "@/lib/ai/coach/suggest-action";
 import { useTranslations } from "@/lib/i18n/context";
 import {
+  ApiError,
   apiDelete,
   apiFetchRaw,
   apiGet,
@@ -285,121 +293,307 @@ export function useCoachConversation(id: string | null) {
   });
 }
 
+function removeConversationFromCache(data: unknown, id: string): unknown {
+  if (!data || typeof data !== "object") return data;
+
+  if ("pages" in data && Array.isArray(data.pages)) {
+    let changed = false;
+    const pages = data.pages.map((page) => {
+      const next = removeConversationFromCache(page, id);
+      changed ||= next !== page;
+      return next;
+    });
+    return changed ? { ...data, pages } : data;
+  }
+
+  if ("conversations" in data && Array.isArray(data.conversations)) {
+    const conversations = data.conversations.filter(
+      (conversation) =>
+        !(
+          conversation &&
+          typeof conversation === "object" &&
+          "id" in conversation &&
+          conversation.id === id
+        ),
+    );
+    return conversations.length === data.conversations.length
+      ? data
+      : { ...data, conversations };
+  }
+  return data;
+}
+
 /**
- * Delete a conversation with optimistic removal from the rail cache.
- * Rolls back if the server responds with a non-2xx.
+ * Drop one conversation from every materialised list cache: the head list
+ * the auto-open reads and every search variant of the paginated history
+ * below the same prefix. Synchronous on purpose, so the row is gone from the
+ * caches before any hide filter that covered it is released. Returns the
+ * previous data for a rollback.
  */
-export function useDeleteCoachConversation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      await apiDelete(`/api/insights/chat/${id}`);
-      return id;
-    },
-    onMutate: async (id: string) => {
-      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.list() });
-      const previous = queryClient.getQueryData<CoachConversationsPage>(
-        QUERY_KEYS.list(),
-      );
-      if (previous) {
-        queryClient.setQueryData<CoachConversationsPage>(QUERY_KEYS.list(), {
-          ...previous,
-          conversations: previous.conversations.filter((c) => c.id !== id),
-        });
-      }
-      return { previous };
-    },
-    onError: (_err, _id, ctx) => {
-      if (ctx?.previous) {
-        queryClient.setQueryData(QUERY_KEYS.list(), ctx.previous);
-      }
-    },
-    onSettled: (_data, _err, id) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.list() });
-      if (typeof id === "string") {
-        queryClient.removeQueries({ queryKey: QUERY_KEYS.one(id) });
-      }
-    },
+export function removeCoachConversationFromCaches(
+  queryClient: QueryClient,
+  id: string,
+): CoachConversationRenameSnapshot {
+  void queryClient.cancelQueries({ queryKey: QUERY_KEYS.list() });
+  const snapshot = queryClient.getQueriesData({ queryKey: QUERY_KEYS.list() });
+  for (const [key, previous] of snapshot) {
+    queryClient.setQueryData(key, removeConversationFromCache(previous, id));
+  }
+  return snapshot;
+}
+
+/**
+ * The DELETE itself. `keepalive` lets the request outlive the page, which is
+ * what a delete committed from `pagehide` or a backgrounded app needs.
+ */
+export function deleteCoachConversationRequest(id: string): Promise<unknown> {
+  return apiDelete(`/api/insights/chat/${encodeURIComponent(id)}`, undefined, {
+    keepalive: true,
   });
 }
 
 // v1.30.1 M5 — delayed-commit delete window, in milliseconds. Long
 // enough to read + tap Undo, short enough that the eventual DELETE
 // isn't a surprise days later.
-const CONVERSATION_DELETE_UNDO_MS = 6000;
+export const CONVERSATION_DELETE_UNDO_MS = 6000;
+
+export interface CoachConversationDeleteQueue {
+  /** Schedule the delete; it commits when the window runs out. */
+  request(id: string): void;
+  /** Cancel a scheduled delete. False once it has been committed. */
+  undo(id: string): boolean;
+  /** Commit every scheduled delete now. */
+  flush(): void;
+}
 
 /**
- * v1.30.1 M5 — replaces the old "tap once to arm, tap the same row
- * again to delete" confirm, which never disarmed (a row armed minutes
- * earlier deleted on a later stray tap) and had no way back once fired.
- * Mirrors the Documents delete-with-undo pattern instead: a single tap
- * hides the row immediately and schedules the real
+ * The undo window as plain state, apart from React. A delete that is still
+ * waiting when the page goes away is committed by `flush`, never dropped:
+ * the window exists to offer an Undo, not to make the delete conditional on
+ * the tab staying open for another six seconds.
+ */
+export function createCoachConversationDeleteQueue(
+  commit: (id: string) => void,
+  delayMs: number = CONVERSATION_DELETE_UNDO_MS,
+): CoachConversationDeleteQueue {
+  const timers = new Map<string, ReturnType<typeof setTimeout>>();
+  const fire = (id: string) => {
+    const timer = timers.get(id);
+    if (timer === undefined) return;
+    clearTimeout(timer);
+    timers.delete(id);
+    commit(id);
+  };
+  return {
+    request(id) {
+      if (timers.has(id)) return;
+      timers.set(
+        id,
+        setTimeout(() => fire(id), delayMs),
+      );
+    },
+    undo(id) {
+      const timer = timers.get(id);
+      if (timer === undefined) return false;
+      clearTimeout(timer);
+      timers.delete(id);
+      return true;
+    },
+    flush() {
+      for (const id of [...timers.keys()]) fire(id);
+    },
+  };
+}
+
+/**
+ * Conversations this page has deleted or is deleting, shared by every
+ * surface: a row hidden in the Coach panel is hidden in the settings card
+ * too. An id stays here once its delete went through; the server no longer
+ * has the row, so hiding it costs nothing and closes the gap before the
+ * refetch lands.
+ */
+let hiddenConversationIds: ReadonlySet<string> = new Set();
+const NO_HIDDEN_CONVERSATIONS: ReadonlySet<string> = new Set();
+const hiddenConversationListeners = new Set<() => void>();
+
+function setConversationHidden(id: string, hidden: boolean): void {
+  if (hiddenConversationIds.has(id) === hidden) return;
+  const next = new Set(hiddenConversationIds);
+  if (hidden) next.add(id);
+  else next.delete(id);
+  hiddenConversationIds = next;
+  for (const listener of hiddenConversationListeners) listener();
+}
+
+function subscribeHiddenConversations(listener: () => void): () => void {
+  hiddenConversationListeners.add(listener);
+  return () => hiddenConversationListeners.delete(listener);
+}
+
+/**
+ * Deletes sent but not yet confirmed, kept in `sessionStorage` so they
+ * outlive a reload. A reload inside the undo window sends the DELETE with
+ * `keepalive` from the old page, and the new page's list read can reach the
+ * server before it: without the journal that read brings the row back. The
+ * new page hides every journaled id and sends its DELETE again; a 404 then
+ * means it is already gone.
+ */
+const DELETE_JOURNAL_KEY = "healthlog:coach-conversation-deletes";
+
+function readDeleteJournal(): string[] {
+  try {
+    const raw = window.sessionStorage.getItem(DELETE_JOURNAL_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((id): id is string => typeof id === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeDeleteJournal(id: string, present: boolean): void {
+  try {
+    const ids = new Set(readDeleteJournal());
+    if (present) ids.add(id);
+    else ids.delete(id);
+    if (ids.size === 0) {
+      window.sessionStorage.removeItem(DELETE_JOURNAL_KEY);
+    } else {
+      window.sessionStorage.setItem(
+        DELETE_JOURNAL_KEY,
+        JSON.stringify([...ids]),
+      );
+    }
+  } catch {
+    // Storage unavailable: the keepalive request still carries the delete.
+  }
+}
+
+const deletesInFlight = new Set<string>();
+
+/**
+ * Send one delete. Synchronous up to the request, so a commit made from
+ * `pagehide` is on the wire before the page is torn down. Every list cache
+ * drops the row first; a failure restores them, shows the row again and
+ * calls `onFailed`. A 404 is success: the row is gone, which is the point.
+ */
+export function commitCoachConversationDelete(
+  queryClient: QueryClient,
+  id: string,
+  onFailed: () => void,
+): void {
+  if (deletesInFlight.has(id)) return;
+  deletesInFlight.add(id);
+  setConversationHidden(id, true);
+  writeDeleteJournal(id, true);
+  const request = deleteCoachConversationRequest(id);
+  const snapshot = removeCoachConversationFromCaches(queryClient, id);
+  request
+    .catch((error: unknown) => {
+      if (error instanceof ApiError && error.status === 404) return;
+      throw error;
+    })
+    .then(
+      () => {
+        queryClient.removeQueries({ queryKey: QUERY_KEYS.one(id) });
+      },
+      () => {
+        restoreCoachConversationRename(queryClient, snapshot);
+        setConversationHidden(id, false);
+        onFailed();
+      },
+    )
+    .finally(() => {
+      deletesInFlight.delete(id);
+      writeDeleteJournal(id, false);
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.list() });
+    });
+}
+
+/**
+ * v1.30.1 M5 — one tap hides the row and schedules the real
  * `DELETE /api/insights/chat/[id]` after `CONVERSATION_DELETE_UNDO_MS`;
- * calling `undoDelete` within that window cancels the network call and
- * un-hides the row. `pendingDeleteIds` is a client-only hide filter —
- * consumers subtract it from whatever list they render.
+ * `undoDelete` within that window cancels it. `pendingDeleteIds` is the
+ * hide filter every surface subtracts from what it renders.
  *
- * Centralised here (rather than duplicated in the rail + the standalone
- * `/coach/conversations` page, which previously carried byte-identical
- * arm/confirm logic) so both surfaces share one implementation.
+ * The delete is never conditional on the page surviving the window. A
+ * scheduled delete commits early when the page is hidden (an installed app
+ * sent to the background, a tab switched away), on `pagehide` (reload,
+ * close, navigation away) and when the owning component unmounts; the
+ * request goes out with `keepalive`, and a delete the page could not confirm
+ * is sent again by the next one (see the journal above). Before that, a
+ * delete followed by a reload inside the window was never sent, and the
+ * conversation came back.
+ *
+ * Shared by every surface that deletes a Coach conversation: the Coach
+ * panel's rail, `/coach/conversations` and the settings memory card.
  */
 export function useDeleteCoachConversationWithUndo() {
-  const deleteMutation = useDeleteCoachConversation();
-  const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(
-    () => new Set(),
+  const queryClient = useQueryClient();
+  const { t } = useTranslations();
+  const pendingDeleteIds = useSyncExternalStore(
+    subscribeHiddenConversations,
+    () => hiddenConversationIds,
+    () => NO_HIDDEN_CONVERSATIONS,
   );
-  const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+
+  // Kept current by an effect, so the queue below is created once and still
+  // commits with the latest translator.
+  const commitRef = useRef<(id: string) => void>(() => {});
+  useEffect(() => {
+    const failedMessage = t("insights.coach.historyDeleteFailed");
+    commitRef.current = (id) =>
+      commitCoachConversationDelete(queryClient, id, () =>
+        toast.error(failedMessage),
+      );
+  });
+
+  // Created on first use, from a handler or an effect, never during render.
+  const queueRef = useRef<CoachConversationDeleteQueue | null>(null);
+  const getQueue = useCallback(
+    () =>
+      (queueRef.current ??= createCoachConversationDeleteQueue((id) =>
+        commitRef.current(id),
+      )),
+    [],
+  );
 
   useEffect(() => {
-    // A closed drawer / unmounted page must not silently lose a
-    // scheduled delete: fire any still-pending ones immediately rather
-    // than leaking the timer (or worse, never deleting at all).
-    const timerMap = timers.current;
-    return () => {
-      for (const [id, timer] of timerMap) {
-        clearTimeout(timer);
-        deleteMutation.mutate(id);
-      }
-      timerMap.clear();
+    // Finish what a previous page of this tab could not confirm.
+    for (const id of readDeleteJournal()) commitRef.current(id);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") getQueue().flush();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on unmount only
-  }, []);
+    const onPageHide = () => getQueue().flush();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pagehide", onPageHide);
+      // A closed drawer or a left page commits what it scheduled.
+      getQueue().flush();
+    };
+  }, [getQueue]);
 
   const requestDelete = useCallback(
     (id: string) => {
-      setPendingDeleteIds((prev) => {
-        const next = new Set(prev);
-        next.add(id);
-        return next;
-      });
-      const timer = setTimeout(() => {
-        timers.current.delete(id);
-        setPendingDeleteIds((prev) => {
-          if (!prev.has(id)) return prev;
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        });
-        deleteMutation.mutate(id);
-      }, CONVERSATION_DELETE_UNDO_MS);
-      timers.current.set(id, timer);
+      setConversationHidden(id, true);
+      getQueue().request(id);
     },
-    [deleteMutation],
+    [getQueue],
   );
 
-  const undoDelete = useCallback((id: string) => {
-    const timer = timers.current.get(id);
-    if (timer) {
-      clearTimeout(timer);
-      timers.current.delete(id);
-    }
-    setPendingDeleteIds((prev) => {
-      if (!prev.has(id)) return prev;
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
-  }, []);
+  const undoDelete = useCallback(
+    (id: string): boolean => {
+      // Too late once committed: the row stays hidden, as the server has it.
+      const undone = getQueue().undo(id);
+      if (undone) setConversationHidden(id, false);
+      return undone;
+    },
+    [getQueue],
+  );
 
   return { pendingDeleteIds, requestDelete, undoDelete };
 }

@@ -2909,6 +2909,7 @@
       "historyEmpty": "Tus conversaciones aparecen aquí. Lanza una pregunta para empezar.",
       "historyDeleteAria": "Eliminar conversación",
       "historyDeleted": "Conversación eliminada",
+      "historyDeleteFailed": "No se pudo eliminar la conversación.",
       "rename": {
         "action": "Renombrar conversación",
         "input": "Título de la conversación",

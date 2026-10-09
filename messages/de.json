@@ -2909,6 +2909,7 @@
       "historyEmpty": "Deine Unterhaltungen erscheinen hier. Stell eine Frage, um zu starten.",
       "historyDeleteAria": "Unterhaltung löschen",
       "historyDeleted": "Unterhaltung gelöscht",
+      "historyDeleteFailed": "Die Unterhaltung konnte nicht gelöscht werden.",
       "rename": {
         "action": "Unterhaltung umbenennen",
         "input": "Titel der Unterhaltung",
