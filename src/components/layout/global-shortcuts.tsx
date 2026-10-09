@@ -1,7 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import { stepDay, useOpenDay } from "@/components/day/day-layer-controller";
 import { useTodayKey } from "@/components/day/use-today-key";
@@ -11,7 +17,7 @@ import {
   visibleCaptureKinds,
 } from "@/components/layout/capture-picker";
 import { openCommandPalette } from "@/components/command-palette/palette-store";
-import { KeyboardShortcutsDialog } from "@/components/layout/keyboard-shortcuts-dialog";
+import dynamic from "next/dynamic";
 import {
   isSettingsUtilityDestination,
   visibleNavDestinations,
@@ -42,6 +48,15 @@ import {
  * The account menu opens the list too (`openShortcutsHelp`), for anyone who
  * does not know there is a `?` to press.
  */
+
+// The list is loaded the first time it opens; no page pays for it before.
+const KeyboardShortcutsDialog = dynamic(
+  () =>
+    import("@/components/layout/keyboard-shortcuts-dialog").then(
+      (m) => m.KeyboardShortcutsDialog,
+    ),
+  { ssr: false },
+);
 
 let helpOpen = false;
 const helpListeners = new Set<() => void>();
@@ -192,14 +207,20 @@ export function GlobalShortcuts() {
     };
   }, []);
 
+  // Mounted from the first open on, so the close animation still plays.
+  const [helpWanted, setHelpWanted] = useState(false);
+  if (open && !helpWanted) setHelpWanted(true);
+
   return (
     <>
-      <KeyboardShortcutsDialog
-        open={open}
-        onOpenChange={setShortcutsHelpOpen}
-        offer={offer}
-        canCapture={offer.canCapture}
-      />
+      {helpWanted ? (
+        <KeyboardShortcutsDialog
+          open={open}
+          onOpenChange={setShortcutsHelpOpen}
+          offer={offer}
+          canCapture={offer.canCapture}
+        />
+      ) : null}
       {offer.canCapture ? (
         <CapturePicker open={capture} onOpenChange={setCaptureOpen} />
       ) : null}
