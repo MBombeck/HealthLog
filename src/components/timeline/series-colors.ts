@@ -6,11 +6,11 @@
  * same colour on both pages. Where two chosen lines would share a colour
  * (systolic and diastolic, or resting pulse beside blood pressure) or a type
  * has none (mood), the later one takes the first `--chart-N` still free.
- * There are five data tokens and up to six lines; a sixth line with nothing
- * free left is drawn in `--foreground`, which is still apart from the other
- * five. The order of `rank` decides who keeps a contested colour, so the
- * same set of lines is coloured the same way whatever order it was picked
- * in.
+ * There are five data tokens and no cap on the lines: once all five are
+ * taken, the next lines take them again in palette order. Every line is
+ * named at its left, so a repeated colour never leaves a line unnamed. The
+ * order of `rank` decides who keeps a contested colour, so the same set of
+ * lines is coloured the same way whatever order it was picked in.
  */
 import { MEASUREMENT_TYPE_COLORS } from "@/components/measurements/measurement-type-colors";
 
@@ -21,9 +21,6 @@ export const SERIES_PALETTE = [
   "var(--chart-4)",
   "var(--chart-5)",
 ] as const;
-
-/** The colour once every data token is taken. */
-export const SERIES_FALLBACK_COLOR = "var(--foreground)";
 
 /** The type's own colour, as a `var(--chart-N)` string, or null. */
 export function preferredSeriesColor(key: string): string | null {
@@ -59,10 +56,11 @@ export function assignSeriesColors(
       taken.add(own);
     }
   }
+  let repeat = 0;
   for (const key of ordered) {
     if (out.has(key)) continue;
     const free = SERIES_PALETTE.find((c) => !taken.has(c));
-    const color = free ?? SERIES_FALLBACK_COLOR;
+    const color = free ?? SERIES_PALETTE[repeat++ % SERIES_PALETTE.length];
     out.set(key, color);
     taken.add(color);
   }

@@ -45,7 +45,7 @@ export const GET = apiHandler(async (request: Request) => {
   }
   const seriesKeys = parseSeriesKeys(parsed.data.values);
   if (seriesKeys === null) {
-    return apiError("Unknown value series, or more than six", 422, {
+    return apiError("Unknown value series", 422, {
       errorCode: "timeline.invalid",
     });
   }

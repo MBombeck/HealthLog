@@ -48,6 +48,7 @@ describe("chronicleEntries", () => {
       label: "x",
       sub: null,
       href: null,
+      group: null,
     });
     expect(chronicleEntries(tl, TODAY).some((e) => e.date > TODAY)).toBe(false);
   });

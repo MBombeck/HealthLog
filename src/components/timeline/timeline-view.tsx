@@ -3,9 +3,10 @@
 /**
  * `/timeline` (v1.42, #613): years at a glance. Conditions, allergies,
  * medications, vaccinations, visits, documents and the person's own life
- * events in lanes, up to six value lines below them, each in its own
- * colour (`series-colors.ts`), all on one
- * time axis. Nothing on the page draws a connection between them.
+ * events in lanes, the value lines the person picks below them (as many as
+ * the record has kinds of value), each in its own colour
+ * (`series-colors.ts`), all on one time axis. Nothing on the page draws a
+ * connection between them.
  *
  * The page hands off to the day view through `?day=`: "Open 3 Jan." (and
  * Enter on the chart, a double click, a chip, a chronicle row) pushes the
@@ -17,7 +18,7 @@
  * list form of the chart. The readiness card sits on top while a lane is
  * thin and the person has not closed it; empty lanes are never drawn.
  */
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { CalendarRange, Plus } from "lucide-react";
 
@@ -58,13 +59,14 @@ import {
 } from "./readiness-model";
 import { TimelineReadinessSheet } from "./readiness-sheet";
 import { Segmented } from "./segmented";
-import { SERIES_FALLBACK_COLOR, assignSeriesColors } from "./series-colors";
+import { SERIES_PALETTE, assignSeriesColors } from "./series-colors";
 import { useSeriesValueFormat } from "./use-series-value-format";
 import { SelectionBar } from "./selection-bar";
 import { TimelineChart } from "./timeline-chart";
 import { TimelineChronicle } from "./timeline-chronicle";
 import { dayKey, dayNumber, todayKeyIn } from "./timeline-dates";
 import { RangeFields } from "./range-fields";
+import { RangeSheet, ZoomControl } from "./range-picker";
 import {
   clampRange,
   parseTimelineUrl,
@@ -72,11 +74,7 @@ import {
   type TimelineRange,
 } from "./timeline-url";
 import { LANE_ORDER, latestDataDate, windowFor } from "./timeline-geometry";
-import {
-  LayersMenu,
-  MAX_VALUE_SERIES,
-  ValueSeriesMenu,
-} from "./timeline-menus";
+import { LayersMenu, ValueSeriesMenu } from "./timeline-menus";
 import {
   isBoolean,
   isStringArray,
@@ -111,6 +109,21 @@ export const VALUE_OPTION_MODULE = {
 export const VALUE_OPTIONS = Object.keys(VALUE_OPTION_MODULE) as Array<
   keyof typeof VALUE_OPTION_MODULE
 >;
+
+/**
+ * Every series name the page can ask for: each measurement type, and the
+ * mood score. A stored choice outside it is dropped before it reaches the
+ * request, so a stale entry never turns the page into a 422.
+ */
+const KNOWN_SERIES: ReadonlySet<string> = new Set([
+  ...Object.keys(MEASUREMENT_TYPE_LABEL_KEYS),
+  "MOOD",
+]);
+
+/** The order colours are handed out in: the selector's own, then the rest. */
+const SERIES_RANK: readonly string[] = [
+  ...new Set([...VALUE_OPTIONS, ...KNOWN_SERIES]),
+];
 
 export const DEFAULT_VALUES = [
   "BLOOD_PRESSURE_SYS",
@@ -152,6 +165,7 @@ export function TimelineView() {
       : (dayParam ?? picked?.date ?? null);
   const setSelected = (date: string) => setPicked({ date, param: dayParam });
   const [readinessOpen, setReadinessOpen] = useState(false);
+  const [rangeSheetOpen, setRangeSheetOpen] = useState(false);
   const [lifeEventOpen, setLifeEventOpen] = useState(false);
   const [editing, setEditing] = useState<LifeEventDTO | null>(null);
 
@@ -172,30 +186,31 @@ export function TimelineView() {
   );
 
   const modules = user?.modules;
-  const valueOptions = useMemo(
-    () =>
-      VALUE_OPTIONS.filter((key) => {
-        const owner: ModuleKey | null = VALUE_OPTION_MODULE[key];
-        return owner === null || modules?.[owner] !== false;
-      }),
+  // What is asked for: the stored choice, minus anything unknown and minus
+  // a line whose module is off. The server narrows it further to what the
+  // caller may see.
+  const allowed = useCallback(
+    (key: string) => {
+      if (!KNOWN_SERIES.has(key)) return false;
+      const owner: ModuleKey | null | undefined =
+        VALUE_OPTION_MODULE[key as keyof typeof VALUE_OPTION_MODULE];
+      return !owner || modules?.[owner] !== false;
+    },
     [modules],
   );
   const values = useMemo(
-    () =>
-      storedValues
-        .filter((v) => (valueOptions as readonly string[]).includes(v))
-        .slice(0, MAX_VALUE_SERIES),
-    [storedValues, valueOptions],
+    () => storedValues.filter(allowed),
+    [storedValues, allowed],
   );
   // One colour per chosen line, shared by the chart, the selection bar, the
   // menu and the phone chronicle; contested colours go by the menu's order.
   const seriesColors = useMemo(
-    () => assignSeriesColors(values, VALUE_OPTIONS),
+    () => assignSeriesColors(values, SERIES_RANK),
     [values],
   );
   const seriesFormat = useSeriesValueFormat();
   const seriesColor = (key: string) =>
-    seriesColors.get(key) ?? SERIES_FALLBACK_COLOR;
+    seriesColors.get(key) ?? SERIES_PALETTE[0];
   const hidden = useMemo(
     () => new Set(hiddenList as TimelineLaneKey[]),
     [hiddenList],
@@ -257,17 +272,8 @@ export function TimelineView() {
     window.history.pushState(null, "", `${pathname}${search}`);
   }
 
-  function setZoom(next: TimelineZoom) {
-    if (next !== "range") {
-      navigate(next, null);
-      return;
-    }
-    // A new range starts as what is on screen, up to today.
-    const shown = window_ ?? {
-      from: dayKey(dayNumber(today) - 29),
-      to: today,
-    };
-    navigate("range", clampRange(shown, today, data?.range.dataFrom ?? null));
+  function setZoom(next: Exclude<TimelineZoom, "range">) {
+    navigate(next, null);
   }
 
   // The shell's day layer owns `?day=` and its history entries; this only
@@ -302,6 +308,23 @@ export function TimelineView() {
         zoom === "all" || zoom === "range" ? data.range : null,
       )
     : null;
+  // A new range starts as the chosen one, or as what is on screen, up to
+  // today.
+  const rangeDraft = clampRange(
+    range ??
+      window_ ?? {
+        from: dayKey(dayNumber(today) - 29),
+        to: today,
+      },
+    today,
+    data?.range.dataFrom ?? null,
+  );
+  // The selector offers every series the record has, the chosen ones kept
+  // even when they have nothing yet, in the selector's order and then the
+  // record's.
+  const valueOptions = [
+    ...new Set([...(data?.availableSeries ?? []).filter(allowed), ...values]),
+  ].sort((a, b) => SERIES_RANK.indexOf(a) - SERIES_RANK.indexOf(b));
   const presentLanes = (data?.lanes ?? [])
     .filter((l) => l.items.length > 0)
     .map((l) => l.key)
@@ -338,27 +361,17 @@ export function TimelineView() {
     </Button>
   ) : null;
 
-  // The chosen range's fields, under the zoom; on a phone with a way back to
-  // the whole record, since the phone has no zoom control to switch with.
-  const rangeControls =
+  // A chosen stretch with nothing in it keeps its fields on the page, so the
+  // next choice is one step away; everywhere else they open in a popover
+  // (or a sheet on a phone) and never push the chart down.
+  const emptyRangeFields =
     zoom === "range" && range ? (
-      <div className="flex flex-wrap items-end gap-3">
-        <RangeFields
-          range={range}
-          today={today}
-          dataFrom={data?.range.dataFrom ?? null}
-          onChange={(next) => navigate("range", next)}
-        />
-        <Button
-          variant="outline"
-          size="sm"
-          className="min-h-11 sm:min-h-10 md:hidden"
-          onClick={() => setZoom("all")}
-          data-slot="timeline-range-clear"
-        >
-          {t("timeline.range.clear")}
-        </Button>
-      </div>
+      <RangeFields
+        range={range}
+        today={today}
+        dataFrom={data?.range.dataFrom ?? null}
+        onChange={(next) => navigate("range", next)}
+      />
     ) : null;
 
   const layers = (iconOnly: boolean) => (
@@ -408,7 +421,7 @@ export function TimelineView() {
         // A chosen stretch with nothing in it: the fields stay, so the next
         // choice is one step away.
         <div className="space-y-4" data-slot="timeline-range-empty">
-          {rangeControls}
+          {emptyRangeFields}
           <EmptyState
             title={t("timeline.selection.empty")}
             action={
@@ -435,14 +448,20 @@ export function TimelineView() {
           <div
             className="hidden space-y-4 md:block"
             data-slot="timeline-desktop"
+            data-zoom={zoom}
+            data-from={range?.from}
+            data-to={range?.to}
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <Segmented
+              <ZoomControl
                 options={zoomOptions}
-                value={zoom}
-                onChange={setZoom}
+                zoom={zoom}
                 label={t("timeline.zoomLabel")}
-                slot="timeline-zoom"
+                initialRange={rangeDraft}
+                today={today}
+                dataFrom={data.range.dataFrom}
+                onZoom={setZoom}
+                onApply={(next) => navigate("range", next)}
               />
               <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <ValueSeriesMenu
@@ -455,7 +474,6 @@ export function TimelineView() {
                 {layers(false)}
               </div>
             </div>
-            {rangeControls}
             <Card className="md:gap-4">
               <CardContent className="space-y-4">
                 <TimelineChart
@@ -482,7 +500,7 @@ export function TimelineView() {
                   onOpenDay={openDay}
                   onEditLifeEvent={canAddLifeEvent ? editLifeEvent : undefined}
                 />
-                <Legend
+                <TimelineLegend
                   bucket={data.bucket}
                   hasSeries={data.series.length > 0}
                 />
@@ -491,7 +509,13 @@ export function TimelineView() {
           </div>
 
           {/* Phone: the chronicle. */}
-          <div className="space-y-4 md:hidden" data-slot="timeline-mobile">
+          <div
+            className="space-y-4 md:hidden"
+            data-slot="timeline-mobile"
+            data-zoom={zoom}
+            data-from={range?.from}
+            data-to={range?.to}
+          >
             <div className="flex items-center justify-between gap-3">
               <Segmented
                 options={groupingOptions}
@@ -507,7 +531,7 @@ export function TimelineView() {
                   className="size-11"
                   aria-label={t("timeline.range.open")}
                   aria-pressed={zoom === "range"}
-                  onClick={() => setZoom(zoom === "range" ? "all" : "range")}
+                  onClick={() => setRangeSheetOpen(true)}
                   data-slot="timeline-range-toggle"
                 >
                   <CalendarRange className="size-4" aria-hidden="true" />
@@ -515,7 +539,15 @@ export function TimelineView() {
                 {layers(true)}
               </div>
             </div>
-            {rangeControls}
+            <RangeSheet
+              open={rangeSheetOpen}
+              onOpenChange={setRangeSheetOpen}
+              initialRange={rangeDraft}
+              today={today}
+              dataFrom={data.range.dataFrom}
+              onApply={(next) => navigate("range", next)}
+              onClear={zoom === "range" ? () => setZoom("all") : null}
+            />
             <TimelineChronicle
               timeline={{
                 ...data,
@@ -549,7 +581,14 @@ export function TimelineView() {
   );
 }
 
-function Legend({
+/**
+ * What the marks mean. Under the selection bar and set off from it by a
+ * hairline. With value lines, the two marks a line can carry besides its
+ * points are explained by an example of each: the dashed stroke over a short
+ * gap without measurements, and the hollow point of a mean resting on fewer
+ * than three.
+ */
+export function TimelineLegend({
   bucket,
   hasSeries,
 }: {
@@ -559,7 +598,7 @@ function Legend({
   const { t } = useTranslations();
   return (
     <div
-      className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs"
+      className="text-muted-foreground border-border flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t pt-3 text-xs"
       data-slot="timeline-legend"
     >
       <span className="inline-flex items-center gap-1.5">
@@ -586,11 +625,50 @@ function Legend({
             <span className="bg-foreground h-0.5 w-4" aria-hidden="true" />
             {t(TIMELINE_LEGEND_MEAN_KEY[bucket])}
           </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span
-              className="border-foreground bg-card size-2 rounded-full border"
+          <span
+            className="inline-flex items-center gap-1.5"
+            data-slot="timeline-legend-gap"
+          >
+            <svg
+              width="16"
+              height="8"
+              viewBox="0 0 16 8"
+              className="text-foreground"
               aria-hidden="true"
-            />
+            >
+              <line
+                x1="1"
+                x2="15"
+                y1="4"
+                y2="4"
+                stroke="currentColor"
+                strokeWidth="1.2"
+                strokeDasharray="3 3"
+                strokeLinecap="round"
+              />
+            </svg>
+            {t("timeline.legendGap")}
+          </span>
+          <span
+            className="inline-flex items-center gap-1.5"
+            data-slot="timeline-legend-thin"
+          >
+            <svg
+              width="8"
+              height="8"
+              viewBox="0 0 8 8"
+              className="text-foreground"
+              aria-hidden="true"
+            >
+              <circle
+                cx="4"
+                cy="4"
+                r="2.75"
+                fill="var(--card)"
+                stroke="currentColor"
+                strokeWidth="1.4"
+              />
+            </svg>
             {t("timeline.legendThin")}
           </span>
         </>

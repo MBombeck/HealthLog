@@ -51,7 +51,8 @@ import type {
 import { resolveIntlLocale } from "@/lib/format-locale";
 import { useTranslations } from "@/lib/i18n/context";
 
-import { useItemWords, type ItemWordsFn } from "./item-words";
+import { itemLine, useItemWords, type ItemWordsFn } from "./item-words";
+import { medicationListItems } from "./medication-rows";
 import { TIMELINE_LANE_LABEL_KEY } from "./label-keys";
 import {
   bucketAfter,
@@ -168,7 +169,7 @@ export function TimelineChart({
             series: timeline.series,
             bucket: timeline.bucket,
             words,
-            startMissing: t("timeline.startMissing"),
+            startMissing: t("timeline.startUnknown"),
             today,
           })
         : null,
@@ -426,9 +427,11 @@ function ChartBody({
             >
               {fitText(t(TIMELINE_LANE_LABEL_KEY[lane.key]), scale.x0 - 30, 13)}
             </text>
+            {/* A medication's bar is drawn in pieces of one item, so a
+                piece is keyed by its item and its own first day. */}
             {lane.spans.map((span) => (
               <SpanMark
-                key={span.item.id}
+                key={`${span.item.id}:${span.segment?.start ?? span.item.start}`}
                 span={span}
                 color={color}
                 x0={scale.x0}
@@ -444,9 +447,9 @@ function ChartBody({
                 intl={intl}
               />
             ))}
-            {lane.labels.map((label) => (
+            {lane.labels.map((label, i) => (
               <text
-                key={`label-${label.itemId}`}
+                key={`label-${label.itemId}-${i}`}
                 x={label.x}
                 y={label.y}
                 fontSize={11}
@@ -676,20 +679,31 @@ export function SeriesLines({
   );
 }
 
+/**
+ * A bar's hover title: "Ramipril 5 mg: 12 Aug 2020 to 1 Jun 2021", or
+ * "since 12 Aug 2020" while it runs on. A dose's piece of a medication's
+ * bar names that dose and its own days.
+ */
 function spanTitle(
   span: PlacedSpan,
   intl: string,
   t: ReturnType<typeof useTranslations>["t"],
   words: ItemWordsFn,
 ): string {
-  const { item } = span;
+  const { item, segment } = span;
   const { label, sub } = words(item);
-  const from = formatAtPrecision(item.start, item.precision, intl);
-  const to = item.open
-    ? t("timeline.selection.ongoing")
-    : formatAtPrecision(item.end ?? item.start, item.precision, intl);
-  const name = sub ? `${label} · ${sub}` : label;
-  return `${name}: ${t("timeline.selection.range", { from, to })}`;
+  const name = [label, segment ? segment.dose : sub].filter(Boolean).join(" ");
+  const start = segment?.start ?? item.start;
+  const end = segment ? segment.end : item.open ? null : item.end;
+  const from = formatAtPrecision(start, item.precision, intl);
+  const when =
+    end === null
+      ? t("timeline.selection.since", { date: from })
+      : t("timeline.selection.range", {
+          from,
+          to: formatAtPrecision(end, item.precision, intl),
+        });
+  return `${name}: ${when}`;
 }
 
 export function SpanMark({
@@ -710,7 +724,7 @@ export function SpanMark({
   const title = spanTitle(span, intl, t, words);
   if (span.pause) {
     return (
-      <g data-kind="pause">
+      <g data-kind="pause" data-item={item.id} data-row={span.row}>
         <title>{title}</title>
         <rect
           x={xStart}
@@ -726,10 +740,19 @@ export function SpanMark({
     );
   }
   const thick = item.open ? 3 : 7;
+  // Only a bar's first piece draws an unknown start, only its last an open
+  // end; a bar that is not cut is both.
+  const first = span.segment?.first ?? true;
+  const last = span.segment?.last ?? true;
   return (
-    <g data-kind={item.kind} data-item={item.id}>
+    <g
+      data-kind={item.kind}
+      data-item={item.id}
+      data-dose={span.segment?.dose ?? undefined}
+      data-row={span.row}
+    >
       <title>{title}</title>
-      {!item.startKnown && (
+      {!item.startKnown && first && (
         <line
           x1={Math.max(x0, xStart - 28)}
           x2={xStart}
@@ -750,7 +773,7 @@ export function SpanMark({
         fill={color}
         opacity={item.open ? 0.75 : 0.9}
       />
-      {item.open && (
+      {item.open && last && (
         <path
           d={`M${xEnd + 1} ${y - 4} l6 4 l-6 4z`}
           fill={color}
@@ -781,7 +804,7 @@ export function PointMark({
 }) {
   const { x, y, item, shape } = point;
   const { label, sub } = useItemWords()(item);
-  const title = `${label}${sub ? ` · ${sub}` : ""}: ${formatAtPrecision(item.start, item.precision, intl)}`;
+  const title = `${[label, sub].filter(Boolean).join(" ")}: ${formatAtPrecision(item.start, item.precision, intl)}`;
   let glyph: React.ReactNode;
   switch (shape) {
     case "diamond":
@@ -860,7 +883,7 @@ export function PointMark({
       );
   }
   return (
-    <g data-kind={item.kind} data-item={item.id}>
+    <g data-kind={item.kind} data-item={item.id} data-row={point.row}>
       <title>{title}</title>
       {glyph}
     </g>
@@ -884,7 +907,12 @@ function TimelineTable({
   const words = useItemWords();
   const rows = timeline.lanes
     .filter((lane) => !hiddenLanes.has(lane.key))
-    .flatMap((lane) => lane.items.map((item) => ({ lane: lane.key, item })))
+    .flatMap((lane) =>
+      (lane.key === "medications"
+        ? medicationListItems(lane.items)
+        : lane.items
+      ).map((item) => ({ lane: lane.key, item })),
+    )
     .sort((a, b) => dayNumber(b.item.start) - dayNumber(a.item.start));
   return (
     <table className="sr-only" data-slot="timeline-table">
@@ -901,22 +929,12 @@ function TimelineTable({
         {rows.map(({ lane, item }) => (
           <tr key={`${lane}-${item.id}`}>
             <td>{t(TIMELINE_LANE_LABEL_KEY[lane])}</td>
-            <td>
-              {[
-                words(item).label,
-                words(item).sub,
-                item.startKnown ? null : t("timeline.startMissing"),
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            </td>
+            <td>{itemLine(item, words, t("timeline.startUnknown"))}</td>
             <td>{formatAtPrecision(item.start, item.precision, intl)}</td>
             <td>
-              {item.open
-                ? t("timeline.selection.ongoing")
-                : isSpan(item) && item.end
-                  ? formatAtPrecision(item.end, item.precision, intl)
-                  : ""}
+              {!item.open && isSpan(item) && item.end
+                ? formatAtPrecision(item.end, item.precision, intl)
+                : ""}
             </td>
           </tr>
         ))}
@@ -1012,7 +1030,9 @@ function SeriesTable({
 
 /**
  * A means line with each value marked by its line's colour: "● 129/82 mmHg
- * · ● 82,6 kg". The dot is decoration; the text reads the same without it.
+ * ● 82,6 kg". The values stand apart by space, not by a separator glyph;
+ * a screen reader hears a comma between them. The dot is decoration; the
+ * text reads the same without it.
  */
 export function MeanPartsLine({
   parts,
@@ -1022,8 +1042,12 @@ export function MeanPartsLine({
   seriesColor: (key: string) => string;
 }) {
   return parts.map((part, i) => (
-    <span key={part.key} data-series={part.key}>
-      {i > 0 ? " · " : null}
+    <span
+      key={part.key}
+      data-series={part.key}
+      className={i > 0 ? "ml-3" : undefined}
+    >
+      {i > 0 ? <span className="sr-only">, </span> : null}
       <span
         data-slot="timeline-series-dot"
         className="mr-1 inline-block size-2 rounded-full align-middle"

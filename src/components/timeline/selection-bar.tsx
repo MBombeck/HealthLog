@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The bar under the chart (v1.42, #613): a cross-section of one bucket, the
+ * The cross-section under the chart (v1.42, #613): one bucket, the
  * one that holds the selected day. Its head names the bucket outright ("July
  * to September 2026", "September 2026", "Week of 22 September 2026"), so a
  * value that changes with the zoom says why: it is the mean of a different
@@ -12,6 +12,12 @@
  *
  * It is also where a label the chart had to leave out is read in full, and
  * where each keyboard step on the chart is announced (`aria-live`).
+ *
+ * It sits on the card's own surface, set off from the chart by a hairline
+ * above it, not in a box of its own. An entry's parts are joined by commas,
+ * a period still open reads "since 3 Mar." (it needs no "ongoing"), and a
+ * medication is one entry however many of its items touch the bucket
+ * (`medicationPeriodItem`).
  */
 import { ArrowRight } from "lucide-react";
 
@@ -86,7 +92,7 @@ export function SelectionBar({
 
   return (
     <div
-      className="bg-muted/60 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg px-3 py-2.5"
+      className="border-border flex flex-wrap items-center gap-x-3 gap-y-2 border-t pt-3"
       data-slot="timeline-selection-bar"
       data-bucket={bucket}
       data-period-from={periodFrom}
@@ -122,32 +128,34 @@ export function SelectionBar({
           {t("timeline.selection.empty")}
         </span>
       )}
-      {entries.map(({ lane, item, through }) => {
+      {entries.map(({ lane, item }) => {
         // A chip opens the day its entry touches inside this period.
         const day =
           item.start >= periodFrom && item.start <= periodTo
             ? item.start
             : periodFrom;
         const canOpenDay = item.precision === "DAY" && day <= today;
-        const when =
-          item.open || through
-            ? t("timeline.selection.ongoing")
-            : item.end && item.end !== item.start
-              ? t("timeline.selection.range", {
-                  from: formatDayMonth(item.start, intl),
-                  to: formatDayMonth(item.end, intl),
-                })
-              : item.precision === "DAY"
-                ? formatDayMonth(item.start, intl)
-                : formatAtPrecision(item.start, item.precision, intl);
+        const at = (date: string) =>
+          item.precision === "DAY"
+            ? formatDayMonth(date, intl)
+            : formatAtPrecision(date, item.precision, intl);
+        const when = item.open
+          ? t("timeline.selection.since", { date: at(item.start) })
+          : item.end && item.end !== item.start
+            ? t("timeline.selection.range", {
+                from: at(item.start),
+                to: at(item.end),
+              })
+            : at(item.start);
         const { label, sub } = words(item);
-        const text = [label, sub, when].filter(Boolean).join(" · ");
+        const name = [label, sub].filter(Boolean).join(" ");
+        const text = `${name}, ${when}`;
         const editable = item.kind === "lifeEvent" && onEditLifeEvent;
         if (!canOpenDay && !editable) {
           return (
             <span
               key={`${lane}-${item.id}`}
-              className="bg-background text-foreground text-2xs inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium"
+              className="bg-muted text-foreground text-2xs inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium"
             >
               <span
                 className="size-1.5 shrink-0 rounded-full"
@@ -167,7 +175,7 @@ export function SelectionBar({
             onClick={() =>
               editable ? onEditLifeEvent(item.id) : onOpenDay(day)
             }
-            className="bg-background text-foreground text-2xs hover:bg-accent focus-visible:ring-ring/50 inline-flex min-h-11 items-center gap-1.5 rounded-full px-2.5 py-1 font-medium outline-none focus-visible:ring-2 sm:min-h-7"
+            className="bg-muted text-foreground text-2xs hover:bg-accent focus-visible:ring-ring/50 inline-flex min-h-11 items-center gap-1.5 rounded-full px-2.5 py-1 font-medium outline-none focus-visible:ring-2 sm:min-h-7"
           >
             <span
               className="size-1.5 shrink-0 rounded-full"

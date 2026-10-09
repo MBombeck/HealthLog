@@ -10,6 +10,13 @@
  * pretend. Something with no date at all is not drawn on the axis; it is
  * listed once under `standing`.
  *
+ * A medication is read from four tables (its own start and end, its
+ * courses, its dose changes, its pauses), so it arrives as several items.
+ * They share the medication's id as `group`, and a client draws one row per
+ * group: the courses are the stretches it was taken, the dose changes cut
+ * them into segments, and a pause is a gap in the same bar. Drawn item by
+ * item, one medication with a course read as two medications.
+ *
  * Each lane belongs to one sharing domain and, where a module owns it, to
  * that module; a lane the caller may not see is not read. The `life` lane
  * holds life events (the timeline module's own content) and travel periods
@@ -82,15 +89,18 @@ interface LaneFrame {
   access: TimelineAccess;
 }
 
+type ItemDefaults = "precision" | "startKnown" | "sub" | "href" | "group";
+
 function item(
-  rest: Omit<TimelineItem, "precision" | "startKnown" | "sub" | "href"> &
-    Partial<Pick<TimelineItem, "precision" | "startKnown" | "sub" | "href">>,
+  rest: Omit<TimelineItem, ItemDefaults> &
+    Partial<Pick<TimelineItem, ItemDefaults>>,
 ): TimelineItem {
   return {
     precision: "DAY",
     startKnown: true,
     sub: null,
     href: null,
+    group: null,
     ...rest,
   };
 }
@@ -308,6 +318,7 @@ async function medicationsLane(frame: LaneFrame): Promise<LaneRead> {
         label: med.name,
         sub: med.dose,
         href,
+        group: med.id,
       }),
     );
   }
@@ -322,6 +333,7 @@ async function medicationsLane(frame: LaneFrame): Promise<LaneRead> {
         open: end === null,
         label: c.medication.name,
         href: `/medications/${c.medicationId}`,
+        group: c.medicationId,
       }),
     );
   }
@@ -336,6 +348,7 @@ async function medicationsLane(frame: LaneFrame): Promise<LaneRead> {
         label: d.medication.name,
         sub: `${d.doseValue} ${d.doseUnit}`,
         href: `/medications/${d.medicationId}/history`,
+        group: d.medicationId,
       }),
     );
   }
@@ -350,6 +363,7 @@ async function medicationsLane(frame: LaneFrame): Promise<LaneRead> {
         open: end === null,
         label: p.medication.name,
         href: `/medications/${p.medicationId}`,
+        group: p.medicationId,
       }),
     );
   }

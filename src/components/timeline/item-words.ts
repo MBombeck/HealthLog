@@ -124,7 +124,8 @@ export function makeItemWords(
 /**
  * The line an item reads as: its label, its second line (a dose change's
  * dose is drawn as its own mark, so it is left out here) and the
- * unknown-start note.
+ * unknown-start note in brackets: "Ramipril 5 mg (start unknown)". The
+ * parts are set apart by a space, never by a separator glyph.
  */
 export function itemLine(
   item: TimelineItem,
@@ -132,10 +133,10 @@ export function itemLine(
   startMissing: string,
 ): string {
   const { label, sub } = words(item);
-  const parts = [label];
-  if (sub && item.kind !== "doseChange") parts.push(sub);
-  if (!item.startKnown) parts.push(startMissing);
-  return parts.filter(Boolean).join(" · ");
+  const base = [label, item.kind === "doseChange" ? null : sub]
+    .filter(Boolean)
+    .join(" ");
+  return item.startKnown || !startMissing ? base : `${base} (${startMissing})`;
 }
 
 /** {@link makeItemWords} with the bundle in hand. */

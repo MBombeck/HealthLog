@@ -23472,11 +23472,11 @@ paths:
         - in: query
           name: values
           schema:
-            description: Comma-separated value series to include, as `MeasurementType` names or `MOOD`, at most 6. More, or an
-              unknown name, answers 422.
+            description: Comma-separated value series to include, as `MeasurementType` names or `MOOD`. A name given twice counts
+              once, so the list is bounded by the names that exist; an unknown name answers 422.
             type: string
-          description: Comma-separated value series to include, as `MeasurementType` names or `MOOD`, at most 6. More, or an
-            unknown name, answers 422.
+          description: Comma-separated value series to include, as `MeasurementType` names or `MOOD`. A name given twice counts
+            once, so the list is bounded by the names that exist; an unknown name answers 422.
       responses:
         "200":
           description: The timeline for the requested zoom and window.
@@ -81664,6 +81664,13 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TimelineSeries"
+        availableSeries:
+          type: array
+          items:
+            type: string
+          description: "Every value series this record can show, whatever the window: the `MeasurementType` names with live
+            readings that the caller may see (events excluded), and `MOOD` when the mood score is visible and has
+            entries. Each may be named in `values`."
         notable:
           type: array
           items:
@@ -81690,6 +81697,7 @@ components:
         - standing
         - bucket
         - series
+        - availableSeries
         - notable
       additionalProperties: false
     TimelineItem:
@@ -81750,6 +81758,12 @@ components:
           anyOf:
             - type: string
             - type: "null"
+        group:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: "Items that belong to one thing share a group and are drawn on one row: a medication's own span, its
+            courses, its dose changes and its pauses all carry the medication's id. Null for an item that stands alone."
       required:
         - id
         - kind
@@ -81761,6 +81775,7 @@ components:
         - label
         - sub
         - href
+        - group
       additionalProperties: false
     TimelineStandingItem:
       type: object

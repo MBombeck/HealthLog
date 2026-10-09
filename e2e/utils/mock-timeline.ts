@@ -22,6 +22,8 @@ type Item = {
   label: string;
   sub: string | null;
   href: string | null;
+  /** The medication an item belongs to; one row per group. */
+  group: string | null;
 };
 
 function item(over: Partial<Item> & Pick<Item, "id" | "kind" | "start">): Item {
@@ -33,6 +35,7 @@ function item(over: Partial<Item> & Pick<Item, "id" | "kind" | "start">): Item {
     label: over.id,
     sub: null,
     href: null,
+    group: null,
     ...over,
   };
 }
@@ -204,6 +207,28 @@ function series(dataFrom: string, today: string, bucket: Bucket) {
   ];
 }
 
+/**
+ * Every series the `full` record can show: fifteen, past the five colours
+ * and past the six lines the chart used to stop at.
+ */
+export const FULL_AVAILABLE = [
+  "WEIGHT",
+  "BLOOD_PRESSURE_SYS",
+  "BLOOD_PRESSURE_DIA",
+  "PULSE",
+  "BODY_FAT",
+  "SLEEP_DURATION",
+  "ACTIVITY_STEPS",
+  "BLOOD_GLUCOSE",
+  "OXYGEN_SATURATION",
+  "HEART_RATE_VARIABILITY",
+  "RESTING_HEART_RATE",
+  "VO2_MAX",
+  "BODY_TEMPERATURE",
+  "RESPIRATORY_RATE",
+  "MOOD",
+];
+
 export function fullTimeline(today: string) {
   const vaccinations = [
     "2020-06-10",
@@ -348,6 +373,7 @@ export function fullTimeline(today: string) {
         items: [
           item({
             id: "med-1",
+            group: "med-1",
             kind: "medication",
             start: "2019-04-02",
             open: true,
@@ -356,6 +382,7 @@ export function fullTimeline(today: string) {
           }),
           item({
             id: "dose-1",
+            group: "med-1",
             kind: "doseChange",
             start: "2020-08-12",
             label: "Ramipril",
@@ -363,13 +390,58 @@ export function fullTimeline(today: string) {
           }),
           item({
             id: "med-2",
+            group: "med-2",
             kind: "medication",
             start: "2022-11-03",
             end: "2022-12-10",
             label: "Ibuprofen",
           }),
+          // One medication sent as its own span, a course, three dose
+          // changes and a pause: the case the beta drew as two medications.
+          item({
+            id: "mj",
+            group: "mj",
+            kind: "medication",
+            start: "2025-01-06",
+            open: true,
+            label: "Mounjaro",
+            sub: "7,5 mg",
+          }),
+          item({
+            id: "mj-course",
+            group: "mj",
+            kind: "course",
+            start: "2025-01-06",
+            open: true,
+            label: "Mounjaro",
+          }),
+          ...(
+            [
+              ["mj-25", "2025-01-06", "2,5 mg"],
+              ["mj-5", "2025-03-03", "5 mg"],
+              ["mj-75", "2025-06-02", "7,5 mg"],
+            ] as const
+          ).map(([id, start, sub]) =>
+            item({
+              id,
+              group: "mj",
+              kind: "doseChange",
+              start,
+              label: "Mounjaro",
+              sub,
+            }),
+          ),
+          item({
+            id: "mj-pause",
+            group: "mj",
+            kind: "pause",
+            start: "2025-08-01",
+            end: "2025-08-20",
+            label: "Mounjaro",
+          }),
           item({
             id: "c-1",
+            group: "vit-d",
             kind: "course",
             start: "2023-11-01",
             end: "2024-03-31",
@@ -377,6 +449,7 @@ export function fullTimeline(today: string) {
           }),
           item({
             id: "c-2",
+            group: "vit-d",
             kind: "course",
             start: "2024-11-01",
             end: "2025-03-31",
@@ -384,6 +457,7 @@ export function fullTimeline(today: string) {
           }),
           item({
             id: "c-3",
+            group: "vit-d",
             kind: "course",
             start: "2025-11-01",
             end: "2026-03-31",
@@ -437,6 +511,7 @@ export function fullTimeline(today: string) {
     standing: [],
     bucket: "quarter" as Bucket,
     series: series("2019-01-01", today, "quarter"),
+    availableSeries: FULL_AVAILABLE,
     notable: [{ date: "2026-01-04", kind: "extremeHigh" }],
   };
 }
@@ -482,6 +557,7 @@ export function readyTimeline(today: string) {
         items: [
           item({
             id: "med-1",
+            group: "med-1",
             kind: "medication",
             start: "2024-05-01",
             open: true,
@@ -491,6 +567,7 @@ export function readyTimeline(today: string) {
           }),
           item({
             id: "c-2",
+            group: "vit-d",
             kind: "course",
             start: "2024-11-01",
             end: "2025-03-31",
@@ -498,6 +575,7 @@ export function readyTimeline(today: string) {
           }),
           item({
             id: "c-3",
+            group: "vit-d",
             kind: "course",
             start: "2025-11-01",
             end: "2026-03-31",
@@ -558,6 +636,7 @@ export function readyTimeline(today: string) {
     series: series("2024-05-01", today, "quarter").filter(
       (s) => s.key !== "RESTING_HEART_RATE",
     ),
+    availableSeries: ["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA", "WEIGHT"],
     notable: [],
   };
 }
