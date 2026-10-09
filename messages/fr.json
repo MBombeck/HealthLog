@@ -12554,6 +12554,22 @@
       "body": "Son titre et sa note disparaîtront."
     }
   },
+  "shortcuts": {
+    "title": "Raccourcis clavier",
+    "description": "Des touches qui fonctionnent partout dans l’application, sauf pendant la saisie dans un champ.",
+    "menuEntry": "Raccourcis clavier",
+    "then": "puis",
+    "help": "Afficher cette liste",
+    "close": "Fermer une boîte de dialogue ou un panneau",
+    "previousDay": "Jour précédent",
+    "nextDay": "Jour suivant",
+    "dayHint": "Lorsqu’un jour est ouvert.",
+    "groups": {
+      "navigation": "Navigation",
+      "actions": "Actions",
+      "day": "Jour"
+    }
+  },
   "aboutPage": {
     "eyebrow": "À propos",
     "title": "À propos de HealthLog",

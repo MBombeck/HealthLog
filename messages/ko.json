@@ -12554,6 +12554,22 @@
       "body": "제목과 메모가 사라져요."
     }
   },
+  "shortcuts": {
+    "title": "키보드 단축키",
+    "description": "입력란에 입력하는 중이 아니면 앱 어디에서나 작동하는 키입니다.",
+    "menuEntry": "키보드 단축키",
+    "then": "다음",
+    "help": "이 목록 보기",
+    "close": "대화 상자나 패널 닫기",
+    "previousDay": "이전 날",
+    "nextDay": "다음 날",
+    "dayHint": "하루가 열려 있을 때.",
+    "groups": {
+      "navigation": "탐색",
+      "actions": "작업",
+      "day": "하루"
+    }
+  },
   "aboutPage": {
     "eyebrow": "정보",
     "title": "HealthLog 정보",

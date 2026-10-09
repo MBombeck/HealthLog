@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
+  Keyboard,
   LogOut,
   Monitor,
   Moon,
@@ -17,6 +18,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { AccountSwitcherMenuItems } from "@/components/layout/account-switcher-menu";
+import { openShortcutsHelp } from "@/components/layout/global-shortcuts";
 import { medicationsPrefetchIntentProps } from "@/lib/queries/prefetch-medications";
 import {
   isNavDestinationActive,
@@ -46,6 +48,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
@@ -200,6 +203,19 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
           </Link>
         </DropdownMenuItem>
       )}
+      {/* v1.42 — the keyboard shortcuts, findable without knowing that `?`
+          lists them. Desktop only, like this menu: the phone's account menu
+          has no keyboard to describe. */}
+      <DropdownMenuItem
+        data-slot="open-keyboard-shortcuts"
+        aria-keyshortcuts="?"
+        onSelect={() => openShortcutsHelp()}
+        className="cursor-pointer"
+      >
+        <Keyboard className="mr-2 h-4 w-4" />
+        {t("shortcuts.menuEntry")}
+        <DropdownMenuShortcut aria-hidden="true">?</DropdownMenuShortcut>
+      </DropdownMenuItem>
       {/* The about section lives at the end of the settings shell nav;
           the avatar menu stays focused on account-level actions. */}
       <DropdownMenuSub>

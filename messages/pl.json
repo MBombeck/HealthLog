@@ -12554,6 +12554,22 @@
       "body": "Tytuł i notatka znikną."
     }
   },
+  "shortcuts": {
+    "title": "Skróty klawiszowe",
+    "description": "Klawisze działające w całej aplikacji, z wyjątkiem pisania w polu.",
+    "menuEntry": "Skróty klawiszowe",
+    "then": "potem",
+    "help": "Pokaż tę listę",
+    "close": "Zamknij okno lub panel",
+    "previousDay": "Poprzedni dzień",
+    "nextDay": "Następny dzień",
+    "dayHint": "Gdy otwarty jest dzień.",
+    "groups": {
+      "navigation": "Nawigacja",
+      "actions": "Akcje",
+      "day": "Dzień"
+    }
+  },
   "aboutPage": {
     "eyebrow": "Informacje",
     "title": "O HealthLog",

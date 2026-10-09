@@ -12554,6 +12554,22 @@
       "body": "Titolo e nota non ci saranno più."
     }
   },
+  "shortcuts": {
+    "title": "Scorciatoie da tastiera",
+    "description": "Tasti che funzionano ovunque nell’app, tranne mentre scrivi in un campo.",
+    "menuEntry": "Scorciatoie da tastiera",
+    "then": "poi",
+    "help": "Mostra questo elenco",
+    "close": "Chiudi una finestra o un pannello",
+    "previousDay": "Giorno precedente",
+    "nextDay": "Giorno successivo",
+    "dayHint": "Quando un giorno è aperto.",
+    "groups": {
+      "navigation": "Navigazione",
+      "actions": "Azioni",
+      "day": "Giorno"
+    }
+  },
   "aboutPage": {
     "eyebrow": "Informazioni",
     "title": "Informazioni su HealthLog",

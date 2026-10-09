@@ -98,6 +98,9 @@ an earlier fold computed from part of a day.
   `REINDEX INDEX CONCURRENTLY` per index, largest first.
 - **Query statistics.** The bundled database loads `pg_stat_statements`;
   `CREATE EXTENSION` once to read it (`docs/ops/query-statistics.md`).
+- **Keyboard shortcuts.** `g` then `d`, `m`, `l`, `t`, `i`, `c` or `s` opens
+  a page, `n` the add menu, `[` and `]` step the open day, and `?` (or the
+  account menu) lists them; ignored while typing in a field.
 
 ### Changed
 

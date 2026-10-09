@@ -24,6 +24,7 @@ import { CoachLaunchProvider } from "@/lib/insights/coach-launch-context";
 import { isManageDelegateSettingsDestination } from "@/lib/record-settings/classification";
 import { isDestinationInSharedRecord } from "./nav-model";
 import { BottomNav } from "./bottom-nav";
+import { GlobalShortcuts } from "./global-shortcuts";
 import { DemoBanner } from "./demo-banner";
 import { OfflineBanner } from "./offline-banner";
 import { SharedRecordBanner } from "./shared-record-banner";
@@ -579,6 +580,10 @@ export function AuthShell({
           got a raw 403. Demo is read-only by design; the FAB has no job
           here, so it's mounted only outside demo mode. */}
       {!demoMode && !inSharedRecord && <LayoutCoachFab />}
+      {/* v1.42 — the keyboard shortcuts (`g d`, `n`, `?` …) and their list.
+          Mounted here and only here, so they never run on the sign-in pages
+          or in the setup flow, which return above. */}
+      <GlobalShortcuts />
     </CoachLaunchProvider>
   );
 }

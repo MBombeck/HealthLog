@@ -12554,6 +12554,22 @@
       "body": "Titel und Notiz sind danach nicht mehr da."
     }
   },
+  "shortcuts": {
+    "title": "Tastenkürzel",
+    "description": "Tasten, die überall in der App funktionieren, außer während du in ein Feld tippst.",
+    "menuEntry": "Tastenkürzel",
+    "then": "dann",
+    "help": "Diese Liste zeigen",
+    "close": "Dialog oder Bereich schließen",
+    "previousDay": "Vorheriger Tag",
+    "nextDay": "Nächster Tag",
+    "dayHint": "Während ein Tag geöffnet ist.",
+    "groups": {
+      "navigation": "Navigation",
+      "actions": "Aktionen",
+      "day": "Tag"
+    }
+  },
   "aboutPage": {
     "eyebrow": "Info",
     "title": "Über HealthLog",

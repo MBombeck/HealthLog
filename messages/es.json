@@ -12554,6 +12554,22 @@
       "body": "Su título y su nota desaparecerán."
     }
   },
+  "shortcuts": {
+    "title": "Atajos de teclado",
+    "description": "Teclas que funcionan en toda la aplicación, salvo mientras escribes en un campo.",
+    "menuEntry": "Atajos de teclado",
+    "then": "luego",
+    "help": "Mostrar esta lista",
+    "close": "Cerrar un diálogo o panel",
+    "previousDay": "Día anterior",
+    "nextDay": "Día siguiente",
+    "dayHint": "Mientras hay un día abierto.",
+    "groups": {
+      "navigation": "Navegación",
+      "actions": "Acciones",
+      "day": "Día"
+    }
+  },
   "aboutPage": {
     "eyebrow": "Información",
     "title": "Acerca de HealthLog",

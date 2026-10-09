@@ -12554,6 +12554,22 @@
       "body": "Its title and note will be gone."
     }
   },
+  "shortcuts": {
+    "title": "Keyboard shortcuts",
+    "description": "Keys that work anywhere in the app, except while you type in a field.",
+    "menuEntry": "Keyboard shortcuts",
+    "then": "then",
+    "help": "Show this list",
+    "close": "Close a dialog or panel",
+    "previousDay": "Previous day",
+    "nextDay": "Next day",
+    "dayHint": "While a day is open.",
+    "groups": {
+      "navigation": "Navigation",
+      "actions": "Actions",
+      "day": "Day"
+    }
+  },
   "aboutPage": {
     "eyebrow": "About",
     "title": "About HealthLog",
