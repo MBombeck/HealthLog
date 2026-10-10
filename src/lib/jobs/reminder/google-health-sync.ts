@@ -12,9 +12,9 @@ import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import {
   GOOGLE_HEALTH_POLL_CONCURRENCY,
+  isGoogleHealthParked,
   syncUserGoogleHealth,
 } from "@/lib/google-health/sync";
-import { isReauthRequired } from "@/lib/integrations/status";
 import { enqueueReminderSatisfy } from "@/lib/jobs/reminder-satisfy";
 import { cleanupExpiredGoogleHealthOAuthStates } from "@/lib/jobs/google-health-oauth-state-cleanup";
 import {
@@ -64,16 +64,19 @@ export async function handleGoogleHealthSync(
       const verdicts = await Promise.all(
         targets.map(({ userId }) =>
           limit(async (): Promise<IntegrationUserVerdict> => {
-            if (await isReauthRequired(userId, "google-health")) {
+            if (await isGoogleHealthParked(userId)) {
               return { status: "parked", imported: 0 };
             }
 
             try {
               const result = await syncUserGoogleHealth(userId);
+              // Another run of this account (its backfill, a manual sync)
+              // holds the account; this tick leaves it to that run.
+              if (result.busy) return { status: "skipped", imported: 0 };
               const parked =
                 result.failed &&
                 result.imported === 0 &&
-                (await isReauthRequired(userId, "google-health"));
+                (await isGoogleHealthParked(userId));
               const status = parked
                 ? "parked"
                 : result.failed

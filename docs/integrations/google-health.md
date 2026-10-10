@@ -120,6 +120,24 @@ GOOGLE_HEALTH_REDIRECT_URI="https://your-instance.example.com/api/google-health/
 
 The Google Cloud client id/secret are per-user (Settings), not env vars.
 
+## Backfill, the hourly sync and Google's rate limit
+
+Only one sync runs per account at a time. While the history backfill that
+follows a connect is running, the hourly sync leaves that account alone, and
+**Sync now** reports that a sync is already in progress and shows its progress
+instead of starting a second one.
+
+Google limits how many requests one account may make per minute. When a sync
+reaches that limit, Google answers `429`, and HealthLog waits and repeats the
+request; the connection is never marked as needing a reconnect because of it.
+Access tokens last an hour, and a long backfill renews its token as it goes.
+A backfill that stops part-way (a restart, the job's time budget) picks up
+with the data types it has not finished yet on its next attempt.
+
+If an older version left your Google Health card asking for a reconnect after
+a backfill, the first sync after updating checks the stored grant and resumes
+on its own when the grant is still valid.
+
 ## The 7-day re-consent caveat
 
 While the OAuth consent screen stays in **Testing** publishing mode, Google

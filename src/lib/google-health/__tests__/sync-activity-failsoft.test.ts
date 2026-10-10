@@ -28,6 +28,10 @@ vi.mock("../sync-core", () => ({
     connection: { id: "c1", googleUserId: "g1" },
   })),
   handleCollectionFetchError: handleErrorMock,
+  googleHealthTokenSource:
+    (_userId: string, info: { accessToken: string }) => async () =>
+      info.accessToken,
+  runGoogleHealthCollection: (_key: string, fn: () => Promise<number>) => fn(),
   upsertGoogleHealthMeasurements: vi.fn(async () => ({
     imported: 0,
     touched: [],

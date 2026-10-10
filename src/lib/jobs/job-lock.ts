@@ -24,15 +24,31 @@ import { caughtAs } from "@/lib/logging/signal";
 /** What a guarded run came to. */
 export type GuardedRun<T> = { ran: true; result: T } | { ran: false };
 
+export interface JobLockOptions {
+  /**
+   * How long to keep asking for a lock another run holds before giving up.
+   * Zero (the default) gives up at once. A caller that would rather wait out
+   * a short run than drop its own work sets this; a run whose holder can take
+   * hours never should.
+   */
+  waitMs?: number;
+  /** The pause between two asks while waiting. */
+  pollMs?: number;
+}
+
+const DEFAULT_LOCK_POLL_MS = 2_000;
+
 /**
  * Run `run` while holding the advisory lock for `key`. Resolves
- * `{ ran: false }` at once, without calling `run`, when another run holds it.
+ * `{ ran: false }` without calling `run` when another run holds it, at once or,
+ * with `waitMs`, once that long has passed without the lock coming free.
  * Rejects exactly as `run` does otherwise.
  */
 export async function withJobLock<T>(
   key: string,
   run: () => Promise<T>,
   connectionString: string | undefined = process.env.DATABASE_URL,
+  options: JobLockOptions = {},
 ): Promise<GuardedRun<T>> {
   const client = new Client({ connectionString, keepAlive: true });
   // An idle client whose server goes away emits `error`; unhandled, that
@@ -41,11 +57,17 @@ export async function withJobLock<T>(
   client.on("error", () => {});
   await client.connect();
   try {
-    const { rows } = await client.query<{ held: boolean }>(
-      "SELECT pg_try_advisory_lock(hashtextextended($1, 0)) AS held",
-      [key],
-    );
-    if (!rows[0]?.held) return { ran: false };
+    const deadline = Date.now() + Math.max(0, options.waitMs ?? 0);
+    const pollMs = Math.max(1, options.pollMs ?? DEFAULT_LOCK_POLL_MS);
+    for (;;) {
+      const { rows } = await client.query<{ held: boolean }>(
+        "SELECT pg_try_advisory_lock(hashtextextended($1, 0)) AS held",
+        [key],
+      );
+      if (rows[0]?.held) break;
+      if (Date.now() + pollMs > deadline) return { ran: false };
+      await new Promise((resolve) => setTimeout(resolve, pollMs));
+    }
     try {
       return { ran: true, result: await run() };
     } finally {

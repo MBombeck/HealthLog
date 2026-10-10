@@ -27,13 +27,16 @@ import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { integrationBackfillSourceOptions } from "@/lib/jobs/integration-backfill-admission";
-import { isReauthRequired } from "@/lib/integrations/status";
 import {
-  GOOGLE_HEALTH_INTEGRATION_KEY,
   GOOGLE_HEALTH_TOKEN_HARD_FAIL,
   runWithGoogleHealthHardFailLedger,
 } from "@/lib/google-health/sync-core";
 import { syncUserSleep } from "@/lib/google-health/sync-sleep";
+import { isGoogleHealthParked } from "@/lib/google-health/sync";
+import {
+  GOOGLE_HEALTH_SYNC_LOCK_WAIT_MS,
+  withGoogleHealthSyncLock,
+} from "@/lib/google-health/sync-lock";
 
 export const GOOGLE_HEALTH_SLEEP_REPAIR_QUEUE = "google-health-sleep-repair";
 
@@ -71,7 +74,7 @@ export interface GoogleHealthSleepRepairPayload {
 export async function runGoogleHealthSleepRepairForUser(
   userId: string,
 ): Promise<{ imported: number }> {
-  if (await isReauthRequired(userId, GOOGLE_HEALTH_INTEGRATION_KEY)) {
+  if (await isGoogleHealthParked(userId)) {
     annotate({
       action: {
         name: "googleHealth.sleepRepair.skipped_reauth",
@@ -81,10 +84,22 @@ export async function runGoogleHealthSleepRepairForUser(
     return { imported: 0 };
   }
 
-  const { result: imported, failures } =
-    await runWithGoogleHealthHardFailLedger(() =>
-      syncUserSleep(userId, { deferRollup: false }),
+  // The repair re-reads the account's sleep, so it takes the account's lock
+  // like every other run (`withGoogleHealthSyncLock`).
+  const run = await withGoogleHealthSyncLock(
+    userId,
+    () =>
+      runWithGoogleHealthHardFailLedger(() =>
+        syncUserSleep(userId, { deferRollup: false }),
+      ),
+    { waitMs: GOOGLE_HEALTH_SYNC_LOCK_WAIT_MS },
+  );
+  if (!run.ran) {
+    throw new Error(
+      `google-health sleep repair for user ${userId} deferred: another sync of the account is running`,
     );
+  }
+  const { result: imported, failures } = run.result;
 
   if (failures.length > 0) {
     if (failures.every((f) => f === GOOGLE_HEALTH_TOKEN_HARD_FAIL)) {

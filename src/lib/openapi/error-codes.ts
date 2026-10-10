@@ -433,6 +433,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "private_origin_not_approved",
       "private_origin_not_grantable",
       "rate_limited_self",
+      "sync_in_progress",
       "too_many_rows",
       "unreadable_json",
       "upstream_invalid_json",

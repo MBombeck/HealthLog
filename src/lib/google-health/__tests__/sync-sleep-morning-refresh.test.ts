@@ -36,6 +36,10 @@ vi.mock("../client", () => ({
 vi.mock("../sync-core", () => ({
   getValidToken: vi.fn(async () => ({ accessToken: "tok" })),
   handleCollectionFetchError: vi.fn(() => 0),
+  googleHealthTokenSource:
+    (_userId: string, info: { accessToken: string }) => async () =>
+      info.accessToken,
+  runGoogleHealthCollection: (_key: string, fn: () => Promise<number>) => fn(),
   noteHardFailure: vi.fn(),
   replaceStaleGoogleHealthSleep: vi.fn(async () => 0),
   upsertGoogleHealthMeasurements: upsertMock,
