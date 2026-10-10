@@ -109,7 +109,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
-    "@next/bundle-analyzer": "^16.3.3",
+    "@next/bundle-analyzer": "^16.3.8",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@tesseract.js-data/deu": "1.0.0",
