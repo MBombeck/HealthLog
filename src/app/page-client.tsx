@@ -930,7 +930,12 @@ export default function DashboardPageClient({
     (snapshotEnabled ? snapshotQuery.isLoading : analyticsSlimQuery.isLoading);
 
   return (
-    <div className="space-y-6">
+    <div
+      className="space-y-6"
+      // The switch in the layout settings, for the e2e check: the card
+      // itself renders nothing on a day without a digest.
+      data-today-card={layout.todayCardVisible === false ? "off" : "on"}
+    >
       <PullToRefreshIndicator {...pull} />
       <DashboardHeader onQuickEntry={setQuickEntryDialog} />
       <KeyBackupBanner isAdmin={user?.role === "ADMIN"} />
@@ -971,25 +976,20 @@ export default function DashboardPageClient({
         // v1.42 — the top card can be switched off in the layout settings;
         // only an explicit `false` hides it, and with it its skeleton and
         // its error card.
-        layout.todayCardVisible === false ? null : (
-          // `contents`: a stable hook for the switch, no box of its own.
-          <div data-slot="today-card" className="contents">
-            {digestQuery.data ? (
-              <TodayHero
-                digest={digestQuery.data}
-                renderFilteredAllClear={renderFilteredHeroAllClear}
-                // Server-persisted hero choice — rides the same resolved
-                // layout as the widget visibility below, so SSR and
-                // hydration agree.
-                primaryContent={layout.hero ?? "score"}
-              />
-            ) : !mounted || digestQuery.isLoading ? (
-              <TodayHeroSkeleton />
-            ) : digestQuery.isError ? (
-              <QueryErrorCard onRetry={() => digestQuery.refetch()} />
-            ) : null}
-          </div>
-        )
+        layout.todayCardVisible === false ? null : digestQuery.data ? (
+          <TodayHero
+            digest={digestQuery.data}
+            renderFilteredAllClear={renderFilteredHeroAllClear}
+            // Server-persisted hero choice — rides the same resolved
+            // layout as the widget visibility below, so SSR and
+            // hydration agree.
+            primaryContent={layout.hero ?? "score"}
+          />
+        ) : !mounted || digestQuery.isLoading ? (
+          <TodayHeroSkeleton />
+        ) : digestQuery.isError ? (
+          <QueryErrorCard onRetry={() => digestQuery.refetch()} />
+        ) : null
       }
 
       {/* v1.42 (#615) — a quiet note about the newest stored environment
