@@ -314,13 +314,14 @@ test.describe("the dashboard's top card", () => {
       }),
     );
 
-    // The card's region, present whenever the card is switched on. What it
-    // shows depends on the day's digest, which the server renders into the
-    // page before any route mock can answer, so the switch is asserted on
-    // the region and not on its content.
-    const hero = page.locator('[data-slot="today-card"]');
+    // The dashboard states the switch on its root. What the card shows
+    // depends on the day's digest, which the server renders into the page
+    // before any route mock can answer, so the switch is asserted there and
+    // not on the card's content.
+    const dashboard = page.locator("[data-today-card]");
+    const hero = page.locator('[data-slot="today-hero"]');
     await page.goto("/");
-    await expect(hero).toHaveCount(1);
+    await expect(dashboard).toHaveAttribute("data-today-card", "on");
 
     async function flip(expected: "checked" | "unchecked") {
       await page.goto("/settings/layout/dashboard");
@@ -346,7 +347,7 @@ test.describe("the dashboard's top card", () => {
 
     await flip("unchecked");
     await page.goto("/");
-    await expect(page.locator("main").first()).toBeVisible();
+    await expect(dashboard).toHaveAttribute("data-today-card", "off");
     await expect(hero).toHaveCount(0);
     await expect(page.locator('[data-slot="today-hero-skeleton"]')).toHaveCount(
       0,
@@ -360,6 +361,6 @@ test.describe("the dashboard's top card", () => {
 
     await flip("checked");
     await page.goto("/");
-    await expect(hero).toHaveCount(1);
+    await expect(dashboard).toHaveAttribute("data-today-card", "on");
   });
 });
