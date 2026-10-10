@@ -65,9 +65,19 @@ export interface MeasurementMaintenancePayload {
   reindex: boolean;
 }
 
-/** Session settings of the maintenance connection. */
+/**
+ * Session settings of the maintenance connection.
+ *
+ * `max_parallel_maintenance_workers=0` keeps VACUUM and the index rebuild in
+ * one process. A parallel run shares its `maintenance_work_mem` through
+ * dynamic shared memory in `/dev/shm`, which Docker caps at 64 MB unless the
+ * container sets `shm_size`; a 128 MB budget then fails at once with
+ * "could not resize shared memory segment ... No space left on device".
+ * One process needs no shared segment, so the run works on any host,
+ * whatever its container settings.
+ */
 export const MAINTENANCE_SESSION_OPTIONS =
-  "-c statement_timeout=0 -c idle_in_transaction_session_timeout=0 -c maintenance_work_mem=128MB -c lock_timeout=300000";
+  "-c statement_timeout=0 -c idle_in_transaction_session_timeout=0 -c maintenance_work_mem=128MB -c max_parallel_maintenance_workers=0 -c lock_timeout=300000";
 
 /**
  * The same settings as `SET` statements, for a host behind a connection
