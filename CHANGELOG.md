@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.42.1] — 2026-10-10
+
+Fixes for Google Health syncing and the measurement maintenance run.
+
+### Fixed
+
+- **Google Health parked after a reconnect (#1194).** A backfill walk used
+  one access token throughout; after Google's one-hour expiry the walk saw
+  401s and the connection was parked at `error_reauth` although the refresh
+  token was valid. Resources now take a token source that renews before
+  expiry and once more on a mid-walk 401; a 429 is waited out (Retry-After,
+  RetryInfo or backoff) and stays transient; parking follows only a refused
+  grant at the token endpoint, and an account parked by a data-call 401
+  recovers on its next run. One sync per account at a time: the hourly run
+  skips, a manual sync answers 409 `sync_in_progress`, backfill and sleep
+  repair wait. An interrupted backfill resumes from `backfill_progress`
+  (migration 0393).
+- **Overlapping Google Health sleep segments (#1195).** A batch keeps one
+  reading per natural key (the longer segment), a remaining collision is
+  settled through `reconcileExternalMeasurement`, and overlapping sessions
+  no longer clear each other's rows. Night totals use the union of segments.
+- **Measurement maintenance on Docker (#1192).** The maintenance connection
+  sets `max_parallel_maintenance_workers=0` and needs no `/dev/shm` segment;
+  the bundled `docker-compose.yml` sets `shm_size: 256mb` for the database.
+- **Dashboard spacing.** The tile row sat flush against the top card; a
+  `display: contents` wrapper had swallowed the gap.
+
+### API
+
+- `POST /api/google-health/sync` may answer 409 `sync_in_progress`.
+
 ## [1.42.0] — 2026-10-09
 
 A day view behind every dated value, an optional timeline with life events,
