@@ -27,6 +27,10 @@ vi.mock("@/lib/google-health/sync-core", () => ({
   getValidToken: mocks.getValidToken,
   handleCollectionFetchError: mocks.handleCollectionFetchError,
   noteHardFailure: mocks.noteHardFailure,
+  googleHealthTokenSource:
+    (_userId: string, info: { accessToken: string }) => async () =>
+      info.accessToken,
+  runGoogleHealthCollection: (_key: string, fn: () => Promise<number>) => fn(),
 }));
 
 vi.mock("@/lib/arrivals/workout-emit", () => ({

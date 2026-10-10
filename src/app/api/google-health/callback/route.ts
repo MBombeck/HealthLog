@@ -154,6 +154,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
         // reconnect CTA and the sync path stops short-circuiting.
         needsReauth: false,
         backfillCompletedAt: null,
+        // A new grant walks history from the start: what an earlier
+        // backfill finished was read under the old one.
+        backfillProgress: Prisma.DbNull,
       },
       create: {
         userId: user.id,

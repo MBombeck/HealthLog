@@ -28,6 +28,10 @@ vi.mock("../sync-core", () => ({
   getValidToken: vi.fn(async () => ({ accessToken: "token" })),
   handleCollectionFetchError: vi.fn(async () => 0),
   upsertGoogleHealthMeasurements: upsertMock,
+  googleHealthTokenSource:
+    (_userId: string, info: { accessToken: string }) => async () =>
+      info.accessToken,
+  runGoogleHealthCollection: (_key: string, fn: () => Promise<number>) => fn(),
 }));
 
 vi.mock("@/lib/db", () => ({

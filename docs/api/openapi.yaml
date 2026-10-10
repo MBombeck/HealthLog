@@ -19847,6 +19847,14 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
+        "409":
+          description: Another sync of this account is already running (the history backfill after a reconnect, or the hourly
+            poll), so none was started. `meta.errorCode` = `sync_in_progress`. `GET /api/google-health/sync/status`
+            reports the running one.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "413":
           description: Body exceeds 64 KiB.
           content:
@@ -34400,8 +34408,8 @@ components:
                 health_score_config_conflict, insights_layout_conflict, invalid_base_updated_at,
                 json_carries_no_intake_time, json_not_an_array, medication_layout_conflict, missing_required_columns,
                 modules_conflict, mood_tag_layout_conflict, not_configured, notification_prefs_conflict, oidc_only,
-                private_origin_not_approved, private_origin_not_grantable, rate_limited_self, too_many_rows,
-                unreadable_json, upstream_invalid_json, vapid_not_configured"
+                private_origin_not_approved, private_origin_not_grantable, rate_limited_self, sync_in_progress,
+                too_many_rows, unreadable_json, upstream_invalid_json, vapid_not_configured"
               type: string
             capability:
               description: "On an AI refusal: the capability that is unavailable, one of the keys of `AiCapabilities` (`coach`,

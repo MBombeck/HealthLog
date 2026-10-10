@@ -1,7 +1,7 @@
 import pLimit from "p-limit";
 import { prisma } from "@/lib/db";
 import { annotate, getEvent } from "@/lib/logging/context";
-import { isReauthRequired, recordSyncSuccess } from "@/lib/integrations/status";
+import { recordSyncSuccess } from "@/lib/integrations/status";
 import {
   collapseToTypeDayKeys,
   recomputeUserRollups,
@@ -17,8 +17,10 @@ import { syncUserActivity } from "./sync-activity";
 import { syncUserMetrics } from "./sync-metrics";
 import { syncUserSleep } from "./sync-sleep";
 import { syncUserWorkout } from "./sync-workout";
+import { withGoogleHealthSyncLock } from "./sync-lock";
 import {
   GOOGLE_HEALTH_INTEGRATION_KEY,
+  getValidToken,
   incrementalStart,
   intradayOverlapMs,
   markSynced,
@@ -40,6 +42,64 @@ export interface GoogleHealthSyncResult {
   imported: number;
   failed: boolean;
   resources?: GoogleHealthResourceOutcome[];
+  /**
+   * Set when nothing ran because another run for this account holds the
+   * account's sync lock (a backfill, the hourly poll, a manual trigger).
+   * `failed` is true alongside it so a caller that ignores the flag cannot
+   * mistake the skipped run for a clean one.
+   */
+  busy?: true;
+}
+
+/**
+ * Whether an account's Google Health connection is parked for a reason no
+ * retry can fix, so the run is not attempted.
+ *
+ * `parked` (a persistent failure older than a day) is one: it waits for the
+ * operator or the user to resume it. `error_reauth` is one only when the
+ * grant itself was refused: the token endpoint answered `invalid_grant` or
+ * 401, which `getValidToken` marks on the connection as `needsReauth`. The
+ * ledger also reaches `error_reauth` from a 401 on a data request, and that
+ * one says nothing certain about the grant: an access token that expired
+ * part-way through a long walk produced it, with a refresh token that was
+ * still valid, and the account stayed parked until it was reconnected by
+ * hand (#1194). Such a connection is not parked here; the next run refreshes
+ * the token first, a refresh that works clears the state when the run
+ * completes, and a refresh that is refused marks `needsReauth` and parks it
+ * properly.
+ */
+export async function isGoogleHealthParked(userId: string): Promise<boolean> {
+  const state = await ledgerState(userId);
+  if (state === "parked") return true;
+  if (state !== "error_reauth") return false;
+  const connection = await prisma.googleHealthConnection.findUnique({
+    where: { userId },
+    select: { needsReauth: true },
+  });
+  return connection?.needsReauth !== false;
+}
+
+async function ledgerState(userId: string): Promise<string | null> {
+  const row = await prisma.integrationStatus.findUnique({
+    where: {
+      userId_integration: {
+        userId,
+        integration: GOOGLE_HEALTH_INTEGRATION_KEY,
+      },
+    },
+    select: { state: true },
+  });
+  return row?.state ?? null;
+}
+
+/** Options for one `syncUserGoogleHealth` run. */
+export interface GoogleHealthSyncOptions {
+  fullSync?: boolean;
+  /**
+   * How long to wait for another run of this account to let go of the
+   * account's sync lock. Zero (the default) answers `busy` at once.
+   */
+  waitForLockMs?: number;
 }
 
 const RESOURCE_STATUSES = new Set<GoogleHealthResourceStatus>([
@@ -135,21 +195,58 @@ function terminalResourceOutcome(
  */
 export async function syncUserGoogleHealth(
   userId: string,
-  opts: { fullSync?: boolean } = {},
+  opts: GoogleHealthSyncOptions = {},
 ): Promise<GoogleHealthSyncResult> {
-  if (await isReauthRequired(userId, GOOGLE_HEALTH_INTEGRATION_KEY)) {
+  if (await isGoogleHealthParked(userId)) {
     getEvent()?.addWarning(
       `google-health sync skipped for ${userId}: parked at error_reauth`,
     );
     return { state: "failed", imported: 0, failed: true, resources: [] };
   }
 
+  const run = await withGoogleHealthSyncLock(
+    userId,
+    () => runGoogleHealthSyncCycle(userId, opts),
+    { waitMs: opts.waitForLockMs ?? 0 },
+  );
+  if (!run.ran) {
+    annotate({ meta: { "googleHealth.sync.busy": true } });
+    return {
+      state: "in_progress",
+      imported: 0,
+      failed: true,
+      resources: [],
+      busy: true,
+    };
+  }
+  return run.result;
+}
+
+/** One sync cycle, run while holding the account's sync lock. */
+async function runGoogleHealthSyncCycle(
+  userId: string,
+  opts: GoogleHealthSyncOptions,
+): Promise<GoogleHealthSyncResult> {
+  const cycleStartedAt = new Date();
   const connection = await prisma.googleHealthConnection.findUnique({
     where: { userId },
     select: { lastSyncedAt: true },
   });
   if (!connection) {
     return { state: "failed", imported: 0, failed: true, resources: [] };
+  }
+
+  // A connection held at `error_reauth` by a data request's 401 (see
+  // `isGoogleHealthParked`) gets a fresh token before anything else: the
+  // refresh is the one call that can tell an expired access token from a
+  // revoked grant. Refused, it records the reauth and the run stops here.
+  if ((await ledgerState(userId)) === "error_reauth") {
+    const probe = await runWithGoogleHealthSyncCycle(() =>
+      getValidToken(userId, { forceRefresh: true }),
+    );
+    if (!probe.result) {
+      return { state: "failed", imported: 0, failed: true, resources: [] };
+    }
   }
 
   const progress = await startGoogleHealthSyncProgress(userId);
@@ -287,7 +384,7 @@ export async function syncUserGoogleHealth(
   const failed = anyFailed || allSoftSkipped || truncated;
 
   if (!failed) {
-    await markSynced(userId);
+    await markSynced(userId, cycleStartedAt);
     await recordSyncSuccess(userId, GOOGLE_HEALTH_INTEGRATION_KEY);
   }
 

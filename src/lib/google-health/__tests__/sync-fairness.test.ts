@@ -14,6 +14,7 @@ const { calls, prismaMock, recordSyncSuccess, resources } = vi.hoisted(() => {
   return {
     calls,
     prismaMock: {
+      integrationStatus: { findUnique: vi.fn(async () => null) },
       googleHealthConnection: {
         findUnique: vi.fn(async () => ({ lastSyncedAt: null })),
         update: vi.fn(async () => ({})),
@@ -45,6 +46,18 @@ const { calls, prismaMock, recordSyncSuccess, resources } = vi.hoisted(() => {
 });
 
 vi.mock("@/lib/db", () => ({ prisma: prismaMock }));
+
+// The account lock is a Postgres advisory lock on a connection of its own;
+// these cases run without a database, so the lock is always free.
+vi.mock("../sync-lock", () => ({
+  withGoogleHealthSyncLock: async (
+    _userId: string,
+    run: () => Promise<unknown>,
+  ) => ({
+    ran: true,
+    result: await run(),
+  }),
+}));
 vi.mock("@/lib/integrations/status", () => ({
   isReauthRequired: vi.fn(async () => false),
   recordSyncSuccess,

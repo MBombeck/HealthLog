@@ -4369,6 +4369,11 @@ model GoogleHealthConnection {
   /// pre-fix externalId (a re-scored night minted parallel copies). Null =
   /// repair pending (or the connection predates the fix).
   sleepRepairedAt     DateTime? @map("sleep_repaired_at")
+  /// The collections the in-flight history backfill has already walked to
+  /// the end (`{ done: string[] }`), so a retry resumes with the rest
+  /// instead of starting over. Null once the backfill completes, and reset
+  /// on every reconnect.
+  backfillProgress    Json?     @map("backfill_progress")
   /// One bounded, owner-scoped current sync run. This is replaced at the start
   /// of every run and never retains provider payloads or historical runs.
   syncProgress        Json?     @map("sync_progress")

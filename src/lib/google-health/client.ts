@@ -106,6 +106,11 @@ export function noteGoogleHealthOutcomeFailure(
   if (tracker && !tracker.reasonCode) tracker.reasonCode = reasonCode;
 }
 
+/** Whether a walk in the current resource scope has ended short so far. */
+export function googleHealthOutcomeTruncated(): boolean {
+  return clientOutcomeStorage.getStore()?.truncated === true;
+}
+
 export async function runWithGoogleHealthClientOutcome<T>(
   fn: () => Promise<T>,
 ): Promise<{ result: T; outcome: GoogleHealthClientOutcome }> {
@@ -729,6 +734,167 @@ export function extractGoogleApiErrorDetail(json: unknown): string | undefined {
   return [head, tail].filter(Boolean).join(" ").slice(0, 500);
 }
 
+// ─── Token source + one data request ───────────────────────────
+
+/**
+ * Where a walk gets its access token. A plain string is used as given. A
+ * function is asked before every request, so a walk that runs for longer than
+ * the token lives (an access token lasts an hour; a full-history heart-rate
+ * walk can take several) picks up the refreshed one instead of carrying an
+ * expired token into a 401. `forceRefresh` asks for a new token even though
+ * the current one has not reached its expiry, after Google refused it.
+ */
+export type GoogleHealthTokenSource = (opts: {
+  forceRefresh: boolean;
+}) => Promise<string>;
+
+export type GoogleHealthAccessToken = string | GoogleHealthTokenSource;
+
+/**
+ * How a data request sits out Google's per-user, per-minute quota (429
+ * `RESOURCE_EXHAUSTED`). The quota refills within the minute, so a short wait
+ * turns a throttled request into a completed one, where failing it used to
+ * cost the whole collection. The waits follow `Retry-After` (or the
+ * `google.rpc.RetryInfo` delay in the body) when Google sends one, and
+ * otherwise double from `baseDelayMs`: 2, 4, 8, 16, 32 s, a minute and a
+ * bit in all, which spans a full quota window. A requested delay above
+ * `maxDelayMs` is not slept out; the request fails as the transient it is
+ * and the next run picks the window up.
+ */
+export const GOOGLE_HEALTH_RATE_LIMIT = {
+  maxRetries: 5,
+  baseDelayMs: 2_000,
+  maxDelayMs: 60_000,
+} as const;
+
+/**
+ * The delay Google asked for on a 429, in ms: the `Retry-After` header in
+ * either of its forms, else a `google.rpc.RetryInfo` detail (`"30s"`) in the
+ * error body. Undefined when it asked for nothing readable.
+ */
+export function googleHealthRetryDelayMs(
+  res: Response,
+  json: unknown,
+  now: number = Date.now(),
+): number | undefined {
+  const header = res.headers.get("retry-after")?.trim();
+  if (header) {
+    if (/^\d+$/.test(header)) return Number.parseInt(header, 10) * 1000;
+    const at = Date.parse(header);
+    if (Number.isFinite(at)) return Math.max(0, at - now);
+  }
+  const details = (json as { error?: { details?: unknown } } | null)?.error
+    ?.details;
+  if (Array.isArray(details)) {
+    for (const d of details) {
+      const delay = (d as { retryDelay?: unknown } | null)?.retryDelay;
+      if (typeof delay === "string") {
+        const m = /^(\d+(?:\.\d+)?)s$/.exec(delay.trim());
+        if (m) return Math.round(Number.parseFloat(m[1]!) * 1000);
+      }
+    }
+  }
+  return undefined;
+}
+
+function waitMs(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+interface GoogleHealthDataResponse<T> {
+  status: number;
+  json: T | null;
+  verdict: ReturnType<typeof classifyGoogleHealthResponse>;
+  apiErrorDetail: string | undefined;
+}
+
+/**
+ * Send one data request and answer with the response it finally got.
+ *
+ * Two answers are handled here rather than handed back:
+ *   - 429: the request waits (see `GOOGLE_HEALTH_RATE_LIMIT`) and is sent
+ *     again, up to `maxRetries` times, unless the caller's stop condition
+ *     says to end the walk.
+ *   - 401 with a token source: the token expired or was revoked between
+ *     the source's last check and this request. The source is asked once for
+ *     a fresh token and the request is repeated. A second 401, or a 401 on a
+ *     fixed string token, is returned like any other answer.
+ *
+ * Every attempt is recorded as its own external call, so the wide event
+ * shows the throttling and the waits rather than only their outcome.
+ */
+async function googleHealthDataRequest<T>(
+  token: GoogleHealthAccessToken,
+  label: string,
+  send: (accessToken: string) => Promise<Response>,
+  isExpectedFallback: (status: number) => boolean = () => false,
+): Promise<GoogleHealthDataResponse<T>> {
+  let rateLimited = 0;
+  let refreshed = false;
+  let forceRefresh = false;
+  for (;;) {
+    const accessToken =
+      typeof token === "string" ? token : await token({ forceRefresh });
+    forceRefresh = false;
+    const started = performance.now();
+    const res = await send(accessToken);
+    const json = (await res.json().catch(() => null)) as T | null;
+    const verdict = classifyGoogleHealthResponse(res.status);
+    const apiErrorDetail =
+      verdict.classification === "success"
+        ? undefined
+        : extractGoogleApiErrorDetail(json);
+
+    const retryAfterMs =
+      res.status === 429 ? googleHealthRetryDelayMs(res, json) : undefined;
+    const backoffMs =
+      res.status === 429
+        ? (retryAfterMs ??
+          GOOGLE_HEALTH_RATE_LIMIT.baseDelayMs * 2 ** rateLimited)
+        : 0;
+    const willWait =
+      res.status === 429 &&
+      rateLimited < GOOGLE_HEALTH_RATE_LIMIT.maxRetries &&
+      backoffMs <= GOOGLE_HEALTH_RATE_LIMIT.maxDelayMs &&
+      !stopRequested();
+    const willRefresh =
+      res.status === 401 && typeof token !== "string" && !refreshed;
+
+    getEvent()?.addExternalCall({
+      service: "google-health",
+      method: label,
+      duration_ms: Math.round(performance.now() - started),
+      status: res.status,
+      ...(isExpectedFallback(res.status)
+        ? { note: "date_filter_rejected_retrying_snake_case" }
+        : willWait
+          ? { note: `rate_limited_retrying_in_ms=${backoffMs}` }
+          : willRefresh
+            ? { note: "token_rejected_retrying_with_fresh_token" }
+            : {
+                error:
+                  verdict.classification === "success"
+                    ? undefined
+                    : apiErrorDetail
+                      ? `${verdict.reason} ${apiErrorDetail}`
+                      : verdict.reason,
+              }),
+    });
+
+    if (willWait) {
+      rateLimited += 1;
+      await waitMs(backoffMs);
+      continue;
+    }
+    if (willRefresh) {
+      refreshed = true;
+      forceRefresh = true;
+      continue;
+    }
+    return { status: res.status, json, verdict, apiErrorDetail };
+  }
+}
+
 /**
  * Walk every `DataPoint` for one data type since the incremental cursor via
  * `dataPoints.list` with `nextPageToken` pagination. The data-type id is
@@ -748,7 +914,7 @@ export function extractGoogleApiErrorDetail(json: unknown): string | undefined {
  */
 export async function fetchDataPoints(
   dataType: GoogleHealthDataType,
-  accessToken: string,
+  accessToken: GoogleHealthAccessToken,
   verb: string,
   query: DataPointQuery = {},
 ): Promise<GoogleHealthDataPoint[]> {
@@ -776,7 +942,7 @@ export async function fetchDataPoints(
  */
 export async function forEachDataPointPage(
   dataType: GoogleHealthDataType,
-  accessToken: string,
+  accessToken: GoogleHealthAccessToken,
   verb: string,
   query: DataPointQuery,
   onPage: (points: GoogleHealthDataPoint[]) => void | Promise<void>,
@@ -812,50 +978,31 @@ export async function forEachDataPointPage(
       if (pageToken) params.set("pageToken", pageToken);
 
       requestCount += 1;
-      const pageStart = performance.now();
-      const res = await safeFetch(
-        `${GOOGLE_HEALTH_API_BASE}/users/me/dataTypes/${dataType.path}/dataPoints?${params}`,
-        {
-          method: "GET",
-          headers: { Authorization: `Bearer ${accessToken}` },
-        },
-      );
-
-      const json = (await res
-        .json()
-        .catch(() => null)) as GoogleHealthDataPointPage | null;
-      const verdict = classifyGoogleHealthResponse(res.status);
-      const apiErrorDetail =
-        verdict.classification === "success"
-          ? undefined
-          : extractGoogleApiErrorDetail(json);
       // v1.42 (#1023) — the first filtered daily-summary read answering 400
       // is the expected trigger for the snake_case retry below, not a
       // failure: some accounts reject the documented camelCase prefix on
       // some types, and the very next request answers 200. It was logged as
       // an error next to the 200 that followed it. It is recorded as a note
       // now; any other 400 still carries its error.
-      const expectedFallback =
-        canFallBack &&
-        dateStyle === "camel" &&
-        requestCount === 1 &&
-        res.status === 400;
-      getEvent()?.addExternalCall({
-        service: "google-health",
-        method: `${verb}(page=${pageCount})`,
-        duration_ms: Math.round(performance.now() - pageStart),
-        status: res.status,
-        ...(expectedFallback
-          ? { note: "date_filter_rejected_retrying_snake_case" }
-          : {
-              error:
-                verdict.classification === "success"
-                  ? undefined
-                  : apiErrorDetail
-                    ? `${verdict.reason} ${apiErrorDetail}`
-                    : verdict.reason,
-            }),
-      });
+      const firstRequest = requestCount === 1;
+      const { json, verdict, apiErrorDetail } =
+        await googleHealthDataRequest<GoogleHealthDataPointPage>(
+          accessToken,
+          `${verb}(page=${pageCount})`,
+          (token) =>
+            safeFetch(
+              `${GOOGLE_HEALTH_API_BASE}/users/me/dataTypes/${dataType.path}/dataPoints?${params}`,
+              {
+                method: "GET",
+                headers: { Authorization: `Bearer ${token}` },
+              },
+            ),
+          (status) =>
+            canFallBack &&
+            dateStyle === "camel" &&
+            firstRequest &&
+            status === 400,
+        );
       if (verdict.classification !== "success") {
         throw new GoogleHealthApiError({
           verb,
@@ -1078,7 +1225,7 @@ export function buildDailyRollUpBody(
  */
 export async function fetchDailyRollUp(
   dataType: GoogleHealthDataType,
-  accessToken: string,
+  accessToken: GoogleHealthAccessToken,
   verb: string,
   query: RollupQuery = {},
 ): Promise<GoogleHealthRollupPoint[]> {
@@ -1108,38 +1255,23 @@ export async function fetchDailyRollUp(
         const body = buildDailyRollUpBody(chunk, pageToken ?? undefined);
 
         requestCount += 1;
-        const reqStart = performance.now();
-        const res = await safeFetch(
-          `${GOOGLE_HEALTH_API_BASE}/users/me/dataTypes/${dataType.path}/dataPoints:dailyRollUp`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(body),
-          },
-        );
-        const json = (await res
-          .json()
-          .catch(() => null)) as GoogleHealthRollupPage | null;
-        const verdict = classifyGoogleHealthResponse(res.status);
-        const apiErrorDetail =
-          verdict.classification === "success"
-            ? undefined
-            : extractGoogleApiErrorDetail(json);
-        getEvent()?.addExternalCall({
-          service: "google-health",
-          method: `${verb}(chunk=${chunkIndex},page=${pageCount})`,
-          duration_ms: Math.round(performance.now() - reqStart),
-          status: res.status,
-          error:
-            verdict.classification === "success"
-              ? undefined
-              : apiErrorDetail
-                ? `${verdict.reason} ${apiErrorDetail}`
-                : verdict.reason,
-        });
+        const { json, verdict, apiErrorDetail } =
+          await googleHealthDataRequest<GoogleHealthRollupPage>(
+            accessToken,
+            `${verb}(chunk=${chunkIndex},page=${pageCount})`,
+            (token) =>
+              safeFetch(
+                `${GOOGLE_HEALTH_API_BASE}/users/me/dataTypes/${dataType.path}/dataPoints:dailyRollUp`,
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(body),
+                },
+              ),
+          );
         if (verdict.classification !== "success") {
           throw new GoogleHealthApiError({
             verb,

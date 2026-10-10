@@ -7,14 +7,19 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { prismaMock, syncUserGoogleHealthMock, isReauthRequiredMock } =
-  vi.hoisted(() => ({
+const { prismaMock, syncUserGoogleHealthMock, isParkedMock } = vi.hoisted(
+  () => ({
     prismaMock: {
-      googleHealthConnection: { findMany: vi.fn(), update: vi.fn() },
+      googleHealthConnection: {
+        findMany: vi.fn(),
+        findUnique: vi.fn(async () => null),
+        update: vi.fn(),
+      },
     },
     syncUserGoogleHealthMock: vi.fn(),
-    isReauthRequiredMock: vi.fn(async () => false),
-  }));
+    isParkedMock: vi.fn(async () => false),
+  }),
+);
 
 vi.mock("@/lib/db", () => ({ prisma: prismaMock }));
 
@@ -33,14 +38,17 @@ vi.mock("@/lib/safe-fetch", async (importOriginal) => {
   return { ...actual, safeFetch: safeFetchMock };
 });
 
-vi.mock("@/lib/integrations/status", () => ({
-  isReauthRequired: isReauthRequiredMock,
-}));
-
 vi.mock("@/lib/google-health/sync-core", () => ({
   GOOGLE_HEALTH_INTEGRATION_KEY: "google-health",
+  readGoogleHealthBackfillDone: () => new Set<string>(),
+  runWithGoogleHealthBackfillResume: async (
+    _userId: string,
+    _done: Set<string>,
+    fn: () => Promise<unknown>,
+  ) => ({ result: await fn(), skipped: [] }),
 }));
 vi.mock("@/lib/google-health/sync", () => ({
+  isGoogleHealthParked: isParkedMock,
   syncUserGoogleHealth: (...a: unknown[]) => syncUserGoogleHealthMock(...a),
 }));
 
@@ -53,7 +61,7 @@ import {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  isReauthRequiredMock.mockResolvedValue(false);
+  isParkedMock.mockResolvedValue(false);
   prismaMock.googleHealthConnection.update.mockResolvedValue({});
 });
 
@@ -66,6 +74,7 @@ describe("runGoogleHealthBackfillForUser — verdict-gated marker", () => {
     expect(imported).toBe(42);
     expect(syncUserGoogleHealthMock).toHaveBeenCalledWith("u1", {
       fullSync: true,
+      waitForLockMs: expect.any(Number),
     });
     const updateArg = prismaMock.googleHealthConnection.update.mock
       .calls[0]![0] as {
@@ -74,6 +83,21 @@ describe("runGoogleHealthBackfillForUser — verdict-gated marker", () => {
     };
     expect(updateArg.where).toEqual({ userId: "u1" });
     expect(updateArg.data.backfillCompletedAt).toBeInstanceOf(Date);
+    // The resume note goes with the stamp: a later backfill starts over.
+    expect(updateArg.data).toHaveProperty("backfillProgress");
+  });
+
+  it("throws without stamping when another sync of the account holds it", async () => {
+    syncUserGoogleHealthMock.mockResolvedValue({
+      imported: 0,
+      failed: true,
+      busy: true,
+    });
+
+    await expect(runGoogleHealthBackfillForUser("u1")).rejects.toThrow(
+      /another sync of the account is running/,
+    );
+    expect(prismaMock.googleHealthConnection.update).not.toHaveBeenCalled();
   });
 
   it("a failed verdict THROWS without stamping — pg-boss retries become real", async () => {
@@ -86,7 +110,7 @@ describe("runGoogleHealthBackfillForUser — verdict-gated marker", () => {
   });
 
   it("a connection parked at error_reauth returns WITHOUT running the sync or stamping", async () => {
-    isReauthRequiredMock.mockResolvedValue(true);
+    isParkedMock.mockResolvedValue(true);
 
     await expect(runGoogleHealthBackfillForUser("u1")).resolves.toEqual({
       imported: 0,

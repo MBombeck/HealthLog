@@ -38,7 +38,9 @@ import {
 } from "./client";
 import {
   getValidToken,
+  googleHealthTokenSource,
   handleCollectionFetchError,
+  runGoogleHealthCollection,
   upsertGoogleHealthMeasurements,
   type GoogleHealthMeasurementUpsert,
   type GoogleHealthResourceSyncOptions,
@@ -96,6 +98,7 @@ export async function syncUserActivity(
 ): Promise<number> {
   const tokenInfo = await getValidToken(userId);
   if (!tokenInfo) return 0;
+  const token = googleHealthTokenSource(userId, tokenInfo);
 
   // The dailyRollUp request range is civil and user-local; resolve the user's
   // stored zone so the range bounds land on the correct civil days rather than
@@ -118,51 +121,51 @@ export async function syncUserActivity(
   const rollupEmptyResponse: string[] = [];
   const rollupDroppedAll: string[] = [];
   for (const resource of ROLLUP_RESOURCES) {
-    let points: Record<string, unknown>[];
-    try {
-      points = await fetchDailyRollUp(
-        resource.dataType,
-        tokenInfo.accessToken,
-        resource.verb,
-        { start, tz },
-      );
-    } catch (err) {
-      imported += await handleCollectionFetchError(resource.verb, userId, err);
-      continue;
-    }
-
-    // The mapper runs INSIDE a per-type catch too (mirrors sync-metrics): a
-    // single malformed point whose `resource.map(point)` throws must not
-    // escape the ROLLUP_RESOURCES loop and abort every sibling type ordered
-    // after it. Route a map throw through the same ledger as a fetch failure —
-    // record it, fail the cycle, and move on to the next type.
-    const readings: GoogleHealthMeasurementUpsert[] = [];
-    try {
-      for (const point of points) {
-        for (const m of resource.map(point, tz)) {
-          readings.push({
-            type: m.type,
-            value: m.value,
-            unit: m.unit,
-            measuredAt: m.measuredAt,
-            externalId: externalIdFor(m),
-          });
-        }
+    imported += await runGoogleHealthCollection(resource.verb, async () => {
+      let points: Record<string, unknown>[];
+      try {
+        points = await fetchDailyRollUp(
+          resource.dataType,
+          token,
+          resource.verb,
+          { start, tz },
+        );
+      } catch (err) {
+        return handleCollectionFetchError(resource.verb, userId, err);
       }
-    } catch (err) {
-      imported += await handleCollectionFetchError(resource.verb, userId, err);
-      continue;
-    }
-    if (points.length === 0) {
-      rollupEmptyResponse.push(resource.verb);
-    } else if (readings.length === 0) {
-      rollupDroppedAll.push(resource.verb);
-    }
-    imported += (
-      await upsertGoogleHealthMeasurements(userId, readings, {
-        deferRollup: opts.deferRollup,
-      })
-    ).imported;
+
+      // The mapper runs INSIDE a per-type catch too (mirrors sync-metrics): a
+      // single malformed point whose `resource.map(point)` throws must not
+      // escape the ROLLUP_RESOURCES loop and abort every sibling type ordered
+      // after it. Route a map throw through the same ledger as a fetch failure —
+      // record it, fail the cycle, and move on to the next type.
+      const readings: GoogleHealthMeasurementUpsert[] = [];
+      try {
+        for (const point of points) {
+          for (const m of resource.map(point, tz)) {
+            readings.push({
+              type: m.type,
+              value: m.value,
+              unit: m.unit,
+              measuredAt: m.measuredAt,
+              externalId: externalIdFor(m),
+            });
+          }
+        }
+      } catch (err) {
+        return handleCollectionFetchError(resource.verb, userId, err);
+      }
+      if (points.length === 0) {
+        rollupEmptyResponse.push(resource.verb);
+      } else if (readings.length === 0) {
+        rollupDroppedAll.push(resource.verb);
+      }
+      return (
+        await upsertGoogleHealthMeasurements(userId, readings, {
+          deferRollup: opts.deferRollup,
+        })
+      ).imported;
+    });
   }
   if (rollupEmptyResponse.length > 0 || rollupDroppedAll.length > 0) {
     annotate({
@@ -174,33 +177,35 @@ export async function syncUserActivity(
   }
 
   // VO2 max — a daily summary (list + `.date` filter), not a rollup type.
-  try {
-    const points = await fetchDataPoints(
-      GOOGLE_HEALTH_DATA_TYPES.vo2Max,
-      tokenInfo.accessToken,
-      "fetchVo2Max",
-      { start },
-    );
-    const readings: GoogleHealthMeasurementUpsert[] = [];
-    for (const point of points) {
-      for (const m of mapVo2Max(point, tz)) {
-        readings.push({
-          type: m.type,
-          value: m.value,
-          unit: m.unit,
-          measuredAt: m.measuredAt,
-          externalId: externalIdFor(m),
-        });
+  imported += await runGoogleHealthCollection("fetchVo2Max", async () => {
+    try {
+      const points = await fetchDataPoints(
+        GOOGLE_HEALTH_DATA_TYPES.vo2Max,
+        token,
+        "fetchVo2Max",
+        { start },
+      );
+      const readings: GoogleHealthMeasurementUpsert[] = [];
+      for (const point of points) {
+        for (const m of mapVo2Max(point, tz)) {
+          readings.push({
+            type: m.type,
+            value: m.value,
+            unit: m.unit,
+            measuredAt: m.measuredAt,
+            externalId: externalIdFor(m),
+          });
+        }
       }
+      return (
+        await upsertGoogleHealthMeasurements(userId, readings, {
+          deferRollup: opts.deferRollup,
+        })
+      ).imported;
+    } catch (err) {
+      return handleCollectionFetchError("fetchVo2Max", userId, err);
     }
-    imported += (
-      await upsertGoogleHealthMeasurements(userId, readings, {
-        deferRollup: opts.deferRollup,
-      })
-    ).imported;
-  } catch (err) {
-    imported += await handleCollectionFetchError("fetchVo2Max", userId, err);
-  }
+  });
 
   // `markSynced` is owned by the orchestrator (`syncUserGoogleHealth`).
   annotate({
