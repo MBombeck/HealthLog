@@ -147,6 +147,16 @@ SELECT pg_size_pretty(pg_total_relation_size('measurements')) AS total,
        pg_size_pretty(pg_indexes_size('measurements')) AS indexes;
 ```
 
+## "could not resize shared memory segment"
+
+Up to v1.42.0 the run could stop at once with `could not resize shared memory
+segment ... No space left on device`. Postgres ran the vacuum in parallel and
+kept its working memory in `/dev/shm`, which Docker limits to 64 MB per
+container unless `shm_size` is set. From v1.42.1 the maintenance connection
+runs single-process and needs no shared segment, and the bundled
+`docker-compose.yml` gives the database `shm_size: 256mb`. On v1.42.0, add
+`shm_size: 256mb` to the `db` service and restart the database container.
+
 ## Not part of this
 
 `VACUUM FULL` would shrink the table file as well, but it locks the table for

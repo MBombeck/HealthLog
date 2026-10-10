@@ -24,7 +24,13 @@ describe("maintenance session settings behind a pooler", () => {
       "SET statement_timeout = '0'",
       "SET idle_in_transaction_session_timeout = '0'",
       "SET maintenance_work_mem = '128MB'",
+      "SET max_parallel_maintenance_workers = '0'",
       "SET lock_timeout = '300000'",
     ]);
+  });
+  it("keeps maintenance in one process so it needs no /dev/shm segment", () => {
+    expect(MAINTENANCE_SESSION_OPTIONS).toContain(
+      "-c max_parallel_maintenance_workers=0",
+    );
   });
 });
