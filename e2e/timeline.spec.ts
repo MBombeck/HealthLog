@@ -306,6 +306,68 @@ test("value lines: quarterly means, gaps kept, short ones bridged, as many as th
   await expect(last).toBeInViewport();
 });
 
+test("each mean's dot sits on the middle of its text and never wraps apart from it", async ({
+  page,
+}, testInfo) => {
+  await setTimelineModuleOn(page);
+  await mockTimeline(page, "full", TODAY);
+  const check = async (slot: string) => {
+    const rows = page.locator(`[data-slot="${slot}"]`);
+    await expect(rows.first()).toBeVisible({ timeout: 20_000 });
+    const units = await rows.evaluateAll((els) =>
+      els.flatMap((row) =>
+        Array.from(
+          row.querySelectorAll('[data-slot="timeline-mean-part"]'),
+        ).map((unit) => {
+          const dot = unit
+            .querySelector('[data-slot="timeline-series-dot"]')!
+            .getBoundingClientRect();
+          const text = unit.querySelector(".truncate")!.getBoundingClientRect();
+          return {
+            dotMid: dot.top + dot.height / 2,
+            textMid: text.top + text.height / 2,
+            dotRight: dot.right,
+            textLeft: text.left,
+            textHeight: text.height,
+          };
+        }),
+      ),
+    );
+    expect(units.length).toBeGreaterThan(0);
+    for (const unit of units) {
+      // Centred on the text line, to the pixel.
+      expect(Math.abs(unit.dotMid - unit.textMid)).toBeLessThanOrEqual(1);
+      // On the same line, the value right after its dot: one line high.
+      expect(unit.textLeft).toBeGreaterThan(unit.dotRight);
+      expect(unit.textLeft - unit.dotRight).toBeLessThanOrEqual(8);
+      expect(unit.textHeight).toBeLessThanOrEqual(20);
+    }
+  };
+
+  // A narrow chart: the selection bar's means wrap between units only.
+  await page.setViewportSize({ width: 800, height: 900 });
+  await page.goto("/timeline");
+  await expect(page.locator('[data-slot="timeline-chart"]')).toBeVisible({
+    timeout: 20_000,
+  });
+  await check("timeline-selection-means");
+  await testInfo.attach("selection-means-800", {
+    body: await page
+      .locator('[data-slot="timeline-selection-bar"]')
+      .screenshot(),
+    contentType: "image/png",
+  });
+
+  // The phone chronicle's means follow the same rule.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/timeline");
+  await check("timeline-chronicle-means");
+  await testInfo.attach("chronicle-means-390", {
+    body: await page.screenshot(),
+    contentType: "image/png",
+  });
+});
+
 test("one medication is one row: its doses cut the bar, its pause is a gap in it", async ({
   page,
 }) => {
@@ -621,8 +683,10 @@ test("an open day stays open from the timeline to another page", async ({
     day,
   );
 
-  // Folded by the person, it stays folded on the next page.
-  await page.locator('[data-slot="day-close"]').click();
+  // Folded by the person (the strip is the docked day's only fold control),
+  // it stays folded on the next page.
+  await expect(page.locator('[data-slot="day-close"]')).toHaveCount(0);
+  await page.locator('[data-slot="day-strip-toggle"]').click();
   await expect(panel).toHaveCount(0);
   await page.locator('a[href="/timeline"]').first().click();
   await expect(page).toHaveURL(/\/timeline$/);
@@ -799,9 +863,6 @@ test("the day's strip stays at the right edge, opens and closes the day, and nev
         docSw: doc.scrollWidth - doc.clientWidth,
         docSh: doc.scrollHeight - doc.clientHeight,
         mainSw: main.scrollWidth - main.clientWidth,
-        bar: document
-          .querySelector('[data-slot="top-bar"]')!
-          .getBoundingClientRect().bottom,
       };
     });
 
@@ -812,17 +873,19 @@ test("the day's strip stays at the right edge, opens and closes the day, and nev
       page.locator('[data-slot="timeline-chart"] > svg'),
     ).toBeVisible({ timeout: 20_000 });
 
-    // Closed: the strip is there, at the right edge, below the top bar's
-    // band, holding today.
+    // Closed: the strip is there, at the right edge, the full height of the
+    // window from its top edge, holding today.
     await expect(strip).toHaveAttribute("data-state", "closed");
     await expect(toggle).toHaveAttribute("aria-expanded", "false");
     const closed = await where();
     expect(closed[0] + closed[2], `${width}px right edge`).toBe(width);
     const before = await measure();
+    expect(closed[1], `${width}px from the top edge`).toBe(0);
+    expect(closed[3], `${width}px full height`).toBe(900);
     expect(
       Math.round((await toggle.boundingBox())!.y),
-      `${width}px below the band`,
-    ).toBe(Math.round(before.bar));
+      `${width}px toggle from the top edge`,
+    ).toBe(0);
     expect(before.docSw).toBeLessThanOrEqual(0);
     expect(before.mainSw).toBeLessThanOrEqual(0);
 

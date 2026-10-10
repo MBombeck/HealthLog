@@ -243,16 +243,19 @@ describe("<DayView>", () => {
     expect(leave).not.toContain("FAMILY");
   });
 
-  it("collapses the docked day and closes a sheet, and says which", async () => {
+  it("has no close button docked, where the strip folds it, and a clear one in a sheet", async () => {
     const docked = await render();
-    const hide = docked.match(/<button[^>]*data-slot="day-close"[^>]*>/)?.[0];
-    expect(hide).toContain('aria-label="Hide day"');
-    expect(hide).toContain('aria-expanded="true"');
+    expect(docked).not.toContain('data-slot="day-close"');
     for (const shell of ["sheet", "bottom"] as const) {
       const sheet = await render({ shell });
       const close = sheet.match(/<button[^>]*data-slot="day-close"[^>]*>/)?.[0];
       expect(close).toContain('aria-label="Close day"');
       expect(close).not.toContain("aria-expanded");
+      // An X, at the end of the header row, after the next-day arrow.
+      expect(sheet.indexOf('data-slot="day-close"')).toBeGreaterThan(
+        sheet.indexOf('data-slot="day-next"'),
+      );
+      expect(sheet).toContain("lucide-x");
     }
   });
 

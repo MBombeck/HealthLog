@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { visibleNavDestinations } from "@/components/layout/nav-model";
 import {
+  DAY_TOGGLE_KEY,
+  GO_TO_SHORTCUTS,
   SEQUENCE_TIMEOUT_MS,
   blockedByModifier,
   createShortcutReader,
@@ -181,6 +183,40 @@ describe("sequence timing", () => {
   });
 });
 
+describe("g p, the day", () => {
+  it("opens or closes the day from the page", () => {
+    const reader = createShortcutReader();
+    expect(reader.read(key("g"), "page", 0)).toBe("pending");
+    expect(reader.read(key("p"), "page", 10)).toEqual({ type: "day-toggle" });
+  });
+
+  it("collides with no destination", () => {
+    expect(DAY_TOGGLE_KEY).toBe("p");
+    const keys = GO_TO_SHORTCUTS.map((s) => s.key as string);
+    expect(keys).not.toContain(DAY_TOGGLE_KEY);
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it("needs the g, within the window", () => {
+    const reader = createShortcutReader();
+    expect(reader.read(key("p"), "page", 0)).toBeNull();
+    reader.read(key("g"), "page", 0);
+    expect(reader.read(key("p"), "page", SEQUENCE_TIMEOUT_MS + 1)).toBeNull();
+  });
+
+  it("is not read from a field, under a modifier or over another dialog", () => {
+    const reader = createShortcutReader();
+    reader.read(key("g"), "page", 0);
+    expect(reader.read(key("p", { target: input }), "page", 10)).toBeNull();
+    reader.read(key("g"), "page", 20);
+    expect(reader.read(key("p", { metaKey: true }), "page", 30)).toBeNull();
+    reader.read(key("g"), "page", 40);
+    expect(reader.read(key("p"), "off", 50)).toBeNull();
+    expect(reader.read(key("g"), "off", 60)).toBeNull();
+    expect(reader.read(key("p"), "page", 70)).toBeNull();
+  });
+});
+
 describe("scope", () => {
   it("an open dialog, menu or popover takes every key", () => {
     const reader = createShortcutReader();
@@ -191,7 +227,7 @@ describe("scope", () => {
     expect(reader.read(key("d"), "off", 10)).toBeNull();
   });
 
-  it("over the day sheet only [ and ] act", () => {
+  it("over the day sheet only [, ] and g p act", () => {
     const reader = createShortcutReader();
     expect(reader.read(key("["), "day-sheet", 0)).toEqual({
       type: "day",
@@ -202,7 +238,14 @@ describe("scope", () => {
       delta: 1,
     });
     expect(reader.read(key("n"), "day-sheet", 0)).toBeNull();
-    expect(reader.read(key("g"), "day-sheet", 0)).toBeNull();
+    expect(reader.read(key("?"), "day-sheet", 0)).toBeNull();
+    // g waits, but only p completes it there: no page leaves under a sheet.
+    expect(reader.read(key("g"), "day-sheet", 0)).toBe("pending");
+    expect(reader.read(key("d"), "day-sheet", 10)).toBeNull();
+    reader.read(key("g"), "day-sheet", 20);
+    expect(reader.read(key("p"), "day-sheet", 30)).toEqual({
+      type: "day-toggle",
+    });
   });
 
   it("Escape is never ours", () => {

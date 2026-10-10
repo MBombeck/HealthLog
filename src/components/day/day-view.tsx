@@ -8,9 +8,8 @@ import {
   ChevronRight,
   History,
   MessageCircle,
-  PanelBottomClose,
-  PanelRightClose,
   Plus,
+  X,
 } from "lucide-react";
 
 import {
@@ -84,15 +83,12 @@ const ICON_BUTTON =
   "text-muted-foreground hover:text-foreground size-11 shrink-0 pointer-fine:size-9";
 
 /**
- * The collapse control is the Coach panel's own toggle, in the same place:
- * the panel's top-left corner, the panel icon mirrored so it points the way
- * the panel goes. Same size and glyph as `PANEL_HEADER_BUTTON` there (kept as
- * a copy so the day layer does not pull the Coach's panel into the shell).
- * The collapsed edge's control in `day-layer.tsx` takes the same pair.
+ * The sheets' close control, at the trailing end of the header like the
+ * Coach sheet's own. The docked day has none: its strip at the right edge of
+ * the window (`shell-dock.tsx`) is the one control that opens and closes it.
  */
-export const PANEL_TOGGLE =
+const CLOSE_BUTTON =
   "text-muted-foreground hover:text-foreground size-11 shrink-0 pointer-fine:size-7";
-export const PANEL_TOGGLE_ICON = "size-5 pointer-fine:size-4";
 
 export function DayView({
   date,
@@ -157,7 +153,7 @@ export function DayView({
     ? Object.values(data.sections).some((s) => s?.reason === "not_shared")
     : false;
   const compact = shell === "bottom";
-  const closeLabel = shell === "docked" ? t("day.hidePanel") : t("day.close");
+  const docked = shell === "docked";
 
   return (
     <div
@@ -170,41 +166,19 @@ export function DayView({
         data-slot="day-header"
         className={cn(
           "flex shrink-0 items-center gap-1",
-          compact ? "pt-0.5 pr-2 pb-2 pl-2" : "border-border border-b px-3",
+          // The date starts on the body's reading edge (`px-4` / `px-6`).
+          compact
+            ? "pt-0.5 pr-2 pb-2 pl-4"
+            : "border-border border-b pr-3 pl-6",
           headerClassName,
         )}
       >
-        {/* Top left, where the Coach panel keeps its toggle: the way out.
-            Docked, it collapses the day to the edge; a sheet closes. */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          data-slot="day-close"
-          aria-label={closeLabel}
-          aria-expanded={shell === "docked" ? true : undefined}
-          title={closeLabel}
-          onClick={onClose}
-          className={PANEL_TOGGLE}
-        >
-          {compact ? (
-            <PanelBottomClose
-              className={PANEL_TOGGLE_ICON}
-              aria-hidden="true"
-            />
-          ) : (
-            <PanelRightClose
-              className={cn(PANEL_TOGGLE_ICON, "-scale-x-100")}
-              aria-hidden="true"
-            />
-          )}
-        </Button>
         {/* One line, centred in the band: the date and nothing under it. */}
         <Title
           id={titleId}
           ref={titleRef}
           tabIndex={-1}
-          className="min-w-0 flex-1 truncate px-1 text-base leading-snug font-semibold focus-visible:outline-none"
+          className="min-w-0 flex-1 truncate pr-1 text-base leading-snug font-semibold focus-visible:outline-none"
         >
           {/* The date is the way to any other day: a calendar opens from
               it, so the header needs no icon of its own. */}
@@ -262,6 +236,20 @@ export function DayView({
             aria-hidden="true"
           />
         </Button>
+        {docked ? null : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            data-slot="day-close"
+            aria-label={t("day.close")}
+            title={t("day.close")}
+            onClick={onClose}
+            className={CLOSE_BUTTON}
+          >
+            <X className="size-5 pointer-fine:size-4" aria-hidden="true" />
+          </Button>
+        )}
       </div>
 
       <div

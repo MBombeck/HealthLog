@@ -12,13 +12,14 @@ import { expect, test } from "./setup/test";
  *   - a module's entry is a switch: Enter sends the module write and the
  *     palette stays open (the write is answered by a route mock, so the
  *     shared account's modules never move);
- *   - the top bar carries the search field on a wide desktop and a
- *     magnifier on a phone, which opens a full-height sheet with the field
- *     focused;
+ *   - the top bar carries a magnifier at every width, named "Search",
+ *     with a tooltip that gives the shortcut; on a phone it opens a
+ *     full-height sheet with the field focused;
  *   - the open palette passes axe.
  *
  * Stable hooks only: `command-palette` (+ `data-variant`),
- * `command-palette-input`, `command-palette-trigger` (+ `data-variant`),
+ * `command-palette-input`, `command-palette-trigger`,
+ * `command-palette-tooltip`,
  * options by `data-entry`.
  */
 
@@ -109,20 +110,27 @@ test.describe("command palette", () => {
     await expect(input(page)).toHaveValue("timeline");
   });
 
-  test("the top bar: a search field on a wide desktop", async ({ page }) => {
+  test("the top bar: a magnifier on a wide desktop, with the shortcut in its tooltip", async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/");
     await shellReady(page);
-    const field = page.locator(
-      '[data-slot="command-palette-trigger"][data-variant="field"]',
+    const magnifier = page.locator('[data-slot="command-palette-trigger"]');
+    await expect(magnifier).toHaveCount(1);
+    await expect(magnifier).toBeVisible();
+    await expect(magnifier).toHaveAttribute("aria-label", "Search");
+    await expect(magnifier).toHaveAttribute(
+      "aria-keyshortcuts",
+      /^(Meta|Control)\+K$/,
     );
-    await expect(field).toBeVisible();
+    // An icon, not a field: no visible words in the button.
+    expect((await magnifier.innerText()).trim()).toBe("");
+    await magnifier.hover();
     await expect(
-      page.locator(
-        '[data-slot="command-palette-trigger"][data-variant="icon"]',
-      ),
-    ).toBeHidden();
-    await field.click();
+      page.locator('[data-slot="command-palette-tooltip"]').first(),
+    ).toHaveText(/^Search \((⌘K|Ctrl K)\)$/);
+    await magnifier.click();
     await expect(palette(page)).toBeVisible();
     await expect(input(page)).toBeFocused();
 
@@ -142,10 +150,9 @@ test.describe("command palette", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
     await shellReady(page);
-    const magnifier = page.locator(
-      '[data-slot="command-palette-trigger"][data-variant="icon"]',
-    );
+    const magnifier = page.locator('[data-slot="command-palette-trigger"]');
     await expect(magnifier).toBeVisible();
+    await expect(magnifier).toHaveAttribute("aria-label", "Search");
     await magnifier.click();
     await expect(palette(page)).toHaveAttribute("data-variant", "sheet");
     await expect(input(page)).toBeFocused();

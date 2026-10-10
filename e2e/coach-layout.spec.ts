@@ -21,9 +21,12 @@ import { mockDay } from "./setup/day-mock";
  *      panel left of the strips, a second click shuts it; the choice
  *      survives a reload. The panel is flush with the strips and runs from
  *      the top of the window to the bottom; the top bar ends at its left
- *      edge and the panel's header border is the top bar's. Focus moves
- *      between the fold control and the strip, and Escape inside the open
- *      panel folds it.
+ *      edge and the panel's header border is the top bar's. Both strips run
+ *      the full height of the window, from its top edge, and the search
+ *      magnifier ends the top bar in front of them, never covered. The strip
+ *      is the docked panel's only fold control (the header has none); focus
+ *      moves between the strip and the panel's heading, and Escape inside
+ *      the open panel folds it.
  *   2. New conversation is a round 56 px button in the conversation column,
  *      never over the panel, never over the composer's field, and absent
  *      from the panel's header.
@@ -218,6 +221,8 @@ async function mockCoach(page: Page): Promise<CoachMock> {
 const toggle = (page: Page) => page.locator('[data-slot="coach-panel-toggle"]');
 const collapse = (page: Page) =>
   page.locator('[data-slot="coach-panel-collapse"]');
+const heading = (page: Page) =>
+  page.locator('[data-slot="coach-panel-heading"]');
 const expand = (page: Page) =>
   page.locator('[data-slot="coach-panel-strip-toggle"]');
 const strip = (page: Page) => page.locator('[data-slot="coach-panel-strip"]');
@@ -257,7 +262,9 @@ async function expectNoSidewaysScroll(page: Page) {
  * right edge (no scrollbar gutter beside them). The panel runs from the top
  * of the window to the bottom, the top bar ends at its left edge, an open
  * panel's header row has the top bar's bottom border, and its own border
- * is the left one only. Both strips start below the top bar's band.
+ * is the left one only. Both strips run the full height of the window, and
+ * the search magnifier at the end of the top bar sits in front of them,
+ * whole and on top.
  */
 async function expectPanelFlush(page: Page, width: number, height: number) {
   const geometry = await page.evaluate(() => {
@@ -283,6 +290,18 @@ async function expectPanelFlush(page: Page, width: number, height: number) {
       list: box('[data-slot="coach-panel-strip"]')!,
       listButton: box('[data-slot="coach-panel-strip-toggle"]')!,
       day: box('[data-slot="day-strip"]')!,
+      dayButton: box('[data-slot="day-strip-toggle"]')!,
+      search: box('[data-slot="command-palette-trigger"]')!,
+      searchOnTop: (() => {
+        const r = document
+          .querySelector('[data-slot="command-palette-trigger"]')!
+          .getBoundingClientRect();
+        return (
+          document
+            .elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+            ?.closest('[data-slot="command-palette-trigger"]') != null
+        );
+      })(),
       dayDock: box("#day-docked-panel")!,
       gutter: main.offsetWidth - main.clientWidth,
       borders: style
@@ -305,8 +324,17 @@ async function expectPanelFlush(page: Page, width: number, height: number) {
   expect(geometry.panel.top).toBe(0);
   expect(geometry.panel.bottom).toBe(height);
   expect(geometry.bar.right).toBe(geometry.panel.left);
-  // The strips start below the band; the palette's corner stays the bar's.
-  expect(geometry.listButton.top).toBe(geometry.bar.bottom);
+  // The strips run the full height, from the top edge of the window.
+  for (const button of [geometry.listButton, geometry.dayButton]) {
+    expect(button.top).toBe(0);
+    expect(button.bottom).toBe(height);
+  }
+  // The magnifier ends the top bar, left of the strips, whole and on top.
+  expect(geometry.search.top).toBeGreaterThanOrEqual(0);
+  expect(geometry.search.bottom).toBeLessThanOrEqual(geometry.bar.bottom);
+  expect(geometry.search.right).toBeLessThanOrEqual(geometry.bar.right);
+  expect(geometry.search.right).toBeLessThanOrEqual(geometry.list.left);
+  expect(geometry.searchOnTop).toBe(true);
   if (geometry.header !== null) {
     expect(geometry.header).toBe(geometry.bar.bottom);
     expect(geometry.borders).toEqual(["0px", "0px", "0px", "1px"]);
@@ -364,7 +392,6 @@ async function panelControlHeights(page: Page) {
         .boundingBox())!.height,
     );
   return {
-    collapse: await height("coach-panel-collapse"),
     plans: await height("coach-panel-plans"),
     gear: await height("coach-settings"),
     row: await height("coach-history-select"),
@@ -449,10 +476,11 @@ test.describe("Coach page frame", () => {
       // First visit: open.
       await expect(panel(page)).toHaveAttribute("data-state", "open");
       await waitForWidth(panel(page), 288);
-      // Docked, the fold control lives in the panel; the top bar has none.
+      // Docked, the strip is the one fold control: the top bar and the
+      // panel's header carry none.
       await expect(toggle(page)).toHaveCount(0);
-      await expect(collapse(page)).toHaveAttribute("aria-expanded", "true");
-      await expect(collapse(page)).toHaveAttribute(
+      await expect(collapse(page)).toHaveCount(0);
+      await expect(expand(page)).toHaveAttribute(
         "aria-controls",
         "coach-conversations-panel",
       );
@@ -480,7 +508,7 @@ test.describe("Coach page frame", () => {
 
       // Folded: the panel slides to nothing, the strip takes the focus, and
       // the top bar ends at the strips.
-      await collapse(page).click();
+      await expand(page).click();
       await expect(panel(page)).toHaveAttribute("data-state", "closed");
       await waitForWidth(panel(page), 0);
       expect(await stripBox(strip(page))).toEqual(stripOpen);
@@ -522,12 +550,17 @@ test.describe("Coach page frame", () => {
       await expect(expand(page)).toBeFocused();
       expect(await stripBox(strip(page))).toEqual(stripOpen);
 
-      // Opened from the keyboard, focus lands on the fold control; Escape
+      // Opened from the keyboard, focus lands on the panel's heading; Escape
       // from inside folds it again and focus goes back to the strip.
       await expand(page).focus();
       await page.keyboard.press("Enter");
       await expect(panel(page)).toHaveAttribute("data-state", "open");
-      await expect(collapse(page)).toBeFocused();
+      await expect(heading(page)).toBeFocused();
+      await page.keyboard.press("Escape");
+      await expect(panel(page)).toHaveAttribute("data-state", "closed");
+      await expect(expand(page)).toBeFocused();
+      await page.keyboard.press("Enter");
+      await expect(panel(page)).toHaveAttribute("data-state", "open");
       await panel(page)
         .locator('[data-slot="coach-history-select"]')
         .first()
@@ -572,14 +605,14 @@ test.describe("Coach page frame", () => {
     await shot(page, testInfo, "coach-frame-1440-day");
 
     // Opening the conversations closes the day; its strip keeps the day,
-    // focus goes to the conversations' fold control, the day is out of the
+    // focus goes to the conversations' heading, the day is out of the
     // URL, and the conversation stays the same.
     await expand(page).click();
     await expect(panel(page)).toHaveAttribute("data-state", "open");
     await expect(dayPanel(page)).toHaveCount(0);
     await expect(dayStrip(page)).toHaveAttribute("data-day", day);
     await expect(dayStrip(page)).toHaveAttribute("data-state", "closed");
-    await expect(collapse(page)).toBeFocused();
+    await expect(heading(page)).toBeFocused();
     await expect(page).toHaveURL(/\/coach\?c=frame-bp$/);
     await expectNewChatFab(page);
     await shot(page, testInfo, "coach-frame-1440-list");
@@ -627,7 +660,7 @@ test.describe("Coach page frame", () => {
     await shot(page, testInfo, "coach-frame-1920-both");
 
     // Folding one leaves the other alone.
-    await collapse(page).click();
+    await expand(page).click();
     await expect(panel(page)).toHaveAttribute("data-state", "closed");
     await expect(dayPanel(page)).toBeVisible();
     await expand(page).click();
@@ -642,7 +675,6 @@ test.describe("Coach page frame", () => {
     await mockCoach(page);
     await openCoach(page);
     expect(await panelControlHeights(page)).toEqual({
-      collapse: 28,
       plans: 28,
       gear: 28,
       row: 36,
@@ -662,7 +694,6 @@ test.describe("Coach page frame", () => {
       await openCoach(page);
       await expect(panel(page)).toHaveAttribute("data-state", "open");
       expect(await panelControlHeights(page)).toEqual({
-        collapse: 44,
         plans: 44,
         gear: 44,
         row: 44,
@@ -935,6 +966,16 @@ test.describe("Coach page frame", () => {
       await title.evaluate((el) => el.scrollWidth <= el.clientWidth),
       "the sheet title is not truncated",
     ).toBe(true);
+    // Without a strip, the sheet keeps a clear close button and no fold.
+    await expect(
+      sheet.locator('[data-slot="coach-panel-close"]'),
+    ).toBeVisible();
+    await expect(
+      sheet.locator('[data-slot="coach-panel-close"]'),
+    ).toHaveAttribute("aria-label", "Close");
+    await expect(
+      sheet.locator('[data-slot="coach-panel-collapse"]'),
+    ).toHaveCount(0);
     await shot(page, testInfo, "coach-frame-390-panel");
 
     await page.keyboard.press("Escape");

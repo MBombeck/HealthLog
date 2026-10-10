@@ -50,6 +50,7 @@ import {
   openDay,
   peekDayTriggerAt,
   publishOpenDay,
+  registerDayToggle,
   stepDay,
   takeDayTrigger,
   takeDayYield,
@@ -255,8 +256,8 @@ function DayLayer() {
   }, []);
   const panelRef = useRef<HTMLElement>(null);
   const stripRef = useRef<HTMLButtonElement>(null);
-  // Set by a fold (the header's control, the strip): focus then lands on the
-  // strip, which brings the day back from the same place.
+  // Set by a fold (the strip, its shortcut): focus then lands on the strip,
+  // which brings the day back from the same place.
   const collapsing = useRef(false);
 
   // The remembered day, while the docked day is shut, if it is still a day
@@ -353,6 +354,33 @@ function DayLayer() {
     [date, today],
   );
 
+  // What the strip holds: the open day, else the remembered one, else today.
+  // Below the docking width the same day is the one `g p` opens.
+  const stripDay = stripDayOf(date, lastDay, today);
+  const dockedOpen = dockedDay !== null;
+  // The strip's click, and `g p` at every width: docked, the column opens
+  // or folds; below, the sheet opens on the strip's day or closes.
+  const toggle = useCallback(() => {
+    if (shell === "docked") {
+      if (dockedOpen) {
+        collapse();
+        return;
+      }
+      openDay(stripDay, { trigger: stripRef.current ?? undefined });
+      return;
+    }
+    if (date !== null) {
+      closeByPerson();
+      return;
+    }
+    openDay(stripDay);
+  }, [shell, dockedOpen, collapse, stripDay, date, closeByPerson]);
+  const latestToggle = useRef(toggle);
+  useEffect(() => {
+    latestToggle.current = toggle;
+  });
+  useEffect(() => registerDayToggle(() => latestToggle.current()), []);
+
   const onPick = useCallback(
     (next: DateKey) => {
       if (next > today) return;
@@ -418,7 +446,8 @@ function DayLayer() {
       today={today}
       focus={focus}
       shell={shell}
-      onClose={shell === "docked" ? collapse : closeByPerson}
+      // Only the sheets show a close button; docked, the strip folds the day.
+      onClose={closeByPerson}
       onStep={onStep}
       onPick={onPick}
       Title={Title}
@@ -429,16 +458,7 @@ function DayLayer() {
   );
 
   if (shell === "docked") {
-    // What the strip holds: the open day, else the remembered one, else today.
-    const stripDay = stripDayOf(date, railDay, today);
-    const open = dockedDay !== null;
-    const toggle = () => {
-      if (open) {
-        collapse();
-        return;
-      }
-      openDay(stripDay, { trigger: stripRef.current ?? undefined });
-    };
+    const open = dockedOpen;
     return (
       <>
         {live}

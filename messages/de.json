@@ -12559,8 +12559,6 @@
     }
   },
   "palette": {
-    "open": "Suchen…",
-    "openLabel": "Seiten, Einstellungen und Aktionen suchen",
     "title": "Suche",
     "description": "Finde eine Seite, eine Einstellung, ein Modul oder eine Aktion.",
     "placeholder": "Seiten, Einstellungen, Module suchen…",
@@ -12597,7 +12595,8 @@
     "close": "Dialog oder Bereich schließen",
     "previousDay": "Vorheriger Tag",
     "nextDay": "Nächster Tag",
-    "dayHint": "Während ein Tag geöffnet ist.",
+    "toggleDay": "Tag öffnen oder schließen",
+    "dayHint": "Vorheriger und nächster Tag gehen, solange ein Tag offen ist.",
     "groups": {
       "navigation": "Navigation",
       "actions": "Aktionen",

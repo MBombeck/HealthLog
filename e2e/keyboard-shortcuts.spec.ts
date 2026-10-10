@@ -15,7 +15,10 @@ import { mockTimeline } from "./utils/mock-timeline";
  *   - `?` opens the list: a titled dialog that keeps focus inside and closes
  *     on Escape; the account menu opens the same list;
  *   - `n` opens the add menu;
- *   - `[` and `]` step the open day, never past today.
+ *   - `[` and `]` step the open day, never past today;
+ *   - `g p` opens and closes the day like a click on its strip (focus into
+ *     the panel, back to the strip); below the docking width it opens the
+ *     sheet on the last day and closes it again.
  *
  * The module map is the account's real `/api/auth/me` with only `timeline`
  * rewritten, so the switch is never moved on a shared account. Desktop only:
@@ -149,6 +152,9 @@ test.describe("keyboard shortcuts", () => {
       "g",
       "d",
     ]);
+    await expect(
+      dialog.locator('[data-group="day"] [data-shortcut="day-toggle"] kbd'),
+    ).toHaveText(["g", "p"]);
 
     // Focus trap: Tab and Shift+Tab never leave the dialog.
     for (const step of ["Tab", "Tab", "Tab", "Shift+Tab", "Shift+Tab"]) {
@@ -212,5 +218,93 @@ test.describe("keyboard shortcuts", () => {
     await expect(page).toHaveURL(new RegExp(`[?&]day=${TODAY}`));
     await page.keyboard.press("]");
     await expect(page).toHaveURL(new RegExp(`[?&]day=${TODAY}`));
+  });
+
+  test("g p opens and closes the docked day, focus like its strip", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await mockDay(page);
+    await page.goto("/insights");
+    await shellReady(page);
+    const panel = page.locator('[data-slot="day-panel"]');
+    const strip = page.locator('[data-slot="day-strip-toggle"]');
+    await expect(strip).toHaveAttribute("aria-expanded", "false");
+    await expect(panel).toHaveCount(0);
+
+    await page.keyboard.press("g");
+    await page.keyboard.press("p");
+    await expect(panel).toHaveAttribute("data-shell", "docked");
+    await expect(page).toHaveURL(new RegExp(`[?&]day=${TODAY}`));
+    await expect(strip).toHaveAttribute("aria-expanded", "true");
+    // Into the panel, on its heading, the way the strip opens it.
+    await expect(panel.locator("h2").first()).toBeFocused();
+
+    await page.keyboard.press("g");
+    await page.keyboard.press("p");
+    await expect(panel).toHaveCount(0);
+    await expect(page).toHaveURL(/\/insights$/);
+    await expect(strip).toHaveAttribute("aria-expanded", "false");
+    // Back on the strip, which brings the day back.
+    await expect(strip).toBeFocused();
+  });
+
+  test("below the docking width g p opens the sheet on the last day and closes it", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1024, height: 800 });
+    await mockDay(page);
+    const day = shiftDay(TODAY, -3);
+    // Open and close a day once, so it is the one remembered.
+    await page.goto(`/insights?day=${day}`);
+    await shellReady(page);
+    const panel = page.locator('[data-slot="day-panel"]');
+    await expect(panel).toHaveAttribute("data-shell", "sheet");
+    await page.keyboard.press("Escape");
+    await expect(panel).toHaveCount(0);
+    await page.locator("#main-content").focus();
+
+    await page.keyboard.press("g");
+    await page.keyboard.press("p");
+    await expect(panel).toHaveAttribute("data-shell", "sheet");
+    await expect(page.locator('[data-slot="day-view"]')).toHaveAttribute(
+      "data-day",
+      day,
+    );
+    // Over the sheet, the same keys close it.
+    await page.keyboard.press("g");
+    await page.keyboard.press("p");
+    await expect(panel).toHaveCount(0);
+    await expect(page).toHaveURL(/\/insights$/);
+  });
+
+  test("g p stays out of a field and out of another dialog", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await mockDay(page);
+    await page.goto("/insights");
+    await shellReady(page);
+    const panel = page.locator('[data-slot="day-panel"]');
+    await expect(page.locator('[data-slot="day-strip"]')).toBeVisible();
+    await page.evaluate(() => {
+      const field = document.createElement("input");
+      field.setAttribute("data-testid", "probe-field");
+      field.setAttribute("aria-label", "Probe");
+      document.getElementById("main-content")?.prepend(field);
+    });
+    await page.getByTestId("probe-field").focus();
+    await page.keyboard.type("gp");
+    await expect(page.getByTestId("probe-field")).toHaveValue("gp");
+    await expect(panel).toHaveCount(0);
+
+    await page.locator("#main-content").focus();
+    await page.keyboard.press("Shift+?");
+    await expect(helpDialog(page)).toBeVisible();
+    await page.keyboard.press("g");
+    await page.keyboard.press("p");
+    await expect(panel).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await expect(helpDialog(page)).toHaveCount(0);
   });
 });
