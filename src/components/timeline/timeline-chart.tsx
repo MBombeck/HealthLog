@@ -1117,13 +1117,22 @@ function SeriesTable({
  * ● 82,6 kg". The values stand apart by space, not by a separator glyph;
  * a screen reader hears a comma between them. The dot is decoration; the
  * text reads the same without it.
+ *
+ * Each dot and its value are one unit that never breaks: a line wraps only
+ * between units (the caller's container is a wrapping flex row), so a dot
+ * cannot stay behind at the end of a line while its value moves to the
+ * next. The dot sits on the middle of the text line, and a name too long for
+ * the row is cut short inside its unit. `lead` (the "Ø" in front of the
+ * selection bar's means) rides in the first unit for the same reason.
  */
 export function MeanPartsLine({
   parts,
   seriesColor,
+  lead,
 }: {
   parts: readonly MeanPart[];
   seriesColor: (key: string) => string;
+  lead?: React.ReactNode;
 }) {
   return parts.map((part, i) => (
     <span
@@ -1133,16 +1142,17 @@ export function MeanPartsLine({
       // The readings behind a mean: a hover title, and the same words for a
       // screen reader, but not on the line itself.
       title={part.detail}
-      className={i > 0 ? "ml-3" : undefined}
+      className="inline-flex max-w-full min-w-0 items-center gap-1 whitespace-nowrap"
     >
+      {i === 0 && lead ? <span className="shrink-0">{lead}</span> : null}
       {i > 0 ? <span className="sr-only">, </span> : null}
       <span
         data-slot="timeline-series-dot"
-        className="mr-1 inline-block size-2 rounded-full align-middle"
+        className="size-2 shrink-0 rounded-full"
         style={{ background: seriesColor(part.key) }}
         aria-hidden="true"
       />
-      {part.text}
+      <span className="min-w-0 truncate">{part.text}</span>
       {part.detail ? (
         <span className="sr-only" data-slot="timeline-mean-detail">
           {`, ${part.detail}`}
@@ -1151,6 +1161,10 @@ export function MeanPartsLine({
     </span>
   ));
 }
+
+/** The row the units of a `MeanPartsLine` wrap in: breaks only between them. */
+export const MEAN_PARTS_ROW =
+  "text-muted-foreground inline-flex max-w-full flex-wrap items-center gap-x-3 gap-y-1 text-xs tabular-nums";
 
 /** Inline style for a lane colour dot in HTML (chips, chronicle rails). */
 export function laneDotStyle(lane: TimelineLaneKey): React.CSSProperties {

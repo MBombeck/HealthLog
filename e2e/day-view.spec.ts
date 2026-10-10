@@ -21,8 +21,11 @@ import { MOBILE_ROUTES_ANALYTE } from "./setup/mobile-routes-fixture";
  *   - `?day=` opens the layer on any page, Back and Escape close it, a date in
  *     the future is dropped;
  *   - stepping to the neighbouring days never adds history entries;
- *   - docked, the day collapses to a narrow edge that brings it back on any
- *     page; a sheet closes for good;
+ *   - docked, the day folds to its strip, which runs the full height of the
+ *     window right of the top bar, is the panel's only open and close
+ *     control and brings the day back on any page; the search magnifier at
+ *     the end of the top bar is never covered by it; a sheet closes for good
+ *     from its close button;
  *   - the dashboard's today area offers no door; its charts below do.
  *
  * Stable data attributes only: `day-panel` (+ `data-shell`), `day-link`,
@@ -175,12 +178,15 @@ test.describe("the day view", () => {
     await page.goto(`/mood?day=${day}`);
     await expect(panel(page)).toHaveAttribute("data-shell", "docked");
 
-    await page.locator('[data-slot="day-close"]').click();
+    // Docked, the header has no fold button: the strip is the toggle.
+    await expect(page.locator('[data-slot="day-close"]')).toHaveCount(0);
+    const rail = page.locator('[data-slot="day-strip"]');
+    const expand = page.locator('[data-slot="day-strip-toggle"]');
+    await expect(expand).toHaveAttribute("aria-expanded", "true");
+    await expand.click();
     await expect(panel(page)).toHaveCount(0);
     await expect(page).toHaveURL(/\/mood$/);
     // The strip stays, holding the day, and focus waits on it.
-    const rail = page.locator('[data-slot="day-strip"]');
-    const expand = page.locator('[data-slot="day-strip-toggle"]');
     await expect(rail).toHaveAttribute("data-day", day);
     await expect(rail).toHaveAttribute("data-state", "closed");
     await expect(expand).toBeFocused();
@@ -303,6 +309,67 @@ test.describe("the day view", () => {
     await expect(panel(page)).toHaveCount(0);
     await expect(page).toHaveURL(/\/mood$/);
     await expect(page.locator('[data-slot="day-strip"]')).toHaveCount(0);
+  });
+
+  test("the strip runs the full height; the search magnifier stays clear of it", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium-desktop",
+      "docked from 1280 px",
+    );
+    const day = isoDaysAgo(3);
+    const strip = page.locator('[data-slot="day-strip"]');
+    const search = page.locator('[data-slot="command-palette-trigger"]');
+    const topBar = page.locator('[data-slot="top-bar"]');
+    for (const width of [1280, 1440, 1920]) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const url of ["/mood", `/mood?day=${day}`]) {
+        await page.goto(url);
+        await expect(strip).toBeVisible();
+        if (url.includes("day=")) {
+          await expect(panel(page)).toHaveAttribute("data-shell", "docked");
+          // The open panel runs the full height beside its strip.
+          await expect
+            .poll(async () => (await panel(page).boundingBox())?.width)
+            .toBeGreaterThan(400);
+          const p = (await panel(page).boundingBox())!;
+          expect(p.y).toBe(0);
+          expect(Math.round(p.y + p.height)).toBe(900);
+        }
+        const s = (await strip.boundingBox())!;
+        // Top edge at the very top of the window, down to the bottom.
+        expect(s.y).toBe(0);
+        expect(Math.round(s.height)).toBe(900);
+        expect(Math.round(s.x + s.width)).toBe(width);
+        // The top bar ends left of the strips, so the magnifier sits fully
+        // inside it, in front of them.
+        const bar = (await topBar.boundingBox())!;
+        expect(bar.x + bar.width).toBeLessThanOrEqual(s.x + 0.5);
+        await expect(search).toBeVisible();
+        const m = (await search.boundingBox())!;
+        expect(m.x).toBeGreaterThanOrEqual(0);
+        expect(m.y).toBeGreaterThanOrEqual(0);
+        expect(m.x + m.width).toBeLessThanOrEqual(s.x);
+        expect(m.y + m.height).toBeLessThanOrEqual(bar.y + bar.height);
+        // Nothing paints over its centre: the hit test lands on it.
+        const hit = await page.evaluate(
+          ([x, y]) =>
+            document
+              .elementFromPoint(x, y)
+              ?.closest('[data-slot="command-palette-trigger"]') != null,
+          [m.x + m.width / 2, m.y + m.height / 2],
+        );
+        expect(hit).toBe(true);
+        // No horizontal scroll anywhere on the page.
+        const overflow = await page.evaluate(
+          () =>
+            document.documentElement.scrollWidth -
+            document.documentElement.clientWidth,
+        );
+        expect(overflow).toBeLessThanOrEqual(0);
+      }
+    }
   });
 
   test("a future or malformed ?day= is dropped without a word", async ({

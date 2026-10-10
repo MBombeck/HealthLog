@@ -15,7 +15,8 @@
  *     Option+5 on a German Mac, AltGr+8 on a German PC) still counts, because
  *     for that person there is no other way to press it;
  *   - while a dialog, sheet, menu or popover is open the keys are its own,
- *     except over the day sheet, where `[` and `]` step the day it shows.
+ *     except over the day sheet, where `[` and `]` step the day it shows and
+ *     `g p` closes it.
  *
  * `g` starts a two-key sequence; the second key has to follow within
  * `SEQUENCE_TIMEOUT_MS`. Escape is never handled here: every surface closes
@@ -43,17 +44,25 @@ export const GO_TO_SHORTCUTS = [
 
 export type GoToKey = (typeof GO_TO_SHORTCUTS)[number]["key"];
 
+/**
+ * `g` + `p` opens or closes the day, the way a click on the day's strip does
+ * (a sheet below the docking width). Not a destination, and no `g` key above.
+ */
+export const DAY_TOGGLE_KEY = "p";
+
 export type ShortcutAction =
   | { type: "go"; key: GoToKey }
   | { type: "palette" }
   | { type: "capture" }
   | { type: "help" }
-  | { type: "day"; delta: -1 | 1 };
+  | { type: "day"; delta: -1 | 1 }
+  | { type: "day-toggle" };
 
 /**
  * Where the keyboard is:
  *  - `page`: nothing modal is open, every shortcut applies;
- *  - `day-sheet`: the day sheet is the only modal surface, `[` / `]` apply;
+ *  - `day-sheet`: the day sheet is the only modal surface, `[` / `]` and
+ *    `g p` apply;
  *  - `off`: another dialog, sheet, menu or popover has the keys.
  */
 export type ShortcutScope = "page" | "day-sheet" | "off";
@@ -205,12 +214,23 @@ export function createShortcutReader(timeoutMs = SEQUENCE_TIMEOUT_MS) {
     if (key === "[" || key === "]") {
       return { type: "day", delta: key === "[" ? -1 : 1 };
     }
-    if (scope !== "page") return null;
 
-    if (pending !== null && now - pending <= timeoutMs) {
-      // The second key of a sequence: a destination, or nothing at all, so
-      // a mistyped `g n` does not open the add menu.
+    const inSequence = pending !== null && now - pending <= timeoutMs;
+    if (scope !== "page") {
+      // Over the day sheet only `g p` (which closes it) is a sequence.
+      if (inSequence && key === DAY_TOGGLE_KEY) return { type: "day-toggle" };
+      if (key === "g") {
+        pendingSince = now;
+        return "pending";
+      }
+      return null;
+    }
+
+    if (inSequence) {
+      // The second key of a sequence: a destination, the day, or nothing at
+      // all, so a mistyped `g n` does not open the add menu.
       if (isGoToKey(key)) return { type: "go", key };
+      if (key === DAY_TOGGLE_KEY) return { type: "day-toggle" };
       if (key !== "g") return null;
     }
     if (key === "g") {

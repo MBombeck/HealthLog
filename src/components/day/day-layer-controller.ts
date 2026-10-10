@@ -185,6 +185,27 @@ export function jumpDay(next: DateKey): void {
  * Coach's conversations below 1600 px): focus then stays with the control
  * that asked for the room instead of moving to the day's edge.
  */
+let dayToggle: (() => void) | null = null;
+
+/**
+ * The mounted layer's open-or-close, the same as a click on the day's strip
+ * (a sheet with the strip's day below the docking width). The layer
+ * registers it; `g p` calls it through `toggleDay`.
+ */
+export function registerDayToggle(toggle: () => void): () => void {
+  dayToggle = toggle;
+  return () => {
+    if (dayToggle === toggle) dayToggle = null;
+  };
+}
+
+/** Open or close the day. False when no day layer is mounted. */
+export function toggleDay(): boolean {
+  if (dayToggle === null) return false;
+  dayToggle();
+  return true;
+}
+
 let yielding = false;
 
 /** Collapse the docked day to its edge for a neighbouring panel. */

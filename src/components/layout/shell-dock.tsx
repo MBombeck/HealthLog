@@ -5,7 +5,6 @@ import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-import { SHELL_HEADER_BAND } from "./shell-metrics";
 import { createShellSlot } from "./shell-slot";
 
 /**
@@ -17,9 +16,12 @@ import { createShellSlot } from "./shell-slot";
  * panels: conversations (`order-1`), then the day (`order-2`). A panel opens
  * to the left of the strips; the strips never move or change shape.
  *
- * Each strip starts below the top bar's band. The band above them is empty
- * and draws the top bar's bottom line on through, so nothing in the strips
- * meets the command palette at the end of the top bar.
+ * Each strip runs the full height of the shell row, from the top of the
+ * window to the bottom. The strip column sits beside the content column, so
+ * the top bar (and the command palette's magnifier at its trailing end) ends
+ * at the strips' left edge and nothing in a strip can cover it. Docked, the
+ * strip is the panel's only open and close control: the panel's header
+ * carries no fold button of its own.
  */
 const strips = createShellSlot("shell-strips");
 
@@ -89,9 +91,9 @@ export interface DockStripProps {
 }
 
 /**
- * One strip: an empty cell of the top bar's band, then a button the rest of
- * the window's height that opens and closes its panel. The label reads
- * top to bottom; the strip is marked while its panel is open.
+ * One strip: a button the full height of the window that opens and closes
+ * its panel. The label reads top to bottom; the strip is marked while its
+ * panel is open.
  */
 export function DockStrip({
   ref,
@@ -116,10 +118,6 @@ export function DockStrip({
         order === 1 ? "order-1" : "order-2",
       )}
     >
-      <div
-        aria-hidden="true"
-        className={cn(SHELL_HEADER_BAND, "border-sidebar-border shrink-0")}
-      />
       <button
         ref={ref}
         type="button"

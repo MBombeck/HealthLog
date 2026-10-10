@@ -245,8 +245,15 @@ test.describe("the dashboard and the list of all values", () => {
       .first();
     await expect(plot).toBeVisible({ timeout: 20_000 });
     await openFromPlot(page, plot, testInfo);
-    // Closing leaves the dashboard on today.
-    await page.locator('[data-slot="day-close"]').click();
+    // Closing leaves the dashboard on today: a sheet from its close button,
+    // the docked day from its strip, the only control it has.
+    await page
+      .locator(
+        isPhone(testInfo)
+          ? '[data-slot="day-close"]'
+          : '[data-slot="day-strip-toggle"]',
+      )
+      .click();
     await expect(panel(page)).toHaveCount(0);
     await expect(page).toHaveURL(/\/$/);
   });
@@ -292,7 +299,8 @@ test.describe("the dashboard and the list of all values", () => {
       .toBeLessThanOrEqual(panelBox.x);
 
     // Folded, the day keeps its strip; the launcher stays clear of it.
-    await page.locator('[data-slot="day-close"]').click();
+    await page.locator('[data-slot="day-strip-toggle"]').click();
+    await expect(panel(page)).toHaveCount(0);
     const edge = (await page.locator('[data-slot="day-strip"]').boundingBox())!;
     await expect
       .poll(async () => {

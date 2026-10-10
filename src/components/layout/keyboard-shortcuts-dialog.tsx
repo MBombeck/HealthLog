@@ -92,6 +92,7 @@ export function KeyboardShortcutsDialog({
   ];
 
   const day: Row[] = [
+    { id: "day-toggle", label: t("shortcuts.toggleDay"), sequence: ["g", "p"] },
     { id: "day-previous", label: t("shortcuts.previousDay"), sequence: ["["] },
     { id: "day-next", label: t("shortcuts.nextDay"), sequence: ["]"] },
   ];

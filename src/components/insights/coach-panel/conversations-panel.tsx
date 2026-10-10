@@ -58,8 +58,9 @@ import { useDeleteCoachConversationWithUndo } from "./use-coach";
  * the two bottom borders draw one line. Its strip stays at the right edge of
  * the window, left of the day's (`shell-dock.tsx`), open or not: a click
  * on the strip opens the panel left of the strips and a second click shuts
- * it; the header's first control shuts it too. The panel slides open and
- * shut (a 200 ms width transition, none under reduced motion).
+ * it. The strip is the docked panel's only fold control; the header carries
+ * none. The panel slides open and shut (a 200 ms width transition, none
+ * under reduced motion).
  * The header carries the title, a link to Plans, the settings gear and, in
  * the sheet, a close button. New conversation is not here: it floats in the
  * conversation itself (`NewChatFab`).
@@ -75,7 +76,7 @@ import { useDeleteCoachConversationWithUndo } from "./use-coach";
  * Keyboard: Escape folds the docked panel when focus is inside it and
  * nothing inside (a row menu, the rename field, the settings popover) has
  * already claimed the key; focus moves to the strip, and opening from the
- * strip lands on the fold control. In the sheet Radix owns Escape, the
+ * strip lands on the panel's heading. In the sheet Radix owns Escape, the
  * focus trap and the return.
  */
 export const COACH_PANEL_ID = "coach-conversations-panel";
@@ -286,17 +287,17 @@ export function ConversationsPanel({
   }
 
   const expanded = docked ? dockedOpen : sheetOpen;
-  const collapseRef = useRef<HTMLButtonElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const expandRef = useRef<HTMLButtonElement>(null);
   // The list keeps painting while it slides shut.
   const shownOpen = useLingering(docked && dockedOpen ? true : null) ?? false;
   // Where focus goes once the docked panel has folded or opened.
-  const focusAfter = useRef<"collapse" | "expand" | null>(null);
+  const focusAfter = useRef<"panel" | "strip" | null>(null);
   useEffect(() => {
     const target = focusAfter.current;
     focusAfter.current = null;
-    if (target === "collapse") collapseRef.current?.focus();
-    if (target === "expand") expandRef.current?.focus();
+    if (target === "panel") headingRef.current?.focus({ preventScroll: true });
+    if (target === "strip") expandRef.current?.focus();
   }, [dockedOpen]);
 
   function toggleSheet() {
@@ -304,7 +305,7 @@ export function ConversationsPanel({
   }
 
   function expandDocked() {
-    focusAfter.current = "collapse";
+    focusAfter.current = "panel";
     setYielded(false);
     setRevealed(false);
     setOpen(true);
@@ -313,7 +314,7 @@ export function ConversationsPanel({
   }
 
   function collapseDocked() {
-    focusAfter.current = "expand";
+    focusAfter.current = "strip";
     setYielded(false);
     setRevealed(false);
     setOpen(false);
@@ -344,37 +345,19 @@ export function ConversationsPanel({
           : cn("border-sidebar-border px-3", SHELL_HEADER_BAND),
       )}
     >
-      {inSheet ? null : (
-        // A title, not a tooltip: focus lands here when the panel opens
-        // from its edge, and a tooltip opened by that focus would take the
-        // next Escape for itself.
-        <Button
-          ref={collapseRef}
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={collapseDocked}
-          data-slot="coach-panel-collapse"
-          aria-controls={COACH_PANEL_ID}
-          aria-expanded={true}
-          aria-label={t("insights.coach.frame.hidePanel")}
-          title={t("insights.coach.frame.hidePanel")}
-          className={PANEL_HEADER_BUTTON}
-        >
-          {/* The day's own fold control and glyph, mirrored so it points
-              the way the panel goes. */}
-          <PanelRightClose
-            className={cn(PANEL_HEADER_ICON, "-scale-x-100")}
-            aria-hidden="true"
-          />
-        </Button>
-      )}
       {inSheet ? (
         <SheetTitle className="min-w-0 flex-1 truncate text-lg leading-tight font-semibold">
           {t("insights.coach.historyTitle")}
         </SheetTitle>
       ) : (
-        <h2 className="min-w-0 flex-1 truncate text-lg leading-tight font-semibold">
+        // Docked, the strip is the panel's only fold control; focus lands on
+        // the heading when the panel opens from it.
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          data-slot="coach-panel-heading"
+          className="min-w-0 flex-1 truncate pl-1 text-lg leading-tight font-semibold focus-visible:outline-none"
+        >
           {t("insights.coach.historyTitle")}
         </h2>
       )}

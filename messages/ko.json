@@ -12559,8 +12559,6 @@
     }
   },
   "palette": {
-    "open": "검색…",
-    "openLabel": "페이지, 설정, 작업 검색",
     "title": "검색",
     "description": "페이지, 설정, 모듈 또는 작업을 찾습니다.",
     "placeholder": "페이지, 설정, 모듈 검색…",
@@ -12597,7 +12595,8 @@
     "close": "대화 상자나 패널 닫기",
     "previousDay": "이전 날",
     "nextDay": "다음 날",
-    "dayHint": "하루가 열려 있을 때.",
+    "toggleDay": "하루 열기 또는 닫기",
+    "dayHint": "이전 날과 다음 날은 하루가 열려 있을 때 작동합니다.",
     "groups": {
       "navigation": "탐색",
       "actions": "작업",

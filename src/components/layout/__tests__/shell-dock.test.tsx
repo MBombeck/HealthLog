@@ -15,7 +15,7 @@ import { DOCK_SLIDE, DockStrip } from "../shell-dock";
  * The docked panels' strips (v1.42). Each docked panel keeps its own strip
  * at the right edge; the strip is a toggle for its panel, never moves, and
  * below 1600 px only one panel is open. The click paths, focus and the
- * geometry run in `e2e/dock-strips.spec.ts`.
+ * geometry run in `e2e/day-view.spec.ts` and `e2e/coach-layout.spec.ts`.
  */
 function strip(expanded: boolean) {
   return renderToStaticMarkup(
@@ -56,14 +56,14 @@ describe("DockStrip", () => {
     expect(html).toContain('aria-label="Hide day"');
   });
 
-  it("keeps the same shape open and closed, below the top bar's band", () => {
+  it("keeps the same shape open and closed, the full height of the window", () => {
     const shape = (html: string) => html.match(/^<div[^>]*class="([^"]*)"/)![1];
     expect(shape(strip(true))).toBe(shape(strip(false)));
     expect(shape(strip(false))).toContain("w-10");
-    // The first cell is the band (`SHELL_HEADER_BAND`), empty and hidden.
-    expect(strip(false)).toMatch(
-      /^<div[^>]*><div aria-hidden="true" class="h-16 border-b/,
-    );
+    expect(shape(strip(false))).toContain("h-full");
+    // The button is the strip's first and only cell: no band above it.
+    expect(strip(false)).toMatch(/^<div[^>]*><button/);
+    expect(strip(false)).not.toContain("h-16");
   });
 
   it("orders the strips like their panels: conversations, then the day", () => {

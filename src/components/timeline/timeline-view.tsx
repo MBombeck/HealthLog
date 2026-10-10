@@ -603,14 +603,14 @@ export function TimelineLegend({
     >
       <span className="inline-flex items-center gap-1.5">
         <span
-          className="bg-muted-foreground h-1.5 w-4 rounded-full"
+          className="bg-muted-foreground h-1.5 w-4 shrink-0 rounded-full"
           aria-hidden="true"
         />
         {t("timeline.legendSpan")}
       </span>
       <span className="inline-flex items-center gap-1.5">
         <span
-          className="bg-muted-foreground size-2 rounded-full"
+          className="bg-muted-foreground size-2 shrink-0 rounded-full"
           aria-hidden="true"
         />
         {t("timeline.legendEvent")}
@@ -622,7 +622,10 @@ export function TimelineLegend({
             data-slot="timeline-legend-mean"
             data-bucket={bucket}
           >
-            <span className="bg-foreground h-0.5 w-4" aria-hidden="true" />
+            <span
+              className="bg-foreground h-0.5 w-4 shrink-0"
+              aria-hidden="true"
+            />
             {t(TIMELINE_LEGEND_MEAN_KEY[bucket])}
           </span>
           <span

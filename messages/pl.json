@@ -12559,8 +12559,6 @@
     }
   },
   "palette": {
-    "open": "Szukaj…",
-    "openLabel": "Szukaj stron, ustawień i akcji",
     "title": "Szukaj",
     "description": "Znajdź stronę, ustawienie, moduł lub akcję.",
     "placeholder": "Szukaj stron, ustawień, modułów…",
@@ -12597,7 +12595,8 @@
     "close": "Zamknij okno lub panel",
     "previousDay": "Poprzedni dzień",
     "nextDay": "Następny dzień",
-    "dayHint": "Gdy otwarty jest dzień.",
+    "toggleDay": "Otwórz lub zamknij dzień",
+    "dayHint": "Poprzedni i następny dzień działają, gdy dzień jest otwarty.",
     "groups": {
       "navigation": "Nawigacja",
       "actions": "Akcje",

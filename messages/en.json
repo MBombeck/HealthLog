@@ -12559,8 +12559,6 @@
     }
   },
   "palette": {
-    "open": "Search…",
-    "openLabel": "Search pages, settings and actions",
     "title": "Search",
     "description": "Find a page, a setting, a module or an action.",
     "placeholder": "Search pages, settings, modules…",
@@ -12597,7 +12595,8 @@
     "close": "Close a dialog or panel",
     "previousDay": "Previous day",
     "nextDay": "Next day",
-    "dayHint": "While a day is open.",
+    "toggleDay": "Open or close the day",
+    "dayHint": "Previous and next day work while a day is open.",
     "groups": {
       "navigation": "Navigation",
       "actions": "Actions",

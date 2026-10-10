@@ -9,7 +9,11 @@ import {
   useSyncExternalStore,
 } from "react";
 
-import { stepDay, useOpenDay } from "@/components/day/day-layer-controller";
+import {
+  stepDay,
+  toggleDay,
+  useOpenDay,
+} from "@/components/day/day-layer-controller";
 import { useTodayKey } from "@/components/day/use-today-key";
 import {
   CAPTURE_KIND_ORDER,
@@ -38,8 +42,8 @@ import {
  * (never on the sign-in pages or in the setup flow, which the shell renders
  * without it).
  *
- * `g` + a key opens a page, `n` the add menu, `[` / `]` step the open day,
- * `?` the list of all of them. Which key does what, and when a key is not
+ * `g` + a key opens a page, `g p` opens or closes the day, `n` the add menu,
+ * `[` / `]` step the open day, `?` the list of all of them. Which key does what, and when a key is not
  * ours, is decided in `src/lib/keyboard/global-shortcuts.ts`; this component
  * reads the page's state and carries the action out. A destination comes from
  * the same lists the navigation renders, so `g t` with the timeline module
@@ -196,6 +200,9 @@ export function GlobalShortcuts() {
           stepDay(date, action.delta);
           return;
         }
+        case "day-toggle":
+          if (toggleDay()) event.preventDefault();
+          return;
       }
     };
     document.addEventListener("keydown", onKeyDown);
