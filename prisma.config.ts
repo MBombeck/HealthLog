@@ -3,8 +3,8 @@ import path from "node:path";
 import dotenv from "dotenv";
 import { defineConfig } from "prisma/config";
 
-dotenv.config({ path: path.join(__dirname, ".env") });
-dotenv.config({ path: path.join(__dirname, ".env.local") });
+dotenv.config({ path: path.join(__dirname, ".env"), quiet: true });
+dotenv.config({ path: path.join(__dirname, ".env.local"), quiet: true });
 
 const inContainer = fs.existsSync("/.dockerenv");
 const defaultDatabaseUrl = inContainer

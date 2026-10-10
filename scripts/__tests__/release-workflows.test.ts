@@ -249,7 +249,7 @@ describe("release container inputs", () => {
     expect(dockerfile).toContain(
       "ln -sfn /opt/prisma-cli/node_modules/.bin/tsx /usr/local/bin/healthlog-tsx",
     );
-    expect(dockerfile).toContain("dotenv@17.4.2");
+    expect(dockerfile).toContain("dotenv@18.0.6");
     expect(dockerfile).toContain(
       "ln -sfn /opt/prisma-cli/node_modules/dotenv /app/node_modules/dotenv",
     );
