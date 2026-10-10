@@ -39,7 +39,7 @@ import {
 } from "./timeline-dates";
 import { useItemWords } from "./item-words";
 import { itemsInPeriod } from "./timeline-geometry";
-import { MeanPartsLine, laneDotStyle } from "./timeline-chart";
+import { MEAN_PARTS_ROW, MeanPartsLine, laneDotStyle } from "./timeline-chart";
 import {
   bucketValues,
   labelledMeanParts,
@@ -201,12 +201,12 @@ export function SelectionBar({
       })}
       {means.values.length > 0 && (
         <span
-          className="text-muted-foreground text-xs tabular-nums"
+          className={MEAN_PARTS_ROW}
           data-slot="timeline-selection-means"
           data-bucket={means.start}
         >
-          {meanBefore}
           <MeanPartsLine
+            lead={meanBefore || undefined}
             parts={labelledMeanParts(means.values, seriesFormat, {
               label: seriesLabel,
               bloodPressure: t("timeline.values.bloodPressure"),
@@ -215,7 +215,7 @@ export function SelectionBar({
             })}
             seriesColor={seriesColor}
           />
-          {meanAfter}
+          {meanAfter ? <span>{meanAfter}</span> : null}
         </span>
       )}
     </div>

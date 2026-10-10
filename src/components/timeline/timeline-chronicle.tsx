@@ -50,7 +50,12 @@ import {
   formatMonthYear,
 } from "./timeline-dates";
 import { LANE_COLOR } from "./timeline-geometry";
-import { MeanPartsLine, bucketText, laneDotStyle } from "./timeline-chart";
+import {
+  MEAN_PARTS_ROW,
+  MeanPartsLine,
+  bucketText,
+  laneDotStyle,
+} from "./timeline-chart";
 import {
   chronicleMeans,
   meanParts,
@@ -247,7 +252,7 @@ export function TimelineChronicle({
                   className="bg-muted text-foreground text-2xs inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium"
                 >
                   <span
-                    className="size-1.5 rounded-full"
+                    className="size-1.5 shrink-0 rounded-full"
                     style={laneDotStyle(chip.lane)}
                     aria-hidden="true"
                   />
@@ -295,7 +300,7 @@ export function TimelineChronicle({
                 </h3>
                 {bucketMeans && parts.length > 0 && (
                   <span
-                    className="text-muted-foreground text-xs tabular-nums"
+                    className={MEAN_PARTS_ROW}
                     data-slot="timeline-chronicle-means"
                     data-bucket={bucketMeans.start}
                   >

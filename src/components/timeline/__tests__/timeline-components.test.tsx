@@ -551,6 +551,43 @@ describe("value line colours", () => {
     expect(text(html)).toBe("129/82 mmHg, 82,6 kg");
     expect(html).toContain('class="sr-only">, </span>');
   });
+
+  it("keeps each dot and its value in one unit that never breaks", () => {
+    const html = render(
+      <MeanPartsLine
+        lead="Ø"
+        parts={[
+          { key: "BLOOD_PRESSURE_SYS", text: "129/82 mmHg" },
+          { key: "WEIGHT", text: "82,6 kg" },
+          { key: "STRAIN", text: "Daily strain with a very long name 12" },
+        ]}
+        seriesColor={seriesColor}
+      />,
+    );
+    // Each unit opens with its own tag; everything up to the next unit's tag
+    // (the lead, the dot, the value) is inside it.
+    const units = html.split(/(?=<span[^>]*data-slot="timeline-mean-part")/);
+    expect(units).toHaveLength(3);
+    for (const unit of units) {
+      const open = unit.slice(0, unit.indexOf(">"));
+      expect(open).toContain("inline-flex");
+      expect(open).toContain("items-center");
+      expect(open).toContain("whitespace-nowrap");
+      const dot = unit.match(
+        /<span[^>]*data-slot="timeline-series-dot"[^>]*>/,
+      )?.[0];
+      expect(dot).toContain("shrink-0");
+      expect(dot).not.toContain("align-middle");
+      // The value follows the dot inside the same unit.
+      expect(text(unit.slice(unit.indexOf(dot!)))).toMatch(/\S/);
+    }
+    // The lead rides in the first unit, so "Ø" never ends a line alone.
+    expect(text(units[0]).startsWith("Ø")).toBe(true);
+    // A long name is cut short inside its unit.
+    expect(units[2]).toContain(
+      '<span class="min-w-0 truncate">Daily strain with a very long name 12</span>',
+    );
+  });
 });
 
 describe("life events in the capture picker", () => {
