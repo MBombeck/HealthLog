@@ -11,13 +11,20 @@
  * provisions it and the boot enqueue silently never drains (the v1.4.37
  * dead-queue class).
  */
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { integrationBackfillSourceOptions } from "@/lib/jobs/integration-backfill-admission";
-import { isReauthRequired } from "@/lib/integrations/status";
-import { GOOGLE_HEALTH_INTEGRATION_KEY } from "@/lib/google-health/sync-core";
-import { syncUserGoogleHealth } from "@/lib/google-health/sync";
+import {
+  readGoogleHealthBackfillDone,
+  runWithGoogleHealthBackfillResume,
+} from "@/lib/google-health/sync-core";
+import {
+  isGoogleHealthParked,
+  syncUserGoogleHealth,
+} from "@/lib/google-health/sync";
+import { GOOGLE_HEALTH_SYNC_LOCK_WAIT_MS } from "@/lib/google-health/sync-lock";
 import { runWithGoogleHealthStop } from "@/lib/google-health/client";
 
 export const GOOGLE_HEALTH_BACKFILL_QUEUE = "google-health-backfill";
@@ -53,14 +60,24 @@ export interface GoogleHealthBackfillPayload {
  * heart-rate history runs to thousands of pages, and the walk asks it before
  * every page: once it says stop, the walk ends where it is, the cycle reports
  * itself truncated, and this throws like any other incomplete run, without
- * the stamp. The rows already written stay; the retry or the next boot walks
- * again and the key-stable upserts overwrite them.
+ * the stamp. The rows already written stay.
+ *
+ * Resumable: every collection the walk finishes cleanly is noted in
+ * `backfillProgress`, and the next attempt (the pg-boss retry, or the next
+ * boot's discovery) skips those and walks only what is left
+ * (`runWithGoogleHealthBackfillResume`). The note is cleared once the stamp
+ * lands, and on every reconnect.
+ *
+ * Never beside another run of the same account: the sync takes the account's
+ * lock, waiting a bounded time for an hourly or manual run to finish. If the
+ * lock does not come free the attempt throws without doing anything, and the
+ * retry tries again.
  */
 export async function runGoogleHealthBackfillForUser(
   userId: string,
   shouldStop: () => boolean = () => false,
 ): Promise<{ imported: number }> {
-  if (await isReauthRequired(userId, GOOGLE_HEALTH_INTEGRATION_KEY)) {
+  if (await isGoogleHealthParked(userId)) {
     annotate({
       action: {
         name: "google_health.backfill.skipped_reauth",
@@ -70,9 +87,32 @@ export async function runGoogleHealthBackfillForUser(
     return { imported: 0 };
   }
 
-  const { imported, failed } = await runWithGoogleHealthStop(shouldStop, () =>
-    syncUserGoogleHealth(userId, { fullSync: true }),
+  const connection = await prisma.googleHealthConnection.findUnique({
+    where: { userId },
+    select: { backfillProgress: true },
+  });
+  const done = readGoogleHealthBackfillDone(connection?.backfillProgress);
+
+  const {
+    result: { imported, failed, busy },
+    skipped,
+  } = await runWithGoogleHealthBackfillResume(userId, done, () =>
+    runWithGoogleHealthStop(shouldStop, () =>
+      syncUserGoogleHealth(userId, {
+        fullSync: true,
+        waitForLockMs: GOOGLE_HEALTH_SYNC_LOCK_WAIT_MS,
+      }),
+    ),
   );
+  if (skipped.length > 0) {
+    annotate({ meta: { "googleHealth.backfill.resumedPast": skipped } });
+  }
+
+  if (busy) {
+    throw new Error(
+      `google-health backfill for user ${userId} deferred: another sync of the account is running`,
+    );
+  }
 
   if (failed) {
     // Surface through the pg-boss retry path (retryLimit 3, backoff). If the
@@ -85,7 +125,7 @@ export async function runGoogleHealthBackfillForUser(
 
   await prisma.googleHealthConnection.update({
     where: { userId },
-    data: { backfillCompletedAt: new Date() },
+    data: { backfillCompletedAt: new Date(), backfillProgress: Prisma.DbNull },
   });
 
   annotate({

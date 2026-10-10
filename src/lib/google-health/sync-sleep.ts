@@ -28,8 +28,10 @@ import {
 } from "./client";
 import {
   getValidToken,
+  googleHealthTokenSource,
   handleCollectionFetchError,
   noteHardFailure,
+  runGoogleHealthCollection,
   replaceStaleGoogleHealthSleep,
   upsertGoogleHealthMeasurements,
   type GoogleHealthMeasurementUpsert,
@@ -43,6 +45,15 @@ import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger"
 export async function syncUserSleep(
   userId: string,
   opts: GoogleHealthResourceSyncOptions = {},
+): Promise<number> {
+  return runGoogleHealthCollection("sleep", () =>
+    syncSleepSessions(userId, opts),
+  );
+}
+
+async function syncSleepSessions(
+  userId: string,
+  opts: GoogleHealthResourceSyncOptions,
 ): Promise<number> {
   const tokenInfo = await getValidToken(userId);
   if (!tokenInfo) return 0;
@@ -60,7 +71,7 @@ export async function syncUserSleep(
   try {
     points = await fetchDataPoints(
       GOOGLE_HEALTH_DATA_TYPES.sleep,
-      tokenInfo.accessToken,
+      googleHealthTokenSource(userId, tokenInfo),
       "fetchSleep",
       { start, pageSize: GOOGLE_HEALTH_ACTIVITY_PAGE_SIZE },
     );
@@ -116,7 +127,16 @@ export async function syncUserSleep(
     });
   }
 
-  await replaceStaleGoogleHealthSleep(userId, replaceWindows);
+  // Every session's fresh rows are protected in every window, not only in
+  // their own. Google can report two sessions over the same stretch of a
+  // night (two sources, or a nap inside the main sleep), and a window that
+  // protected only its own session's rows tombstoned the other session's rows
+  // on every sync, for the upsert to bring them straight back.
+  const allKeepIds = readings.map((r) => r.externalId);
+  await replaceStaleGoogleHealthSleep(
+    userId,
+    replaceWindows.map((w) => ({ ...w, keepIds: allKeepIds })),
+  );
 
   const { imported, inserted } = await upsertGoogleHealthMeasurements(
     userId,

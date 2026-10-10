@@ -21,7 +21,10 @@ vi.mock("../sync-core", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../sync-core")>();
   return {
     ...actual,
-    getValidToken: vi.fn(async () => ({ accessToken: "token" })),
+    getValidToken: vi.fn(async () => ({
+      accessToken: "token",
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    })),
     handleCollectionFetchError: vi.fn(async () => 0),
     upsertGoogleHealthMeasurements: vi.fn(async () => ({
       imported: 0,

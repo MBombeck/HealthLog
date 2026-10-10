@@ -38,6 +38,10 @@ vi.mock("../client", () => ({
 vi.mock("../sync-core", () => ({
   getValidToken,
   handleCollectionFetchError: vi.fn(),
+  googleHealthTokenSource:
+    (_userId: string, info: { accessToken: string }) => async () =>
+      info.accessToken,
+  runGoogleHealthCollection: (_key: string, fn: () => Promise<number>) => fn(),
   noteHardFailure: vi.fn(),
 }));
 

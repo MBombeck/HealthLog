@@ -1955,6 +1955,11 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             "The run failed and wrote nothing. A run that wrote something before failing answers 200 instead.",
           content: { "application/json": { schema: errorEnvelope } },
         },
+        "409": {
+          description:
+            "Another sync of this account is already running (the history backfill after a reconnect, or the hourly poll), so none was started. `meta.errorCode` = `sync_in_progress`. `GET /api/google-health/sync/status` reports the running one.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
         ...stdResponses,
         "422": {
           description:

@@ -25,8 +25,10 @@ import {
 } from "./client";
 import {
   getValidToken,
+  googleHealthTokenSource,
   handleCollectionFetchError,
   noteHardFailure,
+  runGoogleHealthCollection,
   type GoogleHealthResourceSyncOptions,
 } from "./sync-core";
 import { prisma } from "@/lib/db";
@@ -38,6 +40,15 @@ import { resolveUserTimezone } from "@/lib/tz/resolver";
 export async function syncUserWorkout(
   userId: string,
   opts: GoogleHealthResourceSyncOptions = {},
+): Promise<number> {
+  return runGoogleHealthCollection("fetchExercise", () =>
+    syncExerciseSessions(userId, opts),
+  );
+}
+
+async function syncExerciseSessions(
+  userId: string,
+  opts: GoogleHealthResourceSyncOptions,
 ): Promise<number> {
   const tokenInfo = await getValidToken(userId);
   if (!tokenInfo) return 0;
@@ -57,7 +68,7 @@ export async function syncUserWorkout(
   try {
     points = await fetchDataPoints(
       GOOGLE_HEALTH_DATA_TYPES.exercise,
-      tokenInfo.accessToken,
+      googleHealthTokenSource(userId, tokenInfo),
       "fetchExercise",
       { start, pageSize: GOOGLE_HEALTH_ACTIVITY_PAGE_SIZE, tz },
     );

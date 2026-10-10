@@ -30,6 +30,20 @@ vi.mock("@/lib/google-health/sync-sleep", () => ({
   syncUserSleep: (...a: unknown[]) => syncUserSleep(...a),
 }));
 
+vi.mock("@/lib/google-health/sync", () => ({
+  isGoogleHealthParked: isReauthRequiredMock,
+}));
+
+// The account lock is a Postgres advisory lock on a connection of its own;
+// these cases run without a database, so the lock is always free.
+vi.mock("@/lib/google-health/sync-lock", () => ({
+  GOOGLE_HEALTH_SYNC_LOCK_WAIT_MS: 0,
+  withGoogleHealthSyncLock: async (
+    _userId: string,
+    run: () => Promise<unknown>,
+  ) => ({ ran: true, result: await run() }),
+}));
+
 vi.mock("@/lib/logging/context", () => ({
   annotate: () => {},
   getEvent: () => null,

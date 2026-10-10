@@ -104,6 +104,15 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   const result = await syncUserGoogleHealth(user.id, { fullSync });
+  // Another run of this account holds it (the history backfill after a
+  // reconnect, or the hourly poll). Starting a second one beside it is what
+  // pushed accounts over Google's per-minute quota; the card follows the
+  // running one through the status route instead.
+  if (result.busy) {
+    return apiError("A Google Health sync is already running", 409, {
+      errorCode: "sync_in_progress",
+    });
+  }
   // A run that failed AND wrote nothing is an error, as it always was. A run
   // that failed after writing some of its resources is a partial, and answering
   // 502 for it threw away the honest half of the result.

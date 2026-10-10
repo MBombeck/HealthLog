@@ -112,6 +112,7 @@ const resourceOutcomes = [
 
 const { prismaMock, runCycle } = vi.hoisted(() => ({
   prismaMock: {
+    integrationStatus: { findUnique: vi.fn(async () => null) },
     googleHealthConnection: {
       findUnique: vi.fn(async () => ({ lastSyncedAt: null })),
       update: vi.fn(async () => ({})),
@@ -121,6 +122,18 @@ const { prismaMock, runCycle } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/db", () => ({ prisma: prismaMock }));
+
+// The account lock is a Postgres advisory lock on a connection of its own;
+// these cases run without a database, so the lock is always free.
+vi.mock("../sync-lock", () => ({
+  withGoogleHealthSyncLock: async (
+    _userId: string,
+    run: () => Promise<unknown>,
+  ) => ({
+    ran: true,
+    result: await run(),
+  }),
+}));
 vi.mock("@/lib/integrations/status", () => ({
   isReauthRequired: vi.fn(async () => false),
   recordSyncSuccess: vi.fn(async () => {}),
@@ -134,6 +147,7 @@ vi.mock("@/lib/insights/comprehensive-generate", () => ({
 }));
 vi.mock("../sync-core", () => ({
   GOOGLE_HEALTH_INTEGRATION_KEY: "google-health",
+  getValidToken: vi.fn(),
   incrementalStart: vi.fn(() => undefined),
   intradayOverlapMs: vi.fn(() => 2 * 60 * 60 * 1000),
   markSynced: vi.fn(async () => {}),

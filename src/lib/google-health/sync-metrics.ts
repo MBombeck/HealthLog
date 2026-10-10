@@ -30,6 +30,7 @@ import {
   GOOGLE_HEALTH_DENSE_MAX_PAGES,
   type GoogleHealthDataType,
   type GoogleHealthMappedMeasurement,
+  type GoogleHealthTokenSource,
   fetchDataPoints,
   forEachDataPointPage,
   mapBloodGlucose,
@@ -46,7 +47,9 @@ import {
 } from "./client";
 import {
   getValidToken,
+  googleHealthTokenSource,
   handleCollectionFetchError,
+  runGoogleHealthCollection,
   upsertGoogleHealthMeasurements,
   type GoogleHealthMeasurementUpsert,
   type GoogleHealthResourceSyncOptions,
@@ -137,6 +140,7 @@ export async function syncUserMetrics(
 ): Promise<number> {
   const tokenInfo = await getValidToken(userId);
   if (!tokenInfo) return 0;
+  const token = googleHealthTokenSource(userId, tokenInfo);
 
   // The incremental lower bound is the cycle-wide watermark snapshotted once by
   // `syncUserGoogleHealth` — never re-read here, so a sibling resource's stamp
@@ -167,38 +171,9 @@ export async function syncUserMetrics(
   // the failure stay written: every write is keyed, so the retry that the
   // failed verdict causes overwrites them in place.
   for (const resource of METRIC_RESOURCES) {
-    try {
-      await forEachDataPointPage(
-        resource.dataType,
-        tokenInfo.accessToken,
-        resource.verb,
-        {
-          start: resource.intraday ? (opts.intradayStart ?? start) : start,
-          maxPages: resource.maxPages,
-        },
-        async (points) => {
-          const readings: GoogleHealthMeasurementUpsert[] = [];
-          for (const point of points) {
-            for (const m of resource.map(point, tz)) {
-              readings.push({
-                type: m.type,
-                value: m.value,
-                unit: m.unit,
-                measuredAt: m.measuredAt,
-                externalId: m.fieldTag,
-              });
-            }
-          }
-          imported += (
-            await upsertGoogleHealthMeasurements(userId, readings, {
-              deferRollup: opts.deferRollup,
-            })
-          ).imported;
-        },
-      );
-    } catch (err) {
-      imported += await handleCollectionFetchError(resource.verb, userId, err);
-    }
+    imported += await runGoogleHealthCollection(resource.verb, () =>
+      syncMetricCollection(userId, resource, token, tz, opts),
+    );
   }
 
   // Height → User.heightCm, only when the user has no height yet. Never mint a
@@ -208,7 +183,7 @@ export async function syncUserMetrics(
     try {
       heightPoints = await fetchDataPoints(
         GOOGLE_HEALTH_DATA_TYPES.height,
-        tokenInfo.accessToken,
+        token,
         "fetchHeight",
         { start },
       );
@@ -253,5 +228,55 @@ export async function syncUserMetrics(
   // `markSynced` is owned by the orchestrator (`syncUserGoogleHealth`), stamped
   // once at the end of the cycle — never here, so the watermark can't move
   // mid-cycle.
+  return imported;
+}
+
+/**
+ * Walk one metric collection page by page and write each page as it arrives.
+ * A failure (fetch, map or write) goes through the collection ledger and
+ * stops only this collection; the siblings still run.
+ */
+async function syncMetricCollection(
+  userId: string,
+  resource: MetricResource,
+  token: GoogleHealthTokenSource,
+  tz: string,
+  opts: GoogleHealthResourceSyncOptions,
+): Promise<number> {
+  let imported = 0;
+  try {
+    await forEachDataPointPage(
+      resource.dataType,
+      token,
+      resource.verb,
+      {
+        start: resource.intraday
+          ? (opts.intradayStart ?? opts.start)
+          : opts.start,
+        maxPages: resource.maxPages,
+      },
+      async (points) => {
+        const readings: GoogleHealthMeasurementUpsert[] = [];
+        for (const point of points) {
+          for (const m of resource.map(point, tz)) {
+            readings.push({
+              type: m.type,
+              value: m.value,
+              unit: m.unit,
+              measuredAt: m.measuredAt,
+              externalId: m.fieldTag,
+            });
+          }
+        }
+        imported += (
+          await upsertGoogleHealthMeasurements(userId, readings, {
+            deferRollup: opts.deferRollup,
+          })
+        ).imported;
+      },
+    );
+  } catch (err) {
+    imported += await handleCollectionFetchError(resource.verb, userId, err);
+  }
   return imported;
 }
