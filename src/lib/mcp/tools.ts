@@ -1201,11 +1201,8 @@ const listMetricsOutput: z.ZodRawShape = {
 
 /** Output schema for `get_labs` — latest-per-biomarker OR a paginated history. */
 const getLabsOutput: z.ZodRawShape = {
-  present: z.boolean(),
-  reason: z.string().optional(),
-  // Latest-mode payload (the Coach labs section, carried opaque).
-  data: z.unknown().optional(),
-  grounding: z.string().optional(),
+  // Latest-mode payload, including typed empty-read availability metadata.
+  ...coachReadOutput,
   // History-mode payload (per-analyte trajectory + pagination).
   analyte: z.string().optional(),
   readings: z
