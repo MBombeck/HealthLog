@@ -13,7 +13,7 @@
  *   - Tier 1 Pausieren: PUT `{ active: false | true }`. Server derives
  *     `pausedAt`. Switch wraps in `<label>` so the entire row is the
  *     AT hit target.
- *   - Tier 2 Beenden: PUT `{ endsOn: <today-iso> }`. AlertDialog
+ *   - Tier 2 Beenden: PUT `{ endsOn: <today YYYY-MM-DD> }`. AlertDialog
  *     confirm; Cancel autofocus stays default.
  *   - Tier 3a Verlauf löschen: DELETE `/intake/purge`. Disabled when
  *     `intakeCount === 0`. AlertDialog confirm.
@@ -46,9 +46,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { invalidateMedicationReads, queryKeys } from "@/lib/query-keys";
 import { apiDelete, apiPut } from "@/lib/api/api-fetch";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
+
+/**
+ * The PUT body that ends a course today: the person's own calendar day as
+ * `YYYY-MM-DD`, the only shape `endsOn` accepts. A full ISO instant was
+ * refused with 422 on every press, and its date was the UTC one, a day off
+ * around midnight for anyone not on UTC.
+ */
+export function endCourseBody(now: Date, timeZone: string): { endsOn: string } {
+  return { endsOn: userDayKey(now, timeZone) };
+}
 
 const PAUSE_SWITCH_ID = "medication-detail-pause-switch";
 const PAUSE_TITLE_ID = "medication-detail-pause-title";
@@ -71,6 +83,8 @@ export function LifecycleManageBody({
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userTz = user?.timezone || DEFAULT_TIMEZONE;
 
   const [paused, setPaused] = useState(!active);
   const [tier1Busy, setTier1Busy] = useState(false);
@@ -107,8 +121,10 @@ export function LifecycleManageBody({
     if (tier2Busy) return;
     setTier2Busy(true);
     try {
-      const today = new Date().toISOString();
-      await apiPut(`/api/medications/${medicationId}`, { endsOn: today });
+      await apiPut(
+        `/api/medications/${medicationId}`,
+        endCourseBody(new Date(), userTz),
+      );
       await invalidateMedicationReads(queryClient);
       toast.success(t("medications.detail.zone.end.toast"));
       setEndDialogOpen(false);
