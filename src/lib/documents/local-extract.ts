@@ -3,9 +3,17 @@
  *
  * When NO AI provider is configured — or the user has not consented to one —
  * content search still needs a baseline. This module extracts a PDF's embedded
- * text layer SERVER-SIDE with `pdf-parse` (already a direct dependency; its
- * `getText()` touches only the pure-JS/wasm pdfjs core, never the native
- * `@napi-rs/canvas`), in milliseconds, with no OCR and no third-party egress.
+ * text layer SERVER-SIDE with pdfjs' `getTextContent` (the pure-JS/wasm core,
+ * never the native `@napi-rs/canvas`), in milliseconds, with no OCR and no
+ * third-party egress.
+ *
+ * It reads through the app's own `pdfjs-dist`, the copy `./rasterize-pdf`
+ * renders with. It used to go through `pdf-parse`, which brings a second
+ * pdfjs of its own, and the two cannot share a process: both take their
+ * worker from `globalThis.pdfjsWorker`, so whichever ran first broke the
+ * other ("The API version "6.4.299" does not match the Worker version
+ * "5.4.296""). Thumbnails and vision reads failed after a text extraction,
+ * and the text extraction failed after a raster.
  * The extracted text feeds the SAME blind, encrypted content index the provider
  * path writes (`upsertContentIndex`), so nothing readable is stored at rest.
  *
@@ -20,18 +28,67 @@
  */
 import { Buffer } from "node:buffer";
 
-// `pdf-parse` pulls in pdfjs, whose module top-level references the browser-only
-// `DOMMatrix` global. A STATIC import makes the Turbopack server chunk evaluate
-// that reference at instantiation and throw `DOMMatrix is not defined`, taking
-// down every route/worker that shares the chunk (the document routes among
-// them). The value is therefore loaded lazily inside `extractPdfText` via a
-// runtime `import()`, which lets pdf-parse initialise pdfjs on its own terms and
-// never touches DOMMatrix at load — verified to extract a real text layer under
-// plain Node. Keep the surface type as a type-only import (fully erased at
-// build, no runtime module evaluation).
-import type { PDFParse } from "pdf-parse";
-
 import { annotate } from "@/lib/logging/context";
+
+// pdfjs' module top-level references the browser-only `DOMMatrix` global. A
+// STATIC import makes the Turbopack server chunk evaluate that reference at
+// instantiation and throw `DOMMatrix is not defined`, taking down every
+// route/worker that shares the chunk (the document routes among them). The
+// module is therefore loaded lazily inside `extractPdfText` via a runtime
+// `import()`, and only the slice of its API used here is typed, structurally.
+interface PdfTextItem {
+  str: string;
+  /** [a, b, c, d, x, y]: the run's text matrix; x and y place it on the page. */
+  transform: number[];
+  width: number;
+  height: number;
+  hasEOL: boolean;
+}
+interface PdfTextPage {
+  getTextContent(): Promise<{ items: Array<PdfTextItem | object> }>;
+  cleanup(): void;
+}
+interface PdfTextDocument {
+  numPages: number;
+  getPage(pageNumber: number): Promise<PdfTextPage>;
+}
+interface PdfTextLoadingTask {
+  promise: Promise<PdfTextDocument>;
+  destroy(): Promise<void>;
+}
+interface PdfTextModule {
+  getDocument(opts: {
+    data: Uint8Array;
+    verbosity?: number;
+    isEvalSupported?: boolean;
+    useSystemFonts?: boolean;
+  }): PdfTextLoadingTask;
+}
+
+/**
+ * One page's text runs as text: a new line where a run ends its line or the
+ * next one sits on another, a space where two runs on one line leave a gap,
+ * nothing where they touch (a word split across two fonts stays one word).
+ */
+function pageText(items: Array<PdfTextItem | object>): string {
+  let text = "";
+  let last: { end: number; y: number; size: number } | null = null;
+  for (const item of items) {
+    // Marked-content boundaries carry no text.
+    if (!("str" in item)) continue;
+    const x = item.transform[4] ?? 0;
+    const y = item.transform[5] ?? 0;
+    const size = Math.abs(item.transform[3] ?? 0) || item.height || 1;
+    if (last && !text.endsWith("\n")) {
+      if (Math.abs(y - last.y) > last.size / 2) text += "\n";
+      else if (x - last.end > size * 0.1 && !/\s$/.test(text)) text += " ";
+    }
+    text += item.str;
+    if (item.hasEOL) text += "\n";
+    last = { end: x + item.width, y, size };
+  }
+  return text;
+}
 
 /**
  * Minimum joined text length for a PDF to count as a real text-layer document.
@@ -68,19 +125,31 @@ export type LocalExtractResult =
 export async function extractPdfText(
   buffer: Buffer,
 ): Promise<LocalExtractResult> {
-  let parser: PDFParse | null = null;
+  let task: PdfTextLoadingTask | null = null;
   try {
     // Lazy load: keeps pdfjs/DOMMatrix out of the eager server chunk (see the
     // import-site note). Resolved at first PDF extraction, then module-cached.
-    const { PDFParse } = await import("pdf-parse");
-    parser = new PDFParse({ data: new Uint8Array(buffer) });
-    const result = await parser.getText({
-      // Bound the page walk and drop the default "-- N of M --" page markers so
-      // only real document text is tokenised.
-      first: LOCAL_MAX_PAGES,
-      pageJoiner: "",
+    const pdfjs =
+      (await import("pdfjs-dist/legacy/build/pdf.mjs")) as unknown as PdfTextModule;
+    task = pdfjs.getDocument({
+      data: new Uint8Array(buffer),
+      verbosity: 0, // VerbosityLevel.ERRORS — no console spam on odd PDFs.
+      isEvalSupported: false, // never eval font programs (defence in depth).
+      useSystemFonts: false,
     });
-    const text = (result.text ?? "").trim();
+    const doc = await task.promise;
+    // Bound the page walk so a pathological many-page PDF costs no more.
+    const pageCount = Math.min(doc.numPages, LOCAL_MAX_PAGES);
+    const pages: string[] = [];
+    for (let n = 1; n <= pageCount; n++) {
+      const page = await doc.getPage(n);
+      try {
+        pages.push(pageText((await page.getTextContent()).items));
+      } finally {
+        page.cleanup();
+      }
+    }
+    const text = pages.join("\n").trim();
     if (text.length < LOCAL_TEXT_MIN_CHARS) {
       return { ok: false, reason: "empty" };
     }
@@ -88,9 +157,9 @@ export async function extractPdfText(
   } catch {
     return { ok: false, reason: "error" };
   } finally {
-    if (parser) {
+    if (task) {
       try {
-        await parser.destroy();
+        await task.destroy();
       } catch {
         // Best-effort teardown; a destroy failure must not mask the result.
       }
