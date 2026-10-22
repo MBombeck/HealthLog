@@ -50,6 +50,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { invalidateMedicationReads, queryKeys } from "@/lib/query-keys";
 import { apiDelete, apiPut } from "@/lib/api/api-fetch";
+import type { CourseStatus } from "@/lib/medications/course-window";
 import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
 /**
@@ -69,9 +70,7 @@ export function endCourseBody(now: Date, timeZone: string): { endsOn: string } {
  * started it would turn into a one-day course today. Unknown (an older
  * server) keeps the button.
  */
-export function canEndCourse(
-  courseStatus: "UPCOMING" | "CURRENT" | "ENDED" | undefined,
-): boolean {
+export function canEndCourse(courseStatus: CourseStatus | undefined): boolean {
   return courseStatus === undefined || courseStatus === "CURRENT";
 }
 
@@ -94,18 +93,29 @@ export function LifecycleManageBody({
   medicationName: string;
   active: boolean;
   /** Where today sits in the course (server-resolved). */
-  courseStatus?: "UPCOMING" | "CURRENT" | "ENDED";
+  courseStatus?: CourseStatus;
   onAfterAction?: () => void;
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const userTz = user?.timezone || DEFAULT_TIMEZONE;
+  const canEnd = canEndCourse(courseStatus);
 
   const [paused, setPaused] = useState(!active);
   const [tier1Busy, setTier1Busy] = useState(false);
   const [endDialogOpen, setEndDialogOpen] = useState(false);
   const [tier2Busy, setTier2Busy] = useState(false);
+
+  // A refetch can stop offering End while its confirmation is open (the
+  // course ended in another tab). Drop the open state with it, or the dialog
+  // would pop up by itself once a later course offers End again. Adjusted
+  // during render, React's pattern for state that follows a prop.
+  const [offeredEnd, setOfferedEnd] = useState(canEnd);
+  if (offeredEnd !== canEnd) {
+    setOfferedEnd(canEnd);
+    if (!canEnd) setEndDialogOpen(false);
+  }
 
   async function tier1Toggle(pauseNext: boolean) {
     if (tier1Busy) return;
@@ -184,7 +194,7 @@ export function LifecycleManageBody({
         />
       </label>
 
-      {canEndCourse(courseStatus) ? (
+      {canEnd ? (
         <>
           <Separator />
 
