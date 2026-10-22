@@ -62,6 +62,19 @@ export function endCourseBody(now: Date, timeZone: string): { endsOn: string } {
   return { endsOn: userDayKey(now, timeZone) };
 }
 
+/**
+ * Whether "End" may be offered. Only a course that is running today can be
+ * ended today: the PUT rewrites the latest course's end, so pressing it on an
+ * ended course would reopen it up to today, and on a course that has not
+ * started it would turn into a one-day course today. Unknown (an older
+ * server) keeps the button.
+ */
+export function canEndCourse(
+  courseStatus: "UPCOMING" | "CURRENT" | "ENDED" | undefined,
+): boolean {
+  return courseStatus === undefined || courseStatus === "CURRENT";
+}
+
 const PAUSE_SWITCH_ID = "medication-detail-pause-switch";
 const PAUSE_TITLE_ID = "medication-detail-pause-title";
 const PAUSE_HELPER_ID = "medication-detail-pause-helper";
@@ -74,11 +87,14 @@ export function LifecycleManageBody({
   medicationId,
   medicationName,
   active,
+  courseStatus,
   onAfterAction,
 }: {
   medicationId: string;
   medicationName: string;
   active: boolean;
+  /** Where today sits in the course (server-resolved). */
+  courseStatus?: "UPCOMING" | "CURRENT" | "ENDED";
   onAfterAction?: () => void;
 }) {
   const { t } = useTranslations();
@@ -168,65 +184,69 @@ export function LifecycleManageBody({
         />
       </label>
 
-      <Separator />
+      {canEndCourse(courseStatus) ? (
+        <>
+          <Separator />
 
-      <div className="flex items-center justify-between gap-3">
-        <div className="space-y-1">
-          <p className="text-foreground text-sm font-medium">
-            {t("medications.detail.zone.end.title")}
-          </p>
-          <p className="text-muted-foreground text-xs">
-            {t("medications.detail.zone.end.helper")}
-          </p>
-        </div>
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={() => setEndDialogOpen(true)}
-          className="min-h-11 font-semibold sm:min-h-9"
-          data-slot="destructive-zone-end"
-        >
-          <Archive aria-hidden="true" className="h-4 w-4" />
-          {t("medications.detail.zone.end.button")}
-        </Button>
-      </div>
-
-      {/* Tier 2 — Beenden confirm */}
-      <AlertDialog open={endDialogOpen} onOpenChange={setEndDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("medications.detail.zone.end.dialogTitle", {
-                name: medicationName,
-              })}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("medications.detail.zone.end.dialogBody")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
+          <div className="flex items-center justify-between gap-3">
+            <div className="space-y-1">
+              <p className="text-foreground text-sm font-medium">
+                {t("medications.detail.zone.end.title")}
+              </p>
+              <p className="text-muted-foreground text-xs">
+                {t("medications.detail.zone.end.helper")}
+              </p>
+            </div>
+            <Button
               variant="destructive"
-              onClick={(e) => {
-                e.preventDefault();
-                void tier2End();
-              }}
-              disabled={tier2Busy}
-              aria-busy={tier2Busy || undefined}
-              className="font-semibold"
+              size="sm"
+              onClick={() => setEndDialogOpen(true)}
+              className="min-h-11 font-semibold sm:min-h-9"
+              data-slot="destructive-zone-end"
             >
-              {tier2Busy && (
-                <Loader2
-                  aria-hidden="true"
-                  className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none"
-                />
-              )}
+              <Archive aria-hidden="true" className="h-4 w-4" />
               {t("medications.detail.zone.end.button")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </div>
+
+          {/* Tier 2 — Beenden confirm */}
+          <AlertDialog open={endDialogOpen} onOpenChange={setEndDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {t("medications.detail.zone.end.dialogTitle", {
+                    name: medicationName,
+                  })}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t("medications.detail.zone.end.dialogBody")}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                <AlertDialogAction
+                  variant="destructive"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    void tier2End();
+                  }}
+                  disabled={tier2Busy}
+                  aria-busy={tier2Busy || undefined}
+                  className="font-semibold"
+                >
+                  {tier2Busy && (
+                    <Loader2
+                      aria-hidden="true"
+                      className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none"
+                    />
+                  )}
+                  {t("medications.detail.zone.end.button")}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      ) : null}
     </div>
   );
 }

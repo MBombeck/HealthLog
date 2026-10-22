@@ -927,6 +927,7 @@ export function MedicationDetailTabs({
                 medicationId={id}
                 medicationName={medication.name}
                 active={medication.active}
+                courseStatus={served.courseStatus}
               />
             </div>
             {/* v1.40 (#1024) — the courses: when it was taken, and a new
