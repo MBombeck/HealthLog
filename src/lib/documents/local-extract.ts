@@ -84,7 +84,10 @@ function pageText(items: Array<PdfTextItem | object>): string {
       else if (x - last.end > size * 0.1 && !/\s$/.test(text)) text += " ";
     }
     text += item.str;
-    if (item.hasEOL) text += "\n";
+    // An empty run that only ends a line adds no blank line of its own.
+    if (item.hasEOL && !(item.str === "" && text.endsWith("\n"))) {
+      text += "\n";
+    }
     last = { end: x + item.width, y, size };
   }
   return text;
