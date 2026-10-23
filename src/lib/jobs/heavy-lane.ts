@@ -113,8 +113,11 @@ export const LANE_YIELD_DELAY_SECONDS = 2 * LANE_DEFER_SECONDS;
 /** How long a job may stand in line before the wait is reported at `warn`. */
 export const LANE_WAIT_WARN_MS = 2 * 60 * 60 * 1000;
 
-/** How long past its jobs' expiry a holder keeps the lane before it is taken. */
-export const LANE_HOLD_GRACE_SECONDS = LANE_DEFER_SECONDS;
+/**
+ * How long past its jobs' expiry a holder keeps the lane before it is taken:
+ * one deferral, so a job that went back just before the expiry finds it.
+ */
+const LANE_HOLD_GRACE_SECONDS = LANE_DEFER_SECONDS;
 
 /** What one trip back to the queue did. */
 export interface LaneDeferral {

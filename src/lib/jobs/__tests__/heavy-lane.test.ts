@@ -17,7 +17,7 @@ vi.mock("@/lib/observability/container-memory", () => ({
 import { emitSignal } from "@/lib/logging/signal";
 import {
   heavyLane,
-  LANE_HOLD_GRACE_SECONDS,
+  LANE_DEFER_SECONDS,
   LANE_WAIT_WARN_MS,
   laneWanted,
 } from "../heavy-lane";
@@ -309,8 +309,9 @@ describe("a holder that never finishes", () => {
         now,
       )([{ ...job("restore"), expireInSeconds: 21600 } as TestJob]);
 
-    // Inside the backup's expiry and grace, the restore waits its turn.
-    clock = start + (7200 + LANE_HOLD_GRACE_SECONDS) * 1000;
+    // Inside the backup's expiry and the grace of one deferral after it, the
+    // restore waits its turn.
+    clock = start + (7200 + LANE_DEFER_SECONDS) * 1000;
     await tryRestore();
     expect(restore).not.toHaveBeenCalled();
     expect(back.map((b) => b.queue)).toEqual(["backup-restore"]);
