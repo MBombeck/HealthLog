@@ -85,6 +85,29 @@ async function shellReady(page: Page): Promise<void> {
   await expect(page.locator('[data-slot="top-bar"]')).toBeVisible();
 }
 
+/**
+ * Scan the open palette once it has finished opening. The dialog fades in,
+ * and a scan that lands mid-fade reads every colour blended with the page
+ * behind it: on a loaded machine the selected option's text measured 4.47:1
+ * against a 4.5:1 floor it clears once the fade ends. Finite animations are
+ * awaited, bounded, so a stuck one costs the wait and not the test.
+ */
+async function scanPalette(page: Page) {
+  await page.evaluate(async () => {
+    const finite = document
+      .getAnimations()
+      .filter((a) => a.effect?.getTiming().iterations !== Infinity);
+    await Promise.race([
+      Promise.allSettled(finite.map((a) => a.finished)),
+      new Promise((resolve) => window.setTimeout(resolve, 2_000)),
+    ]);
+  });
+  return new AxeBuilder({ page })
+    .include('[data-slot="command-palette"]')
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+}
+
 test.describe("command palette", () => {
   test.beforeEach(async ({ context }, testInfo) => {
     test.skip(
@@ -181,10 +204,7 @@ test.describe("command palette", () => {
       page.locator('[data-group="records"] mark').first(),
     ).toHaveText("Shoulder");
 
-    const axe = await new AxeBuilder({ page })
-      .include('[data-slot="command-palette"]')
-      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-      .analyze();
+    const axe = await scanPalette(page);
     expect(axe.violations).toEqual([]);
 
     // The arrows reach it after the local options, and Enter opens it.
@@ -226,10 +246,7 @@ test.describe("command palette", () => {
     await expect(palette(page)).toBeVisible();
     await expect(input(page)).toBeFocused();
 
-    const axe = await new AxeBuilder({ page })
-      .include('[data-slot="command-palette"]')
-      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-      .analyze();
+    const axe = await scanPalette(page);
     expect(axe.violations).toEqual([]);
 
     await page.keyboard.press("Escape");
