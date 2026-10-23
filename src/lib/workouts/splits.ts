@@ -14,6 +14,7 @@ import {
   haversineMeters,
   type RouteCoordinate,
 } from "@/lib/workouts/route-svg";
+import { routeSampleInstant } from "@/lib/workouts/route-samples";
 
 export interface WorkoutSplit {
   /** 1-based kilometre index. */
@@ -34,7 +35,8 @@ const KM = 1000;
  */
 export function computeSplits(
   coordinates: readonly RouteCoordinate[],
-  timestamps: readonly string[] | null | undefined,
+  /** The stored samples: an instant each, or `{ t, … }` (`RouteSample`). */
+  timestamps: readonly unknown[] | null | undefined,
 ): WorkoutSplit[] | null {
   if (!timestamps || timestamps.length !== coordinates.length) return null;
 
@@ -43,7 +45,7 @@ export function computeSplits(
   coordinates.forEach((c, i) => {
     const [lonLat] = extractLonLat([c]);
     if (!lonLat) return;
-    const tMs = Date.parse(timestamps[i] ?? "");
+    const tMs = Date.parse(routeSampleInstant(timestamps[i]) ?? "");
     if (!Number.isFinite(tMs)) return;
     pts.push({ lon: lonLat[0], lat: lonLat[1], tMs });
   });

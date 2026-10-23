@@ -94,7 +94,6 @@ vi.mock("@/lib/medications/outstanding-doses", async (importOriginal) => {
 const prisma = getPrismaClient();
 const NOW = new Date("2026-10-15T12:00:00.000Z");
 const ROUTE = "/api/medications/intake/bulk";
-const INVALID_ACTION = "medications.intake.bulk.validation-failed";
 
 let ownerId: string;
 let userIds: string[];
@@ -130,8 +129,8 @@ async function syncState() {
 }
 
 /**
- * An audit row a refusal writes without awaiting it: the schema refusal's
- * own, and the narrow token's `auth.bearer.failure`.
+ * An audit row a refusal writes without awaiting it: the narrow token's
+ * `auth.bearer.failure`. (An owner's own schema refusal files none.)
  */
 async function auditRows(action: string, count: number): Promise<void> {
   // Polled on the real timer: the pinned clock stamps the rows read back,
@@ -416,11 +415,9 @@ describe("POST /api/medications/intake/bulk parity", () => {
         medicationId: med.daily,
       })),
     });
-    await post(
-      "04b-invalid",
-      { entries: [{ medicationId: "", takenAt: "never" }] },
-      { settle: () => auditRows(INVALID_ACTION, 1) },
-    );
+    await post("04b-invalid", {
+      entries: [{ medicationId: "", takenAt: "never" }],
+    });
     await post("04c-apple-not-mirrored", {
       entries: [
         {

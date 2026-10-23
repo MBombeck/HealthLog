@@ -150,6 +150,23 @@ describe("haversineMeters", () => {
 });
 
 describe("buildGpxDocument", () => {
+  it("writes the instant of a stored sample object", () => {
+    const gpx = buildGpxDocument({
+      coordinates: [
+        [11.0, 50.0],
+        [11.001, 50.001],
+      ],
+      timestamps: [
+        { t: "2026-05-15T07:00:00Z", hr: 120 },
+        { t: "2026-05-15T07:00:05Z", speedMs: 3.1 },
+      ],
+      sportType: "running",
+      startedAt: "2026-05-15T07:00:00Z",
+    });
+    expect(gpx).toContain("<time>2026-05-15T07:00:00Z</time>");
+    expect(gpx).toContain("<time>2026-05-15T07:00:05Z</time>");
+  });
+
   it("emits trkpt elements with elevation and time when present", () => {
     const gpx = buildGpxDocument({
       coordinates: [

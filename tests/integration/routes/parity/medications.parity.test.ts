@@ -42,15 +42,6 @@ vi.mock("@/lib/logging/transports", async (importOriginal) => {
 const prisma = getPrismaClient();
 const NOW = new Date("2026-10-15T12:00:00.000Z");
 const ROUTE = "/api/medications";
-/**
- * The create answers without the read-model fields (reminder state, course
- * status, stock and runway) the registered medication resource declares. The
- * parity snapshot pins that answer as it is; the contract check is the
- * route's own tests' business.
- */
-const CREATE_ANSWER = {
-  skip: "the create answers without the read-model fields of the resource",
-};
 const CUSTOM_KEY = "custom:5b1f7c2e-4d3a-4b8e-9c61-2a7d0e9f4c13";
 
 let ownerId: string;
@@ -95,7 +86,6 @@ async function create(
       body,
       auth: options.auth ?? owner,
       headers: options.headers,
-      contract: CREATE_ANSWER,
     },
     userIds: options.userIds ?? userIds,
     now: NOW,

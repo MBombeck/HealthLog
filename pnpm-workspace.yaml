@@ -65,8 +65,9 @@ overrides:
   # 10.0.0.1 rather than being rejected. That is the exact alt-notation class
   # `isPublicUrl` exists to catch, and this copy arrives under the MCP SDK's
   # rate limiter where nothing of ours screens it.
-  # Later advisories up to 10.7.0 raised the floor from 10.3.1 to 10.7.1.
-  "ip-address@<10.7.1": "^10.7.1"
+  # Later advisories raised the floor from 10.3.1 to 10.7.1, then to 10.7.4
+  # (a ReDoS in the Address6 zone identifier, through 10.7.3).
+  "ip-address@<10.7.4": "^10.7.4"
   "sharp@<0.35.0": "^0.35.3"
   # A crafted PDF could run arbitrary JavaScript through the renderer. Our own
   # copy is pinned past it in `devDependencies`, but a second copy arrives

@@ -14,6 +14,19 @@
           "confidence": "hoch"
         },
         "disclaimer": "Consult your doctor.",
+        "dailyBriefing": {
+          "paragraph": "Your readings held steady this week, with no surprises.",
+          "signalsOfDay": [
+            {
+              "sourceMetric": "weight",
+              "tone": "info",
+              "headline": "Weight is steady",
+              "nudge": "Keep weighing in at the same time each morning.",
+              "delta": null
+            }
+          ],
+          "keyFindings": []
+        },
         "briefingGeneratedAt": "anchor+0d+12:00:00"
       },
       "cached": false,
@@ -222,6 +235,19 @@
         "confidence": "hoch"
       },
       "disclaimer": "Consult your doctor.",
+      "dailyBriefing": {
+        "paragraph": "Your readings held steady this week, with no surprises.",
+        "signalsOfDay": [
+          {
+            "sourceMetric": "weight",
+            "tone": "info",
+            "headline": "Weight is steady",
+            "nudge": "Keep weighing in at the same time each morning.",
+            "delta": null
+          }
+        ],
+        "keyFindings": []
+      },
       "briefingGeneratedAt": "anchor+0d+12:00:00"
     },
     "snapshotHash": "4ac15bc271309c63b3b5d1e43a3367f7abdf952d3f4351bb1b22aa364bcb630a",

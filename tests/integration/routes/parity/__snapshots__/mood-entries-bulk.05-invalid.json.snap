@@ -30,7 +30,8 @@
       },
       "meta": {
         "write_bucket": "own",
-        "issue_count": 2
+        "issue_count": 2,
+        "rejected_attempt": "mood.bulk.validation-failed"
       },
       "warnings": null,
       "error": null

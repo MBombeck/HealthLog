@@ -23,6 +23,7 @@ import type { PgBoss } from "pg-boss";
 import { startupPhase } from "@/lib/boot/startup-state";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { trackBackgroundTask } from "@/lib/logging/background-tasks";
+import { runDetached } from "@/lib/logging/detached";
 
 /** The global slot a producer (re)start is parked in while it runs. */
 export const BOSS_START_KEY = "__healthlog_pgboss_start__" as const;
@@ -80,14 +81,16 @@ export async function enqueueWhenBossReady(
   }
   if (!bossStartPending()) return "skipped";
   trackBackgroundTask(
-    whenBossReady(label).then(async (boss) => {
-      if (!boss) return;
-      try {
-        await send(boss);
-      } catch (err) {
-        console.warn(`[pg-boss] deferred ${label} enqueue failed:`, err);
-      }
-    }),
+    runDetached(() =>
+      whenBossReady(label).then(async (boss) => {
+        if (!boss) return;
+        try {
+          await send(boss);
+        } catch (err) {
+          console.warn(`[pg-boss] deferred ${label} enqueue failed:`, err);
+        }
+      }),
+    ),
   );
   return "deferred";
 }

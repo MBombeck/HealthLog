@@ -57,7 +57,8 @@ vi.mock("@/lib/logging/context", async (importOriginal) => ({
   annotate: vi.fn(),
 }));
 vi.mock("@/lib/logging/fire-and-forget", () => ({
-  fireAndForget: (promise: Promise<unknown>) => void promise.catch(() => {}),
+  fireAndForget: (start: () => Promise<unknown>) =>
+    void start().catch(() => {}),
 }));
 vi.mock("@/lib/crypto/note-cipher", () => ({
   encryptNote: vi.fn(() => null),

@@ -39,10 +39,10 @@
  * Locked contract — see `.planning/v15-ios-handoff/06-ios-responsibilities.md`
  * §"Cumulative metrics" sibling section for the SyncMode rationale.
  */
+import { auditLog } from "@/lib/auth/audit";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
-import { prisma } from "@/lib/db";
 import { apiHandler, isScopedCredential, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -198,17 +198,12 @@ async function postBulk(request: NextRequest): Promise<Response> {
     const auditIssues = sanitiseZodIssues(parsed.error.issues, {
       stripValuesFromMessage: true,
     });
-    prisma.auditLog
-      .create({
-        data: {
-          userId: user.id,
-          action: "medications.intake.bulk.validation-failed",
-          details: JSON.stringify({ issues: auditIssues }),
-        },
-      })
-      .catch(() => {
-        /* swallow — 422 response is the contract */
-      });
+    auditLog("medications.intake.bulk.validation-failed", {
+      userId: user.id,
+      details: { issues: auditIssues },
+    }).catch(() => {
+      /* swallow — 422 response is the contract */
+    });
     return returnAllZodIssues(parsed.error, 422, {
       errorCode: "medications.intake.bulk.invalid",
     });

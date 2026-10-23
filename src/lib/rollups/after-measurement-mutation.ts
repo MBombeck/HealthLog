@@ -37,6 +37,7 @@ import {
   type StatusIngestSource,
 } from "@/lib/insights/status-invalidation";
 import { trackBackgroundTask } from "@/lib/logging/background-tasks";
+import { runDetached } from "@/lib/logging/detached";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { earliestMeasuredAt } from "@/lib/cache/closed-block";
 import type { MeasurementType } from "@/generated/prisma/client";
@@ -83,9 +84,11 @@ export async function afterMeasurementMutation(
     // write on a detached handle, and one that lands while a vitest worker is
     // closing its RPC channel fails the whole run. No-op outside test.
     trackBackgroundTask(
-      invalidateStatusInsightsForTypes(userId, types, {
-        source: options.source,
-      }).catch((err) => {
+      runDetached(() =>
+        invalidateStatusInsightsForTypes(userId, types, {
+          source: options.source,
+        }),
+      ).catch((err) => {
         console.warn(`[${label}] status-insight invalidate failed`, err);
       }),
     );

@@ -108,15 +108,6 @@ vi.mock("@/lib/notifications/delegated-intake", async (importOriginal) => {
 const prisma = getPrismaClient();
 const NOW = new Date("2026-10-15T12:00:00.000Z");
 const ROUTE = "/api/medications/{id}/intake";
-/**
- * A dose that converges onto a slot answers with the row the shared slot
- * write returns, which carries fewer fields than the registered event
- * resource. The parity snapshot pins that answer as it is; the contract check
- * is the route's own tests' business.
- */
-const DOSE_ANSWER = {
-  skip: "a slot write answers with the narrower slot-write row",
-};
 const REFUSED = "medications.intake.update.refused";
 
 let ownerId: string;
@@ -159,7 +150,6 @@ async function post(
       body,
       auth: options.auth ?? owner,
       headers: options.headers,
-      contract: DOSE_ANSWER,
     },
     userIds,
     now: NOW,

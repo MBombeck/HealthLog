@@ -15,6 +15,7 @@
  * the new prefs for the supplied `chartKey`, and writes it back inside the
  * same request.
  */
+import { auditLog } from "@/lib/auth/audit";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiSuccess, sanitiseZodIssues } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
@@ -72,17 +73,12 @@ export const PUT = apiHandler(async (request: NextRequest) => {
         shouldEmitAuditRow(user.id, "dashboard.chart-overlay.validation-failed")
       ) {
         const issues = sanitiseZodIssues(error.issues);
-        prisma.auditLog
-          .create({
-            data: {
-              userId: user.id,
-              action: "dashboard.chart-overlay.validation-failed",
-              details: JSON.stringify({ issues }),
-            },
-          })
-          .catch(() => {
-            /* swallow — 422 response is the contract */
-          });
+        auditLog("dashboard.chart-overlay.validation-failed", {
+          userId: user.id,
+          details: { issues },
+        }).catch(() => {
+          /* swallow — 422 response is the contract */
+        });
       }
     },
   });

@@ -48,6 +48,7 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { listLiveMeasurementTypes } from "@/lib/measurements/live-types";
 import { APPLE_HEALTH_DATA_STALE_AFTER_MS } from "@/lib/integrations/sync-verdict";
+import { auditLog } from "@/lib/auth/audit";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -56,6 +57,7 @@ const SESSION_OK = {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(auditLog).mockResolvedValue(undefined);
   vi.mocked(prisma.user.findUnique).mockResolvedValue({
     healthKitConfigJson: null,
     healthKitLastSyncedAt: null,
@@ -220,18 +222,16 @@ describe("PATCH /api/integrations/healthkit — 422 multi-issue (v1.4.43 W6)", (
     );
     expect(res.status).toBe(422);
     await new Promise((r) => setTimeout(r, 5));
-    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
-    const call = vi.mocked(prisma.auditLog.create).mock.calls[0]?.[0] as {
-      data: { userId: string; action: string };
-    };
-    expect(call.data.action).toBe("integrations.healthkit.validation-failed");
+    // Through `auditLog()`, which decides whether the refusal is filed.
+    expect(auditLog).toHaveBeenCalledWith(
+      "integrations.healthkit.validation-failed",
+      expect.anything(),
+    );
   });
 
   it("does not block the 422 when the audit-row write rejects", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(prisma.auditLog.create).mockRejectedValueOnce(
-      new Error("db down"),
-    );
+    vi.mocked(auditLog).mockRejectedValueOnce(new Error("db down"));
     const res = await PATCH(
       patchReq({ entries: [{ id: "bodyMass", direction: "JUNK" }] }),
     );

@@ -58,7 +58,21 @@
         }
       ],
       "category": "OTHER",
-      "categoryLabel": null
+      "categoryLabel": null,
+      "courses": [],
+      "courseCount": 0,
+      "previousCourseEndedOn": null,
+      "canStartCourse": false,
+      "nextDueAt": "2026-10-16T06:00:00.000Z",
+      "remindersActive": true,
+      "nextDueOverdue": false,
+      "courseStatus": "CURRENT",
+      "intakeActionable": true,
+      "stockUnitsRemaining": null,
+      "stockDosesRemaining": null,
+      "runwayDays": null,
+      "ingredients": [],
+      "related": []
     },
     "error": null
   },

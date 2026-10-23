@@ -797,11 +797,7 @@ describe("POST /api/insights/generate parity", () => {
     await post(
       "P09-unreadable-key",
       { force: true },
-      {
-        auth: unreadableKey,
-        userId: UNREADABLE_KEY_ID,
-        undeclared: "an unreadable stored key ends in 500 (pinned as it is)",
-      },
+      { auth: unreadableKey, userId: UNREADABLE_KEY_ID },
     );
   });
 

@@ -42,6 +42,16 @@ describe("computeSplits", () => {
     }
   });
 
+  it("reads the stored sample shape, an instant with its channels", () => {
+    // Both ingests store `{ t, speedMs?, hr? }` per point; older tracks a
+    // bare instant. The two shapes time the same track identically.
+    const { coords, timestamps } = track(3200, 320, 960);
+    const samples = timestamps.map((t, i) => ({ t, hr: 120 + (i % 30) }));
+    const splits = computeSplits(coords, samples);
+    expect(splits).not.toBeNull();
+    expect(splits).toEqual(computeSplits(coords, timestamps));
+  });
+
   it("returns null without aligned timestamps", () => {
     const { coords } = track(3000, 300, 900);
     expect(computeSplits(coords, null)).toBeNull();

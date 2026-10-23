@@ -89,20 +89,15 @@ export const PATCH = apiHandler(
         const auditIssues = sanitiseZodIssues(error.issues, {
           stripValuesFromMessage: true,
         });
-        prisma.auditLog
-          .create({
-            data: {
-              userId: user.id,
-              action: "custom-metric.metric.update.validation-failed",
-              details: JSON.stringify({
-                issues: auditIssues,
-                customMetricId: id,
-              }),
-            },
-          })
-          .catch(() => {
-            /* swallow — the 422 response is the contract */
-          });
+        auditLog("custom-metric.metric.update.validation-failed", {
+          userId: user.id,
+          details: {
+            issues: auditIssues,
+            customMetricId: id,
+          },
+        }).catch(() => {
+          /* swallow — the 422 response is the contract */
+        });
       },
     });
     if (!parsed.ok) return parsed.error;

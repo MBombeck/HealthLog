@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 91,
-  "total": 101359,
+  "total": 101342,
   "entries": {
     "app/medications/page-client.tsx": 839,
     "components/charts/mood-chart.tsx": 1166,
@@ -38,7 +38,7 @@
     "lib/analytics/sleep-night.ts": 1345,
     "lib/analytics/summaries-slice.ts": 1248,
     "lib/auth/session.ts": 811,
-    "lib/cache/server-cache.ts": 851,
+    "lib/cache/server-cache.ts": 848,
     "lib/cycle/prediction.ts": 883,
     "lib/daily/digest.ts": 1317,
     "lib/daily/load-digest.ts": 1000,
@@ -82,7 +82,7 @@
     "lib/measurements/import-apple-health-export.ts": 1722,
     "lib/medications/scheduling/cadence.ts": 978,
     "lib/medications/scheduling/recurrence.ts": 1108,
-    "lib/medications/scheduling/slot-upsert.ts": 926,
+    "lib/medications/scheduling/slot-upsert.ts": 912,
     "lib/notifications/senders/apns.ts": 1100,
     "lib/oura/sync.ts": 900,
     "lib/rollups/measurement-rollups.ts": 1496,

@@ -79,7 +79,7 @@ export async function handleFitbitSync(
           // reminders eventfully. Fire-and-forget; the cron is the net.
           onUserSynced: (userId, imported) => {
             if (imported > 0) {
-              fireAndForget(enqueueReminderSatisfy(userId), {
+              fireAndForget(() => enqueueReminderSatisfy(userId), {
                 action: "reminder.satisfy.enqueue",
               });
             }

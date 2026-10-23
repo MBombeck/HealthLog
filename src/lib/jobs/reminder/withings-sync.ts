@@ -124,7 +124,7 @@ export async function handleWithingsFallbackSync(
           // v1.18.1 — a fresh reading landed; resolve this user's Vorsorge
           // reminders eventfully. Fire-and-forget; the cron is the net.
           if (result.imported > 0) {
-            fireAndForget(enqueueReminderSatisfy(connection.userId), {
+            fireAndForget(() => enqueueReminderSatisfy(connection.userId), {
               action: "reminder.satisfy.enqueue",
             });
           }
@@ -304,7 +304,7 @@ export async function handleWithingsActivitySync(
             imported,
           });
           if (imported > 0) {
-            fireAndForget(enqueueReminderSatisfy(userId), {
+            fireAndForget(() => enqueueReminderSatisfy(userId), {
               action: "reminder.satisfy.enqueue",
             });
           }
@@ -377,7 +377,7 @@ export async function handleWithingsSleepSync(
             imported,
           });
           if (imported > 0) {
-            fireAndForget(enqueueReminderSatisfy(userId), {
+            fireAndForget(() => enqueueReminderSatisfy(userId), {
               action: "reminder.satisfy.enqueue",
             });
           }

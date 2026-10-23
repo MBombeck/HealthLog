@@ -45,8 +45,8 @@ export function runBriefingCall(
     // `getInsightsSystemPrompt` returned the old `{changed, stable, drivers,
     // …}` shape and never asked the model for dailyBriefing, so the hero
     // strip's "Re-run analysis" button kept producing a payload with no
-    // briefing block. The reply tolerates the strict shape via
-    // `insightResultSchema.safeParse`'s soft fallback to the parsed object.
+    // briefing block. `insightResultSchema` is loose, so a reply that
+    // validates keeps these blocks, and one that does not is kept as parsed.
     systemPrompt: buildSystemPromptWithReferences(
       ctx.locale,
       prompt.referenceMetrics,

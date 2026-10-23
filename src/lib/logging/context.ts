@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { WideEvent } from "./types";
 import { WideEventBuilder } from "./event-builder";
+import { detachedParent, registerDetachedEventSource } from "./detached";
 import { registerSourcePriorityParseObserver } from "@/lib/validations/source-priority";
 import { registerRecurrenceParseErrorObserver } from "@/lib/medications/scheduling/recurrence";
 import {
@@ -16,6 +17,10 @@ export function getEvent(): WideEventBuilder | null {
   return eventStorage.getStore() ?? null;
 }
 
+// `runDetached` (./detached) reads the current event through this getter;
+// registered here so the two modules do not import each other.
+registerDetachedEventSource(getEvent);
+
 /**
  * Convenience: Felder im aktuellen Event annotieren.
  * Safe to call anywhere — no-op wenn kein Kontext aktiv.
@@ -26,7 +31,10 @@ export function annotate(fields: {
 }): void {
   const evt = getEvent();
   if (!evt) return;
-  if (fields.action) evt.setAction(fields.action);
+  // Detached work never renames the event it was started from.
+  if (fields.action && detachedParent() !== evt) {
+    evt.setAction(fields.action);
+  }
   if (fields.meta) {
     for (const [key, value] of Object.entries(fields.meta)) {
       evt.addMeta(key, value);

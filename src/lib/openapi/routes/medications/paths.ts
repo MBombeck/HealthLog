@@ -255,6 +255,13 @@ const medicationIntakeImportJobStatusEnvelope = dataEnvelope(
   "MedicationIntakeImportJobStatusEnvelope",
 );
 
+// Shared by the create's 201 and its mirror-replay 200: the envelope id is
+// registered once.
+const createMedicationResponse = dataEnvelope(
+  medicationDetailEntry,
+  "CreateMedicationResponse",
+);
+
 export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/medications/intake": {
     get: {
@@ -969,12 +976,14 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         "201": {
           description: "Created medication with its schedules.",
           content: {
-            "application/json": {
-              schema: dataEnvelope(
-                medicationDetailEntry,
-                "CreateMedicationResponse",
-              ),
-            },
+            "application/json": { schema: createMedicationResponse },
+          },
+        },
+        "200": {
+          description:
+            "A mirror create re-posting an `(externalSource, externalId)` pair the caller already holds: the existing medication, nothing written.",
+          content: {
+            "application/json": { schema: createMedicationResponse },
           },
         },
         ...stdResponses,

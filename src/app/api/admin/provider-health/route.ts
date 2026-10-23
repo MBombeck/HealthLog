@@ -10,7 +10,7 @@ import {
   type ModelListing,
 } from "@/lib/ai/model-availability";
 import { decrypt } from "@/lib/crypto";
-import { isAnthropicBaseUrl } from "@/lib/ai/provider";
+import { isAnthropicBaseUrl } from "@/lib/ai/anthropic-host";
 import { isCanonicalOpenAIEndpoint } from "@/lib/ai/openai-capabilities";
 import { loadAiUsageSettings } from "@/lib/ai/capabilities/usage";
 import {

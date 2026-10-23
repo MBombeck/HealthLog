@@ -36,7 +36,7 @@ import { resolveIntakeActionability } from "@/lib/medications/intake-actionable"
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { buildRelated } from "@/lib/links/related";
 
-type ReadUser = Pick<SessionUser, "id" | "timezone" | "locale">;
+export type ReadUser = Pick<SessionUser, "id" | "timezone" | "locale">;
 type MedicationWithSchedules = Medication & {
   schedules: MedicationSchedule[];
 };
@@ -195,6 +195,26 @@ export async function readMedication(input: {
   if (!medication || medication.userId !== user.id) {
     return null;
   }
+  return medicationDetail({ user, grantId, medication, announce: true });
+}
+
+/**
+ * The read model of a medication row in hand: the detail answer, and the
+ * answer of a create or an edit, which pass the row they just wrote so they
+ * answer exactly what `GET /api/medications/{id}` would.
+ */
+export async function medicationDetail(input: {
+  user: ReadUser;
+  grantId: string | null;
+  medication: MedicationWithSchedules;
+  /**
+   * Name the request's action `medication.get`. A write answering with the
+   * read model passes false and keeps its own action.
+   */
+  announce: boolean;
+}): Promise<Record<string, unknown>> {
+  const { user, grantId, medication } = input;
+  const id = medication.id;
 
   let category = "OTHER";
   let categoryLabel: string | null = null;
@@ -208,13 +228,15 @@ export async function readMedication(input: {
 
   const { display, userTz, now } = await loadDisplayDue(user, id, medication);
 
-  annotate({
-    action: {
-      name: "medication.get",
-      entity_type: "medication",
-      entity_id: id,
-    },
-  });
+  if (input.announce) {
+    annotate({
+      action: {
+        name: "medication.get",
+        entity_type: "medication",
+        entity_id: id,
+      },
+    });
+  }
 
   const { schedulesDto, stockUnitsRemaining, stockDosesRemaining, runwayDays } =
     await loadStock(user, id, medication);

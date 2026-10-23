@@ -115,10 +115,17 @@ const MAY_READ_EVERY_ROW: Record<string, string> = {
     "units consumed by a recorded dose",
   "lib/medications/intake-slot-dedup.ts":
     "folds duplicate rows of doses already recorded",
+  // The medication create and edit write the schedule rows and answer
+  // through `medicationDetail` (read-medication.ts), which shapes them with
+  // scheduleWireFields and derives the due state the switch allows.
+  "lib/medications/create-medication.ts":
+    "writes the schedules; answers through medicationDetail",
+  "lib/medications/update-medication/update-medication.ts":
+    "writes the schedules; answers through medicationDetail",
   // The medication edit: the schedule count and the primary schedule's id
   // for the reminder-window bridge, and the replaced rows archived as an era
   // whose payload is empty for a stretch with tracking off. Nothing due comes
-  // out of either; the edit answers through scheduleWireFields.
+  // out of either; the edit answers through medicationDetail.
   "lib/medications/update-medication/preflight.ts":
     "schedule count and the primary schedule's id, derives nothing due",
   "lib/medications/update-medication/write.ts":

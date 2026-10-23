@@ -61,6 +61,8 @@ export function recordActivityVerbLine(
   action: string,
   name: string,
 ): string {
+  const refused = refusedAttemptVerb(t, action, name);
+  if (refused !== null) return refused;
   switch (action) {
     case "measurement.create":
       return t("recordSharing.activityVerb.measurementCreate", { name });
@@ -343,6 +345,54 @@ export function recordActivityVerbLine(
       return t("recordSharing.activityVerb.healthRecordExport", { name });
 
     /* ---------------------------------------------------------------- */
+    /* Acts a delegable module performs outside its own route file.      */
+    /*                                                                   */
+    /* The two below are filed by library modules the routes import — a  */
+    /* background worker's completion row and a lifecycle reconciliation */
+    /* — and a guard that walked only `route.ts` could not see either.   */
+    /* Both carry the actor through, so both reach the owner's feed.     */
+    /* ---------------------------------------------------------------- */
+
+    case "medication.intake.import":
+      return t("recordSharing.activityVerb.medicationIntakeImportFinished", {
+        name,
+      });
+    case "medication.oneShot.reconciled":
+      return t("recordSharing.activityVerb.medicationOneShotReconciled", {
+        name,
+      });
+
+    case "anamnesis.fact.create":
+      return t("recordSharing.activityVerb.anamnesisFactCreate", { name });
+    case "customMetric.create":
+      return t("recordSharing.activityVerb.customMetricCreate", { name });
+    case "customMetric.update":
+      return t("recordSharing.activityVerb.customMetricUpdate", { name });
+    case "customMetric.delete":
+      return t("recordSharing.activityVerb.customMetricDelete", { name });
+    case "documents.inbound.store":
+      return t("recordSharing.activityVerb.documentStore", { name });
+    case "documents.inbound.update":
+      return t("recordSharing.activityVerb.documentUpdate", { name });
+    case "documents.inbound.discard":
+      return t("recordSharing.activityVerb.documentDiscard", { name });
+
+    default:
+      return t("recordSharing.activity.acted", { name });
+  }
+}
+
+/**
+ * The sentence for an attempt that was refused, or null when `action` is no
+ * refusal. Asked first by `recordActivityVerbLine`.
+ */
+function refusedAttemptVerb(
+  t: Translator,
+  action: string,
+  name: string,
+): string | null {
+  switch (action) {
+    /* ---------------------------------------------------------------- */
     /* Attempts that were REFUSED, and things that happened around them. */
     /*                                                                   */
     /* Every delegable route files a `*.validation-failed` breadcrumb    */
@@ -407,47 +457,23 @@ export function recordActivityVerbLine(
       return t("recordSharing.activityVerb.rejectedDoseImport", { name });
     case "custom-metric.entry.create.validation-failed":
       return t("recordSharing.activityVerb.rejectedTrackedValue", { name });
+    case "custom-metric.metric.create.validation-failed":
+      return t("recordSharing.activityVerb.rejectedTrackedValueTypeCreate", {
+        name,
+      });
+    case "custom-metric.metric.update.validation-failed":
+      return t("recordSharing.activityVerb.rejectedTrackedValueTypeUpdate", {
+        name,
+      });
+    case "medication.layout.validation-failed":
+      return t("recordSharing.activityVerb.rejectedMedicationLayout", { name });
     // Not a validation failure: the request was well-formed and admitted,
     // and the queue would not take it. The owner sees an import that never
     // ran rather than one that was refused, because those need different
     // next steps.
     case "medication.intake.import.kickoff.denied":
       return t("recordSharing.activityVerb.deniedDoseImport", { name });
-
-    /* ---------------------------------------------------------------- */
-    /* Acts a delegable module performs outside its own route file.      */
-    /*                                                                   */
-    /* The two below are filed by library modules the routes import — a  */
-    /* background worker's completion row and a lifecycle reconciliation */
-    /* — and a guard that walked only `route.ts` could not see either.   */
-    /* Both carry the actor through, so both reach the owner's feed.     */
-    /* ---------------------------------------------------------------- */
-
-    case "medication.intake.import":
-      return t("recordSharing.activityVerb.medicationIntakeImportFinished", {
-        name,
-      });
-    case "medication.oneShot.reconciled":
-      return t("recordSharing.activityVerb.medicationOneShotReconciled", {
-        name,
-      });
-
-    case "anamnesis.fact.create":
-      return t("recordSharing.activityVerb.anamnesisFactCreate", { name });
-    case "customMetric.create":
-      return t("recordSharing.activityVerb.customMetricCreate", { name });
-    case "customMetric.update":
-      return t("recordSharing.activityVerb.customMetricUpdate", { name });
-    case "customMetric.delete":
-      return t("recordSharing.activityVerb.customMetricDelete", { name });
-    case "documents.inbound.store":
-      return t("recordSharing.activityVerb.documentStore", { name });
-    case "documents.inbound.update":
-      return t("recordSharing.activityVerb.documentUpdate", { name });
-    case "documents.inbound.discard":
-      return t("recordSharing.activityVerb.documentDiscard", { name });
-
     default:
-      return t("recordSharing.activity.acted", { name });
+      return null;
   }
 }

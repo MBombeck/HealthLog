@@ -237,7 +237,7 @@ async function readEnrichment(
       : null;
   const splits =
     geometryCoords && Array.isArray(row.route?.sampleTimestamps)
-      ? computeSplits(geometryCoords, row.route.sampleTimestamps as string[])
+      ? computeSplits(geometryCoords, row.route.sampleTimestamps)
       : null;
 
   // Sport context: the user's own last-180-days average for this

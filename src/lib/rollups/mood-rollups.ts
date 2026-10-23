@@ -49,6 +49,7 @@ import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { annotate } from "@/lib/logging/context";
+import { runDetached } from "@/lib/logging/detached";
 import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import { startOfUtcDay } from "@/lib/tz/start-of-utc-day";
 import {
@@ -318,25 +319,27 @@ export async function recomputeMoodBucketsForEntry(
   // write on a detached handle, and one that lands while a vitest worker is
   // closing its RPC channel fails the whole run. No-op outside test.
   trackBackgroundTask(
-    Promise.all(
-      ASYNC_GRANULARITIES.map((granularity) => {
-        const { from, to } = bucketSpan(dateLabel, granularity);
-        return enqueueMoodRollupRecompute({
-          userId,
-          granularity,
-          from,
-          to,
-        }).catch((err: unknown) => {
-          const message = err instanceof Error ? err.message : String(err);
-          annotate({
-            meta: {
-              mood_rollup_enqueue_failed: true,
-              mood_rollup_enqueue_error: message,
-            },
+    runDetached(() =>
+      Promise.all(
+        ASYNC_GRANULARITIES.map((granularity) => {
+          const { from, to } = bucketSpan(dateLabel, granularity);
+          return enqueueMoodRollupRecompute({
+            userId,
+            granularity,
+            from,
+            to,
+          }).catch((err: unknown) => {
+            const message = err instanceof Error ? err.message : String(err);
+            annotate({
+              meta: {
+                mood_rollup_enqueue_failed: true,
+                mood_rollup_enqueue_error: message,
+              },
+            });
+            console.error("[mood-rollups] async enqueue failed:", message);
           });
-          console.error("[mood-rollups] async enqueue failed:", message);
-        });
-      }),
+        }),
+      ),
     ),
   );
 }

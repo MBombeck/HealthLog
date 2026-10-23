@@ -74,10 +74,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // is rebuilt from a backup. Fire-and-forget; audit failures must
   // never bubble into a user-facing 500.
   fireAndForget(
-    auditLog("consent.ai.grant", {
-      userId: user.id,
-      details: { kind, receiptId: receipt.id },
-    }),
+    () =>
+      auditLog("consent.ai.grant", {
+        userId: user.id,
+        details: { kind, receiptId: receipt.id },
+      }),
     { action: "consent.ai.audit" },
   );
 

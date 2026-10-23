@@ -71,7 +71,17 @@
       ],
       "courseCount": 1,
       "previousCourseEndedOn": "2026-10-05",
-      "canStartCourse": true
+      "canStartCourse": true,
+      "nextDueAt": null,
+      "remindersActive": false,
+      "nextDueOverdue": false,
+      "courseStatus": "ENDED",
+      "intakeActionable": false,
+      "stockUnitsRemaining": null,
+      "stockDosesRemaining": null,
+      "runwayDays": null,
+      "ingredients": [],
+      "related": []
     },
     "error": null
   },

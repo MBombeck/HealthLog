@@ -7,6 +7,10 @@
  * everything after it run here, in the order they always ran. The outcome is
  * a refusal the route answers with `apiError`, or the edited medication.
  */
+import {
+  medicationDetail,
+  type ReadUser,
+} from "@/lib/medications/read-medication";
 import { prisma } from "@/lib/db";
 import {
   enqueueSupplementNutrientRecompute,
@@ -14,7 +18,6 @@ import {
 } from "@/lib/medications/ingredients/recompute-job";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
-import type { SessionUser } from "@/lib/auth/session-user";
 import { overwriteDetails } from "@/lib/sharing/audit-details";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import {
@@ -25,11 +28,8 @@ import {
 import {
   CourseWriteError,
   courseRefusalResponse,
-  resolveCourseFields,
 } from "@/lib/medications/courses";
 import { refreshDoseDay } from "@/lib/medications/dose-day-refresh";
-import { serializeScheduleUnitsPerDose } from "@/lib/medications/schedule-units-dto";
-import { scheduleWireFields } from "@/lib/medications/intake-tracking";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import {
   applyRecordOnlyRule,
@@ -49,7 +49,7 @@ import {
   type MedicationEditWrite,
 } from "./write";
 
-type EditUser = Pick<SessionUser, "id" | "timezone">;
+type EditUser = ReadUser;
 type EditedMedication = Awaited<ReturnType<typeof writeMedicationEdit>>;
 
 export type MedicationEditOutcome =
@@ -238,7 +238,6 @@ async function writeCategory(
   }
   if (categoryToWrite !== undefined)
     await setMedicationCategory(id, categoryToWrite);
-  return (await resolveMedicationCategories([id]))[id];
 }
 
 /** The audit row: C4 on the medication row itself, C7 on the schedule. */
@@ -336,12 +335,7 @@ export async function updateMedication(input: {
     plan.primaryScheduleGracePatch,
   );
 
-  const resolvedCategory = await writeCategory(
-    id,
-    write.input.category,
-    input.authMethod,
-  );
-  const normalizedCategory = resolvedCategory?.category ?? "OTHER";
+  await writeCategory(id, write.input.category, input.authMethod);
 
   // A changed units-per-dose (on the medication or on a slot) changes what
   // every taken dose added, so a medication with a composition has its doses
@@ -364,24 +358,12 @@ export async function updateMedication(input: {
   // read reflects the schedule change.
   invalidateUserMedications(user.id, { evict: true });
 
-  return {
-    ok: true,
-    body: {
-      ...medication,
-      unitsPerDose: Number(medication.unitsPerDose),
-      ...scheduleWireFields(
-        medication.trackIntake,
-        serializeScheduleUnitsPerDose(
-          medication.schedules,
-          medication.unitsPerDose,
-        ),
-      ),
-      category: normalizedCategory,
-      categoryLabel: resolvedCategory?.categoryLabel ?? null,
-      // The courses, as every medication read carries them (#1024).
-      ...(
-        await resolveCourseFields([medication], new Date(), write.courseTz)
-      ).get(id),
-    },
-  };
+  // The read model, exactly as `GET /api/medications/{id}` answers it.
+  const body = await medicationDetail({
+    user,
+    grantId: null,
+    medication,
+    announce: false,
+  });
+  return { ok: true, body };
 }

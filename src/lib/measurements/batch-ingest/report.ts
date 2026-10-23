@@ -201,7 +201,7 @@ export async function enqueueRecordJobs(args: {
   // Eventful Vorsorge satisfaction. A matching reading just landed; resolve
   // the user's reminders now rather than waiting on the 15-min cron.
   // Fire-and-forget — the cron reconciles on enqueue miss.
-  fireAndForget(enqueueReminderSatisfy(userId), {
+  fireAndForget(() => enqueueReminderSatisfy(userId), {
     action: "reminder.satisfy.enqueue",
   });
   try {

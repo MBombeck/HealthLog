@@ -59,15 +59,6 @@ vi.mock(
 const prisma = getPrismaClient();
 const NOW = new Date("2026-10-15T12:00:00.000Z");
 const ROUTE = "/api/medications/{id}/intake/{eventId}";
-/**
- * A correction that moves the dose answers with the row the shared slot write
- * returns, which carries fewer fields than the registered event resource. The
- * parity snapshot pins that answer as it is; the contract check is the
- * route's own tests' business.
- */
-const SLOT_MOVE_ANSWER = {
-  skip: "a slot move answers with the narrower slot-write row",
-};
 
 let ownerId: string;
 let userIds: string[];
@@ -86,7 +77,6 @@ async function put(
     auth?: RouteAuth;
     headers?: Record<string, string>;
     medicationId?: string;
-    contract?: { skip: string };
   } = {},
 ) {
   return parityStep({
@@ -99,7 +89,6 @@ async function put(
       body,
       auth: options.auth ?? owner,
       headers: options.headers,
-      contract: options.contract,
     },
     userIds,
     now: NOW,
@@ -252,22 +241,16 @@ describe("PUT /api/medications/{id}/intake/{eventId} parity", () => {
   });
 
   it("03 a take corrected into the other window, onto a skipped slot", async () => {
-    const res = await put(
-      "03-move-by-band",
-      events.morningTaken,
-      { takenAt: "2026-10-14T20:30:00.000Z" },
-      { contract: SLOT_MOVE_ANSWER },
-    );
+    const res = await put("03-move-by-band", events.morningTaken, {
+      takenAt: "2026-10-14T20:30:00.000Z",
+    });
     events.moved = (res.data as { id: string }).id;
   });
 
   it("04 a legacy take pinned onto a free slot", async () => {
-    const res = await put(
-      "04-pin-free-slot",
-      events.legacyTaken,
-      { forceSlotInstant: "2026-10-12T20:00:00.000Z" },
-      { contract: SLOT_MOVE_ANSWER },
-    );
+    const res = await put("04-pin-free-slot", events.legacyTaken, {
+      forceSlotInstant: "2026-10-12T20:00:00.000Z",
+    });
     events.pinned = (res.data as { id: string }).id;
   });
 
@@ -284,25 +267,17 @@ describe("PUT /api/medications/{id}/intake/{eventId} parity", () => {
   });
 
   it("07 an unpin", async () => {
-    const res = await put(
-      "07-unpin",
-      events.pinned,
-      { forceSlotInstant: null },
-      { contract: SLOT_MOVE_ANSWER },
-    );
+    const res = await put("07-unpin", events.pinned, {
+      forceSlotInstant: null,
+    });
     events.pinned = (res.data as { id: string }).id;
   });
 
   it("08 an explicit slot in the body", async () => {
-    const res = await put(
-      "08-explicit-slot",
-      events.moved,
-      {
-        scheduledFor: "2026-10-14T08:00:00.000Z",
-        takenAt: "2026-10-14T08:45:00.000Z",
-      },
-      { contract: SLOT_MOVE_ANSWER },
-    );
+    const res = await put("08-explicit-slot", events.moved, {
+      scheduledFor: "2026-10-14T08:00:00.000Z",
+      takenAt: "2026-10-14T08:45:00.000Z",
+    });
     events.moved = (res.data as { id: string }).id;
   });
 

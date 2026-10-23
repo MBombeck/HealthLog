@@ -3,12 +3,24 @@
   "body": {
     "data": {
       "id": "<id:1>",
+      "userId": "<id:2>",
+      "medicationId": "<id:3>",
+      "scheduledFor": "2026-10-14T08:00:00.000Z",
       "takenAt": "2026-10-14T08:45:00.000Z",
       "skipped": false,
-      "idempotencyKey": null,
-      "scheduledFor": "2026-10-14T08:00:00.000Z",
+      "autoMissed": false,
+      "autoRecorded": false,
+      "attributionSource": "AUTO",
       "source": "WEB",
-      "createdAt": "<createdAt>"
+      "idempotencyKey": null,
+      "createdAt": "<createdAt>",
+      "injectionSite": null,
+      "doseTaken": null,
+      "inventoryConsumption": null,
+      "externalId": null,
+      "updatedAt": "<updatedAt>",
+      "syncVersion": "<syncVersion>",
+      "deletedAt": null
     },
     "error": null
   },
@@ -18,7 +30,7 @@
       "action": {
         "name": "medication.intake.update",
         "entity_type": "intake_event",
-        "entity_id": "<id:2>"
+        "entity_id": "<id:4>"
       },
       "meta": {
         "medication_id": "<id:3>"
@@ -32,7 +44,7 @@
       "effect": "queueMedicationIntakeSync",
       "args": [
         {
-          "userId": "<id:4>",
+          "userId": "<id:2>",
           "originDeviceToken": null
         }
       ]
@@ -42,7 +54,7 @@
     "medications": [
       {
         "id": "<id:5>",
-        "userId": "<id:4>",
+        "userId": "<id:2>",
         "name": "Parity one-shot",
         "dose": "10mg",
         "treatmentClass": "GENERIC",
@@ -76,7 +88,7 @@
       },
       {
         "id": "<id:3>",
-        "userId": "<id:4>",
+        "userId": "<id:2>",
         "name": "Parity tablet",
         "dose": "10mg",
         "treatmentClass": "GENERIC",
@@ -171,7 +183,7 @@
     "intakes": [
       {
         "id": "<id:9>",
-        "userId": "<id:4>",
+        "userId": "<id:2>",
         "medicationId": "<id:5>",
         "scheduledFor": "2026-10-10T09:00:00.000Z",
         "takenAt": "2026-10-10T09:30:00.000Z",
@@ -192,7 +204,7 @@
       },
       {
         "id": "<id:10>",
-        "userId": "<id:4>",
+        "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-11T08:00:00.000Z",
         "takenAt": "2026-10-11T08:20:00.000Z",
@@ -213,7 +225,7 @@
       },
       {
         "id": "<id:11>",
-        "userId": "<id:4>",
+        "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-11T20:00:00.000Z",
         "takenAt": "2026-10-11T20:20:00.000Z",
@@ -234,7 +246,7 @@
       },
       {
         "id": "<id:12>",
-        "userId": "<id:4>",
+        "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-12T08:00:00.000Z",
         "takenAt": "2026-10-12T08:05:00.000Z",
@@ -255,7 +267,7 @@
       },
       {
         "id": "<id:13>",
-        "userId": "<id:4>",
+        "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-12T20:00:00.000Z",
         "takenAt": "2026-10-13T20:15:00.000Z",
@@ -276,7 +288,7 @@
       },
       {
         "id": "<id:14>",
-        "userId": "<id:4>",
+        "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-13T08:00:00.000Z",
         "takenAt": "2026-10-13T08:40:00.000Z",
@@ -297,7 +309,7 @@
       },
       {
         "id": "<id:15>",
-        "userId": "<id:4>",
+        "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-13T20:00:00.000Z",
         "takenAt": "2026-10-13T20:15:00.000Z",
@@ -318,7 +330,7 @@
       },
       {
         "id": "<id:16>",
-        "userId": "<id:4>",
+        "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-13T20:00:00.000Z",
         "takenAt": "2026-10-13T20:15:00.000Z",
@@ -339,7 +351,7 @@
       },
       {
         "id": "<id:17>",
-        "userId": "<id:4>",
+        "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-14T08:00:00.000Z",
         "takenAt": "2026-10-14T08:10:00.000Z",
@@ -360,7 +372,7 @@
       },
       {
         "id": "<id:1>",
-        "userId": "<id:4>",
+        "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-14T08:00:00.000Z",
         "takenAt": "2026-10-14T08:45:00.000Z",
@@ -380,8 +392,8 @@
         "deletedAt": null
       },
       {
-        "id": "<id:2>",
-        "userId": "<id:4>",
+        "id": "<id:4>",
+        "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-14T20:00:00.000Z",
         "takenAt": "2026-10-14T20:30:00.000Z",
@@ -405,7 +417,7 @@
     "inventoryItems": [
       {
         "id": "<id:18>",
-        "userId": "<id:4>",
+        "userId": "<id:2>",
         "medicationId": "<id:3>",
         "state": "IN_USE",
         "containerType": "OTHER",
@@ -429,7 +441,7 @@
     "audit": [
       {
         "action": "medication.intake.update",
-        "userId": "<id:4>",
+        "userId": "<id:2>",
         "actorUserId": null,
         "details": {
           "eventId": "<id:17>",
@@ -447,10 +459,10 @@
       },
       {
         "action": "medication.intake.update",
-        "userId": "<id:4>",
+        "userId": "<id:2>",
         "actorUserId": null,
         "details": {
-          "eventId": "<id:2>",
+          "eventId": "<id:4>",
           "medicationId": "<id:3>",
           "fields": [
             "scheduledFor",
@@ -465,7 +477,7 @@
       },
       {
         "action": "medication.intake.update",
-        "userId": "<id:4>",
+        "userId": "<id:2>",
         "actorUserId": null,
         "details": {
           "eventId": "<id:13>",
@@ -481,7 +493,7 @@
       },
       {
         "action": "medication.intake.update",
-        "userId": "<id:4>",
+        "userId": "<id:2>",
         "actorUserId": null,
         "details": {
           "eventId": "<id:15>",
@@ -497,7 +509,7 @@
       },
       {
         "action": "medication.intake.update",
-        "userId": "<id:4>",
+        "userId": "<id:2>",
         "actorUserId": null,
         "details": {
           "eventId": "<id:14>",
@@ -513,7 +525,7 @@
       },
       {
         "action": "medication.intake.update",
-        "userId": "<id:4>",
+        "userId": "<id:2>",
         "actorUserId": null,
         "details": {
           "eventId": "<id:14>",

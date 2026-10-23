@@ -63,7 +63,17 @@
       "courses": [],
       "courseCount": 0,
       "previousCourseEndedOn": null,
-      "canStartCourse": false
+      "canStartCourse": false,
+      "nextDueAt": null,
+      "remindersActive": false,
+      "nextDueOverdue": false,
+      "courseStatus": "CURRENT",
+      "intakeActionable": false,
+      "stockUnitsRemaining": null,
+      "stockDosesRemaining": null,
+      "runwayDays": null,
+      "ingredients": [],
+      "related": []
     },
     "error": null
   },

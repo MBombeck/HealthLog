@@ -66,6 +66,7 @@ import { prisma } from "@/lib/db";
 import { checkAuthSurfaceRateLimit, checkRateLimit } from "@/lib/rate-limit";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
+import { auditLog } from "@/lib/auth/audit";
 
 function postReq(
   body: unknown,
@@ -83,6 +84,7 @@ function postReq(
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(auditLog).mockResolvedValue(undefined);
   vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true } as never);
   vi.mocked(checkAuthSurfaceRateLimit).mockResolvedValue({
     allowed: true,
@@ -145,18 +147,15 @@ describe("POST /api/ingest/medication — 422 multi-issue (v1.4.43 W6)", () => {
     const res = await POST(postReq({ medicationName: "" }));
     expect(res.status).toBe(422);
     await new Promise((r) => setTimeout(r, 5));
-    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
-    const call = vi.mocked(prisma.auditLog.create).mock.calls[0]?.[0] as {
-      data: { userId: string; action: string };
-    };
-    expect(call.data.userId).toBe("user-1");
-    expect(call.data.action).toBe("ingest.medication.validation-failed");
+    // Through `auditLog()`, which decides whether the refusal is filed.
+    expect(auditLog).toHaveBeenCalledWith(
+      "ingest.medication.validation-failed",
+      expect.objectContaining({ userId: "user-1" }),
+    );
   });
 
   it("does not block the 422 when the audit-row write rejects", async () => {
-    vi.mocked(prisma.auditLog.create).mockRejectedValueOnce(
-      new Error("db down"),
-    );
+    vi.mocked(auditLog).mockRejectedValueOnce(new Error("db down"));
     const res = await POST(postReq({ medicationName: "" }));
     expect(res.status).toBe(422);
   });

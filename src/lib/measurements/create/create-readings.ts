@@ -208,7 +208,7 @@ async function afterReadingsCreated(
 
   // Eventful Vorsorge satisfaction. Resolve the user's reminders against the
   // just-landed readings now. Fire-and-forget.
-  fireAndForget(enqueueReminderSatisfy(user.id), {
+  fireAndForget(() => enqueueReminderSatisfy(user.id), {
     action: "reminder.satisfy.enqueue",
   });
 
@@ -232,17 +232,18 @@ async function afterReadingsCreated(
   // symptom-coupled emergency copy. Fire-and-forget — a notification failure
   // never fails the write.
   fireAndForget(
-    runSafetyFloorCheck({
-      userId: user.id,
-      written: rows.map((r) => ({
-        type: r.type,
-        value: r.value,
-        measuredAt: r.measuredAt,
-        glucoseContext: r.glucoseContext,
-      })),
-      symptomsPresent: options.symptomsPresent,
-      timezone: user.timezone ?? undefined,
-    }),
+    () =>
+      runSafetyFloorCheck({
+        userId: user.id,
+        written: rows.map((r) => ({
+          type: r.type,
+          value: r.value,
+          measuredAt: r.measuredAt,
+          glucoseContext: r.glucoseContext,
+        })),
+        symptomsPresent: options.symptomsPresent,
+        timezone: user.timezone ?? undefined,
+      }),
     { action: "measurement.safety_floor.check" },
   );
 

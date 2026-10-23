@@ -342,8 +342,8 @@ async function rerollBriefingParagraph(args: {
 
 /**
  * Parse + (best-effort) validate a comprehensive provider reply. Returns the
- * parsed payload (validated when it matches `insightResultSchema`, else the
- * raw object so the richer optional blocks survive), or null when the reply
+ * parsed payload (validated when it matches `insightResultSchema`, which
+ * keeps the richer optional blocks, else the raw object), or null when the reply
  * is not valid JSON even after fence-stripping. Null signals the caller to
  * run its one corrective retry.
  */

@@ -163,15 +163,10 @@ async function commitOcrRows(request: NextRequest) {
       const auditIssues = sanitiseZodIssues(error.issues, {
         stripValuesFromMessage: true,
       });
-      prisma.auditLog
-        .create({
-          data: {
-            userId: user.id,
-            action: "labs.ocr.commit.validation-failed",
-            details: JSON.stringify({ issues: auditIssues }),
-          },
-        })
-        .catch(() => {});
+      auditLog("labs.ocr.commit.validation-failed", {
+        userId: user.id,
+        details: { issues: auditIssues },
+      }).catch(() => {});
     },
   });
   if (!parsed.ok) return parsed.error;
@@ -402,7 +397,7 @@ async function commitOcrRows(request: NextRequest) {
   // A lab panel just landed — resolve any "annual blood panel" reminders now
   // rather than waiting on the cron. Fire-and-forget.
   if (inserted.length > 0) {
-    fireAndForget(enqueueReminderSatisfy(user.id), {
+    fireAndForget(() => enqueueReminderSatisfy(user.id), {
       action: "reminder.satisfy.enqueue",
     });
 
