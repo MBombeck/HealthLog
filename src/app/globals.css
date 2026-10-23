@@ -60,6 +60,20 @@ body,
   --font-sans: "Inter", "Inter Fallback";
 }
 
+/*
+ * Recharts writes a label's font size into the measurement span and reads its
+ * box in the same task. The reduced-motion backstop below gives every element
+ * a near-zero transition, and the default transition property is `all`, so
+ * that write started a transition and the read returned the previous size: a
+ * label was sized at whatever the last one had, and the axes placed their
+ * labels differently from visit to visit. Nothing in the host is ever seen,
+ * so nothing in it transitions.
+ */
+[data-slot="chart-text-measurement-host"],
+[data-slot="chart-text-measurement-host"] * {
+  transition: none !important;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /*
