@@ -38,10 +38,10 @@ const {
   mintStepUpElevation,
   claimStepUpElevation,
   validateStepUpElevation,
-  isFreshFactorMethod,
-  FRESH_FACTOR_METHODS,
   STEP_UP_ELEVATION_TTL_SECONDS,
 } = await import("@/lib/auth/step-up");
+const { isFreshFactorMethod, FRESH_FACTOR_METHODS } =
+  await import("@/lib/auth/step-up-factors");
 const { MFA_STEP_UP_MAX_AGE_SECONDS, STEP_UP_ELEVATION_HEADER } =
   await import("@/lib/api-handler");
 const { hashToken } = await import("@/lib/auth/hmac");

@@ -31,6 +31,10 @@ import {
   readSourceText,
   walkSourceFiles,
 } from "./helpers/source-files";
+import {
+  FRESH_FACTOR_METHODS,
+  isFreshFactorMethod,
+} from "@/lib/auth/step-up-factors";
 
 const SRC = join(process.cwd(), "src");
 
@@ -369,12 +373,14 @@ describe("S4 — the mint surface refuses a cookie", () => {
 });
 
 describe("S5 — a password proof cannot satisfy a fresh-factor gate", () => {
-  it("the fresh-factor set excludes password", async () => {
+  it("the fresh-factor set excludes password", () => {
     // The B1 invariant, pinned at the definition. The web stamps
     // `mfaVerifiedAt` only for a completed second factor or a primary passkey
-    // login; the Bearer arm must not be looser.
-    const { FRESH_FACTOR_METHODS, isFreshFactorMethod } =
-      await import("@/lib/auth/step-up");
+    // login; the Bearer arm must not be looser. Read from the definition's
+    // own module, which imports nothing: reaching it through `step-up.ts`
+    // loaded the database client and the generated Prisma client inside this
+    // test body, and that import alone ran past the test timeout on a loaded
+    // machine.
     expect([...FRESH_FACTOR_METHODS].sort()).toEqual([
       "passkey",
       "totp",

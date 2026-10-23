@@ -20,6 +20,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import nextConfig from "../../next.config";
+
 import {
   requireFloor,
   stripComments,
@@ -34,12 +36,13 @@ type ImagesConfig = {
   dangerouslyAllowSVG?: boolean;
 };
 
-async function imagesConfig(): Promise<ImagesConfig> {
-  const mod = (await import("../../next.config")) as {
-    default: { images?: ImagesConfig };
-  };
-  return mod.default.images ?? {};
-}
+/**
+ * The config as Next reads it, imported once with the file rather than inside
+ * a test: the config pulls in Next's plugins, and loading that graph in a test
+ * body put the import against the test timeout on a loaded machine.
+ */
+const IMAGES: ImagesConfig =
+  (nextConfig as { images?: ImagesConfig }).images ?? {};
 
 // Any import of the module: static, dynamic, `require`, side effect or
 // re-export. Two literals with one shape rather than one built from a string,
@@ -89,22 +92,22 @@ describe("next/image optimizer", () => {
     requireFloor("next/link importers", importers(NEXT_LINK_IMPORT), 100);
   });
 
-  it("is off, and then nothing imports next/image", async () => {
-    const images = await imagesConfig();
+  it("is off, and then nothing imports next/image", () => {
+    const images = IMAGES;
     if (images.unoptimized !== true) return;
     expect(importers(NEXT_IMAGE_IMPORT)).toEqual([]);
   });
 
-  it("is never on with SVG input allowed", async () => {
-    const images = await imagesConfig();
+  it("is never on with SVG input allowed", () => {
+    const images = IMAGES;
     if (images.unoptimized === true) return;
     expect(images.dangerouslyAllowSVG ?? false).toBe(false);
   });
 
-  it("is off today", async () => {
+  it("is off today", () => {
     // The two cases above each skip on the other branch. This pins which
     // branch the tree is on, so flipping it is a visible change to this
     // file and not a silent switch between the two.
-    expect((await imagesConfig()).unoptimized).toBe(true);
+    expect(IMAGES.unoptimized).toBe(true);
   });
 });

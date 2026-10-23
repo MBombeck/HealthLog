@@ -47,10 +47,12 @@ import {
 } from "@/lib/auth/existing-factor-proof";
 import {
   mintStepUpElevation,
-  isFreshFactorMethod,
   STEP_UP_ELEVATION_TTL_SECONDS,
-  type StepUpMethod,
 } from "@/lib/auth/step-up";
+import {
+  isFreshFactorMethod,
+  type StepUpMethod,
+} from "@/lib/auth/step-up-factors";
 import { stepUpMintSchema } from "@/lib/validations/step-up";
 
 export const dynamic = "force-dynamic";
