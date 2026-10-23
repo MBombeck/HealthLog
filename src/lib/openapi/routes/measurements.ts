@@ -332,6 +332,12 @@ export const measurementResource = z
       .describe("Soft-delete tombstone; null on a live row."),
     createdAt: isoDateTime().optional(),
     updatedAt: isoDateTime().optional(),
+    appleHealthMirror: z
+      .boolean()
+      .optional()
+      .describe(
+        "Whether the HealthLog app writes this reading into Apple Health. Resolved by the server on every stored row: true for WITHINGS, IMPORT and MANUAL, for an EXTERNAL row whatever its account chose for the token that sent it, false otherwise. Absent on the synthesised list rows.",
+      ),
     // Synthesised-row extras — present only on the collapsed day-sum mode.
     dayKey: z.string().optional(),
     sampleCount: z.number().int().optional(),

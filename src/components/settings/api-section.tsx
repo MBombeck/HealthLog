@@ -31,6 +31,12 @@ import { formatDate, formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
+import { ApiEndpointsCard } from "@/components/settings/api-endpoints-card";
+import {
+  AppleHealthMirrorOptIn,
+  AppleHealthMirrorSwitch,
+  UnattributedReadingsNotice,
+} from "@/components/settings/apple-health-mirror-token";
 import {
   recentProofErrorMessage,
   throwIfReproofRequired,
@@ -45,6 +51,7 @@ interface ApiTokenInfo {
   expiresAt: string | null;
   createdAt: string;
   revoked: boolean;
+  mirrorToAppleHealth: boolean;
 }
 
 export function ApiSection() {
@@ -78,6 +85,8 @@ function MeasurementTokensCard() {
       icon={Upload}
       slot="settings-measurements-token-created"
       anchor="measurements-token"
+      mirrorOptIn
+      footer={<UnattributedReadingsNotice />}
       copy={{
         title: t("settings.measurementsToken.title"),
         description: t("settings.measurementsToken.description"),
@@ -147,7 +156,12 @@ function IngestTokenCard({
   slot,
   anchor,
   copy,
+  mirrorOptIn = false,
+  footer,
 }: {
+  /** Offer the Apple Health write-back on the mint (measurement tokens). */
+  mirrorOptIn?: boolean;
+  footer?: React.ReactNode;
   /** Deep-link anchor for the card (`/settings/api#<anchor>`). */
   anchor: string;
   endpoint:
@@ -172,6 +186,7 @@ function IngestTokenCard({
   const [creating, setCreating] = useState(false);
   const [tokenMsg, setTokenMsg] = useState<string | null>(null);
   const [tokenCopied, setTokenCopied] = useState(false);
+  const [mirror, setMirror] = useState(false);
   // The token outlives the session, so minting one asks for a fresh proof
   // unless the session signed in or re-proved within five minutes.
   const recentProof = useRecentProof();
@@ -184,7 +199,10 @@ function IngestTokenCard({
     try {
       // No scope field: the endpoint mints one shape, so there is nothing
       // here for a caller to choose or for this form to get wrong.
-      const body = JSON.stringify({ name: newName.trim() });
+      const body = JSON.stringify({
+        name: newName.trim(),
+        ...(mirrorOptIn && { mirrorToAppleHealth: mirror }),
+      });
       const res = await recentProof.run(async () =>
         throwIfReproofRequired(
           await apiFetchRaw(endpoint, {
@@ -198,6 +216,7 @@ function IngestTokenCard({
       if (res.ok) {
         setNewToken(json.data.token);
         setNewName("");
+        setMirror(false);
         // The sibling card lists this token, so it has to hear about it.
         queryClient.invalidateQueries({ queryKey: queryKeys.tokens() });
       } else {
@@ -263,6 +282,12 @@ function IngestTokenCard({
             {t("common.create")}
           </Button>
         </form>
+        {mirrorOptIn && (
+          <AppleHealthMirrorOptIn
+            checked={mirror}
+            onCheckedChange={setMirror}
+          />
+        )}
 
         {newToken && (
           <div
@@ -295,128 +320,8 @@ function IngestTokenCard({
         )}
 
         {tokenMsg && <p className="text-destructive text-sm">{tokenMsg}</p>}
+        {footer}
       </div>
-    </SettingsCard>
-  );
-}
-
-function ApiEndpointsCard() {
-  const { t } = useTranslations();
-
-  // v1.4.27 — dual-render: <md gets a stacked card list, md+
-  // keeps the original table. Mobile cards wrap inside their box and
-  // never trigger horizontal scroll, mirroring the pattern from
-  // `<ApiTokenOverviewSection>`. The endpoint catalogue is array-driven
-  // so adding a row remains a one-line edit on both surfaces — which is
-  // what the two measurement ingest rows below cost.
-  const endpoints = [
-    {
-      method: "POST",
-      path: "/api/ingest/medication",
-      auth: "Authorization: Bearer hlk_...",
-      example: `{ "medicationName": "...", "scheduledFor": "..." }`,
-    },
-    {
-      method: "POST",
-      path: "/api/measurements",
-      auth: "Authorization: Bearer hlk_...",
-      example: `{ "type": "WEIGHT", "value": 82.4, "measuredAt": "..." }`,
-    },
-    {
-      method: "POST",
-      path: "/api/measurements/batch",
-      auth: "Authorization: Bearer hlk_...",
-      example: `{ "entries": [ { "hkIdentifier": "...", "value": 1, ... } ] }`,
-    },
-    {
-      method: "POST",
-      path: "/api/workouts/batch",
-      auth: "Authorization: Bearer hlk_...",
-      example: `{ "workouts": [ { "sportType": "running", "startedAt": "...", "endedAt": "...", "externalId": "..." } ] }`,
-    },
-    {
-      method: "POST",
-      path: "/api/documents/inbound",
-      auth: "Authorization: Bearer hlk_...",
-      example: `multipart: file, title, documentDate, sourceSystem, sourceId`,
-    },
-  ];
-
-  return (
-    <SettingsCard>
-      <SettingsCardHeader
-        anchor="api-endpoints"
-        icon={Key}
-        title={t("settings.apiEndpointsTitle")}
-        description={t("settings.apiEndpointsDescription")}
-      />
-
-      {/* Desktop table — verbatim layout for md+. */}
-      <div className="border-border relative hidden overflow-x-auto rounded-lg border md:block">
-        <table className="w-full min-w-[760px] text-xs md:min-w-0">
-          <thead>
-            <tr className="bg-muted/40 text-muted-foreground border-b">
-              <th className="px-3 py-2 text-left font-medium">
-                {t("settings.apiEndpointMethod")}
-              </th>
-              <th className="px-3 py-2 text-left font-medium">
-                {t("settings.apiEndpointPath")}
-              </th>
-              <th className="px-3 py-2 text-left font-medium">
-                {t("settings.apiEndpointAuth")}
-              </th>
-              <th className="px-3 py-2 text-left font-medium">
-                {t("settings.apiEndpointExample")}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {endpoints.map((endpoint) => (
-              <tr key={`${endpoint.method} ${endpoint.path}`}>
-                <td className="px-3 py-2 font-medium">{endpoint.method}</td>
-                <td className="px-3 py-2 font-mono">{endpoint.path}</td>
-                <td className="px-3 py-2 font-mono">{endpoint.auth}</td>
-                <td className="px-3 py-2 font-mono">{endpoint.example}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Mobile card list — each endpoint stacks its columns vertically
-          with a labelled meta row. No horizontal scroll. */}
-      <ul
-        className="space-y-2 md:hidden"
-        data-testid="settings-api-endpoints-mobile-list"
-      >
-        {endpoints.map((endpoint) => (
-          <li
-            key={`${endpoint.method} ${endpoint.path}`}
-            className="bg-muted/30 border-border space-y-1.5 rounded-lg border p-3 text-xs"
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary" className="text-xs">
-                {endpoint.method}
-              </Badge>
-              <code className="font-mono break-all">{endpoint.path}</code>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-xs tracking-wide uppercase">
-                {t("settings.apiEndpointAuth")}
-              </p>
-              <code className="font-mono break-all">{endpoint.auth}</code>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-xs tracking-wide uppercase">
-                {t("settings.apiEndpointExample")}
-              </p>
-              <code className="block font-mono break-all">
-                {endpoint.example}
-              </code>
-            </div>
-          </li>
-        ))}
-      </ul>
     </SettingsCard>
   );
 }
@@ -425,7 +330,6 @@ function ApiTokensCard() {
   const { t } = useTranslations();
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
-  const [showRevokedTokens, setShowRevokedTokens] = useState(false);
 
   const {
     data: tokens,
@@ -557,7 +461,10 @@ function ApiTokensCard() {
                           key={tok.id}
                           className={index % 2 === 0 ? "bg-muted/20" : ""}
                         >
-                          <td className="px-3 py-2 font-medium">{tok.name}</td>
+                          <td className="px-3 py-2 font-medium">
+                            {tok.name}
+                            <AppleHealthMirrorSwitch token={tok} />
+                          </td>
                           <td className="text-muted-foreground px-3 py-2 text-xs">
                             {tok.permissions.join(", ")}
                           </td>
@@ -660,6 +567,7 @@ function ApiTokensCard() {
                             ? formatDateTime(tok.lastUsedAt)
                             : t("settings.tokenNeverUsed")}
                         </p>
+                        <AppleHealthMirrorSwitch token={tok} />
                         <ConfirmButton
                           label={t("settings.tokenRevokeAction")}
                           title={t("settings.tokenRevoke")}
@@ -679,111 +587,120 @@ function ApiTokensCard() {
             </div>
 
             {revokedTokens.length > 0 && (
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={() => setShowRevokedTokens((prev) => !prev)}
-                  className="text-foreground hover:text-primary flex items-center gap-1 text-sm font-medium transition-colors"
-                >
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform ${showRevokedTokens ? "rotate-180" : ""}`}
-                  />
-                  {t("settings.revokedTokensTitle", {
-                    count: revokedTokens.length,
-                  })}
-                </button>
-                {showRevokedTokens && (
-                  <>
-                    {/* Desktop table — verbatim layout for md+. */}
-                    <div className="border-border relative hidden overflow-x-auto rounded-lg border md:block">
-                      <table className="w-full min-w-[760px] text-sm md:min-w-0">
-                        <thead>
-                          <tr className="bg-muted/40 text-muted-foreground border-b text-xs">
-                            <th className="px-3 py-2 text-left font-medium">
-                              {t("settings.tokenTableName")}
-                            </th>
-                            <th className="px-3 py-2 text-left font-medium">
-                              {t("settings.tokenTablePermissions")}
-                            </th>
-                            <th className="px-3 py-2 text-left font-medium">
-                              {t("settings.tokenTableCreated")}
-                            </th>
-                            <th className="px-3 py-2 text-left font-medium">
-                              {t("settings.tokenTableLastUsed")}
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-border divide-y">
-                          {revokedTokens.map((tok, index) => (
-                            <tr
-                              key={tok.id}
-                              className={index % 2 === 0 ? "bg-muted/20" : ""}
-                            >
-                              <td className="px-3 py-2 font-medium">
-                                {tok.name}
-                              </td>
-                              <td className="text-muted-foreground px-3 py-2 text-xs">
-                                {tok.permissions.join(", ")}
-                              </td>
-                              <td className="text-muted-foreground px-3 py-2 text-xs whitespace-nowrap">
-                                {formatDate(tok.createdAt)}
-                              </td>
-                              <td className="text-muted-foreground px-3 py-2 text-xs whitespace-nowrap">
-                                {tok.lastUsedAt
-                                  ? formatDateTime(tok.lastUsedAt)
-                                  : t("settings.tokenNeverUsed")}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Mobile card list — stacked meta layout, no
-                    horizontal scroll. Revoked tokens are read-only so
-                    no action footer is needed. */}
-                    <ul
-                      className="space-y-2 md:hidden"
-                      data-testid="settings-api-tokens-revoked-mobile-list"
-                    >
-                      {revokedTokens.map((tok) => (
-                        <li
-                          key={tok.id}
-                          className="bg-muted/30 border-border space-y-1.5 rounded-lg border p-3"
-                        >
-                          <p className="text-sm font-medium break-words">
-                            {tok.name}
-                          </p>
-                          <p className="text-muted-foreground text-xs">
-                            <span className="font-medium">
-                              {t("settings.tokenTablePermissions")}:
-                            </span>{" "}
-                            {tok.permissions.join(", ")}
-                          </p>
-                          <p className="text-muted-foreground text-xs">
-                            <span className="font-medium">
-                              {t("settings.tokenTableCreated")}:
-                            </span>{" "}
-                            {formatDate(tok.createdAt)}
-                          </p>
-                          <p className="text-muted-foreground text-xs">
-                            <span className="font-medium">
-                              {t("settings.tokenTableLastUsed")}:
-                            </span>{" "}
-                            {tok.lastUsedAt
-                              ? formatDateTime(tok.lastUsedAt)
-                              : t("settings.tokenNeverUsed")}
-                          </p>
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
-              </div>
+              <RevokedTokens tokens={revokedTokens} />
             )}
           </>
         )}
       </div>
     </SettingsCard>
+  );
+}
+
+/** The revoked tokens, folded away until asked for. Read-only but for the switch. */
+function RevokedTokens({ tokens: revokedTokens }: { tokens: ApiTokenInfo[] }) {
+  const { t } = useTranslations();
+  const [showRevokedTokens, setShowRevokedTokens] = useState(false);
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={() => setShowRevokedTokens((prev) => !prev)}
+        className="text-foreground hover:text-primary flex items-center gap-1 text-sm font-medium transition-colors"
+      >
+        <ChevronDown
+          className={`h-4 w-4 transition-transform ${showRevokedTokens ? "rotate-180" : ""}`}
+        />
+        {t("settings.revokedTokensTitle", {
+          count: revokedTokens.length,
+        })}
+      </button>
+      {showRevokedTokens && (
+        <>
+          {/* Desktop table — verbatim layout for md+. */}
+          <div className="border-border relative hidden overflow-x-auto rounded-lg border md:block">
+            <table className="w-full min-w-[760px] text-sm md:min-w-0">
+              <thead>
+                <tr className="bg-muted/40 text-muted-foreground border-b text-xs">
+                  <th className="px-3 py-2 text-left font-medium">
+                    {t("settings.tokenTableName")}
+                  </th>
+                  <th className="px-3 py-2 text-left font-medium">
+                    {t("settings.tokenTablePermissions")}
+                  </th>
+                  <th className="px-3 py-2 text-left font-medium">
+                    {t("settings.tokenTableCreated")}
+                  </th>
+                  <th className="px-3 py-2 text-left font-medium">
+                    {t("settings.tokenTableLastUsed")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-border divide-y">
+                {revokedTokens.map((tok, index) => (
+                  <tr
+                    key={tok.id}
+                    className={index % 2 === 0 ? "bg-muted/20" : ""}
+                  >
+                    <td className="px-3 py-2 font-medium">
+                      {tok.name}
+                      <AppleHealthMirrorSwitch token={tok} />
+                    </td>
+                    <td className="text-muted-foreground px-3 py-2 text-xs">
+                      {tok.permissions.join(", ")}
+                    </td>
+                    <td className="text-muted-foreground px-3 py-2 text-xs whitespace-nowrap">
+                      {formatDate(tok.createdAt)}
+                    </td>
+                    <td className="text-muted-foreground px-3 py-2 text-xs whitespace-nowrap">
+                      {tok.lastUsedAt
+                        ? formatDateTime(tok.lastUsedAt)
+                        : t("settings.tokenNeverUsed")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile card list — stacked meta layout, no
+          horizontal scroll. Revoked tokens are read-only so
+          no action footer is needed. */}
+          <ul
+            className="space-y-2 md:hidden"
+            data-testid="settings-api-tokens-revoked-mobile-list"
+          >
+            {revokedTokens.map((tok) => (
+              <li
+                key={tok.id}
+                className="bg-muted/30 border-border space-y-1.5 rounded-lg border p-3"
+              >
+                <p className="text-sm font-medium break-words">{tok.name}</p>
+                <p className="text-muted-foreground text-xs">
+                  <span className="font-medium">
+                    {t("settings.tokenTablePermissions")}:
+                  </span>{" "}
+                  {tok.permissions.join(", ")}
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  <span className="font-medium">
+                    {t("settings.tokenTableCreated")}:
+                  </span>{" "}
+                  {formatDate(tok.createdAt)}
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  <span className="font-medium">
+                    {t("settings.tokenTableLastUsed")}:
+                  </span>{" "}
+                  {tok.lastUsedAt
+                    ? formatDateTime(tok.lastUsedAt)
+                    : t("settings.tokenNeverUsed")}
+                </p>
+                <AppleHealthMirrorSwitch token={tok} />
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
   );
 }

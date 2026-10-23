@@ -629,6 +629,28 @@ body,
   html[data-scroll="body"] {
     scrollbar-gutter: stable;
   }
+  /*
+   * The app shell (`data-scroll="shell"`, also set by `AuthShell`) takes the
+   * window's edges and scrolls inside `<main>`, so the document has nothing
+   * to scroll and must not bounce either. On iOS a swipe that reached the end
+   * of `<main>` or of the rail chained to the document, the whole page
+   * rubber-banded and showed the page colour under the shell, and the next
+   * swipe went to that bounce instead of the list under the finger: the
+   * "sometimes it does not scroll" a tablet reported.
+   *
+   * `height: 100%` gives the body the window's box. The shell is
+   * `absolute inset-0`, which resolves against the initial containing block
+   * while the body is static, and against the body once a dialog's scroll
+   * lock makes it `position: relative` (react-remove-scroll does); an
+   * auto-height body is 0 px tall and the shell would collapse behind every
+   * dialog.
+   */
+  html[data-scroll="shell"],
+  html[data-scroll="shell"] body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
   body {
     @apply bg-background text-foreground;
   }

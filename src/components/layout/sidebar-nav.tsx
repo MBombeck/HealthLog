@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Bell,
   Keyboard,
@@ -27,6 +27,10 @@ import {
   visibleUtilityDestinations,
 } from "@/components/layout/nav-model";
 import { SHELL_HEADER_BAND } from "@/components/layout/shell-metrics";
+import {
+  RailNavList,
+  useNavOverflows,
+} from "@/components/layout/sidebar-nav-scroll";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/logo";
 import { useAuth, useLogout } from "@/hooks/use-auth";
@@ -367,69 +371,6 @@ function railRowClass(collapsed: boolean): string {
   );
 }
 
-/** Height of the fade at a scroll edge that has more content beyond it. */
-const RAIL_FADE = "1.5rem";
-
-/**
- * The fade mask for the list's scroll edges: a top fade while there is
- * content above, a bottom fade while there is content below. A mask paints
- * alpha only, so it reads the same in light and dark and never moves layout.
- */
-function railFadeMask(
-  top: boolean,
-  bottom: boolean,
-): React.CSSProperties | undefined {
-  if (!top && !bottom) return undefined;
-  const image = `linear-gradient(to bottom, ${top ? "transparent" : "#000"} 0, #000 ${top ? RAIL_FADE : "0px"}, #000 calc(100% - ${bottom ? RAIL_FADE : "0px"}), ${bottom ? "transparent" : "#000"} 100%)`;
-  return { maskImage: image, WebkitMaskImage: image };
-}
-
-/**
- * Whether the nav list is taller than the room the rail leaves it, i.e.
- * whether it scrolls, and which of its edges have more content beyond them.
- * Re-measured when the nav (viewport height) or the list (entries arriving
- * as modules resolve) changes size, and on scroll.
- */
-function useNavOverflows(navRef: React.RefObject<HTMLElement | null>): {
-  overflows: boolean;
-  moreAbove: boolean;
-  moreBelow: boolean;
-} {
-  const [edges, setEdges] = useState({
-    overflows: false,
-    moreAbove: false,
-    moreBelow: false,
-  });
-  useEffect(() => {
-    const nav = navRef.current;
-    if (!nav || typeof ResizeObserver === "undefined") return;
-    // Strict: any overflow, the same test that makes the list scroll.
-    const update = () => {
-      const overflows = nav.scrollHeight > nav.clientHeight;
-      const moreAbove = overflows && nav.scrollTop > 0.5;
-      const moreBelow =
-        overflows && nav.scrollTop + nav.clientHeight < nav.scrollHeight - 0.5;
-      setEdges((prev) =>
-        prev.overflows === overflows &&
-        prev.moreAbove === moreAbove &&
-        prev.moreBelow === moreBelow
-          ? prev
-          : { overflows, moreAbove, moreBelow },
-      );
-    };
-    const observer = new ResizeObserver(update);
-    observer.observe(nav);
-    if (nav.firstElementChild) observer.observe(nav.firstElementChild);
-    nav.addEventListener("scroll", update, { passive: true });
-    update();
-    return () => {
-      observer.disconnect();
-      nav.removeEventListener("scroll", update);
-    };
-  }, [navRef]);
-  return edges;
-}
-
 /**
  * The sidebar's collapse / expand control, drawn as a footer nav row.
  *
@@ -547,11 +488,8 @@ export function SidebarNav() {
   const collapsed = mounted ? (collapsedPref ?? tabletOrBelow) : false;
 
   const navRef = useRef<HTMLElement | null>(null);
-  const {
-    overflows: navOverflows,
-    moreAbove: navMoreAbove,
-    moreBelow: navMoreBelow,
-  } = useNavOverflows(navRef);
+  const navEdges = useNavOverflows(navRef);
+  const navOverflows = navEdges.overflows;
 
   function toggleCollapsed() {
     const next = !collapsed;
@@ -689,7 +627,7 @@ export function SidebarNav() {
       <aside
         aria-label={t("nav.sidebar")}
         className={cn(
-          "bg-sidebar border-sidebar-border shell-desktop:flex shell-desktop:flex-col relative hidden h-full flex-shrink-0 overflow-hidden border-r transition-[width] duration-200 motion-reduce:transition-none",
+          "bg-sidebar border-sidebar-border shell-desktop:flex shell-desktop:flex-col relative hidden h-full flex-shrink-0 overflow-hidden border-r pb-[env(safe-area-inset-bottom,0px)] transition-[width] duration-200 motion-reduce:transition-none",
           collapsed ? "w-16" : "w-64",
         )}
       >
@@ -737,24 +675,11 @@ export function SidebarNav() {
             </Link>
           </div>
 
-          <nav
-            ref={navRef}
-            aria-label={t("nav.mainNavigation")}
-            // The list scrolls without a native scrollbar (a classic
-            // scrollbar with arrow buttons read as a foreign body in the
-            // rail); fades at the edges say there is more, and focus keeps
-            // the focused row clear of them.
-            className={cn(
-              "flex-1 scroll-py-6 [scrollbar-width:none] overflow-y-auto [&::-webkit-scrollbar]:hidden",
-              collapsed ? "p-1.5" : "p-3",
-              RAIL_SHORT_PY,
-            )}
-            style={railFadeMask(navMoreAbove, navMoreBelow)}
-            data-fade-top={navMoreAbove ? "true" : undefined}
-            data-fade-bottom={navMoreBelow ? "true" : undefined}
-            onFocus={(event) => {
-              event.target.scrollIntoView?.({ block: "nearest" });
-            }}
+          <RailNavList
+            navRef={navRef}
+            edges={navEdges}
+            label={t("nav.mainNavigation")}
+            className={cn(collapsed ? "p-1.5" : "p-3", RAIL_SHORT_PY)}
           >
             <div className={RAIL_LIST_GAP}>
               {visibleNavItems.map((item) => {
@@ -811,7 +736,7 @@ export function SidebarNav() {
                 );
               })}
             </div>
-          </nav>
+          </RailNavList>
 
           {/* Bottom utility links — the shared utility tail (minus
             Notifications, which lives in the avatar menu) with the

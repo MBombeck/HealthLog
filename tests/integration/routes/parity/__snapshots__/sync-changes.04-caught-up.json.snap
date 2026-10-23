@@ -26,6 +26,10 @@
         "cycles": {
           "upserts": [],
           "tombstones": []
+        },
+        "measurementMirror": {
+          "upserts": [],
+          "tombstones": []
         }
       }
     },
@@ -48,6 +52,7 @@
         "cycle_day_tombstones": 0,
         "cycle_upserts": 0,
         "cycle_tombstones": 0,
+        "measurement_mirror_upserts": 0,
         "cycle_module_enabled": true,
         "has_more": false,
         "cursor_present": true

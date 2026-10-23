@@ -1,0 +1,109 @@
+{
+  "status": 200,
+  "body": {
+    "data": [
+      {
+        "id": "<id:1>",
+        "name": "Scale",
+        "permissions": [
+          "measurements:write"
+        ],
+        "lastUsedAt": null,
+        "expiresAt": "2027-01-13T12:00:00.000Z",
+        "createdAt": "<createdAt>",
+        "revoked": false,
+        "mirrorToAppleHealth": true
+      },
+      {
+        "id": "<id:2>",
+        "name": "Phone",
+        "permissions": [
+          "*"
+        ],
+        "lastUsedAt": null,
+        "expiresAt": "2027-01-13T12:00:00.000Z",
+        "createdAt": "<createdAt>",
+        "revoked": false,
+        "mirrorToAppleHealth": false
+      },
+      {
+        "id": "<id:3>",
+        "name": "Connector",
+        "permissions": [
+          "health:read"
+        ],
+        "lastUsedAt": null,
+        "expiresAt": "2027-01-13T12:00:00.000Z",
+        "createdAt": "<createdAt>",
+        "revoked": false,
+        "mirrorToAppleHealth": false
+      }
+    ],
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "tokens.list"
+      },
+      "meta": null,
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "stored": {
+    "tokens": [
+      {
+        "name": "Connector",
+        "permissions": [
+          "health:read"
+        ],
+        "revoked": false,
+        "mirrorToAppleHealth": false,
+        "mirrorChangedAt": null
+      },
+      {
+        "name": "Phone",
+        "permissions": [
+          "*"
+        ],
+        "revoked": false,
+        "mirrorToAppleHealth": false,
+        "mirrorChangedAt": null
+      },
+      {
+        "name": "Scale",
+        "permissions": [
+          "measurements:write"
+        ],
+        "revoked": false,
+        "mirrorToAppleHealth": true,
+        "mirrorChangedAt": "<mirrorChangedAt>"
+      }
+    ],
+    "audit": [
+      {
+        "action": "tokens.measurements.mirror.update",
+        "details": {
+          "tokenId": "<id:1>",
+          "mirrorToAppleHealth": true
+        }
+      }
+    ],
+    "readings": [
+      {
+        "source": "EXTERNAL",
+        "ingestTokenId": null,
+        "stamp": "2026-10-10T08:00:00.000Z",
+        "version": 1
+      },
+      {
+        "source": "EXTERNAL",
+        "ingestTokenId": "<id:1>",
+        "stamp": "2026-10-10T08:00:00.000Z",
+        "version": 1
+      }
+    ]
+  }
+}

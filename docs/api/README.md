@@ -66,7 +66,11 @@ before treating a warning as a regression.
       `health:write`), audience-bound to `/mcp` and refused on REST writes;
     - `POST /api/tokens/measurements` mints `measurements:write`, accepted by
       `POST /api/measurements` and `POST /api/measurements/batch` only, on the
-      holder's own record only;
+      holder's own record only. The readings it writes carry `source: EXTERNAL`
+      and are linked to the token; whether the HealthLog app writes them into
+      Apple Health is the token's `mirrorToAppleHealth` setting (off by
+      default, changed with `PATCH /api/tokens/{id}`), resolved onto every
+      measurement row as `appleHealthMirror`;
     - `POST /api/tokens/workouts` mints `workouts:write`, accepted by
       `POST /api/workouts/batch` only, on the holder's own record only; the
       workouts it writes carry `source: EXTERNAL`;

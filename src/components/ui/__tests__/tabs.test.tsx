@@ -30,4 +30,21 @@ describe("<TabsList>", () => {
     // Horizontal scroll behaviour is still intact for long strips.
     expect(list![0]).toMatch(/\boverflow-x-auto\b/);
   });
+
+  it("leaves the vertical pan to the page", () => {
+    // `touch-pan-x` (or `touch-none`) on the strip refuses a vertical pan
+    // that starts on it, so a swipe up or down over a tab strip scrolled
+    // nothing. The strip pans sideways through its own overflow.
+    const html = renderToStaticMarkup(
+      <Tabs defaultValue="a">
+        <TabsList>
+          <TabsTrigger value="a">A</TabsTrigger>
+        </TabsList>
+      </Tabs>,
+    );
+    const list = html.match(/<div\b[^>]*data-slot="tabs-list"[^>]*>/)![0];
+    expect(list).not.toMatch(
+      /\btouch-(?:pan-x|pan-left|pan-right|none|pinch-zoom)\b/,
+    );
+  });
 });

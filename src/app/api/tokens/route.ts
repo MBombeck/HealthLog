@@ -46,6 +46,9 @@ export const GET = apiHandler(async () => {
       expiresAt: true,
       createdAt: true,
       revoked: true,
+      // A measurement token's Apple Health write-back (#1272); false for
+      // every other token.
+      mirrorToAppleHealth: true,
     },
     orderBy: { createdAt: "desc" },
   });

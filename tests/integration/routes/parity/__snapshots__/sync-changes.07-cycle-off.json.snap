@@ -18,6 +18,7 @@
               "measuredAt": "2026-10-14T06:30:00.000Z",
               "source": "MANUAL",
               "notes": "after the run",
+              "appleHealthMirror": true,
               "syncVersion": "<syncVersion>",
               "updatedAt": "<updatedAt>"
             },
@@ -30,6 +31,7 @@
               "measuredAt": "2026-10-14T07:00:00.000Z",
               "source": "WITHINGS",
               "notes": null,
+              "appleHealthMirror": true,
               "syncVersion": "<syncVersion>",
               "updatedAt": "<updatedAt>"
             },
@@ -42,6 +44,7 @@
               "measuredAt": "2026-06-17T09:30:00.000Z",
               "source": "APPLE_HEALTH",
               "notes": null,
+              "appleHealthMirror": false,
               "syncVersion": "<syncVersion>",
               "updatedAt": "<updatedAt>"
             },
@@ -54,6 +57,7 @@
               "measuredAt": "2026-10-14T08:00:00.000Z",
               "source": "MANUAL",
               "notes": null,
+              "appleHealthMirror": true,
               "syncVersion": "<syncVersion>",
               "updatedAt": "<updatedAt>"
             }
@@ -158,6 +162,10 @@
         "cycles": {
           "upserts": [],
           "tombstones": []
+        },
+        "measurementMirror": {
+          "upserts": [],
+          "tombstones": []
         }
       }
     },
@@ -180,6 +188,7 @@
         "cycle_day_tombstones": 0,
         "cycle_upserts": 0,
         "cycle_tombstones": 0,
+        "measurement_mirror_upserts": 0,
         "cycle_module_enabled": false,
         "has_more": false,
         "cursor_present": false

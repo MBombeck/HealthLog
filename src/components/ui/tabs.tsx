@@ -29,8 +29,8 @@ function Tabs({
 // mobile when more than ~3 tabs render at typical label widths
 // (`/insights`, `/admin`, `/settings/*`). Tab labels are i18n-driven
 // so we cannot truncate them deterministically. Instead, the list
-// becomes horizontally scrollable on mobile via `overflow-x-auto`
-// plus `touch-pan-x` for the iOS PWA, and the wrapping tabs preserve
+// becomes horizontally scrollable on mobile via `overflow-x-auto`, and the
+// wrapping tabs preserve
 // `whitespace-nowrap` so labels never word-wrap mid-tab. Desktop
 // looks identical because the inline-flex shrink-wraps inside the
 // wider container.
@@ -47,10 +47,15 @@ function Tabs({
 // Padding sits at `p-1` (4 px) so the 3 px focus-visible ring
 // (`focus-visible:ring-[3px]`) on triggers stays inside the
 // `overflow-y-hidden` clamp without clipping the bottom of the ring.
+// No `touch-action` on the strip: `overflow-x-auto` already pans it sideways
+// under a finger, and the `touch-pan-x` it once carried also refused the
+// vertical pan, so a swipe up or down that began on a tab strip scrolled
+// nothing at all (on a tablet the strip is 52 px of the page under the 44 px
+// touch floor).
 // Under a coarse pointer the strip sizes to its triggers, which take the
 // 44 px touch floor; a mouse keeps the compact 36 px strip.
 const tabsListVariants = cva(
-  "rounded-lg p-1 group-data-[orientation=horizontal]/tabs:h-9 pointer-coarse:group-data-[orientation=horizontal]/tabs:h-auto data-[variant=line]:rounded-none group/tabs-list text-muted-foreground inline-flex w-fit max-w-full items-center justify-center overflow-x-auto overflow-y-hidden touch-pan-x scrollbar-thin group-data-[orientation=vertical]/tabs:h-fit group-data-[orientation=vertical]/tabs:flex-col group-data-[orientation=vertical]/tabs:overflow-x-visible group-data-[orientation=vertical]/tabs:overflow-y-visible",
+  "rounded-lg p-1 group-data-[orientation=horizontal]/tabs:h-9 pointer-coarse:group-data-[orientation=horizontal]/tabs:h-auto data-[variant=line]:rounded-none group/tabs-list text-muted-foreground inline-flex w-fit max-w-full items-center justify-center overflow-x-auto overflow-y-hidden scrollbar-thin group-data-[orientation=vertical]/tabs:h-fit group-data-[orientation=vertical]/tabs:flex-col group-data-[orientation=vertical]/tabs:overflow-x-visible group-data-[orientation=vertical]/tabs:overflow-y-visible",
   {
     variants: {
       variant: {

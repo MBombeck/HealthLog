@@ -6855,7 +6855,14 @@
       "detail": "Token pokazujemy tylko raz.",
       "scopeNote": "Może wyłącznie dodawać nowe pomiary do Twojej dokumentacji: nie odczyta danych, niczego nie zmieni ani nie usunie i nie utworzy kolejnego tokenu. Pomiary są oznaczane jako pochodzące z urządzenia zewnętrznego, dzięki czemu później je rozpoznasz, i nadal możesz je poprawić.",
       "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie.",
-      "namePlaceholder": "Nazwa, np. Home Assistant"
+      "namePlaceholder": "Nazwa, np. Home Assistant",
+      "appleHealth": {
+        "label": "Zapisuj pomiary w Apple Health",
+        "createHint": "Aplikacja HealthLog na Twoim iPhonie doda wtedy pomiary z tego tokenu do Apple Health. Możesz to później zmienić na liście tokenów poniżej.",
+        "toggleAria": "Zapisuj pomiary z {name} w Apple Health",
+        "updateFailed": "Nie udało się zmienić ustawienia Apple Health. Spróbuj ponownie.",
+        "unattributed": "Pomiarów wysłanych, zanim pojawiło się to ustawienie, nie da się przypisać do żadnego tokenu, więc nie trafiają do Apple Health."
+      }
     },
     "workoutsToken": {
       "title": "Tokeny treningów",

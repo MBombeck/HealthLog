@@ -6855,7 +6855,14 @@
       "detail": "Het token wordt één keer getoond.",
       "scopeNote": "Het kan alleen nieuwe metingen aan je eigen dossier toevoegen. Het kan je gegevens niet lezen, niets wijzigen of verwijderen en geen ander token aanmaken. Metingen worden gemarkeerd als afkomstig van een extern apparaat, zodat je ze later kunt onderscheiden, en je kunt ze nog steeds zelf corrigeren.",
       "createFailed": "Het token kon niet worden aangemaakt. Probeer het opnieuw.",
-      "namePlaceholder": "Naam, bijv. Home Assistant"
+      "namePlaceholder": "Naam, bijv. Home Assistant",
+      "appleHealth": {
+        "label": "Metingen naar Apple Health schrijven",
+        "createHint": "De HealthLog-app op je iPhone zet de metingen van dit token dan in Apple Health. Je kunt dit later wijzigen in de tokenlijst hieronder.",
+        "toggleAria": "Metingen van {name} naar Apple Health schrijven",
+        "updateFailed": "De Apple Health-instelling kon niet worden gewijzigd. Probeer het opnieuw.",
+        "unattributed": "Metingen die zijn verstuurd voordat deze instelling bestond, kunnen niet aan een token worden gekoppeld en blijven daarom buiten Apple Health."
+      }
     },
     "workoutsToken": {
       "title": "Trainingstokens",

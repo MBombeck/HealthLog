@@ -19,6 +19,8 @@ export interface MeasurementUpsert {
   measuredAt: string;
   source: string;
   notes: string | null;
+  /** Whether the app writes the reading into Apple Health (#1272). */
+  appleHealthMirror: boolean;
   syncVersion: number;
   updatedAt: string;
 }
@@ -97,12 +99,23 @@ export interface DomainBlock<U, T> {
   tombstones: T[];
 }
 
+/**
+ * A reading whose Apple Health write-back changed because its token's
+ * setting did (#1272). The reading itself did not change and is not re-sent.
+ */
+export interface MeasurementMirrorUpsert {
+  id: string;
+  appleHealthMirror: boolean;
+}
+
 export interface SyncChanges {
   measurements: DomainBlock<MeasurementUpsert, MeasurementTombstone>;
   mood: DomainBlock<MoodUpsert, IdTombstone>;
   intakes: DomainBlock<IntakeUpsert, IdTombstone>;
   cycleDays: DomainBlock<CycleDayLogDTO, CycleDayTombstone>;
   cycles: DomainBlock<MenstrualCycleDTO, IdTombstone>;
+  /** Never carries tombstones: a deleted reading is a measurement tombstone. */
+  measurementMirror: DomainBlock<MeasurementMirrorUpsert, never>;
 }
 
 export interface SyncChangesBody {

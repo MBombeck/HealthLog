@@ -5,6 +5,9 @@
  */
 export const integrationKeys = {
   tokens: () => ["tokens"] as const,
+  // How many EXTERNAL readings belong to no measurement token (#1272). Under
+  // the `["tokens"]` prefix, so a mint or a revoke refreshes it too.
+  measurementTokenSummary: () => ["tokens", "measurements", "summary"] as const,
   // v1.22.0 — MCP connector tokens (the dedicated `health:read` scope minted
   // for the remote MCP endpoint). Distinct key from `tokens()` so the MCP
   // settings card's mint / revoke mutations invalidate only this list.

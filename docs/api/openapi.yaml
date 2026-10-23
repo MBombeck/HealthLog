@@ -3372,6 +3372,25 @@ paths:
         "422": *a4
         "429": *a5
   /api/tokens/measurements:
+    get:
+      tags:
+        - Auth
+      summary: Readings no measurement token reaches
+      description: Counts the caller's live EXTERNAL readings that are linked to no token. Readings are linked to the token
+        that sent them since v1.46; older ones were linked by a one-time pass only when the account held exactly one
+        measurement token, so the rest belong to none and no token's Apple Health setting reaches them. Cookie session
+        only.
+      responses:
+        "200":
+          description: The count.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeasurementTokenSummaryEnvelope"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
     post:
       tags:
         - Auth
@@ -3689,6 +3708,53 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
+        "429": *a5
+    patch:
+      tags:
+        - Auth
+      summary: Change a measurement token's Apple Health setting
+      description: "Sets whether the HealthLog app writes the readings this measurement token sent into Apple Health. The
+        readings keep their `EXTERNAL` source and are not rewritten: every measurement row resolves `appleHealthMirror`
+        from the token at read time, and a paired client learns of the change through the `measurementMirror` domain of
+        `GET /api/sync/changes`. Turning it off stops further writes; samples already in Apple Health stay. A revoked
+        token is accepted, since its readings stay in the record. Cookie session only, the caller's own tokens only
+        (another account's answers 404). Audited as `tokens.measurements.mirror.update` when the value changes. 30
+        changes per account per minute. Not gated on the instance-wide API switch: no credential is created or
+        extended."
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMeasurementTokenRequest"
+      responses:
+        "200":
+          description: The setting as it now stands.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateMeasurementTokenEnvelope"
+        "401": *a1
+        "403": *a9
+        "404":
+          description: Token not found or not owned by the caller.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422":
+          description: "Validation failed, or the token is not a measurement token (`meta.errorCode` =
+            `tokens.mirror.not_measurement_token`): a wildcard, connector or other narrow token has no such setting."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
   /api/auth/register:
     post:
@@ -4224,10 +4290,11 @@ paths:
         - Sync
       summary: Multi-domain delta feed
       description: "Incremental catch-up after the first-pair backfill (never a replacement for it). Pages over one opaque
-        keyset cursor spanning five domains — measurements, mood, medication intakes, cycle day logs and cycles. Each
-        domain carries `tombstones` (soft-deleted rows) and `upserts` (live rows); apply tombstones before upserts
-        within a domain. Tombstone identity is `externalId` for measurements and the server `id` everywhere else.
-        `cursorExpired: true` forces a clean re-init and the page is empty in every domain."
+        keyset cursor spanning six domains — measurements, mood, medication intakes, cycle day logs, cycles, and
+        `measurementMirror` (the Apple Health write-back of readings whose token setting changed). Each domain carries
+        `tombstones` (soft-deleted rows) and `upserts` (live rows); apply tombstones before upserts within a domain.
+        Tombstone identity is `externalId` for measurements and the server `id` everywhere else. `cursorExpired: true`
+        forces a clean re-init and the page is empty in every domain."
       parameters:
         - in: query
           name: cursor
@@ -4554,6 +4621,12 @@ paths:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+        - in: query
+          name: appleHealthMirror
+          schema:
+            type: string
+            enum:
+              - "true"
         - in: query
           name: valueMin
           schema:
@@ -28142,12 +28215,15 @@ components:
           type: integer
           minimum: 1
           maximum: 365
+        mirrorToAppleHealth:
+          type: boolean
       required:
         - name
       description: "Mint a measurement-ingest Bearer. There is no `scope` field: this endpoint mints one shape and the
         permission array is a literal, so no request can widen it. `name` is what the token is listed under — name it
         after the thing you are pasting it into, because that is what you will be reading when you decide whether to
-        revoke it. `expiresInDays` defaults to 365."
+        revoke it. `expiresInDays` defaults to 365. `mirrorToAppleHealth` (default false) lets the HealthLog app write
+        the token's readings into Apple Health; it can be changed later at `PATCH /api/tokens/{id}`."
     CreateWorkoutTokenRequest:
       type: object
       properties:
@@ -28178,6 +28254,15 @@ components:
         - name
       description: "Mint a document-upload Bearer. No `scope` field: the endpoint mints one shape. `name` is what the token is
         listed under; name it after the system it is pasted into. `expiresInDays` defaults to 365."
+    UpdateMeasurementTokenRequest:
+      type: object
+      properties:
+        mirrorToAppleHealth:
+          type: boolean
+      required:
+        - mirrorToAppleHealth
+      additionalProperties: false
+      description: "The one setting a measurement token has. Strict: any other key is refused 422."
     RegisterRequest:
       type: object
       properties:
@@ -38032,11 +38117,12 @@ components:
                 source-priority.body.invalid_json, source-priority.body.invalid_shape; symptoms —
                 symptoms.definition.limitReached, symptoms.definition.notFound, symptoms.episode.notOpen,
                 symptoms.event.notFound, symptoms.invalid; timeline — timeline.invalid; tokens —
-                tokens.documents.ceiling_reached, tokens.measurements.ceiling_reached, tokens.workouts.ceiling_reached;
-                vaccination — vaccination.booster-invalid, vaccination.booster-no-antigen,
-                vaccination.booster-out-of-scope, vaccination.custom-vaccine-not-found, vaccination.custom.invalid,
-                vaccination.custom.name-taken, vaccination.custom.not-found, vaccination.encounter-not-found,
-                vaccination.identity-required, vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
+                tokens.documents.ceiling_reached, tokens.measurements.ceiling_reached,
+                tokens.mirror.not_measurement_token, tokens.workouts.ceiling_reached; vaccination —
+                vaccination.booster-invalid, vaccination.booster-no-antigen, vaccination.booster-out-of-scope,
+                vaccination.custom-vaccine-not-found, vaccination.custom.invalid, vaccination.custom.name-taken,
+                vaccination.custom.not-found, vaccination.encounter-not-found, vaccination.identity-required,
+                vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
                 vaccination.practitioner-not-found; workout — workout.batch.invalid, workout.batch.payload_too_large,
                 workout.batch.source_not_permitted, workout.batch.too_large, workout.delete.synced_source; (unprefixed)
                 — about_me_conflict, ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
@@ -40800,6 +40886,11 @@ components:
                 type:
                   - string
                   - "null"
+              ingestTokenId:
+                anyOf:
+                  - type: string
+                    maxLength: 64
+                  - type: "null"
               syncVersion:
                 type: integer
                 minimum: -9007199254740991
@@ -47391,6 +47482,10 @@ components:
           type: boolean
           description: Revoked tokens stay in the list rather than disappearing, so a client must filter on this rather than treat
             presence as validity.
+        mirrorToAppleHealth:
+          type: boolean
+          description: "A measurement token's Apple Health setting: whether the HealthLog app writes the readings this token sent
+            into Apple Health. Changed with `PATCH /api/tokens/{id}`; false on every other token."
       required:
         - id
         - name
@@ -47399,6 +47494,36 @@ components:
         - expiresAt
         - createdAt
         - revoked
+        - mirrorToAppleHealth
+      additionalProperties: false
+    MeasurementTokenSummaryEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/MeasurementTokenSummaryResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    MeasurementTokenSummaryResponse:
+      type: object
+      properties:
+        unattributedReadings:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          description: "Live EXTERNAL readings that belong to no token: sent before readings were linked to their token, by an
+            account that held more than one. No token's Apple Health setting reaches them."
+      required:
+        - unattributedReadings
       additionalProperties: false
     CreateMeasurementTokenEnvelope:
       type: object
@@ -47531,6 +47656,34 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    UpdateMeasurementTokenEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/UpdateMeasurementTokenResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    UpdateMeasurementTokenResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        mirrorToAppleHealth:
+          type: boolean
+      required:
+        - id
+        - mirrorToAppleHealth
       additionalProperties: false
     RegisterEnvelope:
       type: object
@@ -48111,12 +48264,37 @@ components:
               additionalProperties: false
               description: Menstrual cycles, observed and forward-predicted. Present on every page, empty arrays when the account has
                 the cycle module off.
+            measurementMirror:
+              type: object
+              properties:
+                upserts:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/SyncMeasurementMirrorUpsert"
+                tombstones:
+                  maxItems: 0
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                    required:
+                      - id
+                    additionalProperties: false
+                  description: "Always empty: a deleted reading is a measurement tombstone."
+              required:
+                - upserts
+                - tombstones
+              additionalProperties: false
+              description: Apple Health write-back changes for readings that are otherwise unchanged. Apply after `measurements`.
           required:
             - measurements
             - mood
             - intakes
             - cycleDays
             - cycles
+            - measurementMirror
           additionalProperties: false
       required:
         - serverNow
@@ -48125,10 +48303,11 @@ components:
         - cursorExpired
         - changes
       additionalProperties: false
-      description: "Multi-domain delta page: measurements, mood, intakes, cycle day logs and cycles. One opaque multi-domain
-        keyset cursor; tombstones apply before upserts within each domain. Tombstone identity: measurements key on
-        externalId, every other domain on server id. All five keys are present on every response, including the
-        `cursorExpired` short-circuit — a domain with nothing to report sends empty arrays rather than being omitted."
+      description: "Multi-domain delta page: measurements, mood, intakes, cycle day logs, cycles, and the Apple Health
+        write-back changes of otherwise unchanged readings. One opaque multi-domain keyset cursor; tombstones apply
+        before upserts within each domain. Tombstone identity: measurements key on externalId, every other domain on
+        server id. All six keys are present on every response, including the `cursorExpired` short-circuit — a domain
+        with nothing to report sends empty arrays rather than being omitted."
     SyncMeasurementUpsert:
       type: object
       properties:
@@ -48221,6 +48400,10 @@ components:
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        appleHealthMirror:
+          type: boolean
+          description: Whether the HealthLog app writes this reading into Apple Health. Server-resolved; mirror exactly the rows
+            that say true.
         dayKey:
           type: string
         sampleCount:
@@ -48280,6 +48463,7 @@ components:
         - externalId
         - syncVersion
         - updatedAt
+        - appleHealthMirror
       additionalProperties: false
     MeasurementSource:
       type: string
@@ -48582,6 +48766,21 @@ components:
         - updatedAt
       additionalProperties: false
       description: A soft-deleted menstrual cycle, keyed on server `id`. Apply before upserts within the domain page.
+    SyncMeasurementMirrorUpsert:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The measurement's server id.
+        appleHealthMirror:
+          type: boolean
+          description: The reading's write-back as it now stands. False means stop writing it; samples already in Apple Health stay.
+      required:
+        - id
+        - appleHealthMirror
+      additionalProperties: false
+      description: A reading whose `appleHealthMirror` changed because the account switched the Apple Health setting of the
+        token that sent it. The reading itself did not change and is not re-sent in `measurements`.
     GetMeasurementsSeriesBatchResponse:
       type: object
       properties:
@@ -49017,6 +49216,11 @@ components:
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        appleHealthMirror:
+          description: "Whether the HealthLog app writes this reading into Apple Health. Resolved by the server on every stored
+            row: true for WITHINGS, IMPORT and MANUAL, for an EXTERNAL row whatever its account chose for the token that
+            sent it, false otherwise. Absent on the synthesised list rows."
+          type: boolean
         dayKey:
           type: string
         sampleCount:
@@ -49258,6 +49462,11 @@ components:
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        appleHealthMirror:
+          description: "Whether the HealthLog app writes this reading into Apple Health. Resolved by the server on every stored
+            row: true for WITHINGS, IMPORT and MANUAL, for an EXTERNAL row whatever its account chose for the token that
+            sent it, false otherwise. Absent on the synthesised list rows."
+          type: boolean
         dayKey:
           type: string
         sampleCount:

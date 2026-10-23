@@ -63,6 +63,7 @@ import {
   readSidebarCollapsedPref,
   writeSidebarCollapsedPref,
 } from "../sidebar-nav";
+import { RAIL_NAV_SCROLL, RailScrollCue } from "../sidebar-nav-scroll";
 import { ADMIN_SECTIONS } from "@/components/admin/admin-shell";
 import { visibleUtilityDestinations } from "../nav-model";
 import { delegatedDomains } from "@/lib/sharing/domain-write-support";
@@ -575,5 +576,66 @@ describe("<SidebarNav> carries no rules for a viewport it never shows on", () =>
       "export function SidebarNav",
     );
     expect(source).not.toMatch(/pointer:coarse\)_and_\(height<=520px\)/);
+  });
+});
+
+describe("<SidebarNav> keeps every destination reachable on a touch tablet", () => {
+  function navClass(html: string): string {
+    return (
+      /<nav[^>]*aria-label="[^"]*"[^>]*class="([^"]*)"/.exec(html)?.[1] ?? ""
+    );
+  }
+
+  it("scrolls the list inside the rail and keeps the swipe there", () => {
+    const nav = navClass(render()).replaceAll("&amp;", "&").split(" ");
+    expect(RAIL_NAV_SCROLL.split(" ")).toEqual(
+      expect.arrayContaining(["min-h-0", "flex-1", "overflow-y-auto"]),
+    );
+    for (const cls of RAIL_NAV_SCROLL.split(" ")) expect(nav).toContain(cls);
+    // Without it a swipe at either end chained to the document on iOS.
+    expect(nav).toContain("pointer-coarse:overscroll-contain");
+    // A focused row lands clear of the 44 px cue under a finger.
+    expect(nav).toContain("pointer-coarse:scroll-py-12");
+  });
+
+  it("gives the rail the home indicator's inset, so the avatar row stays clear", () => {
+    const aside = /<aside[^>]*class="([^"]*)"/.exec(render())?.[1] ?? "";
+    expect(aside.split(" ")).toContain("pb-[env(safe-area-inset-bottom,0px)]");
+  });
+
+  it("draws the scroll cue for a finger only, outside the focus order and the accessibility tree", () => {
+    for (const direction of ["up", "down"] as const) {
+      const html = renderToStaticMarkup(
+        <RailScrollCue direction={direction} navRef={{ current: null }} />,
+      );
+      expect(html).toContain('data-slot="sidebar-nav-scroll-cue"');
+      expect(html).toContain(`data-direction="${direction}"`);
+      expect(html).toContain('tabindex="-1"');
+      expect(html).toContain('aria-hidden="true"');
+      const cls = /class="([^"]*)"/.exec(html)![1].split(" ");
+      expect(cls).toEqual(
+        expect.arrayContaining(["hidden", "pointer-coarse:flex"]),
+      );
+      // 44 px touch floor.
+      expect(cls).toContain("h-11");
+    }
+  });
+
+  it("scrolls the list most of a screen on per tap", () => {
+    const calls: ScrollToOptions[] = [];
+    const nav = {
+      clientHeight: 400,
+      scrollBy: (o: ScrollToOptions) => calls.push(o),
+    } as unknown as HTMLElement;
+    vi.stubGlobal("window", {
+      matchMedia: () => ({ matches: true }),
+    });
+    const element = RailScrollCue({
+      direction: "down",
+      navRef: { current: nav },
+    }) as React.ReactElement<{ onClick: () => void }>;
+    element.props.onClick();
+    vi.unstubAllGlobals();
+    expect(calls).toEqual([{ top: 300, behavior: "auto" }]);
   });
 });

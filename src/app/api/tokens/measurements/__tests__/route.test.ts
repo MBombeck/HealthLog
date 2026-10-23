@@ -39,10 +39,10 @@ vi.mock("@/lib/logging/context", () => ({
 }));
 
 vi.mock("@/lib/db", () => ({
-  prisma: { apiToken: { count: vi.fn() } },
+  prisma: { apiToken: { count: vi.fn() }, measurement: { count: vi.fn() } },
 }));
 
-import { POST } from "../route";
+import { GET, POST } from "../route";
 import { assertRecentCookieProof, requireCookieAuth } from "@/lib/api-handler";
 import { issueApiToken } from "@/lib/auth/issue-token";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
@@ -147,6 +147,27 @@ describe("what it mints", () => {
     );
   });
 
+  it("leaves the write-back off unless asked, and refuses a non-boolean", async () => {
+    const mint = (body: unknown) =>
+      POST(req(body) as Parameters<typeof POST>[0]);
+    await mint({ name: "Scale" });
+    expect(vi.mocked(issueApiToken).mock.calls[0][0].mirrorToAppleHealth).toBe(
+      false,
+    );
+    await mint({ name: "Scale", mirrorToAppleHealth: true });
+    await mint({ name: "Scale", mirrorToAppleHealth: "yes" });
+    expect(issueApiToken).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(issueApiToken).mock.calls[1][0].mirrorToAppleHealth).toBe(
+      true,
+    );
+    expect(auditLog).toHaveBeenLastCalledWith(
+      "tokens.measurements.create",
+      expect.objectContaining({
+        details: expect.objectContaining({ mirrorToAppleHealth: true }),
+      }),
+    );
+  });
+
   it("counts only live tokens carrying this scope", async () => {
     // The whole shape of the query, asserted rather than assumed. Counting
     // every row would let the `["*"]` tokens a login mints consume the budget
@@ -237,5 +258,22 @@ describe("when it refuses", () => {
     expect(vi.mocked(issueApiToken).mock.calls[0][0].permissions).toEqual([
       MEASUREMENTS_WRITE_SCOPE,
     ]);
+  });
+});
+
+describe("the readings no token reaches", () => {
+  it("counts the caller's live EXTERNAL readings without a token", async () => {
+    vi.mocked(prisma.measurement.count).mockResolvedValue(4);
+    const res = await GET();
+    expect(res.status).toBe(200);
+    expect((await res.json()).data).toEqual({ unattributedReadings: 4 });
+    expect(prisma.measurement.count).toHaveBeenCalledWith({
+      where: {
+        userId: USER.id,
+        source: "EXTERNAL",
+        ingestTokenId: null,
+        deletedAt: null,
+      },
+    });
   });
 });

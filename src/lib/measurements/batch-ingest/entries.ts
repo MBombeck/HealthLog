@@ -34,6 +34,11 @@ export interface BatchIngestInput {
   user: { id: string; timezone: string | null };
   /** A narrow single-purpose Bearer (a bridge), not the native client. */
   scoped: boolean;
+  /**
+   * The bridge token that carried the batch, set exactly when `scoped`: each
+   * row it writes points at it (`Measurement.ingestTokenId`, #1272).
+   */
+  ingestTokenId: string | null;
   entries: BatchIngestEntry[];
   syncTrigger: HealthKitRequestSyncTrigger | undefined;
   ipAddress: string | null;

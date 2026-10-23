@@ -24,7 +24,8 @@
           "syncVersion": "<syncVersion>",
           "deletedAt": null,
           "createdAt": "<createdAt>",
-          "updatedAt": "<updatedAt>"
+          "updatedAt": "<updatedAt>",
+          "appleHealthMirror": true
         },
         {
           "id": "<id:3>",
@@ -47,7 +48,8 @@
           "syncVersion": "<syncVersion>",
           "deletedAt": null,
           "createdAt": "<createdAt>",
-          "updatedAt": "<updatedAt>"
+          "updatedAt": "<updatedAt>",
+          "appleHealthMirror": true
         }
       ],
       "meta": {

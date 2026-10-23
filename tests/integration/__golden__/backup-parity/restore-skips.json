@@ -550,7 +550,8 @@
         "syncVersion": 1,
         "deletedAt": null,
         "createdAt": "<now>",
-        "updatedAt": "<now>"
+        "updatedAt": "<now>",
+        "ingestTokenId": null
       }
     ],
     "IntradayCumulativeProfile": [],

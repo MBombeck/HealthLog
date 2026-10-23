@@ -6855,7 +6855,14 @@
       "detail": "El token se muestra una sola vez.",
       "scopeNote": "Solo puede añadir mediciones nuevas a tu propio historial: no puede leer tus datos, ni modificar o borrar nada, ni crear otro token. Las mediciones se marcan como procedentes de un dispositivo externo, así las distingues más tarde, y puedes corregirlas igualmente.",
       "createFailed": "No se pudo crear el token. Inténtalo de nuevo.",
-      "namePlaceholder": "Nombre, p. ej. Home Assistant"
+      "namePlaceholder": "Nombre, p. ej. Home Assistant",
+      "appleHealth": {
+        "label": "Escribir mediciones en Apple Health",
+        "createHint": "La app HealthLog de tu iPhone añadirá entonces las mediciones de este token a Apple Health. Puedes cambiarlo más tarde en la lista de tokens de abajo.",
+        "toggleAria": "Escribir las mediciones de {name} en Apple Health",
+        "updateFailed": "No se pudo cambiar el ajuste de Apple Health. Inténtalo de nuevo.",
+        "unattributed": "Las mediciones enviadas antes de que existiera este ajuste no se pueden asociar a ningún token, así que quedan fuera de Apple Health."
+      }
     },
     "workoutsToken": {
       "title": "Tokens de entrenamientos",

@@ -23,7 +23,8 @@
         "syncVersion": "<syncVersion>",
         "deletedAt": null,
         "createdAt": "<createdAt>",
-        "updatedAt": "<updatedAt>"
+        "updatedAt": "<updatedAt>",
+        "appleHealthMirror": true
       },
       {
         "id": "<id:3>",
@@ -46,7 +47,8 @@
         "syncVersion": "<syncVersion>",
         "deletedAt": null,
         "createdAt": "<createdAt>",
-        "updatedAt": "<updatedAt>"
+        "updatedAt": "<updatedAt>",
+        "appleHealthMirror": true
       },
       {
         "id": "<id:4>",
@@ -69,7 +71,8 @@
         "syncVersion": "<syncVersion>",
         "deletedAt": null,
         "createdAt": "<createdAt>",
-        "updatedAt": "<updatedAt>"
+        "updatedAt": "<updatedAt>",
+        "appleHealthMirror": true
       }
     ],
     "error": null
@@ -126,7 +129,9 @@
             "syncVersion": "<syncVersion>",
             "deletedAt": null,
             "createdAt": "<createdAt>",
-            "updatedAt": "<updatedAt>"
+            "updatedAt": "<updatedAt>",
+            "ingestTokenId": null,
+            "ingestToken": null
           },
           {
             "id": "<id:3>",
@@ -150,7 +155,9 @@
             "syncVersion": "<syncVersion>",
             "deletedAt": null,
             "createdAt": "<createdAt>",
-            "updatedAt": "<updatedAt>"
+            "updatedAt": "<updatedAt>",
+            "ingestTokenId": null,
+            "ingestToken": null
           },
           {
             "id": "<id:4>",
@@ -174,7 +181,9 @@
             "syncVersion": "<syncVersion>",
             "deletedAt": null,
             "createdAt": "<createdAt>",
-            "updatedAt": "<updatedAt>"
+            "updatedAt": "<updatedAt>",
+            "ingestTokenId": null,
+            "ingestToken": null
           }
         ],
         "manual"

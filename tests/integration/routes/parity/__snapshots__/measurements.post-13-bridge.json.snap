@@ -22,7 +22,8 @@
       "syncVersion": "<syncVersion>",
       "deletedAt": null,
       "createdAt": "<createdAt>",
-      "updatedAt": "<updatedAt>"
+      "updatedAt": "<updatedAt>",
+      "appleHealthMirror": false
     },
     "error": null
   },
@@ -73,7 +74,11 @@
             "syncVersion": "<syncVersion>",
             "deletedAt": null,
             "createdAt": "<createdAt>",
-            "updatedAt": "<updatedAt>"
+            "updatedAt": "<updatedAt>",
+            "ingestTokenId": "<id:3>",
+            "ingestToken": {
+              "mirrorToAppleHealth": false
+            }
           }
         ],
         "manual"
@@ -111,7 +116,7 @@
   ],
   "stored": [
     {
-      "id": "<id:3>",
+      "id": "<id:4>",
       "type": "WEIGHT",
       "value": 80.4,
       "unit": "kg",
@@ -141,7 +146,7 @@
       "sealedNote": false
     },
     {
-      "id": "<id:4>",
+      "id": "<id:5>",
       "type": "BLOOD_PRESSURE_SYS",
       "value": 128,
       "unit": "mmHg",
@@ -156,7 +161,7 @@
       "sealedNote": false
     },
     {
-      "id": "<id:5>",
+      "id": "<id:6>",
       "type": "BLOOD_PRESSURE_DIA",
       "value": 82,
       "unit": "mmHg",
@@ -171,7 +176,7 @@
       "sealedNote": false
     },
     {
-      "id": "<id:6>",
+      "id": "<id:7>",
       "type": "PULSE",
       "value": 66,
       "unit": "bpm",
@@ -186,7 +191,7 @@
       "sealedNote": true
     },
     {
-      "id": "<id:7>",
+      "id": "<id:8>",
       "type": "SLEEP_DURATION",
       "value": 90,
       "unit": "minutes",
@@ -201,7 +206,7 @@
       "sealedNote": false
     },
     {
-      "id": "<id:8>",
+      "id": "<id:9>",
       "type": "BLOOD_GLUCOSE",
       "value": 104,
       "unit": "mg/dL",
