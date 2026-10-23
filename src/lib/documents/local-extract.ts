@@ -28,6 +28,12 @@
  */
 import { Buffer } from "node:buffer";
 
+import type { PDFDocumentLoadingTask } from "pdfjs-dist";
+import type {
+  TextItem,
+  TextMarkedContent,
+} from "pdfjs-dist/types/src/display/api";
+
 import { annotate } from "@/lib/logging/context";
 
 // pdfjs' module top-level references the browser-only `DOMMatrix` global. A
@@ -35,42 +41,15 @@ import { annotate } from "@/lib/logging/context";
 // instantiation and throw `DOMMatrix is not defined`, taking down every
 // route/worker that shares the chunk (the document routes among them). The
 // module is therefore loaded lazily inside `extractPdfText` via a runtime
-// `import()`, and only the slice of its API used here is typed, structurally.
-interface PdfTextItem {
-  str: string;
-  /** [a, b, c, d, x, y]: the run's text matrix; x and y place it on the page. */
-  transform: number[];
-  width: number;
-  height: number;
-  hasEOL: boolean;
-}
-interface PdfTextPage {
-  getTextContent(): Promise<{ items: Array<PdfTextItem | object> }>;
-  cleanup(): void;
-}
-interface PdfTextDocument {
-  numPages: number;
-  getPage(pageNumber: number): Promise<PdfTextPage>;
-}
-interface PdfTextLoadingTask {
-  promise: Promise<PdfTextDocument>;
-  destroy(): Promise<void>;
-}
-interface PdfTextModule {
-  getDocument(opts: {
-    data: Uint8Array;
-    verbosity?: number;
-    isEvalSupported?: boolean;
-    useSystemFonts?: boolean;
-  }): PdfTextLoadingTask;
-}
+// `import()`. The type imports above are erased at build, so they load
+// nothing; they let the compiler check this file against pdfjs' own API.
 
 /**
  * One page's text runs as text: a new line where a run ends its line or the
  * next one sits on another, a space where two runs on one line leave a gap,
  * nothing where they touch (a word split across two fonts stays one word).
  */
-function pageText(items: Array<PdfTextItem | object>): string {
+function pageText(items: Array<TextItem | TextMarkedContent>): string {
   let text = "";
   let last: { end: number; y: number; size: number } | null = null;
   for (const item of items) {
@@ -128,16 +107,14 @@ export type LocalExtractResult =
 export async function extractPdfText(
   buffer: Buffer,
 ): Promise<LocalExtractResult> {
-  let task: PdfTextLoadingTask | null = null;
+  let task: PDFDocumentLoadingTask | null = null;
   try {
     // Lazy load: keeps pdfjs/DOMMatrix out of the eager server chunk (see the
     // import-site note). Resolved at first PDF extraction, then module-cached.
-    const pdfjs =
-      (await import("pdfjs-dist/legacy/build/pdf.mjs")) as unknown as PdfTextModule;
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
     task = pdfjs.getDocument({
       data: new Uint8Array(buffer),
       verbosity: 0, // VerbosityLevel.ERRORS — no console spam on odd PDFs.
-      isEvalSupported: false, // never eval font programs (defence in depth).
       useSystemFonts: false,
     });
     const doc = await task.promise;
