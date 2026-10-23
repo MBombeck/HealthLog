@@ -1,5 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
+import { aiBlockAvailable, serveAiBlock } from "./setup/ai-capabilities";
 import { mockDay } from "./setup/day-mock";
 import { expect, test } from "./setup/test";
 import { MOBILE_ROUTES_STORAGE_STATE_PATH } from "./setup/global-setup";
@@ -418,3 +419,194 @@ test("a vertical swipe that starts on a tab strip is the page's", async ({
   );
   expect(touchAction).toBe("auto");
 });
+
+/**
+ * An iPad without a home button reports a bottom inset of about 20 px, which
+ * no browser under test does. The shell reads the inset through
+ * `--safe-area-bottom` (globals.css), so setting the property is the same
+ * inset to every element that owns the bottom edge.
+ */
+const HOME_INDICATOR = 20;
+
+async function setBottomInset(page: Page, px: number) {
+  await page.addStyleTag({
+    content: `:root { --safe-area-bottom: ${px}px !important; }`,
+  });
+}
+
+/** What paints the window's last row of pixels, sampled across its width. */
+async function bottomRowOwners(page: Page) {
+  return page.evaluate(() => {
+    const y = innerHeight - 1;
+    const owners: string[] = [];
+    // 8 px in lands on the rail at its narrowest (64 px); the rest spread
+    // across the content column.
+    for (const x of [
+      8,
+      ...Array.from({ length: 11 }, (_, i) => (innerWidth * (i + 1)) / 12),
+    ]) {
+      const hit = document.elementFromPoint(x, y);
+      const owner = !hit
+        ? "nothing"
+        : hit === document.documentElement || hit === document.body
+          ? "page"
+          : hit.closest("aside")
+            ? "rail"
+            : hit.closest("#main-content")
+              ? "main"
+              : hit.closest('[data-slot="bottom-nav"]')
+                ? "bar"
+                : hit.closest('[data-slot="coach-fab"]')
+                  ? "fab"
+                  : `other:${hit.tagName}`;
+      owners.push(owner);
+    }
+    return owners;
+  });
+}
+
+const INSET_VIEWPORTS = [
+  { name: "iPad mini portrait", width: 744, height: 1133 },
+  { name: "iPad Air 11 portrait", width: 820, height: 1180 },
+  { name: "iPad Air 11 landscape", width: 1180, height: 820 },
+  { name: "iPad Pro 13 landscape", width: 1366, height: 1024 },
+  { name: "Split View two thirds", width: 694, height: 1024 },
+] as const;
+
+for (const vp of INSET_VIEWPORTS) {
+  test(`${vp.name}: the shell paints to the edge under a home indicator`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: vp.width, height: vp.height });
+    await serveAiBlock(page, aiBlockAvailable());
+    await openDashboard(page);
+    await setBottomInset(page, HOME_INDICATOR);
+    await expectShellPinned(page);
+
+    // The last row of pixels belongs to the rail and `<main>` (or the bar),
+    // never to the page behind the shell: that was the band.
+    const owners = await bottomRowOwners(page);
+    expect(owners.filter((o) => o === "page" || o === "nothing")).toEqual([]);
+
+    const railShown = vp.width >= 768;
+    const edge = await page.evaluate(() => {
+      const aside = document.querySelector("aside")!;
+      const column = aside.querySelector('[data-slot="sidebar-column"]');
+      const bar = document.querySelector<HTMLElement>(
+        '[data-slot="bottom-nav"]',
+      )!;
+      return {
+        innerHeight,
+        asideBottom: aside.getBoundingClientRect().bottom,
+        lastRailRowBottom:
+          column?.lastElementChild?.getBoundingClientRect().bottom ?? 0,
+        barBottom: bar.getBoundingClientRect().bottom,
+        barPad: parseFloat(getComputedStyle(bar).paddingBottom),
+        // What a WKWebView browser paints where it keeps the page out: the
+        // root's own background.
+        root: getComputedStyle(document.documentElement).backgroundColor,
+        body: getComputedStyle(document.body).backgroundColor,
+      };
+    });
+    if (railShown) {
+      expect(owners).toContain("rail");
+      expect(owners).toContain("main");
+      // The rail's background runs to the edge; its account row stops
+      // above the inset.
+      expect(edge.asideBottom).toBe(edge.innerHeight);
+      expect(edge.lastRailRowBottom).toBeLessThanOrEqual(
+        edge.innerHeight - HOME_INDICATOR,
+      );
+      expect(edge.root).toBe(edge.body);
+    } else {
+      expect(owners).toContain("bar");
+      expect(edge.barBottom).toBe(edge.innerHeight);
+      expect(edge.barPad).toBe(HOME_INDICATOR);
+      expect(edge.root).toBe(edge.body);
+    }
+
+    // At the end of the page, the last line stands clear of the inset, the
+    // bar and the Coach button.
+    await scrollMainToEnd(page);
+    const end = await measureMainEnd(page);
+    expect(end.atEnd).toBe(true);
+    expect(end.contentBottom).toBeLessThanOrEqual(
+      edge.innerHeight - HOME_INDICATOR,
+    );
+    if (end.barTop !== null) {
+      expect(end.contentBottom).toBeLessThanOrEqual(end.barTop);
+    }
+    const fab = page.locator('[data-slot="coach-fab"]');
+    await expect(fab).toBeVisible();
+    const fabTop = (await fab.boundingBox())!.y;
+    expect(end.contentBottom).toBeLessThanOrEqual(fabTop);
+  });
+}
+
+/**
+ * The Coach button over the last card of a nested layout (Insights, Settings,
+ * a values list): during the scroll it may sit over content, at the end it
+ * must not. Rendered by serving an `ai` block with the Coach available,
+ * since the suite has no provider.
+ */
+const NESTED_PAGES = [
+  "/insights/blood-pressure",
+  "/insights/values/BLOOD_PRESSURE_SYS",
+  "/insights",
+  "/settings/account",
+  "/settings/modules",
+] as const;
+
+for (const vp of [
+  { name: "iPad Air 11 portrait", width: 820, height: 1180 },
+  { name: "iPad Air 11 landscape", width: 1180, height: 820 },
+] as const) {
+  for (const inset of [0, HOME_INDICATOR]) {
+    test(`${vp.name}, inset ${inset}: the Coach button clears the last line of nested layouts`, async ({
+      page,
+    }) => {
+      test.setTimeout(90_000);
+      await page.setViewportSize({ width: vp.width, height: vp.height });
+      await serveAiBlock(page, aiBlockAvailable());
+      for (const path of NESTED_PAGES) {
+        await page.goto(path, { waitUntil: "domcontentloaded" });
+        await expect(
+          page.locator('#main-content [data-slot="main-content-wrapper"]'),
+        ).toBeVisible();
+        await page.waitForLoadState("networkidle");
+        if (inset) await setBottomInset(page, inset);
+        const fab = page.locator('[data-slot="coach-fab"]');
+        await expect(fab).toBeVisible();
+        await scrollMainToEnd(page);
+        const covered = await page.evaluate(() => {
+          const f = document
+            .querySelector('[data-slot="coach-fab"]')!
+            .getBoundingClientRect();
+          const main = document.getElementById("main-content")!;
+          const under: string[] = [];
+          for (const el of main.querySelectorAll<HTMLElement>("*")) {
+            const cs = getComputedStyle(el);
+            if (cs.position === "fixed" || cs.visibility === "hidden") continue;
+            const paints =
+              (el.childElementCount === 0 && !!el.textContent?.trim()) ||
+              cs.borderBottomWidth !== "0px" ||
+              cs.backgroundColor !== "rgba(0, 0, 0, 0)";
+            if (!paints) continue;
+            const b = el.getBoundingClientRect();
+            if (!b.width || !b.height) continue;
+            if (
+              b.right > f.left &&
+              b.left < f.right &&
+              b.bottom > f.top &&
+              b.top < f.bottom
+            ) {
+              under.push(el.getAttribute("data-slot") ?? el.tagName);
+            }
+          }
+          return under;
+        });
+        expect(covered, `${path}: content under the Coach button`).toEqual([]);
+      }
+    });
+  }
+}
