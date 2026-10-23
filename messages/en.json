@@ -6855,7 +6855,14 @@
       "detail": "The token is shown once.",
       "scopeNote": "It can only add new readings to your own record. It cannot read your data, change or delete anything, or create another token. Readings are marked as coming from an external device, so you can tell them apart later, and you can still correct them yourself.",
       "createFailed": "The token could not be created. Please try again.",
-      "namePlaceholder": "Name, e.g. Home Assistant"
+      "namePlaceholder": "Name, e.g. Home Assistant",
+      "appleHealth": {
+        "label": "Write readings to Apple Health",
+        "createHint": "The HealthLog app on your iPhone then adds this token's readings to Apple Health. You can change this later in the token list below.",
+        "toggleAria": "Write readings from {name} to Apple Health",
+        "updateFailed": "The Apple Health setting could not be changed. Please try again.",
+        "unattributed": "Readings sent before this setting existed can't be matched to a token, so they stay out of Apple Health."
+      }
     },
     "workoutsToken": {
       "title": "Workout tokens",
