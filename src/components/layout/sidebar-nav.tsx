@@ -627,7 +627,7 @@ export function SidebarNav() {
       <aside
         aria-label={t("nav.sidebar")}
         className={cn(
-          "bg-sidebar border-sidebar-border shell-desktop:flex shell-desktop:flex-col relative hidden h-full flex-shrink-0 overflow-hidden border-r pb-[env(safe-area-inset-bottom,0px)] transition-[width] duration-200 motion-reduce:transition-none",
+          "bg-sidebar border-sidebar-border shell-desktop:flex shell-desktop:flex-col relative hidden h-full flex-shrink-0 overflow-hidden border-r pb-(--safe-area-bottom) transition-[width] duration-200 motion-reduce:transition-none",
           collapsed ? "w-16" : "w-64",
         )}
       >

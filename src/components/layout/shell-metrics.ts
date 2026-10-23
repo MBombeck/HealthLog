@@ -62,7 +62,7 @@ export const SHELL_ROOT_CLASS =
  * browser tab), so the last line never sits under it.
  */
 export const MAIN_SCROLL_CLASS =
-  "relative flex-1 overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom,0px))] shell-desktop:pb-[env(safe-area-inset-bottom,0px)]";
+  "relative flex-1 overflow-y-auto pb-[calc(4rem+var(--safe-area-bottom))] shell-desktop:pb-(--safe-area-bottom)";
 
 /**
  * The app-chrome header band: one 4rem strip whose bottom border draws the
