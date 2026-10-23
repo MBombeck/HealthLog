@@ -33,7 +33,10 @@ function code(source: string): string {
 describe("the shell owns the safe area", () => {
   it("the authenticated shell wrapper takes the insets", () => {
     const shell = code(read("src/components/layout/auth-shell.tsx"));
-    expect(shell).toMatch(/className="shell-safe-area flex h-dvh flex-col"/);
+    expect(shell).toMatch(/<div className=\{SHELL_ROOT_CLASS\}>/);
+    expect(read("src/components/layout/shell-metrics.ts")).toMatch(
+      /SHELL_ROOT_CLASS =\s*"shell-safe-area absolute inset-0 flex flex-col"/,
+    );
   });
 
   it.each([

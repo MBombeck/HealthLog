@@ -38,6 +38,8 @@ import {
 } from "@/components/layout/module-page-gate";
 import { cn } from "@/lib/utils";
 import { isFullBleedPage } from "./full-bleed";
+import { useDocumentScrollMode } from "./document-scroll-mode";
+import { MAIN_SCROLL_CLASS, SHELL_ROOT_CLASS } from "./shell-metrics";
 import { isOnboardingPathname } from "@/lib/onboarding/wizard-steps";
 import { RecordScopeHydrationGate } from "./record-scope-hydration-gate";
 import { SidebarNav } from "./sidebar-nav";
@@ -166,25 +168,18 @@ export function AuthShell({
   const isOnboardingPage = isOnboardingPathname(pathname);
   const showUnlockNotifier = isAuthenticated && !isPublicPage && !!user?.id;
 
-  // v1.9.0 — the document-level scrollbar-gutter (globals.css) is reserved
-  // only for the body-scrolled shells (login / register / onboarding /
-  // standalone legal pages). The authenticated branch is height-locked and
-  // scrolls inside its own `<main>`, which reserves its own gutter; applying
-  // the document gutter there too produced a second, never-painted gutter on
-  // classic-scrollbar platforms. Flag the body-scrolled branches on `<html>`
-  // so the CSS rule scopes to them.
+  // Who scrolls the page, on `<html>` (`document-scroll-mode.ts`).
   const isBodyScrolled = isPublicPage || isOnboardingPage;
-  useEffect(() => {
-    const root = document.documentElement;
-    if (isBodyScrolled) {
-      root.setAttribute("data-scroll", "body");
-    } else {
-      root.removeAttribute("data-scroll");
-    }
-    return () => {
-      root.removeAttribute("data-scroll");
-    };
-  }, [isBodyScrolled]);
+  const rendersAppShell =
+    !isBodyScrolled &&
+    !accessRefused &&
+    !isLoading &&
+    isAuthenticated &&
+    recordSessionTransition.phase === "ready" &&
+    !recordSessionPending;
+  useDocumentScrollMode(
+    isBodyScrolled ? "body" : rendersAppShell ? "shell" : null,
+  );
 
   // v1.25.1 — the authenticated shell keeps `<main id="main-content">`
   // mounted across every route change, so its scroll offset survives
@@ -438,9 +433,13 @@ export function AuthShell({
         five pixels of content box and pushed the logo and the account menu
         across its bottom border. `shell-safe-area` paints the strip behind
         the status bar in the chrome colour (globals.css). The bottom inset
-        stays with the bottom nav and `<main>`, which own that edge.
+        stays with the bottom nav, `<main>` and the rail, which own that edge.
+
+        The shell takes the window's edges rather than `h-dvh`, and the
+        document under it neither scrolls nor bounces: `SHELL_ROOT_CLASS` in
+        `shell-metrics.ts` says why.
       */}
-      <div className="shell-safe-area flex h-dvh flex-col">
+      <div className={SHELL_ROOT_CLASS}>
         {/*
           v1.4.43 — `<OfflineBanner>` paints only when
           `navigator.onLine === false`. Sits above the maintainership
@@ -500,7 +499,7 @@ export function AuthShell({
               // for all of them at once instead of asking each new
               // absolutely-positioned child to remember its own wrapper.
               className={cn(
-                "shell-desktop:pb-0 relative flex-1 overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom,0px))]",
+                MAIN_SCROLL_CLASS,
                 fullBleed ? "flex flex-col" : "[scrollbar-gutter:stable]",
               )}
             >
@@ -516,7 +515,8 @@ export function AuthShell({
               v1.16.8 — the bottom padding clears the always-on Coach
               FAB (48 px button + its offset above the bottom-nav band /
               the desktop bottom-6 anchor), so the last line of content
-              can always scroll out from under the floating button.
+              can always scroll out from under the floating button; the
+              desktop shell's sits 5.5rem up, so `pb-24` there.
             */}
               <div
                 data-slot="main-content-wrapper"
@@ -524,7 +524,7 @@ export function AuthShell({
                 className={
                   fullBleed
                     ? "flex min-h-0 flex-1 flex-col"
-                    : "mx-auto max-w-screen-xl px-4 pt-6 pb-20 md:px-6"
+                    : "shell-desktop:pb-24 mx-auto max-w-screen-xl px-4 pt-6 pb-20 md:px-6"
                 }
               >
                 {outsideSharedRecord ? (
