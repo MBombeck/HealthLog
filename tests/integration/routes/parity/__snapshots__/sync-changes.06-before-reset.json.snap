@@ -26,6 +26,10 @@
         "cycles": {
           "upserts": [],
           "tombstones": []
+        },
+        "measurementMirror": {
+          "upserts": [],
+          "tombstones": []
         }
       }
     },

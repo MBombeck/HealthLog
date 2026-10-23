@@ -26,7 +26,8 @@
         "syncVersion": 1,
         "deletedAt": null,
         "createdAt": "2026-05-01T08:20:03.000Z",
-        "updatedAt": "2026-05-01T08:21:03.000Z"
+        "updatedAt": "2026-05-01T08:21:03.000Z",
+        "ingestTokenId": null
       },
       {
         "id": "<id:2>",
@@ -50,7 +51,8 @@
         "syncVersion": 1,
         "deletedAt": null,
         "createdAt": "2026-05-01T08:20:02.000Z",
-        "updatedAt": "2026-05-01T08:21:02.000Z"
+        "updatedAt": "2026-05-01T08:21:02.000Z",
+        "ingestTokenId": null
       },
       {
         "id": "<id:3>",
@@ -74,7 +76,8 @@
         "syncVersion": 4,
         "deletedAt": "<tombstone>",
         "createdAt": "2026-05-01T08:20:01.000Z",
-        "updatedAt": "2026-05-01T08:21:01.000Z"
+        "updatedAt": "2026-05-01T08:21:01.000Z",
+        "ingestTokenId": null
       },
       {
         "id": "<id:4>",
@@ -98,7 +101,8 @@
         "syncVersion": 1,
         "deletedAt": null,
         "createdAt": "2026-05-01T08:20:04.000Z",
-        "updatedAt": "2026-05-01T08:21:04.000Z"
+        "updatedAt": "2026-05-01T08:21:04.000Z",
+        "ingestTokenId": null
       },
       {
         "id": "<id:5>",
@@ -122,7 +126,8 @@
         "syncVersion": 1,
         "deletedAt": null,
         "createdAt": "2026-05-01T08:20:00.000Z",
-        "updatedAt": "2026-05-01T08:21:00.000Z"
+        "updatedAt": "2026-05-01T08:21:00.000Z",
+        "ingestTokenId": null
       }
     ],
     "IntradayCumulativeProfile": [

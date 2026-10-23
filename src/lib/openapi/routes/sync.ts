@@ -75,8 +75,28 @@ const syncMeasurementUpsert = measurementResource
         "LWW reconciliation counter; echo to keep the mirror monotonic.",
       ),
     updatedAt: isoDateTime(),
+    appleHealthMirror: z
+      .boolean()
+      .describe(
+        "Whether the HealthLog app writes this reading into Apple Health. Server-resolved; mirror exactly the rows that say true.",
+      ),
   })
   .meta({ id: "SyncMeasurementUpsert" });
+
+const syncMeasurementMirrorUpsert = z
+  .object({
+    id: z.string().describe("The measurement's server id."),
+    appleHealthMirror: z
+      .boolean()
+      .describe(
+        "The reading's write-back as it now stands. False means stop writing it; samples already in Apple Health stay.",
+      ),
+  })
+  .meta({
+    id: "SyncMeasurementMirrorUpsert",
+    description:
+      "A reading whose `appleHealthMirror` changed because the account switched the Apple Health setting of the token that sent it. The reading itself did not change and is not re-sent in `measurements`.",
+  });
 
 const syncMeasurementTombstone = z
   .object({
@@ -294,12 +314,25 @@ export const syncChangesResponse = z
         .describe(
           "Menstrual cycles, observed and forward-predicted. Present on every page, empty arrays when the account has the cycle module off.",
         ),
+      measurementMirror: z
+        .object({
+          upserts: z.array(syncMeasurementMirrorUpsert),
+          tombstones: z
+            .array(z.object({ id: z.string() }))
+            .max(0)
+            .describe(
+              "Always empty: a deleted reading is a measurement tombstone.",
+            ),
+        })
+        .describe(
+          "Apple Health write-back changes for readings that are otherwise unchanged. Apply after `measurements`.",
+        ),
     }),
   })
   .meta({
     id: "SyncChangesResponse",
     description:
-      "Multi-domain delta page: measurements, mood, intakes, cycle day logs and cycles. One opaque multi-domain keyset cursor; tombstones apply before upserts within each domain. Tombstone identity: measurements key on externalId, every other domain on server id. All five keys are present on every response, including the `cursorExpired` short-circuit — a domain with nothing to report sends empty arrays rather than being omitted.",
+      "Multi-domain delta page: measurements, mood, intakes, cycle day logs, cycles, and the Apple Health write-back changes of otherwise unchanged readings. One opaque multi-domain keyset cursor; tombstones apply before upserts within each domain. Tombstone identity: measurements key on externalId, every other domain on server id. All six keys are present on every response, including the `cursorExpired` short-circuit — a domain with nothing to report sends empty arrays rather than being omitted.",
   });
 
 export const syncPaths: NonNullable<ZodOpenApiObject["paths"]> = {
@@ -327,7 +360,7 @@ export const syncPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Sync"],
       summary: "Multi-domain delta feed",
       description:
-        "Incremental catch-up after the first-pair backfill (never a replacement for it). Pages over one opaque keyset cursor spanning five domains — measurements, mood, medication intakes, cycle day logs and cycles. Each domain carries `tombstones` (soft-deleted rows) and `upserts` (live rows); apply tombstones before upserts within a domain. Tombstone identity is `externalId` for measurements and the server `id` everywhere else. `cursorExpired: true` forces a clean re-init and the page is empty in every domain.",
+        "Incremental catch-up after the first-pair backfill (never a replacement for it). Pages over one opaque keyset cursor spanning six domains — measurements, mood, medication intakes, cycle day logs, cycles, and `measurementMirror` (the Apple Health write-back of readings whose token setting changed). Each domain carries `tombstones` (soft-deleted rows) and `upserts` (live rows); apply tombstones before upserts within a domain. Tombstone identity is `externalId` for measurements and the server `id` everywhere else. `cursorExpired: true` forces a clean re-init and the page is empty in every domain.",
       requestParams: {
         query: syncChangesQuery,
       },

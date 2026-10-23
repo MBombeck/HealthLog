@@ -25,6 +25,7 @@ import {
   cycleDayBlock,
   intakeBlock,
   measurementBlock,
+  measurementMirrorBlock,
   moodBlock,
   pageOf,
 } from "./domain-pages";
@@ -72,7 +73,11 @@ async function expiry(
   const retentionHorizon = new Date(
     serverNow.getTime() - TOMBSTONE_RETENTION_DAYS * DAY_MS,
   );
+  // Not `measurementMirror`: its watermark is when a token's setting last
+  // changed, which can be any age, and the domain re-delivers values, not
+  // deletions, so no pruned tombstone can hide behind it.
   const pastRetention = SYNC_DOMAINS.some((domain) => {
+    if (domain === "measurementMirror") return false;
     const wm = cursor[domain];
     return wm !== undefined && wm.updatedAtMs < retentionHorizon.getTime();
   });
@@ -99,6 +104,7 @@ function emptyChanges(): SyncChangesBody["changes"] {
     intakes: { upserts: [], tombstones: [] },
     cycleDays: { upserts: [], tombstones: [] },
     cycles: { upserts: [], tombstones: [] },
+    measurementMirror: { upserts: [], tombstones: [] },
   };
 }
 
@@ -186,8 +192,25 @@ export async function pullSyncChanges(input: {
   const cycles = cycleBlock(cy.page);
   advanceCursor(nextCursor, "cycles", cy.page);
 
+  const mm = pageOf(rows.measurementMirror, limit);
+  const measurementMirror = measurementMirrorBlock(mm.page);
+  advanceCursor(
+    nextCursor,
+    "measurementMirror",
+    mm.page.map((row) => ({
+      // The walk only returns rows whose token carries a change stamp.
+      updatedAt: row.ingestToken!.mirrorChangedAt!,
+      id: row.id,
+    })),
+  );
+
   const hasMore =
-    m.hasMore || md.hasMore || ik.hasMore || cd.hasMore || cy.hasMore;
+    m.hasMore ||
+    md.hasMore ||
+    ik.hasMore ||
+    cd.hasMore ||
+    cy.hasMore ||
+    mm.hasMore;
 
   annotate({
     action: { name: "sync.changes.pull" },
@@ -202,6 +225,7 @@ export async function pullSyncChanges(input: {
       cycle_day_tombstones: cycleDays.tombstones.length,
       cycle_upserts: cycles.upserts.length,
       cycle_tombstones: cycles.tombstones.length,
+      measurement_mirror_upserts: measurementMirror.upserts.length,
       cycle_module_enabled: cycleEnabled,
       has_more: hasMore,
       cursor_present: Boolean(token),
@@ -213,6 +237,13 @@ export async function pullSyncChanges(input: {
     cursor: encodeCursor(nextCursor, serverNow.getTime()),
     hasMore,
     cursorExpired: false,
-    changes: { measurements, mood, intakes, cycleDays, cycles },
+    changes: {
+      measurements,
+      mood,
+      intakes,
+      cycleDays,
+      cycles,
+      measurementMirror,
+    },
   };
 }

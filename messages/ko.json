@@ -6855,7 +6855,14 @@
       "detail": "토큰은 한 번만 표시돼요.",
       "scopeNote": "본인 기록에 새 측정값을 추가하는 것만 할 수 있어요. 데이터를 읽거나, 무언가를 고치거나 지우거나, 다른 토큰을 만들 수는 없어요. 측정값은 외부 기기에서 온 것으로 표시되니 나중에 구분할 수 있고, 언제든 고칠 수 있어요.",
       "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요.",
-      "namePlaceholder": "이름 (예: Home Assistant)"
+      "namePlaceholder": "이름 (예: Home Assistant)",
+      "appleHealth": {
+        "label": "측정값을 Apple Health에 기록",
+        "createHint": "그러면 iPhone의 HealthLog 앱이 이 토큰의 측정값을 Apple Health에 추가해요. 나중에 아래 토큰 목록에서 바꿀 수 있어요.",
+        "toggleAria": "{name}의 측정값을 Apple Health에 기록",
+        "updateFailed": "Apple Health 설정을 바꾸지 못했어요. 다시 시도해 주세요.",
+        "unattributed": "이 설정이 생기기 전에 보낸 측정값은 토큰과 연결할 수 없어서 Apple Health에 기록되지 않아요."
+      }
     },
     "workoutsToken": {
       "title": "운동 토큰",

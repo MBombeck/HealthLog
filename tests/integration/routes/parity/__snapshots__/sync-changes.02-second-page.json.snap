@@ -18,6 +18,7 @@
               "measuredAt": "2026-06-17T09:30:00.000Z",
               "source": "APPLE_HEALTH",
               "notes": null,
+              "appleHealthMirror": false,
               "syncVersion": "<syncVersion>",
               "updatedAt": "<updatedAt>"
             }
@@ -69,6 +70,10 @@
               "updatedAt": "<updatedAt>"
             }
           ]
+        },
+        "measurementMirror": {
+          "upserts": [],
+          "tombstones": []
         }
       }
     },
@@ -91,6 +96,7 @@
         "cycle_day_tombstones": 1,
         "cycle_upserts": 0,
         "cycle_tombstones": 1,
+        "measurement_mirror_upserts": 0,
         "cycle_module_enabled": true,
         "has_more": true,
         "cursor_present": true

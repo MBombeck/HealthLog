@@ -2118,8 +2118,15 @@ model Measurement {
   deletedAt             DateTime?                         @map("deleted_at")
   createdAt             DateTime                          @default(now()) @map("created_at")
   updatedAt             DateTime                          @updatedAt @map("updated_at")
+  /// The `measurements:write` token that carried this reading, set on every
+  /// `EXTERNAL` row (#1272). Read through to the token's `mirrorToAppleHealth`
+  /// when the row is answered; never on the wire itself. SET NULL if the token
+  /// row is ever removed (a revoke keeps it), and the row then stops being
+  /// mirrored.
+  ingestTokenId         String?                           @map("ingest_token_id")
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ingestToken   ApiToken?      @relation(fields: [ingestTokenId], references: [id], onDelete: SetNull)
   // v1.19.0 — optional back-relation to the full ECG waveform recording(s)
   // paired with this EVENT row. SET NULL on the FK side keeps the trace if
   // the EVENT row is re-keyed / removed.
@@ -2175,6 +2182,9 @@ model Measurement {
   // changes nothing else, so those stay HOT; the table also carries
   // `fillfactor = 85` and a 5 % autovacuum threshold from the same migration.
   @@index([userId, updatedAt, id])
+  // The rows a token carried, walked by the `measurementMirror` feed domain
+  // in id order and by the FK's SET NULL (migration 0477).
+  @@index([ingestTokenId, id])
   // `measurements_legacy_step_consolidation_idx` is a partial index
   // over `type = 'ACTIVITY_STEPS' AND deleted_at IS NULL` — see
   // migration 0087. It accelerates the v1.5.6 legacy step-consolidation
@@ -3936,26 +3946,37 @@ model TelegramPromptContext {
 // ─── API Tokens (for external ingest) ──────────────────────
 
 model ApiToken {
-  id              String    @id @default(cuid())
-  userId          String    @map("user_id")
-  name            String
-  tokenHash       String    @unique @map("token_hash") // SHA-256 of the token
-  permissions     String[]  @default(["medication:ingest"])
-  lastUsedAt      DateTime? @map("last_used_at")
-  expiresAt       DateTime? @map("expires_at")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  revoked         Boolean   @default(false)
+  id                  String    @id @default(cuid())
+  userId              String    @map("user_id")
+  name                String
+  tokenHash           String    @unique @map("token_hash") // SHA-256 of the token
+  permissions         String[]  @default(["medication:ingest"])
+  lastUsedAt          DateTime? @map("last_used_at")
+  expiresAt           DateTime? @map("expires_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  revoked             Boolean   @default(false)
   // The MCP OAuth connection this access token belongs to, when it was minted
   // through the `/api/mcp/oauth` bridge. Null for manually-minted tokens and
   // native-client tokens. Lets a connection revoke kill every access row it
   // ever issued (H2), and lets the connector token list exclude the transient
   // 60-minute access rows so it does not flood (M2).
-  mcpConnectionId String?   @map("mcp_connection_id")
+  mcpConnectionId     String?   @map("mcp_connection_id")
+  /// Whether the HealthLog app writes the readings this `measurements:write`
+  /// token carried into Apple Health (#1272). The person decides per token;
+  /// the server resolves it onto every row as `appleHealthMirror`
+  /// (`src/lib/measurements/apple-health-mirror.ts`). False for every other
+  /// kind of token, which `PATCH /api/tokens/{id}` refuses to set.
+  mirrorToAppleHealth Boolean   @default(false) @map("mirror_to_apple_health")
+  /// When `mirrorToAppleHealth` last changed. The keyset of the
+  /// `measurementMirror` domain of `/api/sync/changes`, which re-delivers the
+  /// token's rows with their new value without touching the rows themselves.
+  mirrorChangedAt     DateTime? @map("mirror_changed_at")
 
-  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mcpConnection    McpOAuthConnection? @relation(fields: [mcpConnectionId], references: [id], onDelete: SetNull)
+  user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mcpConnection        McpOAuthConnection? @relation(fields: [mcpConnectionId], references: [id], onDelete: SetNull)
+  ingestedMeasurements Measurement[]
   // v1.30.34 — step-up elevations bound to this token. Cascade-deleted with it.
-  stepUpElevations StepUpElevation[]
+  stepUpElevations     StepUpElevation[]
 
   @@index([userId])
   @@index([mcpConnectionId])

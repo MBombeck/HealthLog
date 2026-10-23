@@ -20,6 +20,11 @@ import {
 import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
 import { localDayWindow } from "@/lib/tz/local-day";
 import { shapeMeasurementNotes } from "@/lib/crypto/note-cipher";
+import {
+  APPLE_HEALTH_MIRROR_SELECT,
+  APPLE_HEALTH_MIRROR_WHERE,
+  withAppleHealthMirror,
+} from "@/lib/measurements/apple-health-mirror";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import {
   readDailySeries,
@@ -59,7 +64,17 @@ const MEASUREMENT_WIRE_SELECT = {
   deletedAt: true,
   createdAt: true,
   updatedAt: true,
+  // Resolved onto `appleHealthMirror` and dropped by `withAppleHealthMirror`.
+  ingestToken: APPLE_HEALTH_MIRROR_SELECT.ingestToken,
 } as const satisfies Prisma.MeasurementSelect;
+
+/** One row as it is answered: the note readable, the write-back resolved. */
+function wireRow<
+  T extends Parameters<typeof shapeMeasurementNotes>[0] &
+    Parameters<typeof withAppleHealthMirror>[0],
+>(row: T) {
+  return withAppleHealthMirror(shapeMeasurementNotes(row));
+}
 
 type ListQuery = z.output<typeof listMeasurementsSchema>;
 type ListUser = { id: string; timezone: string | null };
@@ -202,7 +217,7 @@ async function drillDownResponse(
   return apiSuccess({
     // The same row shape as the plain page: the note decrypted onto `notes`,
     // the ciphertext never on the wire.
-    measurements: samples.map(shapeMeasurementNotes),
+    measurements: samples.map(wireRow),
     meta: { total: samples.length, limit, offset: 0, dayKey },
   });
 }
@@ -281,7 +296,7 @@ async function plainPageResponse(
   query: ListQuery,
 ): Promise<Response> {
   const { type, from, to, limit, offset, sortBy, sortDir } = query;
-  const { sourceEq, valueMin, valueMax } = query;
+  const { sourceEq, valueMin, valueMax, appleHealthMirror } = query;
   const where = {
     userId,
     // Soft-deleted readings are invisible to every list / count / aggregate
@@ -294,6 +309,9 @@ async function plainPageResponse(
     // opt-in (which selects the rollup read tier); `sourceEq` narrows the
     // plain list to one ingest source.
     ...(sourceEq && { source: sourceEq }),
+    // The rows the app mirrors into Apple Health, by the same rule the
+    // field is resolved with (`apple-health-mirror.ts`).
+    ...(appleHealthMirror === "true" && { AND: [APPLE_HEALTH_MIRROR_WHERE] }),
     // Value-range filter. Open-ended on either side; the validator has
     // already rejected an inverted `valueMin > valueMax`.
     ...(valueMin != null || valueMax != null
@@ -330,6 +348,9 @@ async function plainPageResponse(
       orderBy: [{ [sortBy]: sortDir }, { id: sortDir }],
       take: limit,
       skip: offset,
+      // Named columns, so a column added to the model (a token link) reaches
+      // the wire only through this select.
+      select: MEASUREMENT_WIRE_SELECT,
     }),
     prisma.measurement.count({ where }),
   ]);
@@ -339,7 +360,7 @@ async function plainPageResponse(
   return apiSuccess({
     // Decrypt `notesEncrypted` onto `notes` and strip the ciphertext before
     // it leaves the server (iOS MeasurementWireDTO contract).
-    measurements: measurements.map(shapeMeasurementNotes),
+    measurements: measurements.map(wireRow),
     meta: { total, limit, offset },
   });
 }

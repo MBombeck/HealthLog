@@ -1,0 +1,100 @@
+{
+  "status": 422,
+  "body": {
+    "data": null,
+    "error": "Validation failed",
+    "details": {
+      "issues": [
+        {
+          "path": "mirrorToAppleHealth",
+          "code": "invalid_type",
+          "message": "Invalid input: expected boolean, received string"
+        },
+        {
+          "path": "",
+          "code": "unrecognized_keys",
+          "message": "Unrecognized key: \"name\"",
+          "keys": [
+            "name"
+          ]
+        }
+      ]
+    },
+    "meta": {
+      "errorCode": "http.invalid",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 422,
+      "action": {
+        "name": "tokens.measurements.mirror.update"
+      },
+      "meta": null,
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "stored": {
+    "tokens": [
+      {
+        "name": "Connector",
+        "permissions": [
+          "health:read"
+        ],
+        "revoked": false,
+        "mirrorToAppleHealth": false,
+        "mirrorChangedAt": null
+      },
+      {
+        "name": "Phone",
+        "permissions": [
+          "*"
+        ],
+        "revoked": false,
+        "mirrorToAppleHealth": false,
+        "mirrorChangedAt": null
+      },
+      {
+        "name": "Scale",
+        "permissions": [
+          "measurements:write"
+        ],
+        "revoked": true,
+        "mirrorToAppleHealth": false,
+        "mirrorChangedAt": "<mirrorChangedAt>"
+      }
+    ],
+    "audit": [
+      {
+        "action": "tokens.measurements.mirror.update",
+        "details": {
+          "tokenId": "<id:1>",
+          "mirrorToAppleHealth": true
+        }
+      },
+      {
+        "action": "tokens.measurements.mirror.update",
+        "details": {
+          "tokenId": "<id:1>",
+          "mirrorToAppleHealth": false
+        }
+      }
+    ],
+    "readings": [
+      {
+        "source": "EXTERNAL",
+        "ingestTokenId": null,
+        "stamp": "2026-10-10T08:00:00.000Z",
+        "version": 1
+      },
+      {
+        "source": "EXTERNAL",
+        "ingestTokenId": "<id:1>",
+        "stamp": "2026-10-10T08:00:00.000Z",
+        "version": 1
+      }
+    ]
+  }
+}

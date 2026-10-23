@@ -6855,7 +6855,14 @@
       "detail": "Le jeton n'est affiché qu'une fois.",
       "scopeNote": "Il peut uniquement ajouter de nouvelles mesures à votre propre dossier : il ne peut pas lire vos données, ni modifier ou supprimer quoi que ce soit, ni créer un autre jeton. Les mesures sont signalées comme provenant d'un appareil externe, ce qui vous permet de les reconnaître plus tard, et vous pouvez toujours les corriger.",
       "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer.",
-      "namePlaceholder": "Nom, p. ex. Home Assistant"
+      "namePlaceholder": "Nom, p. ex. Home Assistant",
+      "appleHealth": {
+        "label": "Écrire les mesures dans Apple Health",
+        "createHint": "L'app HealthLog de votre iPhone ajoutera alors les mesures de ce jeton à Apple Health. Vous pourrez modifier ce choix plus tard dans la liste des jetons ci-dessous.",
+        "toggleAria": "Écrire les mesures de {name} dans Apple Health",
+        "updateFailed": "Le réglage Apple Health n'a pas pu être modifié. Veuillez réessayer.",
+        "unattributed": "Les mesures envoyées avant l'existence de ce réglage ne peuvent être rattachées à aucun jeton : elles restent donc hors d'Apple Health."
+      }
     },
     "workoutsToken": {
       "title": "Jetons d'entraînements",

@@ -23,6 +23,7 @@
       "deletedAt": null,
       "createdAt": "<createdAt>",
       "updatedAt": "<updatedAt>",
+      "appleHealthMirror": true,
       "status": "duplicate"
     },
     "error": null

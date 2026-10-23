@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 355,
-  "total": 114755,
+  "total": 114658,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 314,
@@ -200,7 +200,7 @@
     "components/settings/ai/codex-provider-form.tsx :: CodexProviderForm": 280,
     "components/settings/ai/fallback-chain-card.tsx :: FallbackChainCard": 228,
     "components/settings/ai/runtime-actions-row.tsx :: RuntimeActionsRow": 282,
-    "components/settings/api-section.tsx :: ApiTokensCard": 366,
+    "components/settings/api-section.tsx :: ApiTokensCard": 269,
     "components/settings/coach-nudge-card.tsx :: CoachNudgeCard": 251,
     "components/settings/coach-prefs-section.tsx :: CoachPrefsSection": 350,
     "components/settings/environment-section.tsx :: EnvironmentSection": 666,

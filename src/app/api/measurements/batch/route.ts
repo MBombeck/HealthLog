@@ -261,6 +261,8 @@ async function postBatch(request: NextRequest): Promise<Response> {
   const result = await ingestMeasurementBatch({
     user: { id: user.id, timezone: user.timezone },
     scoped,
+    // On the Bearer path the token's id rides `session.id`.
+    ingestTokenId: scoped ? auth.session.id : null,
     entries,
     syncTrigger: parsed.data.syncTrigger,
     ipAddress: getClientIp(request),

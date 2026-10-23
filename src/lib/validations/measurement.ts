@@ -394,6 +394,10 @@ export const listMeasurementsSchema = z
     // threaded into the plain-list `where`. Backed by the `(userId, source,
     // measuredAt)` index (migration 0136).
     sourceEq: measurementSourceEnum.optional(),
+    // Only the rows the HealthLog app writes into Apple Health
+    // (`appleHealthMirror`, #1272): the app's historical backfill pages this
+    // instead of one fetch per source. A plain-list filter.
+    appleHealthMirror: z.enum(["true"]).optional(),
     // v1.18.5 — value-range FILTER (backlog G). Narrows the plain list to
     // readings whose `value` falls within an optional `[valueMin, valueMax]`
     // band. Either bound may be omitted for an open-ended range. Coerced
@@ -477,6 +481,23 @@ export const listMeasurementsSchema = z
     {
       message: "valueMin must be <= valueMax",
       path: ["valueMin"],
+    },
+  )
+  // `appleHealthMirror` narrows the plain row list. The other modes answer
+  // something else (night rows, day buckets, a drill-down, a series), where
+  // a row filter would either do nothing or change what the mode means.
+  .refine(
+    ({ appleHealthMirror, type, dayKey, groupBy, aggregate, source }) =>
+      appleHealthMirror === undefined ||
+      (type !== "SLEEP_DURATION" &&
+        dayKey === undefined &&
+        groupBy === undefined &&
+        source === undefined &&
+        (aggregate === undefined || aggregate === "raw")),
+    {
+      message:
+        "appleHealthMirror filters the plain row list only; combine it with type, from, to, sourceEq and paging",
+      path: ["appleHealthMirror"],
     },
   );
 

@@ -23,6 +23,10 @@ import { auditLog } from "@/lib/auth/audit";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { getUnitForType } from "@/lib/validations/measurement";
 import { shapeMeasurementNotes } from "@/lib/crypto/note-cipher";
+import {
+  APPLE_HEALTH_MIRROR_INCLUDE,
+  withAppleHealthMirror,
+} from "@/lib/measurements/apple-health-mirror";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit";
 import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger";
@@ -51,6 +55,8 @@ export async function createNamedSleepStage(
   args: {
     userId: string;
     scoped: boolean;
+    /** The bridge token, set exactly when `scoped` (#1272). */
+    ingestTokenId: string | null;
     ipAddress: string | null;
   },
   entry: z.output<typeof sleepStageEntrySchema>,
@@ -113,6 +119,10 @@ export async function createNamedSleepStage(
         externalSourceVersion: null,
         sleepStage: segment.stage,
         deviceType: entry.deviceType ?? null,
+        // The token an EXTERNAL row came from (#1272).
+        ...(scoped && args.ingestTokenId
+          ? { ingestTokenId: args.ingestTokenId }
+          : {}),
       },
       { exactExternalMatch: "duplicate" },
     ),
@@ -190,9 +200,12 @@ async function namedSleepStageResponse(
       cross_source_merge: meta.crossSource,
     },
   });
-  const row = await prisma.measurement.findUniqueOrThrow({ where: { id } });
+  const row = await prisma.measurement.findUniqueOrThrow({
+    where: { id },
+    include: APPLE_HEALTH_MIRROR_INCLUDE,
+  });
   return apiSuccess(
-    { ...shapeMeasurementNotes(row), status },
+    { ...withAppleHealthMirror(shapeMeasurementNotes(row)), status },
     status === "inserted" ? 201 : 200,
   );
 }

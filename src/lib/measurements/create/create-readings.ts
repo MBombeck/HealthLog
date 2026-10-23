@@ -10,6 +10,10 @@ import type { z } from "zod/v4";
 
 import { prisma } from "@/lib/db";
 import { EXTERNAL_SOURCE } from "@/lib/measurements/external-source";
+import {
+  APPLE_HEALTH_MIRROR_INCLUDE,
+  type MeasurementWithMirrorInput,
+} from "@/lib/measurements/apple-health-mirror";
 import { annotate } from "@/lib/logging/context";
 import { fireAndForget } from "@/lib/logging/fire-and-forget";
 import { auditLog } from "@/lib/auth/audit";
@@ -39,6 +43,11 @@ export interface ReadingWriter {
   user: { id: string; timezone: string | null };
   /** A narrow bridge credential: its rows are `EXTERNAL`. */
   scoped: boolean;
+  /**
+   * The bridge token, set exactly when `scoped`: each row it writes points
+   * at it (`Measurement.ingestTokenId`, #1272).
+   */
+  ingestTokenId: string | null;
   ipAddress: string | null;
 }
 
@@ -52,7 +61,7 @@ export const DUPLICATE_READING = { duplicate: true } as const;
 export async function createReadings(
   writer: ReadingWriter,
   input: z.output<typeof createBatchMeasurementSchema>,
-): Promise<{ rows: Measurement[] } | typeof DUPLICATE_READING> {
+): Promise<{ rows: MeasurementWithMirrorInput[] } | typeof DUPLICATE_READING> {
   const { user, scoped } = writer;
   // The caller has to be told which condition the batch hit. Untouched, a
   // duplicate escaped as an unhandled error and the batch answered 500,
@@ -77,6 +86,7 @@ export async function createReadings(
             source: (scoped
               ? EXTERNAL_SOURCE
               : (m.source ?? "MANUAL")) as MeasurementSource,
+            ingestTokenId: scoped ? writer.ingestTokenId : null,
             measuredAt: m.measuredAt,
             // The note is sealed at rest; the legacy plaintext column is
             // written null for new rows.
@@ -88,6 +98,7 @@ export async function createReadings(
             // `deviceType` instead of silently dropping it.
             deviceType: m.deviceType ?? null,
           },
+          include: APPLE_HEALTH_MIRROR_INCLUDE,
         }),
       ),
     );
@@ -123,7 +134,7 @@ export async function createReadings(
 export async function createReading(
   writer: ReadingWriter,
   input: z.output<typeof createMeasurementSchema>,
-): Promise<{ row: Measurement } | typeof DUPLICATE_READING> {
+): Promise<{ row: MeasurementWithMirrorInput } | typeof DUPLICATE_READING> {
   const { user, scoped } = writer;
   const {
     type,
@@ -150,6 +161,7 @@ export async function createReading(
         source: (scoped
           ? EXTERNAL_SOURCE
           : (source ?? "MANUAL")) as MeasurementSource,
+        ingestTokenId: scoped ? writer.ingestTokenId : null,
         measuredAt,
         // The note is sealed at rest; the legacy plaintext column is nulled.
         notes: null,
@@ -160,6 +172,7 @@ export async function createReading(
         // silently dropping it.
         deviceType: deviceType ?? null,
       },
+      include: APPLE_HEALTH_MIRROR_INCLUDE,
     });
   } catch (err) {
     // `isP2002` rather than `instanceof Prisma.PrismaClientKnownRequestError`.

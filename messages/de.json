@@ -6855,7 +6855,14 @@
       "detail": "Das Token wird nur einmal angezeigt.",
       "scopeNote": "Es kann ausschließlich neue Werte in deine eigene Akte eintragen. Es kann deine Daten nicht lesen, nichts ändern oder löschen und kein weiteres Token erstellen. Werte werden als von einem externen Gerät gekennzeichnet, damit du sie später erkennst, und lassen sich jederzeit korrigieren.",
       "createFailed": "Das Token konnte nicht erstellt werden. Bitte versuche es erneut.",
-      "namePlaceholder": "Name, z. B. Home Assistant"
+      "namePlaceholder": "Name, z. B. Home Assistant",
+      "appleHealth": {
+        "label": "Messwerte in Apple Health schreiben",
+        "createHint": "Die HealthLog-App auf deinem iPhone trägt die Werte dieses Tokens dann in Apple Health ein. Du kannst das später in der Token-Liste unten ändern.",
+        "toggleAria": "Werte von {name} in Apple Health schreiben",
+        "updateFailed": "Die Apple-Health-Einstellung konnte nicht geändert werden. Bitte versuche es erneut.",
+        "unattributed": "Werte, die vor dieser Einstellung gesendet wurden, lassen sich keinem Token zuordnen und bleiben deshalb außerhalb von Apple Health."
+      }
     },
     "workoutsToken": {
       "title": "Training-Tokens",
