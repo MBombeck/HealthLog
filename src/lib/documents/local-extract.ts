@@ -45,29 +45,72 @@ import { annotate } from "@/lib/logging/context";
 // nothing; they let the compiler check this file against pdfjs' own API.
 
 /**
- * One page's text runs as text: a new line where a run ends its line or the
- * next one sits on another, a space where two runs on one line leave a gap,
- * nothing where they touch (a word split across two fonts stays one word).
+ * Where a text run sits on the page. pdfjs gives each run a text matrix
+ * `[a, b, c, d, x, y]`: `x` and `y` are where the run starts, and `d` is its
+ * vertical scale, which for upright text is the font size.
+ */
+interface RunPosition {
+  x: number;
+  /** The baseline the run sits on. */
+  y: number;
+  /** Where the run ends: its start plus its width. */
+  end: number;
+  fontSize: number;
+}
+
+function positionOf(run: TextItem): RunPosition {
+  const [, , , scaleY, x = 0, y = 0] = run.transform as number[];
+  return {
+    x,
+    y,
+    end: x + run.width,
+    fontSize: Math.abs(scaleY ?? 0) || run.height || 1,
+  };
+}
+
+/**
+ * The next run is on a new line when its baseline moved by more than half a
+ * font size. Runs on one line can sit a little higher or lower (a superscript,
+ * a mixed font), so a small shift does not count.
+ */
+function startsNewLine(previous: RunPosition, next: RunPosition): boolean {
+  return Math.abs(next.y - previous.y) > previous.fontSize / 2;
+}
+
+/**
+ * Two runs on one line are separate words when the gap between them is wider
+ * than a tenth of the font size. Runs that touch, such as a word drawn in two
+ * fonts, stay one word.
+ */
+function leavesWordGap(previous: RunPosition, next: RunPosition): boolean {
+  return next.x - previous.end > next.fontSize / 10;
+}
+
+/**
+ * One page's text: its runs in order, with a line break where a run ends a
+ * line or the next one starts a new line, and a space where two runs on one
+ * line leave a gap between words.
  */
 function pageText(items: Array<TextItem | TextMarkedContent>): string {
   let text = "";
-  let last: { end: number; y: number; size: number } | null = null;
+  let previous: RunPosition | null = null;
+
   for (const item of items) {
-    // Marked-content boundaries carry no text.
+    // Marked-content markers carry no text.
     if (!("str" in item)) continue;
-    const x = item.transform[4] ?? 0;
-    const y = item.transform[5] ?? 0;
-    const size = Math.abs(item.transform[3] ?? 0) || item.height || 1;
-    if (last && !text.endsWith("\n")) {
-      if (Math.abs(y - last.y) > last.size / 2) text += "\n";
-      else if (x - last.end > size * 0.1 && !/\s$/.test(text)) text += " ";
+    const position = positionOf(item);
+
+    if (previous && !text.endsWith("\n")) {
+      if (startsNewLine(previous, position)) {
+        text += "\n";
+      } else if (leavesWordGap(previous, position) && !/\s$/.test(text)) {
+        text += " ";
+      }
     }
     text += item.str;
-    // An empty run that only ends a line adds no blank line of its own.
-    if (item.hasEOL && !(item.str === "" && text.endsWith("\n"))) {
-      text += "\n";
-    }
-    last = { end: x + item.width, y, size };
+    if (item.hasEOL && !text.endsWith("\n")) text += "\n";
+
+    previous = position;
   }
   return text;
 }
