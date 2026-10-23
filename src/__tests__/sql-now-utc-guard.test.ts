@@ -39,6 +39,10 @@ const ALLOWED: Record<string, { hits: number; why: string }> = {
     hits: 1,
     why: "pg-boss start_after is timestamptz",
   },
+  "src/lib/jobs/backup-restore-wait.ts": {
+    hits: 1,
+    why: "pg-boss start_after is timestamptz",
+  },
   "src/lib/jobs/reminder/registrar-shared.ts": {
     hits: 1,
     why: "pg-boss tables are timestamptz",

@@ -5766,7 +5766,8 @@ model BackupRestoreJob {
   restoreInstanceSettings Boolean   @default(false) @map("restore_instance_settings")
   /// `pg-boss` job id of the latest delivery. Consumer: the boot sweep, which
   /// completes a delivery whose worker is gone so it does not later surface as
-  /// a timed-out job.
+  /// a timed-out job, and the status routes, which read from it whether the
+  /// heavy lane put a queued restore back (`backup-restore-wait.ts`).
   pgBossJobId             String?   @map("pg_boss_job_id")
   /// `queued | running | succeeded | failed`. Consumer: every reader.
   status                  String    @default("queued")

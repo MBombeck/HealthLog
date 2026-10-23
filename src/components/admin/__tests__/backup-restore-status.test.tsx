@@ -26,7 +26,7 @@ import {
   RestoreJobStatus,
   visibleRestoreJobs,
 } from "@/components/admin/backup-restore-status";
-import type { BackupRestoreJobView } from "@/lib/jobs/backup-restore";
+import type { BackupRestoreJobView } from "@/lib/jobs/backup-restore-view";
 import { primeLocales } from "@/__tests__/helpers/prime-locales";
 
 primeLocales("de");
@@ -54,6 +54,7 @@ function job(overrides: Partial<BackupRestoreJobView>): BackupRestoreJobView {
     },
     result: null,
     failure: null,
+    waiting: null,
     attempts: 1,
     createdAt: "2026-09-25T08:00:00.000Z",
     startedAt: "2026-09-25T08:00:01.000Z",
@@ -85,9 +86,29 @@ describe("RestoreJobStatus while it runs", () => {
     expect(html).not.toContain('data-slot="restore-job-progress"');
   });
 
-  it("says a queued restore is waiting", () => {
+  it("says a queued restore is waiting, and since when", () => {
     const html = render(job({ status: "queued", phase: null, progress: null }));
     expect(html).toContain("waiting to start");
+    expect(html).toContain("background worker picks it up");
+    expect(html).toContain("Queued at");
+    expect(html).not.toContain("data-waiting");
+  });
+
+  it("says it waits for the running backup, not for a stuck worker", () => {
+    const html = render(
+      job({ status: "queued", phase: null, progress: null, waiting: "backup" }),
+    );
+    expect(html).toContain('data-waiting="backup"');
+    expect(html).toContain("Waiting for the backup");
+    expect(html).not.toContain("background worker picks it up");
+  });
+
+  it("says it waits for another large job when that holds the server", () => {
+    const html = render(
+      job({ status: "queued", phase: null, progress: null, waiting: "busy" }),
+    );
+    expect(html).toContain('data-waiting="busy"');
+    expect(html).toContain("large job");
   });
 
   it("says when it was started again after a restart", () => {
@@ -178,5 +199,13 @@ describe("RestoreJobStatus in another language", () => {
     const html = render(job({}), "de");
     expect(html).toContain("alex wird wiederhergestellt");
     expect(html).toContain("Messwerte werden geschrieben");
+  });
+
+  it("says in German that it waits for the backup", () => {
+    const html = render(
+      job({ status: "queued", phase: null, progress: null, waiting: "backup" }),
+      "de",
+    );
+    expect(html).toContain("Wartet auf das Backup");
   });
 });

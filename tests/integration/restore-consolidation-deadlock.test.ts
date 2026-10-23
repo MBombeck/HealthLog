@@ -191,7 +191,8 @@ describe("restore against a running consolidation (#1031)", () => {
     const restore = await startRestore(backupId);
 
     const [folded] = await Promise.all([consolidation, restore.done]);
-    const { readBackupRestoreJob } = await import("@/lib/jobs/backup-restore");
+    const { readBackupRestoreJob } =
+      await import("@/lib/jobs/backup-restore-view");
     const job = await readBackupRestoreJob(restore.jobId);
 
     expect(

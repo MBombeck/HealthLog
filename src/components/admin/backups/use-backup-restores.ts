@@ -10,7 +10,7 @@ import type {
   MissingBackupSection,
   RestoreSkipSummary,
 } from "@/lib/export/restore-skips";
-import type { BackupRestoreJobView } from "@/lib/jobs/backup-restore";
+import type { BackupRestoreJobView } from "@/lib/jobs/backup-restore-view";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { randomId } from "@/lib/random-id";

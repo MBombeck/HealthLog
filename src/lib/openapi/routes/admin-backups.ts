@@ -132,6 +132,12 @@ const restoreJob = z
       })
       .nullable(),
     failure: restoreFailure.nullable(),
+    waiting: z
+      .enum(["backup", "busy"])
+      .nullable()
+      .describe(
+        "Why a `queued` job has not started. A restore never runs beside a backup or another large job: while one holds the server it goes back to the queue for a minute at a time. `backup` when a backup pass holds it, `busy` for anything else (an import, a nightly pass, the memory guard). Null while the job only waits for the worker, and on every job that is not queued.",
+      ),
     attempts: z.number().int(),
     createdAt: z.string(),
     startedAt: z.string().nullable(),

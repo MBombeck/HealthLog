@@ -51,7 +51,6 @@
 import { createHash } from "node:crypto";
 
 import type { Job, PgBoss } from "pg-boss";
-import { z } from "zod/v4";
 
 import { invalidateUserData } from "@/lib/cache/invalidate";
 import { prisma, toJson } from "@/lib/db";
@@ -79,6 +78,10 @@ import {
 } from "@/lib/export/restore-failure-cause";
 import { logCaught } from "@/lib/logging/signal";
 import { BACKUP_RESTORE_QUEUE } from "./backup-restore-queue";
+import type {
+  BackupRestoreJobView,
+  BackupRestoreResult,
+} from "./backup-restore-view";
 
 /** Stable code of the 409 a second restore of the same account gets. */
 export const BACKUP_RESTORE_ACTIVE_CODE = "backup.restore.active";
@@ -140,71 +143,6 @@ export interface BackupRestoreFailure {
   cause?: RestoreFailureCause;
 }
 
-const failureSchema = z.object({
-  code: z.string(),
-  message: z.string(),
-  sections: z.array(z.string()).optional(),
-  keyIds: z.array(z.string()).optional(),
-  cause: z.enum(RESTORE_FAILURE_CAUSES).optional(),
-});
-
-const progressSchema = z.object({
-  measurementsChecked: z.number().int().nonnegative(),
-  measurementsTotal: z.number().int().nonnegative().nullable(),
-  measurementsWritten: z.number().int().nonnegative(),
-  sectionsDone: z.number().int().nonnegative(),
-  sectionsTotal: z.number().int().nonnegative(),
-});
-
-const resultSchema = z.object({
-  summary: z.record(z.string(), z.unknown()),
-  skipped: z.object({
-    links: z.number().int(),
-    catalogueKeys: z.array(
-      z.object({
-        catalogue: z.string(),
-        key: z.string(),
-        links: z.number().int(),
-      }),
-    ),
-  }),
-  cleared: z.record(z.string(), z.number()),
-});
-
-export type BackupRestoreResult = z.infer<typeof resultSchema>;
-
-/** What the status routes answer with. Counts and codes, never content. */
-export interface BackupRestoreJobView {
-  id: string;
-  userId: string;
-  username: string | null;
-  backupId: string;
-  restoreInstanceSettings: boolean;
-  status: BackupRestoreStatus;
-  phase: RestorePhase | null;
-  progress: RestoreProgress | null;
-  result: BackupRestoreResult | null;
-  failure: BackupRestoreFailure | null;
-  attempts: number;
-  createdAt: string;
-  startedAt: string | null;
-  completedAt: string | null;
-}
-
-const PHASES: readonly RestorePhase[] = [
-  "validating",
-  "clearing",
-  "measurements",
-  "sections",
-  "rebuilding",
-];
-const STATUSES: readonly BackupRestoreStatus[] = [
-  "queued",
-  "running",
-  "succeeded",
-  "failed",
-];
-
 /**
  * A failure code as a job fact. Job facts are lower-case words joined by
  * underscores (`job-outcome.ts`), and two of the restore's codes are the
@@ -220,107 +158,6 @@ export function jobFactCode(code: BackupRestoreFailureCode): string {
  */
 export function backupDigest(identity: string): string {
   return createHash("sha256").update(identity).digest("hex");
-}
-
-const viewSelect = {
-  id: true,
-  userId: true,
-  backupId: true,
-  restoreInstanceSettings: true,
-  status: true,
-  phase: true,
-  progress: true,
-  result: true,
-  failure: true,
-  attempts: true,
-  createdAt: true,
-  startedAt: true,
-  completedAt: true,
-  user: { select: { username: true } },
-} as const;
-
-type ViewRow = {
-  id: string;
-  userId: string;
-  backupId: string;
-  restoreInstanceSettings: boolean;
-  status: string;
-  phase: string | null;
-  progress: unknown;
-  result: unknown;
-  failure: unknown;
-  attempts: number;
-  createdAt: Date;
-  startedAt: Date | null;
-  completedAt: Date | null;
-  user: { username: string } | null;
-};
-
-function toView(row: ViewRow): BackupRestoreJobView {
-  const status = (STATUSES as readonly string[]).includes(row.status)
-    ? (row.status as BackupRestoreStatus)
-    : "failed";
-  const phase =
-    row.phase && (PHASES as readonly string[]).includes(row.phase)
-      ? (row.phase as RestorePhase)
-      : null;
-  const progress = progressSchema.safeParse(row.progress);
-  const result = resultSchema.safeParse(row.result);
-  const failure = failureSchema.safeParse(row.failure);
-  return {
-    id: row.id,
-    userId: row.userId,
-    username: row.user?.username ?? null,
-    backupId: row.backupId,
-    restoreInstanceSettings: row.restoreInstanceSettings,
-    status,
-    phase: status === "running" ? phase : null,
-    progress: progress.success ? progress.data : null,
-    result: result.success ? result.data : null,
-    failure: failure.success
-      ? (failure.data as BackupRestoreFailure)
-      : status === "failed"
-        ? { code: "unexpected", message: "The restore failed." }
-        : null,
-    attempts: row.attempts,
-    createdAt: row.createdAt.toISOString(),
-    startedAt: row.startedAt?.toISOString() ?? null,
-    completedAt: row.completedAt?.toISOString() ?? null,
-  };
-}
-
-/** One job, for the status route. Null when the id is unknown. */
-export async function readBackupRestoreJob(
-  id: string,
-): Promise<BackupRestoreJobView | null> {
-  const row = await prisma.backupRestoreJob.findUnique({
-    where: { id },
-    select: viewSelect,
-  });
-  return row ? toView(row) : null;
-}
-
-/**
- * The jobs the console shows: every queued or running one, and the finished
- * ones of the last day, newest first. What a reload of the page needs to pick
- * up a restore it was watching, and to show how the last one ended.
- */
-export async function listRecentBackupRestoreJobs(
-  now: Date = new Date(),
-): Promise<BackupRestoreJobView[]> {
-  const since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  const rows = await prisma.backupRestoreJob.findMany({
-    where: {
-      OR: [
-        { status: { in: ["queued", "running"] } },
-        { createdAt: { gte: since } },
-      ],
-    },
-    orderBy: { createdAt: "desc" },
-    take: 20,
-    select: viewSelect,
-  });
-  return rows.map(toView);
 }
 
 function failureJson(failure: BackupRestoreFailure) {

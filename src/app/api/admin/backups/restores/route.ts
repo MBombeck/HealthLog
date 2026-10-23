@@ -8,10 +8,8 @@
  */
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
-import {
-  evictAfterRestore,
-  listRecentBackupRestoreJobs,
-} from "@/lib/jobs/backup-restore";
+import { evictAfterRestore } from "@/lib/jobs/backup-restore";
+import { listRecentBackupRestoreJobs } from "@/lib/jobs/backup-restore-view";
 import { annotate } from "@/lib/logging/context";
 
 export const dynamic = "force-dynamic";

@@ -45,10 +45,10 @@ import { runJob } from "@/lib/jobs/run-job";
 import {
   BACKUP_RESTORE_MAX_ATTEMPTS,
   handleBackupRestore,
-  readBackupRestoreJob,
   runBackupRestoreJob,
   sweepInterruptedRestores,
 } from "@/lib/jobs/backup-restore";
+import { readBackupRestoreJob } from "@/lib/jobs/backup-restore-view";
 import { BACKUP_RESTORE_QUEUE } from "@/lib/jobs/backup-restore-queue";
 import { backupPayloadSchema } from "@/lib/validations/backup";
 

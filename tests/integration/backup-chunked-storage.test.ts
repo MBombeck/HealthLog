@@ -461,8 +461,9 @@ describe("a restore queued against a copy that is then replaced", () => {
       await import("@/app/api/admin/backups/[id]/restore/route");
     const { getGlobalBoss, setGlobalBoss } =
       await import("@/lib/jobs/boss-instance");
-    const { readBackupRestoreJob, runBackupRestoreJob } =
-      await import("@/lib/jobs/backup-restore");
+    const { runBackupRestoreJob } = await import("@/lib/jobs/backup-restore");
+    const { readBackupRestoreJob } =
+      await import("@/lib/jobs/backup-restore-view");
 
     const previous = getGlobalBoss();
     setGlobalBoss(acceptingBoss);
