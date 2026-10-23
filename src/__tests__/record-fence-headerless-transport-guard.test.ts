@@ -64,6 +64,7 @@
 import { describe, it, expect } from "vitest";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { stripComments } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 const API_ROOT = join(SRC, "app", "api");
@@ -165,19 +166,6 @@ const API_LITERAL = /^[`"']((?:\/api\/)[^`"']*)[`"']$/;
  * against a one-level alias map built from the file's own
  * `const NAME = "/api/…"` declarations.
  */
-/**
- * Comments are stripped before matching.
- *
- * A doc comment that NAMES `src="/api/…"` while explaining why the code no
- * longer does that is prose, not a transport — and this guard's own
- * explanations are written in exactly that shape. Commented-out code is
- * dropped with them, which is correct: it issues no request. Same treatment
- * and the same reason as `account-payload-consumer-guard.test.ts`.
- */
-function stripComments(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|\s)\/\/.*$/gm, "$1");
-}
-
 function headerlessReferences(file: string, source: string): Reference[] {
   const aliases = new Map<string, string>();
   // `const NAME = "/api/…"`, and the ternary form

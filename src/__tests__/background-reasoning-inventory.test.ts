@@ -31,7 +31,7 @@ import { describe, expect, it } from "vitest";
 
 import { BACKGROUND_REASONING_JOBS } from "@/lib/ai/reasoning/levels";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -61,12 +61,6 @@ const NEVER = [
   "lib/insights/derived/derived-assessment-ai.ts",
   "lib/jobs/workout-insight-generate.ts",
 ];
-
-function stripComments(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
-}
 
 /** `reasoningJob:` as a value, not the optional declaration `reasoningJob?:`. */
 const SETTER = /\breasoningJob\s*:(?!\s*BackgroundReasoningJob)/g;

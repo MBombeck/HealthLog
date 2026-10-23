@@ -163,6 +163,7 @@ import {
   AI_AVAILABLE,
   aiUnavailable,
 } from "@/__tests__/helpers/ai-capability-fixtures";
+import { stripComments } from "../../../__tests__/helpers/source-files";
 
 const emptySummary = {
   count: 0,
@@ -898,9 +899,9 @@ describe("buildDashboardSnapshot — no LLM in the path", () => {
     );
     // Strip line + block comments so the guard checks executable code,
     // not the docstring that explicitly states the no-LLM contract.
-    const code = src
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .replace(/(^|[^:])\/\/.*$/gm, "$1");
+    const code = stripComments(src, "snapshot.ts");
+    // The bans below pass on nothing; the builder must still be in the text.
+    expect(code).toMatch(/export async function buildDashboardSnapshot\b/);
     expect(code).not.toMatch(/provider-runner|provider-chain|resolveProvider/);
     expect(code).not.toMatch(/runRawCompletion|extractFeatures/);
     expect(code).not.toMatch(/fetch\(\s*["'`][^"'`]*insights\/generate/);

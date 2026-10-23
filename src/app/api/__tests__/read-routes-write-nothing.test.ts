@@ -20,6 +20,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { stripComments } from "../../../__tests__/helpers/source-files";
 
 /** Mutating Prisma model methods, as they appear at a call site. */
 const PRISMA_WRITE =
@@ -48,7 +49,7 @@ function sourceOf(relative: string): string {
  * guard that fires on its own documentation.
  */
 function code(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+  return stripComments(source);
 }
 
 describe("read routes issue no writes", () => {

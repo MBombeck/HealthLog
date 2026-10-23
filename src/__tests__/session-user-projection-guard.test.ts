@@ -20,19 +20,13 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { guardModuleOf } from "./helpers/auth-guards";
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 import { SESSION_USER_SELECT } from "@/lib/auth/session-user";
 
 const SRC = join(process.cwd(), "src");
 
 function read(rel: string): string {
   return readFileSync(join(SRC, rel), "utf8");
-}
-
-function stripComments(src: string): string {
-  return src
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
 }
 
 /** The `{ ... }` argument of every call matching `callee`, braces balanced. */

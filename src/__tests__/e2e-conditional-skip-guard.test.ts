@@ -22,6 +22,7 @@
 import { globSync, readFileSync } from "node:fs";
 import { join, sep } from "node:path";
 import { describe, expect, it } from "vitest";
+import { stripComments } from "./helpers/source-files";
 
 const E2E = join(process.cwd(), "e2e");
 
@@ -31,16 +32,6 @@ function specFiles(): string[] {
   return globSync("**/*.spec.ts", { cwd: E2E })
     .map((p) => p.split(sep).join("/"))
     .sort();
-}
-
-/** Blank out comments, keeping offsets and newlines so line numbers hold. */
-function stripComments(src: string): string {
-  return src
-    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
-    .replace(
-      /(^|[^:"'`])\/\/.*$/gm,
-      (m, lead: string) => lead + " ".repeat(m.length - lead.length),
-    );
 }
 
 /**

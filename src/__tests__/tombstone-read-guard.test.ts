@@ -20,7 +20,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -56,10 +56,6 @@ const ALLOWED: Record<string, string> = {
   "moodEntry@lib/mood/bulk-ingest.ts":
     "Write path, not analysis: resolves the row that won a raced external-id upsert, which owns the key whether or not it is deleted.",
 };
-
-function stripComments(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-}
 
 function tombstonedModels(): string[] {
   const schema = readFileSync(

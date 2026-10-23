@@ -12,6 +12,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { guardSourceOf } from "@/__tests__/helpers/auth-guards";
+import { stripComments } from "../../../../../__tests__/helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 const read = (rel: string) => readFileSync(join(SRC, rel), "utf8");
@@ -22,9 +23,7 @@ const read = (rel: string) => readFileSync(join(SRC, rel), "utf8");
  * `redirect_uri` parameter").
  */
 function code(rel: string): string {
-  return read(rel)
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+  return stripComments(read(rel), rel);
 }
 
 const ROUTE_FILES = [
@@ -43,6 +42,8 @@ describe("T6 — open redirect / redirect_uri removed by construction", () => {
     // Comments legitimately state "there is no redirect_uri parameter"; the
     // invariant is that no CODE reads or builds one.
     for (const rel of files) {
+      // A file read as nothing would pass the ban below.
+      expect(code(rel)).toMatch(/\bexport\b/);
       expect(code(rel)).not.toMatch(/redirect_uri/);
     }
   });
@@ -56,6 +57,7 @@ describe("T6 — open redirect / redirect_uri removed by construction", () => {
     // The routes build the Location only through the helper, never a bespoke
     // scheme string in code (doc comments naming the scheme are fine).
     for (const rel of ROUTE_FILES) {
+      expect(code(rel)).toMatch(/\bexport\b/);
       expect(code(rel)).not.toMatch(/"healthlog:\/\//);
     }
   });

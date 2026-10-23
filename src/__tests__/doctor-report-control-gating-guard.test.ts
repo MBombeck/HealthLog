@@ -44,6 +44,7 @@ import {
   type ReportLeafId,
 } from "@/lib/report-selection/catalogue";
 import { selectionFromLeaves } from "@/lib/report-selection/selection";
+import { stripComments } from "./helpers/source-files";
 
 const REPO_ROOT = join(__dirname, "..", "..");
 const COLLECT_PATH = join(
@@ -64,11 +65,6 @@ const PICKER_PATH = join(
 
 const collectSource = readFileSync(COLLECT_PATH, "utf8");
 const pickerSource = readFileSync(PICKER_PATH, "utf8");
-
-/** Strip comments so a leaf named only in prose does not count as read. */
-function stripComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-}
 
 describe("report scope gating — structural guard", () => {
   it("reads a plausible catalogue", () => {

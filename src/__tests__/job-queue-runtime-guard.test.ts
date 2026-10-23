@@ -34,7 +34,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 import {
   DEFAULT_JOB_EXPIRE_SECONDS,
   QUEUE_RUNTIME,
@@ -60,9 +60,7 @@ const source = new Map(
 
 /** Strip comments so documentation that quotes code never matches. */
 function code(text: string): string {
-  return text
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+  return stripComments(text);
 }
 
 /** Index just past the bracket that closes the one at `open`. */

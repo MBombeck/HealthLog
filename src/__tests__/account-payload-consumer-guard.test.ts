@@ -69,6 +69,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import { describe, it, expect } from "vitest";
+import { stripComments } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 const ME_ROUTE = join(SRC, "app", "api", "auth", "me", "route.ts");
@@ -199,16 +200,6 @@ function payloadFields(source: string): string[] {
     fields.push(m[1]);
   }
   return [...new Set(fields)];
-}
-
-/**
- * Comments are stripped before matching. A doc comment naming a field is a
- * claim about a consumer, not a consumer — `lastReportPracticeName` had one of
- * those for its whole dead life, and counting it would make this guard agree
- * with the very prose that was wrong.
- */
-function stripComments(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|\s)\/\/.*$/gm, "$1");
 }
 
 /**

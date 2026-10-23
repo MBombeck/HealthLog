@@ -42,21 +42,13 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
 /** The shared statistic: the helper, or the type set it is keyed on. */
 const HELPER_IMPORT =
   /from\s+["'](?:@\/lib\/measurements\/|\.\/)day-(?:mean|statistic)["']/;
-
-/** Comments go first: a mean named in prose is not a mean computed. */
-function stripComments(text: string): string {
-  return text
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/^\s*\/\/.*$/gm, "")
-    .replace(/^\s*--.*$/gm, "");
-}
 
 /**
  * Database means over a measurement value: SQL `AVG(value)`, the per-day folds

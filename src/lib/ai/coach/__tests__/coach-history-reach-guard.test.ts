@@ -199,6 +199,7 @@ import {
 } from "@/lib/ai/coach/tools/definitions";
 import { createResultRefAllocator } from "@/lib/ai/coach/results/refs";
 import type { PriorResultTurn } from "@/lib/ai/coach/results/refs";
+import { stripComments } from "../../../../__tests__/helpers/source-files";
 
 const REACH: CoachHistoryReach = { window: "last30days", days: LIMIT_DAYS };
 
@@ -398,7 +399,7 @@ function walk(dir: string): string[] {
 
 /** `source` without its comments, so a doc mention is not read as a call. */
 function code(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  return stripComments(source);
 }
 
 /** The argument text of every call to `fn(` in `source`, parentheses balanced. */

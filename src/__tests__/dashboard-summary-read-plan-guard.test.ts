@@ -23,6 +23,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { stripComments } from "./helpers/source-files";
 
 const READS = join(process.cwd(), "src/lib/dashboard/summary-reads.ts");
 /** The summary's builder, moved out of its route; it makes the reads. */
@@ -35,9 +36,7 @@ const ROUTE = join(process.cwd(), "src/lib/dashboard/summary/build.ts");
  * shape being warned about.
  */
 function code(path: string): string {
-  return readFileSync(path, "utf8")
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+  return stripComments(readFileSync(path, "utf8"), path);
 }
 
 describe("dashboard summary reads — latest reading per type", () => {

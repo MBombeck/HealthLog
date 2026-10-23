@@ -17,6 +17,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { stripComments } from "./helpers/source-files";
 
 const SRC = join(__dirname, "..");
 /**
@@ -50,11 +51,6 @@ function walk(dir: string, out: string[] = []): string[] {
     else if (name.endsWith(".ts") || name.endsWith(".tsx")) out.push(p);
   }
   return out;
-}
-
-/** Strip comments so a mention in prose is not read as a call. */
-function stripComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 }
 
 describe("doctor-report aggregator egress", () => {

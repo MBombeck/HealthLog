@@ -48,6 +48,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join, posix, relative, sep } from "node:path";
+import { stripComments } from "./helpers/source-files";
 
 const REPO_ROOT = join(__dirname, "..", "..");
 const COMPONENT_ROOT = join(REPO_ROOT, "src", "components");
@@ -527,11 +528,6 @@ const RESULT_SURFACES: ReadonlyArray<{
     forbidsMarkers: true,
   },
 ];
-
-/** Code only — a comment naming a marker is prose, not an affordance. */
-function stripComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-}
 
 function readCode(relativePath: string): string {
   return stripComments(readFileSync(join(REPO_ROOT, relativePath), "utf8"));

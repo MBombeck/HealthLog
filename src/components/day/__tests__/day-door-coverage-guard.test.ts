@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { stripComments } from "../../../__tests__/helpers/source-files";
 
 /**
  * Every chart drawn in days is a door to its days, or it says why not.
@@ -120,17 +121,6 @@ function walk(path: string): string[] {
 
 const files = SCAN.flatMap(walk).filter((f) => /\.tsx?$/.test(f));
 const rel = (abs: string) => relative(ROOT, abs);
-/**
- * The code without its comments: a docblock that names `<HealthChart>` is
- * not a mount. Block comments (JSX ones included) go whole; a line comment
- * goes from `//` to the line end unless the slashes follow a colon (a URL).
- */
-export function stripComments(text: string): string {
-  return text
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
-}
-
 const read = new Map(
   files.map((f) => [rel(f), stripComments(readFileSync(f, "utf8"))]),
 );

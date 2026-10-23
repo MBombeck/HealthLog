@@ -19,6 +19,7 @@ import { guardSourceOf } from "./helpers/auth-guards";
 import {
   readSource,
   readSourceText,
+  stripComments,
   walkSourceFiles,
 } from "./helpers/source-files";
 
@@ -88,10 +89,6 @@ function argsFrom(code: string, open: number): string {
     }
   }
   return code.slice(open + 1, i);
-}
-
-function stripComments(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 }
 
 /** Split an argument list at its top-level commas. */

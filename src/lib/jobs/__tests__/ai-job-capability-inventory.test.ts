@@ -20,6 +20,7 @@ import {
   AI_CAPABILITY_KEYS,
   type AiCapabilityKey,
 } from "@/lib/ai/capabilities/types";
+import { stripComments } from "../../../__tests__/helpers/source-files";
 
 const ROOT = join(process.cwd(), "src");
 
@@ -89,9 +90,7 @@ const AI_JOBS: Record<string, JobGate> = {
 };
 
 function code(rel: string): string {
-  return readFileSync(join(ROOT, rel), "utf8")
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+  return stripComments(readFileSync(join(ROOT, rel), "utf8"), rel);
 }
 
 describe("AI job capability inventory", () => {

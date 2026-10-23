@@ -18,7 +18,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 const HELPER = "lib/validations/datetime.ts";
@@ -28,12 +28,6 @@ function sourceFiles(): string[] {
     .filter((p) => !p.startsWith("generated/"))
     .filter((p) => !p.includes("__tests__"))
     .filter((p) => !p.endsWith(".test.ts") && !p.endsWith(".test.tsx"));
-}
-
-function stripComments(text: string): string {
-  return text
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
 }
 
 const DIRECT_DATETIME = /\.\s*datetime\s*\(/g;

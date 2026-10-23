@@ -22,7 +22,7 @@ import { join } from "node:path";
 import { DOCUMENT_AI_RUN_KINDS } from "@/lib/documents/ai-runs/types";
 import type { runStatusCompletion } from "@/lib/insights/status-provider";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -37,13 +37,6 @@ const EGRESS_CALL =
  */
 const CAPABILITY_CHECK =
   /\b(?:aiCapabilityForJob|aiCapabilityForRecord|requireAiCapability|getAiCapability|aiEgressRefusal|assertAiEgress)\s*\(/;
-
-/** Comments name the helpers too; only code counts. */
-function stripComments(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
-}
 
 function sourceFiles(): string[] {
   return walkSourceFiles(SRC, { floor: 3000 })

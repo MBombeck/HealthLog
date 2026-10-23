@@ -114,6 +114,7 @@ import { describe, expect, it } from "vitest";
 
 import { openApiPaths } from "@/lib/openapi/routes";
 import { RETIRED_ROUTES } from "@/lib/http/retired-routes";
+import { stripComments } from "./helpers/source-files";
 
 const ROOT = process.cwd();
 
@@ -377,10 +378,6 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
     methods: ["GET"],
   },
 };
-
-function stripComments(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|\s)\/\/.*$/gm, "$1");
-}
 
 /** `src/app/api/foo/[id]/route.ts` → `/api/foo/{id}`. */
 function toApiPath(file: string): string {

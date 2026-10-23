@@ -17,7 +17,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const E2E = join(process.cwd(), "e2e");
 
@@ -40,15 +40,6 @@ function e2eFiles(): string[] {
 
 function read(rel: string): string {
   return readFileSync(join(E2E, rel), "utf8");
-}
-
-/**
- * The file with its comments removed. The entry point documents the very API
- * calls it makes, so a naive substring match would be satisfied by the prose
- * alone — a fixture gutted to a no-op would still read as compliant.
- */
-function stripComments(src: string): string {
-  return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 }
 
 /**

@@ -30,7 +30,11 @@
 import { describe, expect, it } from "vitest";
 import { join } from "node:path";
 
-import { readSourceText, walkSourceFiles } from "./helpers/source-files";
+import {
+  readSourceText,
+  stripComments,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -98,31 +102,13 @@ const LIMIT_PATTERNS: readonly RegExp[] = [
 const PAGER_NEARBY = /\boffset\b|\bcursor\b|\bpageParam\b/;
 const PAGER_LINES = 3;
 
-/** The line with every block comment that opens and closes on it removed. */
-function withoutInlineBlocks(text: string): string {
-  return text.replace(/\/\*.*?\*\//g, "");
-}
-
-/** A whole-line comment: it describes code, it sends nothing. */
-function isCommentLine(text: string): boolean {
-  const trimmed = withoutInlineBlocks(text).trim();
-  return (
-    trimmed.startsWith("//") ||
-    trimmed.startsWith("/*") ||
-    trimmed.startsWith("*")
-  );
-}
-
 /**
- * The line as code a pager could live in: a trailing `// …` comment cut off
- * (only after whitespace, so a `https://` inside a string survives), and
- * every offset pinned to a literal zero removed, in the URL spelling and
- * both `URLSearchParams` spellings.
+ * The line as code a pager could live in: every offset pinned to a literal
+ * zero removed, in the URL spelling and both `URLSearchParams` spellings.
+ * The lines come comment-free from `stripComments`.
  */
 function pagerCode(text: string): string {
-  if (isCommentLine(text)) return "";
-  return withoutInlineBlocks(text)
-    .replace(/\s\/\/.*$/, "")
+  return text
     .replace(/[?&]offset=0(?!\d)/g, "")
     .replace(/\.set\(\s*["']offset["']\s*,\s*["']0["']\s*\)/g, "")
     .replace(/\boffset:\s*["']?0["']?(?![\d.])/g, "");
@@ -151,12 +137,11 @@ interface Hit {
 
 /** Every literal limit in the given source, with whether a pager is beside it. */
 function findLimitHits(file: string, source: string): Hit[] {
-  const lines = source.split("\n");
+  // Comments describe old shapes; they send nothing.
+  const lines = stripComments(source, file).split("\n");
   const infinite = /\buseInfiniteQuery\b/.test(source);
   const hits: Hit[] = [];
   lines.forEach((text, index) => {
-    // Comments describe old shapes; they send nothing.
-    if (isCommentLine(text)) return;
     for (const pattern of LIMIT_PATTERNS) {
       for (const match of text.matchAll(pattern)) {
         const near = lines

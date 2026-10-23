@@ -38,6 +38,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   readSourceText,
+  stripComments,
   requireFloor,
   walkSourceFiles,
 } from "./helpers/source-files";
@@ -58,20 +59,6 @@ const CRITICAL_TEST =
 
 /** A route interception call; the first argument is examined separately. */
 const ROUTE_CALL = /\.route(?:FromHAR)?\(\s*/g;
-
-/**
- * The source without its comment LINES: a line whose first non-blank text is
- * `//`, and a block that opens at the start of a line. Deliberately not the
- * shared `stripComments`, which opens a block at any `/*` — and route globs
- * (`"**\/api/day/**"`, `"https://host/**"`) are full of them, so it would
- * swallow the code after the first glob, including any `.route(` there. Prose
- * about this rule lives in comment lines, which is what has to go.
- */
-function stripCommentLines(source: string): string {
-  return source
-    .replace(/^[ \t]*\/\*[\s\S]*?\*\//gm, "")
-    .replace(/^[ \t]*\/\/.*$/gm, "");
-}
 
 interface StubFinding {
   /** Where the interception lives (the spec, or the helper it imports). */
@@ -108,7 +95,7 @@ function firstArgument(
 
 /** Every `/api` (or unprovable) interception in one source text. */
 function apiStubsIn(source: string): string[] {
-  const code = stripCommentLines(source);
+  const code = stripComments(source);
   const hits: string[] = [];
   for (const m of code.matchAll(ROUTE_CALL)) {
     const arg = firstArgument(code, (m.index ?? 0) + m[0].length);
@@ -125,7 +112,7 @@ function apiStubsIn(source: string): string[] {
 function relativeImports(
   source: string,
 ): Array<{ names: string[]; from: string }> {
-  const code = stripCommentLines(source);
+  const code = stripComments(source);
   const out: Array<{ names: string[]; from: string }> = [];
   for (const m of code.matchAll(
     /import\s*(?:type\s*)?\{([^}]*)\}\s*from\s*["'](\.{1,2}\/[^"']+)["']/g,
@@ -150,7 +137,7 @@ function relativeImports(
  * cut at each top-level `export`, so each slice is one export's body.
  */
 function stubbingExports(helperSource: string): string[] {
-  const code = stripCommentLines(helperSource);
+  const code = stripComments(helperSource);
   const starts = [...code.matchAll(/^export\s+/gm)].map((m) => m.index ?? 0);
   const names: string[] = [];
   starts.forEach((start, i) => {
@@ -206,7 +193,7 @@ function specFiles(): string[] {
 function criticalTests(): Array<{ file: string; title: string }> {
   const tests: Array<{ file: string; title: string }> = [];
   for (const file of specFiles()) {
-    const code = stripCommentLines(readSourceText(join(E2E, file)));
+    const code = stripComments(readSourceText(join(E2E, file)));
     for (const m of code.matchAll(CRITICAL_TEST)) {
       tests.push({ file, title: m[2] });
     }
@@ -224,9 +211,7 @@ describe("@critical e2e journeys run against the real API", () => {
     // A file that mentions the tag outside a test title (a describe title, a
     // `grep` option) is held to the same rule.
     for (const file of specFiles()) {
-      if (
-        stripCommentLines(readSourceText(join(E2E, file))).includes("@critical")
-      )
+      if (stripComments(readSourceText(join(E2E, file))).includes("@critical"))
         files.add(file);
     }
     const offenders = [...files].flatMap((file) =>

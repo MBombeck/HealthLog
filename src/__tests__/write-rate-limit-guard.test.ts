@@ -27,7 +27,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { guardSourceOf } from "./helpers/auth-guards";
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -91,10 +91,6 @@ const OWN_BUCKET: Record<string, string> = {
   "app/api/insights/ecg/route.ts":
     "The ECG sweep sends one recording per request with no client-side delay, newest first, over the whole HealthKit history; the route's own 600-a-minute ingest bucket meters it.",
 };
-
-function stripComments(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-}
 
 const WRITES =
   /export\s+(?:const|async\s+function)\s+(POST|PUT|PATCH|DELETE)\b/;

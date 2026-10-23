@@ -13,6 +13,7 @@ import { describe, expect, it } from "vitest";
 import {
   readSource,
   readSourceText,
+  stripComments,
   walkSourceFiles,
 } from "./helpers/source-files";
 
@@ -24,10 +25,6 @@ const ALLOWED: Record<string, string> = {
 
 const HAND_ROLLED_SLOPE =
   /\bn\s*\*\s*sum_?xy\s*-\s*sum_?x\s*\*\s*sum_?y\b|\bsxy\s*\/\s*sxx\b|\bsumXy\s*-\s*\(\s*sumX\s*\*\s*sumY\s*\)\s*\/\s*n\b/i;
-
-function stripComments(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-}
 
 describe("one least-squares line", () => {
   it("the matcher fires on a hand-rolled slope", () => {
