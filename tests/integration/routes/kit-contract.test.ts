@@ -27,6 +27,7 @@ const token = {
   expiresAt: null,
   createdAt: "2026-01-01T00:00:00.000Z",
   revoked: false,
+  mirrorToAppleHealth: false,
 };
 
 function answering(status: number, body: unknown) {

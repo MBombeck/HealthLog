@@ -19,6 +19,21 @@ import { z } from "zod/v4";
 export const createMeasurementTokenSchema = z.object({
   name: z.string().min(1, "Name required").max(100),
   expiresInDays: z.number().int().min(1).max(365).optional(),
+  /**
+   * Whether the HealthLog app writes this token's readings into Apple Health
+   * (#1272). Off unless the person turns it on; changeable later with
+   * `PATCH /api/tokens/{id}`.
+   */
+  mirrorToAppleHealth: z.boolean().optional(),
+});
+
+/**
+ * Body of `PATCH /api/tokens/{id}`: the one setting a measurement token has.
+ * Strict, so a key this route does not understand (a `permissions`, a
+ * `name`) is refused rather than ignored.
+ */
+export const updateMeasurementTokenSchema = z.strictObject({
+  mirrorToAppleHealth: z.boolean(),
 });
 
 export type CreateMeasurementTokenInput = z.infer<
