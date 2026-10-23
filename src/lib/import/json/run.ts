@@ -18,16 +18,22 @@ import {
   type JsonImportMeasurement,
 } from "./measurements";
 import { importJsonMoodEntries, type JsonImportMoodEntry } from "./mood";
+import type { JsonImportMoodTag, JsonImportMoodTagCategory } from "./schema";
 import { newJsonImportTally, type JsonImportTally } from "./tally";
+import { resolveMoodVocabulary } from "./vocabulary";
 
 export async function runJsonImport(input: {
   userId: string;
   measurements: JsonImportMeasurement[] | undefined;
   moodEntries: JsonImportMoodEntry[] | undefined;
+  customMoodTagCategories: JsonImportMoodTagCategory[] | undefined;
+  customMoodTags: JsonImportMoodTag[] | undefined;
   ipAddress: string | null;
 }): Promise<
   Pick<JsonImportTally, "stats" | "writeFailed"> & {
     droppedLinkKeys: DroppedLinkKeys;
+    keptMoodTagKeys: string[];
+    keptMoodCategoryKeys: string[];
   }
 > {
   const { userId } = input;
@@ -49,8 +55,22 @@ export async function runJsonImport(input: {
       .map((row) => row.measuredAt),
   ).catch(() => {});
 
-  if (!tally.writeFailed && input.moodEntries?.length) {
-    await importJsonMoodEntries(userId, input.moodEntries, tally);
+  // The account's own vocabulary goes in before the entries that link to
+  // it, and every link key is resolved once.
+  const entries = input.moodEntries ?? [];
+  const resolver =
+    !tally.writeFailed &&
+    (entries.length > 0 || (input.customMoodTags?.length ?? 0) > 0)
+      ? await resolveMoodVocabulary({
+          userId,
+          entries,
+          categories: input.customMoodTagCategories ?? [],
+          tags: input.customMoodTags ?? [],
+          tally,
+        })
+      : new Map();
+  if (!tally.writeFailed && entries.length > 0) {
+    await importJsonMoodEntries(userId, entries, resolver, tally);
   }
 
   // One bounded re-fold per import is cheaper than firing N per-row hooks.
@@ -111,5 +131,7 @@ export async function runJsonImport(input: {
       droppedTagKeys: [...tally.droppedTagKeys].sort(),
       droppedFactorKeys: [...tally.droppedFactorKeys].sort(),
     },
+    keptMoodTagKeys: [...tally.keptMoodTagKeys].sort(),
+    keptMoodCategoryKeys: [...tally.keptMoodCategoryKeys].sort(),
   };
 }

@@ -5795,6 +5795,7 @@
             "resultSummary": "{measurements} mesures et {moods} entrées d'humeur importées, {skipped} ignorées.",
             "resultSuccess": "{measurements} mesures et {moods} entrées d'humeur importées",
             "droppedLinks": "Importé sans ces étiquettes, car ce compte n’en a aucune de ce nom : {keys}",
+            "keptLabels": "Ce compte a déjà des étiquettes ou des groupes avec ces clés sous son propre nom, ils ont été conservés : {keys}",
             "resultNothing": "Rien n'a été importé. Les {skipped} entrées ont toutes été ignorées.",
             "resultEmpty": "Ce fichier ne contenait ni mesures ni entrées d'humeur."
           },

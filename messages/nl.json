@@ -5795,6 +5795,7 @@
             "resultSummary": "{measurements} metingen en {moods} stemmingsregistraties geïmporteerd, {skipped} overgeslagen.",
             "resultSuccess": "{measurements} metingen en {moods} stemmingsregistraties geïmporteerd",
             "droppedLinks": "Geïmporteerd zonder deze tags, omdat dit account er geen met die naam heeft: {keys}",
+            "keptLabels": "Dit account heeft al tags of groepen met deze sleutels onder een eigen naam, die zijn behouden: {keys}",
             "resultNothing": "Er is niets geïmporteerd. Alle {skipped} registraties zijn overgeslagen.",
             "resultEmpty": "Dat bestand bevatte geen metingen en geen stemmingsregistraties."
           },

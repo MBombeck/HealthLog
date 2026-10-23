@@ -72,10 +72,17 @@ in the backup and `""` in the export, reads as absent, a backup's deletion
 records are skipped and counted, and a reading in a display unit (lb, °F,
 mmol/L) is converted to the stored one.
 
-A mood entry's tags and rated factors are linked by key. A key the
-importing account has no tag for, typically a tag another account made
-for itself, is dropped from that entry, and the response names it in
-`droppedTagKeys` or `droppedFactorKeys`. The rest of the entry lands.
+A mood entry's tags and rated factors are linked by key. A full backup
+also carries the account's own tags, rated factors and tag groups, and the
+import brings them along: a tag the importing account already has is used
+as it is, and one it lacks is created (within the account's limit of 50
+custom tags and 12 groups). The account's own tag is never overwritten: when
+the file names it differently, the account's name stays and the response
+lists the key in `keptMoodTagKeys` (`keptMoodCategoryKeys` for a group).
+Moving a file between two accounts of one server works too; the tags come
+over under keys of their own. A key the account cannot resolve at all is
+dropped from that entry and named in `droppedTagKeys` or
+`droppedFactorKeys`, and the rest of the entry lands.
 
 ### Measurement entry
 

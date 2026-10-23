@@ -5795,6 +5795,7 @@
             "resultSummary": "Zaimportowano {measurements} pomiarów i {moods} wpisów nastroju, pominięto {skipped}.",
             "resultSuccess": "Zaimportowano {measurements} pomiarów i {moods} wpisów nastroju",
             "droppedLinks": "Zaimportowano bez tych tagów, bo to konto nie ma żadnego o tej nazwie: {keys}",
+            "keptLabels": "To konto ma już tagi lub grupy z tymi kluczami pod własną nazwą, więc zostały zachowane: {keys}",
             "resultNothing": "Nic nie zaimportowano. Pominięto wszystkie {skipped} wpisów.",
             "resultEmpty": "Ten plik nie zawierał pomiarów ani wpisów nastroju."
           },

@@ -228,14 +228,14 @@ const jsonImportMoodEntry = z
       .max(30)
       .optional()
       .describe(
-        "Rated factors by catalogue key; replaces the entry's rated links. A key the account cannot resolve is dropped and named in `droppedFactorKeys`; a rating outside the factor's own scale skips the entry.",
+        "Rated factors by key (the catalogue's, or the account's own as for `structuredTags`); replaces the entry's rated links. A key the account cannot resolve is dropped and named in `droppedFactorKeys`; a rating outside the factor's own scale skips the entry.",
       ),
     structuredTags: z
       .array(z.string().max(60))
       .max(30)
       .optional()
       .describe(
-        "Ticked tags by key (the catalogue or the account's own); replaces the entry's tag links. An unresolvable key is dropped and named in `droppedTagKeys`.",
+        "Ticked tags by key (the catalogue, the account's own, or one the file's `customMoodTags` brings); replaces the entry's tag links. An unresolvable key is dropped and named in `droppedTagKeys`.",
       ),
     context: moodContextWire
       .partial()
@@ -257,15 +257,82 @@ const jsonImportMoodEntry = z
     description: "One mood-entry row of a JSON import file.",
   });
 
+const jsonImportMoodTagCategory = z
+  .object({
+    id: z
+      .string()
+      .max(120)
+      .optional()
+      .describe(
+        "The file's own id, read only to find the group a tag names in `categoryId`.",
+      ),
+    key: z.string().min(1).max(80),
+    labelKey: z.string().min(1).max(120),
+    icon: z.string().max(60).optional(),
+    sortOrder: z.number().int().optional(),
+    isActive: z.boolean().optional(),
+    label: z.string().max(200).optional().describe("The group's own name."),
+    labelEncrypted: z
+      .string()
+      .max(2000)
+      .optional()
+      .describe(
+        "A disaster-recovery file's sealed name, used only when this server's keys open it.",
+      ),
+  })
+  .meta({
+    id: "JsonImportMoodTagCategory",
+    description:
+      "A mood-tag group the account made itself. Matched by `key`: a group the account has is used as it is, a missing one is created.",
+  });
+
+const jsonImportMoodTag = z
+  .object({
+    key: z.string().min(1).max(80),
+    labelKey: z.string().min(1).max(120),
+    categoryId: z
+      .string()
+      .min(1)
+      .max(120)
+      .describe(
+        "The group's id in the file; a group the file does not carry falls back to the seeded `custom` group.",
+      ),
+    kind: z.enum(["BINARY", "RATED"]),
+    isActive: z.boolean().optional(),
+    icon: z.string().max(60).optional(),
+    sortOrder: z.number().int().optional(),
+    label: z.string().max(200).optional().describe("The tag's own name."),
+    labelEncrypted: z
+      .string()
+      .max(2000)
+      .optional()
+      .describe(
+        "A disaster-recovery file's sealed name, used only when this server's keys open it.",
+      ),
+    scaleMin: z.number().int().min(0).max(10).optional(),
+    scaleMax: z.number().int().min(0).max(10).optional(),
+    inverse: z.boolean().optional(),
+  })
+  .meta({
+    id: "JsonImportMoodTag",
+    description:
+      "A mood tag the account made itself, a rated factor included. Matched by `key`: the account's own tag of that key is used and never overwritten (a different label is named in `keptMoodTagKeys`); a missing one is created, within the account's custom-tag cap; a key another account of this server holds comes over under a key derived from the account and the file's key, so a second import of the same file finds it.",
+  });
+
 const jsonImportRequest = z
   .object({
     measurements: z.array(jsonImportMeasurement).max(10000).optional(),
     moodEntries: z.array(jsonImportMoodEntry).max(10000).optional(),
+    customMoodTagCategories: z
+      .array(jsonImportMoodTagCategory)
+      .max(10000)
+      .optional(),
+    customMoodTags: z.array(jsonImportMoodTag).max(10000).optional(),
   })
   .meta({
     id: "JsonImportRequest",
     description:
-      "JSON import payload: the measurements and mood entries of the JSON export or the portable full backup. Both sections optional; up to 10 000 rows each.",
+      "JSON import payload: the measurements and mood entries of the JSON export or the portable full backup, and the backup's own mood vocabulary the entries link to. Every section optional; up to 10 000 rows each.",
   });
 
 const jsonImportStats = z
@@ -299,6 +366,16 @@ const jsonImportStats = z
       .describe(
         "Rated-factor keys this account cannot resolve, as `droppedTagKeys`.",
       ),
+    keptMoodTagKeys: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "Keys of the account's own tags the file names differently. The account's tag is kept as it is. Present only when non-empty.",
+      ),
+    keptMoodCategoryKeys: z
+      .array(z.string())
+      .optional()
+      .describe("The same, for the account's own tag groups."),
   })
   .meta({
     id: "JsonImportStats",

@@ -174,6 +174,44 @@ export const jsonImportMoodEntrySchema = z
     }
   });
 
+/**
+ * A mood-tag group the account made itself, as the full backup writes it.
+ * `id` is the file's own id, read only to find the group a tag of the file
+ * names; the group is matched and created by `key`.
+ */
+export const jsonImportMoodTagCategorySchema = z.object({
+  id: z.string().max(120).optional(),
+  key: z.string().min(1).max(80),
+  labelKey: z.string().min(1).max(120),
+  icon: z.string().max(60).optional(),
+  sortOrder: z.number().int().optional(),
+  isActive: z.boolean().optional(),
+  // The person's own name for the group: readable in a portable file,
+  // ciphertext in a disaster-recovery one (opened only by the host's keys).
+  label: z.string().max(200).optional(),
+  labelEncrypted: z.string().max(2000).optional(),
+});
+
+/**
+ * A mood tag the account made itself, a rated factor included. Matched and
+ * created by `key`; its group is the file's `categoryId`, resolved through
+ * the groups the file carries.
+ */
+export const jsonImportMoodTagSchema = z.object({
+  key: z.string().min(1).max(80),
+  labelKey: z.string().min(1).max(120),
+  categoryId: z.string().min(1).max(120),
+  kind: z.enum(["BINARY", "RATED"]),
+  isActive: z.boolean().optional(),
+  icon: z.string().max(60).optional(),
+  sortOrder: z.number().int().optional(),
+  label: z.string().max(200).optional(),
+  labelEncrypted: z.string().max(2000).optional(),
+  scaleMin: z.number().int().min(0).max(10).optional(),
+  scaleMax: z.number().int().min(0).max(10).optional(),
+  inverse: z.boolean().optional(),
+});
+
 export const jsonImportSchema = z.object({
   measurements: z
     .array(jsonImportMeasurementSchema)
@@ -183,7 +221,20 @@ export const jsonImportSchema = z.object({
     .array(jsonImportMoodEntrySchema)
     .max(JSON_IMPORT_MAX_ROWS)
     .optional(),
+  // The account's own mood vocabulary, which the entries' links point into.
+  customMoodTagCategories: z
+    .array(jsonImportMoodTagCategorySchema)
+    .max(JSON_IMPORT_MAX_ROWS)
+    .optional(),
+  customMoodTags: z
+    .array(jsonImportMoodTagSchema)
+    .max(JSON_IMPORT_MAX_ROWS)
+    .optional(),
 });
 
 export type JsonImportMeasurement = z.infer<typeof jsonImportMeasurementSchema>;
 export type JsonImportMoodEntry = z.infer<typeof jsonImportMoodEntrySchema>;
+export type JsonImportMoodTagCategory = z.infer<
+  typeof jsonImportMoodTagCategorySchema
+>;
+export type JsonImportMoodTag = z.infer<typeof jsonImportMoodTagSchema>;

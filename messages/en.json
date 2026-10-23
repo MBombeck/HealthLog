@@ -5795,6 +5795,7 @@
             "resultSummary": "Imported {measurements} measurements and {moods} mood entries, {skipped} skipped.",
             "resultSuccess": "Imported {measurements} measurements and {moods} mood entries",
             "droppedLinks": "Imported without these tags, because this account has none by that name: {keys}",
+            "keptLabels": "This account already has tags or groups with these keys under its own names, so those were kept: {keys}",
             "resultNothing": "Nothing was imported. All {skipped} entries were skipped.",
             "resultEmpty": "That file carried no measurements and no mood entries."
           },

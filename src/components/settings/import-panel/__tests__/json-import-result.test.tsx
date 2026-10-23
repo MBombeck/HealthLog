@@ -38,9 +38,22 @@ describe("<JsonImportResultView>", () => {
     expect(html).toContain("Imported 3 measurements and 2 mood entries");
   });
 
+  it("names the account's own tags it kept rather than renamed", () => {
+    const html = render({
+      measurements: 0,
+      moodEntries: 2,
+      skipped: 0,
+      keptMoodTagKeys: ["custom:walk"],
+      keptMoodCategoryKeys: ["customcat:outdoors"],
+    });
+    expect(html).toContain('data-testid="import-json-kept-labels"');
+    expect(html).toContain("custom:walk, customcat:outdoors");
+  });
+
   it("says nothing about links when every one landed", () => {
     const html = render({ measurements: 3, moodEntries: 2, skipped: 0 });
     expect(html).not.toContain("import-json-dropped-links");
+    expect(html).not.toContain("import-json-kept-labels");
   });
 
   it("reads a missing count as none", () => {
@@ -49,6 +62,7 @@ describe("<JsonImportResultView>", () => {
       moodEntries: 0,
       skipped: 0,
       droppedLinkKeys: [],
+      keptLabelKeys: [],
     });
   });
 });

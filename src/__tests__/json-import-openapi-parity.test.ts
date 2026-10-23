@@ -13,6 +13,9 @@ import {
   jsonImportMeasurementSchema,
   jsonImportMoodContextSchema,
   jsonImportMoodEntrySchema,
+  jsonImportMoodTagCategorySchema,
+  jsonImportMoodTagSchema,
+  jsonImportSchema,
 } from "@/lib/import/json/schema";
 import { buildOpenApiDocument } from "@/lib/openapi/registry";
 
@@ -61,6 +64,18 @@ describe("the published JSON import contract", () => {
     const fields = documented("JsonImportMoodEntry");
     expect(fields.length).toBeGreaterThan(5);
     expect(fields).toEqual(Object.keys(jsonImportMoodEntrySchema.shape).sort());
+  });
+
+  it("names every section and every vocabulary field the import reads", () => {
+    expect(documented("JsonImportRequest")).toEqual(
+      Object.keys(jsonImportSchema.shape).sort(),
+    );
+    expect(documented("JsonImportMoodTag")).toEqual(
+      Object.keys(jsonImportMoodTagSchema.shape).sort(),
+    );
+    expect(documented("JsonImportMoodTagCategory")).toEqual(
+      Object.keys(jsonImportMoodTagCategorySchema.shape).sort(),
+    );
   });
 
   it("names every day-context field the import reads, and no other", () => {

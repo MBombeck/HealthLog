@@ -5795,6 +5795,7 @@
             "resultSummary": "{measurements} mediciones y {moods} entradas de ánimo importadas, {skipped} omitidas.",
             "resultSuccess": "{measurements} mediciones y {moods} entradas de ánimo importadas",
             "droppedLinks": "Importado sin estas etiquetas, porque esta cuenta no tiene ninguna con ese nombre: {keys}",
+            "keptLabels": "Esta cuenta ya tiene etiquetas o grupos con estas claves y con su propio nombre, así que se han conservado: {keys}",
             "resultNothing": "No se importó nada. Se omitieron las {skipped} entradas.",
             "resultEmpty": "Ese archivo no contenía mediciones ni entradas de ánimo."
           },

@@ -11,6 +11,13 @@ export interface JsonImportTally {
    */
   droppedTagKeys: Set<string>;
   droppedFactorKeys: Set<string>;
+  /**
+   * The account's own tags and groups whose key the file shares and whose
+   * label it states differently. The account's version is kept, never
+   * overwritten; the key is named.
+   */
+  keptMoodTagKeys: Set<string>;
+  keptMoodCategoryKeys: Set<string>;
   /** A write failed for a reason other than a duplicate; the import stops. */
   writeFailed: boolean;
 }
@@ -21,6 +28,8 @@ export function newJsonImportTally(): JsonImportTally {
     unstableShapes: [],
     droppedTagKeys: new Set(),
     droppedFactorKeys: new Set(),
+    keptMoodTagKeys: new Set(),
+    keptMoodCategoryKeys: new Set(),
     writeFailed: false,
   };
 }

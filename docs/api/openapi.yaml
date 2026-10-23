@@ -33209,8 +33209,18 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/JsonImportMoodEntry"
-      description: "JSON import payload: the measurements and mood entries of the JSON export or the portable full backup.
-        Both sections optional; up to 10 000 rows each."
+        customMoodTagCategories:
+          maxItems: 10000
+          type: array
+          items:
+            $ref: "#/components/schemas/JsonImportMoodTagCategory"
+        customMoodTags:
+          maxItems: 10000
+          type: array
+          items:
+            $ref: "#/components/schemas/JsonImportMoodTag"
+      description: "JSON import payload: the measurements and mood entries of the JSON export or the portable full backup, and
+        the backup's own mood vocabulary the entries link to. Every section optional; up to 10 000 rows each."
     JsonImportMeasurement:
       type: object
       properties:
@@ -33346,8 +33356,9 @@ components:
           type: string
           maxLength: 64
         factors:
-          description: Rated factors by catalogue key; replaces the entry's rated links. A key the account cannot resolve is
-            dropped and named in `droppedFactorKeys`; a rating outside the factor's own scale skips the entry.
+          description: Rated factors by key (the catalogue's, or the account's own as for `structuredTags`); replaces the entry's
+            rated links. A key the account cannot resolve is dropped and named in `droppedFactorKeys`; a rating outside
+            the factor's own scale skips the entry.
           maxItems: 30
           type: array
           items:
@@ -33364,8 +33375,8 @@ components:
               - key
               - rating
         structuredTags:
-          description: Ticked tags by key (the catalogue or the account's own); replaces the entry's tag links. An unresolvable
-            key is dropped and named in `droppedTagKeys`.
+          description: Ticked tags by key (the catalogue, the account's own, or one the file's `customMoodTags` brings); replaces
+            the entry's tag links. An unresolvable key is dropped and named in `droppedTagKeys`.
           maxItems: 30
           type: array
           items:
@@ -33538,6 +33549,100 @@ components:
         - mood
         - score
       description: One mood-entry row of a JSON import file.
+    JsonImportMoodTagCategory:
+      type: object
+      properties:
+        id:
+          description: The file's own id, read only to find the group a tag names in `categoryId`.
+          type: string
+          maxLength: 120
+        key:
+          type: string
+          minLength: 1
+          maxLength: 80
+        labelKey:
+          type: string
+          minLength: 1
+          maxLength: 120
+        icon:
+          type: string
+          maxLength: 60
+        sortOrder:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        isActive:
+          type: boolean
+        label:
+          description: The group's own name.
+          type: string
+          maxLength: 200
+        labelEncrypted:
+          description: A disaster-recovery file's sealed name, used only when this server's keys open it.
+          type: string
+          maxLength: 2000
+      required:
+        - key
+        - labelKey
+      description: "A mood-tag group the account made itself. Matched by `key`: a group the account has is used as it is, a
+        missing one is created."
+    JsonImportMoodTag:
+      type: object
+      properties:
+        key:
+          type: string
+          minLength: 1
+          maxLength: 80
+        labelKey:
+          type: string
+          minLength: 1
+          maxLength: 120
+        categoryId:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: The group's id in the file; a group the file does not carry falls back to the seeded `custom` group.
+        kind:
+          type: string
+          enum:
+            - BINARY
+            - RATED
+        isActive:
+          type: boolean
+        icon:
+          type: string
+          maxLength: 60
+        sortOrder:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        label:
+          description: The tag's own name.
+          type: string
+          maxLength: 200
+        labelEncrypted:
+          description: A disaster-recovery file's sealed name, used only when this server's keys open it.
+          type: string
+          maxLength: 2000
+        scaleMin:
+          type: integer
+          minimum: 0
+          maximum: 10
+        scaleMax:
+          type: integer
+          minimum: 0
+          maximum: 10
+        inverse:
+          type: boolean
+      required:
+        - key
+        - labelKey
+        - categoryId
+        - kind
+      description: "A mood tag the account made itself, a rated factor included. Matched by `key`: the account's own tag of
+        that key is used and never overwritten (a different label is named in `keptMoodTagKeys`); a missing one is
+        created, within the account's custom-tag cap; a key another account of this server holds comes over under a key
+        derived from the account and the file's key, so a second import of the same file finds it."
     MeasurementReminderCreate:
       type: object
       properties:
@@ -74082,6 +74187,17 @@ components:
             type: string
         droppedFactorKeys:
           description: Rated-factor keys this account cannot resolve, as `droppedTagKeys`.
+          type: array
+          items:
+            type: string
+        keptMoodTagKeys:
+          description: Keys of the account's own tags the file names differently. The account's tag is kept as it is. Present only
+            when non-empty.
+          type: array
+          items:
+            type: string
+        keptMoodCategoryKeys:
+          description: The same, for the account's own tag groups.
           type: array
           items:
             type: string

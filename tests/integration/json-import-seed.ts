@@ -5,21 +5,27 @@
  * Every reading carries what makes it that reading: a range keeps its bounds,
  * a sleep night its stages and its writer, a rhythm alert its verdict, a
  * glucose value its meal-time context, a note its text. The mood entry
- * carries a note, all five level-A values, its zone, a rated factor, a
- * catalogue tag, a tag of the account's own and a full day context. A field
+ * carries a note, all five level-A values, its zone, a catalogue factor and
+ * tag, the account's own tag and its own rated factor (in a group of its own)
+ * and a full day context. A field
  * the seed leaves empty is a field neither test can see arrive, so nothing
  * here is left at its default.
  */
 import type { PrismaClient } from "@/generated/prisma/client";
 import { encryptNote } from "@/lib/crypto/note-cipher";
 import { encodeKeyList } from "@/lib/mood/context-vocabulary";
+import { encryptCustomLabel } from "@/lib/mood/custom-tags";
 
 import { makeUser } from "../kit/factories";
 
 export const JI_FACTOR_KEY = "ji_sleep_quality";
 export const JI_TAG_KEY = "ji_headache";
-/** The account's own tag: another account importing the file cannot resolve it. */
+/** The account's own tag, in a seeded group. */
 export const JI_OWN_TAG_KEY = "custom:ji_long_walk";
+/** The account's own group, and its own rated factor in it. */
+export const JI_OWN_CATEGORY_KEY = "customcat:ji_outdoors";
+export const JI_OWN_FACTOR_KEY = "custom:ji_trail_feel";
+export const JI_OWN_TAG_LABEL = "Long walk";
 
 export const JI_MEASUREMENTS = [
   {
@@ -119,11 +125,19 @@ export interface SeededOwner {
 export async function seedJsonImportCatalogue(
   prisma: PrismaClient,
 ): Promise<void> {
+  // Fixed ids, as the migrations seed the real catalogue (whose `custom`
+  // group the test database holds too): a group's id is the same on every
+  // server, which is what lets an imported tag find it.
   const category = await prisma.moodTagCategory.create({
-    data: { key: "ji_category", labelKey: "mood.tagCategory.ji" },
+    data: {
+      id: "mtc_ji_category",
+      key: "ji_category",
+      labelKey: "mood.tagCategory.ji",
+    },
   });
   await prisma.moodTag.create({
     data: {
+      id: "mt_ji_headache",
       categoryId: category.id,
       key: JI_TAG_KEY,
       labelKey: "mood.tag.jiHeadache",
@@ -132,6 +146,7 @@ export async function seedJsonImportCatalogue(
   });
   await prisma.moodTag.create({
     data: {
+      id: "mt_ji_sleep_quality",
       categoryId: category.id,
       key: JI_FACTOR_KEY,
       labelKey: "mood.tag.jiSleepQuality",
@@ -195,6 +210,31 @@ export async function seedJsonImportOwner(
       key: JI_OWN_TAG_KEY,
       labelKey: "mood.tag.custom",
       kind: "BINARY",
+      labelEncrypted: encryptCustomLabel(JI_OWN_TAG_LABEL),
+    },
+  });
+  const ownCategory = await prisma.moodTagCategory.create({
+    data: {
+      userId: ownerId,
+      key: JI_OWN_CATEGORY_KEY,
+      labelKey: "mood.tagCategory.custom",
+      icon: null,
+      sortOrder: 7,
+      labelEncrypted: encryptCustomLabel("Outdoors"),
+    },
+  });
+  const ownFactor = await prisma.moodTag.create({
+    data: {
+      userId: ownerId,
+      categoryId: ownCategory.id,
+      key: JI_OWN_FACTOR_KEY,
+      labelKey: "mood.tag.custom",
+      kind: "RATED",
+      scaleMin: 1,
+      scaleMax: 5,
+      inverse: true,
+      sortOrder: 2,
+      labelEncrypted: encryptCustomLabel("How the trail felt"),
     },
   });
   const [tag, factor] = await Promise.all([
@@ -226,6 +266,7 @@ export async function seedJsonImportOwner(
       { moodEntryId: entry.id, moodTagId: tag.id },
       { moodEntryId: entry.id, moodTagId: ownTag.id },
       { moodEntryId: entry.id, moodTagId: factor.id, rating: 4 },
+      { moodEntryId: entry.id, moodTagId: ownFactor.id, rating: 2 },
     ],
   });
   await prisma.moodContext.create({

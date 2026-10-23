@@ -8,8 +8,9 @@
  * ones.
  *
  * Each entry is written with its note, its level-A values, its zone, its day
- * context and its tag and factor links, in one transaction, the way the bulk
- * mood ingest writes one: a link that throws (a rating outside its factor's
+ * context and its tag and factor links (resolved through the account's
+ * vocabulary, `vocabulary.ts`), in one transaction, the way the bulk mood
+ * ingest writes one: a link that throws (a rating outside its factor's
  * own scale) takes the entry back with it, so a skipped row left nothing
  * behind.
  */
@@ -23,15 +24,12 @@ import { classifyExternalId } from "@/lib/validations/external-id";
 import { isP2002 } from "@/lib/prisma-errors";
 import { levelAForWrite } from "@/lib/mood/level-a";
 import { persistMoodContext } from "@/lib/mood/context";
-import {
-  RatedFactorOutOfRangeError,
-  replaceRatedFactorLinks,
-  replaceTagLinks,
-} from "@/lib/mood/tag-links";
+import { RatedFactorOutOfRangeError } from "@/lib/mood/tag-links";
 
 import { fallbackMoodDateStart } from "./mood-instant";
 import type { JsonImportMoodEntry } from "./schema";
 import type { JsonImportTally } from "./tally";
+import type { MoodLinkResolver } from "./vocabulary";
 
 export type { JsonImportMoodEntry } from "./schema";
 
@@ -98,32 +96,81 @@ interface DroppedKeys {
   factors: Set<string>;
 }
 
+/**
+ * Replace one kind of an entry's links with the ones the file states,
+ * resolved through the import's vocabulary. A link to an archived tag stays,
+ * as the edit path keeps it: it is history, not editable state. A rating
+ * outside its tag's own scale throws, and the transaction takes the entry
+ * back with it.
+ */
+async function replaceImportedLinks(
+  tx: Prisma.TransactionClient,
+  moodEntryId: string,
+  kind: "RATED" | "BINARY",
+  wanted: ReadonlyArray<{ key: string; rating: number | null }>,
+  resolver: MoodLinkResolver,
+  dropped: Set<string>,
+): Promise<void> {
+  const links = new Map<string, number | null>();
+  for (const { key, rating } of wanted) {
+    const tag = resolver.get(key);
+    if (!tag || tag.kind !== kind) {
+      dropped.add(key);
+      continue;
+    }
+    if (rating !== null && (rating < tag.scaleMin || rating > tag.scaleMax)) {
+      throw new RatedFactorOutOfRangeError(
+        key,
+        rating,
+        tag.scaleMin,
+        tag.scaleMax,
+      );
+    }
+    links.set(tag.id, rating);
+  }
+  await tx.moodEntryTagLink.deleteMany({
+    where: { moodEntryId, moodTag: { isActive: true, kind } },
+  });
+  if (links.size === 0) return;
+  await tx.moodEntryTagLink.createMany({
+    data: [...links].map(([moodTagId, rating]) => ({
+      moodEntryId,
+      moodTagId,
+      rating,
+    })),
+    skipDuplicates: true,
+  });
+}
+
 /** The entry's links and day context, when the file states them. */
 async function writeMoodEntryParts(
   tx: Prisma.TransactionClient,
   userId: string,
   moodEntryId: string,
   e: JsonImportMoodEntry,
+  resolver: MoodLinkResolver,
   dropped: DroppedKeys,
 ): Promise<void> {
   await persistMoodContext(tx, moodEntryId, userId, e.context);
   if (e.factors !== undefined) {
-    const keys = await replaceRatedFactorLinks(
-      moodEntryId,
-      userId,
-      e.factors,
+    await replaceImportedLinks(
       tx,
+      moodEntryId,
+      "RATED",
+      e.factors,
+      resolver,
+      dropped.factors,
     );
-    for (const key of keys) dropped.factors.add(key);
   }
   if (e.structuredTags !== undefined) {
-    const keys = await replaceTagLinks(
-      moodEntryId,
-      userId,
-      e.structuredTags,
+    await replaceImportedLinks(
       tx,
+      moodEntryId,
+      "BINARY",
+      e.structuredTags.map((key) => ({ key, rating: null })),
+      resolver,
+      dropped.tags,
     );
-    for (const key of keys) dropped.tags.add(key);
   }
 }
 
@@ -131,6 +178,7 @@ async function writeMoodEntry(
   userId: string,
   e: JsonImportMoodEntry,
   loggedAt: Date,
+  resolver: MoodLinkResolver,
   tally: JsonImportTally,
 ): Promise<void> {
   const columns = moodEntryColumns(e, loggedAt);
@@ -165,7 +213,7 @@ async function writeMoodEntry(
           data: { userId, ...columns, source: "IMPORT" },
           select: { id: true },
         });
-    await writeMoodEntryParts(tx, userId, row.id, e, dropped);
+    await writeMoodEntryParts(tx, userId, row.id, e, resolver, dropped);
   });
   for (const key of dropped.tags) tally.droppedTagKeys.add(key);
   for (const key of dropped.factors) tally.droppedFactorKeys.add(key);
@@ -209,6 +257,7 @@ async function importMoodEntry(
   userId: string,
   e: JsonImportMoodEntry,
   fallback: FallbackState,
+  resolver: MoodLinkResolver,
   tally: JsonImportTally,
 ): Promise<void> {
   // Same stability floor as the measurement rows: the mood upsert keys on
@@ -234,7 +283,7 @@ async function importMoodEntry(
       continue;
     }
     try {
-      await writeMoodEntry(userId, e, loggedAt, tally);
+      await writeMoodEntry(userId, e, loggedAt, resolver, tally);
       if (!e.loggedAt) {
         fallback.reserved.add(loggedAt.getTime());
       }
@@ -281,6 +330,7 @@ async function importMoodEntry(
 export async function importJsonMoodEntries(
   userId: string,
   rows: JsonImportMoodEntry[],
+  resolver: MoodLinkResolver,
   tally: JsonImportTally,
 ): Promise<void> {
   const fallback: FallbackState = {
@@ -288,7 +338,7 @@ export async function importJsonMoodEntries(
     reserved: new Set(),
   };
   for (const e of rows) {
-    await importMoodEntry(userId, e, fallback, tally);
+    await importMoodEntry(userId, e, fallback, resolver, tally);
     if (tally.writeFailed) break;
   }
 }

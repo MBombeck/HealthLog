@@ -1,7 +1,7 @@
 /**
  * The JSON import reads what the app itself writes.
  *
- * Two of the app's files carry the import's two arrays: the full backup
+ * Two of the app's files carry the import's arrays: the full backup
  * (`/api/export/full-backup`), at the top level, and the JSON export
  * (`/api/export?format=json`), inside the response envelope's `data`. Neither
  * was written for the import schema, and both spell an absent value the way
@@ -103,6 +103,15 @@ export function normalizeJsonImportFile(
     const read = readEntries(source.moodEntries, (entry) => entry);
     file.moodEntries = read.entries;
     skipped += read.skipped;
+  }
+  // The mood vocabulary the entries' links point into, read the same way.
+  for (const section of [
+    "customMoodTagCategories",
+    "customMoodTags",
+  ] as const) {
+    if (section in source) {
+      file[section] = readEntries(source[section], (entry) => entry).entries;
+    }
   }
   return { file, skipped };
 }

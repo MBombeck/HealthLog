@@ -29,11 +29,14 @@ import { POST as importJson } from "@/app/api/import/route";
 import { encryptNote, readNote } from "@/lib/crypto/note-cipher";
 import { buildFullBackupPayload } from "@/lib/export/full-backup-payload";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
+import { derivedVocabularyKey } from "@/lib/import/json/vocabulary";
+import { decryptCustomLabel, encryptCustomLabel } from "@/lib/mood/custom-tags";
 
 import { callRoute } from "../kit/call-route";
 import { makeSession, makeUser } from "../kit/factories";
 import {
   JI_OWN_TAG_KEY,
+  JI_OWN_TAG_LABEL,
   seedJsonImportCatalogue,
   seedJsonImportOwner,
 } from "./json-import-seed";
@@ -49,14 +52,19 @@ interface ImportStats {
   skipped: number;
   droppedTagKeys?: string[];
   droppedFactorKeys?: string[];
+  keptMoodTagKeys?: string[];
 }
 
 let ownerId: string;
 
-async function fullBackupOf(userId: string): Promise<{
+interface FullBackup {
   measurements: Row[];
   moodEntries: Row[];
-}> {
+  customMoodTags: Row[];
+  customMoodTagCategories: Row[];
+}
+
+async function fullBackupOf(userId: string): Promise<FullBackup> {
   let text = "";
   await streamFullBackupJson(prisma, userId, (chunk) => {
     text += chunk;
@@ -89,6 +97,35 @@ async function importInto(file: unknown) {
   return { userId: user.id, res };
 }
 
+/**
+ * A file's own vocabulary, comparable across accounts and servers: each tag
+ * with its group named by key rather than by a row id.
+ */
+function vocabularyOf(file: FullBackup) {
+  const groupKey = new Map(
+    file.customMoodTagCategories.map((c) => [c.id as string, c.key as string]),
+  );
+  const groups = new Map(
+    file.customMoodTagCategories.map((c) => {
+      const { id: _id, ...rest } = c;
+      return [c.key as string, rest];
+    }),
+  );
+  return file.customMoodTags
+    .map((tag) => {
+      const { categoryId, ...rest } = tag;
+      const categoryKey =
+        groupKey.get(categoryId as string) ?? (categoryId as string);
+      return {
+        ...rest,
+        key: tag.key as string,
+        categoryKey,
+        group: groups.get(categoryKey) ?? null,
+      };
+    })
+    .sort((a, b) => String(a.key).localeCompare(String(b.key)));
+}
+
 /** A row without the fields the import deliberately does not carry. */
 function comparable(row: Row): Row {
   const { id: _id, source: _source, ...rest } = row;
@@ -112,7 +149,7 @@ afterAll(async () => {
 });
 
 describe("the JSON import takes the app's own files back", () => {
-  it("takes a full backup back field for field", async () => {
+  it("takes a full backup into another account of the same server, every link included", async () => {
     const original = await fullBackupOf(ownerId);
     // The file carries the shapes the import used to refuse or drop.
     expect(original.measurements.some((m) => m.notes === null)).toBe(true);
@@ -123,33 +160,100 @@ describe("the JSON import takes the app's own files back", () => {
 
     const { userId, res } = await importInto(original);
     expect(res.status).toBe(200);
+    // Every link lands: the owner's own tags come over as copies, under keys
+    // of the importing account, because this server's keys are the owner's.
     expect(res.data).toEqual({
       measurements: original.measurements.length,
       moodEntries: original.moodEntries.length,
       skipped: 0,
-      // The account's own tag is not this account's: the entry lands without
-      // that one link, and the response says which.
-      droppedTagKeys: [JI_OWN_TAG_KEY],
     });
+    const copyOf = (key: string) =>
+      key.startsWith("custom:")
+        ? derivedVocabularyKey("custom:", userId, key)
+        : key.startsWith("customcat:")
+          ? derivedVocabularyKey("customcat:", userId, key)
+          : key;
 
     const back = await fullBackupOf(userId);
-    const expectedMeasurements = original.measurements
-      .map(comparable)
-      .sort(byInstant("measuredAt"));
     expect(
       back.measurements.map(comparable).sort(byInstant("measuredAt")),
-    ).toEqual(expectedMeasurements);
+    ).toEqual(
+      original.measurements.map(comparable).sort(byInstant("measuredAt")),
+    );
     const expectedMood = original.moodEntries
       .map((entry) => ({
         ...comparable(entry),
-        structuredTags: (entry.structuredTags as string[]).filter(
-          (key) => key !== JI_OWN_TAG_KEY,
+        structuredTags: (entry.structuredTags as string[]).map(copyOf),
+        factors: (entry.factors as Array<{ key: string; rating: number }>).map(
+          (factor) => ({ ...factor, key: copyOf(factor.key) }),
         ),
       }))
       .sort(byInstant("loggedAt"));
     expect(
       back.moodEntries.map(comparable).sort(byInstant("loggedAt")),
     ).toEqual(expectedMood);
+    expect(vocabularyOf(back)).toEqual(
+      vocabularyOf(original)
+        .map((tag) => ({
+          ...tag,
+          key: copyOf(tag.key),
+          categoryKey: copyOf(tag.categoryKey),
+          group: tag.group && {
+            ...tag.group,
+            key: copyOf(String(tag.group.key)),
+          },
+        }))
+        .sort((a, b) => a.key.localeCompare(b.key)),
+    );
+
+    // A second import of the same file finds the copies.
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const again = await callRoute<ImportStats>(importJson, {
+      method: "POST",
+      route: "/api/import",
+      body: original,
+      auth: await makeSession(user),
+    });
+    expect(again.status).toBe(200);
+    expect(await prisma.moodTag.count({ where: { userId } })).toBe(
+      original.customMoodTags.length,
+    );
+    expect(await prisma.moodTagCategory.count({ where: { userId } })).toBe(
+      original.customMoodTagCategories.length,
+    );
+  });
+
+  it("keeps the account's own name for a tag the file names differently, and says so", async () => {
+    const original = await fullBackupOf(ownerId);
+    // The owner renames the tag after the backup, then imports the backup.
+    await prisma.moodTag.update({
+      where: { key: JI_OWN_TAG_KEY },
+      data: { labelEncrypted: encryptCustomLabel("Evening walk") },
+    });
+    const owner = await prisma.user.findUniqueOrThrow({
+      where: { id: ownerId },
+    });
+    // The vocabulary alone: the readings of a portable file carry no source
+    // id, and would be written a second time into the account they came from.
+    const res = await callRoute<ImportStats>(importJson, {
+      method: "POST",
+      route: "/api/import",
+      body: {
+        customMoodTags: original.customMoodTags,
+        customMoodTagCategories: original.customMoodTagCategories,
+      },
+      auth: await makeSession(owner),
+    });
+    expect(res.status).toBe(200);
+    expect(res.data.keptMoodTagKeys).toEqual([JI_OWN_TAG_KEY]);
+    const tag = await prisma.moodTag.findUniqueOrThrow({
+      where: { key: JI_OWN_TAG_KEY },
+    });
+    expect(decryptCustomLabel(tag.labelEncrypted)).toBe("Evening walk");
+    await prisma.moodTag.update({
+      where: { key: JI_OWN_TAG_KEY },
+      data: { labelEncrypted: encryptCustomLabel(JI_OWN_TAG_LABEL) },
+    });
   });
 
   it("takes the JSON export back, empty strings and its envelope included", async () => {
@@ -242,6 +346,40 @@ describe("the JSON import takes the app's own files back", () => {
     expect(
       second.moodEntries.map(comparable).sort(byInstant("loggedAt")),
     ).toEqual(first.moodEntries.map(comparable).sort(byInstant("loggedAt")));
+  });
+});
+
+describe("a full backup moved to another server", () => {
+  it("comes back equal, the account's own tags, groups and rated factor included", async () => {
+    const original = await fullBackupOf(ownerId);
+    expect(original.customMoodTags.length).toBeGreaterThanOrEqual(2);
+    expect(original.customMoodTags.some((tag) => tag.kind === "RATED")).toBe(
+      true,
+    );
+    expect(original.customMoodTagCategories).toHaveLength(1);
+
+    // Another server: the same seeded catalogue, none of this account's rows.
+    await truncateAllTables(prisma);
+    await seedJsonImportCatalogue(prisma);
+
+    const { userId, res } = await importInto(original);
+    expect(res.status).toBe(200);
+    expect(res.data).toEqual({
+      measurements: original.measurements.length,
+      moodEntries: original.moodEntries.length,
+      skipped: 0,
+    });
+
+    const back = await fullBackupOf(userId);
+    expect(
+      back.measurements.map(comparable).sort(byInstant("measuredAt")),
+    ).toEqual(
+      original.measurements.map(comparable).sort(byInstant("measuredAt")),
+    );
+    expect(
+      back.moodEntries.map(comparable).sort(byInstant("loggedAt")),
+    ).toEqual(original.moodEntries.map(comparable).sort(byInstant("loggedAt")));
+    expect(vocabularyOf(back)).toEqual(vocabularyOf(original));
   });
 });
 

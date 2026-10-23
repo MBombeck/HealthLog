@@ -5795,6 +5795,7 @@
             "resultSummary": "{measurements} Messwerte und {moods} Stimmungseinträge importiert, {skipped} übersprungen.",
             "resultSuccess": "{measurements} Messwerte und {moods} Stimmungseinträge importiert",
             "droppedLinks": "Ohne diese Tags importiert, weil dieses Konto keine mit dem Namen hat: {keys}",
+            "keptLabels": "Dieses Konto hat Tags oder Gruppen mit diesen Schlüsseln schon unter eigenem Namen, die wurden behalten: {keys}",
             "resultNothing": "Nichts importiert. Alle {skipped} Einträge wurden übersprungen.",
             "resultEmpty": "Diese Datei enthielt weder Messwerte noch Stimmungseinträge."
           },

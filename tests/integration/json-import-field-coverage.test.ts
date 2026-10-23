@@ -28,6 +28,8 @@ import {
   jsonImportMeasurementSchema,
   jsonImportMoodContextSchema,
   jsonImportMoodEntrySchema,
+  jsonImportMoodTagCategorySchema,
+  jsonImportMoodTagSchema,
 } from "@/lib/import/json/schema";
 
 import { callRoute } from "../kit/call-route";
@@ -86,20 +88,26 @@ const CONTEXT_NOT_IMPORTED: Record<string, string> = {
   updatedAt: ROW_STAMP,
 };
 
+/** A tag or group of the file is matched and created by key, not by id. */
+const MOOD_TAG_NOT_IMPORTED: Record<string, string> = {
+  id: "A tag is matched and created by its key; its id in the file names a row of the account it came from (disaster-recovery file only).",
+};
+const MOOD_CATEGORY_NOT_IMPORTED: Record<string, string> = {};
+
 /**
- * The files' other sections. The JSON import carries readings and mood
- * entries into an account that has its own record already; an account's
- * whole record (medications, labs, documents, settings, …) comes back through
- * the backup restore, which replaces it. The mood vocabulary is named apart
- * because the entries' links point into it: a link to a tag the importing
- * account does not have is dropped and named in the response.
+ * The files' other sections. The JSON import carries readings, mood entries
+ * and the account's own mood vocabulary (which the entries' links point into)
+ * into an account that has its own record already; an account's whole record
+ * (medications, labs, documents, settings, …) comes back through the backup
+ * restore, which replaces it.
  */
-const IMPORTED_SECTIONS = new Set(["measurements", "moodEntries"]);
-const VOCABULARY_SECTIONS: Record<string, string> = {
-  customMoodTags:
-    "Account vocabulary, restored by the backup restore. An imported link to one of these tags resolves only when the importing account has a tag of that key, and is otherwise dropped and named (`droppedTagKeys`).",
-  customMoodTagCategories:
-    "Account vocabulary, restored by the backup restore with the tags it groups.",
+const IMPORTED_SECTIONS = new Set([
+  "measurements",
+  "moodEntries",
+  "customMoodTags",
+  "customMoodTagCategories",
+]);
+const NAMED_MOOD_SECTIONS: Record<string, string> = {
   hiddenMoodTags:
     "An account setting (which tags its editor hides), restored by the backup restore.",
 };
@@ -166,6 +174,18 @@ const MEASUREMENT_READ = new Set(
 );
 const MOOD_READ = new Set(Object.keys(jsonImportMoodEntrySchema.shape));
 const CONTEXT_READ = new Set(Object.keys(jsonImportMoodContextSchema.shape));
+const MOOD_TAG_READ = new Set(Object.keys(jsonImportMoodTagSchema.shape));
+const MOOD_CATEGORY_READ = new Set(
+  Object.keys(jsonImportMoodTagCategorySchema.shape),
+);
+const BACKUP_NAMES = ["portable", "disasterRecovery"] as const;
+
+function sectionOf(
+  name: (typeof BACKUP_NAMES)[number],
+  section: "customMoodTags" | "customMoodTagCategories",
+): Row[] {
+  return files[name][section] as Row[];
+}
 
 const FILE_NAMES = ["jsonExport", "portable", "disasterRecovery"] as const;
 
@@ -207,13 +227,37 @@ describe("the JSON import reads what the exporters write", () => {
     },
   );
 
-  it("names the mood vocabulary the entries' links point into", () => {
-    for (const name of ["portable", "disasterRecovery"] as const) {
+  it.each(BACKUP_NAMES)("every field of the %s's own mood tags", (name) => {
+    const rows = sectionOf(name, "customMoodTags");
+    // The seed's own tag and its own rated factor.
+    expect(rows.length).toBeGreaterThanOrEqual(2);
+    expect(
+      unaccounted(keysOf(rows), MOOD_TAG_READ, MOOD_TAG_NOT_IMPORTED),
+    ).toEqual([]);
+  });
+
+  it.each(BACKUP_NAMES)("every field of the %s's own mood groups", (name) => {
+    const rows = sectionOf(name, "customMoodTagCategories");
+    expect(rows.length).toBeGreaterThan(0);
+    expect(
+      unaccounted(keysOf(rows), MOOD_CATEGORY_READ, MOOD_CATEGORY_NOT_IMPORTED),
+    ).toEqual([]);
+  });
+
+  it("reads or names every mood section the backups carry", () => {
+    for (const name of BACKUP_NAMES) {
       const sections = Object.keys(files[name]);
       expect(sections).toEqual(expect.arrayContaining([...IMPORTED_SECTIONS]));
-      for (const section of Object.keys(VOCABULARY_SECTIONS)) {
+      for (const section of Object.keys(NAMED_MOOD_SECTIONS)) {
         expect(sections, `${name} carries ${section}`).toContain(section);
       }
+      // Every mood section of the file is one of the two lists.
+      const mood = sections.filter((s) => /mood/i.test(s));
+      expect(
+        mood.filter(
+          (s) => !IMPORTED_SECTIONS.has(s) && !(s in NAMED_MOOD_SECTIONS),
+        ),
+      ).toEqual([]);
     }
     // The JSON export's other two sections are medications, restored the
     // same way as every other section of an account's record.
@@ -245,6 +289,14 @@ describe("the JSON import reads what the exporters write", () => {
       ...Object.keys(CONTEXT_NOT_IMPORTED)
         .filter((key) => !writtenContext.has(key))
         .map((key) => `context.${key}`),
+      ...Object.keys(MOOD_TAG_NOT_IMPORTED)
+        .filter(
+          (key) =>
+            !BACKUP_NAMES.some((name) =>
+              keysOf(sectionOf(name, "customMoodTags")).has(key),
+            ),
+        )
+        .map((key) => `customMoodTag.${key}`),
     ];
     expect(stale).toEqual([]);
   });
@@ -256,6 +308,7 @@ describe("the JSON import reads what the exporters write", () => {
       ),
       ...Object.keys(MOOD_NOT_IMPORTED).filter((k) => MOOD_READ.has(k)),
       ...Object.keys(CONTEXT_NOT_IMPORTED).filter((k) => CONTEXT_READ.has(k)),
+      ...Object.keys(MOOD_TAG_NOT_IMPORTED).filter((k) => MOOD_TAG_READ.has(k)),
     ];
     expect(both).toEqual([]);
   });

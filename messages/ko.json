@@ -5795,6 +5795,7 @@
             "resultSummary": "측정 {measurements}개와 기분 기록 {moods}개를 불러왔고, {skipped}개는 건너뛰었어요.",
             "resultSuccess": "측정 {measurements}개와 기분 기록 {moods}개를 불러왔어요",
             "droppedLinks": "이 계정에 같은 이름의 태그가 없어 다음 태그 없이 가져왔습니다: {keys}",
+            "keptLabels": "이 계정에는 이미 같은 키의 태그나 그룹이 자체 이름으로 있어서 그대로 유지했어요: {keys}",
             "resultNothing": "불러온 게 없어요. {skipped}개 기록을 모두 건너뛰었어요.",
             "resultEmpty": "그 파일에는 측정도 기분 기록도 없었어요."
           },

@@ -28,6 +28,11 @@ export interface JsonImportResult {
    * those links, which the count alone would not say.
    */
   droppedLinkKeys: string[];
+  /**
+   * Keys of the account's own tags and groups the file names differently.
+   * The account's names were kept, never overwritten.
+   */
+  keptLabelKeys: string[];
 }
 
 /** The route's `data`, read field by field; a missing count reads as none. */
@@ -38,6 +43,8 @@ export function readJsonImportResult(
     skipped?: number;
     droppedTagKeys?: string[];
     droppedFactorKeys?: string[];
+    keptMoodTagKeys?: string[];
+    keptMoodCategoryKeys?: string[];
   } | null,
 ): JsonImportResult {
   return {
@@ -47,6 +54,10 @@ export function readJsonImportResult(
     droppedLinkKeys: [
       ...(data?.droppedTagKeys ?? []),
       ...(data?.droppedFactorKeys ?? []),
+    ],
+    keptLabelKeys: [
+      ...(data?.keptMoodTagKeys ?? []),
+      ...(data?.keptMoodCategoryKeys ?? []),
     ],
   };
 }
@@ -93,6 +104,16 @@ export function JsonImportResultView({ result }: { result: JsonImportResult }) {
         >
           {t("settings.sections.export.import.json.droppedLinks", {
             keys: result.droppedLinkKeys.join(", "),
+          })}
+        </p>
+      )}
+      {result.keptLabelKeys.length > 0 && (
+        <p
+          className="text-muted-foreground text-xs"
+          data-testid="import-json-kept-labels"
+        >
+          {t("settings.sections.export.import.json.keptLabels", {
+            keys: result.keptLabelKeys.join(", "),
           })}
         </p>
       )}

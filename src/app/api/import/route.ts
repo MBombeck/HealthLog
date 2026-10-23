@@ -56,10 +56,14 @@ export const POST = apiHandler(async (request: NextRequest) => {
     stats: written,
     writeFailed,
     droppedLinkKeys,
+    keptMoodTagKeys,
+    keptMoodCategoryKeys,
   } = await runJsonImport({
     userId: user.id,
     measurements: parsed.data.measurements,
     moodEntries: parsed.data.moodEntries,
+    customMoodTagCategories: parsed.data.customMoodTagCategories,
+    customMoodTags: parsed.data.customMoodTags,
     ipAddress: getClientIp(request),
   });
   const stats = {
@@ -68,6 +72,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     // The mood links the account could not resolve, by key, only when there
     // are any: "imported" alone told the person their tags had landed.
     ...droppedLinkKeysForWire(droppedLinkKeys),
+    // The account's own tags and groups the file names differently: kept as
+    // they are, and said so, only when there are any.
+    ...(keptMoodTagKeys.length > 0 ? { keptMoodTagKeys } : {}),
+    ...(keptMoodCategoryKeys.length > 0 ? { keptMoodCategoryKeys } : {}),
   };
 
   if (writeFailed) {
