@@ -20,14 +20,18 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "./setup/test";
 
-import { STORAGE_STATE_PATH } from "./setup/global-setup";
+import { E2E_VAULT, VAULT_STORAGE_STATE_PATH } from "./setup/global-setup";
 import { aiBlockAvailable, serveAiBlock } from "./setup/ai-capabilities";
 import {
   ensureVaultFixture,
   seedNamespaceDocs,
-  KNIE_EPISODE_ID,
-  MRT_DOC_ID,
+  vaultFixtureIds,
 } from "./setup/vault-fixture";
+
+// The vault on an account of its own (`E2E_VAULT`): its layout is account
+// state, and the month-grid tests read the default.
+const { knieEpisodeId: KNIE_EPISODE_ID, mrtDocId: MRT_DOC_ID } =
+  vaultFixtureIds(E2E_VAULT.username);
 
 const DEFAULT_MAX_FILE_BYTES = 26_214_400;
 
@@ -145,10 +149,10 @@ test.describe("document vault", () => {
     await serveAiBlock(page, aiBlockAvailable());
   });
 
-  test.use({ storageState: STORAGE_STATE_PATH });
+  test.use({ storageState: VAULT_STORAGE_STATE_PATH });
 
   test.beforeAll(async () => {
-    await ensureVaultFixture();
+    await ensureVaultFixture(E2E_VAULT.username);
   });
 
   // ── v1.42 — the archive as a month grid of preview tiles ──────────────
@@ -532,7 +536,7 @@ test.describe("document vault", () => {
   test("bulk: 50-item kind change round-trips", async ({ page, isMobile }) => {
     test.skip(isMobile, "range selection is a desktop pointer flow");
     test.setTimeout(90_000);
-    await seedNamespaceDocs("bulkfifty", 50);
+    await seedNamespaceDocs("bulkfifty", 50, E2E_VAULT.username);
 
     // Shared filing date → the namespace orders by id desc: "050" first,
     // "001" last. Anchor on the first card, shift-click the last.
@@ -568,7 +572,7 @@ test.describe("document vault", () => {
     isMobile,
   }) => {
     test.skip(isMobile, "bulk selection is a desktop pointer flow");
-    await seedNamespaceDocs("bulkpf", 5);
+    await seedNamespaceDocs("bulkpf", 5, E2E_VAULT.username);
 
     await page.goto("/documents?q=bulkpf");
     for (let i = 1; i <= 5; i++) {
@@ -603,7 +607,7 @@ test.describe("document vault", () => {
   }) => {
     test.skip(isMobile, "range selection is a desktop pointer flow");
     test.setTimeout(120_000);
-    await seedNamespaceDocs("bulkchunk", 101);
+    await seedNamespaceDocs("bulkchunk", 101, E2E_VAULT.username);
 
     // Newest-first by id tiebreak: "101" renders first, "001" last. Walk
     // the infinite query to the end (pages of 50) so the range can span

@@ -16,7 +16,11 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "./setup/test";
 
-import { STORAGE_STATE_PATH } from "./setup/global-setup";
+import {
+  E2E_VAULT_LAYOUT,
+  STORAGE_STATE_PATH,
+  VAULT_LAYOUT_STORAGE_STATE_PATH,
+} from "./setup/global-setup";
 import { ensureVaultFixture, seedNamespaceDocs } from "./setup/vault-fixture";
 import { mockPopulatedInsights } from "./utils/mock-populated-insights";
 
@@ -36,17 +40,18 @@ async function putDocumentsLayout(
 const resetDocumentsLayout = (page: Page) =>
   putDocumentsLayout(page, "stacked");
 
-/**
- * The account is shared with `documents.spec.ts`, which reads the default
- * (flowing) arrangement, so the journey hands the account back on the
- * default rather than on the state it started from.
- */
+/** And leaves its account on the default, as a new account would read it. */
 const restoreDefaultDocumentsLayout = (page: Page) =>
   putDocumentsLayout(page, "flow");
 
+// The vault's layout is account state, and this journey turns it, so these
+// tests run on a vault account of their own (`E2E_VAULT_LAYOUT`); the month
+// grid tests in `documents.spec.ts` read the default on theirs.
 test.describe("documents", () => {
+  test.use({ storageState: VAULT_LAYOUT_STORAGE_STATE_PATH });
+
   test.beforeAll(async () => {
-    await ensureVaultFixture();
+    await ensureVaultFixture(E2E_VAULT_LAYOUT.username);
   });
 
   test("the display choice behind the wrench persists across visits", async ({
@@ -71,11 +76,15 @@ test.describe("documents", () => {
         settings.locator('[data-slot="module-view-list"]'),
       ).toHaveAttribute("aria-pressed", "true");
       const flow = settings.locator('[data-slot="documents-arrangement-flow"]');
-      // Wait for the write to land, so the reload below reads it back.
+      // Wait for THIS write to land, so the reload below reads it back. The
+      // view switch above writes too, and its answer can arrive after this
+      // wait starts; matching on the arrangement keeps the two apart.
       const saved = page.waitForResponse(
         (r) =>
           r.url().includes("/api/documents/inbound/layout") &&
-          r.request().method() === "PUT",
+          r.request().method() === "PUT" &&
+          (r.request().postDataJSON() as { arrangement?: string } | null)
+            ?.arrangement === "flow",
       );
       await flow.click();
       expect((await saved).status()).toBe(200);
@@ -111,7 +120,7 @@ test.describe("documents", () => {
     isMobile,
   }) => {
     test.skip(isMobile, "selection by checkbox is a pointer flow");
-    await seedNamespaceDocs("qoldel", 2);
+    await seedNamespaceDocs("qoldel", 2, E2E_VAULT_LAYOUT.username);
     await page.goto("/documents?q=qoldel");
     const box = page.getByRole("checkbox", { name: "Select qoldel 002" });
     await expect(box).toBeVisible();
@@ -155,7 +164,7 @@ test.describe("documents", () => {
     isMobile,
   }) => {
     test.skip(isMobile, "keyboard flow");
-    await seedNamespaceDocs("qolkey", 1);
+    await seedNamespaceDocs("qolkey", 1, E2E_VAULT_LAYOUT.username);
     await page.goto("/documents?q=qolkey");
     const open = page.getByRole("button", { name: "Open qolkey 001" });
     await expect(open).toBeVisible();
@@ -173,7 +182,7 @@ test.describe("documents", () => {
     isMobile,
   }) => {
     test.skip(isMobile, "selection by checkbox is a pointer flow");
-    await seedNamespaceDocs("qolclear", 2);
+    await seedNamespaceDocs("qolclear", 2, E2E_VAULT_LAYOUT.username);
     await page.goto("/documents?q=qolclear");
     await page.getByRole("checkbox", { name: "Select qolclear 001" }).click();
 

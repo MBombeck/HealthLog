@@ -252,6 +252,41 @@ export const TIMELINE_STORAGE_STATE_PATH = resolve(
 );
 
 /**
+ * The vault specs' own accounts (`documents.spec.ts`, and the documents
+ * journeys of `v142-qol.spec.ts`).
+ *
+ * The vault's layout (cards or a list, months stacked or side by side) is a
+ * per-account preference. On the shared account the layout journey turned it
+ * while the month-grid tests read the default, so either could fail depending
+ * on which ran first. Each file seeds its own vault into its own account
+ * (`ensureVaultFixture(username)`).
+ */
+export const E2E_VAULT = {
+  email: "e2e-vault@healthlog.test",
+  username: "e2e-vault",
+  password: "Vt4!Hq8mZr2wKx6N",
+  // The upload-cap test sets the instance's cap through the admin console.
+  role: "ADMIN",
+} as const;
+
+export const VAULT_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateVault.json",
+);
+
+export const E2E_VAULT_LAYOUT = {
+  email: "e2e-vault-layout@healthlog.test",
+  username: "e2e-vault-layout",
+  password: "Vl7!Bn3qXw9pRt5M",
+  role: "USER",
+} as const;
+
+export const VAULT_LAYOUT_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateVaultLayout.json",
+);
+
+/**
  * The day-doors journey's own account (`day-doors.spec.ts`).
  *
  * It turns a chart's comparison overlay on, which is a per-account
@@ -991,6 +1026,32 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       ],
     );
 
+    // The vault specs' accounts — see `E2E_VAULT`. The vault fixture turns
+    // the documents module on and seeds the documents.
+    for (const account of [E2E_VAULT, E2E_VAULT_LAYOUT]) {
+      await pool.query(
+        `INSERT INTO users
+          (id, username, email, password_hash, role, created_at, updated_at,
+           onboarding_completed_at, onboarding_tour_completed)
+         VALUES ($1, $2, $3, $4, $6, $5, $5, $5, true)
+         ON CONFLICT (username) DO UPDATE SET
+           email = EXCLUDED.email,
+           password_hash = EXCLUDED.password_hash,
+           role = EXCLUDED.role,
+           updated_at = EXCLUDED.updated_at,
+           onboarding_completed_at = EXCLUDED.onboarding_completed_at,
+           onboarding_tour_completed = EXCLUDED.onboarding_tour_completed`,
+        [
+          cuid(),
+          account.username,
+          account.email,
+          await hashPassword(account.password),
+          now,
+          account.role,
+        ],
+      );
+    }
+
     // The day-doors journey's account. Every module the journey reaches is
     // on; its record is written after the login capture.
     await pool.query(
@@ -1365,6 +1426,28 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     // surfaces' own buckets are cleared; nothing else in the table is touched.
     await pool.query(`DELETE FROM rate_limits WHERE key LIKE 'auth:%'`);
 
+    // Every other bucket the suite can fill, for the same reason. A bucket is
+    // keyed on the account it meters (`<surface>:<id>`, sometimes with a
+    // further segment) or, on an anonymous surface, on the caller's address,
+    // and several of them outlive a run by up to an hour: the check-in
+    // ceiling, the per-account write bucket, the export and import buckets.
+    // A second run on the same database then met the first run's counts.
+    // Cleared are the buckets of the fixture accounts (every one of them is
+    // an `@healthlog.test` address or an `e2e-` record) and those of the
+    // loopback addresses the suite calls from; a developer's own accounts
+    // and their buckets are left alone.
+    await pool.query(
+      `DELETE FROM rate_limits r
+        USING users u
+        WHERE (u.email LIKE '%@healthlog.test' OR u.username LIKE 'e2e-%')
+          AND position(u.id IN r.key) > 0`,
+    );
+    await pool.query(
+      `DELETE FROM rate_limits
+        WHERE key LIKE '%:127.0.0.1' OR key LIKE '%:::1'
+           OR key LIKE '%:::ffff:127.0.0.1' OR key LIKE '%:unknown'`,
+    );
+
     // One marker weight per record. Re-seeded by delete-then-insert so a
     // re-run cannot accumulate duplicates and so an edited constant takes
     // effect rather than sitting beside the old value.
@@ -1689,6 +1772,10 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 
     // The timeline journey's jar — see `E2E_TIMELINE`.
     await capture(E2E_TIMELINE, TIMELINE_STORAGE_STATE_PATH);
+
+    // The vault specs' jars — see `E2E_VAULT`.
+    await capture(E2E_VAULT, VAULT_STORAGE_STATE_PATH);
+    await capture(E2E_VAULT_LAYOUT, VAULT_LAYOUT_STORAGE_STATE_PATH);
 
     // The day-doors journey's jar, then its record — see `E2E_DAY_DOORS`.
     await capture(E2E_DAY_DOORS, DAY_DOORS_STORAGE_STATE_PATH);
