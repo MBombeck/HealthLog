@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2898,
-  "total": 9297,
+  "total": 9296,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1098,7 +1098,7 @@
     "components/layout/__tests__/shared-record-chrome.test.tsx": 1,
     "components/layout/__tests__/sidebar-nav.test.tsx": 3,
     "components/layout/account-switcher-menu.tsx": 1,
-    "components/layout/auth-shell.tsx": 15,
+    "components/layout/auth-shell.tsx": 14,
     "components/layout/bottom-nav.tsx": 8,
     "components/layout/capture-picker.tsx": 5,
     "components/layout/nav-model.ts": 17,
