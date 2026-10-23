@@ -76,7 +76,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
           },
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     }),
     resolveUserTimezone(user.id),
   ]);
@@ -114,7 +114,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     const events = await prisma.medicationIntakeEvent.findMany({
       where,
       include: { medication: { select: { name: true } } },
-      orderBy: { scheduledFor: "desc" },
+      orderBy: [{ scheduledFor: "desc" }, { id: "desc" }],
     });
     intakeCount = events.length;
     sections.push("# Intake history");

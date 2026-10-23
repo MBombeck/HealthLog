@@ -605,7 +605,7 @@ export async function buildMedicationEfficacy(
       deletedAt: null,
       scheduledFor: { gte: fetchFrom },
     },
-    orderBy: { scheduledFor: "desc" },
+    orderBy: [{ scheduledFor: "desc" }, { id: "desc" }],
     select: {
       takenAt: true,
       skipped: true,

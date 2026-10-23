@@ -202,7 +202,7 @@ async function medicationsPart(frame: DayFrame): Promise<SectionPart> {
           doseTaken: true,
           medication: { select: { name: true, dose: true } },
         },
-        orderBy: { takenAt: "asc" },
+        orderBy: [{ takenAt: "asc" }, { id: "asc" }],
       }),
       prisma.medicationDoseChange.findMany({
         where: {
@@ -229,7 +229,7 @@ async function medicationsPart(frame: DayFrame): Promise<SectionPart> {
           doseValue: true,
           doseUnit: true,
         },
-        orderBy: { effectiveFrom: "desc" },
+        orderBy: [{ effectiveFrom: "desc" }, { id: "desc" }],
         distinct: ["medicationId"],
       }),
     ]);

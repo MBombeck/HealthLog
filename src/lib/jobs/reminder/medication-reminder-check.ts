@@ -46,6 +46,7 @@ import {
   liveEraStart as liveEraStartOf,
 } from "@/lib/medications/scheduling/live-era";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 
 export interface ReminderCheckPayload {
   triggeredAt: string;
@@ -227,7 +228,7 @@ export async function handleReminderCheck(
       const medications = await prisma.medication.findMany({
         where: { active: true, asNeeded: false, ...TRACKED_INTAKE_WHERE },
         include: {
-          schedules: true,
+          schedules: { orderBy: MEDICATION_SCHEDULE_ORDER },
           phaseConfig: true,
           scheduleRevisions: LIVE_ERA_REVISION_ARGS,
           user: {
@@ -340,13 +341,10 @@ export async function handleReminderCheck(
           a.windowStart.localeCompare(b.windowStart),
         );
 
-        // v1.5.0 — fetch the latest `takenAt` for this medication
-        // once per tick when any schedule on it is rolling. The
-        // canonical recurrence engine needs `lastIntakeAt` to compute
-        // the next-due instant for rolling cadences; calendar
-        // cadences ignore the field, so the fetch is conditional to
-        // avoid an extra round-trip on the common path. Failures bias
-        // toward "treat as never logged" so a flaky DB doesn't
+        // The latest `takenAt` for this medication, once per tick and only
+        // when a schedule on it is rolling: the recurrence engine needs
+        // `lastIntakeAt` for a rolling cadence, a calendar one ignores it.
+        // Failures read as "never logged", so a flaky DB does not
         // suppress reminders.
         const hasRollingSchedule = med.schedules.some(
           (s) => s.rollingIntervalDays !== null,
@@ -362,7 +360,7 @@ export async function handleReminderCheck(
               deletedAt: null,
               takenAt: { not: null },
             },
-            orderBy: { takenAt: "desc" },
+            orderBy: [{ takenAt: "desc" }, { id: "desc" }],
             select: { takenAt: true },
           });
           lastIntakeAt = lastIntake?.takenAt ?? null;

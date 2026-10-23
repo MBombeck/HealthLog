@@ -548,7 +548,7 @@ export async function resolveSlotInstantForWrite(
         deletedAt: null,
         takenAt: { not: null },
       },
-      orderBy: { takenAt: "desc" },
+      orderBy: [{ takenAt: "desc" }, { id: "desc" }],
       select: { takenAt: true },
     });
     lastIntakeAt = lastIntake?.takenAt ?? null;
@@ -603,7 +603,7 @@ async function loadAttributeMedication(input: {
         deletedAt: null,
         takenAt: { not: null },
       },
-      orderBy: { takenAt: "desc" },
+      orderBy: [{ takenAt: "desc" }, { id: "desc" }],
       select: { takenAt: true },
     });
     lastIntakeAt = lastIntake?.takenAt ?? null;
@@ -905,7 +905,7 @@ async function rollingIntakeInstantsIfNeeded(
       skipped: false,
       takenAt: { not: null, lte: around },
     },
-    orderBy: { takenAt: "asc" },
+    orderBy: [{ takenAt: "asc" }, { id: "asc" }],
     select: { takenAt: true },
   });
   return rows.map((r) => r.takenAt).filter((d): d is Date => d !== null);

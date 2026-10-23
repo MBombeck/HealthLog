@@ -50,7 +50,12 @@ export const GET = apiHandler(
     const [items, medication] = await Promise.all([
       prisma.medicationInventoryItem.findMany({
         where: { userId: user.id, medicationId: id },
-        orderBy: [{ state: "asc" }, { expiresAt: "asc" }, { createdAt: "asc" }],
+        orderBy: [
+          { state: "asc" },
+          { expiresAt: "asc" },
+          { createdAt: "asc" },
+          { id: "asc" },
+        ],
       }),
       prisma.medication.findUnique({
         where: { id },

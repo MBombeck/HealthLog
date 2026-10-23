@@ -517,7 +517,7 @@ async function buildCoachSnapshotImpl(
           createdAt: true,
           schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
           scheduleRevisions: {
-            orderBy: { validFrom: "asc" },
+            orderBy: [{ validFrom: "asc" }, { id: "asc" }],
             select: {
               id: true,
               validFrom: true,
@@ -533,7 +533,7 @@ async function buildCoachSnapshotImpl(
           intakeEvents: {
             // Tombstoned intake rows must never reach the Coach snapshot.
             where: { deletedAt: null, scheduledFor: { gte: cutoff } },
-            orderBy: { scheduledFor: "asc" },
+            orderBy: [{ scheduledFor: "asc" }, { id: "asc" }],
             select: {
               scheduledFor: true,
               takenAt: true,

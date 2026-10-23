@@ -166,7 +166,7 @@ export const GET = apiHandler(
 
     const events = await prisma.medicationIntakeEvent.findMany({
       where: { medicationId: id, userId: user.id, deletedAt: null },
-      orderBy: { scheduledFor: "desc" },
+      orderBy: [{ scheduledFor: "desc" }, { id: "desc" }],
       select: {
         id: true,
         scheduledFor: true,

@@ -63,7 +63,10 @@ export async function detectGlp1Plateau(
   const meds = await prisma.medication.findMany({
     where: { userId, treatmentClass: "GLP1", active: true },
     include: {
-      doseChanges: { orderBy: { effectiveFrom: "desc" }, take: 1 },
+      doseChanges: {
+        orderBy: [{ effectiveFrom: "desc" }, { id: "desc" }],
+        take: 1,
+      },
     },
   });
   if (meds.length === 0) return null;

@@ -83,7 +83,7 @@ export const GET = apiHandler(async (_request: NextRequest) => {
     }),
     prisma.medicationIntakeEvent.findFirst({
       where: { userId: user.id, deletedAt: null },
-      orderBy: { updatedAt: "desc" },
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
       select: { updatedAt: true },
     }),
     prisma.medicationIntakeEvent.count({

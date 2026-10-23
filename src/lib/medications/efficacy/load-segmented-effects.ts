@@ -176,7 +176,7 @@ export async function loadSegmentedEffects(params: {
         deletedAt: null,
         scheduledFor: { gte: since, lte: until },
       },
-      orderBy: { scheduledFor: "desc" },
+      orderBy: [{ scheduledFor: "desc" }, { id: "desc" }],
       select: {
         takenAt: true,
         skipped: true,

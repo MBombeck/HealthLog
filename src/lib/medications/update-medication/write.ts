@@ -164,7 +164,7 @@ async function archiveEra(
     // Chain from the ACTIVE boundary: a superseded row is an
     // audit record whose `validUntil` may sit past its correction.
     where: { medicationId: id, supersededByRevisionId: null },
-    orderBy: { validUntil: "desc" },
+    orderBy: [{ validUntil: "desc" }, { id: "desc" }],
     select: { validUntil: true },
   });
   await tx.medicationScheduleRevision.create({

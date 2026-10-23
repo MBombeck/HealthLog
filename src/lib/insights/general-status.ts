@@ -248,7 +248,7 @@ async function readAdherenceSeries(userId: string, now: Date, userTz: string) {
       // v1.39.1 (#1033) — adherence counts tracked medications only.
       ...TRACKED_INTAKE_EVENT_WHERE,
     },
-    orderBy: { scheduledFor: "asc" },
+    orderBy: [{ scheduledFor: "asc" }, { id: "asc" }],
     select: {
       scheduledFor: true,
       takenAt: true,

@@ -49,6 +49,7 @@ import {
   TRACKED_INTAKE_WHERE,
 } from "@/lib/medications/intake-tracking";
 import { liveEraStartsByMedication } from "@/lib/medications/scheduling/live-era";
+import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 
 export interface MedsTodayDueCandidate {
   medicationId: string;
@@ -138,8 +139,8 @@ export async function buildMedsTodayBlock(
       // place on the doses card: not counted, never the next due dose.
       prisma.medication.findMany({
         where: { userId, active: true, ...TRACKED_INTAKE_WHERE },
-        include: { schedules: true },
-        orderBy: { createdAt: "desc" },
+        include: { schedules: { orderBy: MEDICATION_SCHEDULE_ORDER } },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       }),
       prisma.medicationIntakeEvent.findMany({
         where: {

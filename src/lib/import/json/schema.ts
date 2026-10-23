@@ -10,6 +10,11 @@
  *
  * Lives here rather than in the route because the route module may export
  * nothing but its handlers, and the guard needs the field set.
+ *
+ * The objects are deliberately not strict. A file is a foreign archive: the
+ * app's own files carry fields the import leaves out on purpose (row ids, the
+ * source, sync bookkeeping), and a strict object would refuse every one of
+ * them. An unknown key is stripped, never stored.
  */
 import { z } from "zod/v4";
 

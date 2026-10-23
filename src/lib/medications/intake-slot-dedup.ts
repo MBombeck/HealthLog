@@ -226,7 +226,7 @@ export async function dedupeUserIntakeSlots(
       // v1.16.9 — archived eras: an old ad-hoc row converges against the
       // schedule that was live at its takenAt, not today's times.
       scheduleRevisions: {
-        orderBy: { validFrom: "asc" },
+        orderBy: [{ validFrom: "asc" }, { id: "asc" }],
         select: {
           id: true,
           validFrom: true,
@@ -242,15 +242,11 @@ export async function dedupeUserIntakeSlots(
   // recompute after the collapse. Deduped so a busy day folds once.
   const daysToRecompute = new Set<string>();
 
-  // v1.20.2 — batch the per-medication reads. The pre-v1.20.2 shape
-  // issued a `findFirst` (latest takenAt) + a `findMany` (all live rows)
-  // PER medication → 2N round-trips (20 meds = 40). Pull every live row
-  // for the user's medication set in ONE ordered `findMany`, group in
-  // memory by `medicationId`, and derive the per-med `lastIntakeAt` (max
-  // non-null takenAt) from the same grouped set the `findFirst` would
-  // have scanned. The grouping preserves the `scheduledFor asc` order the
-  // snap + heal passes depend on (a stable Postgres sort keeps the
-  // per-medication slices in the same order a per-med query returned).
+  // One ordered read for the user's whole medication set, grouped in memory
+  // by `medicationId`, rather than a `findFirst` and a `findMany` per
+  // medication (2N round-trips). The per-med `lastIntakeAt` comes from the
+  // same rows. The order ends on the id, so each slice holds its rows in the
+  // slot order the snap and heal passes need, the same on every run.
   const medIds = medications
     .filter((m) => m.schedules.length > 0)
     .map((m) => m.id);
@@ -277,7 +273,11 @@ export async function dedupeUserIntakeSlots(
       },
       // `medicationId` first so the per-med slices are contiguous, then the
       // `scheduledFor asc` the loop relies on.
-      orderBy: [{ medicationId: "asc" }, { scheduledFor: "asc" }],
+      orderBy: [
+        { medicationId: "asc" },
+        { scheduledFor: "asc" },
+        { id: "asc" },
+      ],
     })) as DedupIntakeRow[];
 
     for (const row of allRows) {

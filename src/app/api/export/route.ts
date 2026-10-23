@@ -19,6 +19,7 @@ import {
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { NextRequest, NextResponse } from "next/server";
+import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 
 /**
  * Export user data.
@@ -122,8 +123,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
   if (type === "medications" || type === "all") {
     const medications = await prisma.medication.findMany({
       where: { userId },
-      include: { schedules: true },
-      orderBy: { createdAt: "desc" },
+      include: { schedules: { orderBy: MEDICATION_SCHEDULE_ORDER } },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
     data.medications =
       format === "csv"
@@ -135,7 +136,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     const events = await prisma.medicationIntakeEvent.findMany({
       where: { userId, deletedAt: null },
       include: { medication: { select: { name: true } } },
-      orderBy: { scheduledFor: "desc" },
+      orderBy: [{ scheduledFor: "desc" }, { id: "desc" }],
     });
     data.intakeEvents =
       format === "csv"

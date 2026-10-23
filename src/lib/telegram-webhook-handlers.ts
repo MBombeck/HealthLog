@@ -1164,7 +1164,7 @@ export async function handleTextMessage(update: TelegramUpdate) {
     const meds = await prisma.medication.findMany({
       where: { userId: user.id, active: true, ...TRACKED_INTAKE_WHERE },
       select: { id: true, name: true, dose: true },
-      orderBy: { name: "asc" },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
     });
 
     if (meds.length === 0) {
@@ -1280,7 +1280,7 @@ export async function handleTextMessage(update: TelegramUpdate) {
     const meds = await prisma.medication.findMany({
       where: { userId: user.id, active: true, ...TRACKED_INTAKE_WHERE },
       select: { id: true, name: true },
-      orderBy: { name: "asc" },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
       take: 2,
     });
     if (meds.length === 1) {

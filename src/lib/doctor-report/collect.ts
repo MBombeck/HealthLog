@@ -322,7 +322,7 @@ export async function collectDoctorReportData(
                 select: { ...SCHEDULE_COMPLIANCE_SELECT, label: true },
               },
               scheduleRevisions: {
-                orderBy: { validFrom: "asc" },
+                orderBy: [{ validFrom: "asc" }, { id: "asc" }],
                 select: {
                   id: true,
                   validFrom: true,
@@ -336,11 +336,11 @@ export async function collectDoctorReportData(
               courses: COURSES_COMPLIANCE_SELECT,
               doseChanges: {
                 where: { effectiveFrom: { lte: end } },
-                orderBy: { effectiveFrom: "asc" },
+                orderBy: [{ effectiveFrom: "asc" }, { id: "asc" }],
               },
               intakeEvents: {
                 where: { takenAt: { not: null, lte: end } },
-                orderBy: { takenAt: "desc" },
+                orderBy: [{ takenAt: "desc" }, { id: "desc" }],
                 take: 1,
                 select: { takenAt: true, injectionSite: true },
               },
@@ -367,7 +367,7 @@ export async function collectDoctorReportData(
                 },
               },
             },
-            orderBy: { scheduledFor: "asc" },
+            orderBy: [{ scheduledFor: "asc" }, { id: "asc" }],
           })
         : Promise.resolve([]),
       // Zero DB read when the mood leaf was not chosen: the payload reflects

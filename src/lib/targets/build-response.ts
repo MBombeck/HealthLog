@@ -175,12 +175,12 @@ export async function buildTargetsResponse(user: AuthedUser) {
         },
         include: {
           schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
-          scheduleRevisions: { orderBy: { validFrom: "asc" } },
+          scheduleRevisions: { orderBy: [{ validFrom: "asc" }, { id: "asc" }] },
           pauseEras: { select: { pausedAt: true, resumedAt: true } },
           // v1.40 (#1024) — the courses, so a gap between two expects nothing.
           courses: COURSES_COMPLIANCE_SELECT,
         },
-        orderBy: { name: "asc" },
+        orderBy: [{ name: "asc" }, { id: "asc" }],
       });
       if (activeMedications.length === 0) {
         return { activeMedications, intakeEvents: [] };
@@ -194,7 +194,7 @@ export async function buildTargetsResponse(user: AuthedUser) {
           },
           scheduledFor: { gte: thirtyDaysAgo },
         },
-        orderBy: { scheduledFor: "desc" },
+        orderBy: [{ scheduledFor: "desc" }, { id: "desc" }],
         select: {
           medicationId: true,
           takenAt: true,

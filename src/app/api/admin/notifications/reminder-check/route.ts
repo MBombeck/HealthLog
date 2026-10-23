@@ -11,6 +11,7 @@ import { getUserTodayBounds, getDayOfWeekInTz } from "@/lib/tz/local-day";
 import { sendsMedicationReminders } from "@/lib/medications/auto-mark-taken";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 
 export const dynamic = "force-dynamic";
 
@@ -109,7 +110,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       ...(scopedUserId ? { userId: scopedUserId } : {}),
     },
     include: {
-      schedules: true,
+      schedules: { orderBy: MEDICATION_SCHEDULE_ORDER },
       user: { select: { id: true, username: true, timezone: true } },
     },
   });

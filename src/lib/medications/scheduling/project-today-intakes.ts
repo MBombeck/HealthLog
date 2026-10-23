@@ -123,7 +123,7 @@ export async function projectTodayIntakesAndRecompute(input: {
           deletedAt: null,
           takenAt: { not: null },
         },
-        orderBy: { takenAt: "desc" },
+        orderBy: [{ takenAt: "desc" }, { id: "desc" }],
         select: { takenAt: true },
       });
       lastIntakeAt = lastIntake?.takenAt ?? null;

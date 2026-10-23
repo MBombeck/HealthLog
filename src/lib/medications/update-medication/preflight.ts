@@ -189,7 +189,7 @@ export async function findPrimaryScheduleGracePatch(
   if (topLevelGraceMinutes !== undefined && !schedules) {
     const primary = await prisma.medicationSchedule.findFirst({
       where: { medicationId: id },
-      orderBy: { windowStart: "asc" },
+      orderBy: [{ windowStart: "asc" }, { id: "asc" }],
       select: { id: true },
     });
     if (primary) {

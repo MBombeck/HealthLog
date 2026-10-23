@@ -68,7 +68,7 @@ export async function buildScheduleAnchoredComplianceBuckets(
       // reaches this surface the moment it joins SCHEDULE_COMPLIANCE_SELECT.
       schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
       // v1.16.3 — archived schedule eras for era-aware expected counts.
-      scheduleRevisions: { orderBy: { validFrom: "asc" } },
+      scheduleRevisions: { orderBy: [{ validFrom: "asc" }, { id: "asc" }] },
       // v1.25 — pause eras so paused days drop out of the denominator.
       pauseEras: { select: { pausedAt: true, resumedAt: true } },
       // v1.40 (#1024) — the courses, so a gap between two expects nothing.

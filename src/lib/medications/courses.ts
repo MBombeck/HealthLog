@@ -125,7 +125,7 @@ async function loadOwned(tx: Tx, userId: string, medicationId: string) {
   if (!medication) throw new CourseWriteError("notFound");
   const courses = await tx.medicationCourse.findMany({
     where: { medicationId },
-    orderBy: { startsOn: "asc" },
+    orderBy: [{ startsOn: "asc" }, { id: "asc" }],
     select: { id: true, startsOn: true, endsOn: true, noteEncrypted: true },
   });
   return { medication, courses };
@@ -423,7 +423,7 @@ export async function checkCurrentWindow(
   const todayKey = userDayKey(args.now ?? new Date(), args.timeZone);
   const courses = await prisma.medicationCourse.findMany({
     where: { medicationId: args.medicationId, userId: args.userId },
-    orderBy: { startsOn: "asc" },
+    orderBy: [{ startsOn: "asc" }, { id: "asc" }],
     select: { id: true, startsOn: true, endsOn: true },
   });
   const latest = courses.at(-1);
@@ -472,7 +472,7 @@ export async function loadCoursesFor(
   if (medicationIds.length === 0) return byMedication;
   const rows = await prisma.medicationCourse.findMany({
     where: { medicationId: { in: medicationIds } },
-    orderBy: { startsOn: "asc" },
+    orderBy: [{ startsOn: "asc" }, { id: "asc" }],
     select: {
       id: true,
       medicationId: true,

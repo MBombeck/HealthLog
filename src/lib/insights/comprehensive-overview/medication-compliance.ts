@@ -36,7 +36,7 @@ async function readScheduledMedications(userId: string) {
       // per-dose windows reach this surface like every other.
       schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
       // Archived schedule eras for era-aware compliance.
-      scheduleRevisions: { orderBy: { validFrom: "asc" } },
+      scheduleRevisions: { orderBy: [{ validFrom: "asc" }, { id: "asc" }] },
       // Pause eras so paused days drop out of the denominator.
       pauseEras: { select: { pausedAt: true, resumedAt: true } },
       // The courses, so a gap between two expects nothing (#1024).
@@ -85,7 +85,7 @@ export async function readMedicationCompliance(args: {
           deletedAt: null,
           scheduledFor: { gte: since },
         },
-        orderBy: { scheduledFor: "desc" },
+        orderBy: [{ scheduledFor: "desc" }, { id: "desc" }],
       })
     : [];
 

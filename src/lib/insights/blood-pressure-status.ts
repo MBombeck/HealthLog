@@ -480,7 +480,7 @@ async function readBpMedicationContext(
     include: {
       schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
       // v1.16.3 — archived schedule eras for era-aware compliance.
-      scheduleRevisions: { orderBy: { validFrom: "asc" } },
+      scheduleRevisions: { orderBy: [{ validFrom: "asc" }, { id: "asc" }] },
       // v1.25 — pause eras so paused days drop out of the denominator.
       pauseEras: { select: { pausedAt: true, resumedAt: true } },
       // v1.40 (#1024) — the courses, so a gap between two expects nothing.
@@ -521,7 +521,7 @@ async function readBpMedicationContext(
               in: bpMedications.map((medication) => medication.id),
             },
           },
-          orderBy: { scheduledFor: "asc" },
+          orderBy: [{ scheduledFor: "asc" }, { id: "asc" }],
           select: {
             medicationId: true,
             scheduledFor: true,

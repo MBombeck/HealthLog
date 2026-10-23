@@ -285,7 +285,7 @@ async function medicationsLane(frame: Frame) {
     prisma.medication.findMany({
       where: { userId: frame.userId },
       select: { id: true, startsOn: true },
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     }),
     prisma.medicationIntakeEvent.groupBy({
       by: ["medicationId"],

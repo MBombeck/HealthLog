@@ -31,6 +31,7 @@ import {
   medicationDetail,
   type ReadUser,
 } from "@/lib/medications/read-medication";
+import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 
 export type CreateMedicationInput = z.output<typeof createMedicationSchema>;
 type ScheduleInput = NonNullable<CreateMedicationInput["schedules"]>[number];
@@ -103,7 +104,7 @@ async function existingMirrorOrCap(
   const userId = user.id;
   const existing = await prisma.medication.findFirst({
     where: { userId, externalSource, externalId },
-    include: { schedules: true },
+    include: { schedules: { orderBy: MEDICATION_SCHEDULE_ORDER } },
   });
   if (existing) {
     return existingMirrorBody(user, existing);
@@ -480,7 +481,7 @@ export async function createMedication(input: {
     if (isP2002 && externalSource !== undefined && externalId !== undefined) {
       const winner = await prisma.medication.findFirst({
         where: { userId: user.id, externalSource, externalId },
-        include: { schedules: true },
+        include: { schedules: { orderBy: MEDICATION_SCHEDULE_ORDER } },
       });
       if (winner) return existingMirrorBody(user, winner);
     }

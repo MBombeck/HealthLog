@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 354,
-  "total": 114417,
+  "total": 114410,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 314,
@@ -319,8 +319,8 @@
     "lib/jobs/medication-low-stock.ts :: runMedicationLowStockTick": 286,
     "lib/jobs/oura-backfill.ts :: runOuraBackfillForUser": 236,
     "lib/jobs/reaction-line.ts :: runReactionLine": 337,
-    "lib/jobs/reminder/medication-reminder-check.ts :: handleReminderCheck": 619,
-    "lib/jobs/reminder/medication-reminder-check.ts :: handleReminderCheck > withBackgroundEvent(arg)": 614,
+    "lib/jobs/reminder/medication-reminder-check.ts :: handleReminderCheck": 616,
+    "lib/jobs/reminder/medication-reminder-check.ts :: handleReminderCheck > withBackgroundEvent(arg)": 611,
     "lib/jobs/workout-insight-generate.ts :: runWorkoutInsightGenerate": 324,
     "lib/labs/biomarker-merge.ts :: runMerge": 254,
     "lib/labs/ocr-extract.ts :: runOcrExtraction": 207,
@@ -337,7 +337,7 @@
     "lib/measurements/import-apple-health-export.ts :: streamParseExportXml > (anonymous) #2": 323,
     "lib/medications/efficacy/build-efficacy.ts :: buildMedicationEfficacy": 268,
     "lib/medications/intake-slot-dedup.ts :: dedupeUserIntakeSlots": 321,
-    "lib/medications/list-read.ts :: buildMedicationsList": 310,
+    "lib/medications/list-read.ts :: buildMedicationsList": 309,
     "lib/medications/scheduling/dose-history.ts :: reconstructDoseHistory": 218,
     "lib/multipart/stream-to-disk.ts :: streamMultipartToDisk": 272,
     "lib/notifications/dispatcher.ts :: dispatchNotification": 378,

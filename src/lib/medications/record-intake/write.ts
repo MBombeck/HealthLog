@@ -66,7 +66,7 @@ export async function findReplayedIntake(
         skipped,
         createdAt: { gte: new Date(Date.now() - 60_000) },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
     if (recentDuplicate) {
       return recentDuplicate;

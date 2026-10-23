@@ -269,7 +269,7 @@ export async function runIntakeAutoTakePass(
       autoMarkTakenSince: true,
       schedules: { select: SCHEDULE_SELECT },
       scheduleRevisions: {
-        orderBy: { validFrom: "asc" },
+        orderBy: [{ validFrom: "asc" }, { id: "asc" }],
         select: {
           id: true,
           validFrom: true,
@@ -423,7 +423,7 @@ async function autoTakeMedication(
         deletedAt: null,
         takenAt: { not: null },
       },
-      orderBy: { takenAt: "desc" },
+      orderBy: [{ takenAt: "desc" }, { id: "desc" }],
       select: { takenAt: true },
     });
     lastIntakeAt = last?.takenAt ?? null;

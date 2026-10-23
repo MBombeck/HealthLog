@@ -63,7 +63,7 @@ async function loadDisplayDue(
           deletedAt: null,
           takenAt: { not: null },
         },
-        orderBy: { takenAt: "desc" },
+        orderBy: [{ takenAt: "desc" }, { id: "desc" }],
         select: { takenAt: true },
       })
     : null;
@@ -94,7 +94,7 @@ async function loadDisplayDue(
     // Superseded rows are audit records — a correction may have
     // shortened the era, so the boundary reads only active rows.
     where: { medicationId: id, supersededByRevisionId: null },
-    orderBy: { validUntil: "desc" },
+    orderBy: [{ validUntil: "desc" }, { id: "desc" }],
     select: { validUntil: true },
   });
   // Intake tracking off (#1033): nothing is due from the stored rows, and no

@@ -43,7 +43,7 @@ export async function readTodayIntakes(input: {
       // medication with intake tracking off is not on it.
       ...TRACKED_INTAKE_EVENT_WHERE,
     },
-    orderBy: { scheduledFor: "asc" },
+    orderBy: [{ scheduledFor: "asc" }, { id: "asc" }],
     include: { medication: { select: { id: true, snoozedUntil: true } } },
   });
 

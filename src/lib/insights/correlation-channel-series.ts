@@ -115,13 +115,13 @@ export async function fetchComplianceSeries(
     where: { userId, active: true, asNeeded: false, ...TRACKED_INTAKE_WHERE },
     include: {
       schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
-      scheduleRevisions: { orderBy: { validFrom: "asc" } },
+      scheduleRevisions: { orderBy: [{ validFrom: "asc" }, { id: "asc" }] },
       // v1.25 — pause eras so paused days drop out of the denominator.
       pauseEras: { select: { pausedAt: true, resumedAt: true } },
       // v1.40 (#1024) — the courses, so a gap between two expects nothing.
       courses: COURSES_COMPLIANCE_SELECT,
     },
-    orderBy: { name: "asc" },
+    orderBy: [{ name: "asc" }, { id: "asc" }],
   });
   if (medications.length === 0) {
     return {
@@ -138,7 +138,7 @@ export async function fetchComplianceSeries(
       medicationId: { in: medications.map((med) => med.id) },
       scheduledFor: { gte: since },
     },
-    orderBy: { scheduledFor: "asc" },
+    orderBy: [{ scheduledFor: "asc" }, { id: "asc" }],
     select: {
       medicationId: true,
       scheduledFor: true,

@@ -15,6 +15,7 @@ import { dueSchedules } from "@/lib/medications/intake-tracking";
 import { liveEraStartsByMedication } from "@/lib/medications/scheduling/live-era";
 import { MODULE_DISABLED } from "./shared";
 import { READ_ONLY_ANNOTATIONS, type McpToolDefinition } from "./types";
+import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 
 // ── Operational reads (not Coach snapshot domains) ──────────────────
 // These answer "what should I do / why is my data stale" rather than "what
@@ -69,8 +70,8 @@ export const getMedicationScheduleTool: McpToolDefinition = {
       }),
       prisma.medication.findMany({
         where: { userId: ctx.userId, active: true },
-        include: { schedules: true },
-        orderBy: { createdAt: "desc" },
+        include: { schedules: { orderBy: MEDICATION_SCHEDULE_ORDER } },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       }),
     ]);
 

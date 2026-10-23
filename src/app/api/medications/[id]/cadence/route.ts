@@ -108,7 +108,7 @@ export const GET = apiHandler(
         // chips agree with the % + the history on a "zugeordnet" dose.
         attributionSource: true,
       },
-      orderBy: { scheduledFor: "asc" },
+      orderBy: [{ scheduledFor: "asc" }, { id: "asc" }],
     });
 
     // The cadence-anchor is the medication's createdAt for stable

@@ -96,7 +96,16 @@ function orderKey(value: unknown): string {
   });
 }
 
-/** Rows in content order, ids and stamps left out of the comparison. */
+/**
+ * Rows in content order, ids and stamps left out of the comparison.
+ *
+ * Two rows can share their whole content once the ids are out (a schedule at
+ * 08:00 on each of two medications), and the sort keeps them in the order the
+ * read returned them. So every read below is ordered by id, which for a cuid
+ * is the order the rows were written in: an unordered read handed the ties
+ * back in whatever order the heap held them, and their `<id:N>` labels
+ * swapped under a loaded run.
+ */
 export function sortRows<T>(rows: readonly T[]): unknown[] {
   return rows
     .map(plain)
@@ -112,6 +121,8 @@ export function sortRows<T>(rows: readonly T[]): unknown[] {
  * guard writes them fire-and-forget, so whether one has landed when the test
  * reads is a race, not something the route decides.
  */
+const BY_ID = { id: "asc" } as const;
+
 export async function medicationState(prisma: Client, userIds: string[]) {
   const byUser = { userId: { in: userIds } };
   const byMedication = { medication: byUser };
@@ -130,19 +141,35 @@ export async function medicationState(prisma: Client, userIds: string[]) {
     audit,
     idempotency,
   ] = await Promise.all([
-    prisma.medication.findMany({ where: byUser }),
-    prisma.medicationSchedule.findMany({ where: byMedication }),
-    prisma.medicationScheduleRevision.findMany({ where: byMedication }),
-    prisma.medicationPauseEra.findMany({ where: byMedication }),
-    prisma.medicationCourse.findMany({ where: byMedication }),
-    prisma.medicationIntakeEvent.findMany({ where: byUser }),
-    prisma.medicationDoseChange.findMany({ where: byMedication }),
-    prisma.medicationInventoryItem.findMany({ where: byUser }),
-    prisma.medicationInventoryEvent.findMany({ where: byMedication }),
-    prisma.medicationCategoryAssignment.findMany({ where: byMedication }),
-    prisma.medicationIngredient.findMany({ where: byMedication }),
+    prisma.medication.findMany({ where: byUser, orderBy: BY_ID }),
+    prisma.medicationSchedule.findMany({ where: byMedication, orderBy: BY_ID }),
+    prisma.medicationScheduleRevision.findMany({
+      where: byMedication,
+      orderBy: BY_ID,
+    }),
+    prisma.medicationPauseEra.findMany({ where: byMedication, orderBy: BY_ID }),
+    prisma.medicationCourse.findMany({ where: byMedication, orderBy: BY_ID }),
+    prisma.medicationIntakeEvent.findMany({ where: byUser, orderBy: BY_ID }),
+    prisma.medicationDoseChange.findMany({
+      where: byMedication,
+      orderBy: BY_ID,
+    }),
+    prisma.medicationInventoryItem.findMany({ where: byUser, orderBy: BY_ID }),
+    prisma.medicationInventoryEvent.findMany({
+      where: byMedication,
+      orderBy: BY_ID,
+    }),
+    prisma.medicationCategoryAssignment.findMany({
+      where: byMedication,
+      orderBy: { medicationId: "asc" },
+    }),
+    prisma.medicationIngredient.findMany({
+      where: byMedication,
+      orderBy: BY_ID,
+    }),
     prisma.auditLog.findMany({
       where: { ...byUser, action: { notIn: [...GUARD_TRAIL_ACTIONS] } },
+      orderBy: BY_ID,
       select: {
         action: true,
         userId: true,
@@ -153,6 +180,7 @@ export async function medicationState(prisma: Client, userIds: string[]) {
     }),
     prisma.idempotencyKey.findMany({
       where: byUser,
+      orderBy: BY_ID,
       select: {
         userId: true,
         key: true,

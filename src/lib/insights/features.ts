@@ -1667,7 +1667,7 @@ export async function extractFeatures(
     include: {
       schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
       // v1.16.3 — archived schedule eras for era-aware compliance.
-      scheduleRevisions: { orderBy: { validFrom: "asc" } },
+      scheduleRevisions: { orderBy: [{ validFrom: "asc" }, { id: "asc" }] },
       // v1.25 — pause eras so paused days drop out of the denominator.
       pauseEras: { select: { pausedAt: true, resumedAt: true } },
       // v1.40 (#1024) — the courses, so a gap between two expects nothing.
@@ -1696,7 +1696,7 @@ export async function extractFeatures(
         medicationId: { in: medications.map((med) => med.id) },
         scheduledFor: { gte: ninetyDaysAgo },
       },
-      orderBy: { scheduledFor: "desc" },
+      orderBy: [{ scheduledFor: "desc" }, { id: "desc" }],
       select: {
         medicationId: true,
         takenAt: true,

@@ -86,7 +86,7 @@ export const GET = apiHandler(
       // Superseded rows are audit records behind a correction — the
       // timeline shows the corrected state, like every era consumer.
       where: { medicationId: id, supersededByRevisionId: null },
-      orderBy: { validFrom: "desc" },
+      orderBy: [{ validFrom: "desc" }, { id: "desc" }],
       select: {
         id: true,
         validFrom: true,

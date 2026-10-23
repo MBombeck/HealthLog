@@ -633,7 +633,7 @@ describe("PUT /api/medications/[id] — primary-schedule grace bridge", () => {
     expect(res.status).toBe(200);
     expect(prisma.medicationSchedule.findFirst).toHaveBeenCalledWith({
       where: { medicationId: "m1" },
-      orderBy: { windowStart: "asc" },
+      orderBy: [{ windowStart: "asc" }, { id: "asc" }],
       select: { id: true },
     });
     expect(prisma.medicationSchedule.update).toHaveBeenCalledWith({
