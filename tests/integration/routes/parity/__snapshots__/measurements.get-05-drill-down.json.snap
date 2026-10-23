@@ -24,7 +24,8 @@
           "syncVersion": "<syncVersion>",
           "deletedAt": null,
           "createdAt": "<createdAt>",
-          "updatedAt": "<updatedAt>"
+          "updatedAt": "<updatedAt>",
+          "appleHealthMirror": false
         }
       ],
       "meta": {

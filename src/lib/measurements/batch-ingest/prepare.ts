@@ -44,9 +44,13 @@ export interface PreparedBatch {
 }
 
 export async function prepareBatch(
-  input: Pick<BatchIngestInput, "user" | "scoped" | "entries">,
+  input: Pick<
+    BatchIngestInput,
+    "user" | "scoped" | "ingestTokenId" | "entries"
+  >,
 ): Promise<PreparedBatch> {
   const { user, scoped, entries } = input;
+  const ingestTokenId = scoped ? input.ingestTokenId : null;
   const batch: PreparedBatch = {
     prepared: [],
     results: new Array(entries.length),
@@ -94,7 +98,13 @@ export async function prepareBatch(
       continue;
     }
 
-    const prepared = prepareMeasurementEntry(index, entry, user.id, scoped);
+    const prepared = prepareMeasurementEntry(
+      index,
+      entry,
+      user.id,
+      scoped,
+      ingestTokenId,
+    );
     if ("row" in prepared) batch.prepared.push(prepared);
     else batch.results[index] = prepared;
   }
@@ -183,6 +193,7 @@ function prepareMeasurementEntry(
   entry: BatchIngestEntry,
   userId: string,
   scoped: boolean,
+  ingestTokenId: string | null,
 ): PreparedEntry | EntryResult {
   const mapped = mapAppleHealthEntry({
     hkIdentifier: entry.hkIdentifier,
@@ -293,6 +304,8 @@ function prepareMeasurementEntry(
       // `(userId, type, EXTERNAL, externalId)`, which is the isolated
       // namespace this source exists to give.
       source: scoped ? EXTERNAL_SOURCE : (entry.source ?? "APPLE_HEALTH"),
+      // The token an EXTERNAL row came from (#1272); null for the phone.
+      ingestTokenId,
       measuredAt: mapped.takenAt,
       externalId: entry.externalId,
       externalSourceVersion: entry.externalSourceVersion ?? null,

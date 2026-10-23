@@ -156,7 +156,10 @@ export async function clearMeasurementRollups(
   await ctx.tx.measurementRollup.deleteMany({ where: { userId: ctx.ownerId } });
 }
 
-function toRestoredMeasurementData(measurement: BackupMeasurement) {
+function toRestoredMeasurementData(
+  measurement: BackupMeasurement,
+  ownTokenIds: ReadonlySet<string>,
+) {
   return {
     type: isLegacyRmssdRow(measurement)
       ? ("HRV_RMSSD" as const)
@@ -204,6 +207,13 @@ function toRestoredMeasurementData(measurement: BackupMeasurement) {
     sleepStage: (measurement.sleepStage ?? null) as never,
     rhythmClassification: (measurement.rhythmClassification ?? null) as never,
     deviceType: measurement.deviceType ?? null,
+    // The token link (#1272) survives only onto the account that still holds
+    // the token: a backup restored elsewhere, or after the token was deleted,
+    // would point at a row that is not there or not this account's.
+    ingestTokenId:
+      measurement.ingestTokenId && ownTokenIds.has(measurement.ingestTokenId)
+        ? measurement.ingestTokenId
+        : null,
     syncVersion: measurement.syncVersion ?? 1,
     deletedAt: measurement.deletedAt ? new Date(measurement.deletedAt) : null,
     ...(measurement.createdAt
@@ -343,8 +353,9 @@ async function reconcileWithoutId(
   tx: Prisma.TransactionClient,
   ownerId: string,
   measurement: BackupMeasurement,
+  ownTokenIds: ReadonlySet<string>,
 ): Promise<void> {
-  const restoredData = toRestoredMeasurementData(measurement);
+  const restoredData = toRestoredMeasurementData(measurement, ownTokenIds);
   const existing = await tx.measurement.findFirst({
     where: {
       userId: ownerId,
@@ -378,6 +389,16 @@ export async function restoreMeasurements(ctx: RestoreContext): Promise<void> {
   const measurementBatchSize = 1_000;
   const isExpiredTombstone = await expiredTombstoneFilter(ctx);
   const { isShadowedLegacyRmssd } = ctx.measurementPrepass;
+  // Tokens are not part of a backup; the ones the account holds now decide
+  // which token links come back.
+  const ownTokenIds = new Set(
+    (
+      await tx.apiToken.findMany({
+        where: { userId: ownerId },
+        select: { id: true },
+      })
+    ).map((token) => token.id),
+  );
   ctx.reportMeasurements(0);
   await streamed.forEachMeasurementBatch(
     measurementBatchSize,
@@ -395,7 +416,7 @@ export async function restoreMeasurements(ctx: RestoreContext): Promise<void> {
               {
                 id: measurement.id,
                 userId: ownerId,
-                ...toRestoredMeasurementData(measurement),
+                ...toRestoredMeasurementData(measurement, ownTokenIds),
               },
             ]
           : [],
@@ -412,7 +433,7 @@ export async function restoreMeasurements(ctx: RestoreContext): Promise<void> {
       }
       for (const measurement of batch) {
         if (measurement.id) continue;
-        await reconcileWithoutId(tx, ownerId, measurement);
+        await reconcileWithoutId(tx, ownerId, measurement, ownTokenIds);
       }
     },
   );

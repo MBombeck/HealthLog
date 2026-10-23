@@ -426,7 +426,8 @@
         "syncVersion": 1,
         "deletedAt": null,
         "createdAt": "<now>",
-        "updatedAt": "<now>"
+        "updatedAt": "<now>",
+        "ingestTokenId": null
       },
       {
         "id": "<id:2>",
@@ -450,7 +451,8 @@
         "syncVersion": 1,
         "deletedAt": null,
         "createdAt": "<now>",
-        "updatedAt": "<now>"
+        "updatedAt": "<now>",
+        "ingestTokenId": null
       },
       {
         "id": "<id:3>",
@@ -474,7 +476,8 @@
         "syncVersion": 1,
         "deletedAt": null,
         "createdAt": "<now>",
-        "updatedAt": "<now>"
+        "updatedAt": "<now>",
+        "ingestTokenId": null
       },
       {
         "id": "<id:4>",
@@ -498,7 +501,8 @@
         "syncVersion": 1,
         "deletedAt": null,
         "createdAt": "<now>",
-        "updatedAt": "<now>"
+        "updatedAt": "<now>",
+        "ingestTokenId": null
       }
     ],
     "IntradayCumulativeProfile": [],
@@ -1289,6 +1293,7 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": null,
+        "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
         "createdAt": "<now>",
@@ -1312,6 +1317,7 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": null,
+        "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
         "createdAt": "<now>",
@@ -1335,6 +1341,7 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": null,
+        "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
         "createdAt": "<now>",
@@ -1358,6 +1365,7 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": null,
+        "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
         "createdAt": "<now>",

@@ -21,6 +21,10 @@ import {
 } from "@/lib/validations/measurement";
 import { withIdempotency } from "@/lib/idempotency";
 import { shapeMeasurementNotes } from "@/lib/crypto/note-cipher";
+import {
+  type MeasurementWithMirrorInput,
+  withAppleHealthMirror,
+} from "@/lib/measurements/apple-health-mirror";
 import { measurementListResponse } from "@/lib/measurements/list/measurement-list";
 import {
   createReading,
@@ -154,6 +158,8 @@ async function postMeasurement(request: NextRequest) {
   const writer: ReadingWriter = {
     user: { id: user.id, timezone: user.timezone },
     scoped,
+    // On the Bearer path the token's id rides `session.id`.
+    ingestTokenId: scoped ? auth.session.id : null,
     ipAddress: getClientIp(request),
   };
 
@@ -202,7 +208,7 @@ async function postMeasurement(request: NextRequest) {
     if ("duplicate" in created) {
       return apiError(DUPLICATE_MESSAGE, 409, DUPLICATE_META);
     }
-    return apiSuccess(created.rows.map(shapeMeasurementNotes), 201);
+    return apiSuccess(created.rows.map(answerRow), 201);
   }
 
   // Single mode (existing behavior)
@@ -237,7 +243,12 @@ async function postMeasurement(request: NextRequest) {
   if ("duplicate" in created) {
     return apiError(DUPLICATE_MESSAGE, 409, DUPLICATE_META);
   }
-  return apiSuccess(shapeMeasurementNotes(created.row), 201);
+  return apiSuccess(answerRow(created.row), 201);
+}
+
+/** A written row as it is answered: the note readable, the write-back resolved. */
+function answerRow(row: MeasurementWithMirrorInput) {
+  return withAppleHealthMirror(shapeMeasurementNotes(row));
 }
 
 /**
@@ -262,6 +273,7 @@ async function postNamedSleepStage(
     {
       userId: writer.user.id,
       scoped: writer.scoped,
+      ingestTokenId: writer.ingestTokenId,
       ipAddress: writer.ipAddress,
     },
     parsed.data,

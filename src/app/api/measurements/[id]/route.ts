@@ -17,9 +17,13 @@ import {
   validateMeasurementRange,
 } from "@/lib/validations/measurement";
 import { encryptNote, shapeMeasurementNotes } from "@/lib/crypto/note-cipher";
+import {
+  APPLE_HEALTH_MIRROR_INCLUDE,
+  withAppleHealthMirror,
+} from "@/lib/measurements/apple-health-mirror";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma, type MeasurementType } from "@/generated/prisma/client";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
@@ -37,6 +41,7 @@ export const GET = apiHandler(
     // is not part of a unique index.
     const measurement = await prisma.measurement.findFirst({
       where: { id, deletedAt: null },
+      include: APPLE_HEALTH_MIRROR_INCLUDE,
     });
 
     if (!measurement || measurement.userId !== user.id) {
@@ -51,7 +56,9 @@ export const GET = apiHandler(
       },
     });
 
-    return apiSuccess(shapeMeasurementNotes(measurement));
+    return apiSuccess(
+      withAppleHealthMirror(shapeMeasurementNotes(measurement)),
+    );
   },
 );
 
@@ -113,62 +120,8 @@ export const PUT = apiHandler(
     // implausible edited value flowed unchecked into rollups, the health
     // score, the BP gates and the Coach snapshot.
     if (data.value !== undefined && data.value !== existing.value) {
-      // Server-owned rows first: a value attributed to a connector / import /
-      // computed engine is the provider's reading — editing the number would
-      // forge a source-attributed row the server never received. Timestamp
-      // and note edits stay allowed — annotating a Withings reading is
-      // legitimate.
-      //
-      // v1.38.x — gated on `USER_CORRECTABLE_MEASUREMENT_SOURCES` rather than
-      // the write-side `WRITABLE_MEASUREMENT_SOURCES` the two once shared,
-      // because `EXTERNAL` separates the questions. A client may not NAME that
-      // source (it is resolved from the ingest credential, and the write
-      // allowlist is published as `ingest.writeAllowlist`), but the hardware
-      // behind the token is the user's own scale, so the rationale above —
-      // "the value is the provider's" — does not reach it. Locking those rows
-      // would also break the correctability the settings card and the Home
-      // Assistant guide promise. This is the only site that reads the wider
-      // set; re-merging the two constants silently value-locks bridge rows.
-      if (
-        !(USER_CORRECTABLE_MEASUREMENT_SOURCES as readonly string[]).includes(
-          existing.source,
-        )
-      ) {
-        annotate({
-          action: { name: "measurements.update.server-owned-source" },
-          meta: { measurement_id: id, source: existing.source },
-        });
-        return apiError(
-          "Values from a connected source cannot be edited",
-          409,
-          { errorCode: "measurement.update.server_owned_source" },
-        );
-      }
-
-      // Range check against the row's OWN type (the edit body carries no
-      // type). Returned through the standard multi-issue 422 envelope so the
-      // edit sheet renders it like any other field error.
-      const rangeCheck = z
-        .object({
-          value: z.number().superRefine((value, ctx) => {
-            const rangeError = validateMeasurementRange(existing.type, value);
-            if (rangeError) {
-              ctx.addIssue({ code: "custom", message: rangeError });
-            }
-          }),
-        })
-        .safeParse({ value: data.value });
-      if (!rangeCheck.success) {
-        annotate({
-          action: { name: "measurements.update.validation-failed" },
-          meta: {
-            issue_count: rangeCheck.error.issues.length,
-            measurement_id: id,
-            reason: "value_out_of_range",
-          },
-        });
-        return returnAllZodIssues(rangeCheck.error, 422);
-      }
+      const refused = refuseValueEdit(existing, data.value, id);
+      if (refused) return refused;
     }
 
     let measurement;
@@ -185,6 +138,7 @@ export const PUT = apiHandler(
             notesEncrypted: encryptNote(data.notes),
           }),
         },
+        include: APPLE_HEALTH_MIRROR_INCLUDE,
       });
     } catch (err) {
       // v1.4.28 — re-pointing `measuredAt` onto an existing
@@ -252,7 +206,9 @@ export const PUT = apiHandler(
       { source: "manual" },
     );
 
-    return apiSuccess(shapeMeasurementNotes(measurement));
+    return apiSuccess(
+      withAppleHealthMirror(shapeMeasurementNotes(measurement)),
+    );
   },
 );
 
@@ -320,3 +276,69 @@ export const DELETE = apiHandler(
     return apiSuccess({ deleted: true });
   },
 );
+
+/**
+ * Whether a changed value may be written over `existing`, as the refusal to
+ * answer when it may not; null when it may.
+ */
+function refuseValueEdit(
+  existing: { source: string; type: MeasurementType },
+  value: number,
+  id: string,
+): Response | null {
+  // Server-owned rows first: a value attributed to a connector / import /
+  // computed engine is the provider's reading — editing the number would
+  // forge a source-attributed row the server never received. Timestamp
+  // and note edits stay allowed — annotating a Withings reading is
+  // legitimate.
+  //
+  // v1.38.x — gated on `USER_CORRECTABLE_MEASUREMENT_SOURCES` rather than
+  // the write-side `WRITABLE_MEASUREMENT_SOURCES` the two once shared,
+  // because `EXTERNAL` separates the questions. A client may not NAME that
+  // source (it is resolved from the ingest credential, and the write
+  // allowlist is published as `ingest.writeAllowlist`), but the hardware
+  // behind the token is the user's own scale, so the rationale above —
+  // "the value is the provider's" — does not reach it. Locking those rows
+  // would also break the correctability the settings card and the Home
+  // Assistant guide promise. This is the only site that reads the wider
+  // set; re-merging the two constants silently value-locks bridge rows.
+  if (
+    !(USER_CORRECTABLE_MEASUREMENT_SOURCES as readonly string[]).includes(
+      existing.source,
+    )
+  ) {
+    annotate({
+      action: { name: "measurements.update.server-owned-source" },
+      meta: { measurement_id: id, source: existing.source },
+    });
+    return apiError("Values from a connected source cannot be edited", 409, {
+      errorCode: "measurement.update.server_owned_source",
+    });
+  }
+
+  // Range check against the row's OWN type (the edit body carries no
+  // type). Returned through the standard multi-issue 422 envelope so the
+  // edit sheet renders it like any other field error.
+  const rangeCheck = z
+    .object({
+      value: z.number().superRefine((value, ctx) => {
+        const rangeError = validateMeasurementRange(existing.type, value);
+        if (rangeError) {
+          ctx.addIssue({ code: "custom", message: rangeError });
+        }
+      }),
+    })
+    .safeParse({ value: value });
+  if (!rangeCheck.success) {
+    annotate({
+      action: { name: "measurements.update.validation-failed" },
+      meta: {
+        issue_count: rangeCheck.error.issues.length,
+        measurement_id: id,
+        reason: "value_out_of_range",
+      },
+    });
+    return returnAllZodIssues(rangeCheck.error, 422);
+  }
+  return null;
+}

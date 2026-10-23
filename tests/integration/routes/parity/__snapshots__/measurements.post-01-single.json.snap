@@ -22,7 +22,8 @@
       "syncVersion": "<syncVersion>",
       "deletedAt": null,
       "createdAt": "<createdAt>",
-      "updatedAt": "<updatedAt>"
+      "updatedAt": "<updatedAt>",
+      "appleHealthMirror": true
     },
     "error": null
   },
@@ -73,7 +74,9 @@
             "syncVersion": "<syncVersion>",
             "deletedAt": null,
             "createdAt": "<createdAt>",
-            "updatedAt": "<updatedAt>"
+            "updatedAt": "<updatedAt>",
+            "ingestTokenId": null,
+            "ingestToken": null
           }
         ],
         "manual"

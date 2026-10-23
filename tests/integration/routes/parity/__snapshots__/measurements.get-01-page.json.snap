@@ -24,7 +24,8 @@
           "syncVersion": "<syncVersion>",
           "deletedAt": null,
           "createdAt": "<createdAt>",
-          "updatedAt": "<updatedAt>"
+          "updatedAt": "<updatedAt>",
+          "appleHealthMirror": true
         },
         {
           "id": "<id:3>",
@@ -47,7 +48,8 @@
           "syncVersion": "<syncVersion>",
           "deletedAt": null,
           "createdAt": "<createdAt>",
-          "updatedAt": "<updatedAt>"
+          "updatedAt": "<updatedAt>",
+          "appleHealthMirror": false
         },
         {
           "id": "<id:4>",
@@ -70,7 +72,8 @@
           "syncVersion": "<syncVersion>",
           "deletedAt": null,
           "createdAt": "<createdAt>",
-          "updatedAt": "<updatedAt>"
+          "updatedAt": "<updatedAt>",
+          "appleHealthMirror": false
         },
         {
           "id": "<id:5>",
@@ -93,7 +96,8 @@
           "syncVersion": "<syncVersion>",
           "deletedAt": null,
           "createdAt": "<createdAt>",
-          "updatedAt": "<updatedAt>"
+          "updatedAt": "<updatedAt>",
+          "appleHealthMirror": true
         },
         {
           "id": "<id:6>",
@@ -116,7 +120,8 @@
           "syncVersion": "<syncVersion>",
           "deletedAt": null,
           "createdAt": "<createdAt>",
-          "updatedAt": "<updatedAt>"
+          "updatedAt": "<updatedAt>",
+          "appleHealthMirror": true
         },
         {
           "id": "<id:7>",
@@ -139,7 +144,8 @@
           "syncVersion": "<syncVersion>",
           "deletedAt": null,
           "createdAt": "<createdAt>",
-          "updatedAt": "<updatedAt>"
+          "updatedAt": "<updatedAt>",
+          "appleHealthMirror": true
         },
         {
           "id": "<id:8>",
@@ -162,7 +168,8 @@
           "syncVersion": "<syncVersion>",
           "deletedAt": null,
           "createdAt": "<createdAt>",
-          "updatedAt": "<updatedAt>"
+          "updatedAt": "<updatedAt>",
+          "appleHealthMirror": true
         },
         {
           "id": "<id:9>",
@@ -185,7 +192,8 @@
           "syncVersion": "<syncVersion>",
           "deletedAt": null,
           "createdAt": "<createdAt>",
-          "updatedAt": "<updatedAt>"
+          "updatedAt": "<updatedAt>",
+          "appleHealthMirror": true
         },
         {
           "id": "<id:10>",
@@ -208,7 +216,8 @@
           "syncVersion": "<syncVersion>",
           "deletedAt": null,
           "createdAt": "<createdAt>",
-          "updatedAt": "<updatedAt>"
+          "updatedAt": "<updatedAt>",
+          "appleHealthMirror": true
         },
         {
           "id": "<id:11>",
@@ -231,7 +240,8 @@
           "syncVersion": "<syncVersion>",
           "deletedAt": null,
           "createdAt": "<createdAt>",
-          "updatedAt": "<updatedAt>"
+          "updatedAt": "<updatedAt>",
+          "appleHealthMirror": false
         },
         {
           "id": "<id:12>",
@@ -254,7 +264,8 @@
           "syncVersion": "<syncVersion>",
           "deletedAt": null,
           "createdAt": "<createdAt>",
-          "updatedAt": "<updatedAt>"
+          "updatedAt": "<updatedAt>",
+          "appleHealthMirror": false
         }
       ],
       "meta": {
