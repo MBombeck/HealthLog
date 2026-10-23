@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   chartPointDayKey,
   rugFraction,
+  rugEntries,
   rugPosition,
   timeRugFraction,
 } from "../chart-day";
@@ -189,5 +190,38 @@ describe("rug on a time axis drawn from real instants", () => {
     expect(timeRugFraction("2026-03-01", points, days)).toBeNull();
     expect(timeRugFraction("2026-03-05", points, days)).toBe(1);
     expect(timeRugFraction("2026-03-06", points, days)).toBeNull();
+  });
+});
+
+describe("rugEntries", () => {
+  const points = ["2026-09-01", "2026-09-04", "2026-09-08", "2026-09-12"].map(
+    (day) => ({ timestamp: noon(day) }),
+  );
+  const everyDay = Array.from(
+    { length: 12 },
+    (_, i) => `2026-09-${String(i + 1).padStart(2, "0")}`,
+  );
+
+  it("marks only the chart's own points on an index axis", () => {
+    // Days between two points have no place on an axis that spaces points;
+    // interpolated, a week of them ran together into a bar in one gap.
+    const entries = rugEntries(everyDay, points, "index");
+    expect(entries.map((e) => e.day)).toEqual([
+      "2026-09-01",
+      "2026-09-04",
+      "2026-09-08",
+      "2026-09-12",
+    ]);
+    expect(entries.map((e) => e.at)).toEqual([0, 1 / 3, 2 / 3, 1]);
+  });
+
+  it("keeps every day of the span on a time axis", () => {
+    expect(rugEntries(everyDay, points, "time")).toHaveLength(12);
+  });
+
+  it("never puts two dots closer than one point step on an index axis", () => {
+    const entries = rugEntries(everyDay, points, "index");
+    const gaps = entries.slice(1).map((e, i) => e.at - entries[i]!.at);
+    expect(Math.min(...gaps)).toBeCloseTo(1 / (points.length - 1));
   });
 });

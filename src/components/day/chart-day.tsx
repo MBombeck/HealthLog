@@ -169,6 +169,38 @@ export function timeRugFraction(
 }
 
 /**
+ * The rug's dots: each day that holds anything, where it sits along the plot.
+ *
+ * On an index or band axis a day has a place only if it is one of the
+ * chart's points, because the axis spaces points, not days. A day between
+ * two points used to be interpolated into the gap between them, so a sparse
+ * series (blood pressure taken twice a week beside a mood logged every day)
+ * squeezed a week of other days into one gap and their dots ran together
+ * into bars. A time axis spaces days and keeps every day of its span.
+ */
+export function rugEntries(
+  days: readonly string[],
+  points: readonly RugPoint[],
+  axis: ChartDayAxis,
+  pointDays?: ReadonlyArray<DateKey | null>,
+): Array<{ day: string; at: number }> {
+  const onPoints =
+    axis === "time"
+      ? null
+      : new Set(points.map((point) => chartPointDayKey(point.timestamp)));
+  return days
+    .filter((day) => onPoints === null || onPoints.has(day))
+    .map((day) => ({
+      day,
+      at:
+        axis === "time" && pointDays !== undefined
+          ? timeRugFraction(day as DateKey, points, pointDays)
+          : rugFraction(day as DateKey, points, axis),
+    }))
+    .filter((entry): entry is { day: string; at: number } => entry.at !== null);
+}
+
+/**
  * The row of day dots under a daily chart. `insetLeft` / `insetRight` are the
  * pixels between the chart box and the first and last point (margin, axis,
  * padding), so a dot lands under its day.
@@ -216,15 +248,12 @@ export function DayRug({
   const index = useDayIndex(from, to);
   const data = index.data;
   const notable = new Set(data?.notable ?? []);
-  const days = Object.keys(data?.days ?? {})
-    .filter((day) => isOpenableDay(day, today))
-    .map((day) => ({
-      day,
-      at: byDays
-        ? timeRugFraction(day, points, pointDays)
-        : rugFraction(day, points, axis),
-    }))
-    .filter((entry): entry is { day: string; at: number } => entry.at !== null);
+  const days = rugEntries(
+    Object.keys(data?.days ?? {}).filter((day) => isOpenableDay(day, today)),
+    points,
+    axis,
+    byDays ? pointDays : undefined,
+  );
   return (
     <div
       aria-hidden="true"
