@@ -10,6 +10,7 @@ import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import type { DomainWatermark, SyncCursor } from "@/lib/sync/cursor";
 import { dayLogSymptomInclude } from "@/lib/cycle/dto";
+import { APPLE_HEALTH_MIRROR_SELECT } from "@/lib/measurements/apple-health-mirror";
 
 const MEASUREMENT_SELECT = {
   id: true,
@@ -24,6 +25,13 @@ const MEASUREMENT_SELECT = {
   syncVersion: true,
   deletedAt: true,
   updatedAt: true,
+  ingestToken: APPLE_HEALTH_MIRROR_SELECT.ingestToken,
+} satisfies Prisma.MeasurementSelect;
+
+const MEASUREMENT_MIRROR_SELECT = {
+  id: true,
+  source: true,
+  ingestToken: { select: { mirrorToAppleHealth: true, mirrorChangedAt: true } },
 } satisfies Prisma.MeasurementSelect;
 
 const MOOD_SELECT = {
@@ -73,6 +81,9 @@ export type CycleDayRow = Prisma.CycleDayLogGetPayload<{
   include: typeof dayLogSymptomInclude;
 }>;
 export type CycleRow = Prisma.MenstrualCycleGetPayload<object>;
+export type MeasurementMirrorRow = Prisma.MeasurementGetPayload<{
+  select: typeof MEASUREMENT_MIRROR_SELECT;
+}>;
 
 /**
  * Build the `(updatedAt, id)` keyset predicate for a domain's watermark.
@@ -95,6 +106,44 @@ export interface DomainRows {
   intakes: IntakeRow[];
   cycleDays: CycleDayRow[];
   cycles: CycleRow[];
+  measurementMirror: MeasurementMirrorRow[];
+}
+
+/**
+ * The live readings of every token whose Apple Health setting changed past
+ * the watermark, in `(token.mirrorChangedAt, measurement.id)` order. Switching
+ * the setting writes the token row only, so the readings keep their
+ * `updatedAt` (nothing keyed on it recomputes) and arrive through this walk
+ * instead of the measurement one.
+ */
+function readMeasurementMirrorRows(
+  userId: string,
+  wm: DomainWatermark | undefined,
+  limit: number,
+): Promise<MeasurementMirrorRow[]> {
+  const at = wm ? new Date(wm.updatedAtMs) : null;
+  return prisma.measurement.findMany({
+    where: {
+      userId,
+      deletedAt: null,
+      ingestToken: { mirrorChangedAt: { not: null } },
+      ...(at &&
+        wm && {
+          OR: [
+            { ingestToken: { mirrorChangedAt: { gt: at } } },
+            {
+              AND: [
+                { ingestToken: { mirrorChangedAt: at } },
+                { id: { gt: wm.id } },
+              ],
+            },
+          ],
+        }),
+    },
+    orderBy: [{ ingestToken: { mirrorChangedAt: "asc" } }, { id: "asc" }],
+    take: limit + 1,
+    select: MEASUREMENT_MIRROR_SELECT,
+  });
 }
 
 /**
@@ -108,40 +157,42 @@ export async function readDomainRows(
   limit: number,
   cycleEnabled: boolean,
 ): Promise<DomainRows> {
-  const [measurements, mood, intakes, cycleDays, cycles] = await Promise.all([
-    prisma.measurement.findMany({
-      where: { userId, ...keysetFilter(cursor.measurements) },
-      orderBy: [{ updatedAt: "asc" }, { id: "asc" }],
-      take: limit + 1,
-      select: MEASUREMENT_SELECT,
-    }),
-    prisma.moodEntry.findMany({
-      where: { userId, ...keysetFilter(cursor.mood) },
-      orderBy: [{ updatedAt: "asc" }, { id: "asc" }],
-      take: limit + 1,
-      select: MOOD_SELECT,
-    }),
-    prisma.medicationIntakeEvent.findMany({
-      where: { userId, ...keysetFilter(cursor.intakes) },
-      orderBy: [{ updatedAt: "asc" }, { id: "asc" }],
-      take: limit + 1,
-      select: INTAKE_SELECT,
-    }),
-    cycleEnabled
-      ? prisma.cycleDayLog.findMany({
-          where: { userId, ...keysetFilter(cursor.cycleDays) },
-          orderBy: [{ updatedAt: "asc" }, { id: "asc" }],
-          take: limit + 1,
-          include: dayLogSymptomInclude,
-        })
-      : [],
-    cycleEnabled
-      ? prisma.menstrualCycle.findMany({
-          where: { userId, ...keysetFilter(cursor.cycles) },
-          orderBy: [{ updatedAt: "asc" }, { id: "asc" }],
-          take: limit + 1,
-        })
-      : [],
-  ]);
-  return { measurements, mood, intakes, cycleDays, cycles };
+  const [measurements, mood, intakes, cycleDays, cycles, measurementMirror] =
+    await Promise.all([
+      prisma.measurement.findMany({
+        where: { userId, ...keysetFilter(cursor.measurements) },
+        orderBy: [{ updatedAt: "asc" }, { id: "asc" }],
+        take: limit + 1,
+        select: MEASUREMENT_SELECT,
+      }),
+      prisma.moodEntry.findMany({
+        where: { userId, ...keysetFilter(cursor.mood) },
+        orderBy: [{ updatedAt: "asc" }, { id: "asc" }],
+        take: limit + 1,
+        select: MOOD_SELECT,
+      }),
+      prisma.medicationIntakeEvent.findMany({
+        where: { userId, ...keysetFilter(cursor.intakes) },
+        orderBy: [{ updatedAt: "asc" }, { id: "asc" }],
+        take: limit + 1,
+        select: INTAKE_SELECT,
+      }),
+      cycleEnabled
+        ? prisma.cycleDayLog.findMany({
+            where: { userId, ...keysetFilter(cursor.cycleDays) },
+            orderBy: [{ updatedAt: "asc" }, { id: "asc" }],
+            take: limit + 1,
+            include: dayLogSymptomInclude,
+          })
+        : [],
+      cycleEnabled
+        ? prisma.menstrualCycle.findMany({
+            where: { userId, ...keysetFilter(cursor.cycles) },
+            orderBy: [{ updatedAt: "asc" }, { id: "asc" }],
+            take: limit + 1,
+          })
+        : [],
+      readMeasurementMirrorRows(userId, cursor.measurementMirror, limit),
+    ]);
+  return { measurements, mood, intakes, cycleDays, cycles, measurementMirror };
 }

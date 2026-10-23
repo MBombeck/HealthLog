@@ -9,6 +9,7 @@ import {
   loadFoldTimezone,
 } from "@/lib/measurements/folded-window";
 import { readNote } from "@/lib/crypto/note-cipher";
+import { resolveAppleHealthMirror } from "@/lib/measurements/apple-health-mirror";
 import { levelAForWire } from "@/lib/mood/level-a";
 import { contextForWire } from "@/lib/mood/context";
 import {
@@ -22,6 +23,7 @@ import type {
   CycleDayRow,
   CycleRow,
   IntakeRow,
+  MeasurementMirrorRow,
   MeasurementRow,
   MoodRow,
 } from "./read-rows";
@@ -30,6 +32,7 @@ import type {
   DomainBlock,
   IdTombstone,
   IntakeUpsert,
+  MeasurementMirrorUpsert,
   MeasurementTombstone,
   MeasurementUpsert,
   MoodUpsert,
@@ -129,12 +132,25 @@ export async function measurementBlock(
         measuredAt: row.measuredAt.toISOString(),
         source: row.source,
         notes: readNote(row.notesEncrypted, row.notes),
+        appleHealthMirror: resolveAppleHealthMirror(row),
         syncVersion: row.syncVersion,
         updatedAt: row.updatedAt.toISOString(),
       });
     }
   }
   return { upserts, tombstones };
+}
+
+export function measurementMirrorBlock(
+  page: MeasurementMirrorRow[],
+): DomainBlock<MeasurementMirrorUpsert, never> {
+  return {
+    upserts: page.map((row) => ({
+      id: row.id,
+      appleHealthMirror: resolveAppleHealthMirror(row),
+    })),
+    tombstones: [],
+  };
 }
 
 export function moodBlock(

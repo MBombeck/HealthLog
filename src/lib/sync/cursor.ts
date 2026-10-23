@@ -28,19 +28,34 @@
 
 /** The sync domains the feed serves. */
 export type SyncDomain =
-  "measurements" | "mood" | "intakes" | "cycleDays" | "cycles";
+  | "measurements"
+  | "mood"
+  | "intakes"
+  | "cycleDays"
+  | "cycles"
+  | "measurementMirror";
 
+/**
+ * `measurementMirror` (#1272) is additive inside the v2 envelope: a token
+ * without it decodes as before and that domain scans from the start. Its
+ * watermark is not a row's `updatedAt` but the `mirrorChangedAt` of the
+ * token whose readings were last re-delivered (see `read-rows.ts`).
+ */
 export const SYNC_DOMAINS: readonly SyncDomain[] = [
   "measurements",
   "mood",
   "intakes",
   "cycleDays",
   "cycles",
+  "measurementMirror",
 ];
 
 /** A single domain's keyset position. */
 export interface DomainWatermark {
-  /** `updatedAt` of the last drained row, as epoch milliseconds. */
+  /**
+   * `updatedAt` of the last drained row, as epoch milliseconds; for
+   * `measurementMirror`, the `mirrorChangedAt` of that row's token.
+   */
   updatedAtMs: number;
   /** `id` of the last drained row (cuid) — the keyset tie-breaker. */
   id: string;
