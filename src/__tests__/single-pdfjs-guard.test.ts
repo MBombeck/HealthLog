@@ -17,12 +17,12 @@
  * it; they run in their own processes. The pdfjs-one-version tests prove the
  * two orders in one process; this file stops the import from coming back.
  */
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 import {
+  readSourceText,
   requireFloor,
   stripComments,
   walkSourceFiles,
@@ -56,9 +56,7 @@ const PDF_PARSE_IMPORT =
 describe("one pdfjs in the server", () => {
   it("no runtime file imports pdf-parse", () => {
     const importers = runtimeFiles().filter((rel) =>
-      PDF_PARSE_IMPORT.test(
-        stripComments(readFileSync(join(SRC, rel), "utf8")),
-      ),
+      PDF_PARSE_IMPORT.test(stripComments(readSourceText(join(SRC, rel)))),
     );
     expect(importers).toEqual([]);
   });

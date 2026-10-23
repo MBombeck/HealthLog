@@ -4,18 +4,21 @@ import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 /**
- * Text extraction and rasterising share one process, and pdfjs keeps its worker
- * on `globalThis.pdfjsWorker`. While `pdf-parse` brought its own pdfjs
- * (5.4.296) beside the app's (6.4.299), whichever ran first installed its
- * worker and the other refused it: "The API version "6.4.299" does not match
- * the Worker version "5.4.296"". Thumbnails failed as `raster-failed`, vision
- * reads of a PDF answered 422 and the local text index stayed empty without a
- * word. Reading the text through the app's own pdfjs is the fix; this file runs
- * extraction first and `pdfjs-one-version-raster-first.test.ts` the reverse,
- * each in a fresh process state.
+ * Text extraction and rasterising run in one process. In Node, pdfjs keeps its
+ * worker in one global, `globalThis.pdfjsWorker`. When `pdf-parse` brought its
+ * own pdfjs (5.4.296) beside the app's (6.4.299), the copy that ran first set
+ * that global, and the other copy refused it: "The API version "6.4.299" does
+ * not match the Worker version "5.4.296"". Thumbnails then failed as
+ * `raster-failed`, vision reads of a PDF answered 422, and the local text index
+ * stayed empty with no log line. The fix: read the text with the app's own
+ * pdfjs.
  *
- * Mutation check: read the text through `pdf-parse` again in `extractPdfText` →
- * the raster step here fails.
+ * This file extracts text first and rasterises second. Its twin in this
+ * folder runs the reverse order. Each order needs its own file, because a
+ * process keeps the first worker it loads.
+ *
+ * Mutation check: read the text through `pdf-parse` again in
+ * `extractPdfText` → the raster step here fails.
  */
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
 
