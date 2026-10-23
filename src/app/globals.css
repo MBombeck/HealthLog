@@ -626,6 +626,16 @@ body,
    * Scoping it to the body-scrolled branch leaves exactly one gutter per
    * branch.
    */
+  /*
+   * The home-indicator inset, read through one property by everything that
+   * owns the shell's bottom edge (the rail, `<main>`, the bottom bar, the
+   * Coach button). It is `env()` everywhere it matters; a test that needs an
+   * inset no desktop browser reports sets it instead
+   * (`e2e/tablet-shell.spec.ts`).
+   */
+  :root {
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  }
   html[data-scroll="body"] {
     scrollbar-gutter: stable;
   }
@@ -650,6 +660,17 @@ body,
     height: 100%;
     overflow: hidden;
     overscroll-behavior: none;
+  }
+  /*
+   * The colour of anything beyond the page. A browser built on WKWebView
+   * (Edge, Chrome, Firefox on iPadOS) can keep the strip over the home
+   * indicator out of the page's layout and fill it with the page's
+   * "under-page" colour, which it takes from the root. The root states the
+   * content colour itself rather than leaving it to propagate from the body,
+   * so that strip meets `<main>` in the same colour.
+   */
+  html[data-scroll="shell"] {
+    background-color: var(--background);
   }
   body {
     @apply bg-background text-foreground;

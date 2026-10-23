@@ -600,7 +600,7 @@ describe("<SidebarNav> keeps every destination reachable on a touch tablet", () 
 
   it("gives the rail the home indicator's inset, so the avatar row stays clear", () => {
     const aside = /<aside[^>]*class="([^"]*)"/.exec(render())?.[1] ?? "";
-    expect(aside.split(" ")).toContain("pb-[env(safe-area-inset-bottom,0px)]");
+    expect(aside.split(" ")).toContain("pb-(--safe-area-bottom)");
   });
 
   it("draws the scroll cue for a finger only, outside the focus order and the accessibility tree", () => {

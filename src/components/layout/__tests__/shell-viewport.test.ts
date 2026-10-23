@@ -43,7 +43,7 @@ describe("the shell takes the window's edges", () => {
     );
     // `fixed` re-rasterises the whole app in its own layer and traps the
     // bottom bar's z-index in a stacking context.
-    expect(shell).not.toContain("fixed");
+    expect(shell.filter((c) => /(^|:)fixed$/.test(c))).toEqual([]);
     expect(SHELL_ROOT_CLASS).not.toMatch(
       /\b(?:min-)?h-(?:dvh|svh|lvh|screen)\b/,
     );
@@ -64,6 +64,28 @@ describe("the shell takes the window's edges", () => {
   });
 });
 
+describe("the home-indicator inset has one source", () => {
+  it("is env() behind one property, which every owner of the bottom edge reads", () => {
+    const css = readSource("src/app/globals.css", "--safe-area-bottom");
+    expect(css).toMatch(
+      /:root\s*\{\s*--safe-area-bottom:\s*env\(safe-area-inset-bottom,\s*0px\);/,
+    );
+    for (const [path, anchor] of [
+      ["src/components/layout/sidebar-nav.tsx", "export function SidebarNav"],
+      ["src/components/layout/bottom-nav.tsx", 'data-slot="bottom-nav"'],
+      ["src/components/insights/layout-coach-fab.tsx", 'data-slot="coach-fab"'],
+    ] as const) {
+      expect(readSource(path, anchor)).toContain("--safe-area-bottom");
+    }
+    expect(MAIN_SCROLL_CLASS).not.toContain("safe-area-inset-bottom");
+    // Where a WKWebView browser keeps the page out of the strip over the
+    // home indicator, it fills it with the root's colour: the content's.
+    expect(css).toMatch(
+      /html\[data-scroll="shell"\]\s*\{\s*background-color:\s*var\(--background\);\s*\}/,
+    );
+  });
+});
+
 describe("the bottom edge is cleared in both shells", () => {
   const fab = readSource(
     "src/components/insights/layout-coach-fab.tsx",
@@ -71,12 +93,12 @@ describe("the bottom edge is cleared in both shells", () => {
   );
   const fabSize = rem(/\bsize-(\d+)\b/.exec(fab)![0]);
   const phoneFabBottom = rem(
-    /(?<![\w:-])bottom-\[calc\(env\(safe-area-inset-bottom,0px\)\+[\d.]+rem\)\]/.exec(
+    /(?<![\w:-])bottom-\[calc\(var\(--safe-area-bottom\)\+[\d.]+rem\)\]/.exec(
       fab,
     )![0],
   );
   const desktopFabBottom = rem(
-    /shell-desktop:bottom-\[calc\(env\(safe-area-inset-bottom,0px\)\+[\d.]+rem\)\]/.exec(
+    /shell-desktop:bottom-\[calc\(var\(--safe-area-bottom\)\+[\d.]+rem\)\]/.exec(
       fab,
     )![0],
   );
@@ -85,14 +107,12 @@ describe("the bottom edge is cleared in both shells", () => {
 
   it("the desktop shell's main keeps the home indicator off the last line", () => {
     expect(main).not.toContain("shell-desktop:pb-0");
-    expect(main).toContain(
-      "shell-desktop:pb-[env(safe-area-inset-bottom,0px)]",
-    );
+    expect(main).toContain("shell-desktop:pb-(--safe-area-bottom)");
   });
 
   it("the last line scrolls clear of the Coach button in the phone shell", () => {
     const mainPad = Number(
-      /^pb-\[calc\((\d+(?:\.\d+)?)rem\+env\(safe-area-inset-bottom,0px\)\)\]$/.exec(
+      /^pb-\[calc\((\d+(?:\.\d+)?)rem\+var\(--safe-area-bottom\)\)\]$/.exec(
         main.find((c) => c.startsWith("pb-[calc("))!,
       )![1],
     );
