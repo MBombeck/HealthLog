@@ -1002,10 +1002,14 @@ describe("buildFullBackupPayload — aggregation provenance", () => {
     );
 
     const rows = payload.measurements as Array<Record<string, unknown>>;
-    // The portable arm carries the human-readable subset only — no
-    // externalSourceVersion, no glucoseContext, and no provenance either.
+    // The portable arm carries the human-readable subset only: none of the
+    // sync bookkeeping (source ids, their version, the provenance), but every
+    // attribute of the reading itself, its glucose context among them.
     expect(rows[0]).not.toHaveProperty("aggregationProvenance");
     expect(rows[0]).not.toHaveProperty("externalSourceVersion");
+    expect(rows[0]).not.toHaveProperty("externalId");
+    expect(rows[0]).toHaveProperty("glucoseContext");
+    expect(rows[0]).toHaveProperty("sleepStage");
   });
 });
 

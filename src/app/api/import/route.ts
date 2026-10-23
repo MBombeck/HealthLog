@@ -1,7 +1,8 @@
 /**
  * `POST /api/import` — import user data (JSON format matching the export
  * structure). The route authenticates, meters and parses the file; the
- * writers live in `src/lib/import/json/`.
+ * writers live in `src/lib/import/json/`. The app's own full backup and JSON
+ * export are read in their own terms first (`normalizeJsonImportFile`).
  */
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
@@ -28,6 +29,7 @@ import {
 } from "@/lib/validations/entry-instant";
 import { isoDateTime } from "@/lib/validations/datetime";
 import { fallbackMoodDateStart } from "@/lib/import/json/mood";
+import { normalizeJsonImportFile } from "@/lib/import/json/normalize";
 import { runJsonImport } from "@/lib/import/json/run";
 
 // Derived from canonical enum so round-trip export → import covers every
@@ -120,7 +122,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
   });
 
   if (jsonError) return jsonError;
-  const parsed = importSchema.safeParse(body);
+  const normalized = normalizeJsonImportFile(body);
+  const parsed = importSchema.safeParse(normalized.file);
   if (!parsed.success) {
     return apiValidationError(
       parsed.error.issues[0]?.message ?? "Invalid import payload",
@@ -129,12 +132,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
     );
   }
 
-  const { stats, writeFailed } = await runJsonImport({
+  const { stats: written, writeFailed } = await runJsonImport({
     userId: user.id,
     measurements: parsed.data.measurements,
     moodEntries: parsed.data.moodEntries,
     ipAddress: getClientIp(request),
   });
+  const stats = { ...written, skipped: written.skipped + normalized.skipped };
 
   if (writeFailed) {
     return apiError("Import write failed", 503, {

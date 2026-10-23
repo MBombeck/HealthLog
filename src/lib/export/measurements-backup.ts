@@ -91,14 +91,26 @@ function serialiseMeasurement(
         createdAt: measurement.createdAt.toISOString(),
         updatedAt: measurement.updatedAt.toISOString(),
       }
-    : {
+    : // The portable file is the human-readable subset: no tombstones, no
+      // ciphertext and none of the sync bookkeeping (the source's ids, its
+      // version, the aggregate's provenance). What the reading itself says
+      // stays: a glucose value without its fasting context, a sleep row
+      // without its stage or a range without its bounds reads as a
+      // different measurement once it is imported or restored elsewhere.
+      {
         id: measurement.id,
         type: measurement.type,
         value: measurement.value,
+        valueMin: measurement.valueMin,
+        valueMax: measurement.valueMax,
         unit: measurement.unit,
         measuredAt: measurement.measuredAt.toISOString(),
         source: measurement.source,
         notes: readNote(measurement.notesEncrypted, measurement.notes),
+        glucoseContext: measurement.glucoseContext,
+        sleepStage: measurement.sleepStage,
+        rhythmClassification: measurement.rhythmClassification,
+        deviceType: measurement.deviceType,
         deletedAt: measurement.deletedAt?.toISOString() ?? null,
       };
 }
