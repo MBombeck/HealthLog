@@ -91,8 +91,20 @@ test.describe.configure({ mode: "serial" });
  * The pass backs up every account in the database, the restore rewrites a
  * dozen tables in one transaction, and the archive runs Argon2id at the OWASP
  * cost. None of that fits the suite's 30-second default on a loaded runner.
+ * On top of that, a test must hold the restore wait below in full.
  */
-test.setTimeout(180_000);
+test.setTimeout(240_000);
+
+/**
+ * How long a queued restore may take to finish. The restore shares the heavy
+ * lane with the backup pass, and a restore that finds the lane taken goes
+ * back to the queue for `LANE_DEFER_SECONDS` (60 s, `src/lib/jobs/heavy-lane.ts`).
+ * The pass this journey starts can still be finishing when the restore is
+ * asked for: on a loaded machine its tail ran 15 s, the restore was put back
+ * by 60, and a 60-second wait ran out one second before it started. The
+ * budget holds one deferral and a second yield with room to run.
+ */
+const RESTORE_BUDGET_MS = 135_000;
 
 /** Long enough to clear the export card's own 12-character minimum. */
 const ARCHIVE_PASSPHRASE = "e2e-backup-journey-passphrase";
@@ -339,7 +351,7 @@ async function awaitRestore(page: Page, response: Response): Promise<void> {
           ? `failed: ${body.data.failure?.code ?? "unknown"}`
           : body.data?.status;
       },
-      { timeout: 60_000, intervals: [250, 500, 1_000] },
+      { timeout: RESTORE_BUDGET_MS, intervals: [250, 500, 1_000] },
     )
     .toBe("succeeded");
 }
