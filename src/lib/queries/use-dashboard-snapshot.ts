@@ -215,7 +215,13 @@ export function useDashboardSnapshot(enabled = true) {
     queryFn: makeSnapshotQueryFn(queryClient),
     enabled,
     staleTime: 60_000,
-    refetchOnMount: false,
+    // A remount of a cell that holds live data reads it as it is, but a cell
+    // restored from the offline copy (`restorePersistedQueryCache`) arrives
+    // invalidated and must fetch on its first mount. Plain `false` kept the
+    // restored copy on screen: a page reloaded right after a write, before
+    // the persister had flushed the newer snapshot, painted the pre-write
+    // dashboard until the two-minute poll.
+    refetchOnMount: (query) => query.state.isInvalidated,
     // Keep the snapshot and Today digest in lockstep after a background sync.
     // Both are out-of-band reads, so staleTime cannot signal that a worker
     // landed a new arrival while the browser was hidden.
