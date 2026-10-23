@@ -5794,6 +5794,7 @@
             "readFailed": "Impossibile leggere il file.",
             "resultSummary": "{measurements} misurazioni e {moods} voci dell'umore importate, {skipped} saltate.",
             "resultSuccess": "{measurements} misurazioni e {moods} voci dell'umore importate",
+            "droppedLinks": "Importato senza questi tag, perché questo account non ne ha nessuno con quel nome: {keys}",
             "resultNothing": "Non è stato importato nulla. Tutte le {skipped} voci sono state saltate.",
             "resultEmpty": "Questo file non conteneva né misurazioni né voci dell'umore."
           },

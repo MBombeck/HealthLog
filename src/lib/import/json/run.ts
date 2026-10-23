@@ -11,6 +11,7 @@ import { recomputeUserMoodRollups } from "@/lib/rollups/mood-rollups";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
 import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit";
 import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger";
+import type { DroppedLinkKeys } from "@/lib/mood/tag-links";
 
 import {
   importJsonMeasurements,
@@ -24,7 +25,11 @@ export async function runJsonImport(input: {
   measurements: JsonImportMeasurement[] | undefined;
   moodEntries: JsonImportMoodEntry[] | undefined;
   ipAddress: string | null;
-}): Promise<Pick<JsonImportTally, "stats" | "writeFailed">> {
+}): Promise<
+  Pick<JsonImportTally, "stats" | "writeFailed"> & {
+    droppedLinkKeys: DroppedLinkKeys;
+  }
+> {
   const { userId } = input;
   const tally = newJsonImportTally();
 
@@ -80,6 +85,8 @@ export async function runJsonImport(input: {
   annotate({
     meta: {
       import_stats: tally.stats,
+      import_dropped_link_keys:
+        tally.droppedTagKeys.size + tally.droppedFactorKeys.size,
       ...(tally.unstableShapes.length > 0
         ? unstableExternalIdMeta("import.json", tally.unstableShapes)
         : {}),
@@ -97,5 +104,12 @@ export async function runJsonImport(input: {
     annotate({ meta: { import_audit_failed: true } });
   }
 
-  return { stats: tally.stats, writeFailed: tally.writeFailed };
+  return {
+    stats: tally.stats,
+    writeFailed: tally.writeFailed,
+    droppedLinkKeys: {
+      droppedTagKeys: [...tally.droppedTagKeys].sort(),
+      droppedFactorKeys: [...tally.droppedFactorKeys].sort(),
+    },
+  };
 }

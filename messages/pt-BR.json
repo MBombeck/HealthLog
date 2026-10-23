@@ -5794,6 +5794,7 @@
             "readFailed": "Não foi possível ler esse arquivo.",
             "resultSummary": "Importadas {measurements} medições e {moods} registros de humor, {skipped} pulados.",
             "resultSuccess": "Importadas {measurements} medições e {moods} registros de humor",
+            "droppedLinks": "Importado sem estas tags, porque esta conta não tem nenhuma com esse nome: {keys}",
             "resultNothing": "Nada foi importado. Todas as {skipped} entradas foram puladas.",
             "resultEmpty": "Esse arquivo não continha medições nem registros de humor."
           },

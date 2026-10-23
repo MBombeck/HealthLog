@@ -5794,6 +5794,7 @@
             "readFailed": "Impossible de lire ce fichier.",
             "resultSummary": "{measurements} mesures et {moods} entrées d'humeur importées, {skipped} ignorées.",
             "resultSuccess": "{measurements} mesures et {moods} entrées d'humeur importées",
+            "droppedLinks": "Importé sans ces étiquettes, car ce compte n’en a aucune de ce nom : {keys}",
             "resultNothing": "Rien n'a été importé. Les {skipped} entrées ont toutes été ignorées.",
             "resultEmpty": "Ce fichier ne contenait ni mesures ni entrées d'humeur."
           },

@@ -16162,16 +16162,19 @@ paths:
       tags:
         - Import
       summary: Import measurements and mood entries from JSON
-      description: "Restores a JSON export (the structure `GET /api/export/json` emits): up to 10 000 measurements plus 10 000
-        mood entries per call, body ≤ 16 MB. Rows carrying an `externalId` upsert idempotently (re-import updates in
-        place); rows without one are first-write-wins and dedup against the existing unique keys, so an exact duplicate
-        is `skipped` rather than doubled. A row with an unstable `externalId` is skipped while the rest of the file
-        still lands. Every imported measurement stores `source = IMPORT`; every imported mood entry re-derives
-        pleasantness from its label. Writes are per-row, not transactional: on a mid-file write failure the response is
-        503 (`meta.errorCode` = `import.write_failed`, `meta.retryable` = true) with `meta.stats` carrying what landed —
-        rows already written stay written, and a retry is only safe against duplication for rows that carry an
-        `externalId`. Validation is fail-fast (the 422 carries the first issue's message, not the multi-issue envelope).
-        Rate-limited 5/hour per user (shared `import:` bucket with the CSV importer)."
+      description: "Imports the app's own files back: the JSON export (`GET /api/export?format=json`, read inside its `data`
+        envelope) or the portable full backup (`GET /api/export/full-backup`). Every field either file writes for a
+        reading or a mood entry is carried, apart from the row ids, the source and the sync bookkeeping; a backup's
+        deletion records are skipped and counted. Up to 10 000 measurements plus 10 000 mood entries per call, body ≤ 16
+        MB. Rows carrying an `externalId` upsert idempotently (re-import updates in place); rows without one are
+        first-write-wins and dedup against the existing unique keys, so an exact duplicate is `skipped` rather than
+        doubled. A row with an unstable `externalId` is skipped while the rest of the file still lands. Every imported
+        row stores `source = IMPORT`; a mood entry without `a1` derives pleasantness from its label. Writes are per-row,
+        not transactional: on a mid-file write failure the response is 503 (`meta.errorCode` = `import.write_failed`,
+        `meta.retryable` = true) with `meta.stats` carrying what landed — rows already written stay written, and a retry
+        is only safe against duplication for rows that carry an `externalId`. Validation is fail-fast (the 422 carries
+        the first issue's message, not the multi-issue envelope). Rate-limited 5/hour per user (shared `import:` bucket
+        with the CSV importer)."
       requestBody:
         required: true
         content:
@@ -33206,8 +33209,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/JsonImportMoodEntry"
-      description: JSON import payload, matching the structure `GET /api/export/json` emits. Both sections optional; up to 10
-        000 rows each.
+      description: "JSON import payload: the measurements and mood entries of the JSON export or the portable full backup.
+        Both sections optional; up to 10 000 rows each."
     JsonImportMeasurement:
       type: object
       properties:
@@ -33217,6 +33220,12 @@ components:
           type: number
           description: Checked against the type's server-side plausibility range; an out-of-range value fails the whole request
             with 422.
+        valueMin:
+          description: Lower bound of a range reading (an hourly heart-rate statistic). Not above `valueMax`.
+          type: number
+        valueMax:
+          description: Upper bound of a range reading.
+          type: number
         unit:
           type: string
         measuredAt:
@@ -33232,9 +33241,31 @@ components:
             - POSTPRANDIAL
             - RANDOM
             - BEDTIME
-        source:
-          description: "Accepted for export-format compatibility and ignored: every imported row stores `source = IMPORT`."
+        sleepStage:
+          description: A sleep row's stage.
           type: string
+          enum:
+            - IN_BED
+            - ASLEEP
+            - AWAKE
+            - CORE
+            - DEEP
+            - REM
+        rhythmClassification:
+          description: The device's own verdict on an ECG, a rhythm alert or a steadiness reading.
+          type: string
+          enum:
+            - IRREGULAR
+            - NOT_DETECTED
+            - INCONCLUSIVE
+            - LOW
+            - VERY_LOW
+            - FIRED
+        deviceType:
+          description: The writer of the reading (watch, phone).
+          type: string
+          minLength: 1
+          maxLength: 32
         notes:
           description: Encrypted at rest.
           type: string
@@ -33271,17 +33302,231 @@ components:
           type: integer
           minimum: 1
           maximum: 5
-          description: Stored as sent — the export format's own field. Pleasantness (`a1`) is re-derived from `mood` on every
-            imported row, never taken from this.
+          description: Stored as sent — the export format's own field. Pleasantness (`a1`) is never taken from this.
+        a1:
+          description: Pleasantness, 0–10. Absent → derived from `mood`.
+          type: integer
+          minimum: 0
+          maximum: 10
+        a2:
+          description: Stress, 0–10.
+          type: integer
+          minimum: 0
+          maximum: 10
+        a3:
+          description: Energy, 0–10.
+          type: integer
+          minimum: 0
+          maximum: 10
+        a4:
+          description: Connection, 0–10.
+          type: integer
+          minimum: 0
+          maximum: 10
+        a5:
+          description: Stability, 0–10. `a2` to `a5` absent leave a row the import updates as it was.
+          type: integer
+          minimum: 0
+          maximum: 10
         tags:
           description: JSON-encoded array of tag strings, stored verbatim.
           type: string
+        note:
+          description: The entry's note. Encrypted at rest.
+          type: string
+          maxLength: 500
         loggedAt:
           description: Bounded like `measuredAt`. Absent → the server derives a stable per-row instant within the `date` day, so a
             re-import of the same file dedups instead of duplicating.
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        tz:
+          description: IANA zone the `date` is anchored to. Absent → the legacy reading.
+          type: string
+          maxLength: 64
+        factors:
+          description: Rated factors by catalogue key; replaces the entry's rated links. A key the account cannot resolve is
+            dropped and named in `droppedFactorKeys`; a rating outside the factor's own scale skips the entry.
+          maxItems: 30
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                maxLength: 60
+              rating:
+                type: integer
+                minimum: 1
+                maximum: 5
+            required:
+              - key
+              - rating
+        structuredTags:
+          description: Ticked tags by key (the catalogue or the account's own); replaces the entry's tag links. An unresolvable
+            key is dropped and named in `droppedTagKeys`.
+          maxItems: 30
+          type: array
+          items:
+            type: string
+            maxLength: 60
+        context:
+          description: The day context; replaces the entry's context. `contactCircles` and `leisureCategories` are also read as
+            the backup's JSON-encoded string.
+          type: object
+          properties:
+            workStatus:
+              description: Shape of the working day.
+              anyOf:
+                - type: string
+                  enum:
+                    - off
+                    - partial
+                    - regular
+                    - overtime
+                - type: "null"
+            workMinutes:
+              anyOf:
+                - type: integer
+                  minimum: 0
+                  maximum: 1440
+                - type: "null"
+            overtimeMinutes:
+              anyOf:
+                - type: integer
+                  minimum: 0
+                  maximum: 1440
+                - type: "null"
+            workLoad:
+              description: "0-10, INVERSE-oriented: a higher value is a heavier day, not a better one."
+              anyOf:
+                - type: integer
+                  minimum: 0
+                  maximum: 10
+                - type: "null"
+            workSatisfaction:
+              anyOf:
+                - type: integer
+                  minimum: 0
+                  maximum: 10
+                - type: "null"
+            contactCircles:
+              description: "Who the day's contact was with. Multi-select. Never scored: the count of people is not a good or a bad
+                number."
+              anyOf:
+                - type: array
+                  items:
+                    type: string
+                    enum:
+                      - partner
+                      - child
+                      - family
+                      - friends
+                      - colleagues
+                      - acquaintances
+                      - professional
+                      - other
+                - type: "null"
+            contactForm:
+              anyOf:
+                - type: string
+                  enum:
+                    - inPerson
+                    - phone
+                    - video
+                    - written
+                - type: "null"
+            contactExtent:
+              anyOf:
+                - type: string
+                  enum:
+                    - brief
+                    - medium
+                    - extended
+                - type: "null"
+            contactQuality:
+              anyOf:
+                - type: integer
+                  minimum: 0
+                  maximum: 10
+                - type: "null"
+            contactSupport:
+              anyOf:
+                - type: integer
+                  minimum: 0
+                  maximum: 10
+                - type: "null"
+            leisureCategories:
+              anyOf:
+                - type: array
+                  items:
+                    type: string
+                    enum:
+                      - film
+                      - reading
+                      - gaming
+                      - music
+                      - creative
+                      - outing
+                      - garden
+                      - cooking
+                      - timeWithChild
+                      - relaxation
+                      - other
+                - type: "null"
+            leisureMinutes:
+              anyOf:
+                - type: integer
+                  minimum: 0
+                  maximum: 1440
+                - type: "null"
+            leisureJoy:
+              anyOf:
+                - type: integer
+                  minimum: 0
+                  maximum: 10
+                - type: "null"
+            leisureRecovery:
+              anyOf:
+                - type: integer
+                  minimum: 0
+                  maximum: 10
+                - type: "null"
+            eventType:
+              description: One notable event. One per entry, not a list.
+              anyOf:
+                - type: string
+                  enum:
+                    - goodNews
+                    - badNews
+                    - success
+                    - disappointment
+                    - conflict
+                    - appointment
+                    - familyEvent
+                    - change
+                    - unexpected
+                - type: "null"
+            eventValence:
+              description: -5 (clearly bad) to +5 (clearly good).
+              anyOf:
+                - type: integer
+                  minimum: -5
+                  maximum: 5
+                - type: "null"
+            eventAt:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                - type: "null"
+            note:
+              description: One free-text note for the whole context. AES-256-GCM at rest; the ciphertext never rides the wire.
+              anyOf:
+                - type: string
+                  maxLength: 500
+                - type: "null"
         externalId:
           description: "Source-stable id (e.g. a Daylio row id) making re-import idempotent (upsert on `(userId, source=IMPORT,
             externalId)`). Same stability rule as the measurement `externalId`: an unstable id skips the row."
@@ -73827,7 +74072,19 @@ components:
           type: integer
           minimum: 0
           maximum: 9007199254740991
-          description: "Rows not written: duplicates of existing rows, and rows carrying an unstable `externalId`."
+          description: "Rows not written: duplicates of existing rows, rows carrying an unstable `externalId`, mood entries with a
+            factor rating outside its own scale, and a backup's deletion records."
+        droppedTagKeys:
+          description: Tag keys of imported mood entries this account cannot resolve (another account's custom tag, a retired
+            key). The entries landed without them. Present only when non-empty.
+          type: array
+          items:
+            type: string
+        droppedFactorKeys:
+          description: Rated-factor keys this account cannot resolve, as `droppedTagKeys`.
+          type: array
+          items:
+            type: string
       required:
         - measurements
         - moodEntries

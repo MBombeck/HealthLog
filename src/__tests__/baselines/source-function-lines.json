@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 355,
-  "total": 114640,
+  "count": 354,
+  "total": 114417,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 314,
@@ -208,7 +208,6 @@
     "components/settings/import-panel/csv-import-card.tsx :: CsvImportCard": 212,
     "components/settings/import-panel/dose-history-import-card.tsx :: DoseHistoryImportCard": 225,
     "components/settings/import-panel/health-connect-import-card.tsx :: HealthConnectImportCard": 293,
-    "components/settings/import-panel/json-import-card.tsx :: JsonImportCard": 223,
     "components/settings/import-panel/record-csv-import-card.tsx :: RecordCsvImportSheet": 460,
     "components/settings/insights-pill-order-section.tsx :: InsightsPillOrderSection": 255,
     "components/settings/integrations/connections-panel.tsx :: ConnectionsPanel": 230,

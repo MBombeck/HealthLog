@@ -5794,6 +5794,7 @@
             "readFailed": "Couldn't read that file.",
             "resultSummary": "Imported {measurements} measurements and {moods} mood entries, {skipped} skipped.",
             "resultSuccess": "Imported {measurements} measurements and {moods} mood entries",
+            "droppedLinks": "Imported without these tags, because this account has none by that name: {keys}",
             "resultNothing": "Nothing was imported. All {skipped} entries were skipped.",
             "resultEmpty": "That file carried no measurements and no mood entries."
           },

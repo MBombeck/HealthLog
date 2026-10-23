@@ -8,8 +8,8 @@ vi.mock("@/lib/api-handler", () => ({
   })),
 }));
 
-vi.mock("@/lib/db", () => ({
-  prisma: {
+vi.mock("@/lib/db", () => {
+  const prisma = {
     measurement: {
       create: vi.fn(),
       createManyAndReturn: vi.fn(),
@@ -18,8 +18,13 @@ vi.mock("@/lib/db", () => ({
       upsert: vi.fn(),
     },
     moodEntry: { create: vi.fn(), findUnique: vi.fn(), upsert: vi.fn() },
-  },
-}));
+    // A mood entry is written in a transaction with its links and context;
+    // the callback runs against this same client. Given as the mock's own
+    // implementation, so `resetAllMocks` keeps it.
+    $transaction: vi.fn(async (fn: (tx: unknown) => unknown) => fn(prisma)),
+  };
+  return { prisma };
+});
 
 vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn(),

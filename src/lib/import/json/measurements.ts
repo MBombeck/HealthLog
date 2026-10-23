@@ -7,29 +7,37 @@
  * one it is a first-write-wins create with a NULL external id, which does
  * duplicate on re-import.
  */
-import type { z } from "zod/v4";
-
 import { prisma } from "@/lib/db";
 import type { MeasurementType } from "@/generated/prisma/client";
-import type {
-  glucoseContextEnum,
-  measurementTypeEnum,
-} from "@/lib/validations/measurement";
 import { classifyExternalId } from "@/lib/validations/external-id";
 import { encryptNote } from "@/lib/crypto/note-cipher";
 import { isP2002, isP2025 } from "@/lib/prisma-errors";
 
+import type { JsonImportMeasurement } from "./schema";
 import type { JsonImportTally } from "./tally";
 
-export interface JsonImportMeasurement {
-  type: z.infer<typeof measurementTypeEnum>;
-  value: number;
-  unit: string;
-  measuredAt: Date;
-  glucoseContext?: z.infer<typeof glucoseContextEnum>;
-  source?: string;
-  notes?: string;
-  externalId?: string;
+export type { JsonImportMeasurement } from "./schema";
+
+/**
+ * A reading's own columns beyond its value: what the reading says, carried
+ * whole so a range keeps its bounds, a sleep row its stage and an ECG its
+ * verdict. Every arm of the write states them, so a re-import of the same
+ * file puts back what an edit in between changed.
+ */
+function readingColumns(m: JsonImportMeasurement) {
+  return {
+    value: m.value,
+    valueMin: m.valueMin ?? null,
+    valueMax: m.valueMax ?? null,
+    unit: m.unit,
+    measuredAt: m.measuredAt,
+    glucoseContext: m.glucoseContext ?? null,
+    sleepStage: m.sleepStage ?? null,
+    rhythmClassification: m.rhythmClassification ?? null,
+    deviceType: m.deviceType ?? null,
+    notes: null,
+    notesEncrypted: encryptNote(m.notes || null),
+  };
 }
 
 export interface ImportedMeasurements {
@@ -72,8 +80,8 @@ export async function importJsonMeasurements(
     try {
       // `measuredAt` is already a `Date` (validateEntryInstant transform).
       const measuredAt = m.measuredAt;
+      const columns = readingColumns(m);
       if (m.externalId) {
-        const notesEncrypted = encryptNote(m.notes || null);
         // INSERT ... RETURNING is the only insertion proof. A concurrent
         // importer can win this key after any existence probe, so attempt
         // the insert first and update only when the statement returns no row.
@@ -82,14 +90,9 @@ export async function importJsonMeasurements(
             {
               userId,
               type: m.type,
-              value: m.value,
-              unit: m.unit,
               source: "IMPORT",
               externalId: m.externalId,
-              measuredAt,
-              notes: null,
-              notesEncrypted,
-              glucoseContext: m.glucoseContext ?? null,
+              ...columns,
             },
           ],
           skipDuplicates: true,
@@ -112,14 +115,7 @@ export async function importJsonMeasurements(
                   externalId: m.externalId,
                 },
               },
-              data: {
-                value: m.value,
-                unit: m.unit,
-                measuredAt,
-                notes: null,
-                notesEncrypted,
-                glucoseContext: m.glucoseContext ?? null,
-              },
+              data: columns,
             });
           } catch (err) {
             if (isP2025(err)) {
@@ -134,13 +130,8 @@ export async function importJsonMeasurements(
           data: {
             userId,
             type: m.type,
-            value: m.value,
-            unit: m.unit,
             source: "IMPORT",
-            measuredAt,
-            notes: null,
-            notesEncrypted: encryptNote(m.notes || null),
-            glucoseContext: m.glucoseContext ?? null,
+            ...columns,
           },
           select: { id: true, type: true, measuredAt: true },
         });

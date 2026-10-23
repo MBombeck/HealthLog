@@ -6,43 +6,34 @@
  * derived from the row's content and its occurrence in the file, so the same
  * file lands on the same instants every time and twin rows land on distinct
  * ones.
+ *
+ * Each entry is written with its note, its level-A values, its zone, its day
+ * context and its tag and factor links, in one transaction, the way the bulk
+ * mood ingest writes one: a link that throws (a rating outside its factor's
+ * own scale) takes the entry back with it, so a skipped row left nothing
+ * behind.
  */
 import { createHash } from "node:crypto";
 
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import { encryptNote } from "@/lib/crypto/note-cipher";
 import { ENTRY_INSTANT_CLOCK_SKEW_MS } from "@/lib/validations/entry-instant";
 import { classifyExternalId } from "@/lib/validations/external-id";
 import { isP2002 } from "@/lib/prisma-errors";
-import { moodDateKey } from "@/lib/mood/date-key";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
-import { deriveA1 } from "@/lib/mood/level-a";
-import { zonedWallClockToUtc } from "@/lib/tz/wall-clock";
+import { levelAForWrite } from "@/lib/mood/level-a";
+import { persistMoodContext } from "@/lib/mood/context";
+import {
+  RatedFactorOutOfRangeError,
+  replaceRatedFactorLinks,
+  replaceTagLinks,
+} from "@/lib/mood/tag-links";
 
+import { fallbackMoodDateStart } from "./mood-instant";
+import type { JsonImportMoodEntry } from "./schema";
 import type { JsonImportTally } from "./tally";
 
-export interface JsonImportMoodEntry {
-  date: string;
-  mood: "SUPER_GUT" | "GUT" | "OKAY" | "SCHLECHT" | "LAUSIG";
-  score: number;
-  tags?: string;
-  loggedAt?: Date;
-  externalId?: string;
-}
-
-/**
- * The start of a `YYYY-MM-DD` day in the default zone, or null when the
- * string does not name a real day. The route's schema uses it to bound a row
- * without a logged instant.
- */
-export function fallbackMoodDateStart(date: string): Date | null {
-  const [year, month, day] = date.split("-").map(Number);
-  if (!year || !month || !day) return null;
-  const instant = zonedWallClockToUtc(
-    { year, month, day, hour: 0, minute: 0 },
-    DEFAULT_TIMEZONE,
-  );
-  return moodDateKey(instant, DEFAULT_TIMEZONE) === date ? instant : null;
-}
+export type { JsonImportMoodEntry } from "./schema";
 
 function fallbackMoodIdentity(entry: JsonImportMoodEntry): string {
   return JSON.stringify([
@@ -75,65 +66,109 @@ interface FallbackState {
   reserved: Set<number>;
 }
 
+/**
+ * The entry's own columns, as both arms of the write state them. The level-A
+ * values follow `levelAForWrite`: the file's `a1` wins over the one derived
+ * from the label, and an `a2` to `a5` the file leaves out is left alone on a
+ * row the import updates rather than blanked.
+ */
+function moodEntryColumns(e: JsonImportMoodEntry, loggedAt: Date) {
+  return {
+    date: e.date,
+    mood: e.mood,
+    score: e.score,
+    ...levelAForWrite(e.mood, {
+      a1: e.a1,
+      a2: e.a2,
+      a3: e.a3,
+      a4: e.a4,
+      a5: e.a5,
+    }),
+    tags: e.tags || null,
+    note: null,
+    noteEncrypted: encryptNote(e.note ?? null),
+    ...(e.tz === undefined ? {} : { tz: e.tz }),
+    moodLoggedAt: loggedAt,
+  };
+}
+
+/** Link keys an entry's write could not resolve. */
+interface DroppedKeys {
+  tags: Set<string>;
+  factors: Set<string>;
+}
+
+/** The entry's links and day context, when the file states them. */
+async function writeMoodEntryParts(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  moodEntryId: string,
+  e: JsonImportMoodEntry,
+  dropped: DroppedKeys,
+): Promise<void> {
+  await persistMoodContext(tx, moodEntryId, userId, e.context);
+  if (e.factors !== undefined) {
+    const keys = await replaceRatedFactorLinks(
+      moodEntryId,
+      userId,
+      e.factors,
+      tx,
+    );
+    for (const key of keys) dropped.factors.add(key);
+  }
+  if (e.structuredTags !== undefined) {
+    const keys = await replaceTagLinks(
+      moodEntryId,
+      userId,
+      e.structuredTags,
+      tx,
+    );
+    for (const key of keys) dropped.tags.add(key);
+  }
+}
+
 async function writeMoodEntry(
   userId: string,
   e: JsonImportMoodEntry,
   loggedAt: Date,
+  tally: JsonImportTally,
 ): Promise<void> {
-  if (e.externalId) {
+  const columns = moodEntryColumns(e, loggedAt);
+  // Links resolve against what the importing account can see. Collected
+  // here and handed to the tally only once the transaction committed, so a
+  // rolled-back entry reports nothing.
+  const dropped: DroppedKeys = { tags: new Set(), factors: new Set() };
+  await prisma.$transaction(async (tx) => {
     // Idempotent re-import keyed on the source-stable id. A second import
     // of the same export updates the row in place rather than skipping it as
     // a duplicate, so an upstream edit (re-scored mood, added tag) is
     // reflected.
-    await prisma.moodEntry.upsert({
-      where: {
-        userId_source_externalId: {
-          userId,
-          source: "IMPORT",
-          externalId: e.externalId,
-        },
-      },
-      update: {
-        date: e.date,
-        mood: e.mood,
-        score: e.score,
-        // Pleasantness derived from the row's own label, not from the file's
-        // `score`. This is the one writer whose score comes out of the file
-        // rather than out of the label, so the two can disagree; the column
-        // that records a self-assessment has to agree with the label the
-        // user actually picked.
-        moodA1: deriveA1(e.mood),
-        tags: e.tags || null,
-        moodLoggedAt: loggedAt,
-      },
-      create: {
-        userId,
-        date: e.date,
-        mood: e.mood,
-        score: e.score,
-        moodA1: deriveA1(e.mood),
-        tags: e.tags || null,
-        source: "IMPORT",
-        externalId: e.externalId,
-        moodLoggedAt: loggedAt,
-      },
-    });
-  } else {
-    await prisma.moodEntry.create({
-      data: {
-        userId,
-        date: e.date,
-        mood: e.mood,
-        score: e.score,
-        // See the upsert arm above: derived from the label, because an
-        // imported file's `score` is its own field.
-        moodA1: deriveA1(e.mood),
-        tags: e.tags || null,
-        source: "IMPORT",
-        moodLoggedAt: loggedAt,
-      },
-    });
-  }
+    const row = e.externalId
+      ? await tx.moodEntry.upsert({
+          where: {
+            userId_source_externalId: {
+              userId,
+              source: "IMPORT",
+              externalId: e.externalId,
+            },
+          },
+          update: columns,
+          create: {
+            userId,
+            ...columns,
+            source: "IMPORT",
+            externalId: e.externalId,
+          },
+          select: { id: true },
+        })
+      : await tx.moodEntry.create({
+          data: { userId, ...columns, source: "IMPORT" },
+          select: { id: true },
+        });
+    await writeMoodEntryParts(tx, userId, row.id, e, dropped);
+  });
+  for (const key of dropped.tags) tally.droppedTagKeys.add(key);
+  for (const key of dropped.factors) tally.droppedFactorKeys.add(key);
 }
 
 /**
@@ -199,13 +234,19 @@ async function importMoodEntry(
       continue;
     }
     try {
-      await writeMoodEntry(userId, e, loggedAt);
+      await writeMoodEntry(userId, e, loggedAt, tally);
       if (!e.loggedAt) {
         fallback.reserved.add(loggedAt.getTime());
       }
       tally.stats.moodEntries++;
       return;
     } catch (err) {
+      // A rating outside its factor's own scale refuses that one entry, the
+      // way the bulk ingest refuses it; the transaction took the row back.
+      if (err instanceof RatedFactorOutOfRangeError) {
+        tally.stats.skipped++;
+        return;
+      }
       if (!isP2002(err)) {
         tally.writeFailed = true;
         return;

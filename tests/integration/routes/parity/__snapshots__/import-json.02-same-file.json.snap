@@ -20,6 +20,7 @@
           "moodEntries": 1,
           "skipped": 6
         },
+        "import_dropped_link_keys": 0,
         "external_id_rejected": 2,
         "external_id_shapes": "object_description",
         "external_id_surface": "import.json"

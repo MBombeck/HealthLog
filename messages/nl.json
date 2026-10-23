@@ -5794,6 +5794,7 @@
             "readFailed": "Dat bestand kon niet worden gelezen.",
             "resultSummary": "{measurements} metingen en {moods} stemmingsregistraties geïmporteerd, {skipped} overgeslagen.",
             "resultSuccess": "{measurements} metingen en {moods} stemmingsregistraties geïmporteerd",
+            "droppedLinks": "Geïmporteerd zonder deze tags, omdat dit account er geen met die naam heeft: {keys}",
             "resultNothing": "Er is niets geïmporteerd. Alle {skipped} registraties zijn overgeslagen.",
             "resultEmpty": "Dat bestand bevatte geen metingen en geen stemmingsregistraties."
           },

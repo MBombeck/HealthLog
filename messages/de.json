@@ -5794,6 +5794,7 @@
             "readFailed": "Diese Datei konnte nicht gelesen werden.",
             "resultSummary": "{measurements} Messwerte und {moods} Stimmungseinträge importiert, {skipped} übersprungen.",
             "resultSuccess": "{measurements} Messwerte und {moods} Stimmungseinträge importiert",
+            "droppedLinks": "Ohne diese Tags importiert, weil dieses Konto keine mit dem Namen hat: {keys}",
             "resultNothing": "Nichts importiert. Alle {skipped} Einträge wurden übersprungen.",
             "resultEmpty": "Diese Datei enthielt weder Messwerte noch Stimmungseinträge."
           },

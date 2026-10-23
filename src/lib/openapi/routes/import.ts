@@ -16,6 +16,9 @@ import { z } from "zod/v4";
 
 import { glucoseContextEnum } from "@/lib/validations/measurement";
 import { moodLevelEnum } from "@/lib/validations/mood";
+import { SLEEP_STAGE_NAMES } from "@/lib/validations/sleep-stage-entry";
+import { RhythmClassification } from "@/generated/prisma/enums";
+import { moodContextWire } from "./mood";
 import {
   dataEnvelope,
   errorEnvelope,
@@ -94,10 +97,10 @@ const csvImportResponse = z
       "Per-row import outcome. Mirrors the batch-route per-entry envelope. In `dryRun` mode no write runs and every valid row reports its projected `inserted` status.",
   });
 
-// ── JSON import — mirrors the route-local `importSchema`
-// (`src/app/api/import/route.ts`), which is deliberately not exported: the
-// runtime side carries transforms + plausibility refinements the document
-// restates in prose.
+// ── JSON import — mirrors `jsonImportSchema`
+// (`src/lib/import/json/schema.ts`). The runtime side carries transforms and
+// plausibility refinements the document restates in prose; its field set is
+// held to this one by `json-import-field-coverage.test.ts`.
 
 const jsonImportMeasurement = z
   .object({
@@ -107,6 +110,13 @@ const jsonImportMeasurement = z
       .describe(
         "Checked against the type's server-side plausibility range; an out-of-range value fails the whole request with 422.",
       ),
+    valueMin: z
+      .number()
+      .optional()
+      .describe(
+        "Lower bound of a range reading (an hourly heart-rate statistic). Not above `valueMax`.",
+      ),
+    valueMax: z.number().optional().describe("Upper bound of a range reading."),
     unit: z.string(),
     measuredAt: isoDateTime().describe(
       "Bounded: no future instants beyond a 5-min clock-skew tolerance, nothing before 1900.",
@@ -116,12 +126,22 @@ const jsonImportMeasurement = z
       .describe(
         "Optional even on a BLOOD_GLUCOSE row — a sensor export classifies nothing per sample.",
       ),
-    source: z
-      .string()
+    sleepStage: z
+      .enum(SLEEP_STAGE_NAMES)
+      .optional()
+      .describe("A sleep row's stage."),
+    rhythmClassification: z
+      .enum(RhythmClassification)
       .optional()
       .describe(
-        "Accepted for export-format compatibility and ignored: every imported row stores `source = IMPORT`.",
+        "The device's own verdict on an ECG, a rhythm alert or a steadiness reading.",
       ),
+    deviceType: z
+      .string()
+      .min(1)
+      .max(32)
+      .optional()
+      .describe("The writer of the reading (watch, phone)."),
     notes: z.string().optional().describe("Encrypted at rest."),
     externalId: z
       .string()
@@ -150,16 +170,78 @@ const jsonImportMoodEntry = z
       .min(1)
       .max(5)
       .describe(
-        "Stored as sent — the export format's own field. Pleasantness (`a1`) is re-derived from `mood` on every imported row, never taken from this.",
+        "Stored as sent — the export format's own field. Pleasantness (`a1`) is never taken from this.",
+      ),
+    a1: z
+      .number()
+      .int()
+      .min(0)
+      .max(10)
+      .optional()
+      .describe("Pleasantness, 0–10. Absent → derived from `mood`."),
+    a2: z.number().int().min(0).max(10).optional().describe("Stress, 0–10."),
+    a3: z.number().int().min(0).max(10).optional().describe("Energy, 0–10."),
+    a4: z
+      .number()
+      .int()
+      .min(0)
+      .max(10)
+      .optional()
+      .describe("Connection, 0–10."),
+    a5: z
+      .number()
+      .int()
+      .min(0)
+      .max(10)
+      .optional()
+      .describe(
+        "Stability, 0–10. `a2` to `a5` absent leave a row the import updates as it was.",
       ),
     tags: z
       .string()
       .optional()
       .describe("JSON-encoded array of tag strings, stored verbatim."),
+    note: z
+      .string()
+      .max(500)
+      .optional()
+      .describe("The entry's note. Encrypted at rest."),
     loggedAt: isoDateTime()
       .optional()
       .describe(
         "Bounded like `measuredAt`. Absent → the server derives a stable per-row instant within the `date` day, so a re-import of the same file dedups instead of duplicating.",
+      ),
+    tz: z
+      .string()
+      .max(64)
+      .optional()
+      .describe(
+        "IANA zone the `date` is anchored to. Absent → the legacy reading.",
+      ),
+    factors: z
+      .array(
+        z.object({
+          key: z.string().max(60),
+          rating: z.number().int().min(1).max(5),
+        }),
+      )
+      .max(30)
+      .optional()
+      .describe(
+        "Rated factors by catalogue key; replaces the entry's rated links. A key the account cannot resolve is dropped and named in `droppedFactorKeys`; a rating outside the factor's own scale skips the entry.",
+      ),
+    structuredTags: z
+      .array(z.string().max(60))
+      .max(30)
+      .optional()
+      .describe(
+        "Ticked tags by key (the catalogue or the account's own); replaces the entry's tag links. An unresolvable key is dropped and named in `droppedTagKeys`.",
+      ),
+    context: moodContextWire
+      .partial()
+      .optional()
+      .describe(
+        "The day context; replaces the entry's context. `contactCircles` and `leisureCategories` are also read as the backup's JSON-encoded string.",
       ),
     externalId: z
       .string()
@@ -183,7 +265,7 @@ const jsonImportRequest = z
   .meta({
     id: "JsonImportRequest",
     description:
-      "JSON import payload, matching the structure `GET /api/export/json` emits. Both sections optional; up to 10 000 rows each.",
+      "JSON import payload: the measurements and mood entries of the JSON export or the portable full backup. Both sections optional; up to 10 000 rows each.",
   });
 
 const jsonImportStats = z
@@ -203,7 +285,19 @@ const jsonImportStats = z
       .int()
       .nonnegative()
       .describe(
-        "Rows not written: duplicates of existing rows, and rows carrying an unstable `externalId`.",
+        "Rows not written: duplicates of existing rows, rows carrying an unstable `externalId`, mood entries with a factor rating outside its own scale, and a backup's deletion records.",
+      ),
+    droppedTagKeys: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "Tag keys of imported mood entries this account cannot resolve (another account's custom tag, a retired key). The entries landed without them. Present only when non-empty.",
+      ),
+    droppedFactorKeys: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "Rated-factor keys this account cannot resolve, as `droppedTagKeys`.",
       ),
   })
   .meta({
@@ -425,7 +519,7 @@ export const importPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Import"],
       summary: "Import measurements and mood entries from JSON",
       description:
-        "Restores a JSON export (the structure `GET /api/export/json` emits): up to 10 000 measurements plus 10 000 mood entries per call, body ≤ 16 MB. Rows carrying an `externalId` upsert idempotently (re-import updates in place); rows without one are first-write-wins and dedup against the existing unique keys, so an exact duplicate is `skipped` rather than doubled. A row with an unstable `externalId` is skipped while the rest of the file still lands. Every imported measurement stores `source = IMPORT`; every imported mood entry re-derives pleasantness from its label. Writes are per-row, not transactional: on a mid-file write failure the response is 503 (`meta.errorCode` = `import.write_failed`, `meta.retryable` = true) with `meta.stats` carrying what landed — rows already written stay written, and a retry is only safe against duplication for rows that carry an `externalId`. Validation is fail-fast (the 422 carries the first issue's message, not the multi-issue envelope). Rate-limited 5/hour per user (shared `import:` bucket with the CSV importer).",
+        "Imports the app's own files back: the JSON export (`GET /api/export?format=json`, read inside its `data` envelope) or the portable full backup (`GET /api/export/full-backup`). Every field either file writes for a reading or a mood entry is carried, apart from the row ids, the source and the sync bookkeeping; a backup's deletion records are skipped and counted. Up to 10 000 measurements plus 10 000 mood entries per call, body ≤ 16 MB. Rows carrying an `externalId` upsert idempotently (re-import updates in place); rows without one are first-write-wins and dedup against the existing unique keys, so an exact duplicate is `skipped` rather than doubled. A row with an unstable `externalId` is skipped while the rest of the file still lands. Every imported row stores `source = IMPORT`; a mood entry without `a1` derives pleasantness from its label. Writes are per-row, not transactional: on a mid-file write failure the response is 503 (`meta.errorCode` = `import.write_failed`, `meta.retryable` = true) with `meta.stats` carrying what landed — rows already written stay written, and a retry is only safe against duplication for rows that carry an `externalId`. Validation is fail-fast (the 422 carries the first issue's message, not the multi-issue envelope). Rate-limited 5/hour per user (shared `import:` bucket with the CSV importer).",
       requestBody: {
         required: true,
         content: { "application/json": { schema: jsonImportRequest } },

@@ -1,18 +1,24 @@
 /**
- * The JSON import takes the app's own files back.
+ * The JSON import takes the app's own files back, whole.
  *
- * An account's full backup (`/api/export/full-backup`, the portable export)
- * and its JSON export (`/api/export?format=json`) are written, as they are
- * served, and imported into a fresh account. What the import carries (a
- * measurement's type, value, unit, instant, glucose context and note; a mood
- * entry's day, label, score, tags and instant) must come back as it was.
+ * An account with every column filled in (`json-import-seed.ts`) is written
+ * out by the full backup (the portable export, `/api/export/full-backup`) and
+ * by the JSON export (`/api/export?format=json`), each file is imported into
+ * a fresh account, and the fresh account is written out again by the same
+ * exporter. The two files must agree on everything the import carries; what
+ * it deliberately leaves out is named in `json-import-field-coverage.test.ts`
+ * and is the only thing stripped before the comparison.
+ *
+ * Reading the result back through the exporter rather than through a
+ * hand-written projection of the tables is the point: a field the import
+ * drops shows up as a difference in the file a person would get back, which
+ * is the loss that matters, and a field an exporter learns to write is
+ * compared from the release it starts.
  *
  * Both files spell an empty field their own way, `null` in the backup and an
  * empty string in the export. Before the import read files in the exporter's
  * terms, the first empty note, tag list or glucose context refused the whole
- * file with a 422. The portable backup also left a reading's own attributes
- * out (a glucose value's fasting context among them), so the backup half
- * pins those too.
+ * file with a 422.
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -21,163 +27,60 @@ import { POST as importCsv } from "@/app/api/import/csv/route";
 import { GET as exportMeasurementsCsv } from "@/app/api/export/measurements/route";
 import { POST as importJson } from "@/app/api/import/route";
 import { encryptNote, readNote } from "@/lib/crypto/note-cipher";
+import { buildFullBackupPayload } from "@/lib/export/full-backup-payload";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
 
 import { callRoute } from "../kit/call-route";
 import { makeSession, makeUser } from "../kit/factories";
+import {
+  JI_OWN_TAG_KEY,
+  seedJsonImportCatalogue,
+  seedJsonImportOwner,
+} from "./json-import-seed";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
 const prisma = getPrismaClient();
 
-const MEASUREMENTS = [
-  {
-    type: "WEIGHT",
-    value: 81.4,
-    unit: "kg",
-    at: "2026-09-10T06:30:00.000Z",
-    note: "after the run",
-  },
-  {
-    type: "WEIGHT",
-    value: 81.9,
-    unit: "kg",
-    at: "2026-09-11T06:30:00.000Z",
-    note: null,
-  },
-  {
-    type: "PULSE",
-    value: 62,
-    unit: "bpm",
-    at: "2026-09-11T07:00:00.000Z",
-    note: null,
-  },
-  {
-    type: "BLOOD_GLUCOSE",
-    value: 104,
-    unit: "mg/dL",
-    at: "2026-09-12T08:00:00.000Z",
-    note: null,
-    glucoseContext: "FASTING" as const,
-  },
-  {
-    type: "BLOOD_GLUCOSE",
-    value: 141,
-    unit: "mg/dL",
-    at: "2026-09-12T13:00:00.000Z",
-    note: "after lunch",
-    glucoseContext: "POSTPRANDIAL" as const,
-  },
-] as const;
+type Row = Record<string, unknown>;
 
-const MOOD = [
-  {
-    date: "2026-09-10",
-    mood: "GUT",
-    score: 4,
-    tags: null,
-    at: "2026-09-10T19:00:00.000Z",
-  },
-  {
-    date: "2026-09-11",
-    mood: "OKAY",
-    score: 3,
-    tags: JSON.stringify(["work", "sleep"]),
-    at: "2026-09-11T20:30:00.000Z",
-  },
-  {
-    date: "2026-09-12",
-    mood: "SUPER_GUT",
-    score: 5,
-    tags: null,
-    at: "2026-09-12T21:15:00.000Z",
-  },
-] as const;
+interface ImportStats {
+  measurements: number;
+  moodEntries: number;
+  skipped: number;
+  droppedTagKeys?: string[];
+  droppedFactorKeys?: string[];
+}
 
 let ownerId: string;
 
-async function seedOwner(): Promise<void> {
-  const owner = await makeUser({
-    timezone: "Europe/Berlin",
-    glucoseUnit: "mmol/L" /* the JSON export stays in the stored unit */,
+async function fullBackupOf(userId: string): Promise<{
+  measurements: Row[];
+  moodEntries: Row[];
+}> {
+  let text = "";
+  await streamFullBackupJson(prisma, userId, (chunk) => {
+    text += chunk;
   });
-  ownerId = owner.id;
-  for (const m of MEASUREMENTS) {
-    await prisma.measurement.create({
-      data: {
-        userId: ownerId,
-        type: m.type,
-        value: m.value,
-        unit: m.unit,
-        measuredAt: new Date(m.at),
-        source: "MANUAL",
-        notes: null,
-        notesEncrypted: encryptNote(m.note),
-        glucoseContext: "glucoseContext" in m ? m.glucoseContext : null,
-      },
-    });
-  }
-  // A reading deleted before the backup: its row is the record of a
-  // deletion, and the import leaves it out.
-  await prisma.measurement.create({
-    data: {
-      userId: ownerId,
-      type: "WEIGHT",
-      value: 90,
-      unit: "kg",
-      measuredAt: new Date("2026-09-09T06:30:00.000Z"),
-      source: "MANUAL",
-      deletedAt: new Date("2026-09-09T07:00:00.000Z"),
-    },
-  });
-  for (const e of MOOD) {
-    await prisma.moodEntry.create({
-      data: {
-        userId: ownerId,
-        date: e.date,
-        mood: e.mood,
-        score: e.score,
-        tags: e.tags,
-        source: "MANUAL",
-        moodLoggedAt: new Date(e.at),
-      },
-    });
-  }
+  return JSON.parse(text);
 }
 
-/** What an import carries, read back from an account. */
-async function carried(userId: string) {
-  const measurements = await prisma.measurement.findMany({
-    where: { userId, deletedAt: null },
-    orderBy: [{ measuredAt: "asc" }, { type: "asc" }],
+async function jsonExportOf(userId: string): Promise<{
+  data: { measurements: Row[]; moodEntries: Row[] };
+}> {
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+  const res = await callRoute<unknown>(exportJson, {
+    method: "GET",
+    route: "/api/export",
+    query: { format: "json", type: "all" },
+    auth: await makeSession(user),
   });
-  const mood = await prisma.moodEntry.findMany({
-    where: { userId, deletedAt: null },
-    orderBy: { moodLoggedAt: "asc" },
-  });
-  return {
-    measurements: measurements.map((m) => ({
-      type: m.type,
-      value: m.value,
-      unit: m.unit,
-      measuredAt: m.measuredAt.toISOString(),
-      glucoseContext: m.glucoseContext,
-      note: readNote(m.notesEncrypted, m.notes),
-    })),
-    mood: mood.map((e) => ({
-      date: e.date,
-      mood: e.mood,
-      score: e.score,
-      tags: e.tags,
-      loggedAt: e.moodLoggedAt.toISOString(),
-    })),
-  };
+  expect(res.status).toBe(200);
+  return res.body as { data: { measurements: Row[]; moodEntries: Row[] } };
 }
 
 async function importInto(file: unknown) {
   const user = await makeUser({ timezone: "Europe/Berlin" });
-  const res = await callRoute<{
-    data: { measurements: number; moodEntries: number; skipped: number };
-  }>(importJson, {
+  const res = await callRoute<ImportStats>(importJson, {
     method: "POST",
     route: "/api/import",
     body: file,
@@ -186,77 +89,194 @@ async function importInto(file: unknown) {
   return { userId: user.id, res };
 }
 
+/** A row without the fields the import deliberately does not carry. */
+function comparable(row: Row): Row {
+  const { id: _id, source: _source, ...rest } = row;
+  return rest;
+}
+
+function byInstant(at: string) {
+  return (a: Row, b: Row) =>
+    String(a[at]).localeCompare(String(b[at])) ||
+    String(a.type ?? "").localeCompare(String(b.type ?? ""));
+}
+
 beforeAll(async () => {
   await truncateAllTables(prisma);
-  await seedOwner();
+  await seedJsonImportCatalogue(prisma);
+  ({ ownerId } = await seedJsonImportOwner(prisma));
 });
 
 afterAll(async () => {
   await truncateAllTables(prisma);
 });
 
-describe("the JSON import reads the app's own files", () => {
-  it("takes a full backup back, nulls and deletion records included", async () => {
-    let text = "";
-    await streamFullBackupJson(prisma, ownerId, (chunk) => {
-      text += chunk;
-    });
-    const backup = JSON.parse(text) as {
-      measurements: Array<Record<string, unknown>>;
-      moodEntries: Array<Record<string, unknown>>;
-    };
-    // The file carries the shapes the import used to refuse.
-    expect(backup.measurements.some((m) => m.notes === null)).toBe(true);
-    expect(backup.moodEntries.some((e) => e.tags === null)).toBe(true);
+describe("the JSON import takes the app's own files back", () => {
+  it("takes a full backup back field for field", async () => {
+    const original = await fullBackupOf(ownerId);
+    // The file carries the shapes the import used to refuse or drop.
+    expect(original.measurements.some((m) => m.notes === null)).toBe(true);
+    expect(original.measurements.some((m) => m.sleepStage === "DEEP")).toBe(
+      true,
+    );
+    expect(original.moodEntries.some((e) => e.context !== null)).toBe(true);
 
-    const { userId, res } = await importInto(backup);
+    const { userId, res } = await importInto(original);
     expect(res.status).toBe(200);
-    const deletedInFile = backup.measurements.filter(
-      (m) => typeof m.deletedAt === "string",
-    ).length;
     expect(res.data).toEqual({
-      measurements: MEASUREMENTS.length,
-      moodEntries: MOOD.length,
-      skipped: deletedInFile,
+      measurements: original.measurements.length,
+      moodEntries: original.moodEntries.length,
+      skipped: 0,
+      // The account's own tag is not this account's: the entry lands without
+      // that one link, and the response says which.
+      droppedTagKeys: [JI_OWN_TAG_KEY],
     });
 
-    expect(await carried(userId)).toEqual(await carried(ownerId));
+    const back = await fullBackupOf(userId);
+    const expectedMeasurements = original.measurements
+      .map(comparable)
+      .sort(byInstant("measuredAt"));
+    expect(
+      back.measurements.map(comparable).sort(byInstant("measuredAt")),
+    ).toEqual(expectedMeasurements);
+    const expectedMood = original.moodEntries
+      .map((entry) => ({
+        ...comparable(entry),
+        structuredTags: (entry.structuredTags as string[]).filter(
+          (key) => key !== JI_OWN_TAG_KEY,
+        ),
+      }))
+      .sort(byInstant("loggedAt"));
+    expect(
+      back.moodEntries.map(comparable).sort(byInstant("loggedAt")),
+    ).toEqual(expectedMood);
   });
 
   it("takes the JSON export back, empty strings and its envelope included", async () => {
-    const owner = await prisma.user.findUniqueOrThrow({
-      where: { id: ownerId },
-    });
-    const exported = await callRoute<unknown>(exportJson, {
-      method: "GET",
-      route: "/api/export",
-      query: { format: "json", type: "all" },
-      auth: await makeSession(owner),
-    });
-    expect(exported.status).toBe(200);
-    const file = exported.body as {
-      data: {
-        measurements: Array<Record<string, unknown>>;
-        moodEntries: Array<Record<string, unknown>>;
-      };
-    };
-    expect(file.data.measurements.some((m) => m.notes === "")).toBe(true);
-    expect(file.data.moodEntries.some((e) => e.tags === "")).toBe(true);
+    const original = await jsonExportOf(ownerId);
+    expect(original.data.measurements.some((m) => m.notes === "")).toBe(true);
+    expect(original.data.moodEntries.some((e) => e.note === "")).toBe(true);
 
-    const { userId, res } = await importInto(file);
+    const { userId, res } = await importInto(original);
     expect(res.status).toBe(200);
     expect(res.data).toMatchObject({
-      measurements: MEASUREMENTS.length,
-      moodEntries: MOOD.length,
+      measurements: original.data.measurements.length,
+      moodEntries: original.data.moodEntries.length,
+      skipped: 0,
     });
 
-    expect(await carried(userId)).toEqual(await carried(ownerId));
+    // A sleep night is one summary record in this file, and its `notes` is
+    // the stage breakdown the exporter writes from the stored stages. The
+    // import stores the night and that text as its note; a re-export
+    // rebuilds the column from stages the summary does not have. So the
+    // night's note is compared against what was stored, and the rest of the
+    // record through the file.
+    const nights = original.data.measurements.filter(
+      (m) => m.type === "SLEEP_DURATION",
+    );
+    expect(nights).toHaveLength(1);
+    const storedNight = await prisma.measurement.findFirstOrThrow({
+      where: { userId, type: "SLEEP_DURATION" },
+    });
+    expect(readNote(storedNight.notesEncrypted, storedNight.notes)).toBe(
+      nights[0]!.notes,
+    );
+    const withoutNightNote = (m: Row) =>
+      m.type === "SLEEP_DURATION"
+        ? { ...comparable(m), notes: null }
+        : comparable(m);
+
+    const back = await jsonExportOf(userId);
+    expect(
+      back.data.measurements
+        .map(withoutNightNote)
+        .sort(byInstant("measuredAt")),
+    ).toEqual(
+      original.data.measurements
+        .map(withoutNightNote)
+        .sort(byInstant("measuredAt")),
+    );
+    expect(
+      back.data.moodEntries.map(comparable).sort(byInstant("loggedAt")),
+    ).toEqual(
+      original.data.moodEntries.map(comparable).sort(byInstant("loggedAt")),
+    );
   });
 
-  it("takes the measurement CSV back into the CSV import, in display units too", async () => {
-    const owner = await prisma.user.findUniqueOrThrow({
-      where: { id: ownerId },
+  it("leaves out a disaster-recovery file's deletion records, and counts them", async () => {
+    const { payload } = await buildFullBackupPayload(prisma, ownerId, {
+      purpose: "disaster-recovery",
     });
+    const rows = (payload as { measurements: Row[] }).measurements;
+    const deleted = rows.filter((m) => typeof m.deletedAt === "string");
+    expect(deleted).toHaveLength(1);
+
+    const { userId, res } = await importInto(payload);
+    expect(res.status).toBe(200);
+    expect(res.data).toMatchObject({
+      measurements: rows.length - deleted.length,
+      skipped: deleted.length,
+    });
+    expect(
+      await prisma.measurement.count({ where: { userId, value: 90 } }),
+    ).toBe(0);
+  });
+
+  it("takes the same file twice without changing what the first import wrote", async () => {
+    const original = await fullBackupOf(ownerId);
+    const { userId } = await importInto(original);
+    const first = await fullBackupOf(userId);
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const again = await callRoute<ImportStats>(importJson, {
+      method: "POST",
+      route: "/api/import",
+      body: original,
+      auth: await makeSession(user),
+    });
+    expect(again.status).toBe(200);
+    // The mood entries carry their instant, so the second pass finds them;
+    // the readings carry no source id in a portable file and are written
+    // again, as the import has always documented for a file without one.
+    expect(again.data.moodEntries).toBe(0);
+    const second = await fullBackupOf(userId);
+    expect(
+      second.moodEntries.map(comparable).sort(byInstant("loggedAt")),
+    ).toEqual(first.moodEntries.map(comparable).sort(byInstant("loggedAt")));
+  });
+});
+
+describe("the CSV import reads the measurement CSV export", () => {
+  const READINGS = [
+    { type: "WEIGHT", value: 81.4, unit: "kg", at: "2026-09-10T06:30:00.000Z" },
+    { type: "PULSE", value: 62, unit: "bpm", at: "2026-09-11T07:00:00.000Z" },
+    {
+      type: "BLOOD_GLUCOSE",
+      value: 104,
+      unit: "mg/dL",
+      at: "2026-09-12T08:00:00.000Z",
+      glucoseContext: "FASTING" as const,
+    },
+  ] as const;
+
+  it("takes it back, in display units too", async () => {
+    const owner = await makeUser({
+      timezone: "Europe/Berlin",
+      glucoseUnit: "mmol/L",
+    });
+    for (const m of READINGS) {
+      await prisma.measurement.create({
+        data: {
+          userId: owner.id,
+          type: m.type,
+          value: m.value,
+          unit: m.unit,
+          measuredAt: new Date(m.at),
+          source: "MANUAL",
+          notesEncrypted: encryptNote(null),
+          glucoseContext: "glucoseContext" in m ? m.glucoseContext : null,
+        },
+      });
+    }
     const exported = await callRoute(exportMeasurementsCsv, {
       method: "GET",
       route: "/api/export/measurements",
@@ -279,13 +299,24 @@ describe("the JSON import reads the app's own files", () => {
       },
     );
     expect(res.status).toBe(200);
-    expect(res.data).toMatchObject({
-      inserted: MEASUREMENTS.length,
-      skipped: 0,
-    });
+    expect(res.data).toMatchObject({ inserted: READINGS.length, skipped: 0 });
 
-    const back = (await carried(user.id)).measurements;
-    const original = (await carried(ownerId)).measurements;
+    const read = async (userId: string) =>
+      (
+        await prisma.measurement.findMany({
+          where: { userId, deletedAt: null },
+          orderBy: [{ measuredAt: "asc" }, { type: "asc" }],
+        })
+      ).map((m) => ({
+        type: m.type,
+        value: m.value,
+        unit: m.unit,
+        measuredAt: m.measuredAt.toISOString(),
+        glucoseContext: m.glucoseContext,
+        note: readNote(m.notesEncrypted, m.notes),
+      }));
+    const back = await read(user.id);
+    const original = await read(owner.id);
     expect(back).toHaveLength(original.length);
     back.forEach((m, i) => {
       const o = original[i]!;

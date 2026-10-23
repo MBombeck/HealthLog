@@ -75,7 +75,7 @@ const WRITERS: Record<string, Disposition> = {
   },
   "lib/import/json/measurements.ts": {
     kind: "upstream",
-    validatedIn: "app/api/import/route.ts",
+    validatedIn: "lib/import/json/schema.ts",
   },
   // The batch ingest's set-based insert writes rows that already passed
   // `validateMeasurementRange` per entry in its first pass; everything else
