@@ -4,7 +4,15 @@
  * land. No React and no Recharts, so each piece has direct unit coverage.
  */
 import { chartPointDayKey } from "@/components/day/chart-day";
+import { isWholeNumberType } from "@/components/day/use-day-value-format";
 import { translateOrNull } from "@/lib/i18n/translate-code";
+
+import {
+  computeTickPositions,
+  type TickLayout,
+} from "@/lib/charts/x-axis-density";
+
+import type { ChartDataPoint } from "./types";
 
 const BASE_TYPE_LABEL_KEYS: Record<string, string> = {
   WEIGHT: "charts.weight",
@@ -218,4 +226,115 @@ export function resolveAnnotationPositions(
     });
   }
   return out;
+}
+
+/**
+ * The value axis's and the tooltip's number formats. One decimal on the axis
+ * while the visible domain spans under 6 units, so two gridlines never round
+ * to the same integer (82.8 vs 83.5 kg).
+ */
+export function axisValueFormatters(
+  yDomain: [number, number] | undefined,
+  fmt: {
+    number: (value: number, digits: number) => string;
+    integer: (value: number) => string;
+  },
+) {
+  const span = yDomain ? yDomain[1] - yDomain[0] : null;
+  const useDecimalAxis = span !== null && span < 6;
+  return {
+    useDecimalAxis,
+    formatAxisValue: (value: number) =>
+      useDecimalAxis ? fmt.number(value, 1) : fmt.integer(value),
+    formatTooltipValue: (value: number) => fmt.number(value, 1),
+  };
+}
+
+/**
+ * What the day shows at its top when opened from a point: the chart's name
+ * and the point's value as the tooltip reads it. A pressure or a pulse reads
+ * in whole numbers on the day, as in every list; the rest keep the tooltip's
+ * one decimal.
+ */
+export function dayFocusFor(
+  point: ChartDataPoint | undefined,
+  ctx: {
+    types: string[];
+    title: string;
+    unit?: string;
+    valueMode: "raw" | "bmi";
+    fmt: { number: (value: number, digits: number) => string };
+    formatTooltipValue: (value: number) => string;
+  },
+) {
+  if (!point) return null;
+  const parts = ctx.types
+    .map((type) => ({ type, v: point[type] }))
+    .filter((p): p is { type: string; v: number } => typeof p.v === "number");
+  if (parts.length === 0) return null;
+  return {
+    label: ctx.title,
+    value: parts
+      .map(({ type, v }) =>
+        ctx.valueMode === "raw" && isWholeNumberType(type)
+          ? ctx.fmt.number(Math.round(v), 0)
+          : ctx.formatTooltipValue(v),
+      )
+      .join("/"),
+    unit: ctx.unit,
+    types: ctx.valueMode === "raw" ? ctx.types : [],
+  };
+}
+
+/**
+ * Where the x labels are drawn: the plot's width (the container less the
+ * chart margins, the y axis, the right-hand label room and the axis padding)
+ * and the width a date label takes, with room between two. Null until the
+ * container has been measured; the ticks then fall back to the count cap.
+ */
+export function xTickLayout(
+  containerWidth: number | null,
+  yAxisWidth: number,
+  rightRoom: number,
+): { plotWidth: number; labelWidth: number } | undefined {
+  if (!containerWidth) return undefined;
+  const plotWidth = containerWidth - 16 - yAxisWidth - rightRoom - 20;
+  if (plotWidth <= 0) return undefined;
+  // A day-month-year date at the axis's 11 px, with a gap of its own size
+  // between two labels so the row reads as separate dates.
+  return { plotWidth, labelWidth: 64 + 16 };
+}
+
+/**
+ * The x axis's props: one point per index, labelled with its date. Recharts
+ * ignores `interval` on a numeric axis, so the calendar grid arrives as
+ * explicit tick positions (`computeTickPositions`).
+ */
+export function pointIndexXAxis({
+  chartData,
+  formatDate,
+  viewportWidth,
+  layout,
+}: {
+  chartData: ChartDataPoint[] | undefined;
+  formatDate: (date: Date) => string;
+  viewportWidth: number;
+  layout: TickLayout | undefined;
+}) {
+  return {
+    type: "number" as const,
+    dataKey: "pointIndex",
+    domain: [0, Math.max(0, (chartData?.length ?? 1) - 1)],
+    allowDecimals: false,
+    tick: { fontSize: 11, fill: "var(--muted-foreground)" },
+    tickLine: false,
+    axisLine: false,
+    tickFormatter: (value: number) =>
+      formatDate(
+        new Date(chartData?.[Math.round(value)]?.timestamp ?? Date.now()),
+      ),
+    ticks: computeTickPositions(chartData ?? [], viewportWidth, layout),
+    padding: { left: 10, right: 10 },
+    tickMargin: 10,
+  };
 }

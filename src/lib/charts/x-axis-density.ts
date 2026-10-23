@@ -162,56 +162,159 @@ export function getViewportWidth(): number {
 }
 
 /**
- * v1.4.29 — Recharts ignores the `interval` prop on a numeric
- * `<XAxis type="number" />`. The pulse + mood charts switched to
- * numeric axes in v1.4.25 to support multi-band rendering; the
- * legacy `interval` value silently degraded to "every tick" on
- * those charts.
+ * Tick positions for a chart whose x axis is the point index, on a calendar
+ * grid rather than every n-th point.
  *
- * `computeTickPositions` returns explicit tick indices the numeric
- * axis can consume via the `ticks` prop. The skip count comes from
- * `chooseTickInterval` so the day-aware policy stays in one place.
- * The result is clamped to at least 3 ticks (when the chart has
- * enough data) and at most ~12, so the user always sees calendar
- * landmarks without overcrowding.
+ * Every n-th point read as random dates wherever the series had gaps: on a
+ * 90-day blood-pressure chart with a few missed days the labels fell 18, 14,
+ * 13, 17 and 23 days apart, and the forced last label crowded its neighbour.
+ * So the step is a calendar one (a day, two days, a week, two weeks, a month,
+ * a quarter, half a year, a year), the smallest that keeps the labels under
+ * the width's cap, and each tick is the point on that grid's date: Mondays
+ * for the week steps (an even-week grid for two), the first of the month for
+ * the month steps. A grid date with no point of its own takes the nearest
+ * point within half a step, and none if there is none, so a tick never
+ * claims a date it is not near. The last point is not forced in.
  *
- * Returns an empty array for zero-length data and `[0]` for a
- * single-point chart.
+ * `timestamp` is the point's day anchor (noon UTC of the day it stands for,
+ * or the start of its week or month bucket); its UTC date is the day.
  */
 export function computeTickPositions(
   chartData: ReadonlyArray<{ timestamp: number } | unknown>,
   viewportWidth: number,
+  layout?: TickLayout,
 ): number[] {
   const length = chartData?.length ?? 0;
   if (length <= 0) return [];
   if (length === 1) return [0];
 
-  const lastIndex = length - 1;
-  const interval = chooseTickInterval(length, viewportWidth);
-  // `interval === 0` means "render every tick". Cap the visible tick
-  // count so dense series (e.g. 365-row pulse) never blow past ~12
-  // labels — pick a step that hits ~6 ticks if the policy would
-  // otherwise produce too many.
-  const TARGET_MAX_TICKS = 12;
-  let step = interval > 0 ? interval + 1 : 1;
-  if (length / step > TARGET_MAX_TICKS) {
-    step = Math.ceil(length / TARGET_MAX_TICKS);
+  const days = chartData.map((point) =>
+    Math.floor(
+      ((point as { timestamp?: number })?.timestamp ?? Number.NaN) / DAY_MS,
+    ),
+  );
+  if (days.some((day) => !Number.isFinite(day))) {
+    return Array.from({ length }, (_, index) => index);
   }
-  // Floor on visible tick count — never fewer than 3 ticks unless
-  // the data simply doesn't have that many points.
-  const minTicks = Math.min(3, length);
-  if (length / step < minTicks) {
-    step = Math.max(1, Math.floor(length / minTicks));
-  }
+  const first = days[0]!;
+  const last = days[length - 1]!;
+  const maxTicks =
+    Number.isFinite(viewportWidth) &&
+    viewportWidth < MOBILE_DESKTOP_BREAKPOINT_PX
+      ? MAX_TICKS_MOBILE
+      : MAX_TICKS_DESKTOP;
 
-  const ticks: number[] = [];
-  for (let i = 0; i <= lastIndex; i += step) {
-    ticks.push(i);
+  const ticksFor = (step: CalendarStep): number[] => {
+    const ticks: number[] = [];
+    const reach = Math.floor(step.approxDays / 2);
+    for (const anchor of calendarAnchors(first, last, step)) {
+      const index = nearestPoint(days, anchor, reach);
+      if (
+        index !== -1 &&
+        (ticks.length === 0 || index > ticks[ticks.length - 1]!)
+      ) {
+        ticks.push(index);
+      }
+    }
+    return ticks;
+  };
+
+  // With the plot's width known, the step is the smallest whose labels all
+  // fit side by side where they are drawn: on an index axis the points, not
+  // the days, are spaced evenly, so two grid dates can sit closer than their
+  // step where the series is dense. Recharts dropped such a colliding label
+  // itself, which left the grid with holes. Without a width, the count cap.
+  const fits = (ticks: number[]) => {
+    if (!layout) return ticks.length <= maxTicks;
+    const perIndex = layout.plotWidth / Math.max(1, length - 1);
+    return ticks.every(
+      (tick, i) =>
+        i === 0 || (tick - ticks[i - 1]!) * perIndex >= layout.labelWidth,
+    );
+  };
+  for (const step of CALENDAR_STEPS) {
+    const count = Math.floor((last - first) / step.approxDays) + 1;
+    if (!layout && count > maxTicks) continue;
+    const ticks = ticksFor(step);
+    if (ticks.length > 0 && fits(ticks)) return ticks;
   }
-  // Always include the last index so the chart's right edge keeps a
-  // tick label.
-  if (ticks[ticks.length - 1] !== lastIndex) {
-    ticks.push(lastIndex);
+  const widest = ticksFor(CALENDAR_STEPS[CALENDAR_STEPS.length - 1]!);
+  return widest.length > 0 ? widest : [0];
+}
+
+/** Where the ticks are drawn: the plot's width and a label's width, in px. */
+export interface TickLayout {
+  plotWidth: number;
+  labelWidth: number;
+}
+
+const DAY_MS = 86_400_000;
+/** 1970-01-05 was a Monday: day numbers counted from it fall on weeks. */
+const FIRST_MONDAY = 4;
+const MAX_TICKS_MOBILE = 5;
+const MAX_TICKS_DESKTOP = 8;
+
+interface CalendarStep {
+  kind: "days" | "months";
+  /** Days per step, or months per step. */
+  size: number;
+  /** The step's length in days, for counting and the nearest-point window. */
+  approxDays: number;
+}
+
+const CALENDAR_STEPS: ReadonlyArray<CalendarStep> = [
+  { kind: "days", size: 1, approxDays: 1 },
+  { kind: "days", size: 2, approxDays: 2 },
+  { kind: "days", size: 7, approxDays: 7 },
+  { kind: "days", size: 14, approxDays: 14 },
+  { kind: "months", size: 1, approxDays: 30 },
+  { kind: "months", size: 3, approxDays: 91 },
+  { kind: "months", size: 6, approxDays: 182 },
+  { kind: "months", size: 12, approxDays: 365 },
+];
+
+/** The grid's dates (as day numbers) from `first` to `last`, both included. */
+function calendarAnchors(
+  first: number,
+  last: number,
+  step: CalendarStep,
+): number[] {
+  const anchors: number[] = [];
+  if (step.kind === "days") {
+    const offset = step.size >= 7 ? FIRST_MONDAY : 0;
+    const start =
+      first + ((((offset - first) % step.size) + step.size) % step.size);
+    for (let day = start; day <= last; day += step.size) anchors.push(day);
+    return anchors;
   }
-  return ticks;
+  const from = new Date(first * DAY_MS);
+  let year = from.getUTCFullYear();
+  let month = from.getUTCMonth();
+  // Start on a month the step's grid holds (Jan / Apr / Jul / Oct for a
+  // quarter), at or after the first point.
+  month = Math.ceil(month / step.size) * step.size;
+  if (Date.UTC(year, month, 1) / DAY_MS < first) month += step.size;
+  for (;;) {
+    year += Math.floor(month / 12);
+    month %= 12;
+    const day = Date.UTC(year, month, 1) / DAY_MS;
+    if (day > last) break;
+    anchors.push(day);
+    month += step.size;
+  }
+  return anchors;
+}
+
+/** The index of the point nearest `anchor` within `reach` days, or -1. */
+function nearestPoint(days: number[], anchor: number, reach: number): number {
+  let best = -1;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (let index = 0; index < days.length; index += 1) {
+    const distance = Math.abs(days[index]! - anchor);
+    if (distance <= reach && distance < bestDistance) {
+      best = index;
+      bestDistance = distance;
+    }
+  }
+  return best;
 }

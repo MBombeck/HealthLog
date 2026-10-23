@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2898,
-  "total": 9297,
+  "total": 9296,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1904,7 +1904,7 @@
     "lib/charts/comparison-shift.ts": 1,
     "lib/charts/data-ready-latch.ts": 1,
     "lib/charts/window-stats.ts": 1,
-    "lib/charts/x-axis-density.ts": 6,
+    "lib/charts/x-axis-density.ts": 5,
     "lib/clinician-share/__tests__/passphrase.test.ts": 1,
     "lib/clinician-share/__tests__/resolve-share-gate-state.test.ts": 1,
     "lib/clinician-share/__tests__/resolve-share-token.test.ts": 1,

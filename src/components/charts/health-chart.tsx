@@ -16,7 +16,6 @@ import {
   ChartDayFooter,
   useChartDayLinks,
 } from "@/components/day/chart-day-links";
-import { isWholeNumberType } from "@/components/day/use-day-value-format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useChartOverlayPrefs } from "@/hooks/use-chart-overlay-prefs";
@@ -25,7 +24,6 @@ import { useViewportWidth } from "@/hooks/use-viewport-width";
 import { axisTickUnitSuffix } from "@/lib/charts/axis-unit";
 import { makeBucketLabelFormatters } from "@/lib/charts/bucket-label";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
-import { computeTickPositions } from "@/lib/charts/x-axis-density";
 import {
   useDateFormatPreference,
   useFormatters,
@@ -50,12 +48,16 @@ import {
 } from "./health-chart/chart-layers";
 import { makeTooltipContent } from "./health-chart/chart-tooltip-content";
 import {
+  axisValueFormatters,
+  dayFocusFor,
   getTypeLabel,
   makeDayKeyFormatter,
+  pointIndexXAxis,
   resolveAnnotationPositions,
   resolveVerticalMarkerPositions,
+  xTickLayout,
 } from "./health-chart/series-math";
-import type { ChartDataPoint, HealthChartProps } from "./health-chart/types";
+import type { HealthChartProps } from "./health-chart/types";
 import {
   useHealthChartLabels,
   useHealthChartOverlays,
@@ -194,6 +196,7 @@ export function HealthChart({
     activeBucket,
     bucketCaption,
     yDomain,
+    yTicks,
   } = useHealthChartView({
     data,
     rangePoints,
@@ -209,29 +212,25 @@ export function HealthChart({
     onVisibleStats,
   });
 
+  const overlays = useHealthChartOverlays({
+    showBands,
+    showTrend,
+    valueBands,
+    targetZones,
+    yDomain,
+    chartData,
+    types,
+    unit,
+    valueMode,
+    t,
+    fmt,
+  });
   const { visibleBands, visibleTargetZones, trendInfo, personalBaselines } =
-    useHealthChartOverlays({
-      showBands,
-      showTrend,
-      valueBands,
-      targetZones,
-      yDomain,
-      chartData,
-      types,
-      unit,
-      valueMode,
-      t,
-      fmt,
-    });
+    overlays;
 
-  // One decimal on the axis while the visible domain spans under 6 units, so
-  // two gridlines never round to the same integer (82.8 vs 83.5 kg).
-  const yDomainSpan = yDomain ? yDomain[1] - yDomain[0] : null;
-  const useDecimalAxis = yDomainSpan !== null && yDomainSpan < 6;
-  const formatAxisValue = (value: number) =>
-    useDecimalAxis ? fmt.number(value, 1) : fmt.integer(value);
-
-  const formatTooltipValue = (value: number) => fmt.number(value, 1);
+  const [containerWidth, setContainerWidth] = useState<number | null>(null);
+  const { useDecimalAxis, formatAxisValue, formatTooltipValue } =
+    axisValueFormatters(yDomain, fmt);
 
   const { primaryType, chartAriaLabel, dataTableColumns } =
     useHealthChartLabels({
@@ -262,36 +261,21 @@ export function HealthChart({
   // The days as doors: daily points only (a week or month point averages
   // many days and has no one day to open).
   const dayLinksActive = dayLinks && !mini && activeBucket === "day";
-  // What the day shows at its top when opened from a point: the chart's name
-  // and the point's value as the tooltip reads it.
-  const dayFocusFor = (point: ChartDataPoint | undefined) => {
-    if (!point) return null;
-    const parts = types
-      .map((type) => ({ type, v: point[type] }))
-      .filter((p): p is { type: string; v: number } => typeof p.v === "number");
-    if (parts.length === 0) return null;
-    return {
-      label: title,
-      // A pressure or a pulse reads in whole numbers on the day, as in every
-      // list; the rest keep the tooltip's one decimal.
-      value: parts
-        .map(({ type, v }) =>
-          valueMode === "raw" && isWholeNumberType(type)
-            ? fmt.number(Math.round(v), 0)
-            : formatTooltipValue(v),
-        )
-        .join("/"),
-      unit,
-      types: valueMode === "raw" ? types : [],
-    };
-  };
   const dayLinkSource = chartDataWithCompare ?? chartData;
   const chartDays = useChartDayLinks({
     enabled: dayLinksActive,
     days: dayLinksActive
       ? (dayLinkSource ?? []).map((point) => chartPointDayKey(point.timestamp))
       : [],
-    focusFor: (index) => dayFocusFor(dayLinkSource?.[index]),
+    focusFor: (index) =>
+      dayFocusFor(dayLinkSource?.[index], {
+        types,
+        title,
+        unit,
+        valueMode,
+        fmt,
+        formatTooltipValue,
+      }),
   });
   const openDayIndex = chartDays.openIndex;
   const openDayPoint =
@@ -405,10 +389,19 @@ export function HealthChart({
               role="img"
               aria-label={chartAriaLabel}
             >
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer
+                width="100%"
+                height="100%"
+                onResize={setContainerWidth}
+              >
                 <ComposedChart
                   data={chartDataWithCompare ?? chartData}
-                  margin={{ top: 10, right: 8, bottom: 8, left: 8 }}
+                  margin={{
+                    top: 10,
+                    right: 8 + overlays.rightRoom,
+                    bottom: 8,
+                    left: 8,
+                  }}
                   accessibilityLayer
                   onClick={chartDays.onChartClick}
                 >
@@ -418,26 +411,16 @@ export function HealthChart({
                     opacity={0.5}
                   />
                   <XAxis
-                    type="number"
-                    dataKey="pointIndex"
-                    domain={[0, maxPointIndex]}
-                    allowDecimals={false}
-                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value) =>
-                      tzFmt.date(
-                        new Date(
-                          chartData?.[Math.round(value)]?.timestamp ??
-                            Date.now(),
-                        ),
-                      )
-                    }
-                    // Recharts ignores `interval` on a numeric axis, so the
-                    // day-aware density arrives as explicit tick positions.
-                    ticks={computeTickPositions(chartData ?? [], viewportWidth)}
-                    padding={{ left: 10, right: 10 }}
-                    tickMargin={10}
+                    {...pointIndexXAxis({
+                      chartData,
+                      formatDate: tzFmt.date,
+                      viewportWidth,
+                      layout: xTickLayout(
+                        containerWidth,
+                        yAxisWidth,
+                        overlays.rightRoom,
+                      ),
+                    })}
                   />
                   <YAxis
                     tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
@@ -446,6 +429,7 @@ export function HealthChart({
                     width={yAxisWidth}
                     tickMargin={10}
                     domain={yDomain}
+                    ticks={yTicks}
                     tickFormatter={(value) =>
                       typeof value === "number"
                         ? formatAxisValue(
@@ -537,7 +521,7 @@ export function HealthChart({
               // The plot's margin (8) + the y axis + the x axis padding (10)
               // on the left, margin + padding on the right.
               insetLeft={8 + yAxisWidth + 10}
-              insetRight={8 + 10}
+              insetRight={8 + overlays.rightRoom + 10}
             />
           ) : null}
           {/* The points the chart just drew, as a table, read from the same

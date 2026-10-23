@@ -19,6 +19,7 @@ import type {
   VisibleTargetZone,
   VisibleValueBand,
 } from "./types";
+import { baselineLabelText, rightLabelRoom } from "./chart-layers";
 
 type Translate = (
   key: string,
@@ -210,7 +211,26 @@ export function useHealthChartOverlays({
     return map;
   }, [chartData, types]);
 
-  return { visibleBands, visibleTargetZones, trendInfo, personalBaselines };
+  // The labels drawn beside the plot (the average's, the target zones'), and
+  // so the room the plot keeps for them on its right.
+  const baselineLabel = baselineLabelText(
+    showTrend,
+    types,
+    personalBaselines,
+    yDomain,
+    t,
+  );
+
+  return {
+    visibleBands,
+    visibleTargetZones,
+    trendInfo,
+    personalBaselines,
+    rightRoom: rightLabelRoom([
+      baselineLabel,
+      ...visibleTargetZones.map((zone) => zone.label),
+    ]),
+  };
 }
 
 /**

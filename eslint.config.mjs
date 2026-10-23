@@ -239,6 +239,9 @@ const eslintConfig = defineConfig([
       "src/components/charts/workout-elevation-chart.tsx",
       "src/components/insights/coach-panel/result-chart.tsx",
       "src/components/insights/derived/score-trend-chart.tsx",
+      // Browser tests draw a chart with Recharts itself to pin what it lays
+      // out; a test file is never bundled, so it mints no chunk.
+      "src/**/*.browser.test.tsx",
     ],
     rules: {
       "no-restricted-imports": [

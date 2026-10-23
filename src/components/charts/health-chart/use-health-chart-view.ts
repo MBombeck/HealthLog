@@ -15,7 +15,7 @@ import {
   type MetricWindowStats,
 } from "@/lib/charts/window-stats";
 import type { ComparisonBaseline } from "@/lib/dashboard-layout";
-import { computePaddedYDomain } from "@/lib/insights/chart-y-domain";
+import { computePaddedYDomain, niceYAxis } from "@/lib/insights/chart-y-domain";
 import { trendLineByTime } from "@/lib/stats/linear-fit";
 
 import { movingAverageByPoints } from "./series-math";
@@ -308,7 +308,9 @@ export function useHealthChartView({
   // in the tooltip.
   const bucketCaption = bucketCaptionKey(activeBucket, types);
 
-  const yDomain = useMemo<[number, number] | undefined>(() => {
+  const yAxis = useMemo<
+    { domain: [number, number]; ticks: number[] } | undefined
+  >(() => {
     if (!chartDataWithCompare?.length) return undefined;
 
     const keys = [...types];
@@ -325,7 +327,8 @@ export function useHealthChartView({
       .filter((value): value is number => typeof value === "number")
       .filter((value) => Number.isFinite(value));
 
-    return computePaddedYDomain(values, types);
+    const padded = computePaddedYDomain(values, types);
+    return padded ? niceYAxis(padded) : undefined;
   }, [
     chartDataWithCompare,
     effectiveCompareBaseline,
@@ -342,6 +345,7 @@ export function useHealthChartView({
     hasComparisonData,
     activeBucket,
     bucketCaption,
-    yDomain,
+    yDomain: yAxis?.domain,
+    yTicks: yAxis?.ticks,
   };
 }

@@ -66,8 +66,9 @@ export function targetZoneLayers(
             ? {
                 value: zone.label,
                 position: "right",
+                offset: BASELINE_LABEL_GAP,
                 fill: zone.textColor ?? zone.color,
-                fontSize: 10,
+                fontSize: BASELINE_LABEL_FONT_SIZE,
               }
             : undefined
         }
@@ -186,10 +187,51 @@ export function openDayLayers(
   ];
 }
 
+/** The gap between the plot's right edge and the baseline label. */
+const BASELINE_LABEL_GAP = 6;
+/** The label's type size, and a width per character that over-reads it. */
+const BASELINE_LABEL_FONT_SIZE = 10;
+const BASELINE_LABEL_CHAR_WIDTH = 6;
+
+/**
+ * The baseline label's text when the chart draws one: the trend overlay is
+ * on and the first type has a baseline inside the visible domain. Null
+ * otherwise, and then the chart keeps no room for it.
+ */
+export function baselineLabelText(
+  showTrend: boolean,
+  types: string[],
+  personalBaselines: Map<string, number>,
+  yDomain: [number, number] | undefined,
+  t: Translate,
+): string | null {
+  if (!showTrend || types.length === 0) return null;
+  const baseline = personalBaselines.get(types[0]!);
+  if (baseline == null) return null;
+  if (yDomain && (baseline < yDomain[0] || baseline > yDomain[1])) return null;
+  return t("charts.personalBaseline");
+}
+
+/**
+ * The right margin the labels drawn beside the plot need: the average's label
+ * and the target zones' labels sit outside the plot, past the lines' right
+ * ends, so they never cover a point or a line. With the margin at 8 px a
+ * zone's label was cut to its first letter, and the average's label, inside
+ * the plot at the top left, sat on the first readings.
+ */
+export function rightLabelRoom(
+  labels: ReadonlyArray<string | null | undefined>,
+): number {
+  const longest = Math.max(0, ...labels.map((label) => label?.length ?? 0));
+  if (longest === 0) return 0;
+  return BASELINE_LABEL_GAP + Math.ceil(longest * BASELINE_LABEL_CHAR_WIDTH);
+}
+
 /**
  * The personal baseline per type, only while the trend overlay is shown (an
  * always-on mean line was rejected). Only the first type carries the label,
- * so a multi-type chart does not paint it twice.
+ * so a multi-type chart does not paint it twice; it is drawn to the right of
+ * the plot, in the room `rightLabelRoom` keeps there.
  */
 export function baselineLayers(
   showTrend: boolean,
@@ -216,9 +258,10 @@ export function baselineLayers(
             i === 0
               ? {
                   value: t("charts.personalBaseline"),
-                  position: "insideTopLeft",
+                  position: "right",
+                  offset: BASELINE_LABEL_GAP,
                   fill: "var(--muted-foreground)",
-                  fontSize: 10,
+                  fontSize: BASELINE_LABEL_FONT_SIZE,
                   opacity: 0.7,
                 }
               : undefined
