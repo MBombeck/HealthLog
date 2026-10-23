@@ -15,7 +15,12 @@ vi.mock("@/lib/observability/container-memory", () => ({
 }));
 
 import { emitSignal } from "@/lib/logging/signal";
-import { heavyLane, LANE_WAIT_WARN_MS, laneWanted } from "../heavy-lane";
+import {
+  heavyLane,
+  LANE_HOLD_GRACE_SECONDS,
+  LANE_WAIT_WARN_MS,
+  laneWanted,
+} from "../heavy-lane";
 import { jobDone } from "../job-outcome";
 
 type TestJob = Job<{ force?: boolean }>;
@@ -268,6 +273,91 @@ describe("a long wait for the lane", () => {
     });
     release();
     await held;
+  });
+});
+
+describe("a holder that never finishes", () => {
+  it("loses the lane once it has outlived its own expiry, and the overrun is reported", async () => {
+    vi.mocked(emitSignal).mockClear();
+    const start = Date.parse("2026-10-20T02:00:00Z");
+    let clock = start;
+    const now = () => clock;
+    const { back, defer } = deferrals();
+    // A backup whose handler never settles: pg-boss failed it at its expiry,
+    // but the handler is still awaiting.
+    let unstick!: () => void;
+    const stuck = new Promise<void>((r) => (unstick = r));
+    const backup = heavyLane(
+      "data-backup",
+      async () => {
+        await stuck;
+        return jobDone({ jobs: 1 });
+      },
+      undefined,
+      defer,
+      now,
+    )([{ ...job("nightly"), expireInSeconds: 7200 } as TestJob]);
+    await tick();
+
+    const restore = vi.fn(async () => jobDone({ jobs: 1 }));
+    const tryRestore = () =>
+      heavyLane(
+        "backup-restore",
+        restore,
+        undefined,
+        defer,
+        now,
+      )([{ ...job("restore"), expireInSeconds: 21600 } as TestJob]);
+
+    // Inside the backup's expiry and grace, the restore waits its turn.
+    clock = start + (7200 + LANE_HOLD_GRACE_SECONDS) * 1000;
+    await tryRestore();
+    expect(restore).not.toHaveBeenCalled();
+    expect(back.map((b) => b.queue)).toEqual(["backup-restore"]);
+    expect(emitSignal).not.toHaveBeenCalled();
+
+    // Past it, the lane is the restore's, and the overrun is an error.
+    clock += 60_000;
+    await tryRestore();
+    expect(restore).toHaveBeenCalledTimes(1);
+    expect(emitSignal).toHaveBeenCalledWith({
+      action: "job.heavy_lane.holder_expired",
+      level: "error",
+      meta: {
+        holder: "data-backup",
+        queue: "backup-restore",
+        overran_minutes: 1,
+      },
+    });
+
+    // The stuck handler settling later does not free a lane it no longer
+    // holds: a job that arrives while the next holder runs still waits.
+    let release!: () => void;
+    const released = new Promise<void>((r) => (release = r));
+    const next = heavyLane(
+      "rollup-full-backfill",
+      async () => {
+        await released;
+        return jobDone({ jobs: 1 });
+      },
+      undefined,
+      defer,
+      now,
+    )([{ ...job("fold"), expireInSeconds: 3600 } as TestJob]);
+    await tick();
+    unstick();
+    await backup;
+    const waiting = vi.fn(async () => jobDone({ jobs: 1 }));
+    await heavyLane(
+      "data-backup",
+      waiting,
+      undefined,
+      defer,
+      now,
+    )([{ ...job("weekly"), expireInSeconds: 7200 } as TestJob]);
+    expect(waiting).not.toHaveBeenCalled();
+    release();
+    await next;
   });
 });
 
