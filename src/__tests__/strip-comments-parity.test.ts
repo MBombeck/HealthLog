@@ -9,13 +9,13 @@
  * scanner held to the TypeScript parser: every source file is stripped both
  * ways, and the first file where they differ fails here with the line.
  */
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 import {
+  readSourceText,
   requireFloor,
   stripComments,
   walkSourceFiles,
@@ -117,7 +117,7 @@ describe("stripComments", () => {
     );
     const differing: string[] = [];
     for (const rel of files) {
-      const text = readFileSync(join(ROOT, rel), "utf8");
+      const text = readSourceText(join(ROOT, rel));
       const ours = lines(stripComments(text, rel));
       const parser = lines(parserStrip(text, rel));
       const at = ours.findIndex((line, index) => line !== parser[index]);
