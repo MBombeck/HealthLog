@@ -1,23 +1,23 @@
 {
-  "status": 500,
+  "status": 422,
   "body": {
     "data": null,
-    "error": "Interner Serverfehler",
+    "error": "No AI provider configured. Connect ChatGPT in settings or ask your admin to set up an API key.",
     "meta": {
-      "errorCode": "http.internal",
+      "errorCode": "ai.provider.none",
       "requestId": "<requestId>"
     }
   },
   "events": [
     {
-      "status": 500,
+      "status": 422,
       "action": null,
       "meta": null,
-      "warnings": null,
-      "error": {
-        "type": "TypeError",
-        "message": "Invalid authentication tag length: 0"
-      }
+      "warnings": [
+        "ai: a stored provider key could not be opened",
+        "ai: a stored provider key could not be opened"
+      ],
+      "error": null
     }
   ],
   "effects": [],

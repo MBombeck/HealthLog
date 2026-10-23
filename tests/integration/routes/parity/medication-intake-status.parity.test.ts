@@ -132,21 +132,7 @@ async function get(
   });
 }
 
-/**
- * A take that re-binds to another slot answers with the row the shared slot
- * write returns, which carries fewer fields than the registered event
- * resource. The parity snapshot pins that answer as it is; the contract check
- * is the route's own tests' business.
- */
-const SLOT_MOVE_ANSWER = {
-  skip: "a slot move answers with the narrower slot-write row",
-};
-
-async function post(
-  name: string,
-  body: unknown,
-  caller: Caller & { contract?: { skip: string } } = {},
-) {
+async function post(name: string, body: unknown, caller: Caller = {}) {
   await parityStep({
     name: `medication-intake-status.${name}`,
     handler: POST,
@@ -156,7 +142,6 @@ async function post(
       body,
       auth: caller.auth ?? owner,
       headers: caller.headers,
-      contract: caller.contract,
     },
     userIds,
     now: NOW,
@@ -362,28 +347,20 @@ describe("POST /api/medications/intake parity", () => {
   });
 
   it("12 a take that re-binds to another slot", async () => {
-    await post(
-      "12-take-slot-move",
-      {
-        intakeId: ev.moveMe,
-        status: "taken",
-        takenAt: "2026-10-14T20:30:00.000Z",
-      },
-      { contract: SLOT_MOVE_ANSWER },
-    );
+    await post("12-take-slot-move", {
+      intakeId: ev.moveMe,
+      status: "taken",
+      takenAt: "2026-10-14T20:30:00.000Z",
+    });
   });
 
   it("13 a pinned take, and a pin that is no slot", async () => {
-    await post(
-      "13a-pin",
-      {
-        intakeId: ev.pinMe,
-        status: "taken",
-        takenAt: "2026-10-13T11:00:00.000Z",
-        forceSlotInstant: "2026-10-13T08:00:00.000Z",
-      },
-      { contract: SLOT_MOVE_ANSWER },
-    );
+    await post("13a-pin", {
+      intakeId: ev.pinMe,
+      status: "taken",
+      takenAt: "2026-10-13T11:00:00.000Z",
+      forceSlotInstant: "2026-10-13T08:00:00.000Z",
+    });
     await post("13b-pin-not-a-slot", {
       intakeId: ev.snoozeMe,
       status: "taken",
@@ -451,7 +428,7 @@ describe("POST /api/medications/intake parity", () => {
     await post(
       "20a-writer-take",
       { intakeId: ev.todayEvening, status: "taken" },
-      { ...writer, contract: SLOT_MOVE_ANSWER },
+      { ...writer },
     );
     await post(
       "20b-writer-snooze-refused",

@@ -105,7 +105,7 @@ export async function handleGoogleHealthSync(
               // next hour's, which is not a failure to retry.
               if (result.failed && shouldStop()) {
                 if (result.imported > 0) {
-                  fireAndForget(enqueueReminderSatisfy(userId), {
+                  fireAndForget(() => enqueueReminderSatisfy(userId), {
                     action: "reminder.satisfy.enqueue",
                   });
                 }
@@ -128,7 +128,7 @@ export async function handleGoogleHealthSync(
                   : "complete";
 
               if (result.imported > 0) {
-                fireAndForget(enqueueReminderSatisfy(userId), {
+                fireAndForget(() => enqueueReminderSatisfy(userId), {
                   action: "reminder.satisfy.enqueue",
                 });
               }

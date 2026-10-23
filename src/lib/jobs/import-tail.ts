@@ -25,6 +25,7 @@ import type { MeasurementType } from "@/generated/prisma/client";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { invalidateStatusInsightsForTypes } from "@/lib/insights/status-invalidation";
 import { trackBackgroundTask } from "@/lib/logging/background-tasks";
+import { runDetached } from "@/lib/logging/detached";
 import {
   recomputeUserRollups,
   ROLLUP_FOLD_WINDOW_MS,
@@ -68,9 +69,11 @@ export async function afterBulkImport(
   if (types.length > 0) {
     // Registered so the test suite can await the detached handle.
     trackBackgroundTask(
-      invalidateStatusInsightsForTypes(userId, types, {
-        source: "manual",
-      }).catch((err) => {
+      runDetached(() =>
+        invalidateStatusInsightsForTypes(userId, types, {
+          source: "manual",
+        }),
+      ).catch((err) => {
         console.warn(
           `[${label}] status-insight invalidate failed for user ${userId}`,
           err,

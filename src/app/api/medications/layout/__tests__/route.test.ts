@@ -243,7 +243,7 @@ describe("PUT /api/medications/layout — 422 multi-issue envelope", () => {
     expect(res.status).toBe(422);
   });
 
-  it("writes one deduped audit breadcrumb for repeated 422s", async () => {
+  it("files no row for an owner's repeated refusals", async () => {
     const res1 = await callPut(makeReq({ version: 9 }));
     const res2 = await callPut(makeReq({ version: 9 }));
     expect(res1.status).toBe(422);
@@ -251,12 +251,9 @@ describe("PUT /api/medications/layout — 422 multi-issue envelope", () => {
 
     await new Promise((r) => setTimeout(r, 5));
 
-    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
-    const call = vi.mocked(prisma.auditLog.create).mock.calls[0]?.[0] as {
-      data: { userId: string; action: string };
-    };
-    expect(call.data.userId).toBe("user-1");
-    expect(call.data.action).toBe("medication.layout.validation-failed");
+    // An owner's own refused request is not an audit event: `auditLog`
+    // keeps it on the wide event and files no row.
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
   });
 });
 

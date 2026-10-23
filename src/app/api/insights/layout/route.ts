@@ -13,6 +13,7 @@
  * single blob with a `surface` discriminator would force every read to
  * demux first.
  */
+import { auditLog } from "@/lib/auth/audit";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
   apiSuccess,
@@ -178,17 +179,12 @@ export const PUT = apiHandler(async (request: NextRequest) => {
       const auditIssues = sanitiseZodIssues(parsed.error.issues, {
         stripValuesFromMessage: true,
       });
-      prisma.auditLog
-        .create({
-          data: {
-            userId: user.id,
-            action: "insights.layout.validation-failed",
-            details: JSON.stringify({ issues: auditIssues }),
-          },
-        })
-        .catch(() => {
-          /* swallow — validation response is the contract, audit row is best-effort */
-        });
+      auditLog("insights.layout.validation-failed", {
+        userId: user.id,
+        details: { issues: auditIssues },
+      }).catch(() => {
+        /* swallow — validation response is the contract, audit row is best-effort */
+      });
     }
     return returnAllZodIssues(parsed.error, 422);
   }

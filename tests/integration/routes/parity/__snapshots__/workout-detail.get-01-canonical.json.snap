@@ -145,7 +145,13 @@
           }
         ]
       },
-      "splits": null,
+      "splits": [
+        {
+          "km": 1,
+          "durationSec": 530,
+          "paceSecPerKm": 530
+        }
+      ],
       "sportContext": {
         "count": 1,
         "avgDurationSec": 1800,

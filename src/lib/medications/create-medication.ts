@@ -10,33 +10,27 @@
 import type { z } from "zod/v4";
 
 import { prisma } from "@/lib/db";
-import type { Prisma } from "@/generated/prisma/client";
-import { annotate, getEvent } from "@/lib/logging/context";
+import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
-import type { SessionUser } from "@/lib/auth/session-user";
-import {
-  courseRefusalResponse,
-  resolveCourseFields,
-} from "@/lib/medications/courses";
+import { courseRefusalResponse } from "@/lib/medications/courses";
 import {
   dateOfDayKey,
   dayKeyOfDate,
   validateCourses,
 } from "@/lib/medications/course-window";
 import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
-import {
-  isCustomMedicationCategoryKey,
-  type createMedicationSchema,
-} from "@/lib/validations/medication";
+import type { createMedicationSchema } from "@/lib/validations/medication";
 import {
   isAssignableCategory,
-  resolveMedicationCategories,
   setMedicationCategory,
 } from "@/lib/medication-category";
 import { serializeScheduleRecurrence } from "@/lib/medication-schedule";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
-import { serializeScheduleUnitsPerDose } from "@/lib/medications/schedule-units-dto";
-import { scheduleWireFields } from "@/lib/medications/intake-tracking";
+import type { Medication, MedicationSchedule } from "@/generated/prisma/client";
+import {
+  medicationDetail,
+  type ReadUser,
+} from "@/lib/medications/read-medication";
 
 export type CreateMedicationInput = z.output<typeof createMedicationSchema>;
 type ScheduleInput = NonNullable<CreateMedicationInput["schedules"]>[number];
@@ -67,28 +61,14 @@ export type CreateMedicationOutcome =
  * EXISTING row (status 200, vs 201 for a fresh create) when the caller
  * re-posts a `(externalSource, externalId)` pair this user already mirrors —
  * the iOS re-sync replays its full HealthKit medication list, and a replay
- * must neither duplicate nor 500. Response shape mirrors the fresh-create
- * envelope (schedules included, category joined, Decimal unwrapped); no
- * audit row and no cache eviction because nothing was written.
+ * must neither duplicate nor 500. It answers the medication's read model,
+ * the same body the fresh create and the detail read answer; no audit row
+ * and no cache eviction because nothing was written.
  */
 async function existingMirrorBody(
-  medication: Record<string, unknown> & {
-    id: string;
-    unitsPerDose: unknown;
-    trackIntake: boolean;
-    schedules: Array<{ unitsPerDose: Prisma.Decimal | null }>;
-  },
+  user: ReadUser,
+  medication: Medication & { schedules: MedicationSchedule[] },
 ): Promise<CreateMedicationOutcome> {
-  let category = "OTHER";
-  let categoryLabel: string | null = null;
-  try {
-    const categories = await resolveMedicationCategories([medication.id]);
-    category = categories[medication.id]?.category ?? "OTHER";
-    categoryLabel = categories[medication.id]?.categoryLabel ?? null;
-  } catch {
-    getEvent()?.addWarning("Medication categories could not be loaded");
-  }
-
   annotate({
     action: {
       name: "medication.create",
@@ -97,25 +77,14 @@ async function existingMirrorBody(
     },
     meta: { idempotent_replay: true },
   });
-
-  return {
-    kind: "existing",
-    body: {
-      ...medication,
-      unitsPerDose: Number(medication.unitsPerDose),
-      // #219 — Decimal → number for the per-schedule column too.
-      // (#1033) — record-only medications ship `schedules: []`.
-      ...scheduleWireFields(
-        medication.trackIntake,
-        serializeScheduleUnitsPerDose(
-          medication.schedules,
-          Number(medication.unitsPerDose),
-        ),
-      ),
-      category,
-      categoryLabel,
-    },
-  };
+  // The read model, exactly as `GET /api/medications/{id}` answers it.
+  const body = await medicationDetail({
+    user,
+    grantId: null,
+    medication,
+    announce: false,
+  });
+  return { kind: "existing", body };
 }
 
 /**
@@ -127,16 +96,17 @@ async function existingMirrorBody(
  * create covers the concurrent race. Null when the create goes ahead.
  */
 async function existingMirrorOrCap(
-  userId: string,
+  user: ReadUser,
   externalSource: NonNullable<CreateMedicationInput["externalSource"]>,
   externalId: string,
 ): Promise<CreateMedicationOutcome | null> {
+  const userId = user.id;
   const existing = await prisma.medication.findFirst({
     where: { userId, externalSource, externalId },
     include: { schedules: true },
   });
   if (existing) {
-    return existingMirrorBody(existing);
+    return existingMirrorBody(user, existing);
   }
 
   // Growth guard. This point is only reached when the idempotency lookup
@@ -438,7 +408,7 @@ function insertMedication(
 }
 
 export async function createMedication(input: {
-  user: Pick<SessionUser, "id" | "timezone">;
+  user: ReadUser;
   data: CreateMedicationInput;
   ipAddress: string | null;
 }): Promise<CreateMedicationOutcome> {
@@ -468,11 +438,7 @@ export async function createMedication(input: {
   }
 
   if (externalSource !== undefined && externalId !== undefined) {
-    const mirror = await existingMirrorOrCap(
-      user.id,
-      externalSource,
-      externalId,
-    );
+    const mirror = await existingMirrorOrCap(user, externalSource, externalId);
     if (mirror) return mirror;
   }
 
@@ -516,19 +482,12 @@ export async function createMedication(input: {
         where: { userId: user.id, externalSource, externalId },
         include: { schedules: true },
       });
-      if (winner) return existingMirrorBody(winner);
+      if (winner) return existingMirrorBody(user, winner);
     }
     throw err;
   }
 
-  const normalizedCategory = await setMedicationCategory(
-    medication.id,
-    category,
-  );
-  const categoryLabel = isCustomMedicationCategoryKey(normalizedCategory)
-    ? ((await resolveMedicationCategories([medication.id]))[medication.id]
-        ?.categoryLabel ?? null)
-    : null;
+  await setMedicationCategory(medication.id, category);
 
   await auditLog("medication.create", {
     userId: user.id,
@@ -554,30 +513,12 @@ export async function createMedication(input: {
   // read reflects the new schedule.
   invalidateUserMedications(user.id, { evict: true });
 
-  return {
-    kind: "created",
-    body: {
-      ...medication,
-      unitsPerDose: Number(medication.unitsPerDose),
-      // #219 — Decimal → number for the per-schedule column too.
-      // (#1033) — record-only medications ship `schedules: []`.
-      ...scheduleWireFields(
-        medication.trackIntake,
-        serializeScheduleUnitsPerDose(
-          medication.schedules,
-          medication.unitsPerDose,
-        ),
-      ),
-      category: normalizedCategory,
-      categoryLabel,
-      // (#1024) — the courses, as every medication read carries them.
-      ...(
-        await resolveCourseFields(
-          [medication],
-          new Date(),
-          user.timezone || DEFAULT_TIMEZONE,
-        )
-      ).get(medication.id),
-    },
-  };
+  // The read model, exactly as `GET /api/medications/{id}` answers it.
+  const body = await medicationDetail({
+    user,
+    grantId: null,
+    medication,
+    announce: false,
+  });
+  return { kind: "created", body };
 }

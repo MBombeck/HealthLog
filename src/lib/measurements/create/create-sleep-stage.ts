@@ -147,7 +147,7 @@ export async function createNamedSleepStage(
       },
     });
     invalidateUserMeasurements(userId, { evict: true });
-    fireAndForget(enqueueReminderSatisfy(userId), {
+    fireAndForget(() => enqueueReminderSatisfy(userId), {
       action: "reminder.satisfy.enqueue",
     });
     if (status === "inserted") {

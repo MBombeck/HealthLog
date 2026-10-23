@@ -62,7 +62,27 @@
       "courses": [],
       "courseCount": 0,
       "previousCourseEndedOn": null,
-      "canStartCourse": false
+      "canStartCourse": false,
+      "nextDueAt": "2026-10-17T07:00:00.000Z",
+      "remindersActive": false,
+      "nextDueOverdue": false,
+      "courseStatus": "CURRENT",
+      "intakeActionable": true,
+      "stockUnitsRemaining": 3,
+      "stockDosesRemaining": 1,
+      "runwayDays": 10,
+      "ingredients": [
+        {
+          "nutrient": "vitamin_d",
+          "amountPerUnit": 25,
+          "unit": "ug",
+          "enteredAmount": 1000,
+          "enteredUnit": "IU",
+          "labelKey": "nutrients.names.vitamin_d",
+          "label": "Vitamin D"
+        }
+      ],
+      "related": []
     },
     "error": null
   },

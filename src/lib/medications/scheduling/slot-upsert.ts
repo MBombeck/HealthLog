@@ -14,7 +14,10 @@
  * (PRN / off-slot beyond tolerance / cyclic off-week / no schedules) —
  * the caller's signal to keep the unmodified insert behaviour.
  */
-import type { PrismaClient } from "@/generated/prisma/client";
+import type {
+  MedicationIntakeEvent,
+  PrismaClient,
+} from "@/generated/prisma/client";
 
 import { prisma as defaultPrisma } from "@/lib/db";
 import { isP2002 } from "@/lib/prisma-errors";
@@ -30,16 +33,12 @@ import type { InjectionSiteKey } from "@/lib/medications/injection-sites";
 
 type PrismaLike = Pick<PrismaClient, "medication" | "medicationIntakeEvent">;
 
-/** The minimal intake-row shape the slot upsert reads + returns. */
-export interface SlotIntakeRow {
-  id: string;
-  takenAt: Date | null;
-  skipped: boolean;
-  idempotencyKey: string | null;
-  scheduledFor: Date;
-  source: string;
-  createdAt: Date;
-}
+/**
+ * The intake row the slot upsert reads and returns: the whole row, so a
+ * write that converged onto a slot answers the same event shape as one that
+ * inserted its own (the declared `MedicationIntakeEvent`).
+ */
+export type SlotIntakeRow = MedicationIntakeEvent;
 
 export interface ApplyCanonicalSlotWriteInput {
   client: PrismaLike;
@@ -151,16 +150,6 @@ export interface ApplyCanonicalSlotWriteResult {
   outcomeChangeRefused: boolean;
 }
 
-const SLOT_ROW_SELECT = {
-  id: true,
-  takenAt: true,
-  skipped: true,
-  idempotencyKey: true,
-  scheduledFor: true,
-  source: true,
-  createdAt: true,
-} as const;
-
 /**
  * Forward grace a TAKEN write may still snap onto a slot whose anchor sits
  * ahead of the take — the same clock-skew / early-dose margin the resolver's
@@ -239,7 +228,6 @@ async function findSlotRows(
       scheduledFor: canonicalSlot,
       deletedAt: null,
     },
-    select: SLOT_ROW_SELECT,
     // H1 — deterministic order; actioned-preference applied in
     // `pickSlotRow`.
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
@@ -311,7 +299,6 @@ export async function applyCanonicalSlotWrite(
         // v1.28 — external dose-event id only when the write carries one.
         ...(externalId !== null && { externalId }),
       },
-      select: SLOT_ROW_SELECT,
     })) as SlotIntakeRow;
     return {
       row: created,
@@ -453,7 +440,6 @@ async function applyToExisting(
       // never clears a previously-recorded id.
       ...(externalId !== null && { externalId }),
     },
-    select: SLOT_ROW_SELECT,
   })) as SlotIntakeRow;
 
   return {

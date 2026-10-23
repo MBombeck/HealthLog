@@ -131,7 +131,7 @@ export async function runWhoopResourceSync(
             // sync tail the webhook / per-resource cron paths pass through —
             // `syncUserWhoop` covers the manual + backfill paths itself.
             invalidateUserMeasurements(userId);
-            fireAndForget(enqueueReminderSatisfy(userId), {
+            fireAndForget(() => enqueueReminderSatisfy(userId), {
               action: "reminder.satisfy.enqueue",
             });
           }

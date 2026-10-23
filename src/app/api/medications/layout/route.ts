@@ -11,6 +11,7 @@
  * lives on its own `User` column (`medication_list_layout_json`) per
  * the per-surface-column convention.
  */
+import { auditLog } from "@/lib/auth/audit";
 import { apiHandler, requireAuth, requireRecordAuth } from "@/lib/api-handler";
 import {
   apiSuccess,
@@ -151,17 +152,12 @@ export const PUT = apiHandler(async (request: NextRequest) => {
       const auditIssues = sanitiseZodIssues(parsed.error.issues, {
         stripValuesFromMessage: true,
       });
-      prisma.auditLog
-        .create({
-          data: {
-            userId: user.id,
-            action: "medication.layout.validation-failed",
-            details: JSON.stringify({ issues: auditIssues }),
-          },
-        })
-        .catch(() => {
-          /* swallow — validation response is the contract, audit row is best-effort */
-        });
+      auditLog("medication.layout.validation-failed", {
+        userId: user.id,
+        details: { issues: auditIssues },
+      }).catch(() => {
+        /* swallow — validation response is the contract, audit row is best-effort */
+      });
     }
     return returnAllZodIssues(parsed.error, 422);
   }

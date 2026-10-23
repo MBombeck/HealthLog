@@ -145,9 +145,10 @@ describe("background-task settle contract", () => {
   it("registers what fireAndForget starts", async () => {
     let release: () => void = () => {};
     fireAndForget(
-      new Promise<void>((resolve) => {
-        release = resolve;
-      }),
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve;
+        }),
       { action: "guard.background.registered" },
     );
     expect(pendingBackgroundTaskCount()).toBe(1);
@@ -161,17 +162,19 @@ describe("background-task settle contract", () => {
     let innerDone = false;
 
     fireAndForget(
-      Promise.resolve().then(() => {
-        fireAndForget(
-          new Promise<void>((resolve) =>
-            setTimeout(() => {
-              innerDone = true;
-              resolve();
-            }, 10),
-          ),
-          { action: "guard.background.cascade.inner" },
-        );
-      }),
+      () =>
+        Promise.resolve().then(() => {
+          fireAndForget(
+            () =>
+              new Promise<void>((resolve) =>
+                setTimeout(() => {
+                  innerDone = true;
+                  resolve();
+                }, 10),
+              ),
+            { action: "guard.background.cascade.inner" },
+          );
+        }),
       { action: "guard.background.cascade.outer" },
     );
 

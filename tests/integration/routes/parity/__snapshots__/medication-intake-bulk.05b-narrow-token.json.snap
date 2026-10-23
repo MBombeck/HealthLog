@@ -617,24 +617,6 @@
           "skipped": 7
         },
         "ipAddress": null
-      },
-      {
-        "action": "medications.intake.bulk.validation-failed",
-        "userId": "<id:2>",
-        "actorUserId": null,
-        "details": {
-          "issues": [
-            {
-              "path": "entries.0.medicationId",
-              "code": "too_small"
-            },
-            {
-              "path": "entries.0.takenAt",
-              "code": "invalid_format"
-            }
-          ]
-        },
-        "ipAddress": null
       }
     ],
     "idempotency": []

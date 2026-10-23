@@ -24,10 +24,10 @@
  * The route authenticates, meters, caps and parses; the per-entry writes live
  * in `src/lib/mood/bulk-ingest.ts`.
  */
+import { auditLog } from "@/lib/auth/audit";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
-import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -206,17 +206,12 @@ async function postBulk(request: NextRequest): Promise<Response> {
     const auditIssues = sanitiseZodIssues(parsed.error.issues, {
       stripValuesFromMessage: true,
     });
-    prisma.auditLog
-      .create({
-        data: {
-          userId: user.id,
-          action: "mood.bulk.validation-failed",
-          details: JSON.stringify({ issues: auditIssues }),
-        },
-      })
-      .catch(() => {
-        /* swallow — 422 response is the contract */
-      });
+    auditLog("mood.bulk.validation-failed", {
+      userId: user.id,
+      details: { issues: auditIssues },
+    }).catch(() => {
+      /* swallow — 422 response is the contract */
+    });
     return returnAllZodIssues(parsed.error, 422, {
       errorCode: "mood.bulk.invalid",
     });

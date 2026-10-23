@@ -42,6 +42,7 @@ vi.mock("next/headers", () => ({
 import { GET, POST } from "../route";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
+import { auditLog } from "@/lib/auth/audit";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -73,6 +74,7 @@ const ROW = {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(auditLog).mockResolvedValue(undefined);
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
 });
 

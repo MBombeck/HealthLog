@@ -75,7 +75,16 @@ export const insightRecommendationSchema = z.union([
   }),
 ]);
 
-export const insightResultSchema = z.object({
+/**
+ * The fields every insight reply must carry. Loose on purpose: the briefing
+ * prompt also asks for `dailyBriefing`, `trendAnnotations` and
+ * `storyboardAnnotations`, each read downstream (the briefing card, the
+ * dashboard snapshot, the today read), and a strict object dropped exactly
+ * those from a reply that validated, while a reply that did not validate
+ * kept them. Validation checks these fields and leaves the rest of the reply
+ * as it came.
+ */
+export const insightResultSchema = z.looseObject({
   insightType: z.string().optional(),
   summary: z.string(),
   classification: z.enum([

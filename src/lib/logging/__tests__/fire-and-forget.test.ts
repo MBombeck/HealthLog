@@ -12,7 +12,7 @@ afterEach(() => {
 describe("fireAndForget", () => {
   it("does not throw and does not reject when the promise resolves", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    fireAndForget(Promise.resolve("ok"), { action: "test.noop.run" });
+    fireAndForget(() => Promise.resolve("ok"), { action: "test.noop.run" });
     await flush();
     expect(warn).not.toHaveBeenCalled();
   });
@@ -22,7 +22,7 @@ describe("fireAndForget", () => {
     const builder = new WideEventBuilder();
 
     await eventStorage.run(builder, async () => {
-      fireAndForget(Promise.reject(new Error("boom")), {
+      fireAndForget(() => Promise.reject(new Error("boom")), {
         action: "reminder.satisfy.enqueue",
         meta: { userScope: "u_1" },
       });
@@ -39,7 +39,7 @@ describe("fireAndForget", () => {
 
   it("warns with the action label only — never the error payload", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    fireAndForget(Promise.reject(new Error("secret-token-xyz")), {
+    fireAndForget(() => Promise.reject(new Error("secret-token-xyz")), {
       action: "integration.reauth.mark",
     });
     await flush();
@@ -52,7 +52,7 @@ describe("fireAndForget", () => {
   it("is a safe no-op outside a request context", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     expect(() => {
-      fireAndForget(Promise.reject(new Error("no context")), {
+      fireAndForget(() => Promise.reject(new Error("no context")), {
         action: "test.orphan.run",
       });
     }).not.toThrow();
@@ -63,7 +63,7 @@ describe("fireAndForget", () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     const builder = new WideEventBuilder();
     await eventStorage.run(builder, async () => {
-      fireAndForget(Promise.reject("plain-string"), {
+      fireAndForget(() => Promise.reject("plain-string"), {
         action: "test.reject.string",
       });
       await flush();

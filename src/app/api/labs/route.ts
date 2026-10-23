@@ -373,7 +373,7 @@ async function postLabResult(request: NextRequest) {
   // v1.18.1 — eventful Lab↔Vorsorge satisfaction. A lab panel just
   // landed; resolve the user's free-text "annual blood panel" reminders
   // now rather than waiting on the 15-min cron. Fire-and-forget.
-  fireAndForget(enqueueReminderSatisfy(user.id), {
+  fireAndForget(() => enqueueReminderSatisfy(user.id), {
     action: "reminder.satisfy.enqueue",
   });
 

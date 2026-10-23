@@ -109,7 +109,7 @@ describe("PUT /api/dashboard/chart-overlay-prefs — 422 multi-issue (v1.4.43 W6
     expect(body.details.issues.length).toBeGreaterThanOrEqual(3);
   });
 
-  it("writes a dashboard.chart-overlay.validation-failed audit row", async () => {
+  it("keeps the owner's own dashboard.chart-overlay refusal off the ledger", async () => {
     const res = await PUT(
       putReq({
         chartKey: "not-a-chart",
@@ -122,11 +122,9 @@ describe("PUT /api/dashboard/chart-overlay-prefs — 422 multi-issue (v1.4.43 W6
     );
     expect(res.status).toBe(422);
     await new Promise((r) => setTimeout(r, 5));
-    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
-    const call = vi.mocked(prisma.auditLog.create).mock.calls[0]?.[0] as {
-      data: { userId: string; action: string };
-    };
-    expect(call.data.action).toBe("dashboard.chart-overlay.validation-failed");
+    // An owner's own refused request is not an audit event: `auditLog`
+    // keeps it on the wide event and files no row.
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
   });
 
   it("does not block the 422 when the audit-row write rejects", async () => {

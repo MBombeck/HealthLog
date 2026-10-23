@@ -225,7 +225,7 @@ export function makePollCohortHandler({
             // v1.18.1 — a fresh reading landed; resolve this user's Vorsorge
             // reminders eventfully. Fire-and-forget; the cron is the net.
             if (imported > 0) {
-              fireAndForget(enqueueReminderSatisfy(userId), {
+              fireAndForget(() => enqueueReminderSatisfy(userId), {
                 action: "reminder.satisfy.enqueue",
               });
             }

@@ -70,17 +70,12 @@ async function postCustomMetric(request: NextRequest) {
       const auditIssues = sanitiseZodIssues(error.issues, {
         stripValuesFromMessage: true,
       });
-      prisma.auditLog
-        .create({
-          data: {
-            userId: user.id,
-            action: "custom-metric.metric.create.validation-failed",
-            details: JSON.stringify({ issues: auditIssues }),
-          },
-        })
-        .catch(() => {
-          /* swallow — the 422 response is the contract */
-        });
+      auditLog("custom-metric.metric.create.validation-failed", {
+        userId: user.id,
+        details: { issues: auditIssues },
+      }).catch(() => {
+        /* swallow — the 422 response is the contract */
+      });
     },
   });
   if (!parsed.ok) return parsed.error;

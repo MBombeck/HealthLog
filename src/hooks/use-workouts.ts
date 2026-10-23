@@ -7,6 +7,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
+import type { RouteSample } from "@/lib/workouts/route-samples";
 
 /**
  * v1.4.32 — TanStack Query wrapper for `GET /api/workouts`.
@@ -325,7 +326,7 @@ export interface WorkoutDetailPayload extends WorkoutListEntry {
   metadata: unknown;
   route: {
     geometry: unknown;
-    sampleTimestamps: string[] | null;
+    sampleTimestamps: RouteSample[] | null;
   } | null;
   /**
    * Raw per-workout HR sample envelope. `samples.samples` is dropped

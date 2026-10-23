@@ -6585,6 +6585,13 @@ paths:
             schema:
               $ref: "#/components/schemas/CreateMedicationRequest"
       responses:
+        "200":
+          description: "A mirror create re-posting an `(externalSource, externalId)` pair the caller already holds: the existing
+            medication, nothing written."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateMedicationResponse"
         "201":
           description: Created medication with its schedules.
           content:

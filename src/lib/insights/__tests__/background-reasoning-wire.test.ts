@@ -48,7 +48,6 @@ vi.mock("@/lib/ai/provider", () => ({
   resolveProvider: vi.fn(),
   probeProviderPresence: vi.fn(async () => true),
   probeProviderChain: vi.fn(),
-  isAnthropicBaseUrl: () => false,
 }));
 
 vi.mock("@/lib/ai/capabilities/gate", () => ({

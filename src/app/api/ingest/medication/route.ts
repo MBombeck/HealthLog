@@ -174,17 +174,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
       const auditIssues = sanitiseZodIssues(error.issues, {
         stripValuesFromMessage: true,
       });
-      prisma.auditLog
-        .create({
-          data: {
-            userId: apiToken.userId,
-            action: "ingest.medication.validation-failed",
-            details: JSON.stringify({ issues: auditIssues }),
-          },
-        })
-        .catch(() => {
-          /* swallow — 422 response is the contract */
-        });
+      auditLog("ingest.medication.validation-failed", {
+        userId: apiToken.userId,
+        details: { issues: auditIssues },
+      }).catch(() => {
+        /* swallow — 422 response is the contract */
+      });
     },
   });
   if (!parsed.ok) return parsed.error;

@@ -16,6 +16,7 @@
  * correction squashes the longitude axis by `cos(midLat)` so one screen
  * unit east equals one screen unit north in real metres.
  */
+import { routeSampleInstant } from "@/lib/workouts/route-samples";
 
 export type RouteCoordinate =
   [number, number] | [number, number, number] | number[];
@@ -323,7 +324,8 @@ function escapeXml(value: string): string {
  */
 export function buildGpxDocument(params: {
   coordinates: readonly RouteCoordinate[];
-  timestamps?: readonly string[] | null;
+  /** The stored samples: an instant each, or `{ t, … }` (`RouteSample`). */
+  timestamps?: readonly unknown[] | null;
   sportType: string;
   startedAt: string;
 }): string {
@@ -336,8 +338,8 @@ export function buildGpxDocument(params: {
     if (!isFiniteNumber(lon) || !isFiniteNumber(lat)) return;
     const parts = [`<trkpt lat="${lat}" lon="${lon}">`];
     if (c.length >= 3 && isFiniteNumber(c[2])) parts.push(`<ele>${c[2]}</ele>`);
-    const ts = timestamps?.[i];
-    if (typeof ts === "string" && ts.length > 0) {
+    const ts = routeSampleInstant(timestamps?.[i]);
+    if (ts) {
       parts.push(`<time>${escapeXml(ts)}</time>`);
     }
     parts.push(`</trkpt>`);
