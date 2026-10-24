@@ -398,12 +398,12 @@ export interface InboundDocumentDetailDto extends InboundDocumentDto {
   /** When the background summary was generated (ISO 8601), or null. */
   summaryGeneratedAt: string | null;
   /**
-   * What became of the summary. A null `summary` is ambiguous on its own —
-   * never attempted, mid-flight, withheld by the safety screen and could-not-
-   * produce all look identical — so the view reads this instead of guessing
-   * "still generating".
+   * What became of the summary: a null `summary` alone cannot tell never
+   * attempted, mid-flight, withheld and could-not-produce apart.
    */
   summaryState: DocumentSummaryStateValue;
+  /** The staged facts may leave part of the document out (last extraction). */
+  extractionIncomplete: boolean;
 }
 
 // ─── Edit (correction before approval) ─────────────────────────────────────

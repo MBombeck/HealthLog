@@ -59,6 +59,7 @@ export const documentBackupSchema = z
       .nullable()
       .optional(),
     aiReadDeferred: z.boolean().optional(),
+    extractionIncomplete: z.boolean().optional(),
     summary: z.string().nullable().optional(),
     createdAt: isoDateTime.optional(),
     updatedAt: isoDateTime.optional(),

@@ -8896,9 +8896,9 @@ enum ExtractedFactStatus {
 }
 
 model InboundDocument {
-  id                 String                @id @default(cuid())
-  userId             String                @map("user_id")
-  kind               InboundDocumentKind   @default(OTHER)
+  id                   String                @id @default(cuid())
+  userId               String                @map("user_id")
+  kind                 InboundDocumentKind   @default(OTHER)
   /// User-given label. Deliberately plaintext (like `filename`) so the library
   /// list can ILIKE-search + ORDER BY in SQL. The document BODY stays
   /// encrypted; only this short, user-authored title is clear-text. Tradeoff:
@@ -8906,18 +8906,18 @@ model InboundDocument {
   /// cleartext at rest / in backups — the same exposure the pre-existing
   /// plaintext `filename` already carries. Accepted to keep server-side search
   /// and sort.
-  title              String?
+  title                String?
   /// Original filename as uploaded (sanitised, optional).
-  filename           String?
+  filename             String?
   /// Magic-byte-sniffed MIME type the document was stored as.
-  mimeType           String                @map("mime_type")
+  mimeType             String                @map("mime_type")
   /// Stored byte length of the original (pre-encryption) document.
-  byteSize           Int                   @map("byte_size")
+  byteSize             Int                   @map("byte_size")
   /// AES-256-GCM ciphertext of the raw document bytes (base64 of the binary
   /// → `encrypt()` string → UTF-8 BYTEA), the `*_encrypted` Bytes convention
   /// shared with the note columns. The original is sensitive and never
   /// stored in the clear or logged.
-  contentEncrypted   Bytes                 @map("content_encrypted")
+  contentEncrypted     Bytes                 @map("content_encrypted")
   /// Lowercase-hex SHA-256 of the PLAINTEXT document bytes, computed at
   /// upload for same-user duplicate detection. Nullable: rows stored before
   /// the vault release are not backfilled (only new uploads dedupe). A
@@ -8926,29 +8926,29 @@ model InboundDocument {
   ///   CREATE UNIQUE INDEX inbound_documents_user_sha_live
   ///     ON inbound_documents (user_id, content_sha256)
   ///     WHERE deleted_at IS NULL AND content_sha256 IS NOT NULL;
-  contentSha256      String?               @map("content_sha256") @db.VarChar(64)
+  contentSha256        String?               @map("content_sha256") @db.VarChar(64)
   /// Storage codec of `contentEncrypted`. "base64v1" = legacy string path
   /// (base64-of-binary → `encrypt()` string → UTF-8 bytes); "binary2" = the
   /// binary AES-256-GCM layout written by `encryptBytes()` (no base64
   /// detour). Explicit column, never header-sniffed; the default keeps every
   /// pre-existing row correct.
-  contentCodec       String                @default("base64v1") @map("content_codec")
-  status             InboundDocumentStatus @default(STORED)
+  contentCodec         String                @default("base64v1") @map("content_codec")
+  status               InboundDocumentStatus @default(STORED)
   /// Provider type that ran the extraction (e.g. "anthropic", "openai",
   /// "local"). Diagnostic only. Null on a store-only document.
-  providerType       String?               @map("provider_type")
+  providerType         String?               @map("provider_type")
   /// The document's stated report/collection date (YYYY-MM-DD at UTC), as
   /// transcribed by the model — never inferred, never user-set.
-  reportDate         DateTime?             @map("report_date")
+  reportDate           DateTime?             @map("report_date")
   /// Effective filing date the library sorts, groups, and range-filters on
   /// (editable). Distinct from `reportDate`, which is the model-transcribed
   /// value. On store it defaults to the upload day (now) when the user does
   /// not supply one, so a stored row's filing date is never NULL and display
   /// == sort == filter. It stays user-editable and MAY be cleared back to
   /// NULL via PATCH (the list then sorts such rows last).
-  documentDate       DateTime?             @map("document_date")
+  documentDate         DateTime?             @map("document_date")
   /// Failure reason when status = FAILED (a short code, never the document).
-  errorReason        String?               @map("error_reason")
+  errorReason          String?               @map("error_reason")
   /// AES-256-GCM ciphertext of a short (3-4 sentence) plain-language summary
   /// of WHAT the document is, generated ONCE in the background right after
   /// upload when the user's `documentsAutoAiRead` opt-in is ON (that flag is
@@ -8956,23 +8956,23 @@ model InboundDocument {
   /// provider is configured, or generation has not run yet. Descriptive only —
   /// never a diagnosis. `encrypt()`-string-as-UTF-8 BYTEA, the shared Bytes
   /// codec every other note column uses; PHI, never logged.
-  summaryEncrypted   Bytes?                @map("summary_encrypted")
+  summaryEncrypted     Bytes?                @map("summary_encrypted")
   /// When the background summary was generated (null until it runs). Surfaced
   /// as meta beside the summary in the document detail view.
-  summaryGeneratedAt DateTime?             @map("summary_generated_at")
+  summaryGeneratedAt   DateTime?             @map("summary_generated_at")
   /// What actually happened to this document's summary, so the detail view can
   /// tell the four outcomes apart instead of reading a null column as "still
   /// generating". `summaryEncrypted` alone cannot: a document nobody ever
   /// enqueued, one whose provider is missing, one the safety screen withheld,
   /// and one mid-flight all leave it null. NONE is the default, which keeps
   /// every pre-existing row correct — none of them were ever attempted.
-  summaryState       DocumentSummaryState  @default(NONE) @map("summary_state")
+  summaryState         DocumentSummaryState  @default(NONE) @map("summary_state")
   /// When the most recent content-index attempt finished (auto job, corpus
   /// backfill, or the manual index route — they share one recorder),
   /// successful or not. Null until any attempt ran. Diagnostic state the
   /// detail view pairs with `lastIndexOutcome`; carried verbatim in the
   /// disaster-recovery backup like its summary siblings.
-  lastIndexAttemptAt DateTime?             @map("last_index_attempt_at")
+  lastIndexAttemptAt   DateTime?             @map("last_index_attempt_at")
   /// Why the most recent index attempt produced NO index — a closed string
   /// enum (`DocumentIndexOutcomeValue` in
   /// `src/lib/validations/inbound-documents.ts`): local-empty |
@@ -8982,13 +8982,13 @@ model InboundDocument {
   /// and before the first attempt. Lets the detail view tell "never tried"
   /// from "tried and here is why it failed" instead of showing a bare
   /// not-indexed state for both.
-  lastIndexOutcome   String?               @map("last_index_outcome")
+  lastIndexOutcome     String?               @map("last_index_outcome")
   /// v1.39.2 (#1038) — where an imported document came from: a closed string
   /// enum (`DOCUMENT_SOURCE_SYSTEMS` in
   /// `src/lib/validations/inbound-documents.ts`): PAPERLESS | PAPRA | OTHER.
   /// Null for a document added in HealthLog itself. Sent by the import script
   /// and the Paperless workflow recipe; shown on the detail sheet.
-  sourceSystem       String?               @map("source_system") @db.VarChar(16)
+  sourceSystem         String?               @map("source_system") @db.VarChar(16)
   /// v1.39.2 (#1038) — the document's id in `sourceSystem`. Together with
   /// `userId`, `sourceSystem` and `sourceInstance` it is unique across live
   /// AND tombstoned rows (raw SQL in migrations 0353 and 0356, not expressible
@@ -8996,7 +8996,7 @@ model InboundDocument {
   /// Including tombstones is the point: re-running an importer must not bring
   /// back a document the person deleted. The purge carries the key over to
   /// `DocumentImportKey` when it removes the row.
-  sourceId           String?               @map("source_id") @db.VarChar(128)
+  sourceId             String?               @map("source_id") @db.VarChar(128)
   /// v1.39.3 (#1038) — which instance of `sourceSystem` the document came
   /// from: the normalised origin (`scheme://host[:port]`) of the Paperless-ngx
   /// or Papra it was fetched from, so id 123 on one Paperless and id 123 on
@@ -9007,12 +9007,20 @@ model InboundDocument {
   /// source-key unique index since migration 0356, which rebuilt it as
   ///   (user_id, source_system, source_instance, source_id) NULLS NOT DISTINCT
   ///   WHERE source_id IS NOT NULL.
-  sourceInstance     String?               @map("source_instance") @db.VarChar(512)
+  sourceInstance       String?               @map("source_instance") @db.VarChar(512)
   /// v1.39.2 (#1038) — the upload asked for `aiRead=defer`: nothing may send
   /// this document to an AI provider on its own (the summary catch-up, the
   /// summary job, lab auto-staging all skip it). Cleared when the person
   /// explicitly reads it with AI or generates its summary.
-  aiReadDeferred     Boolean               @default(false) @map("ai_read_deferred")
+  aiReadDeferred       Boolean               @default(false) @map("ai_read_deferred")
+  /// Whether the facts staged by the last extraction may leave part of the
+  /// document out: a read stopped at the provider's output limit, came back
+  /// unreadable or was never sent, the text or pages ran past what the reads
+  /// take, or the document held more facts than one review takes. Written by
+  /// both stagings (the extract route or run, and lab auto-staging) with the
+  /// facts they replace, so a review opened later says so, not only the
+  /// notice at the end of the run. False for a document never extracted.
+  extractionIncomplete Boolean               @default(false) @map("extraction_incomplete")
 
   facts            ExtractedFact[]
   conditionLinks   DocumentConditionLink[]

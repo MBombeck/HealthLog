@@ -854,3 +854,73 @@ describe("fact extraction in the background", () => {
     expect(await getPrismaClient().documentAiRun.count()).toBe(0);
   });
 });
+
+async function documentDetail(documentId: string) {
+  const { GET } = await import("@/app/api/documents/inbound/[id]/route");
+  const { NextRequest } = await import("next/server");
+  const res = await GET(
+    new NextRequest(
+      `http://localhost/api/documents/inbound/${documentId}`,
+    ) as never,
+    { params: Promise.resolve({ id: documentId }) } as never,
+  );
+  return {
+    status: res.status,
+    body: (await res.json()) as Envelope<Record<string, unknown>>,
+  };
+}
+
+/** The extraction mock's default answer, cut short. */
+async function answerIncompleteOnce() {
+  const actual = await vi.mocked(runInboundExtraction).getMockImplementation()!(
+    {} as never,
+  );
+  vi.mocked(runInboundExtraction).mockResolvedValueOnce({
+    ...actual,
+    incomplete: true,
+  });
+}
+
+describe("an extraction that did not read the whole document", () => {
+  it("keeps saying so on the document until a whole read replaces it", async () => {
+    const user = await makeUser();
+    await grantConsent(user.id);
+    const document = await indexedDocument(user.id);
+    await signIn(user.id);
+
+    await answerIncompleteOnce();
+    const cut = await postStoredExtract(document.id, false);
+    expect(cut.status).toBe(200);
+    expect(cut.body.data).toMatchObject({ extractionIncomplete: true });
+    // Opened later, the review still says it is not the whole document.
+    const later = await documentDetail(document.id);
+    expect(later.status).toBe(200);
+    expect(later.body.data).toMatchObject({ extractionIncomplete: true });
+
+    const whole = await postStoredExtract(document.id, false);
+    expect(whole.status).toBe(200);
+    expect(whole.body.data).toMatchObject({ extractionIncomplete: false });
+    expect((await documentDetail(document.id)).body.data).toMatchObject({
+      extractionIncomplete: false,
+    });
+  });
+
+  it("records it from a background run as well", async () => {
+    const user = await makeUser();
+    await grantConsent(user.id);
+    const document = await indexedDocument(user.id);
+    await signIn(user.id);
+
+    await answerIncompleteOnce();
+    const queued = await postStoredExtract(document.id, true);
+    expect(queued.status).toBe(202);
+    const { runId } = queued.body.data as { runId: string };
+    expect(await work(runId)).toBe("succeeded");
+    expect((await poll(runId)).body.data).toMatchObject({
+      result: { incomplete: true },
+    });
+    expect((await documentDetail(document.id)).body.data).toMatchObject({
+      extractionIncomplete: true,
+    });
+  });
+});

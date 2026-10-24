@@ -97,6 +97,7 @@ function doc(
     summary: null,
     summaryGeneratedAt: null,
     summaryState: "NONE",
+    extractionIncomplete: false,
     ...overrides,
   };
 }
@@ -112,6 +113,19 @@ describe("<DocumentFactsSection>", () => {
     const html = render(<DocumentFactsSection doc={doc()} {...baseProps} />);
     expect(html).toContain('data-slot="document-facts-review-open"');
     expect(html).toContain("Review extracted value");
+  });
+
+  it("says the review may not be the whole document when the extraction was cut", () => {
+    const cut = render(
+      <DocumentFactsSection
+        doc={doc({ extractionIncomplete: true })}
+        {...baseProps}
+      />,
+    );
+    expect(cut).toContain('data-slot="document-facts-incomplete"');
+    expect(cut).toContain("could not be read in full");
+    const whole = render(<DocumentFactsSection doc={doc()} {...baseProps} />);
+    expect(whole).not.toContain('data-slot="document-facts-incomplete"');
   });
 
   it("offers the stored-text extract for a read lab document with nothing staged", () => {

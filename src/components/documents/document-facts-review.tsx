@@ -493,6 +493,37 @@ function announceExtract(
   }
 }
 
+/** The review panel's title and how to use it. */
+function ReviewHeading() {
+  const { t } = useTranslations();
+  return (
+    <div className="space-y-1">
+      <p className="text-sm font-medium">{t("documents.review.title")}</p>
+      <p className="text-muted-foreground text-xs">
+        {t("documents.review.hint")}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * The staged facts may leave part of the document out. Kept on the document
+ * by the extraction, so a review opened later says what the notice at the
+ * end of the run said.
+ */
+function ExtractionIncompleteNote() {
+  const { t } = useTranslations();
+  return (
+    <p
+      role="note"
+      data-slot="document-facts-incomplete"
+      className="text-foreground text-sm"
+    >
+      {t("documents.review.extractIncomplete")}
+    </p>
+  );
+}
+
 export function DocumentFactsSection({
   doc,
   canManage,
@@ -598,6 +629,9 @@ export function DocumentFactsSection({
 
   return (
     <div className="space-y-3" data-slot="document-facts-section">
+      {pending.length > 0 && doc.extractionIncomplete ? (
+        <ExtractionIncompleteNote />
+      ) : null}
       {pending.length > 0 ? (
         <>
           {!open ? (
@@ -617,14 +651,7 @@ export function DocumentFactsSection({
               data-slot="document-facts-review"
               className="border-border bg-muted/30 space-y-3 rounded-lg border p-3 md:p-4"
             >
-              <div className="space-y-1">
-                <p className="text-sm font-medium">
-                  {t("documents.review.title")}
-                </p>
-                <p className="text-muted-foreground text-xs">
-                  {t("documents.review.hint")}
-                </p>
-              </div>
+              <ReviewHeading />
               <ul className="space-y-2">
                 {pending.map((fact) => (
                   <FactRow

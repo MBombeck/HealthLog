@@ -106,6 +106,7 @@ async function stageExtraction(
   documentId: string,
   userId: string,
   result: InboundExtractionResult,
+  incomplete: boolean,
 ) {
   return prisma.$transaction(async (tx) => {
     const locked = await tx.$queryRaw<{ status: string }[]>`
@@ -151,6 +152,9 @@ async function stageExtraction(
       data: {
         status: "EXTRACTED",
         providerType: result.providerType,
+        // Kept with the facts it describes, so a review opened later says
+        // what the notice at the end of the run said.
+        extractionIncomplete: incomplete,
         reportDate: result.reportDate
           ? dateOnlyAtNoonUtc(result.reportDate)
           : null,
@@ -320,10 +324,11 @@ export async function executeDocumentExtract(args: {
     return unreadableDocument(false);
   }
   await settle(true);
+  const incomplete = result.incomplete || plan.partial;
 
   let staged: StagedDocument;
   try {
-    staged = await stageExtraction(document.id, userId, result);
+    staged = await stageExtraction(document.id, userId, result, incomplete);
   } catch (err) {
     if (!(err instanceof StagingRefused)) {
       // The reservation is already settled for the call that was made; a
@@ -356,6 +361,6 @@ export async function executeDocumentExtract(args: {
   });
   return {
     ok: true,
-    data: { document: staged, incomplete: result.incomplete || plan.partial },
+    data: { document: staged, incomplete },
   };
 }

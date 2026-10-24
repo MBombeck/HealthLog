@@ -173,6 +173,19 @@ describe("maybeAutoStageLabFacts", () => {
     expect(created.data.every((f) => f.status === "PENDING")).toBe(true);
   });
 
+  it("keeps on the document whether the staged facts may be missing a part", async () => {
+    await maybeAutoStageLabFacts("u1", "d1");
+    expect(updateMany.mock.calls[0]![0]).toMatchObject({
+      data: { extractionIncomplete: false },
+    });
+    const whole = await mockExtract.mock.results[0]!.value;
+    mockExtract.mockResolvedValueOnce({ ...whole, incomplete: true });
+    await maybeAutoStageLabFacts("u1", "d1");
+    expect(updateMany.mock.calls[1]![0]).toMatchObject({
+      data: { extractionIncomplete: true },
+    });
+  });
+
   it("plans a long report's reads against the run's deadline (#1274)", async () => {
     // Four hundred lines of a panel, many reads of text.
     const longReport = Array.from(

@@ -328,6 +328,10 @@ const inboundDocumentDetail = inboundDocument
     summary: z.string().nullable(),
     summaryGeneratedAt: z.string().nullable(),
     summaryState: z.enum(DOCUMENT_SUMMARY_STATES),
+    extractionIncomplete: z.boolean().meta({
+      description:
+        "Whether the staged facts may leave part of the document out: a part of a long document was cut at the provider's output limit or not read, the text or pages ran past what the reads take, or the document held more facts than one review takes. Kept from the last extraction (the extract route, its background run, or automatic lab staging) until the next one replaces the facts; false for a document never extracted. A review shows it whenever it is opened, not only when the run ends.",
+    }),
   })
   .meta({
     id: "InboundDocumentDetail",

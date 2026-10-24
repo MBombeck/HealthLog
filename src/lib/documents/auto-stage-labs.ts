@@ -221,6 +221,7 @@ async function stageFactsIfStored(
   userId: string,
   documentId: string,
   result: InboundExtractionResult,
+  incomplete: boolean,
 ): Promise<number | null> {
   return prisma.$transaction(async (tx) => {
     const moved = await tx.inboundDocument.updateMany({
@@ -228,6 +229,7 @@ async function stageFactsIfStored(
       data: {
         status: "EXTRACTED",
         providerType: result.providerType,
+        extractionIncomplete: incomplete,
         reportDate: result.reportDate
           ? dateOnlyAtNoonUtc(result.reportDate)
           : null,
@@ -359,7 +361,15 @@ export async function maybeAutoStageLabFacts(
     return { staged: false, reason: "extract-failed" };
   }
 
-  const staged = await stageFactsIfStored(userId, documentId, result);
+  // Part of the document may be missing from the staged facts. Kept on the
+  // document, so the review says so whenever it is opened.
+  const incomplete = result.incomplete || plan.partial;
+  const staged = await stageFactsIfStored(
+    userId,
+    documentId,
+    result,
+    incomplete,
+  );
   if (staged === null) return { staged: false, reason: "raced" };
 
   annotate({
@@ -369,9 +379,7 @@ export async function maybeAutoStageLabFacts(
       facts: staged,
       provider: provider.pick.providerType,
       byKind: doc.kind === "LAB_RESULT",
-      // Part of the document may be missing from the staged facts; the
-      // manual extract says so to the person, this records it.
-      incomplete: result.incomplete || plan.partial,
+      incomplete,
     },
   });
   return { staged: true, facts: staged };

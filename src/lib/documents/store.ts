@@ -377,5 +377,6 @@ export function serialiseDocumentDetail(
       ? doc.summaryGeneratedAt.toISOString()
       : null,
     summaryState,
+    extractionIncomplete: doc.extractionIncomplete,
   };
 }
