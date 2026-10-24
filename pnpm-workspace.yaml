@@ -30,7 +30,9 @@ overrides:
   # for.
   "@hono/node-server@<1.19.15": "^1.19.15"
   "picomatch@<4.0.4": "^4.0.4"
-  "body-parser@<2.3.0": "^2.3.0"
+  # CVE-2026-111181 (HIGH) raised the floor from 2.3.0. The copy arrives
+  # under express in the MCP SDK, on a production path.
+  "body-parser@<2.4.0": "^2.4.0"
   # CVE-2026-93749 (source-map-js < 1.2.2, HIGH, under postcss and the
   # Tailwind build), CVE-2026-104844 (postcss-selector-parser < 7.1.6, under
   # shadcn) and GHSA-r4xh-jqrq-34v2 (smol-toml < 1.9.0, under knip). All three
@@ -46,8 +48,9 @@ overrides:
   # malformed authorities. It arrives under ajv, including the connector SDK's
   # copy, so it sits on a path this app exposes.
   # Authority injection through an unvalidated port in serialize, and a
-  # follow-up fixed in 3.1.8, raised the floor from 3.1.6.
-  "fast-uri@<3.1.8": "^3.1.8"
+  # follow-up fixed in 3.1.8, raised the floor from 3.1.6. CVE-2026-110180 and
+  # CVE-2026-110306 raised it again to 3.1.9.
+  "fast-uri@<3.1.9": "^3.1.9"
   "flatted@<3.4.2": "^3.4.2"
   # GHSA-jqcg-44mw-7w3h: IP spoofing through IPv4-mapped addresses. It
   # arrives under express in the MCP SDK; the app resolves client IPs itself,
@@ -100,12 +103,13 @@ overrides:
 
   # Development-only copies (test containers, build tooling) that the
   # dependency alerts flag: gRPC under the test containers, brace-expansion on
-  # three major lines, and undici 7 next to the app's own undici 8.
+  # three major lines, and undici 7 next to the app's own undici 8
+  # (CVE-2026-109869, CVE-2026-109841 and CVE-2026-109924 raised it to 7.30.1).
   "@grpc/grpc-js@>=1.14.0 <1.14.5": "^1.14.5"
   "brace-expansion@<1.1.21": "^1.1.21"
   "brace-expansion@>=2.0.0 <2.1.7": "^2.1.7"
   "brace-expansion@>=4.0.0 <5.0.12": "^5.0.12"
-  "undici@>=7.0.0 <7.29.1": "^7.29.1"
+  "undici@>=7.0.0 <7.30.1": "^7.30.1"
 
   # GHSA-587h-7wmj-h5pm (HIGH), GHSA-rq7h-c2jc-7f22, GHSA-r825-w8mm-5pxw,
   # GHSA-698v-4r3x-3vcv and GHSA-9jrq-w75r-8gcw: dev-server file serving,
