@@ -74,6 +74,8 @@ const INTAKE_MAY_SEE_EVERY_ROW: Record<string, string> = {
     "deletes rows the person chose",
   "lib/medications/update-medication/write.ts":
     "one medication's open slots, tombstoned on a schedule replace or the tracking switch",
+  "lib/medications/course-end-placeholders.ts":
+    "gives back the open slots one medication's End course took, no rate",
   "lib/medications/intake-bulk/ingest.ts": "writes recorded doses",
   "lib/medications/scheduling/slot-upsert.ts":
     "binds a recorded dose to its slot",

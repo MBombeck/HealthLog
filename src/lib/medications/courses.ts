@@ -35,6 +35,7 @@ import {
   type CourseStatus,
 } from "@/lib/medications/course-window";
 import { userDayKey } from "@/lib/tz/format";
+import { reviveEndedPlaceholders } from "@/lib/medications/course-end-placeholders";
 import {
   moveAutoTakeFloorToNow,
   windowWidens,
@@ -170,12 +171,20 @@ type ProjectedWindow = {
  * v1.42.2 — a window that now reaches further into the past than before
  * (an earlier start, a later or removed end) would let the auto-take pass
  * fill the days it reopens as taken; its floor moves to now instead.
+ *
+ * #1280 — a write that takes back an "End course" (the end moved, removed,
+ * or the ended course deleted) brings back the placeholders the End
+ * tombstoned (`reviveEndedPlaceholders`).
  */
-async function project(tx: Tx, medicationId: string): Promise<ProjectedWindow> {
+async function project(
+  tx: Tx,
+  medicationId: string,
+  timeZone: string,
+): Promise<ProjectedWindow> {
   const [before, courses] = await Promise.all([
     tx.medication.findUnique({
       where: { id: medicationId },
-      select: { startsOn: true, endsOn: true },
+      select: { userId: true, startsOn: true, endsOn: true, endedAt: true },
     }),
     tx.medicationCourse.findMany({
       where: { medicationId },
@@ -193,6 +202,18 @@ async function project(tx: Tx, medicationId: string): Promise<ProjectedWindow> {
   });
   if (before && windowWidens(before, window)) {
     await moveAutoTakeFloorToNow(tx, medicationId);
+  }
+  if (
+    before?.endedAt &&
+    before.endedAt.getTime() !== window.endedAt?.getTime()
+  ) {
+    await reviveEndedPlaceholders(tx, {
+      userId: before.userId,
+      medicationId,
+      endedAt: before.endedAt,
+      courses,
+      timeZone,
+    });
   }
   return window;
 }
@@ -281,7 +302,7 @@ export async function createCourse(
       },
       select: COURSE_ROW_SELECT,
     });
-    await project(tx, args.medicationId);
+    await project(tx, args.medicationId, args.timeZone);
     return created;
   });
 }
@@ -326,7 +347,7 @@ export async function updateCourse(
       },
       select: COURSE_ROW_SELECT,
     });
-    await project(tx, args.medicationId);
+    await project(tx, args.medicationId, args.timeZone);
     return updated;
   });
 }
@@ -345,7 +366,7 @@ export async function deleteCourse(
       throw new CourseWriteError("notFound");
     }
     await tx.medicationCourse.delete({ where: { id: args.courseId } });
-    await project(tx, args.medicationId);
+    await project(tx, args.medicationId, args.timeZone);
   });
 }
 
@@ -408,10 +429,10 @@ async function writeCurrentWindow(
   const latest = sortCourses(courses).at(-1);
 
   if (args.startsOn === null && args.endsOn === null) {
-    if (!latest) return project(tx, args.medicationId);
+    if (!latest) return project(tx, args.medicationId, args.timeZone);
     if (courses.length > 1) throw new CourseWriteError("windowRequired");
     await tx.medicationCourse.delete({ where: { id: latest.id } });
-    return project(tx, args.medicationId);
+    return project(tx, args.medicationId, args.timeZone);
   }
 
   const next = windowAsCourse(
@@ -443,7 +464,7 @@ async function writeCurrentWindow(
       },
     });
   }
-  return project(tx, args.medicationId);
+  return project(tx, args.medicationId, args.timeZone);
 }
 
 /**
@@ -545,7 +566,7 @@ export async function endCurrentCourse(args: WriteContext): Promise<{
       data: { deletedAt: now, syncVersion: { increment: 1 } },
     });
     return {
-      window: await project(tx, args.medicationId),
+      window: await project(tx, args.medicationId, args.timeZone),
       previous: {
         startsOn: medication.startsOn,
         endsOn: medication.endsOn,

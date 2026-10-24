@@ -593,6 +593,96 @@ describe("End follows what the caller may do in a shared record", () => {
   });
 });
 
+describe("undoing an End the same day brings the later doses back", () => {
+  const today = () =>
+    call(
+      "@/app/api/medications/intake/route",
+      "GET",
+      "/api/medications/intake?scope=today",
+      {},
+    );
+
+  it.each([
+    [
+      "the course editor",
+      async (id: string) => {
+        const course =
+          await getPrismaClient().medicationCourse.findFirstOrThrow({
+            where: { medicationId: id },
+          });
+        return call(
+          "@/app/api/medications/[id]/courses/[courseId]/route",
+          "PATCH",
+          `/api/medications/${id}/courses/${course.id}`,
+          { id, courseId: course.id },
+          { endsOn: "2026-06-12" },
+        );
+      },
+    ],
+    [
+      "the medication's PUT",
+      (id: string) => putMedication(id, { endsOn: null }),
+    ],
+  ] as const)("through %s", async (_label, undo) => {
+    at("2026-06-10T09:00:00.000Z");
+    const userId = await makeUser();
+    const id = await seedTwiceDaily(userId);
+    expect((await today()).status).toBe(200);
+    expect(await liveRowsOn(id, EVENING)).toHaveLength(1);
+
+    at(ENDED_AT);
+    expect((await endCourse(id)).status).toBe(200);
+    expect(await liveRowsOn(id, EVENING)).toHaveLength(0);
+
+    at("2026-06-10T12:00:00.000Z");
+    const res = await undo(id);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect((await detail(id)).endedAt).toBeNull();
+
+    // The evening placeholder is live again, on the list and in sync.
+    const evening = await liveRowsOn(id, EVENING);
+    expect(evening).toHaveLength(1);
+    expect(evening[0]).toMatchObject({ takenAt: null, skipped: false });
+    expect((await today()).status).toBe(200);
+    expect(await liveRowsOn(id, EVENING)).toHaveLength(1);
+
+    // Left untaken, it is missed like any dose of a running course.
+    await runIntakeAutoSkipPass(getPrismaClient(), {
+      nowMs: Date.parse("2026-06-12T12:00:00.000Z"),
+    });
+    const missed = await getPrismaClient().medicationIntakeEvent.findMany({
+      where: { medicationId: id, autoMissed: true, deletedAt: null },
+      select: { scheduledFor: true },
+      orderBy: { scheduledFor: "asc" },
+    });
+    expect(missed.map((r) => r.scheduledFor.toISOString())).toContain(EVENING);
+  });
+
+  it("leaves a slot dropped by the End alone when a dose already holds it", async () => {
+    at("2026-06-10T09:00:00.000Z");
+    const userId = await makeUser();
+    const id = await seedTwiceDaily(userId);
+    expect((await today()).status).toBe(200);
+    at(ENDED_AT);
+    expect((await endCourse(id)).status).toBe(200);
+    // A dose logged for that slot afterwards, from another source.
+    await getPrismaClient().medicationIntakeEvent.create({
+      data: {
+        userId,
+        medicationId: id,
+        scheduledFor: new Date(EVENING),
+        takenAt: new Date("2026-06-10T18:05:00.000Z"),
+        source: "WEB",
+      },
+    });
+    at("2026-06-10T19:00:00.000Z");
+    expect((await putMedication(id, { endsOn: null })).status).toBe(200);
+    const rows = await liveRowsOn(id, EVENING);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].source).toBe("WEB");
+  });
+});
+
 describe("an edit that moves the end clears the instant", () => {
   it("reopens the course to the end of its new last day", async () => {
     at(ENDED_AT);
