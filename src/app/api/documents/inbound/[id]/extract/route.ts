@@ -30,9 +30,13 @@
  * answered here, then the route answers 202 with a run id. The run's result is
  * `{ documentId, factsStaged, status }` rather than the whole detail (the
  * facts are staged on the document; the client reads them from there).
- * Without the header the route behaves exactly as before; the iPhone app
- * relies on that. Both paths run one body (`executeDocumentExtract`), which
- * re-checks the document under a row lock before it stages anything.
+ * Without the header the route answers the document detail as before; the
+ * iPhone app relies on that. Both paths run one body (`executeDocumentExtract`),
+ * which re-checks the document under a row lock before it stages anything.
+ * Inside the request the reads are bounded (`SYNC_EXTRACT_MAX_READS`): a
+ * twenty-page report read a page at a time with a retry each was forty model
+ * calls in one HTTP request. What does not fit is reported on the document as
+ * `extractionIncomplete`, and the background run reads it in full.
  */
 import { Buffer } from "node:buffer";
 

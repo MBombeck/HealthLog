@@ -267,16 +267,39 @@ function extractionFailure(err: OcrExtractError): AiRunOutcome<never> {
   }
 }
 
+/**
+ * The most reads an extraction makes inside one HTTP request (the extract
+ * route without `Prefer: respond-async`, which the iPhone app sends). Each
+ * read is up to `OCR_EXTRACT_MODEL_CALLS` model calls, so this bounds the
+ * request at six calls where an unplanned read of a twenty-page report made
+ * forty. A longer document is read in as many reads by sharing its pages or
+ * text out between them, and what does not fit is reported as
+ * `extractionIncomplete` on the document; the background run, which has a
+ * deadline of its own, reads it a page at a time.
+ */
+export const SYNC_EXTRACT_MAX_READS = 3;
+
+/** The read plan of a request: a fixed number of calls, nothing to arm. */
+export const SYNCHRONOUS_READ_SCHEDULE: OcrSchedule = {
+  maxModelCalls: () => SYNC_EXTRACT_MAX_READS * OCR_EXTRACT_MODEL_CALLS,
+  arm: async () => undefined,
+};
+
 /** Extract and stage facts from one owned document. The caller authorised and charged it. */
 export async function executeDocumentExtract(args: {
   userId: string;
   document: LoadedDocument;
   input: DocumentExtractInput;
   origin: RunOrigin;
-  /** The run's deadline; absent, the reads are planned without one. */
+  /**
+   * The run's deadline. Absent, the reads are planned for one request
+   * ({@link SYNCHRONOUS_READ_SCHEDULE}): no extraction plans its reads
+   * without a bound.
+   */
   schedule?: OcrSchedule;
 }): Promise<AiRunOutcome<DocumentExtraction>> {
-  const { userId, document, input, origin, schedule } = args;
+  const { userId, document, input, origin } = args;
+  const schedule = args.schedule ?? SYNCHRONOUS_READ_SCHEDULE;
   const { pick, budget } = input;
   const servedBy = pick.entry.providerType as ProviderChainType;
   const { meter, reserveRead, settle } = meteredReadBudget(
@@ -301,7 +324,7 @@ export async function executeDocumentExtract(args: {
   }
   const plan = await planInboundReads(source, schedule);
   if (!plan.ok) return refused(pdfUnreadable());
-  await schedule?.arm(plan.args.chunks.length * OCR_EXTRACT_MODEL_CALLS);
+  await schedule.arm(plan.args.chunks.length * OCR_EXTRACT_MODEL_CALLS);
 
   let result: InboundExtractionResult;
   try {

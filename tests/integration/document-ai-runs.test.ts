@@ -924,3 +924,55 @@ describe("an extraction that did not read the whole document", () => {
     });
   });
 });
+
+describe("a synchronous extraction stays inside one request", () => {
+  /** A stored text of many reads' worth: forty lab lines per part. */
+  async function longIndexedDocument(userId: string) {
+    const document = await storeDocument(userId);
+    const { upsertContentIndex } =
+      await import("@/lib/documents/content-index");
+    const lines = Array.from(
+      { length: 1200 },
+      (_, i) => `Analyte ${i} ${(i % 90) + 10}.0 mg/dL reference 10-100`,
+    );
+    await upsertContentIndex({
+      userId,
+      documentId: document.id,
+      text: lines.join("\n"),
+      source: "text-ocr",
+      providerType: null,
+    });
+    return document;
+  }
+
+  it("reads a long document in a few reads and says what it left out", async () => {
+    const user = await makeUser();
+    await grantConsent(user.id);
+    const document = await longIndexedDocument(user.id);
+    await signIn(user.id);
+
+    const res = await postStoredExtract(document.id, false);
+    expect(res.status).toBe(200);
+    const { SYNC_EXTRACT_MAX_READS } =
+      await import("@/lib/documents/ai-runs/extract-run");
+    const args = vi.mocked(runInboundExtraction).mock.calls[0][0];
+    expect(args.chunks.length).toBeGreaterThan(0);
+    expect(args.chunks.length).toBeLessThanOrEqual(SYNC_EXTRACT_MAX_READS);
+    expect(res.body.data).toMatchObject({ extractionIncomplete: true });
+  });
+
+  it("reads it in full in the background", async () => {
+    const user = await makeUser();
+    await grantConsent(user.id);
+    const document = await longIndexedDocument(user.id);
+    await signIn(user.id);
+
+    const queued = await postStoredExtract(document.id, true);
+    const { runId } = queued.body.data as { runId: string };
+    expect(await work(runId)).toBe("succeeded");
+    const { SYNC_EXTRACT_MAX_READS } =
+      await import("@/lib/documents/ai-runs/extract-run");
+    const args = vi.mocked(runInboundExtraction).mock.calls[0][0];
+    expect(args.chunks.length).toBeGreaterThan(SYNC_EXTRACT_MAX_READS);
+  });
+});
