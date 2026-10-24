@@ -610,3 +610,119 @@ for (const vp of [
     });
   }
 }
+
+/**
+ * A side inset. An iPad in a Safari tab laid the shell out 10 px in from the
+ * left edge in portrait, which no browser under test reports. The shell and
+ * the rail read the side insets through `--safe-area-left` / `-right`
+ * (globals.css), so setting them is the same inset to both.
+ */
+const SIDE_INSET = 10;
+
+async function setSideInsets(page: Page, px: number) {
+  await page.addStyleTag({
+    content: `:root { --safe-area-left: ${px}px !important; --safe-area-right: ${px}px !important; }`,
+  });
+}
+
+const SIDE_INSET_VIEWPORTS = [
+  { name: "iPad Pro 11 portrait", width: 834, height: 1194 },
+  { name: "iPad Air 11 portrait", width: 820, height: 1180 },
+  { name: "iPad Air 11 landscape", width: 1180, height: 820 },
+  { name: "iPad Pro 13 landscape", width: 1366, height: 1024 },
+] as const;
+
+for (const vp of SIDE_INSET_VIEWPORTS) {
+  test(`${vp.name}: the rail runs to the left edge over a side inset`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: vp.width, height: vp.height });
+    await openDashboard(page);
+    await setSideInsets(page, SIDE_INSET);
+    await setBottomInset(page, HOME_INDICATOR);
+    await expectShellPinned(page);
+    await expect(page.locator("aside")).toBeVisible();
+
+    const m = await page.evaluate(() => {
+      const aside = document.querySelector("aside")!;
+      const box = (el: Element | null) => {
+        const r = el!.getBoundingClientRect();
+        return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+      };
+      // What paints a pixel: the rail, or the page behind the shell (the
+      // root, the body, or one of the shell's own unpainted boxes around the
+      // rail and `<main>`), or some other chrome that meets the edge.
+      const owner = (x: number, y: number) => {
+        const hit = document.elementFromPoint(x, y);
+        if (!hit) return "nothing";
+        if (hit.closest("aside")) return "rail";
+        const unpainted =
+          hit === document.documentElement ||
+          hit === document.body ||
+          (hit.id !== "main-content" &&
+            hit.contains(document.getElementById("main-content")));
+        return unpainted ? `page:${hit.tagName}` : "chrome";
+      };
+      const header = aside.querySelector('[data-slot="sidebar-header"]')!;
+      const account = aside.querySelector(
+        '[data-slot="sidebar-column"]',
+      )!.lastElementChild!;
+      const avatar = account.querySelector('[data-slot="avatar"]')!;
+      const footer = aside.querySelector('[data-slot="sidebar-footer"]')!;
+      const links = [...aside.querySelectorAll("nav a[href]")].map(
+        (a) => a.getBoundingClientRect().left,
+      );
+      const headerBox = box(header);
+      const accountBox = box(account);
+      return {
+        innerWidth,
+        innerHeight,
+        aside: box(aside),
+        header: headerBox,
+        account: accountBox,
+        avatar: box(avatar),
+        logoLeft: box(header.querySelector("svg")).left,
+        footerLeft: box(footer).left,
+        firstLinkLeft: Math.min(...links),
+        // Down the window's first column of pixels, and its last.
+        leftEdge: [
+          (headerBox.top + headerBox.bottom) / 2,
+          innerHeight / 2,
+          (accountBox.top + accountBox.bottom) / 2,
+          innerHeight - 2,
+        ].map((y) => owner(1, y)),
+        rightEdge: [
+          (headerBox.top + headerBox.bottom) / 2,
+          innerHeight / 2,
+        ].map((y) => owner(innerWidth - 1, y)),
+      };
+    });
+
+    // No strip: the rail paints the inset from the logo band to the bottom
+    // edge, and the top bar and `<main>` (or a docked panel) meet the right
+    // edge.
+    expect(m.leftEdge).toEqual(["rail", "rail", "rail", "rail"]);
+    expect(m.rightEdge).toEqual(["chrome", "chrome"]);
+    expect(m.aside.left).toBe(0);
+    // The band lines run to the edge: the logo band, the account band and
+    // the footer group (whose scroll edge draws a line) start at x = 0.
+    expect(m.header.left).toBe(0);
+    expect(m.account.left).toBe(0);
+    expect(m.footerLeft).toBe(0);
+    // And everything in the rail stays clear of the inset.
+    expect(m.logoLeft).toBeGreaterThanOrEqual(SIDE_INSET);
+    expect(m.firstLinkLeft).toBeGreaterThanOrEqual(SIDE_INSET);
+    expect(m.avatar.left).toBeGreaterThanOrEqual(SIDE_INSET);
+
+    // The account band mirrors the logo band: the same height, the avatar
+    // centred in it, and the home indicator's inset below it.
+    expect(m.account.bottom - m.account.top).toBe(
+      m.header.bottom - m.header.top,
+    );
+    const above = m.avatar.top - m.account.top;
+    const below = m.account.bottom - m.avatar.bottom;
+    expect(Math.abs(above - below)).toBeLessThanOrEqual(1);
+    expect(m.account.bottom).toBe(m.innerHeight - HOME_INDICATOR);
+    expect(m.aside.bottom).toBe(m.innerHeight);
+  });
+}

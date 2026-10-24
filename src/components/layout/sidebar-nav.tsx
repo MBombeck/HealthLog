@@ -26,7 +26,13 @@ import {
   visibleNavDestinations,
   visibleUtilityDestinations,
 } from "@/components/layout/nav-model";
-import { SHELL_HEADER_BAND } from "@/components/layout/shell-metrics";
+import {
+  RAIL_ACCOUNT_BAND_CLASS,
+  RAIL_BAND_INSET,
+  RAIL_WIDTH_COLLAPSED,
+  RAIL_WIDTH_EXPANDED,
+  SHELL_HEADER_BAND,
+} from "@/components/layout/shell-metrics";
 import {
   RailNavList,
   useNavOverflows,
@@ -268,10 +274,8 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
   if (collapsed) {
     return (
       <div
-        className={cn(
-          "border-sidebar-border border-t p-3",
-          "[@media(max-height:940px)]:p-2",
-        )}
+        data-slot="sidebar-account"
+        className={RAIL_ACCOUNT_BAND_CLASS.collapsed}
       >
         <div className="flex items-center justify-center">
           <DropdownMenu>
@@ -294,8 +298,11 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
   }
 
   return (
-    <div className="border-sidebar-border border-t p-3">
-      <div className="flex items-center gap-3 px-2 py-1">
+    <div
+      data-slot="sidebar-account"
+      className={RAIL_ACCOUNT_BAND_CLASS.expanded}
+    >
+      <div className="flex w-full min-w-0 items-center gap-3 px-2 py-1">
         {/* The avatar + name in the expanded footer routes straight
             into the account settings; the kebab to the right still opens
             the rest of the user menu. */}
@@ -343,7 +350,8 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
  *
  * Steps (rows are full-width, so the click target is the whole row):
  * - default: 40 px rows, 4 px apart
- * - max-height 940 px: gaps close (40 px pitch), list and user padding tighten
+ * - max-height 940 px: gaps close (40 px pitch), the list padding tightens
+ *   (the account band keeps the logo band's height, `RAIL_ACCOUNT_BAND`)
  * - max-height 820 px: 36 px rows
  * - max-height 740 px: 32 px rows — the one step under 40 px, taken only
  *   where the alternative is rows hidden behind a scroll edge
@@ -627,8 +635,8 @@ export function SidebarNav() {
       <aside
         aria-label={t("nav.sidebar")}
         className={cn(
-          "bg-sidebar border-sidebar-border shell-desktop:flex shell-desktop:flex-col relative hidden h-full flex-shrink-0 overflow-hidden border-r pb-(--safe-area-bottom) transition-[width] duration-200 motion-reduce:transition-none",
-          collapsed ? "w-16" : "w-64",
+          "bg-sidebar border-sidebar-border shell-desktop:flex shell-desktop:flex-col relative hidden h-full flex-shrink-0 overflow-hidden border-r pb-(--safe-area-bottom) pl-(--safe-area-left) transition-[width] duration-200 motion-reduce:transition-none",
+          collapsed ? RAIL_WIDTH_COLLAPSED : RAIL_WIDTH_EXPANDED,
         )}
       >
         {/* The rail animates its width; the content does not. Expanded, this
@@ -656,7 +664,7 @@ export function SidebarNav() {
             className={cn(
               "border-sidebar-border",
               SHELL_HEADER_BAND,
-              collapsed ? "px-3" : "px-6",
+              RAIL_BAND_INSET.header[collapsed ? "collapsed" : "expanded"],
             )}
           >
             <Link
@@ -755,7 +763,7 @@ export function SidebarNav() {
             className={cn(
               RAIL_LIST_GAP,
               "pb-1",
-              collapsed ? "px-1.5" : "px-3",
+              RAIL_BAND_INSET.footer[collapsed ? "collapsed" : "expanded"],
               navOverflows && "border-sidebar-border border-t pt-1",
             )}
           >

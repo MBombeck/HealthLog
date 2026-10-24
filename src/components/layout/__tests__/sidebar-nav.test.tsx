@@ -56,6 +56,7 @@ vi.mock("@/hooks/use-mounted", () => ({
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { I18nProvider } from "@/lib/i18n/context";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { RAIL_WIDTH_COLLAPSED } from "../shell-metrics";
 import {
   SIDEBAR_EXPANDED_CONTENT_WIDTH,
   SidebarCollapseToggle,
@@ -559,7 +560,7 @@ describe("<SidebarNav> width transition never overflows the nav", () => {
     });
     mockMountedRef.value = true;
     const html = render();
-    expect(asideClass(html).split(" ")).toContain("w-16");
+    expect(asideClass(html).split(" ")).toContain(RAIL_WIDTH_COLLAPSED);
     expect(columnClass(html).split(" ")).not.toContain(
       SIDEBAR_EXPANDED_CONTENT_WIDTH,
     );
