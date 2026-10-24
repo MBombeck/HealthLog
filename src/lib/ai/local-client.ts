@@ -25,18 +25,22 @@ import type { ReasoningEffort } from "./reasoning-effort";
 import {
   ANSWERS_ONLY_UNREASONED,
   learnedReasoningDialect,
+  noteReasoningSeen,
   refusesReasoningField,
 } from "./reasoning/dialect-cache";
 import { uncontrolledThinkingRoom } from "./reasoning/levels";
 import {
   askAgainUnreasoned,
+  knownReasoner,
   reasonsUnasked,
   repeatUnreasoned,
 } from "./reasoning/answerless";
 import {
   ReasoningCollector,
+  StreamedThinkSplitter,
   separateMessage,
   takeReasoning,
+  type LocalReasoner,
 } from "./local-reasoning";
 
 interface LocalClientConfig {
@@ -228,6 +232,22 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     if (!params.reasoning) return null;
     if (refusesReasoningField(learned)) return null;
     return params.reasoning.effort === "off" ? "none" : params.reasoning.effort;
+  }
+
+  /**
+   * #1276 — what this endpoint and model have shown of their reasoning, for
+   * one request (`LocalReasoner`). Seen on a request that asked to reason
+   * counts only for requests that ask too.
+   */
+  private reasoner(params: CompletionParams, room: boolean): LocalReasoner {
+    const key = this.reasoningDialectKey();
+    const sent = this.sentReasoningEffort(params);
+    const asked = sent !== null && sent !== "none";
+    return {
+      room,
+      known: knownReasoner(key, asked),
+      seen: () => noteReasoningSeen(key, asked),
+    };
   }
 
   /**
@@ -436,7 +456,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       params,
       json.choices?.[0]?.message,
       finish,
-      room,
+      this.reasoner(params, room),
     );
     if (!content) {
       const spent = json.usage?.total_tokens ?? null;
@@ -506,7 +526,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       params,
       json?.choices?.[0]?.message,
       json?.choices?.[0]?.finish_reason,
-      room,
+      this.reasoner(params, room),
     );
     if (!content) {
       const spent = json?.usage?.total_tokens ?? null;
@@ -626,44 +646,12 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     // reasoning never reaches `onDelta`; it would otherwise show up as the
     // answer. #1276 — for every caller (only one that asked is told).
     const collector = new ReasoningCollector(params);
-    let thinkState: "detect" | "inside" | "passthrough" = "detect";
-    let pending = "";
-    const passContent = (text: string) => {
+    const splitter = new StreamedThinkSplitter(collector, (text) => {
       if (!text) return;
       collector.finish();
       content += text;
       onDelta(text);
-    };
-    const onContent = (delta: string) => {
-      if (thinkState === "passthrough") {
-        passContent(delta);
-        return;
-      }
-      pending += delta;
-      if (thinkState === "detect") {
-        const lead = pending.replace(/^\s+/, "");
-        if (lead.length < "<think>".length && "<think>".startsWith(lead)) {
-          return;
-        }
-        if (!lead.startsWith("<think>")) {
-          thinkState = "passthrough";
-          const out = pending;
-          pending = "";
-          passContent(out);
-          return;
-        }
-        thinkState = "inside";
-        pending = lead.slice("<think>".length);
-      }
-      const close = pending.indexOf("</think>");
-      if (close === -1) return;
-      collector.add(pending.slice(0, close));
-      collector.finish();
-      const rest = pending.slice(close + "</think>".length).replace(/^\s+/, "");
-      pending = "";
-      thinkState = "passthrough";
-      passContent(rest);
-    };
+    });
 
     // An SSE frame can carry the same embedded failure the buffered body
     // carries. Remember the first one; it only matters if the stream ends
@@ -731,7 +719,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
             collector.add(reasoningDelta);
           }
           const delta = choiceDelta?.content;
-          if (delta) onContent(delta);
+          if (delta) splitter.push(delta);
           if (typeof chunk.usage?.total_tokens === "number") {
             tokensUsed = chunk.usage.total_tokens;
           }
@@ -763,24 +751,16 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       reader.cancel().catch(() => {});
     }
 
-    // A reply short enough to still sit in the `<think>` detector is prose;
-    // an unclosed block is reasoning that ran out of budget.
-    // (The closures above move `thinkState`; read it afresh.)
-    const endState = thinkState as "detect" | "inside" | "passthrough";
-    if (endState === "detect") {
-      thinkState = "passthrough";
-      passContent(pending);
-    } else if (endState === "inside") {
-      collector.add(pending);
-    }
-    pending = "";
+    const { unclosed } = splitter.end();
     // #1276 — a lone `</think>`, or unlabelled text that filled the ceiling.
     // Sent deltas are a liveness signal only; the guards read `content`.
+    const reasoner = this.reasoner(params, room);
     const tail = takeReasoning(collector, content, {
       fieldedReasoning: streamedReasoning,
       finishReason,
-      reasoningRoom: room,
+      reasoner,
     });
+    if (streamedReasoning || splitter.opened || tail.took) reasoner.seen();
     content = tail.content;
     if (!content) {
       // A stream that ended with a failure frame and no token reports the
@@ -791,8 +771,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
         model: this.config.model,
       });
       // An unclosed inline `<think>` block is reasoning too.
-      const hadReasoning =
-        streamedReasoning || endState === "inside" || tail.took;
+      const hadReasoning = streamedReasoning || unclosed || tail.took;
       if (
         this.learnAnswerlessReasoning(params, hops, hadReasoning, finishReason)
       ) {

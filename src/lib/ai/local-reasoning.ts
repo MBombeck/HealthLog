@@ -75,11 +75,22 @@ export function messageReasoning(message: unknown): string | null {
 }
 
 /**
+ * What one request's endpoint and model have shown of their reasoning
+ * (#1276): `room` the ceiling held room for it, `known` the model was seen
+ * reasoning before (`knownReasoner`), `seen` records a reply that reasoned.
+ */
+export interface LocalReasoner {
+  room: boolean;
+  known: boolean;
+  seen(): void;
+}
+
+/**
  * #1276 — take the reasoning out of `content` (`answerOf`: an inline
- * `<think>` block or only its closing tag, or unlabelled text that filled a
- * ceiling sized for thinking) and hand it to `collector`. Returns the answer
- * and whether anything was taken. For every caller: reasoning is never an
- * answer, asked for or not.
+ * `<think>` block or only its closing tag, or, from a model known to reason,
+ * unlabelled text that filled a ceiling sized for thinking) and hand it to
+ * `collector`. Returns the answer and whether anything was taken. For every
+ * caller: reasoning is never an answer, asked for or not.
  */
 export function takeReasoning(
   collector: ReasoningCollector,
@@ -87,10 +98,16 @@ export function takeReasoning(
   reply: {
     fieldedReasoning: boolean;
     finishReason: string | undefined;
-    reasoningRoom: boolean;
+    reasoner: LocalReasoner;
   },
 ): { content: string; took: boolean } {
-  const separated = answerOf(content, { ...reply, hasToolCalls: false });
+  const separated = answerOf(content, {
+    fieldedReasoning: reply.fieldedReasoning,
+    finishReason: reply.finishReason,
+    hasToolCalls: false,
+    reasoningRoom: reply.reasoner.room,
+    knownReasoner: reply.reasoner.known,
+  });
   if (separated.reasoning) collector.add(separated.reasoning);
   if (separated.unseparated) {
     emitSignal({
@@ -110,7 +127,7 @@ export function separateMessage(
   params: CompletionParams,
   message: { content?: string | null } | undefined,
   finishReason: string | undefined,
-  reasoningRoom: boolean,
+  reasoner: LocalReasoner,
 ): { content: string; hadReasoning: boolean; collector: ReasoningCollector } {
   const collector = new ReasoningCollector(params);
   const fielded = messageReasoning(message);
@@ -118,7 +135,77 @@ export function separateMessage(
   const { content, took } = takeReasoning(collector, message?.content ?? "", {
     fieldedReasoning: fielded !== null,
     finishReason,
-    reasoningRoom,
+    reasoner,
   });
-  return { content, hadReasoning: fielded !== null || took, collector };
+  const hadReasoning = fielded !== null || took;
+  if (hadReasoning) reasoner.seen();
+  return { content, hadReasoning, collector };
+}
+
+/**
+ * A leading inline `<think>` block in streamed `content`, split off delta by
+ * delta: the reasoning goes to the collector, never to `pass`, which gets the
+ * answer as it arrives.
+ */
+export class StreamedThinkSplitter {
+  private state: "detect" | "inside" | "passthrough" = "detect";
+  private pending = "";
+  /** A `<think>` block opened. */
+  opened = false;
+
+  constructor(
+    private readonly collector: ReasoningCollector,
+    private readonly pass: (text: string) => void,
+  ) {}
+
+  push(delta: string): void {
+    if (this.state === "passthrough") {
+      this.pass(delta);
+      return;
+    }
+    this.pending += delta;
+    if (this.state === "detect") {
+      const lead = this.pending.replace(/^\s+/, "");
+      if (lead.length < "<think>".length && "<think>".startsWith(lead)) {
+        return;
+      }
+      if (!lead.startsWith("<think>")) {
+        this.state = "passthrough";
+        const out = this.pending;
+        this.pending = "";
+        this.pass(out);
+        return;
+      }
+      this.state = "inside";
+      this.opened = true;
+      this.pending = lead.slice("<think>".length);
+    }
+    const close = this.pending.indexOf("</think>");
+    if (close === -1) return;
+    this.collector.add(this.pending.slice(0, close));
+    this.collector.finish();
+    const rest = this.pending
+      .slice(close + "</think>".length)
+      .replace(/^\s+/, "");
+    this.pending = "";
+    this.state = "passthrough";
+    this.pass(rest);
+  }
+
+  /**
+   * The stream ended. A reply short enough to still sit in the detector is
+   * prose; an unclosed block is reasoning that ran out of budget, and the
+   * result says so.
+   */
+  end(): { unclosed: boolean } {
+    const unclosed = this.state === "inside";
+    if (this.state === "detect") {
+      this.state = "passthrough";
+      this.pass(this.pending);
+    } else if (unclosed) {
+      this.collector.add(this.pending);
+    }
+    this.pending = "";
+    return { unclosed };
+  }
 }

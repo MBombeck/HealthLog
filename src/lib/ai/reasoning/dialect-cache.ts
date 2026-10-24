@@ -150,9 +150,58 @@ export function isReasoningParameterRejection(
   return params.test(text) && PARAMETER_REFUSAL.test(text);
 }
 
+/**
+ * #1276 — endpoints and models seen reasoning: a reasoning field or a think
+ * tag in a reply. `unasked` when the request carried no effort (or `none`),
+ * and it outlasts a later sighting on a request that asked. Held as long as a
+ * lesson (`DIALECT_TTL_MS`) and on `globalThis` for the same reason.
+ */
+const SEEN_SLOT = Symbol.for("healthlog.ai.reasoningSeen");
+const seen: Map<string, { unasked: boolean; expiresAt: number }> = ((
+  globalThis as Record<symbol, unknown>
+)[SEEN_SLOT] ??= new Map()) as Map<
+  string,
+  { unasked: boolean; expiresAt: number }
+>;
+
+function seenEntry(k: string) {
+  const entry = seen.get(k);
+  if (entry && Date.now() >= entry.expiresAt) {
+    seen.delete(k);
+    return undefined;
+  }
+  return entry;
+}
+
+/** Record a reply of `key` that reasoned; `asked`: its request asked to. */
+export function noteReasoningSeen(
+  key: ReasoningDialectKey,
+  asked: boolean,
+): void {
+  const k = cacheKey(key);
+  seen.set(k, {
+    unasked: !asked || (seenEntry(k)?.unasked ?? false),
+    expiresAt: Date.now() + DIALECT_TTL_MS,
+  });
+}
+
+/**
+ * True when `key` was seen reasoning in a way that speaks for a request that
+ * did (`asked`) or did not ask to reason: a model that reasoned unasked
+ * speaks for both, one seen reasoning only when asked for the first.
+ */
+export function reasoningSeen(
+  key: ReasoningDialectKey,
+  asked: boolean,
+): boolean {
+  const entry = seenEntry(cacheKey(key));
+  return entry !== undefined && (entry.unasked || asked);
+}
+
 /** Test hook: forget everything learned. */
 export function resetReasoningDialectCache(): void {
   learned.clear();
+  seen.clear();
 }
 
 /**

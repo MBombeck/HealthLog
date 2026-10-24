@@ -268,11 +268,20 @@ describe("#1276: a gateway model that always reasons", () => {
           reasoning: { effort: "medium", summaries: true },
         })
         .then(
-          (r) => ({ ok: true as const, content: r.content }),
+          (r) => ({ ok: true as const, finishReason: r.finishReason }),
           (e: { kind?: string }) => ({ ok: false as const, kind: e.kind }),
         );
-      // Never the thought as an answer.
-      expect(first).toEqual({ ok: false, kind: "reasoning_only" });
+      // Never the thought as an answer, once it is labelled as one. The
+      // template-opened reply carries no label at all (no field, no tag) and
+      // comes from a model not yet seen reasoning: text cut off at the
+      // ceiling from such a model is its answer, cut off (a model that does
+      // not reason, asked with any level, must keep its answer), so it comes
+      // back as the answer with `finishReason: "length"`.
+      expect(first).toEqual(
+        mode === "template-opened"
+          ? { ok: true, finishReason: "length" }
+          : { ok: false, kind: "reasoning_only" },
+      );
 
       // The next turn reasons a normal amount.
       reasoningWords = 1200;

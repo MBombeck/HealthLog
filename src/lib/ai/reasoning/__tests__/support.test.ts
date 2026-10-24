@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  answerOf,
   anthropicModelVersion,
   anthropicRefusesSampling,
   anthropicThinkingDialect,
@@ -192,6 +193,56 @@ describe("parsing helpers", () => {
     expect(splitThinkTags("<think></think>\nThe answer.")).toEqual({
       content: "The answer.",
       reasoning: null,
+    });
+  });
+
+  it("leaves a closing tag mentioned in a sentence alone, unless the model is known to reason", () => {
+    const prose =
+      "Some models end their thinking with </think> before they answer.";
+    expect(splitThinkTags(prose)).toEqual({ content: prose, reasoning: null });
+    // The same text from a model seen reasoning: the template opened the
+    // block, so the tag closes it wherever it sits.
+    expect(splitThinkTags("Weighing the week</think>Steady.", true)).toEqual({
+      content: "Steady.",
+      reasoning: "Weighing the week",
+    });
+    // A tag that opens a line splits whoever sent it.
+    expect(splitThinkTags("Weighing the week\n  </think>\nSteady.")).toEqual({
+      content: "Steady.",
+      reasoning: "Weighing the week",
+    });
+  });
+
+  describe("answerOf, a reply cut off at the ceiling", () => {
+    const cut = '{"summary": "Your weight has been stable and';
+    const reply = (knownReasoner: boolean) => ({
+      fieldedReasoning: false,
+      finishReason: "length",
+      hasToolCalls: false,
+      reasoningRoom: true,
+      knownReasoner,
+    });
+
+    it("is the answer from a model not known to reason", () => {
+      expect(answerOf(cut, reply(false))).toEqual({
+        content: cut,
+        reasoning: null,
+        unseparated: false,
+      });
+    });
+
+    it("is reasoning the server did not separate from a model known to reason", () => {
+      expect(answerOf(cut, reply(true))).toEqual({
+        content: "",
+        reasoning: cut,
+        unseparated: true,
+      });
+    });
+
+    it("is the answer when the ceiling held no room for reasoning", () => {
+      expect(
+        answerOf(cut, { ...reply(true), reasoningRoom: false }).content,
+      ).toBe(cut);
     });
   });
 

@@ -15,10 +15,12 @@ import {
 import {
   ANSWERS_ONLY_UNREASONED,
   learnedReasoningDialect,
+  noteReasoningSeen,
   refusesReasoningField,
 } from "./reasoning/dialect-cache";
 import {
   askAgainUnreasoned,
+  knownReasoner,
   reasonsUnasked,
   repeatUnreasoned,
 } from "./reasoning/answerless";
@@ -276,30 +278,15 @@ export class OpenAIClient implements AIProvider {
               : {}),
         }),
       },
-      // 60 s ceiling so a tar-pit upstream cannot pin a worker
-      // indefinitely. Real completions land well inside this budget.
-      // v1.11.2 — the base URL is user/admin-overridable (BYO gateway), so pin
-      // the connect-time DNS check: a base URL resolving to a private/metadata
-      // address is rejected, closing the SSRF/rebinding surface.
-      // v1.20.1 — compose the caller's cancel signal (Coach SSE disconnect) so
-      // a mid-generation abort tears the upstream call down early.
-      // The record owner's response-timeout setting, else the surface value, else 60 s.
-      // v1.33.1 (#470) — the gateway tag reuses the Local provider's host
-      // policy verbatim: public hosts always; a private host only when the
-      // operator granted its origin (`AI_PRIVATE_ORIGINS` or the legacy host
-      // list), and then only through the pinned operator-approved dispatcher.
-      //
-      // v1.37.30 — the `admin-key` tag consults the same policy. Its base URL
-      // is the one other operator-typed URL in this client (an operator can
-      // point the global provider at a private OpenAI-compatible proxy, e.g.
-      // an OAuth sidecar), and both ends of the grant are the operator's own:
-      // the URL comes from the admin settings, the allowlist from the
-      // operator's environment. Every non-operator construction of this tag
-      // pins the public `api.openai.com` constant, for which the policy
-      // resolves to `true` without ever consulting the allowlist — so the
-      // personal-key posture is unchanged. The `codex` tag keeps the hard
-      // pin: its base URL is a repository constant, there is nothing an
-      // operator legitimately redirects.
+      // The record owner's response-timeout setting (else the surface value,
+      // else 60 s), and the caller's cancel signal (a Coach disconnect tears
+      // the upstream call down). The gateway's base URL and the operator's
+      // `admin-key` one are typed by a person, so they take the Local
+      // provider's host policy: public hosts always, a private host only for
+      // an origin the operator granted (`AI_PRIVATE_ORIGINS`), dialled through
+      // the pinned operator-approved dispatcher; a personal key pins the
+      // public `api.openai.com`, for which the policy never consults the
+      // allowlist. `codex` keeps the hard pin: its URL is a repository constant.
       {
         timeoutMs: callTimeoutMs(params, this.responseTimeoutSeconds),
         ...(this.isGateway || this.type === "admin-key"
@@ -357,7 +344,13 @@ export class OpenAIClient implements AIProvider {
 
     const choice = json.choices?.[0];
     const toolCalls = parseOpenAIToolCalls(choice);
-    const reply = this.separateReasoning(choice, toolCalls, thinkingTokens);
+    // The effort the request carried, whichever level decided it.
+    const sent =
+      reasoningWire.kind !== "none" ? reasoningWire.effort : entryEffort;
+    const reply = this.separateReasoning(choice, toolCalls, {
+      thinkingTokens,
+      sent,
+    });
     let content: string = reply.content;
 
     // v1.28.28 (#470) — gateway JSON-mode shim. LiteLLM (and similar
@@ -382,8 +375,7 @@ export class OpenAIClient implements AIProvider {
     // empty reply with neither content NOR tool calls is an error.
     if (!content && !toolCalls) {
       return this.answerless(params, hops, {
-        sent:
-          reasoningWire.kind !== "none" ? reasoningWire.effort : entryEffort,
+        sent,
         hadReasoning: reply.hadReasoning,
         finishReason: choice?.finish_reason,
         spent: json.usage?.total_tokens ?? null,
@@ -613,19 +605,24 @@ export class OpenAIClient implements AIProvider {
   private separateReasoning(
     choice: OpenAIChoice | undefined,
     toolCalls: AiToolCall[] | undefined,
-    thinkingTokens: number,
+    request: { thinkingTokens: number; sent: string | null },
   ): { content: string; reasoning: string | null; hadReasoning: boolean } {
     const message = (choice?.message ?? {}) as Record<string, unknown>;
     const fielded = [message.reasoning, message.reasoning_content].find(
       (v): v is string => typeof v === "string" && v.trim().length > 0,
     );
     const raw = choice?.message?.content ?? "";
+    const key = this.reasoningDialectKey();
+    const asked = request.sent !== null && request.sent !== "none";
     const separated = answerOf(raw, {
       fieldedReasoning: fielded !== undefined,
       finishReason: choice?.finish_reason,
       hasToolCalls: toolCalls !== undefined,
-      reasoningRoom: this.isGateway && thinkingTokens > 0,
+      reasoningRoom: this.isGateway && request.thinkingTokens > 0,
+      knownReasoner: knownReasoner(key, asked),
     });
+    const hadReasoning = fielded !== undefined || separated.content !== raw;
+    if (hadReasoning) noteReasoningSeen(key, asked);
     if (separated.unseparated) {
       emitSignal({
         action: "ai.gateway.reasoning_unseparated",
@@ -636,7 +633,7 @@ export class OpenAIClient implements AIProvider {
     return {
       content: separated.content,
       reasoning: fielded ?? separated.reasoning,
-      hadReasoning: fielded !== undefined || separated.content !== raw,
+      hadReasoning,
     };
   }
 

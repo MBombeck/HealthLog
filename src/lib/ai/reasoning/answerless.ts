@@ -31,6 +31,7 @@ import {
   REASONS_REGARDLESS,
   annotateReasoningDowngrade,
   learnedReasoningDialect,
+  reasoningSeen,
   rememberReasoningDialect,
   type ReasoningDialectKey,
 } from "./dialect-cache";
@@ -133,6 +134,19 @@ export function reasonsUnasked(key: ReasoningDialectKey): boolean {
     learned === REASONS_REGARDLESS ||
     learned === FIELD_REFUSED_REASONS_REGARDLESS
   );
+}
+
+/**
+ * #1276 — true when the model has shown it reasons, for a request that did
+ * (`asked`) or did not ask it to: a lesson that says it reasons unasked, or a
+ * reply seen reasoning (`reasoningSeen`). Only then is unlabelled text that
+ * ran into the ceiling read as reasoning (`answerOf`).
+ */
+export function knownReasoner(
+  key: ReasoningDialectKey,
+  asked: boolean,
+): boolean {
+  return reasonsUnasked(key) || reasoningSeen(key, asked);
 }
 
 /**
