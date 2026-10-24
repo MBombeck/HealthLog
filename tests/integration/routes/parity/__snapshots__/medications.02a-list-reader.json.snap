@@ -16,6 +16,7 @@
         "snoozedUntil": null,
         "startsOn": "2026-10-01T00:00:00.000Z",
         "endsOn": null,
+        "endedAt": null,
         "oneShot": false,
         "asNeeded": false,
         "trackIntake": true,
@@ -73,6 +74,7 @@
         "nextDueScheduleId": "<id:3>",
         "courseStatus": "CURRENT",
         "intakeActionable": true,
+        "canEndCourse": true,
         "stockUnitsRemaining": null,
         "stockDosesRemaining": null,
         "runwayDays": null
@@ -112,6 +114,7 @@
         "snoozedUntil": null,
         "startsOn": "2026-10-01T00:00:00.000Z",
         "endsOn": null,
+        "endedAt": null,
         "oneShot": false,
         "asNeeded": false,
         "trackIntake": true,
