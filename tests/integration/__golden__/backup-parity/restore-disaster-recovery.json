@@ -332,7 +332,7 @@
           "symptomDefinitions": 0,
           "lifeEvents": 0
         },
-        "accountSettingsApplied": 62,
+        "accountSettingsApplied": 61,
         "skipped": {
           "catalogueKeys": [],
           "links": 0
@@ -2759,9 +2759,6 @@
       "moduleListLayoutJson": {
         "roundTrip": "rt-User-moduleListLayoutJson"
       },
-      "previewFeaturesJson": {
-        "roundTrip": "rt-User-previewFeaturesJson"
-      },
       "activityGoalsJson": {
         "stepsPerMonth": 250000,
         "workoutsPerWeek": 4
@@ -3028,9 +3025,6 @@
       },
       "moduleListLayoutJson": {
         "roundTrip": "rt-User-moduleListLayoutJson"
-      },
-      "previewFeaturesJson": {
-        "roundTrip": "rt-User-previewFeaturesJson"
       },
       "activityGoalsJson": {
         "stepsPerMonth": 250000,

@@ -22,6 +22,8 @@ vi.mock("@/lib/modules/gate", () => ({ isModuleEnabled: vi.fn() }));
 vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: { findMany: vi.fn() },
+    // The mirror walk's token lookup: no token switched, so no walk.
+    apiToken: { findMany: vi.fn(async () => []) },
     moodEntry: { findMany: vi.fn() },
     medicationIntakeEvent: { findMany: vi.fn() },
     cycleDayLog: { findMany: vi.fn() },

@@ -98,6 +98,8 @@
  * shape `summarize()` would return.
  */
 import { prisma } from "@/lib/db";
+import { runDetached } from "@/lib/logging/detached";
+import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import type { DataSummary } from "@/lib/analytics/trends";
 import {
   liveTrend,
@@ -254,14 +256,12 @@ export async function buildComprehensiveAggregate(
   // bp-raw, first-at, coverage-probe) without re-instrumenting.
   const timings: Record<string, number> = {};
 
-  // v1.4.37.1 — fire-and-forget. See `src/app/api/analytics/route.ts`
-  // for the full rationale: awaiting this on the read path can stall
-  // the event loop for 30–60 s on power-user accounts whose iOS step
-  // samples keep the 90-day window slightly stale. The downstream
-  // coverage probe falls back to live SQL for uncovered types, so
-  // correctness is preserved; the read just doesn't block waiting
-  // for the background refresh.
-  void ensureUserRollupsFresh(userId);
+  // v1.4.37.1 — fire-and-forget (see `src/app/api/analytics/route.ts`):
+  // awaiting it can stall the event loop for 30–60 s on accounts whose iOS
+  // steps keep the 90-day window stale, and the coverage probe falls back to
+  // live SQL meanwhile. Registered so the suite's settle hook and the
+  // statement counter can await it.
+  trackBackgroundTask(runDetached(() => ensureUserRollupsFresh(userId)));
 
   // v1.4.36 — per-type coverage probe. The legacy global COUNT
   // returned true as soon as any one type had a DAY bucket, which made

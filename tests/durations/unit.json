@@ -2660,7 +2660,6 @@
     "src/lib/search/__tests__/match.test.ts": 0,
     "src/lib/search/__tests__/search-records.test.ts": 0,
     "src/lib/settings/__tests__/module-list-layout.test.ts": 0,
-    "src/lib/settings/__tests__/preview-features.test.ts": 0,
     "src/lib/sharing/__tests__/account-access-parse.test.ts": 0,
     "src/lib/sharing/__tests__/account-access.test.ts": 0,
     "src/lib/sharing/__tests__/account-label.test.ts": 0,

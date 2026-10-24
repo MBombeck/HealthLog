@@ -91,6 +91,20 @@ async function signalRunFailed(
 }
 
 /**
+ * A queue's handler module that failed to load before any job asked for it
+ * (the worker's boot preload, `preloadHandlers`). Reported the way a failed
+ * run is, so the operator hears about it at deploy time on the line the
+ * repeated-failure alert already reads, instead of on the queue's first job.
+ */
+export async function reportHandlerLoadFailure(
+  queue: string,
+  error: unknown,
+): Promise<void> {
+  await reportWorkerError(queue, error, { phase: "handler_preload" });
+  await signalRunFailed(queue, "handler_load_failed", error);
+}
+
+/**
  * Wrap a handler for `boss.work`. Resolves with the bounded, redacted
  * persistence representation on `ok: true`; reports and rethrows on
  * `ok: false`.

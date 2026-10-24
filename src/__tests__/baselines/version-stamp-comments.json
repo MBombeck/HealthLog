@@ -2752,7 +2752,7 @@
     "lib/rollups/mood-rollups.ts": 4,
     "lib/rollups/tiered-context.ts": 6,
     "lib/score-config/rows.ts": 1,
-    "lib/settings/section-slugs.ts": 20,
+    "lib/settings/section-slugs.ts": 19,
     "lib/sharing/__tests__/account-access-parse.test.ts": 3,
     "lib/sharing/__tests__/account-access.test.ts": 2,
     "lib/sharing/__tests__/account-label.test.ts": 1,

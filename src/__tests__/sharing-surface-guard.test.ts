@@ -2163,8 +2163,6 @@ const ACTOR_ROUTES: Record<string, string> = {
     "The UI language belongs to the person reading the screen, never to the record on it. Under a record scope this would transplant a delegate's choice onto the owner's row and send the owner's cron mail in a language they may not read. It has to keep working rather than merely refuse safely: the switcher's mount-time backfill fires on every page load, including the shared dashboard.",
   "app/api/settings/module-list-layout/route.ts":
     "How the person's own labs, illness and checkups lists are laid out: card or list view, manual order, sort. It reads and writes the caller's own row only. Inside another record the ids of a saved order simply match nothing and the list keeps the server order, so serving the person's own choice there reveals nothing of the owner's and grants nothing; refusing it under a switch broke the list controls in exactly the context they are used in.",
-  "app/api/settings/preview-features/route.ts":
-    "The person's own opt-in to preview features. A preview entry is chrome of the person reading the screen, never a property of the record on it; it reads and writes the caller's own row and nothing of the owner's.",
   "app/api/feature-flags/route.ts":
     "Reads the `AppSettings` singleton and no user row at all, so there is no record for a switch to substitute. It answers about the deployment, which for this purpose is the caller's side of the request; the shell gates the Coach launcher and the assistant surfaces on it, so a 403 here is a piece of chrome deciding it does not exist.",
 };
@@ -2273,8 +2271,11 @@ const ACTOR_ROUTES: Record<string, string> = {
  * side). The activity goals route does not: setting or changing goals stays
  * owner-only, and a delegate sees the goals only as the calendar reports them.
  * 270 -> 273.
+ *
+ * The preview-feature switch went with its column in the next release; the
+ * topic pages it was kept for were dropped. 273 -> 272.
  */
-const FROZEN_ENTRY_COUNT = 273;
+const FROZEN_ENTRY_COUNT = 272;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

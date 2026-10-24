@@ -142,6 +142,14 @@ describe("background-task settle contract", () => {
     expect(pendingBackgroundTaskCount()).toBe(0);
   });
 
+  it("drains a handle that is not a promise instead of spinning on it", async () => {
+    // A mocked background starter that returns nothing hands the registry
+    // `undefined`; left in the set, settle would loop on it forever.
+    trackBackgroundTask(undefined as unknown as Promise<unknown>);
+    await settleBackgroundTasks();
+    expect(pendingBackgroundTaskCount()).toBe(0);
+  });
+
   it("registers what fireAndForget starts", async () => {
     let release: () => void = () => {};
     fireAndForget(

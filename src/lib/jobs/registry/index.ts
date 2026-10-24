@@ -10,7 +10,13 @@ import type { JobDefinition, JobGroup } from "./define-job";
 import { INTEGRATION_SYNC_GROUP } from "./integration-sync";
 import { MAINTENANCE_GROUP } from "./maintenance";
 import { REMINDERS_GROUP } from "./reminders";
-import { registerJobGroup, runBootDiscovery } from "./register";
+import {
+  registerJobGroup,
+  runBootDiscovery,
+  type BoundLoader,
+} from "./register";
+
+export { preloadHandlers, type BoundLoader } from "./register";
 import { ROLLUP_GROUP } from "./rollup";
 import { STATUS_GROUP } from "./status";
 
@@ -29,16 +35,18 @@ export function allJobDefinitions(): readonly JobDefinition[] {
 
 /**
  * Register every group in order. `onGroup` runs before each one, so the boot
- * can time the groups as steps. Returns every queue name created.
+ * can time the groups as steps; `onBound` receives every queue's handler
+ * loader as it is bound. Returns every queue name created.
  */
 export async function registerAllJobGroups(
   boss: PgBoss,
   onGroup: (group: JobGroup) => void = () => {},
+  onBound: (bound: BoundLoader) => void = () => {},
 ): Promise<string[]> {
   const queues: string[] = [];
   for (const group of JOB_GROUPS) {
     onGroup(group);
-    queues.push(...(await registerJobGroup(boss, group)));
+    queues.push(...(await registerJobGroup(boss, group, onBound)));
   }
   return queues;
 }

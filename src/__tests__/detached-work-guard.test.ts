@@ -91,3 +91,56 @@ describe("detached work cannot rename the request's event", () => {
     expect(startsDetached(detached)).toBe(true);
   });
 });
+
+/**
+ * Read-path work a request starts and never awaits. Each of these runs real
+ * statements against Postgres after the response is already on its way, so a
+ * bare `void` hides it from `settleBackgroundTasks()`: the statement counter
+ * then closes its window while a stale account's rollup recompute is still
+ * writing, and the next test inherits the tail. The dashboard summary budget
+ * read 30 against 28 that way, depending on which side of the window a full
+ * mood recompute landed.
+ */
+const READ_PATH_BACKGROUND_STARTERS = [
+  "ensureUserRollupsFresh",
+  "ensureUserMoodRollupsFresh",
+  "requestTodayBriefingWarm",
+  "touchGrantUsage",
+  "recordDelegatedAccess",
+] as const;
+
+describe("read-path background work is registered", () => {
+  const files = readSourceFolder("src", {
+    floor: 3000,
+    include: (rel) =>
+      !rel.startsWith("generated/") &&
+      !rel.includes("__tests__/") &&
+      !/\.test\.tsx?$/.test(rel),
+  });
+  const bare = new RegExp(
+    String.raw`\bvoid\s+(${READ_PATH_BACKGROUND_STARTERS.join("|")})\s*\(`,
+  );
+
+  it("starts none of them with a bare void", () => {
+    const offenders = files.flatMap(([rel, text]) =>
+      stripComments(text)
+        .split("\n")
+        .flatMap((line, i) => (bare.test(line) ? [`src/${rel}:${i + 1}`] : [])),
+    );
+    expect(
+      offenders,
+      "wrap the call in trackBackgroundTask(runDetached(() => ...)) or " +
+        "fireAndForget(...) so the suite can await it",
+    ).toEqual([]);
+  });
+
+  it("still finds each starter at a detached call site", () => {
+    const joined = files.map(([, text]) => stripComments(text)).join("\n");
+    for (const name of READ_PATH_BACKGROUND_STARTERS) {
+      expect(
+        new RegExp(String.raw`=>\s*${name}\s*\(`).test(joined),
+        `${name} is no longer started detached anywhere; drop it from the list`,
+      ).toBe(true);
+    }
+  });
+});

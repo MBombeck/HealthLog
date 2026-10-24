@@ -111,6 +111,21 @@ describe("admitAccountSettings", () => {
     expect(admitAccountSettings({}, ctx)).toEqual({ data: {}, refused: [] });
   });
 
+  it("accepts and ignores the retired preview-feature opt-ins of an older file", async () => {
+    // Written by v1.44 and v1.45, whose column v1.46 dropped. The file must
+    // still restore, so the field is neither refused nor written.
+    const { accountSettingsBackupSchema } =
+      await import("@/lib/export/account-settings-backup-schema");
+    const entry = accountSettingsBackupSchema.parse({
+      timezone: "Europe/Berlin",
+      previewFeaturesJson: { topics: true },
+    });
+    expect(admitAccountSettings(entry, ctx)).toEqual({
+      data: { timezone: "Europe/Berlin" },
+      refused: [],
+    });
+  });
+
   it("refuses a language, unit or time zone this release does not know", () => {
     const { data, refused } = admitAccountSettings(
       {

@@ -27,10 +27,7 @@ import {
   MODULE_LIST_VIEWS,
   MODULE_SORT_DIRS,
 } from "@/lib/settings/module-list-layout";
-import {
-  moduleListLayoutPutSchema,
-  previewFeaturesPatchSchema,
-} from "@/lib/validations/settings-prefs";
+import { moduleListLayoutPutSchema } from "@/lib/validations/settings-prefs";
 
 const moduleListPrefsEntry = z
   .object({
@@ -70,20 +67,6 @@ const moduleListLayoutSchema = z
     id: "ModuleListLayout",
     description:
       "Per-user presentation of the labs, illness and checkups lists. Display-only; a client that does not render a list ignores it.",
-  });
-
-const previewFeaturesSchema = z
-  .object({
-    topics: z
-      .boolean()
-      .describe(
-        "Topic overview pages above the single-metric Insights pages. Off by default.",
-      ),
-  })
-  .meta({
-    id: "PreviewFeatures",
-    description:
-      "Per-user opt-in to preview features, one boolean per flag, every flag off by default.",
   });
 
 // v1.16.11 — the one threshold read every dose-status consumer makes
@@ -962,57 +945,6 @@ export const settingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(
                 moduleListLayoutSchema,
                 "ModuleListLayoutSavedEnvelope",
-              ),
-            },
-          },
-        },
-        ...stdResponses,
-      },
-    },
-  },
-  "/api/settings/preview-features": {
-    get: {
-      tags: ["Meta"],
-      summary: "Get the preview-feature opt-ins",
-      description: "Every flag, off unless the caller switched it on.",
-      responses: {
-        "200": {
-          description: "The opt-ins.",
-          content: {
-            "application/json": {
-              schema: dataEnvelope(
-                previewFeaturesSchema,
-                "PreviewFeaturesEnvelope",
-              ),
-            },
-          },
-        },
-        ...stdResponses,
-      },
-    },
-    patch: {
-      tags: ["Meta"],
-      summary: "Switch preview features on or off",
-      description:
-        "Sets the flags the body names and keeps the rest. An unknown flag or an empty body is refused with 422.",
-      requestBody: {
-        required: true,
-        content: {
-          "application/json": {
-            schema: previewFeaturesPatchSchema.meta({
-              id: "PreviewFeaturesPatchBody",
-            }),
-          },
-        },
-      },
-      responses: {
-        "200": {
-          description: "The opt-ins as stored.",
-          content: {
-            "application/json": {
-              schema: dataEnvelope(
-                previewFeaturesSchema,
-                "PreviewFeaturesSavedEnvelope",
               ),
             },
           },

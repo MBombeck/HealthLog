@@ -237,6 +237,21 @@ Pass `--only=prod` / `--only=demo` to check a single target, or
 `--attempts=N --interval=ms` to widen the retry window while a slow
 pull settles.
 
+The worker loads each job's handler module on that job's first run, so a
+module the image cannot load does not stop the worker from starting. Once
+it has bound its queues, the worker loads every handler a single time in
+the background and reports each one that fails, normally within a minute
+of start. Each failure is a `job.run.failed` event at `error` with
+`reason: "handler_load_failed"` and the queue's name, and stderr also gets
+`[pg-boss] [registry] preloaded N/M job handlers; failed to load: <queues>`.
+If either shows up after a deploy, the image is broken for those queues,
+and their jobs will fail when they run. Roll back (see Rollback above)
+instead of waiting for the retries to run out:
+
+```sh
+docker compose logs --since 5m app 2>&1 | grep -E 'handler_load_failed|failed to load:'
+```
+
 ## Walk the synthetic journey
 
 The version check proves the instance serves the right build. It does not

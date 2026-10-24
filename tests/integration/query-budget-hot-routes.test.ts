@@ -281,9 +281,15 @@ async function seed(): Promise<void> {
     }),
   });
 
+  // Both rollup tiers are minted here, the way a running account has them.
+  // Seeded rows without their rollups make the first read start a full
+  // recompute in the background, and that is a warm-up cost, not the read's.
   const { recomputeUserRollups } =
     await import("@/lib/rollups/measurement-rollups");
   await recomputeUserRollups(USER_ID);
+  const { recomputeUserMoodRollups } =
+    await import("@/lib/rollups/mood-rollups");
+  await recomputeUserMoodRollups(USER_ID);
 
   const session = await db.session.create({
     data: { userId: USER_ID, expiresAt: new Date(Date.now() + 3_600_000) },

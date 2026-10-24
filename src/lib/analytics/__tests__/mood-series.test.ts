@@ -31,7 +31,14 @@ vi.mock("@/lib/rollups/mood-rollups", async () => {
 
 import { buildMoodDailySeries } from "../mood-series";
 import { prisma } from "@/lib/db";
-import { readMoodDayRollups } from "@/lib/rollups/mood-rollups";
+import {
+  ensureUserMoodRollupsFresh,
+  readMoodDayRollups,
+} from "@/lib/rollups/mood-rollups";
+import {
+  pendingBackgroundTaskCount,
+  settleBackgroundTasks,
+} from "@/lib/logging/background-tasks";
 
 beforeEach(() => {
   vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([] as never);
@@ -103,5 +110,27 @@ describe("buildMoodDailySeries", () => {
     // An empty table reads as the rollup tier for annotation parity.
     expect(series.source).toBe("rollup");
     expect(series.summary.count).toBe(0);
+  });
+
+  it("files the rollup warm-up with the background registry", async () => {
+    // The warm-up is not awaited by the read, so a caller that has to know
+    // when the request's work is over (the statement counter, the suite's
+    // settle hook) can only see it through the registry. Left unregistered,
+    // a stale account's full recompute bled into whatever ran next.
+    let release: () => void = () => {};
+    vi.mocked(ensureUserMoodRollupsFresh).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = () => resolve({ recomputed: true });
+        }),
+    );
+
+    await buildMoodDailySeries("user-1");
+
+    expect(ensureUserMoodRollupsFresh).toHaveBeenCalledWith("user-1");
+    expect(pendingBackgroundTaskCount()).toBe(1);
+    release();
+    await settleBackgroundTasks();
+    expect(pendingBackgroundTaskCount()).toBe(0);
   });
 });
