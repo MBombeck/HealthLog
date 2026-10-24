@@ -4,9 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Loader2, Pill } from "lucide-react";
 
-import { useAiCapability } from "@/hooks/use-ai-capability";
+import { useAiCapability, useAiProviderState } from "@/hooks/use-ai-capability";
 import { useAuth } from "@/hooks/use-auth";
-import { nextStatusPollInterval } from "@/hooks/use-insight-status";
+import {
+  nextStatusPollInterval,
+  statusPollMaxAttempts,
+} from "@/hooks/use-insight-status";
 import { pollAttemptCount } from "@/lib/queries/refetch-interval";
 import { queryKeys } from "@/lib/query-keys";
 import { useTranslations } from "@/lib/i18n/context";
@@ -102,6 +105,7 @@ export default function InsightsMedikamentePage() {
   // The compliance summary and the per-medication sentences are status notes:
   // read only while the `statusText` capability is available.
   const statusText = useAiCapability("statusText");
+  const { responseTimeoutMs } = useAiProviderState();
 
   const {
     data: comprehensive,
@@ -137,14 +141,13 @@ export default function InsightsMedikamentePage() {
     enabled: isAuthenticated && statusText.available,
     staleTime: 60 * 1000,
     retry: 0,
-    // v1.8.4 — bounded preparing poll: stop after the shared attempt
-    // ceiling so a persistently failing generation can't poll an open
-    // page forever.
+    // Bounded poll whose ceiling follows the response timeout (#1274).
     refetchInterval: (query) =>
       nextStatusPollInterval(
         query.state.data?.preparing,
         pollAttemptCount(query.state),
         query.state.data?.revalidating,
+        statusPollMaxAttempts(responseTimeoutMs),
       ),
   });
 

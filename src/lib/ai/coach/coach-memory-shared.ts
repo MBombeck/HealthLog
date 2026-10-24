@@ -21,8 +21,28 @@
  */
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
+import {
+  STATUS_RUN_CEILING_MS,
+  expireAboveModelTime,
+} from "@/lib/jobs/model-time";
 
 export const COACH_MEMORY_REFRESH_QUEUE = "coach-memory-refresh";
+
+/**
+ * The status runs one refresh makes in a row: the conversation summary, the
+ * fact extraction and the plan proposals (`runCoachMemoryRefresh`).
+ */
+export const COACH_MEMORY_MODEL_RUNS = 3;
+
+/**
+ * The job's expiry: every run of one refresh at the largest response timeout,
+ * plus headroom. Three runs of up to two ten-minute calls each outlived
+ * pg-boss's fifteen-minute default, which then failed the job and retried it
+ * beside the refresh still writing (#1274).
+ */
+export const COACH_MEMORY_REFRESH_EXPIRE_SECONDS = expireAboveModelTime(
+  COACH_MEMORY_MODEL_RUNS * STATUS_RUN_CEILING_MS,
+);
 
 /** How long a conversation must be quiet before its memory is refreshed. */
 export const COACH_MEMORY_QUIET_MS = 30 * 60_000;
@@ -64,6 +84,7 @@ export async function enqueueCoachMemoryRefresh(
         singletonKey: `quiet:${payload.conversationId}`,
         singletonSeconds: quietSeconds,
         startAfter: Math.max(1, Math.round(delayMs / 1000)),
+        expireInSeconds: COACH_MEMORY_REFRESH_EXPIRE_SECONDS,
       },
     );
     annotate({

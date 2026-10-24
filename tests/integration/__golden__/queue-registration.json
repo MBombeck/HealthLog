@@ -958,7 +958,7 @@
       "name": "insight-status-generate",
       "notify": false,
       "partition": false,
-      "policy": "standard",
+      "policy": "exclusive",
       "retention_seconds": 1209600,
       "retry_backoff": false,
       "retry_delay": 0,

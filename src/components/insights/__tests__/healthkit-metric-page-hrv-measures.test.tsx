@@ -19,6 +19,7 @@ vi.mock("@/hooks/use-ai-capability", () => ({
     reason: null,
     onDeviceAllowed: true,
   }),
+  useAiProviderState: () => ({ responseTimeoutMs: 60_000 }),
 }));
 vi.mock("next/dynamic", () => ({
   default: () => {

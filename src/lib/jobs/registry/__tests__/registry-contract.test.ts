@@ -38,6 +38,10 @@ const ALLOWED: Readonly<Record<string, string>> = {
   "lib/ai/coach/coach-memory-shared.ts":
     "the Coach memory queue's name and payload, with its byte codec; no model code",
   "lib/ai/coach/bytes-codec.ts": "pulled by coach-memory-shared; a codec",
+  "lib/ai/ai-budgets.ts":
+    "pulled by model-time for the call counts the bounded queues' expiries derive from; constants only",
+  "lib/ai/effective-timeout.ts":
+    "pulled by model-time for the response-timeout ceiling; arithmetic only, no model code",
   "lib/export/restore-lock.ts":
     "the per-account restore lock the consolidation passes take; a lock primitive",
   "lib/export/restore-failure-cause.ts":

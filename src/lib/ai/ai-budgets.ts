@@ -265,6 +265,17 @@ export const AI_BUDGETS = {
  */
 export const COMPREHENSIVE_MODEL_CALLS = 5;
 
+/**
+ * The most model calls one status run (`runStatusCompletion`: a status card,
+ * the batched assessment, a derived score, a period narrative, a workout
+ * line, a Coach memory pass) makes one after another: the call itself, plus
+ * the one repeat the Local and gateway clients send when a thinking model
+ * answered with reasoning alone. Each has the person's response timeout to
+ * itself, so the run's outer bound, the jobs around it and the page that
+ * polls for its text all wait for this many (#1274).
+ */
+export const STATUS_MODEL_CALLS = 2;
+
 /** Bounds + default for the comprehensive / briefing output-token ceiling. */
 const INSIGHTS_MAX_TOKENS_DEFAULT = 2500;
 const INSIGHTS_MAX_TOKENS_MIN = 500;

@@ -7,6 +7,14 @@ import type { AIProvider, CompletionParams } from "./types";
 export const PROVIDER_DEFAULT_TIMEOUT_MS = 60_000;
 
 /**
+ * The range `User.aiResponseTimeoutSeconds` accepts at write time (Settings →
+ * AI). The ceiling is what every outer bound and job expiry around model work
+ * sizes its worst case from: a person can make each call wait this long.
+ */
+export const AI_RESPONSE_TIMEOUT_MIN_SECONDS = 10;
+export const AI_RESPONSE_TIMEOUT_MAX_SECONDS = 600;
+
+/**
  * Resolve the upstream provider timeout (ms) for a non-chat generation surface.
  *
  * The per-user `User.aiResponseTimeoutSeconds` setting (Settings → AI) is the

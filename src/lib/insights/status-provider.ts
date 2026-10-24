@@ -21,7 +21,11 @@ import {
   resolveCostOwner,
   resolveDailyCapFor,
 } from "@/lib/ai/coach/budget";
-import { AI_BUDGETS, REFERENCE_AI_SEED } from "@/lib/ai/ai-budgets";
+import {
+  AI_BUDGETS,
+  REFERENCE_AI_SEED,
+  STATUS_MODEL_CALLS,
+} from "@/lib/ai/ai-budgets";
 import { singleUserTurn } from "@/lib/ai/types";
 import { STATUS_PROVIDER_TIMEOUT_MS, withTimeout } from "./with-timeout";
 import { prisma } from "@/lib/db";
@@ -41,6 +45,19 @@ import { resolveJobReasoning } from "@/lib/ai/reasoning/controls";
 export const REASONING_JOB_TIMEOUT_MS = 90_000;
 
 /**
+ * The outer bound of one status run: the per-call timeout for each of the
+ * `STATUS_MODEL_CALLS` calls the run may make in a row. Bounded at one call,
+ * a thinking model whose first answer was reasoning alone timed out in the
+ * middle of the repeat that would have answered, and a slow local model the
+ * person had given 300 s or more per call never landed its note (#1274).
+ * Every caller is a background job; the job expiries in `queue-runtime.ts`
+ * sit above this at the largest setting.
+ */
+export function statusRunBoundMs(effectiveTimeoutMs: number): number {
+  return effectiveTimeoutMs * STATUS_MODEL_CALLS;
+}
+
+/**
  * Shared provider plumbing for the seven `*-status.ts` generators.
  *
  * Before this, each generator resolved a single provider via
@@ -53,10 +70,9 @@ export const REASONING_JOB_TIMEOUT_MS = 90_000;
  * provider chain, fall back to the legacy single provider when the chain
  * is empty, and run `runRawCompletionWithFallback` so a degraded provider
  * cascades to the next. The whole thing is still wrapped in
- * `withTimeout` at the aligned 60 s budget so a total stall can't pin the
- * card — but a timeout / error is reported as a transient miss (the
- * caller serves the fallback for this render without persisting it),
- * never as the day's cached assessment.
+ * `withTimeout` (`statusRunBoundMs`) so a total stall cannot hold the job —
+ * but a timeout / error is reported as a transient miss (the caller serves
+ * the fallback without persisting it), never as the day's cached assessment.
  */
 
 export type StatusProviderResult =
@@ -147,7 +163,7 @@ export async function hasUsableStatusProvider(
 /**
  * Run a status generation across the user's provider chain, bounded by the
  * per-user response-timeout setting (falling back to `STATUS_PROVIDER_TIMEOUT_MS`
- * when unset). The result discriminates between
+ * when unset) for each call the run may make (`statusRunBoundMs`). The result discriminates between
  * no-provider / timeout / provider-error / success so the caller can
  * decide what to persist — only `ok` is ever cached as the day's
  * assessment.
@@ -205,9 +221,9 @@ export async function runStatusCompletion(
   // cards, the batched assessment, the derived assessments, and the period
   // narratives — so resolving it here threads the setting onto all of them at
   // once. A positive stored value wins (seconds → ms); unset falls back to the
-  // status-path budget. Applied to BOTH the upstream call's own `timeoutMs`
-  // and the outer `withTimeout` cap so a raised value is not silently clipped
-  // by the 60 s wall-clock that previously bounded the path.
+  // status-path budget. Applied to the upstream call's own `timeoutMs` and,
+  // times the calls a run may make, to the outer `withTimeout` cap, so a
+  // raised value is not silently clipped by a wall-clock sized for less.
   const settingsRow = await prisma.user.findUnique({
     where: { id: userId },
     select: { aiResponseTimeoutSeconds: true },
@@ -320,7 +336,7 @@ export async function runStatusCompletion(
           ...(reasoning ? { reasoning } : {}),
         },
       }),
-    effectiveTimeoutMs,
+    statusRunBoundMs(effectiveTimeoutMs),
     null,
   );
 

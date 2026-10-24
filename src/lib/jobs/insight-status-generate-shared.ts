@@ -21,7 +21,10 @@ import {
   type ProviderWorkAuthority,
 } from "@/lib/sharing/provider-work-authority";
 import { logCaught } from "@/lib/logging/signal";
-import { INSIGHT_STATUS_GENERATE_QUEUE } from "./insight-status-generate-queue";
+import {
+  INSIGHT_STATUS_GENERATE_EXPIRE_SECONDS,
+  INSIGHT_STATUS_GENERATE_QUEUE,
+} from "./insight-status-generate-queue";
 
 /**
  * The seven per-metric status scopes the queue can generate. Mirrors the
@@ -152,6 +155,7 @@ export async function enqueueStatusGeneration(
         retryLimit: 3,
         retryDelay: 60,
         retryBackoff: true,
+        expireInSeconds: INSIGHT_STATUS_GENERATE_EXPIRE_SECONDS,
       },
     );
     annotate({

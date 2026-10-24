@@ -20,6 +20,8 @@
  *     stops on the job's budget where the table says (`jobBudget` /
  *     `jobDeadline`, or a declared one-shot), and it is exclusive per identity
  *     where the table says (the definition's `lock`, or the named marker);
+ *   - a `bounded` queue (one unit of model work behind outer bounds) has an
+ *     expiry above its declared model time and every send carries it;
  *   - a `budgeted` queue stops on the budget and relies on the default expiry;
  *   - a `short` queue's sends set no expiry of their own, which would mean the
  *     job is longer than the table claims.
@@ -161,7 +163,7 @@ function check(
   const definition = all.definitions.find((d) => d.queue === queue);
   const sends = all.sends.filter((s) => s.queue === queue);
   const scheduledExpiry = definition?.scheduleOptions?.expireInSeconds;
-  if (entry.runtime === "long") {
+  if (entry.runtime === "long" || entry.runtime === "bounded") {
     if (
       !(entry.expireInSeconds > DEFAULT_JOB_EXPIRE_SECONDS) ||
       !(entry.expireInSeconds < MAX_EXPIRE_SECONDS)
@@ -179,6 +181,17 @@ function check(
     if (definition?.cron && typeof scheduledExpiry !== "number") {
       problems.push(`${queue}: its schedule carries no expiry`);
     }
+  }
+  if (entry.runtime === "bounded") {
+    if (!(entry.expireInSeconds > entry.modelSeconds)) {
+      problems.push(
+        `${queue}: expiry ${entry.expireInSeconds}s is not above its ${entry.modelSeconds}s of model work`,
+      );
+    }
+    if (sends.length === 0 && !definition?.cron) {
+      problems.push(`${queue}: no send or schedule carries its expiry`);
+    }
+  } else if (entry.runtime === "long") {
     if (typeof entry.stop === "object" && "oneShot" in entry.stop) {
       if (entry.stop.oneShot.length < 20) {
         problems.push(`${queue}: a one-shot needs its reason`);
@@ -313,7 +326,9 @@ describe("every queue declares its runtime", () => {
         { definitions: [planted({})], ...scan(texts(budgeted)) },
       ),
     ).toEqual(["planted-long: expiry 900s out of range"]);
-  });
+    // Each finding rescans every send in the tree; under a full parallel run
+    // that took six to nine seconds against the five-second default.
+  }, 30_000);
 });
 
 /**

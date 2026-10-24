@@ -26,7 +26,8 @@
  *      lost its briefing on the first corrective retry). Every `withTimeout`
  *      around model work is named below with what it must allow, and the
  *      briefing generators' stages are held to the call counts the outer
- *      waits multiply by.
+ *      waits multiply by. A status run waits for its call and the one
+ *      reasoning repeat (`STATUS_MODEL_CALLS`).
  *
  * Its limit: it reads source text. A provider object built by hand in
  * production code that dials the network itself would slip all four matchers,
@@ -214,8 +215,15 @@ const OUTER_BOUND_SITES: Record<
   },
   "lib/insights/status-provider.ts": {
     sites: 1,
-    bound: /\beffectiveTimeoutMs\b/,
-    why: "One short status note per chain run, bounded at the per-call timeout on purpose: the card has deterministic fallback copy and the next read retries.",
+    bound: /\bstatusRunBoundMs\(\s*effectiveTimeoutMs\s*\)/,
+    sizedBy: /\breturn\s+effectiveTimeoutMs\s*\*\s*STATUS_MODEL_CALLS\b/g,
+    why: "One status run in a background job: the per-call timeout times STATUS_MODEL_CALLS, the call and the one repeat a thinking model gets (#1274). The card keeps its fallback copy meanwhile.",
+  },
+  "lib/jobs/morning-digest-refresh.ts": {
+    sites: 1,
+    bound:
+      /\bcomprehensiveWarmBudgetMs\(\s*user\.aiResponseTimeoutSeconds\s*\)/,
+    why: "The morning refresh's one comprehensive generation: the same per-call timeout times COMPREHENSIVE_MODEL_CALLS the warms use, below the job's expiry (#1274).",
   },
 };
 

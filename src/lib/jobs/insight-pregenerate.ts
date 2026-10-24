@@ -79,8 +79,7 @@ import {
   type MetricStatusMetricId,
 } from "@/lib/insights/metric-status-registry";
 import { withTimeout } from "@/lib/insights/with-timeout";
-import { AI_BUDGETS, COMPREHENSIVE_MODEL_CALLS } from "@/lib/ai/ai-budgets";
-import { resolveEffectiveTimeoutMs } from "@/lib/ai/effective-timeout";
+import { comprehensiveWarmBudgetMs } from "@/lib/jobs/model-time";
 import {
   INSIGHT_PREGENERATE_QUEUE,
   enqueueForceWarm,
@@ -152,57 +151,16 @@ const FORCE_WARM_DAILY_WINDOW_MS = 24 * 60 * 60 * 1000;
 const WARM_PASS_CONCURRENCY = 3;
 
 /**
- * Bounded budget for one comprehensive generation inside a warm pass —
- * the forced single-user warm AND the nightly per-candidate loop. A slow or
+ * Bounded budget for one comprehensive generation inside a warm pass — the
+ * forced single-user warm AND the nightly per-candidate loop. A slow or
  * stalled provider must not keep the per-status (7) + generic-metric (~30)
  * passes from running, and in the nightly loop one stalled provider must not
  * pin the whole batch behind a single candidate. The bound is a backstop
  * against a wedged generation, never the deadline of a working one: every
- * provider call carries its own abort, so this sits above the longest
- * generation those calls allow.
- *
- * That generation is several calls, not one. Each provider call gets the
- * account's response timeout (`User.aiResponseTimeoutSeconds`, 10–600 s at
- * write time, the operator's lever for a slow local model; the
- * comprehensive surface default when unset), and one generation makes up to
- * `COMPREHENSIVE_MODEL_CALLS` of them in a row. A bound of one call plus
- * headroom cut a local model that needs 300 s per answer at 630 s, in the
- * middle of its corrective retry, however high the setting stood (#1274).
- * The headroom covers what runs inside the warm but outside the calls:
- * feature extraction, prompt assembly, the cache write.
+ * provider call carries its own abort, so `comprehensiveWarmBudgetMs`
+ * (`model-time.ts`) sits above the longest generation those calls allow.
  */
-const COMPREHENSIVE_WARM_HEADROOM_MS = 30_000;
-
-/**
- * Largest value `User.aiResponseTimeoutSeconds` accepts (see the 10–600 s
- * write-time bound in `POST /api/user/ai-provider`), in ms. The ceiling below
- * derives from it so it always sits ABOVE the most a person can set.
- */
-const AI_RESPONSE_TIMEOUT_MAX_MS = 600_000;
-
-/** Absolute backstop: the longest generation the largest setting allows. */
-const COMPREHENSIVE_WARM_CEILING_MS =
-  AI_RESPONSE_TIMEOUT_MAX_MS * COMPREHENSIVE_MODEL_CALLS +
-  COMPREHENSIVE_WARM_HEADROOM_MS;
-
-/**
- * Outer-abort budget (ms) for one comprehensive warm: the account's per-call
- * timeout times the calls one generation may make, plus headroom, clamped to
- * the ceiling.
- */
-export function comprehensiveWarmBudgetMs(
-  aiResponseTimeoutSeconds: number | null | undefined,
-): number {
-  const effectiveTimeoutMs = resolveEffectiveTimeoutMs(
-    aiResponseTimeoutSeconds,
-    AI_BUDGETS.comprehensive.timeoutMs,
-  );
-  return Math.min(
-    effectiveTimeoutMs * COMPREHENSIVE_MODEL_CALLS +
-      COMPREHENSIVE_WARM_HEADROOM_MS,
-    COMPREHENSIVE_WARM_CEILING_MS,
-  );
-}
+export { comprehensiveWarmBudgetMs };
 
 /**
  * Short, redaction-safe error description for the failure annotations

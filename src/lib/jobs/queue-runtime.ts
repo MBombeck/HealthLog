@@ -14,6 +14,13 @@
  *   - `budgeted`: a pass over a long history that stops itself at three
  *     quarters of the default expiry (`jobBudget`) and hands the rest to its
  *     next run, so it ends before fifteen minutes by construction.
+ *   - `bounded`: one unit of model work (one account's note, refresh or
+ *     memory pass) whose calls wait the person's response timeout each, up
+ *     to ten minutes, which can outlast fifteen minutes. Every call sits
+ *     behind an outer bound, so the job's longest run is known
+ *     (`modelSeconds`, from `model-time.ts`); it carries an explicit
+ *     `expireInSeconds` above that on every send, and no retry can start
+ *     beside a run that is still going (#1274).
  *   - `long`: a job that may run for hours. It carries an explicit
  *     `expireInSeconds` on every send and schedule, stops itself before that
  *     expiry (`jobBudget` / `jobDeadline`), and holds something per identity
@@ -43,6 +50,17 @@ import { HEALTH_CONNECT_IMPORT_SEND_OPTIONS } from "@/lib/jobs/health-connect-im
 import { MEASUREMENT_MAINTENANCE_SEND_OPTIONS } from "@/lib/jobs/measurement-maintenance";
 import { PULSE_DAY_MEAN_SEND_OPTIONS } from "@/lib/jobs/pulse-day-mean";
 import { ROLLUP_FULL_BACKFILL_EXPIRE_SECONDS } from "@/lib/rollups/measurement-rollups";
+import { MORNING_DIGEST_REFRESH_EXPIRE_SECONDS } from "@/lib/jobs/morning-digest-refresh-shared";
+import { INSIGHT_STATUS_GENERATE_EXPIRE_SECONDS } from "@/lib/jobs/insight-status-generate-queue";
+import { WORKOUT_INSIGHT_GENERATE_EXPIRE_SECONDS } from "@/lib/jobs/workout-insight-generate-shared";
+import {
+  COACH_MEMORY_MODEL_RUNS,
+  COACH_MEMORY_REFRESH_EXPIRE_SECONDS,
+} from "@/lib/ai/coach/coach-memory-shared";
+import {
+  COMPREHENSIVE_WARM_CEILING_MS,
+  STATUS_RUN_CEILING_MS,
+} from "@/lib/jobs/model-time";
 
 /** pg-boss's default job expiry, in seconds. */
 export const DEFAULT_JOB_EXPIRE_SECONDS = 15 * 60;
@@ -53,6 +71,18 @@ export type SourceSite = { file: string; fn: string };
 export type QueueRuntime =
   | { runtime: "short"; why: string }
   | { runtime: "budgeted"; budget: SourceSite; why: string }
+  | {
+      runtime: "bounded";
+      /**
+       * The longest the job's model work runs at the largest response-timeout
+       * setting, in seconds: the outer bounds in the code, not an estimate.
+       */
+      modelSeconds: number;
+      expireInSeconds: number;
+      /** As for `long`: identifiers that carry the expiry into a send. */
+      expiryVia: readonly string[];
+      why: string;
+    }
   | {
       runtime: "long";
       expireInSeconds: number;
@@ -156,15 +186,29 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     exclusive: "lockedPass",
     why: "Up to 200 accounts, a comprehensive generation each (up to five provider calls in a row, each bounded by the account's timeout of at most ten minutes) plus the status warm.",
   },
-  "morning-digest-refresh": short(
-    "One account, one comprehensive generation, bounded by the provider timeout.",
-  ),
-  "insight-status-generate": short(
-    "One account, one metric, one provider call.",
-  ),
+  "morning-digest-refresh": {
+    runtime: "bounded",
+    modelSeconds: COMPREHENSIVE_WARM_CEILING_MS / 1000,
+    expireInSeconds: MORNING_DIGEST_REFRESH_EXPIRE_SECONDS,
+    expiryVia: ["MORNING_DIGEST_REFRESH_EXPIRE_SECONDS"],
+    why: "One account, one forced comprehensive generation: up to five calls in a row at the account's timeout, behind the warm's own bound.",
+  },
+  "insight-status-generate": {
+    runtime: "bounded",
+    modelSeconds: STATUS_RUN_CEILING_MS / 1000,
+    expireInSeconds: INSIGHT_STATUS_GENERATE_EXPIRE_SECONDS,
+    expiryVia: ["INSIGHT_STATUS_GENERATE_EXPIRE_SECONDS"],
+    why: "One account, one note: one status run, the call and its one reasoning repeat at the account's timeout.",
+  },
   "data-arrival": short("One arrival's reactions."),
   "reaction-line-generate": short("One provider call for one reaction line."),
-  "workout-insight-generate": short("One workout's insight."),
+  "workout-insight-generate": {
+    runtime: "bounded",
+    modelSeconds: STATUS_RUN_CEILING_MS / 1000,
+    expireInSeconds: WORKOUT_INSIGHT_GENERATE_EXPIRE_SECONDS,
+    expiryVia: ["WORKOUT_INSIGHT_GENERATE_EXPIRE_SECONDS"],
+    why: "One workout's line: one status run at the account's timeout.",
+  },
   "recovery-score-compute": short(
     "Arithmetic over a recent window, capped at 500 accounts; no provider call.",
   ),
@@ -185,7 +229,13 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     exclusive: "lockedPass",
     why: "On a boundary night up to 200 accounts with a provider call per period each; a single-account warm is short.",
   },
-  "coach-memory-refresh": short("One conversation's summary and facts."),
+  "coach-memory-refresh": {
+    runtime: "bounded",
+    modelSeconds: (COACH_MEMORY_MODEL_RUNS * STATUS_RUN_CEILING_MS) / 1000,
+    expireInSeconds: COACH_MEMORY_REFRESH_EXPIRE_SECONDS,
+    expiryVia: ["COACH_MEMORY_REFRESH_EXPIRE_SECONDS"],
+    why: "One conversation's summary, facts and plan proposals: three status runs in a row at the account's timeout.",
+  },
   "coach-nudge": short(
     "Light deterministic checks per account; the provider part is capped at 25 calls and 90 seconds a tick.",
   ),

@@ -35,6 +35,8 @@ import {
   type GenerateOutcome,
 } from "@/lib/insights/comprehensive-generate";
 import { enqueuePregenerateFailureRetry } from "@/lib/jobs/insight-pregenerate-shared";
+import { comprehensiveWarmBudgetMs } from "@/lib/jobs/model-time";
+import { withTimeout } from "@/lib/insights/with-timeout";
 import type { SupportedLocale } from "@/lib/insights/status-shared";
 import { resolveJobLocale } from "@/lib/i18n/job-locale";
 import {
@@ -53,7 +55,7 @@ export interface MorningDigestRefreshResult {
 
 type GenerateFn = (
   userId: string,
-  options: { locale: SupportedLocale; force?: boolean },
+  options: { locale: SupportedLocale; force?: boolean; signal?: AbortSignal },
 ) => Promise<GenerateOutcome>;
 
 /**
@@ -81,7 +83,11 @@ export async function runMorningDigestRefresh(
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { locale: true, morningDigestRefreshedOn: true },
+    select: {
+      locale: true,
+      morningDigestRefreshedOn: true,
+      aiResponseTimeoutSeconds: true,
+    },
   });
   if (!user) {
     annotate({
@@ -101,20 +107,45 @@ export async function runMorningDigestRefresh(
   }
 
   const locale = await resolveJobLocale(user.locale);
-  const outcome = await generate(userId, { locale, force: true });
+  // The same bound the nightly and forced warms use: every call of one
+  // generation at the person's timeout, plus headroom. It is the worst case
+  // the job's expiry (`MORNING_DIGEST_REFRESH_EXPIRE_SECONDS`) sits above, so
+  // pg-boss never declares a working refresh dead and retries it beside
+  // itself (#1274); a wedged generation is aborted here instead.
+  const controller = new AbortController();
+  let thrown: unknown = null;
+  const bounded = await withTimeout(
+    () =>
+      generate(userId, {
+        locale,
+        force: true,
+        signal: controller.signal,
+      }).catch((err: unknown) => {
+        thrown = err;
+        throw err;
+      }),
+    comprehensiveWarmBudgetMs(user.aiResponseTimeoutSeconds),
+    null,
+    () => controller.abort(),
+  );
+  // A throw is transient (a pool or provider fault): the queue's own retry
+  // re-runs the refresh, as it did before the bound.
+  if (bounded.errored) throw thrown;
+  const outcome = bounded.value;
 
   // A hard provider failure leaves the day provisional and hands recovery to
   // the existing 45-minute briefing-retry machinery. Every other outcome —
   // including `skipped` (no provider / no consent: there is no LLM briefing to
   // wait for, so the deterministic score + digest are as final as they get
   // once last night's sleep is in the record) — finalises the day.
-  if (outcome.status === "failed") {
+  if (outcome === null || outcome.status === "failed") {
+    const cause = outcome !== null ? `generator:${outcome.reason}` : "timeout";
     annotate({
       action: { name: "daily.morning_refresh.deferred" },
-      meta: { local_date: localDate, cause: `generator:${outcome.reason}` },
+      meta: { local_date: localDate, cause },
     });
     await enqueueRetry({ userId, locale });
-    return { status: "failed", comprehensive: outcome.status };
+    return { status: "failed", comprehensive: "failed" };
   }
 
   await prisma.user.update({

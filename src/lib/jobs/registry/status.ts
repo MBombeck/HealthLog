@@ -7,10 +7,12 @@
  * pass and the daily-briefing fallback.
  *
  * Most queues here are keyless cron ticks, so they carry no policy. The
- * LLM-bound warm queues (pre-generate, per-metric status, period narrative,
- * Coach memory) pass `singletonSeconds` on every send, which pg-boss
- * constrains whatever the policy, so they are left alone. The three that carry
- * one key on the user's local date, which no wall-clock window can express.
+ * LLM-bound warm queues (pre-generate, period narrative, Coach memory) pass
+ * `singletonSeconds` on every send, which pg-boss constrains whatever the
+ * policy, so they are left alone. The per-metric status queue is exclusive as
+ * well: its run outlasts its slot while the open card keeps sending. The three
+ * that carry one key on the user's local date, which no wall-clock window can
+ * express.
  */
 import type { Job } from "pg-boss";
 
@@ -133,6 +135,11 @@ const jobs: readonly JobDefinition[] = [
   // a first visit cannot fan out unbounded provider calls.
   defineJob({
     queue: INSIGHT_STATUS_GENERATE_QUEUE,
+    policy: {
+      policy: "exclusive",
+      reason:
+        "The open card re-reads the route while its note is generated, and every miss sends again under the user+metric key. A run may take two calls at a ten-minute timeout, far past the 120 s singletonSeconds slot, so only exclusive keeps a second generation from queueing beside the one still running.",
+    },
     work: { localConcurrency: INSIGHT_STATUS_GENERATE_CONCURRENCY },
     load: async () => (await insights()).handleInsightStatusGenerate,
   }),
