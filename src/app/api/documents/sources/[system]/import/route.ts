@@ -11,7 +11,13 @@
  *   2. the source key answers first, without a download: a document already
  *      imported (or already holding this key as an alias) is a `duplicate`,
  *      and one the person deleted here is `deleted` — nothing is fetched and
- *      nothing is stored, exactly as the token upload answers the same key;
+ *      nothing is stored, exactly as the token upload answers the same key.
+ *      Unless the person asked to bring it back (`revive`, sent only for a
+ *      row they picked knowing it was deleted): a document still in Recently
+ *      deleted is restored (`restored`, nothing fetched), and one the purge
+ *      already removed is fetched and stored like a new one, after which the
+ *      import ledger forgets its key. The token upload has no such switch, so
+ *      a deletion keeps holding against every automatic re-send;
  *   3. only then is the source asked (on the search allowance, like every
  *      request to it) and an upload slot taken. One import per key and person
  *      runs at a time under an advisory lock, so a double click downloads the
@@ -37,6 +43,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiError, getClientIp } from "@/lib/api-response";
+import { auditLog } from "@/lib/auth/audit";
 import { parseJsonBody } from "@/lib/api/body";
 import { getAiCapability } from "@/lib/ai/capabilities/gate";
 import { prisma } from "@/lib/db";
@@ -49,6 +56,7 @@ import {
 import {
   checkSourceLookupRateLimit,
   findSourceKey,
+  forgetDeletedSourceKey,
   type SourceKeyMatch,
 } from "@/lib/documents/source-key";
 import type { SourceClient } from "@/lib/documents/sources/clients";
@@ -71,6 +79,7 @@ import {
   acquireDocumentUploadSlot,
   resolveDocumentLimits,
 } from "@/lib/documents/upload-policy";
+import { restoreDocumentTombstone } from "@/lib/documents/tombstones";
 import { linkTargets } from "@/lib/links";
 import { annotate } from "@/lib/logging/context";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -148,18 +157,82 @@ function respond(
   );
 }
 
-/** A key the vault already holds: link a live one, never revive a deleted one. */
+/** The key the request names, for the ledger. */
+interface PickedKey {
+  system: DocumentPickerSystem;
+  sourceId: string;
+  instance: string;
+}
+
+/**
+ * A key the vault already holds: link a live one; leave a deleted one alone
+ * unless the person asked to bring it back (`revive`). Then a document still
+ * in Recently deleted is restored here, and for one the purge already removed
+ * this answers null: the caller fetches and stores it again.
+ */
 async function answerHeldKey(
-  system: string,
+  request: Request,
+  key: PickedKey,
   userId: string,
   link: LinkTarget | undefined,
   match: SourceKeyMatch,
-): Promise<NextResponse> {
+  revive: boolean,
+): Promise<NextResponse | null> {
   if (match.state === "deleted") {
-    return respond(system, "deleted", match.id, false);
+    if (!revive) return respond(key.system, "deleted", match.id, false);
+    if (match.id === null) return null;
+    return restoreFromPicker(request, key, userId, link, match.id);
   }
   const linked = await linkDocument(userId, link, match.document.id);
-  return respond(system, "duplicate", match.document.id, linked);
+  return respond(key.system, "duplicate", match.document.id, linked);
+}
+
+/**
+ * Bring a picked document back out of Recently deleted, through the same
+ * restore the vault uses (which also clears the ledger for the document's own
+ * keys), and forget the picked key's ledger entry the way a re-import would.
+ */
+async function restoreFromPicker(
+  request: Request,
+  key: PickedKey,
+  userId: string,
+  link: LinkTarget | undefined,
+  documentId: string,
+): Promise<NextResponse> {
+  const outcome = await restoreDocumentTombstone(userId, documentId);
+  switch (outcome.kind) {
+    case "gone":
+      // Purged between the key check and the restore: nothing to bring back
+      // from Recently deleted, and nothing is fetched on this request.
+      return respond(key.system, "deleted", null, false);
+    case "duplicate": {
+      // The same bytes are live under another document: that one is the
+      // person's copy, so the pick links it, like any duplicate.
+      const existing = outcome.existingId;
+      const linked = existing
+        ? await linkDocument(userId, link, existing)
+        : false;
+      return respond(key.system, "duplicate", existing, linked);
+    }
+    case "live":
+    case "restored": {
+      await forgetDeletedSourceKey(
+        userId,
+        key.system,
+        key.sourceId,
+        key.instance,
+      );
+      if (outcome.kind === "restored") {
+        await auditLog("documents.inbound.restore", {
+          userId,
+          ipAddress: getClientIp(request),
+          details: { documentId, via: "documentPicker" },
+        });
+      }
+      const linked = await linkDocument(userId, link, documentId);
+      return respond(key.system, "restored", documentId, linked);
+    }
+  }
 }
 
 export const POST = apiHandler(
@@ -177,6 +250,7 @@ export const POST = apiHandler(
     });
     if (!parsed.ok) return parsed.error;
     const { sourceId, kind, link } = parsed.data;
+    const revive = parsed.data.revive === true;
     // Only an id this system could have issued goes into a request path.
     if (!isSourceDocumentId(system, sourceId)) {
       return apiError("Not a document id of this archive.", 422);
@@ -210,8 +284,19 @@ export const POST = apiHandler(
         rateLimitHeaders(lookupRl),
       );
     }
+    const key: PickedKey = { system, sourceId, instance };
     const held = await findSourceKey(userId, system, sourceId, instance);
-    if (held) return answerHeldKey(system, userId, link, held);
+    if (held) {
+      const answered = await answerHeldKey(
+        request,
+        key,
+        userId,
+        link,
+        held,
+        revive,
+      );
+      if (answered) return answered;
+    }
 
     // A request to the source counts against the search allowance like any
     // other; the upload allowance is charged only once a file arrived.
@@ -249,7 +334,17 @@ export const POST = apiHandler(
             FROM pg_advisory_xact_lock(hashtextextended(${`documents-import:${userId}:${system}:${instance}:${sourceId}`}, 0))
           `;
           const raced = await findSourceKey(userId, system, sourceId, instance);
-          if (raced) return answerHeldKey(system, userId, link, raced);
+          if (raced) {
+            const answered = await answerHeldKey(
+              request,
+              key,
+              userId,
+              link,
+              raced,
+              revive,
+            );
+            if (answered) return answered;
+          }
           return importOne({
             request,
             client,
@@ -259,6 +354,7 @@ export const POST = apiHandler(
             sourceId,
             kind: kind ?? null,
             link,
+            revive,
           });
         },
         { maxWait: IMPORT_LOCK_WAIT_MS, timeout: IMPORT_LOCK_HOLD_MS },
@@ -279,9 +375,21 @@ async function importOne(args: {
   sourceId: string;
   kind: InboundDocumentKindValue | null;
   link: LinkTarget | undefined;
+  /** The person asked to bring back a document they deleted here. */
+  revive: boolean;
 }): Promise<Response> {
-  const { request, client, userId, system, instance, sourceId, kind, link } =
-    args;
+  const {
+    request,
+    client,
+    userId,
+    system,
+    instance,
+    sourceId,
+    kind,
+    link,
+    revive,
+  } = args;
+  const key: PickedKey = { system, sourceId, instance };
   const limits = await resolveDocumentLimits(userId);
   let meta;
   let file;
@@ -326,16 +434,36 @@ async function importOne(args: {
     documentAi: () => getAiCapability("documentAi"),
   });
 
+  // A key the purge removed was kept in the ledger; once the person brought
+  // the document back by hand, the ledger stops saying it is deleted. Done
+  // only after the document is in the vault again, so a fetch that failed
+  // leaves the deletion standing.
+  const forgetIfRevived = async () => {
+    if (revive)
+      await forgetDeletedSourceKey(userId, system, sourceId, instance);
+  };
+
   switch (result.kind) {
     case "sourceKey":
-      return answerHeldKey(system, userId, link, result.match);
+      return (
+        (await answerHeldKey(
+          request,
+          key,
+          userId,
+          link,
+          result.match,
+          revive,
+        )) ?? respond(system, "deleted", null, false)
+      );
     case "duplicate": {
       // The same bytes were already in the vault (an upload, or another
       // archive); the key is now remembered for that document.
+      await forgetIfRevived();
       const linked = await linkDocument(userId, link, result.document.id);
       return respond(system, "duplicate", result.document.id, linked);
     }
     case "stored": {
+      await forgetIfRevived();
       const linked = await linkDocument(userId, link, result.document.id);
       return respond(system, "imported", result.document.id, linked);
     }

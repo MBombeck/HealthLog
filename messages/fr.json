@@ -11890,6 +11890,7 @@
       "loadMore": "Charger plus",
       "stateImported": "Dans HealthLog",
       "stateDeleted": "Supprimé dans HealthLog",
+      "stateInTrash": "Dans Supprimés récemment",
       "selectedCount": "{count} sélectionnés sur {max} au plus",
       "importAction": "Importer {count}",
       "importing": "Import en cours, un document après l'autre…",
@@ -11903,7 +11904,9 @@
         "importedLinked": "Importé et lié",
         "duplicate": "Déjà dans HealthLog",
         "duplicateLinked": "Déjà dans HealthLog, désormais lié",
-        "deleted": "Supprimé dans HealthLog, laissé tel quel"
+        "deleted": "Supprimé dans HealthLog, laissé tel quel",
+        "restored": "Restauré depuis Supprimés récemment",
+        "restoredLinked": "Restauré depuis Supprimés récemment et lié"
       },
       "errors": {
         "unavailable": "Les archives de documents ne sont pas activées sur ce serveur.",

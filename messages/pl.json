@@ -11890,6 +11890,7 @@
       "loadMore": "Wczytaj więcej",
       "stateImported": "W HealthLog",
       "stateDeleted": "Usunięty w HealthLog",
+      "stateInTrash": "W sekcji Ostatnio usunięte",
       "selectedCount": "Wybrano {count} z maksymalnie {max}",
       "importAction": "Importuj ({count})",
       "importing": "Importowanie, dokument po dokumencie…",
@@ -11903,7 +11904,9 @@
         "importedLinked": "Zaimportowano i powiązano",
         "duplicate": "Już jest w HealthLog",
         "duplicateLinked": "Już jest w HealthLog, teraz powiązany",
-        "deleted": "Usunięty w HealthLog, pozostaje usunięty"
+        "deleted": "Usunięty w HealthLog, pozostaje usunięty",
+        "restored": "Przywrócono z sekcji Ostatnio usunięte",
+        "restoredLinked": "Przywrócono z sekcji Ostatnio usunięte i powiązano"
       },
       "errors": {
         "unavailable": "Archiwa dokumentów nie są włączone na tym serwerze.",

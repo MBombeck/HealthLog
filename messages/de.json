@@ -11890,6 +11890,7 @@
       "loadMore": "Mehr laden",
       "stateImported": "In HealthLog",
       "stateDeleted": "In HealthLog gelöscht",
+      "stateInTrash": "Unter Zuletzt gelöscht",
       "selectedCount": "{count} von höchstens {max} ausgewählt",
       "importAction": "{count} importieren",
       "importing": "Import läuft, ein Dokument nach dem anderen …",
@@ -11903,7 +11904,9 @@
         "importedLinked": "Importiert und verknüpft",
         "duplicate": "Schon in HealthLog",
         "duplicateLinked": "Schon in HealthLog, jetzt verknüpft",
-        "deleted": "In HealthLog gelöscht, bleibt gelöscht"
+        "deleted": "In HealthLog gelöscht, bleibt gelöscht",
+        "restored": "Aus Zuletzt gelöscht wiederhergestellt",
+        "restoredLinked": "Aus Zuletzt gelöscht wiederhergestellt und verknüpft"
       },
       "errors": {
         "unavailable": "Dokumentarchive sind auf diesem Server nicht freigeschaltet.",

@@ -11890,6 +11890,7 @@
       "loadMore": "Load more",
       "stateImported": "In HealthLog",
       "stateDeleted": "Deleted in HealthLog",
+      "stateInTrash": "In Recently deleted",
       "selectedCount": "{count} of up to {max} selected",
       "importAction": "Import {count}",
       "importing": "Importing, one document at a time…",
@@ -11903,7 +11904,9 @@
         "importedLinked": "Imported and linked",
         "duplicate": "Already in HealthLog",
         "duplicateLinked": "Already in HealthLog, now linked",
-        "deleted": "Deleted in HealthLog, left alone"
+        "deleted": "Deleted in HealthLog, left alone",
+        "restored": "Restored from Recently deleted",
+        "restoredLinked": "Restored from Recently deleted and linked"
       },
       "errors": {
         "unavailable": "Document archives are not enabled on this server.",

@@ -11890,6 +11890,7 @@
       "loadMore": "Carica altri",
       "stateImported": "Già in HealthLog",
       "stateDeleted": "Eliminato in HealthLog",
+      "stateInTrash": "In Eliminati di recente",
       "selectedCount": "{count} selezionati su un massimo di {max}",
       "importAction": "Importa {count}",
       "importing": "Importazione in corso, un documento alla volta…",
@@ -11903,7 +11904,9 @@
         "importedLinked": "Importato e collegato",
         "duplicate": "Già in HealthLog",
         "duplicateLinked": "Già in HealthLog, ora collegato",
-        "deleted": "Eliminato in HealthLog, lasciato così"
+        "deleted": "Eliminato in HealthLog, lasciato così",
+        "restored": "Ripristinato da Eliminati di recente",
+        "restoredLinked": "Ripristinato da Eliminati di recente e collegato"
       },
       "errors": {
         "unavailable": "Gli archivi di documenti non sono abilitati su questo server.",

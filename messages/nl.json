@@ -11890,6 +11890,7 @@
       "loadMore": "Meer laden",
       "stateImported": "Staat in HealthLog",
       "stateDeleted": "Verwijderd in HealthLog",
+      "stateInTrash": "In Recent verwijderd",
       "selectedCount": "{count} van maximaal {max} geselecteerd",
       "importAction": "{count} importeren",
       "importing": "Importeren, één document tegelijk…",
@@ -11903,7 +11904,9 @@
         "importedLinked": "Geïmporteerd en gekoppeld",
         "duplicate": "Staat al in HealthLog",
         "duplicateLinked": "Staat al in HealthLog, nu gekoppeld",
-        "deleted": "Verwijderd in HealthLog, ongemoeid gelaten"
+        "deleted": "Verwijderd in HealthLog, ongemoeid gelaten",
+        "restored": "Hersteld uit Recent verwijderd",
+        "restoredLinked": "Hersteld uit Recent verwijderd en gekoppeld"
       },
       "errors": {
         "unavailable": "Documentarchieven zijn niet ingeschakeld op deze server.",

@@ -11890,6 +11890,7 @@
       "loadMore": "더 불러오기",
       "stateImported": "HealthLog에 있음",
       "stateDeleted": "HealthLog에서 삭제됨",
+      "stateInTrash": "최근 삭제됨에 있음",
       "selectedCount": "최대 {max}개 중 {count}개 선택",
       "importAction": "{count}개 가져오기",
       "importing": "문서를 하나씩 가져오는 중…",
@@ -11903,7 +11904,9 @@
         "importedLinked": "가져오고 연결함",
         "duplicate": "이미 HealthLog에 있음",
         "duplicateLinked": "이미 HealthLog에 있음, 이제 연결됨",
-        "deleted": "HealthLog에서 삭제됨, 그대로 둠"
+        "deleted": "HealthLog에서 삭제됨, 그대로 둠",
+        "restored": "최근 삭제됨에서 복구했어요",
+        "restoredLinked": "최근 삭제됨에서 복구하고 연결했어요"
       },
       "errors": {
         "unavailable": "이 서버에서는 문서 보관함이 활성화되어 있지 않습니다.",
