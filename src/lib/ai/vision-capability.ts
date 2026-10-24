@@ -82,8 +82,8 @@ function openaiSupportsVision(model: string): boolean {
  * `codex/responses` endpoint (docs/codex-protocol-spec.md §2b) on a multimodal
  * slug — no API key needed. The whole GPT-5.x line is text+vision, including
  * the `-codex` specialist slugs (gpt-5.x-codex); only the legacy `gpt-4`-class
- * non-multimodal pins are text-only. The slug we test is the codex client's
- * resolved working slug
+ * non-multimodal pins are text-only. The GPT-6 line is text+vision too. The
+ * slug we test is the codex client's resolved working slug
  * (cached or chain head), so a slug rotation onto a non-vision model degrades
  * to false rather than 400-ing the user at the image block.
  *
@@ -101,6 +101,12 @@ function codexSupportsVision(model: string): boolean {
     // "-codex is text-only" exclusion was stale — the wire reads images on
     // these slugs, so lab-OCR and document reads both succeed on a `-codex` pin.
     m.startsWith("gpt-5") ||
+    // The GPT-6 line is multimodal too. OpenAI's Codex model bundle
+    // (codex-rs/models-manager/models.json) lists every gpt-6 slug with
+    // `input_modalities: ["text", "image"]`, and the Codex client keeps image
+    // blocks for such a model. OpenAI retired the 5.x line from Codex for
+    // ChatGPT sign-in, so without this line no Codex account reads images.
+    m.startsWith("gpt-6") ||
     m.startsWith("gpt-4o") ||
     m.startsWith("gpt-4.1") ||
     m.startsWith("gpt-4-turbo") ||

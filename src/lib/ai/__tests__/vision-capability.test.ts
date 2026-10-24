@@ -100,6 +100,11 @@ describe("supportsVisionForConfig", () => {
       "gpt-5-codex",
       "gpt-5.3-codex",
       "gpt-5.1-codex-mini",
+      // The GPT-6 line, which replaced the 5.x line on Codex for ChatGPT
+      // sign-in.
+      "gpt-6.1-sol",
+      "gpt-6-sol",
+      "gpt-6-luna",
     ]) {
       expect(supportsVisionForConfig("codex", model)).toBe(true);
     }
@@ -120,6 +125,7 @@ describe("supportsVisionForConfig", () => {
     // slug, so its vision gate is identical to `codex`.
     expect(supportsVisionForConfig("admin-codex", "gpt-5.5")).toBe(true);
     expect(supportsVisionForConfig("admin-codex", "gpt-5.3-codex")).toBe(true);
+    expect(supportsVisionForConfig("admin-codex", "gpt-6.1-sol")).toBe(true);
     expect(supportsVisionForConfig("admin-codex", "gpt-4")).toBe(false);
     expect(supportsVisionForConfig("admin-codex", "o3-mini")).toBe(false);
     expect(supportsVisionForConfig("admin-codex", null)).toBe(false);
