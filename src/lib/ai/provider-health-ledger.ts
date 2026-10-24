@@ -149,6 +149,16 @@ export function classifyFailure(httpStatus: number | null): {
  * `provider_health` table. Writes use an atomic SQL upsert (the
  * rate-limiter pattern) so concurrent workers never clobber each other's
  * counters.
+ *
+ * One clock: the app's. Every instant a write stores is the `Date` the
+ * write took, bound as a parameter, never the database's `NOW()`, because
+ * every reader (`getSkipHints`, the background bench, the admin card, the
+ * server-health tri-state, the support report) compares those instants
+ * with the app's clock. Two clocks put a window wherever their skew put
+ * it: a process whose clock is pinned saw a five-minute backoff last until
+ * the database's clock plus five minutes, months away or already over.
+ * The columns are naive UTC timestamps, so the bound instant is cast with
+ * `::timestamp` (see `request-clock-sql.ts`).
  */
 export const postgresProviderHealthLedger: ProviderHealthLedger = {
   async getSkipHints(userId) {
@@ -196,6 +206,7 @@ export const postgresProviderHealthLedger: ProviderHealthLedger = {
   async recordSuccess(userId, providerType) {
     try {
       // Atomic upsert; a success always clears the negative cache.
+      const now = new Date();
       await prisma.$executeRaw`
         INSERT INTO provider_health
           (id, user_id, provider_type, last_result, last_status,
@@ -203,14 +214,14 @@ export const postgresProviderHealthLedger: ProviderHealthLedger = {
            next_retry_at, updated_at)
         VALUES
           (gen_random_uuid()::text, ${userId}, ${providerType}, 'ok', NULL,
-           0, (NOW() AT TIME ZONE 'UTC'), NULL, NULL, (NOW() AT TIME ZONE 'UTC'))
+           0, ${now}::timestamp, NULL, NULL, ${now}::timestamp)
         ON CONFLICT (user_id, provider_type) DO UPDATE SET
           last_result = 'ok',
           last_status = NULL,
           consecutive_failures = 0,
-          last_ok_at = (NOW() AT TIME ZONE 'UTC'),
+          last_ok_at = ${now}::timestamp,
           next_retry_at = NULL,
-          updated_at = (NOW() AT TIME ZONE 'UTC')
+          updated_at = ${now}::timestamp
       `;
     } catch {
       // Fire-and-forget — a failed write never blocks the hot path.
@@ -228,10 +239,12 @@ export const postgresProviderHealthLedger: ProviderHealthLedger = {
     const pauseFrom = PROVIDER_PAUSE_THRESHOLD;
     const pauseBase = `${PROVIDER_PAUSE_BASE_MS} milliseconds`;
     const pauseMax = `${PROVIDER_PAUSE_MAX_MS} milliseconds`;
+    const now = new Date();
     try {
       // Atomic upsert. `consecutive_failures` accumulates across workers;
       // an auth failure forces the cooldown regardless of count, a hard
-      // failure extends it. The cooldown anchors on NOW() so a fresh failure
+      // failure extends it. The cooldown anchors on the failure's own
+      // instant (the app's clock, like every reader) so a fresh failure
       // always re-arms the skip window.
       await prisma.$executeRaw`
         INSERT INTO provider_health
@@ -240,13 +253,13 @@ export const postgresProviderHealthLedger: ProviderHealthLedger = {
            next_retry_at, updated_at)
         VALUES
           (gen_random_uuid()::text, ${userId}, ${providerType}, ${result},
-           ${status}, 1, NULL, (NOW() AT TIME ZONE 'UTC'), (NOW() AT TIME ZONE 'UTC') + ${interval}::interval, (NOW() AT TIME ZONE 'UTC'))
+           ${status}, 1, NULL, ${now}::timestamp, ${now}::timestamp + ${interval}::interval, ${now}::timestamp)
         ON CONFLICT (user_id, provider_type) DO UPDATE SET
           last_result = ${result},
           last_status = ${status},
           consecutive_failures = provider_health.consecutive_failures + 1,
-          last_failure_at = (NOW() AT TIME ZONE 'UTC'),
-          next_retry_at = (NOW() AT TIME ZONE 'UTC') + CASE
+          last_failure_at = ${now}::timestamp,
+          next_retry_at = ${now}::timestamp + CASE
             WHEN ${result} = 'hard_failed'
               AND provider_health.consecutive_failures + 1 >= ${pauseFrom}::int
             THEN LEAST(
@@ -258,7 +271,7 @@ export const postgresProviderHealthLedger: ProviderHealthLedger = {
             )
             ELSE ${interval}::interval
           END,
-          updated_at = (NOW() AT TIME ZONE 'UTC')
+          updated_at = ${now}::timestamp
       `;
     } catch {
       // Fire-and-forget.
