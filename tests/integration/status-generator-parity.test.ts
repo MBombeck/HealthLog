@@ -73,6 +73,26 @@ vi.mock("@/lib/ai/provider", async (importOriginal) => ({
   resolveProvider: async () => ({ type: "none" }),
 }));
 
+/**
+ * The provider health ledger stands still. When the batch call fails, every
+ * pending card falls back to its own call at once, and each failure is
+ * written to the ledger without being awaited. Background work leaves out a
+ * provider from its third failure in a row on (#1279), so whether a card
+ * still reaches the model depends on how many of its siblings' writes landed
+ * before it read the ledger: scheduling, not code. A ledger that records
+ * nothing and benches nothing keeps every arm's request list exact. The bench
+ * has its own tests (`provider-runner-background-bench.test.ts`, and
+ * `provider-pause.test.ts` for the pause it reads).
+ */
+vi.mock("@/lib/ai/provider-health-ledger", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/ai/provider-health-ledger")>()),
+  postgresProviderHealthLedger: {
+    getSkipHints: async () => new Map(),
+    recordSuccess: async () => {},
+    recordFailure: async () => {},
+  },
+}));
+
 vi.mock(
   "@/lib/jobs/insight-status-generate-shared",
   async (importOriginal) => ({
