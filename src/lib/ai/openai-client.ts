@@ -554,7 +554,12 @@ export class OpenAIClient implements AIProvider {
       model: this.config.model,
       providerType: this.type,
       ...(toolCalls ? { toolCalls } : {}),
-      finishReason: mapFinishReason(choice?.finish_reason),
+      // #1276 — the tool calls themselves decide, as on the Anthropic and
+      // Codex wires: vLLM, Ollama and LiteLLM can put `stop` beside them,
+      // and the loop runs calls only on `tool_calls`.
+      finishReason: toolCalls
+        ? "tool_calls"
+        : mapFinishReason(choice?.finish_reason),
       ...(params.reasoning
         ? {
             reasoning: {

@@ -312,6 +312,13 @@ describe("#1276: a gateway model that always reasons", () => {
     },
   );
 
+  it("runs a tool call the server reports with finish_reason stop", async () => {
+    toolFinish = "stop";
+    const out = await turn("medium");
+    expect(executeCoachTool).toHaveBeenCalledTimes(1);
+    expect(out.result.content).toBe(ANSWER);
+  });
+
   it("fails as reasoning_only, never with the thought, when no answer ever comes", async () => {
     parser = "raw";
     reasoningWords = 20_000;
