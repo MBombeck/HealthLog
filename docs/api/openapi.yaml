@@ -42034,6 +42034,11 @@ components:
                           format: date
                           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
                         - type: "null"
+                    endedAt:
+                      anyOf:
+                        - type: string
+                          minLength: 1
+                        - type: "null"
                     note:
                       anyOf:
                         - type: string
@@ -53787,9 +53792,10 @@ components:
           type: boolean
           description: "v1.42.2 — whether the server sends dose reminders for this medication: true only when
             `notificationsEnabled` is on, the medication is `active`, its course has not ended (`endsOn` is today or
-            later on the person's clock, or unset), its intake is tracked (`trackIntake`), it is not `asNeeded`, and
-            `autoMarkTaken` is off. The same decision gates every server-side reminder send. A client that arms local
-            reminders arms them from this, not from `notificationsEnabled`. Read-only — computed, not stored."
+            later on the person's clock, or unset, and no `endedAt` has passed), its intake is tracked (`trackIntake`),
+            it is not `asNeeded`, and `autoMarkTaken` is off. The same decision gates every server-side reminder send. A
+            client that arms local reminders arms them from this, not from `notificationsEnabled`. Read-only — computed,
+            not stored."
         nextDueAt:
           anyOf:
             - type: string
@@ -53813,6 +53819,15 @@ components:
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
           description: v1.5 course end (ISO date). NULL means chronic. Equals `startsOn` when `oneShot` is true.
+        endedAt:
+          description: "#1280 — the instant the latest course was ended with \"End course\" (the course's own `endedAt`). From it
+            on no dose is due or reminded and `courseStatus` is ENDED; NULL when the course runs to the end of `endsOn`.
+            Read-only — written by the course writer only."
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
         oneShot:
           type: boolean
           description: v1.5 single-administration flag. When true the medication has at most one schedule (no `rrule` /
@@ -53910,7 +53925,8 @@ components:
             - ENDED
           description: "v1.39.4 — where today (on the user's clock) sits in the course: UPCOMING before `startsOn`, ENDED after
             `endsOn`, CURRENT otherwise. Calendar days, both ends inclusive, so a course that ends today is CURRENT all
-            day. Read-only — computed, not stored."
+            day, unless it was ended with \"End course\": then it is ENDED from that instant (`endedAt`). Read-only —
+            computed, not stored."
         intakeActionable:
           type: boolean
           description: "v1.39.4 — whether the medication offers taken / skip today: true only when it is `active`, its intake is
@@ -54037,13 +54053,23 @@ components:
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
             - type: "null"
           description: Last day, inclusive. NULL = open (only the latest course).
+        endedAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: '#1280 — the instant "End course" ended this course, on its `endsOn` day. No dose slot at or after it is
+            due, reminded or expected, and the course is ENDED from it on. NULL when the whole `endsOn` day counts (an
+            end date set in the editor). Any edit that moves `endsOn` clears it.'
         status:
           type: string
           enum:
             - UPCOMING
             - CURRENT
             - ENDED
-          description: Where today, on the person's clock, sits in this course.
+          description: Where today, on the person's clock, sits in this course. A course with `endedAt` is ENDED on its `endsOn`
+            day already.
         takenDoses:
           type: integer
           minimum: 0
@@ -54058,6 +54084,7 @@ components:
         - id
         - startsOn
         - endsOn
+        - endedAt
         - status
         - takenDoses
         - note
@@ -54244,6 +54271,15 @@ components:
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
           description: v1.5 course end (ISO date). NULL means chronic. Equals `startsOn` when `oneShot` is true.
+        endedAt:
+          description: "#1280 — the instant the latest course was ended with \"End course\" (the course's own `endedAt`). From it
+            on no dose is due or reminded and `courseStatus` is ENDED; NULL when the course runs to the end of `endsOn`.
+            Read-only — written by the course writer only."
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
         oneShot:
           type: boolean
           description: v1.5 single-administration flag. When true the medication has at most one schedule (no `rrule` /
@@ -54336,7 +54372,8 @@ components:
             - ENDED
           description: "v1.39.4 — where today (on the user's clock) sits in the course: UPCOMING before `startsOn`, ENDED after
             `endsOn`, CURRENT otherwise. Calendar days, both ends inclusive, so a course that ends today is CURRENT all
-            day. Read-only — computed, not stored."
+            day, unless it was ended with \"End course\": then it is ENDED from that instant (`endedAt`). Read-only —
+            computed, not stored."
         intakeActionable:
           type: boolean
           description: "v1.39.4 — whether the medication offers taken / skip today: true only when it is `active`, its intake is
@@ -93793,6 +93830,15 @@ components:
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
           description: v1.5 course end (ISO date). NULL means chronic. Equals `startsOn` when `oneShot` is true.
+        endedAt:
+          description: "#1280 — the instant the latest course was ended with \"End course\" (the course's own `endedAt`). From it
+            on no dose is due or reminded and `courseStatus` is ENDED; NULL when the course runs to the end of `endsOn`.
+            Read-only — written by the course writer only."
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
         oneShot:
           type: boolean
           description: v1.5 single-administration flag. When true the medication has at most one schedule (no `rrule` /

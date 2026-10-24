@@ -92,6 +92,8 @@ export interface ComplianceMedicationInput {
   createdAt: Date;
   startsOn: Date | null;
   endsOn: Date | null;
+  /** #1280 — the instant "End course" ended the latest course. */
+  endedAt: Date | null;
   oneShot: boolean;
   asNeeded: boolean;
   /** v1.39.1 (#1033) — intake tracking off: no adherence, heatmap empty. */

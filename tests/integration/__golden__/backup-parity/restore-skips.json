@@ -570,6 +570,7 @@
         "snoozedUntil": null,
         "startsOn": null,
         "endsOn": null,
+        "endedAt": null,
         "oneShot": false,
         "asNeeded": false,
         "trackIntake": true,

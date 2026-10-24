@@ -417,6 +417,7 @@ describe("calculateCompliance — engine-routed (medicationContext)", () => {
     return {
       startsOn: null,
       endsOn: null,
+      endedAt: null,
       oneShot: false,
       createdAt: new Date("2024-12-01T00:00:00Z"),
       lastIntakeAt: null,
@@ -1002,6 +1003,7 @@ describe("expectedSlotCountForDay + lastNonSkippedTakenAt", () => {
       {
         startsOn: overrides.startsOn ?? null,
         endsOn: overrides.endsOn ?? null,
+        endedAt: null,
         oneShot: overrides.oneShot ?? false,
         createdAt: overrides.createdAt ?? new Date("2024-12-01T00:00:00Z"),
       },
@@ -1121,6 +1123,7 @@ describe("expectedSlotCountForDay + lastNonSkippedTakenAt", () => {
       {
         startsOn: medCtx.startsOn,
         endsOn: medCtx.endsOn,
+        endedAt: null,
         oneShot: medCtx.oneShot,
         createdAt: medCtx.createdAt,
         lastIntakeAt: medCtx.lastIntakeAt,
@@ -1466,6 +1469,7 @@ describe("buildComplianceDisplay — two rows, cadence-scaled windows", () => {
       {
         startsOn: overrides.startsOn ?? null,
         endsOn: overrides.endsOn ?? null,
+        endedAt: null,
         oneShot: overrides.oneShot ?? false,
         // Created well before the windows so no day is excluded.
         createdAt: overrides.createdAt ?? new Date("2025-01-01T00:00:00Z"),
@@ -2102,6 +2106,7 @@ describe("expectedSlotsBetween", () => {
       {
         startsOn: overrides.startsOn ?? null,
         endsOn: overrides.endsOn ?? null,
+        endedAt: null,
         oneShot: overrides.oneShot ?? false,
         createdAt: overrides.createdAt ?? new Date("2025-01-01T00:00:00Z"),
       },
@@ -2317,6 +2322,7 @@ describe("calculateCompliance — autoMissed forgotten doses (BUG #2 / #3)", () 
       {
         startsOn: null,
         endsOn: null,
+        endedAt: null,
         oneShot: false,
         createdAt: new Date("2025-01-08T00:00:00Z"),
       },
@@ -2370,6 +2376,7 @@ describe("calculateCompliance — irregular twice-daily taker (BUG 3 verify)", (
     {
       startsOn: null,
       endsOn: null,
+      endedAt: null,
       oneShot: false,
       // Created well before the window so age never clamps the denominator.
       createdAt: new Date("2025-01-01T00:00:00Z"),
@@ -2717,6 +2724,7 @@ describe("tallyComplianceFromLedger — the unified % keystone", () => {
     return {
       startsOn: new Date("2026-06-01T00:00:00Z"),
       endsOn: null,
+      endedAt: null,
       oneShot: false,
       createdAt: new Date("2026-06-01T00:00:00Z"),
       lastIntakeAt: null,
@@ -3048,6 +3056,7 @@ describe("tallyComplianceFromLedger — the unified % keystone", () => {
         id: "x",
         startsOn: ctxFor().startsOn,
         endsOn: null,
+        endedAt: null,
         oneShot: false,
         createdAt: ctxFor().createdAt,
       },

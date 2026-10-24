@@ -706,6 +706,7 @@ describe("buildCoachSnapshot", () => {
       name: "Testdrug",
       startsOn: null,
       endsOn: null,
+      endedAt: null,
       oneShot: false,
       createdAt,
       schedules: [schedule],

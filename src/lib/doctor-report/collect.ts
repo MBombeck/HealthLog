@@ -15,7 +15,11 @@
  *
  * Pure data assembly — no auth, no rate limit, no audit. Idempotent.
  */
-import { courseStatusOn, dayKeyOfDate } from "@/lib/medications/course-window";
+import {
+  courseStatusOn,
+  dayKeyOfDate,
+  medicationWindow,
+} from "@/lib/medications/course-window";
 import { prisma } from "@/lib/db";
 import {
   getEffectiveRange,
@@ -484,8 +488,7 @@ export async function collectDoctorReportData(
       name: m.name,
       asNeeded: m.asNeeded,
       trackIntake: m.trackIntake,
-      startsOn: m.startsOn,
-      endsOn: m.endsOn,
+      ...medicationWindow(m),
       oneShot: m.oneShot,
       createdAt: m.createdAt,
       schedules: m.schedules,

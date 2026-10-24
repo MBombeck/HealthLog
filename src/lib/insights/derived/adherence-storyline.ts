@@ -184,6 +184,8 @@ export async function buildAdherenceStoryline(
         { endsOn: null },
         { endsOn: { gte: dayKeyAsUtcMidnight(todayKey) } },
       ],
+      // #1280 — a course ended with "End course" is over from that instant.
+      endedAt: null,
     },
     select: { name: true, treatmentClass: true },
   });

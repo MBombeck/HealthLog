@@ -212,6 +212,7 @@
         "snoozedUntil": "2026-06-30T12:34:56.789Z",
         "startsOn": "2026-06-10T00:00:00.000Z",
         "endsOn": "2026-06-16T00:00:00.000Z",
+        "endedAt": "2026-06-16T09:30:00.000Z",
         "oneShot": true,
         "asNeeded": true,
         "trackIntake": false,
@@ -231,8 +232,8 @@
         "reorderLeadDays": 3,
         "externalSource": "WEB",
         "externalId": "rt-Medication-externalId",
-        "createdAt": "2026-05-01T11:50:00.000Z",
-        "updatedAt": "2026-05-01T11:51:00.000Z"
+        "createdAt": "2026-05-01T11:51:00.000Z",
+        "updatedAt": "2026-05-01T11:52:00.000Z"
       }
     ],
     "MedicationSchedule": [
@@ -403,9 +404,10 @@
         "userId": "round-trip-owner",
         "startsOn": "2026-03-01T00:00:00.000Z",
         "endsOn": "2026-03-07T00:00:00.000Z",
+        "endedAt": null,
         "noteEncrypted": "<sealed:v1:the March flu>",
-        "createdAt": "2026-05-02T00:46:00.000Z",
-        "updatedAt": "2026-05-02T00:47:00.000Z"
+        "createdAt": "2026-05-02T00:47:00.000Z",
+        "updatedAt": "2026-05-02T00:48:00.000Z"
       },
       {
         "id": "<id:19>",
@@ -413,9 +415,10 @@
         "userId": "round-trip-owner",
         "startsOn": "2026-06-10T00:00:00.000Z",
         "endsOn": "2026-06-16T00:00:00.000Z",
+        "endedAt": "2026-06-16T09:30:00.000Z",
         "noteEncrypted": null,
-        "createdAt": "2026-05-02T00:46:01.000Z",
-        "updatedAt": "2026-05-02T00:47:01.000Z"
+        "createdAt": "2026-05-02T00:47:01.000Z",
+        "updatedAt": "2026-05-02T00:48:01.000Z"
       }
     ],
     "MedicationIngredient": [

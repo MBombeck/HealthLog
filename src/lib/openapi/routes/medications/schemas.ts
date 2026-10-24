@@ -66,9 +66,16 @@ export const medicationCourseResource = z
       .date()
       .nullable()
       .describe("Last day, inclusive. NULL = open (only the latest course)."),
+    endedAt: isoDateTime()
+      .nullable()
+      .describe(
+        '#1280 — the instant "End course" ended this course, on its `endsOn` day. No dose slot at or after it is due, reminded or expected, and the course is ENDED from it on. NULL when the whole `endsOn` day counts (an end date set in the editor). Any edit that moves `endsOn` clears it.',
+      ),
     status: z
       .enum(["UPCOMING", "CURRENT", "ENDED"])
-      .describe("Where today, on the person's clock, sits in this course."),
+      .describe(
+        "Where today, on the person's clock, sits in this course. A course with `endedAt` is ENDED on its `endsOn` day already.",
+      ),
     takenDoses: z
       .number()
       .int()
@@ -364,6 +371,12 @@ export const medicationResource = z
       .describe(
         "v1.5 course end (ISO date). NULL means chronic. Equals `startsOn` when `oneShot` is true.",
       ),
+    endedAt: isoDateTime()
+      .nullable()
+      .optional()
+      .describe(
+        '#1280 — the instant the latest course was ended with "End course" (the course\'s own `endedAt`). From it on no dose is due or reminded and `courseStatus` is ENDED; NULL when the course runs to the end of `endsOn`. Read-only — written by the course writer only.',
+      ),
     oneShot: z
       .boolean()
       .describe(
@@ -435,12 +448,12 @@ export const medicationListEntry = medicationResource
     remindersActive: z
       .boolean()
       .describe(
-        "v1.42.2 — whether the server sends dose reminders for this medication: true only when `notificationsEnabled` is on, the medication is `active`, its course has not ended (`endsOn` is today or later on the person's clock, or unset), its intake is tracked (`trackIntake`), it is not `asNeeded`, and `autoMarkTaken` is off. The same decision gates every server-side reminder send. A client that arms local reminders arms them from this, not from `notificationsEnabled`. Read-only — computed, not stored.",
+        "v1.42.2 — whether the server sends dose reminders for this medication: true only when `notificationsEnabled` is on, the medication is `active`, its course has not ended (`endsOn` is today or later on the person's clock, or unset, and no `endedAt` has passed), its intake is tracked (`trackIntake`), it is not `asNeeded`, and `autoMarkTaken` is off. The same decision gates every server-side reminder send. A client that arms local reminders arms them from this, not from `notificationsEnabled`. Read-only — computed, not stored.",
       ),
     courseStatus: z
       .enum(["UPCOMING", "CURRENT", "ENDED"])
       .describe(
-        "v1.39.4 — where today (on the user's clock) sits in the course: UPCOMING before `startsOn`, ENDED after `endsOn`, CURRENT otherwise. Calendar days, both ends inclusive, so a course that ends today is CURRENT all day. Read-only — computed, not stored.",
+        'v1.39.4 — where today (on the user\'s clock) sits in the course: UPCOMING before `startsOn`, ENDED after `endsOn`, CURRENT otherwise. Calendar days, both ends inclusive, so a course that ends today is CURRENT all day, unless it was ended with "End course": then it is ENDED from that instant (`endedAt`). Read-only — computed, not stored.',
       ),
     intakeActionable: z
       .boolean()
@@ -506,7 +519,7 @@ export const medicationDetailEntry = medicationResource
     courseStatus: z
       .enum(["UPCOMING", "CURRENT", "ENDED"])
       .describe(
-        "v1.39.4 — where today (on the user's clock) sits in the course: UPCOMING before `startsOn`, ENDED after `endsOn`, CURRENT otherwise. Calendar days, both ends inclusive, so a course that ends today is CURRENT all day. Read-only — computed, not stored.",
+        'v1.39.4 — where today (on the user\'s clock) sits in the course: UPCOMING before `startsOn`, ENDED after `endsOn`, CURRENT otherwise. Calendar days, both ends inclusive, so a course that ends today is CURRENT all day, unless it was ended with "End course": then it is ENDED from that instant (`endedAt`). Read-only — computed, not stored.',
       ),
     intakeActionable: z
       .boolean()

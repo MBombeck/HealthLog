@@ -234,7 +234,7 @@ export const GET = apiHandler(
       createdAt: medication.createdAt,
     };
     const ctx = buildRecurrenceContext({
-      medication: bandMedication,
+      medication: { ...bandMedication, endedAt: medication.endedAt },
       userTz,
       lastIntakeAt,
     });

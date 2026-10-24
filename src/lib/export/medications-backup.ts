@@ -228,6 +228,10 @@ function serialiseMedicationHistory(
     courses: m.courses.map((c) => ({
       startsOn: dayKeyOfDate(c.startsOn),
       endsOn: c.endsOn ? dayKeyOfDate(c.endsOn) : null,
+      // #1280 — when "End course" ended it. Both purposes: without it the
+      // restored course runs to midnight of its last day and expects the
+      // doses the person had stopped.
+      endedAt: c.endedAt ? c.endedAt.toISOString() : null,
       ...(disasterRecovery
         ? {
             note: null,

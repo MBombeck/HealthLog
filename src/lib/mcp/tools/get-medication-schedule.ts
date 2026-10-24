@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { medicationWindow } from "@/lib/medications/course-window";
 
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
@@ -152,8 +153,7 @@ export const getMedicationScheduleTool: McpToolDefinition = {
       const display = computeDisplayDue({
         medication: {
           id: m.id,
-          startsOn: m.startsOn,
-          endsOn: m.endsOn,
+          ...medicationWindow(m),
           oneShot: m.oneShot,
           createdAt: m.createdAt,
         },

@@ -15,6 +15,12 @@
  * which it is. The scan asserts a floor on what it found, so a matcher that
  * stopped matching fails instead of agreeing with an empty tree.
  *
+ * #1280 — the same list carries the instant "End course" ended a course:
+ * every medication builder threads `endedAt` into the context, or the
+ * engine would keep a dose due after the course was ended. A builder passes
+ * when its block names `endedAt` or spreads a window that carries it
+ * (`...window` from `mintWindow`, `...medicationWindow(row)`).
+ *
  * Limit, stated: a literal passed straight to the engine without the
  * `RecurrenceContext` annotation is invisible here. Every medication path
  * today goes through one of the annotated builders below.
@@ -69,7 +75,10 @@ function blockAt(text: string, open: number): string {
 interface Builder {
   file: string;
   declaresCourseStart: boolean;
+  threadsEndedAt: boolean;
 }
+
+const THREADS_ENDED_AT = /\bendedAt\b|\.\.\.\s*(window\b|medicationWindow\()/;
 
 function builders(): Builder[] {
   const out: Builder[] = [];
@@ -77,11 +86,11 @@ function builders(): Builder[] {
     const text = readSourceText(file);
     for (const m of text.matchAll(DECLARATION)) {
       const open = m.index! + m[0].length - 1;
+      const block = blockAt(text, open);
       out.push({
         file: relative(ROOT, file),
-        declaresCourseStart: /rollingAnchor\s*:\s*"courseStart"/.test(
-          blockAt(text, open),
-        ),
+        declaresCourseStart: /rollingAnchor\s*:\s*"courseStart"/.test(block),
+        threadsEndedAt: THREADS_ENDED_AT.test(block),
       });
     }
   }
@@ -112,6 +121,18 @@ describe("the rolling course anchor is opt-in", () => {
       (b) => MEDICATION_BUILDERS.includes(b.file) && !b.declaresCourseStart,
     );
     expect(missing).toEqual([]);
+  });
+
+  it("has every medication builder thread the instant a course was ended", () => {
+    const medication = builders().filter((b) =>
+      MEDICATION_BUILDERS.includes(b.file),
+    );
+    expect(medication.length).toBeGreaterThanOrEqual(3);
+    expect(medication.filter((b) => !b.threadsEndedAt)).toEqual([]);
+    // The matcher, held against what it must and must not accept.
+    expect(THREADS_ENDED_AT.test("endedAt: row.endedAt,")).toBe(true);
+    expect(THREADS_ENDED_AT.test("...medicationWindow(row),")).toBe(true);
+    expect(THREADS_ENDED_AT.test("endsOn: row.endsOn,")).toBe(false);
   });
 
   it("keeps every other builder on the default (the last intake anchors)", () => {

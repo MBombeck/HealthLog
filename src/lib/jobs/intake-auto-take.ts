@@ -53,6 +53,7 @@
  * owns alone, so the two never write the same slot.
  */
 import type { PrismaClient } from "@/generated/prisma/client";
+import { MEDICATION_WINDOW_SELECT } from "@/lib/medications/course-window";
 
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
@@ -154,6 +155,8 @@ interface AutoTakeMedication {
   userId: string;
   startsOn: Date | null;
   endsOn: Date | null;
+  /** #1280 — no slot at or after the instant the course was ended is filled. */
+  endedAt: Date | null;
   oneShot: boolean;
   createdAt: Date;
   autoMarkTakenSince: Date | null;
@@ -262,8 +265,7 @@ export async function runIntakeAutoTakePass(
     select: {
       id: true,
       userId: true,
-      startsOn: true,
-      endsOn: true,
+      ...MEDICATION_WINDOW_SELECT,
       oneShot: true,
       createdAt: true,
       autoMarkTakenSince: true,

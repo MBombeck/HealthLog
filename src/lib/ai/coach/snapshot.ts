@@ -17,6 +17,7 @@
  */
 import { loadFreeWeekdaySpansForPrompt } from "@/lib/profile/life-circumstances";
 import { prisma } from "@/lib/db";
+import { MEDICATION_WINDOW_SELECT } from "@/lib/medications/course-window";
 import { extractFeatures } from "@/lib/insights/features";
 import type { CoachDataCluster } from "@/lib/validations/coach-prefs";
 import type { UnitPreferences } from "@/lib/measurements/display-transform";
@@ -511,8 +512,7 @@ async function buildCoachSnapshotImpl(
         where: { userId, asNeeded: false, ...TRACKED_INTAKE_WHERE },
         select: {
           id: true,
-          startsOn: true,
-          endsOn: true,
+          ...MEDICATION_WINDOW_SELECT,
           oneShot: true,
           createdAt: true,
           schedules: { select: SCHEDULE_COMPLIANCE_SELECT },

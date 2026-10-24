@@ -521,6 +521,7 @@
         "snoozedUntil": null,
         "startsOn": null,
         "endsOn": null,
+        "endedAt": null,
         "oneShot": false,
         "asNeeded": false,
         "trackIntake": true,
@@ -555,6 +556,7 @@
         "snoozedUntil": null,
         "startsOn": "2026-07-01T00:00:00.000Z",
         "endsOn": "2026-08-01T00:00:00.000Z",
+        "endedAt": null,
         "oneShot": false,
         "asNeeded": false,
         "trackIntake": true,
@@ -652,6 +654,7 @@
         "userId": "round-trip-owner",
         "startsOn": "2026-07-01T00:00:00.000Z",
         "endsOn": "2026-08-01T00:00:00.000Z",
+        "endedAt": null,
         "noteEncrypted": null,
         "createdAt": "<now>",
         "updatedAt": "<now>"
@@ -1480,6 +1483,7 @@
           {
             "startsOn": "2026-07-01",
             "endsOn": "2026-08-01",
+            "endedAt": null,
             "note": null,
             "noteEncrypted": null,
             "updatedAt": "<now>",

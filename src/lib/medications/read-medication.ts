@@ -8,6 +8,7 @@
  * medication is not the record's.
  */
 import type { Medication, MedicationSchedule } from "@/generated/prisma/client";
+import { medicationWindow } from "@/lib/medications/course-window";
 import { prisma } from "@/lib/db";
 import { sendsMedicationReminders } from "@/lib/medications/auto-mark-taken";
 import { toIngredientDtos } from "@/lib/medications/ingredients/composition";
@@ -113,8 +114,7 @@ async function loadDisplayDue(
   const display = computeDisplayDue({
     medication: {
       id: medication.id,
-      startsOn: medication.startsOn,
-      endsOn: medication.endsOn,
+      ...medicationWindow(medication),
       oneShot: medication.oneShot,
       createdAt: medication.createdAt,
     },

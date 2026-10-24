@@ -123,6 +123,9 @@ export const medicationCourseSchema = z
   .object({
     startsOn: z.iso.date(),
     endsOn: z.iso.date().nullable(),
+    // #1280 — the instant "End course" ended the course, on its `endsOn`
+    // day. A file without it (any written before) restores the full-day end.
+    endedAt: isoDateTime.nullable().optional(),
     note: z.string().max(280).nullable().optional(),
     // The note's ciphertext, disaster-recovery files only. A file without it
     // (any written before) carries the readable note, which the restore seals.

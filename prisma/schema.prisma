@@ -2903,6 +2903,12 @@ model Medication {
   /// minting slots past this date. NULL = no end date (chronic).
   /// When `oneShot` is true, `endsOn` always equals `startsOn`.
   endsOn                        DateTime?              @map("ends_on") @db.Date
+  /// #1280 — the instant the latest course was ended with "End course", the
+  /// projection of `MedicationCourse.endedAt` written next to `startsOn` /
+  /// `endsOn` by `src/lib/medications/courses.ts` only. On the `endsOn` day;
+  /// no dose slot at or after it is due, reminded or expected, and the course
+  /// reads as ended from it on. NULL = the course runs to the end of `endsOn`.
+  endedAt                       DateTime?              @map("ended_at") @db.Timestamptz(6)
   /// v1.5 — single-administration medication (flu shot, vaccine,
   /// post-op single dose, etc.). When true the medication has at
   /// most one MedicationIntakeEvent and `active` flips to false once
@@ -3157,6 +3163,13 @@ model MedicationCourse {
   startsOn      DateTime  @map("starts_on") @db.Date
   /// Last day, inclusive. NULL = open (only the latest course may be open).
   endsOn        DateTime? @map("ends_on") @db.Date
+  /// #1280 — set by "End course": the instant the course ended, on the
+  /// `endsOn` day. A dose slot at or after it is not part of the course (not
+  /// due, not reminded, not expected by compliance), so the course ends when
+  /// the person ends it rather than at local midnight. NULL = the whole
+  /// `endsOn` day counts, the reading of an end date set in the editor. Any
+  /// later write that moves `endsOn` clears it.
+  endedAt       DateTime? @map("ended_at") @db.Timestamptz(6)
   /// Why this course, in the person's words. AES-256-GCM at rest.
   noteEncrypted Bytes?    @map("note_encrypted")
   createdAt     DateTime  @default(now()) @map("created_at")

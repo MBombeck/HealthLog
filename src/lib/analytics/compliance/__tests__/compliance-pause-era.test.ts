@@ -78,6 +78,7 @@ describe("H-MED1 — paused days drop out of the compliance denominator", () => 
   const medBase = {
     startsOn: createdAt,
     endsOn,
+    endedAt: null,
     oneShot: false,
     createdAt,
   };
@@ -209,6 +210,7 @@ describe("M-MED3 — the compliance rate honours archived schedule eras", () => 
   const medBase = {
     startsOn: createdAt,
     endsOn,
+    endedAt: null,
     oneShot: false,
     createdAt,
   };
