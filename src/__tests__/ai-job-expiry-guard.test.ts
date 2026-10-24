@@ -62,6 +62,7 @@ import {
   STATUS_MODEL_CALLS,
 } from "@/lib/ai/ai-budgets";
 import { AI_RESPONSE_TIMEOUT_MAX_SECONDS } from "@/lib/ai/effective-timeout";
+import { MODEL_RUN_SITES } from "./helpers/model-run-sites";
 
 const SRC = join(process.cwd(), "src");
 const ENTRY_POINTS = [
@@ -73,40 +74,6 @@ const ENTRY_POINTS = [
   "runDocumentAssist",
   "executeSupplementLabelExtraction",
 ];
-
-/** Each importer of an entry point, and the queues whose jobs reach it. */
-const MODEL_RUN_SITES: Readonly<Record<string, readonly string[]>> = {
-  "lib/insights/status-card-generation.ts": [
-    "insight-status-generate",
-    "insights-general-status",
-    "insight-pregenerate",
-  ],
-  "lib/insights/derived/derived-assessment-ai.ts": ["insight-status-generate"],
-  "lib/insights/status-batch.ts": [
-    "insights-general-status",
-    "insight-pregenerate",
-  ],
-  "lib/insights/narrative/period-narrative-generate.ts": [
-    "period-narrative-warm",
-  ],
-  "lib/ai/coach/conversation-summary.ts": ["coach-memory-refresh"],
-  "lib/ai/coach/facts.ts": ["coach-memory-refresh"],
-  "lib/ai/coach/plans.ts": ["coach-memory-refresh"],
-  "lib/jobs/workout-insight-generate.ts": ["workout-insight-generate"],
-  "lib/jobs/insight-pregenerate.ts": ["insight-pregenerate"],
-  "lib/jobs/morning-digest-refresh.ts": ["morning-digest-refresh"],
-  "lib/documents/extract.ts": ["document-ai-run", "document-index"],
-  "lib/documents/index-document.ts": ["document-index", "document-ai-run"],
-  "lib/documents/ai-runs/index-run.ts": ["document-ai-run"],
-  "lib/documents/ai-runs/summary-run.ts": ["document-ai-run"],
-  "lib/documents/ai-runs/suggest-run.ts": ["document-ai-run"],
-  "lib/labs/ocr-extract.ts": ["document-ai-run"],
-  "lib/jobs/document-ai-run.ts": ["document-ai-run"],
-  "lib/jobs/document-content-index-backfill.ts": [
-    "document-content-index-backfill",
-  ],
-  "lib/jobs/document-summary.ts": ["document-summary"],
-};
 
 /**
  * Importers no queue reaches: a request waits on them, and the browser's

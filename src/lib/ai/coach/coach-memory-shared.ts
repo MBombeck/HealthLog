@@ -85,6 +85,11 @@ export async function enqueueCoachMemoryRefresh(
         singletonSeconds: quietSeconds,
         startAfter: Math.max(1, Math.round(delayMs / 1000)),
         expireInSeconds: COACH_MEMORY_REFRESH_EXPIRE_SECONDS,
+        // #1279 — pg-boss's queue default retried a failed pass twice at
+        // once; the same two retries now wait a minute, then longer.
+        retryLimit: 2,
+        retryDelay: 60,
+        retryBackoff: true,
       },
     );
     annotate({

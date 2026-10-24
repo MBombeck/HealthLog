@@ -2035,6 +2035,9 @@
       "kind": "cron",
       "name": "coach-nudge",
       "options": {
+        "retryBackoff": true,
+        "retryDelay": 60,
+        "retryLimit": 2,
         "tz": "Europe/Berlin"
       },
       "timezone": "Europe/Berlin"
