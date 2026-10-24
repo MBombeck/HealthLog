@@ -21,6 +21,7 @@ import { describe, expect, it, vi } from "vitest";
  * `extractPdfText` → the text step here fails.
  */
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
+vi.mock("@/lib/logging/signal", () => ({ logCaught: vi.fn() }));
 
 import { extractPdfText } from "../local-extract";
 import { rasterizePdf } from "../rasterize-pdf";
@@ -31,6 +32,12 @@ const fixture = readFileSync(
 
 describe("one pdfjs for text and raster: raster first", () => {
   it("rasterises, extracts and rasterises again in one process", async () => {
+    // The order only means something in a process that has not opened a PDF.
+    expect(
+      (globalThis as { pdfjsWorker?: unknown }).pdfjsWorker,
+      "this file must run in a process of its own",
+    ).toBeUndefined();
+
     const first = await rasterizePdf(fixture, 1);
     expect(first.ok).toBe(true);
 
