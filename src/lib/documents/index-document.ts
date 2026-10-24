@@ -24,7 +24,7 @@
  *      configured, the toggle is OFF for an external pick, the provider can't
  *      read this file (e.g. a text-layer PDF on a non-Anthropic account), the
  *      daily budget is reached, or the provider call fails — fall back to
- *      server-side text-layer extraction (`pdf-parse`, no egress, milliseconds).
+ *      server-side text-layer extraction (pdf.js, no egress, milliseconds).
  *      So content search works at a baseline even with no AI, and every
  *      text-layer PDF is searchable regardless of provider.
  *

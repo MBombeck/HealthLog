@@ -1,5 +1,4 @@
 import { describe, it, expect } from "vitest";
-import { PDFParse } from "pdf-parse";
 import {
   buildDoctorReportPdfDocument,
   renderDoctorReportPdfBytes,
@@ -12,15 +11,10 @@ import type { DoctorReportData } from "../doctor-report-data";
 import { computeGlucoseClinicalMetrics } from "@/lib/analytics/glucose-metrics";
 import { getServerTranslator } from "../i18n/server-translator";
 import { reportMeasurementLabelKey } from "../report-selection/catalogue";
+import { readPdfText } from "@/lib/documents/pdfjs";
 
-async function extractText(bytes: Uint8Array): Promise<string> {
-  const parser = new PDFParse({ data: bytes });
-  try {
-    const result = await parser.getText();
-    return result.text;
-  } finally {
-    await parser.destroy();
-  }
+function extractText(bytes: Uint8Array): Promise<string> {
+  return readPdfText(bytes);
 }
 
 const FIXED_NOW = new Date("2026-05-03T12:00:00.000Z");

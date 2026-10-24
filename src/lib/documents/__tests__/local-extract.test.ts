@@ -8,7 +8,12 @@ import { jsPDF } from "jspdf";
  * (unsupported); malformed bytes fail closed to "error" without throwing.
  */
 
-vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
+const { annotate, logCaught } = vi.hoisted(() => ({
+  annotate: vi.fn(),
+  logCaught: vi.fn(),
+}));
+vi.mock("@/lib/logging/context", () => ({ annotate }));
+vi.mock("@/lib/logging/signal", () => ({ logCaught }));
 
 import {
   extractPdfText,
@@ -54,6 +59,52 @@ describe("extractPdfText", () => {
   it("fails closed to error on malformed bytes without throwing", async () => {
     const result = await extractPdfText(Buffer.from([1, 2, 3, 4, 5, 6, 7, 8]));
     expect(result).toEqual({ ok: false, reason: "error" });
+  });
+
+  // #1277: a failed read used to leave nothing behind but `error`, which
+  // the index job reports under another name. It now says what pdf.js threw.
+  it("says why a read failed", async () => {
+    annotate.mockClear();
+    logCaught.mockClear();
+    const bytes = Buffer.from([1, 2, 3, 4, 5, 6, 7, 8]);
+    await extractPdfText(bytes);
+    expect(logCaught).toHaveBeenCalledOnce();
+    const [action, error, meta] = logCaught.mock.calls[0]!;
+    expect(action).toBe("documents.local_extract.failed");
+    expect(error).toBeInstanceOf(Error);
+    expect(meta).toEqual({ bytes: 8 });
+    expect(annotate).toHaveBeenCalledWith({
+      action: { name: "documents.localIndex.extractFailed" },
+      meta: { localExtractError: (error as Error).name },
+    });
+  });
+
+  it("reads a PDF with an owner password only, and refuses one that needs a password to open", async () => {
+    const owned = new jsPDF({
+      encryption: { ownerPassword: "owner", userPermissions: ["print"] },
+    });
+    owned.text("Encrypted lab report haemoglobin creatinine glucose", 10, 10);
+    const readable = await extractPdfText(
+      Buffer.from(owned.output("arraybuffer")),
+    );
+    expect(readable).toMatchObject({ ok: true, source: "local-pdf" });
+
+    logCaught.mockClear();
+    const locked = new jsPDF({
+      encryption: {
+        userPassword: "user",
+        ownerPassword: "owner",
+        userPermissions: ["print"],
+      },
+    });
+    locked.text("Encrypted lab report haemoglobin creatinine glucose", 10, 10);
+    const result = await extractPdfText(
+      Buffer.from(locked.output("arraybuffer")),
+    );
+    expect(result).toEqual({ ok: false, reason: "error" });
+    expect((logCaught.mock.calls[0]![1] as Error).name).toBe(
+      "PasswordException",
+    );
   });
 });
 

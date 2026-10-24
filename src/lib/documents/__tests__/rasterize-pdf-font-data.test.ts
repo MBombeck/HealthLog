@@ -61,6 +61,7 @@ vi.mock("@napi-rs/canvas", async (importActual) => {
   };
 });
 
+import { __resetPdfjsAssetsForTests } from "../pdfjs";
 import * as raster from "../rasterize-pdf";
 import { generateThumbnail } from "../thumbnail";
 
@@ -85,7 +86,8 @@ beforeEach(() => {
   annotate.mockClear();
   registerFromPath.mockClear();
   getDocumentOptions.length = 0;
-  raster.__resetPdfjsAssetsForTests();
+  __resetPdfjsAssetsForTests();
+  raster.__resetFallbackFamiliesForTests();
 });
 
 describe("rasterizePdf font and decoder data (#1124)", () => {

@@ -14,8 +14,9 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
-import { PDFParse } from "pdf-parse";
 import { unzipSync } from "fflate";
+
+import { readPdfText } from "@/lib/documents/pdfjs";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -155,22 +156,11 @@ function mkReq(
 }
 
 async function pdfText(res: Response): Promise<string> {
-  const bytes = new Uint8Array(await res.arrayBuffer());
-  const parser = new PDFParse({ data: bytes });
-  try {
-    return (await parser.getText()).text;
-  } finally {
-    await parser.destroy();
-  }
+  return readPdfText(new Uint8Array(await res.arrayBuffer()));
 }
 
-async function pdfBytesText(bytes: Uint8Array): Promise<string> {
-  const parser = new PDFParse({ data: bytes });
-  try {
-    return (await parser.getText()).text;
-  } finally {
-    await parser.destroy();
-  }
+function pdfBytesText(bytes: Uint8Array): Promise<string> {
+  return readPdfText(bytes);
 }
 
 beforeEach(() => {

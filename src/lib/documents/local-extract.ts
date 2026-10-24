@@ -3,9 +3,9 @@
  *
  * When NO AI provider is configured — or the user has not consented to one —
  * content search still needs a baseline. This module extracts a PDF's embedded
- * text layer SERVER-SIDE with `pdf-parse` (already a direct dependency; its
- * `getText()` touches only the pure-JS/wasm pdfjs core, never the native
- * `@napi-rs/canvas`), in milliseconds, with no OCR and no third-party egress.
+ * text layer SERVER-SIDE through the app's one pdf.js (`./pdfjs`; reading the
+ * text layer never draws, so the native canvas does no work here), in
+ * milliseconds, with no OCR and no third-party egress.
  * The extracted text feeds the SAME blind, encrypted content index the provider
  * path writes (`upsertContentIndex`), so nothing readable is stored at rest.
  *
@@ -20,18 +20,10 @@
  */
 import { Buffer } from "node:buffer";
 
-// `pdf-parse` pulls in pdfjs, whose module top-level references the browser-only
-// `DOMMatrix` global. A STATIC import makes the Turbopack server chunk evaluate
-// that reference at instantiation and throw `DOMMatrix is not defined`, taking
-// down every route/worker that shares the chunk (the document routes among
-// them). The value is therefore loaded lazily inside `extractPdfText` via a
-// runtime `import()`, which lets pdf-parse initialise pdfjs on its own terms and
-// never touches DOMMatrix at load — verified to extract a real text layer under
-// plain Node. Keep the surface type as a type-only import (fully erased at
-// build, no runtime module evaluation).
-import type { PDFParse } from "pdf-parse";
-
 import { annotate } from "@/lib/logging/context";
+import { logCaught } from "@/lib/logging/signal";
+
+import { readPdfText } from "./pdfjs";
 
 /**
  * Minimum joined text length for a PDF to count as a real text-layer document.
@@ -63,39 +55,34 @@ export type LocalExtractResult =
  * Extract a text-layer PDF's embedded text server-side. Returns `empty` for a
  * scanned/no-text-layer PDF and `error` for a malformed/encrypted one — never
  * throws, so a bad document can never abort the caller (the upload/backfill job
- * just leaves it un-indexed).
+ * just leaves it un-indexed). An `error` leaves a `warn` line naming what
+ * pdf.js threw, because the outcome alone does not say why a document stayed
+ * out of the index.
  */
 export async function extractPdfText(
   buffer: Buffer,
 ): Promise<LocalExtractResult> {
-  let parser: PDFParse | null = null;
+  let raw: string;
   try {
-    // Lazy load: keeps pdfjs/DOMMatrix out of the eager server chunk (see the
-    // import-site note). Resolved at first PDF extraction, then module-cached.
-    const { PDFParse } = await import("pdf-parse");
-    parser = new PDFParse({ data: new Uint8Array(buffer) });
-    const result = await parser.getText({
-      // Bound the page walk and drop the default "-- N of M --" page markers so
-      // only real document text is tokenised.
-      first: LOCAL_MAX_PAGES,
-      pageJoiner: "",
+    // Bounded page walk; pages joined by a blank line, with no page markers,
+    // so only real document text is tokenised.
+    raw = await readPdfText(buffer, LOCAL_MAX_PAGES);
+  } catch (err) {
+    const errorType = err instanceof Error ? err.name || "Error" : typeof err;
+    annotate({
+      action: { name: "documents.localIndex.extractFailed" },
+      meta: { localExtractError: errorType },
     });
-    const text = (result.text ?? "").trim();
-    if (text.length < LOCAL_TEXT_MIN_CHARS) {
-      return { ok: false, reason: "empty" };
-    }
-    return { ok: true, text, source: "local-pdf" };
-  } catch {
+    logCaught("documents.local_extract.failed", err, {
+      bytes: buffer.length,
+    });
     return { ok: false, reason: "error" };
-  } finally {
-    if (parser) {
-      try {
-        await parser.destroy();
-      } catch {
-        // Best-effort teardown; a destroy failure must not mask the result.
-      }
-    }
   }
+  const text = raw.trim();
+  if (text.length < LOCAL_TEXT_MIN_CHARS) {
+    return { ok: false, reason: "empty" };
+  }
+  return { ok: true, text, source: "local-pdf" };
 }
 
 /**

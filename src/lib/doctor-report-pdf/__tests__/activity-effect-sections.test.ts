@@ -5,8 +5,8 @@
  * block. Text is read back out of the real PDF bytes.
  */
 import { describe, expect, it } from "vitest";
-import { PDFParse } from "pdf-parse";
 
+import { readPdfText } from "@/lib/documents/pdfjs";
 import { renderDoctorReportPdfBytes } from "@/lib/doctor-report-pdf-core";
 import type { DoctorReportData } from "@/lib/doctor-report-data";
 import { computeGlucoseClinicalMetrics } from "@/lib/analytics/glucose-metrics";
@@ -16,13 +16,8 @@ import type { EfficacySegmented } from "@/lib/medications/efficacy/segmented-eff
 
 const NOW = new Date("2026-05-03T12:00:00.000Z");
 
-async function textOf(bytes: Uint8Array): Promise<string> {
-  const parser = new PDFParse({ data: bytes });
-  try {
-    return (await parser.getText()).text;
-  } finally {
-    await parser.destroy();
-  }
+function textOf(bytes: Uint8Array): Promise<string> {
+  return readPdfText(bytes);
 }
 
 function series(values: number[]) {

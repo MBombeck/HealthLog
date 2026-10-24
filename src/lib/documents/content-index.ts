@@ -325,7 +325,7 @@ export async function loadDocumentChatText(
  *   - `vision`    → an AI provider transcribed the stored original (image or PDF,
  *                   incl. scanned) — the AI-first primary path.
  *   - `text-ocr`  → browser-OCR text posted by the client (opt-in local OCR).
- *   - `local-pdf` → server-side text-layer extraction of a PDF (`pdf-parse`), no
+ *   - `local-pdf` → server-side text-layer extraction of a PDF (pdf.js), no
  *                   provider, no egress — the fallback when no provider is usable.
  *   - `local-ocr` → server-side OCR of a scanned image/PDF (deferred follow-up).
  */
