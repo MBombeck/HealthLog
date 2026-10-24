@@ -66,10 +66,12 @@ describe("End is offered only for a running course", () => {
       <I18nProvider initialLocale="en">
         <QueryClientProvider client={new QueryClient()}>
           <LifecycleManageBody
-            medicationId="med-1"
-            medicationName="Example"
-            active={true}
-            courseStatus={courseStatus}
+            medication={{
+              id: "med-1",
+              name: "Example",
+              active: true,
+              courseStatus,
+            }}
           />
         </QueryClientProvider>
       </I18nProvider>,

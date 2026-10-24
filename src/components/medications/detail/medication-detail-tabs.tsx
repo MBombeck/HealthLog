@@ -923,12 +923,7 @@ export function MedicationDetailTabs({
             defaultOpen={false}
           >
             <div className="py-3">
-              <LifecycleManageBody
-                medicationId={id}
-                medicationName={medication.name}
-                active={medication.active}
-                courseStatus={served.courseStatus}
-              />
+              <LifecycleManageBody medication={medication} />
             </div>
             {/* v1.40 (#1024) — the courses: when it was taken, and a new
                 course once the last one has ended. */}

@@ -83,23 +83,23 @@ const PAUSE_HELPER_ID = "medication-detail-pause-helper";
  * Bare (no section / card chrome); the caller supplies its own grouping.
  */
 export function LifecycleManageBody({
-  medicationId,
-  medicationName,
-  active,
-  courseStatus,
+  medication,
   onAfterAction,
 }: {
-  medicationId: string;
-  medicationName: string;
-  active: boolean;
-  /** Where today sits in the course (server-resolved). */
-  courseStatus?: CourseStatus;
+  medication: {
+    id: string;
+    name: string;
+    active: boolean;
+    /** Where today sits in the course (server-resolved). */
+    courseStatus?: CourseStatus;
+  };
   onAfterAction?: () => void;
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
+  const medicationId = medication.id;
 
-  const [paused, setPaused] = useState(!active);
+  const [paused, setPaused] = useState(!medication.active);
   const [tier1Busy, setTier1Busy] = useState(false);
 
   async function tier1Toggle(pauseNext: boolean) {
@@ -158,10 +158,10 @@ export function LifecycleManageBody({
         />
       </label>
 
-      {canEndCourse(courseStatus) && (
+      {canEndCourse(medication.courseStatus) && (
         <EndCourseControl
           medicationId={medicationId}
-          medicationName={medicationName}
+          medicationName={medication.name}
           onAfterAction={onAfterAction}
         />
       )}
