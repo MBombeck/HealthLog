@@ -13,6 +13,14 @@
  * queue's protections do not depend on whether its module has loaded yet. A
  * module that fails to load fails the job that asked for it, with the queue's
  * name on the error, and the next job tries the import again.
+ *
+ * Loading lazily moved a broken module from a failed boot to a failed job: the
+ * worker comes up healthy, and the queue burns its retries the first time it
+ * has work, which for a one-shot job (a restore, an import tail) means the
+ * job ends failed with nobody told at deploy time. `preloadHandlers` closes
+ * that gap. The worker runs it once after binding, in the background, through
+ * the same memoised loader the queue uses, and reports every module that does
+ * not load before any job needs it.
  */
 import type { Job, PgBoss } from "pg-boss";
 
@@ -26,6 +34,7 @@ import {
   type ScheduleEntry,
 } from "@/lib/jobs/reminder/registrar-shared";
 import { workerLog } from "@/lib/jobs/reminder/shared";
+import { reportHandlerLoadFailure } from "@/lib/jobs/run-job";
 
 import type {
   BatchHandler,
@@ -35,6 +44,34 @@ import type {
   JobGroup,
 } from "./define-job";
 
+/** A queue's handler loader, memoised: one import, retried after a failure. */
+export type HandlerLoader = () => Promise<BatchHandler<Job<unknown>>>;
+
+/** One bound queue and the loader its handler goes through. */
+export interface BoundLoader {
+  readonly queue: string;
+  readonly load: HandlerLoader;
+}
+
+/**
+ * The loader a definition's binding shares: the first call imports, every
+ * later call answers from the same promise, and a failed import is forgotten
+ * so the next call tries again.
+ */
+export function handlerLoader(
+  definition: JobDefinition,
+  ctx: JobContext,
+): HandlerLoader {
+  let loading: Promise<BatchHandler<Job<unknown>>> | null = null;
+  return () => {
+    loading ??= definition.load(ctx).catch((err: unknown) => {
+      loading = null;
+      throw err;
+    });
+    return loading;
+  };
+}
+
 /**
  * The handler a definition binds: its loaded module behind the lock and the
  * lane it declares.
@@ -42,15 +79,8 @@ import type {
 export function bindableHandler(
   definition: JobDefinition,
   ctx: JobContext,
+  load: HandlerLoader = handlerLoader(definition, ctx),
 ): BatchHandler<Job<unknown>> {
-  let loading: Promise<BatchHandler<Job<unknown>>> | null = null;
-  const load = (): Promise<BatchHandler<Job<unknown>>> => {
-    loading ??= definition.load(ctx).catch((err: unknown) => {
-      loading = null;
-      throw err;
-    });
-    return loading;
-  };
   let handler: BatchHandler<Job<unknown>> = async (jobs) =>
     (await load())(jobs);
   if (definition.lane) {
@@ -88,11 +118,13 @@ export function policiesOf(jobs: readonly JobDefinition[]): QueuePolicyTable {
 
 /**
  * Register one group: create, schedule, retire, bind. Returns the queue names
- * it created.
+ * it created. `onBound` is handed each queue's loader as it is bound, so the
+ * boot can preload through the very loader the queue will use.
  */
 export async function registerJobGroup(
   boss: PgBoss,
   group: JobGroup,
+  onBound: (bound: BoundLoader) => void = () => {},
 ): Promise<readonly string[]> {
   const queues = group.jobs.map((job) => job.queue);
   await createAndSchedule(
@@ -104,7 +136,14 @@ export async function registerJobGroup(
   if (group.retired) await retireQueues(boss, group.retired);
   const ctx: JobContext = { boss };
   for (const job of group.jobs) {
-    await createAndWork(boss, job.queue, job.work, bindableHandler(job, ctx));
+    const load = handlerLoader(job, ctx);
+    await createAndWork(
+      boss,
+      job.queue,
+      job.work,
+      bindableHandler(job, ctx, load),
+    );
+    onBound({ queue: job.queue, load });
   }
   if (group.afterBind) await group.afterBind(ctx);
   return queues;
@@ -143,4 +182,41 @@ export async function runBootDiscovery(
       );
     }
   }
+}
+
+/**
+ * Load every bound handler once, in declaration order, and report each one
+ * that fails: `job.run.failed` at error with the queue's name and the reason
+ * `handler_load_failed`, the line the repeated-failure alert already keys on,
+ * plus the worker error report (stderr and GlitchTip). Never throws, and the
+ * caller does not wait for it, so a broken module costs the boot nothing but
+ * the report. A module that loads stays loaded, and the queue's first job
+ * finds it in the loader's memo. Returns the queues that failed.
+ */
+export async function preloadHandlers(
+  bound: readonly BoundLoader[],
+  report: (
+    queue: string,
+    error: unknown,
+  ) => Promise<void> = reportHandlerLoadFailure,
+): Promise<string[]> {
+  const failed: string[] = [];
+  for (const { queue, load } of bound) {
+    try {
+      await load();
+    } catch (error) {
+      failed.push(queue);
+      try {
+        await report(queue, error);
+      } catch {
+        // The report is the last line of defence; it must not stop the sweep.
+      }
+    }
+  }
+  workerLog(
+    failed.length === 0 ? "info" : "error",
+    `[registry] preloaded ${bound.length - failed.length}/${bound.length} job handlers` +
+      (failed.length === 0 ? "" : `; failed to load: ${failed.join(", ")}`),
+  );
+  return failed;
 }

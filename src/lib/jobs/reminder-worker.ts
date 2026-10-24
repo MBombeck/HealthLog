@@ -17,6 +17,7 @@ import { reportJobsCutOffAtBoot } from "@/lib/jobs/job-observer";
 import { beginBootStep, reportBootSteps } from "@/lib/boot/boot-steps";
 import { assertSubsystemEnabled } from "@/lib/process-type";
 import { DATABASE_URL, workerLog } from "./reminder/shared";
+import type { BoundLoader } from "./registry/index";
 
 /**
  * Give the event loop a turn around a module load, so requests and the
@@ -76,8 +77,11 @@ export async function startReminderWorker() {
     "registry",
     () => import("./registry/index"),
   );
-  const registeredQueues = await registry.registerAllJobGroups(boss, (group) =>
-    beginBootStep(`register_${group.name}`),
+  const bound: BoundLoader[] = [];
+  const registeredQueues = await registry.registerAllJobGroups(
+    boss,
+    (group) => beginBootStep(`register_${group.name}`),
+    (loader) => bound.push(loader),
   );
   workerLog(
     "info",
@@ -100,6 +104,11 @@ export async function startReminderWorker() {
   await registry.runAllBootDiscovery();
 
   await reportBootSteps({ boot_queue_count: registeredQueues.length });
+
+  // Every handler module is loaded once now, in the background, so one that
+  // cannot load is reported at deploy time rather than on its queue's first
+  // job. Not awaited: readiness does not wait on it, and it never throws.
+  void registry.preloadHandlers(bound);
   return boss;
 }
 
