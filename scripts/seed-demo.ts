@@ -225,11 +225,15 @@ function randomWalk(
   // fresh seed — iOS #33); clamping every step keeps the series inside the
   // same band the input validator enforces.
   clamp?: { min: number; max: number },
+  // How hard each step pulls back towards the target. The default lets a
+  // series wander; blood pressure needs a firmer pull, or a seed could end
+  // several mmHg above the settled band its stored texts describe.
+  reversion = 0.03,
 ): number[] {
   const values: number[] = [start];
   for (let i = 1; i < days; i++) {
     const prev = values[i - 1];
-    const drift = (target - prev) * 0.03; // mean reversion
+    const drift = (target - prev) * reversion;
     const noise = (Math.random() - 0.5) * volatility;
     let next = Math.round((prev + drift + noise) * 10) / 10;
     if (clamp) next = Math.min(clamp.max, Math.max(clamp.min, next));
@@ -395,6 +399,23 @@ async function bulkInsert(
       params,
     );
   }
+}
+
+/**
+ * A busy stretch inside the 90-day window, in days before "now": blood
+ * pressure and pulse rise and settle again, and the mood dips with them.
+ * Without it every short-window series was flat noise around its target and a
+ * 7-day trend line over 30 days drew a straight line; with it the line has a
+ * shape to follow. It ends well before today, so the latest readings, the
+ * tiles and the stored texts still describe a settled, optimal band.
+ */
+const BUSY_STRETCH = { from: 27, to: 12 } as const;
+
+/** 0 outside the busy stretch, rising smoothly to 1 at its middle. */
+function busyStretch(daysBefore: number): number {
+  const { from, to } = BUSY_STRETCH;
+  if (daysBefore > from || daysBefore < to) return 0;
+  return Math.sin((Math.PI * (from - daysBefore)) / (from - to)) ** 2;
 }
 
 /** Pollen season bump: 0 outside `[from, to]`, peaking at `peak` mid-season. */
@@ -563,6 +584,7 @@ export async function seed() {
       span,
       3,
       VALUE_RANGES.BLOOD_PRESSURE_SYS,
+      0.1,
     );
     // Diastolic BP: 82 → settled ~76 (clamped)
     const diaBP = randomWalk(
@@ -571,6 +593,7 @@ export async function seed() {
       span,
       2.5,
       VALUE_RANGES.BLOOD_PRESSURE_DIA,
+      0.1,
     );
     // Spot pulse (daytime heart rate): ~72, gently lower
     const pulse = randomWalk(74, 70, span, 3, VALUE_RANGES.PULSE);
@@ -597,8 +620,34 @@ export async function seed() {
     );
     // Steps: 6500 → a solid ~9000
     const steps = randomWalk(6500, 9000, span, 1500);
-    for (const series of [weights, sysBP, diaBP, pulse, restingHr]) {
+    // The busy stretch lifts blood pressure and pulse, and weekends read a
+    // touch higher than weekdays, as home readings tend to.
+    for (let i = 0; i < span; i++) {
+      const before = days - i;
+      const weekday = daysAgo(before).getDay();
+      const weekend = weekday === 0 || weekday === 6 ? 1 : 0;
+      const busy = busyStretch(before);
+      const lift = (
+        series: number[],
+        by: number,
+        range: { min: number; max: number },
+      ) => {
+        series[i] = Math.min(
+          range.max,
+          Math.max(range.min, Math.round((series[i] + by) * 10) / 10),
+        );
+      };
+      lift(sysBP, busy * 12 + weekend * 2, VALUE_RANGES.BLOOD_PRESSURE_SYS);
+      lift(diaBP, busy * 7 + weekend * 1, VALUE_RANGES.BLOOD_PRESSURE_DIA);
+      lift(pulse, busy * 6, VALUE_RANGES.PULSE);
+    }
+    for (const series of [weights, restingHr]) {
       settleLatest(series);
+    }
+    // Today's reading settles on the days after the busy stretch only, so it
+    // describes the band the series came back to.
+    for (const series of [sysBP, diaBP, pulse]) {
+      settleLatest(series, BUSY_STRETCH.to - 1);
     }
 
     // Each series carries the source that writes it on a real account, the
@@ -1580,7 +1629,9 @@ export async function seed() {
       if (Math.random() < 0.05) continue;
 
       const date = daysAgo(days - i);
-      const rawScore = Math.round(Math.min(5, Math.max(1, moodTrend[i])));
+      // The busy stretch costs about a point of mood at its height.
+      const moodScore = moodTrend[i] - 1.2 * busyStretch(days - i);
+      const rawScore = Math.round(Math.min(5, Math.max(1, moodScore)));
       const mood = moodOptions[5 - rawScore]; // invert: score 5 = SUPER_GUT
       const tags = tagOptions[5 - rawScore];
       const loggedAt = new Date(date);
@@ -3302,8 +3353,9 @@ export async function seed() {
             content: "How has my blood pressure been trending lately?",
           },
           answer(
-            "Your blood pressure has been settling nicely. Over the last few " +
-              "weeks the morning readings have drifted into the optimal band, and " +
+            "Your blood pressure has been settling nicely. After a higher " +
+              "stretch about three weeks ago, the morning readings have come back " +
+              "down into the optimal band, and " +
               "your resting heart rate is sitting in a comfortable range too. " +
               "Keeping up the steady sleep and daily movement looks like it is " +
               "paying off — worth staying consistent with the morning measurements " +
@@ -3675,10 +3727,11 @@ export async function seed() {
       {
         scope: "blood-pressure",
         text:
-          "Your blood pressure is averaging about 118/76 over the last few " +
-          "weeks — down roughly 10 mmHg systolic from where this quarter " +
-          "started, and now comfortably inside the optimal band. That is a " +
-          "real, earned shift, not day-to-day noise. Keeping the morning " +
+          "Your blood pressure is averaging about 118/76 over the last two " +
+          "weeks, back down after a busier stretch before that. It sits " +
+          "roughly 10 mmHg systolic below where this quarter started, " +
+          "comfortably inside the optimal band. That is a real, earned " +
+          "shift, not day-to-day noise. Keeping the morning " +
           "readings on a steady schedule will make the trend even easier to " +
           "follow.",
       },
