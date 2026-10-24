@@ -57,12 +57,9 @@ interface LocalClientConfig {
 }
 
 /**
- * v1.28.28 (#470) — per-endpoint JSON-mode dialect, learned at runtime.
- * v1.33.1 — the machinery moved to `json-dialect.ts` when the
- * OpenAI-compatible gateway provider needed the same learning; the two
- * clients share one cache keyed by base URL. The names below stay exported
- * from here because this client's tests and call sites were the first
- * consumers.
+ * #470 — the per-endpoint JSON-mode dialect, learned at runtime in
+ * `json-dialect.ts` (one cache keyed by base URL, shared with the gateway
+ * client). The names stay exported here for this client's first consumers.
  */
 type LocalJsonDialect = JsonModeDialect;
 
@@ -72,10 +69,8 @@ export const resetLocalJsonDialectCache = resetJsonModeDialectCache;
 export { isResponseFormatRejection };
 
 /**
- * v1.22 (#89) — absolute backstop for the streaming path. The real ceiling is
- * the per-idle-gap timer (`CompletionParams.timeoutMs`); this only stops a
- * server that streams forever from pinning a worker. Ten minutes is far beyond
- * any legitimate single Coach turn.
+ * #89 — the streaming path's absolute backstop. The real ceiling is the
+ * per-idle-gap timer; this only stops a server that streams forever.
  */
 const STREAM_ABSOLUTE_CEILING_MS = 10 * 60_000;
 
@@ -89,12 +84,10 @@ const STREAM_ABSOLUTE_CEILING_MS = 10 * 60_000;
  * `LocalJsonDialect` above). The strict-JSON instruction prepended to the
  * user message stays in both dialects.
  *
- * v1.20.0 — tool-calling DEGRADES silently here: most local servers reject an
- * unknown `tools` field, so the client never forwards it (capability flag
- * below). F1's tool loop must therefore tolerate a provider that never returns
- * `toolCalls` and answer from base context. Prompt-caching, where the local
- * server supports it (vLLM / Ollama prefix cache), is transparent — no flag,
- * no harm.
+ * Tool calling degrades silently: most local servers reject an unknown
+ * `tools` field, so the client never forwards it (`supportsTools`), and the
+ * Coach's tool loop answers from base context. Prompt caching, where the
+ * server has it (vLLM / Ollama prefix cache), is transparent.
  */
 export class LocalOpenAICompatibleClient implements AIProvider {
   readonly type = "local" as const;
@@ -179,7 +172,11 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       // v1.41 — a call that carries its own resolved level wins over it.
       // #1267 — once a model answered nothing while reasoning, the entry's
       // setting gives way to the `none` that `callReasoningEffort` sends.
-      ...(!params.reasoning && this.reasoningEffort && callEffort === null
+      // #1279 — not once the endpoint refused the field.
+      ...(!params.reasoning &&
+      this.reasoningEffort &&
+      callEffort === null &&
+      this.sentReasoningEffort(params) !== null
         ? { reasoning_effort: this.reasoningEffort }
         : {}),
       ...(callEffort ? { reasoning_effort: callEffort } : {}),
@@ -252,13 +249,14 @@ export class LocalOpenAICompatibleClient implements AIProvider {
 
   /**
    * The `reasoning_effort` this request carries, whichever level decided it:
-   * the call's own (`callReasoningEffort`), else the entry's #1126 setting.
+   * the call's own (`callReasoningEffort`), else the entry's #1126 setting,
+   * unless the endpoint refused the field (#1279).
    */
   private sentReasoningEffort(params: CompletionParams): string | null {
-    return (
-      this.callReasoningEffort(params) ??
-      (params.reasoning ? null : this.reasoningEffort)
-    );
+    const call = this.callReasoningEffort(params);
+    if (call !== null || params.reasoning) return call;
+    const learned = learnedReasoningDialect(this.reasoningDialectKey());
+    return refusesReasoningField(learned) ? null : this.reasoningEffort;
   }
 
   /**
@@ -405,7 +403,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
 
     if (!res.ok) {
       return this.failed(res, params, hops, {
-        effort: this.callReasoningEffort(params),
+        effort: this.sentReasoningEffort(params),
         json:
           params.responseFormat === "json" && jsonDialect === "response_format",
         streamed: false,
@@ -620,7 +618,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
 
     if (!res.ok) {
       return this.failed(res, params, hops, {
-        effort: this.callReasoningEffort(params),
+        effort: this.sentReasoningEffort(params),
         json:
           params.responseFormat === "json" && jsonDialect === "response_format",
         streamed: true,

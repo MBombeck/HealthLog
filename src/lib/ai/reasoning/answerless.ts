@@ -32,6 +32,7 @@ import {
   annotateReasoningDowngrade,
   learnedReasoningDialect,
   reasoningSeen,
+  refusesReasoningField,
   rememberReasoningDialect,
   type ReasoningDialectKey,
 } from "./dialect-cache";
@@ -159,11 +160,21 @@ export function learnReasoningFieldRefused(
   provider: string,
   sent: string,
 ): void {
+  const before = learnedReasoningDialect(key);
   rememberReasoningDialect(
     key,
     reasonsUnasked(key) ? FIELD_REFUSED_REASONS_REGARDLESS : "none",
   );
   annotateReasoningDowngrade(provider, sent, "none");
+  // One line per lesson, not per call: the operator learns that the
+  // endpoint takes no reasoning field (an entry setting it refuses included).
+  if (!refusesReasoningField(before)) {
+    emitSignal({
+      action: "ai.provider.reasoning_field_refused",
+      level: "warn",
+      meta: { provider, effort: sent },
+    });
+  }
 }
 
 /**

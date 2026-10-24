@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2897,
-  "total": 9256,
+  "total": 9252,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1748,7 +1748,7 @@
     "lib/ai/insight-interpretation.ts": 1,
     "lib/ai/legacy-payload.ts": 2,
     "lib/ai/legacy-private-host-report.ts": 1,
-    "lib/ai/local-client.ts": 16,
+    "lib/ai/local-client.ts": 12,
     "lib/ai/medical-references.ts": 1,
     "lib/ai/mock-client.ts": 5,
     "lib/ai/openai-client.ts": 9,

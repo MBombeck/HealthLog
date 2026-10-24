@@ -214,10 +214,18 @@ export class OpenAIClient implements AIProvider {
       this.config.model,
     );
     const reasoningWire = this.planReasoning(params, hasTools, capabilities);
-    // #1126 — the gateway entry's own setting, for a call without a resolved
-    // level (sent below unless the wire already carries `none`).
+    // #1126 — the gateway entry's own setting, for a call without a level,
+    // unless the wire carries one or the endpoint refused the field (#1279).
     const entryEffort =
-      !params.reasoning && this.isGateway ? this.reasoningEffort : null;
+      !params.reasoning &&
+      this.isGateway &&
+      this.reasoningEffort &&
+      reasoningWire.kind === "none" &&
+      !this.refusesField()
+        ? this.reasoningEffort
+        : null;
+    const sent =
+      reasoningWire.kind !== "none" ? reasoningWire.effort : entryEffort;
     const thinkingTokens = this.thinkingRoom(params, reasoningWire);
     const tokenBudget = (params.maxTokens ?? 1000) + thinkingTokens;
     const capabilityParams = capabilities.supportsSamplingControls
@@ -261,16 +269,11 @@ export class OpenAIClient implements AIProvider {
             ? { prompt_cache_key: params.cacheKey }
             : {}),
           // #1126 — the gateway entry's reasoning setting; Default sends
-          // nothing. `api.openai.com` and Codex never get it. v1.41 — a call
-          // that carries its own resolved level (`params.reasoning`) wins.
-          // #1267 — once a model answered nothing while reasoning, the wire
+          // nothing. `api.openai.com` and Codex never get it. A call that
+          // carries its own resolved level (`params.reasoning`) wins, and
+          // (#1267) once a model answered nothing while reasoning, the wire
           // below carries `none` instead (`planReasoning`).
-          ...(!params.reasoning &&
-          this.isGateway &&
-          this.reasoningEffort &&
-          reasoningWire.kind === "none"
-            ? { reasoning_effort: this.reasoningEffort }
-            : {}),
+          ...(entryEffort ? { reasoning_effort: this.reasoningEffort } : {}),
           ...(reasoningWire.kind === "reasoning_effort"
             ? { reasoning_effort: reasoningWire.effort }
             : reasoningWire.kind === "openrouter"
@@ -299,7 +302,7 @@ export class OpenAIClient implements AIProvider {
     );
 
     if (!res.ok) {
-      return this.failed(res, params, hops, { reasoningWire, sendJsonFormat });
+      return this.failed(res, params, hops, { sent, sendJsonFormat });
     }
 
     // v1.33.1 (#470) — the standard `response_format` request succeeded: pin
@@ -344,9 +347,6 @@ export class OpenAIClient implements AIProvider {
 
     const choice = json.choices?.[0];
     const toolCalls = parseOpenAIToolCalls(choice);
-    // The effort the request carried, whichever level decided it.
-    const sent =
-      reasoningWire.kind !== "none" ? reasoningWire.effort : entryEffort;
     const reply = this.separateReasoning(choice, toolCalls, {
       thinkingTokens,
       sent,
@@ -514,19 +514,21 @@ export class OpenAIClient implements AIProvider {
     res: Response,
     params: CompletionParams,
     hops: RequestHops,
-    sent: { reasoningWire: OpenAIReasoningWire; sendJsonFormat: boolean },
+    sent: { sent: string | null; sendJsonFormat: boolean },
   ): Promise<CompletionResult> {
     const bodyExcerpt = sanitiseBodyExcerpt(await res.text().catch(() => ""));
-    const wire = sent.reasoningWire;
+    // The entry's own setting (#1126) included: a refused field is learned
+    // whichever level put it on the wire.
+    const effort = sent.sent;
     const lesson = learnFromRefusal({
       status: res.status,
       body: bodyExcerpt,
       model: this.config.model,
       reasoning:
-        wire.kind === "none"
+        effort === null
           ? null
           : {
-              sent: wire.effort,
+              sent: effort,
               key: this.reasoningDialectKey(),
               provider: this.type,
               names: /reasoning|thinking/i,
@@ -635,6 +637,13 @@ export class OpenAIClient implements AIProvider {
       reasoning: fielded ?? separated.reasoning,
       hadReasoning,
     };
+  }
+
+  /** #1279 — this endpoint and model refused the reasoning field. */
+  private refusesField(): boolean {
+    return refusesReasoningField(
+      learnedReasoningDialect(this.reasoningDialectKey()),
+    );
   }
 
   private reasoningDialectKey() {
