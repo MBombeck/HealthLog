@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 354,
-  "total": 114410,
+  "count": 352,
+  "total": 113991,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 314,
@@ -95,7 +95,7 @@
     "components/documents/document-bulk-bar.tsx :: DocumentBulkBar": 204,
     "components/documents/document-card.tsx :: DocumentCard": 354,
     "components/documents/document-detail-sheet.tsx :: DocumentDetailSheet": 325,
-    "components/documents/document-facts-review.tsx :: DocumentFactsSection": 252,
+    "components/documents/document-facts-review.tsx :: DocumentFactsSection": 246,
     "components/documents/document-facts-review.tsx :: FactRow": 262,
     "components/documents/document-filter-bar.tsx :: DocumentFilterBar": 348,
     "components/documents/document-record-links.tsx :: DocumentRecordLinks": 202,
@@ -323,8 +323,6 @@
     "lib/jobs/reminder/medication-reminder-check.ts :: handleReminderCheck > withBackgroundEvent(arg)": 611,
     "lib/jobs/workout-insight-generate.ts :: runWorkoutInsightGenerate": 324,
     "lib/labs/biomarker-merge.ts :: runMerge": 254,
-    "lib/labs/ocr-extract.ts :: runOcrExtraction": 207,
-    "lib/labs/ocr-run.ts :: executeOcrExtraction": 206,
     "lib/measurements/consolidate-daily-mean.ts :: consolidateDailyMean": 278,
     "lib/measurements/consolidate-legacy-steps.ts :: consolidateLegacySteps": 263,
     "lib/measurements/dense-intraday-retention.ts :: runDenseIntradayRetention": 537,

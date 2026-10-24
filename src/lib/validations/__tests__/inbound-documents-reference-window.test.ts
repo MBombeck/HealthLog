@@ -4,16 +4,14 @@
  *
  * The two answer a transposed pair differently on purpose. Extraction cannot
  * reject — every field in that schema is `.catch()`ed so one bad value does
- * not sink a 120-fact document — so it drops the pair and keeps the verbatim
+ * not sink a long document — so it drops the pair and keeps the verbatim
  * string. An edit is a person looking at both numbers, so it refuses and says
  * why, exactly as the three lab schemas do.
  */
 import { describe, expect, it } from "vitest";
 
-import {
-  extractedFactRawSchema,
-  inboundFactEditSchema,
-} from "@/lib/validations/inbound-documents";
+import { inboundFactEditSchema } from "@/lib/validations/inbound-documents";
+import { extractedFactRawSchema } from "@/lib/validations/inbound-extraction";
 
 const baseRaw = {
   type: "OBSERVATION" as const,

@@ -145,6 +145,12 @@ export interface DocumentExtractRunResult {
   documentId: string;
   factsStaged: number;
   status: InboundDocumentStatusValue;
+  /**
+   * Present (true) when part of the document's facts may be missing: a read
+   * stopped at the provider's output limit, a part could not be read or was
+   * not reached, or the document holds more facts than one review takes.
+   */
+  incomplete?: true;
 }
 
 /**

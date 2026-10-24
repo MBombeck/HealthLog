@@ -23,7 +23,7 @@ vi.mock("../local-host-allowlist", () => ({
   isLocalAiHostAllowed: () => true,
 }));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
-// The lab scan re-checks the wire before each read; the wire is open here.
+// A transcription re-checks the wire before each read; the wire is open here.
 vi.mock("@/lib/ai/capabilities/egress", () => ({
   aiEgressRefusal: async () => null,
 }));
@@ -205,9 +205,11 @@ describe("the surfaces that used to fall back to 60 s", () => {
   it("document extraction, which lab staging runs", async () => {
     await expect(
       runInboundExtraction({
+        userId: "u1",
         provider: bound(),
         providerType: "local",
-        images: image,
+        mode: "vision",
+        chunks: [{ images: image, pages: [] }],
       }),
     ).rejects.toBe(STOP);
     expect(dialledTimeout()).toBe(300_000);
