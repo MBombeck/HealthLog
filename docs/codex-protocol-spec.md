@@ -630,7 +630,8 @@ Confirmed-rejected slugs (despite the source-tree references in the table above)
 
 Confirmed-accepted slugs on a ChatGPT Plus subscription (per `available_in_plans` in `models.json`):
 
-- `gpt-5.5` — HealthLog's default (first chain entry) as of 2026-06
+- `gpt-5.6-terra` — HealthLog's default (first chain entry) as of 2026-10-24, with `gpt-5.6-luna` and `gpt-5.6-sol` behind it; the backend rejected `gpt-5.5` and everything below it that day
+- `gpt-5.5` — the default from 2026-06 until 2026-10-24
 - `gpt-5.4` / `gpt-5.4-mini` / `gpt-5.2` — accepted per plan
 - `gpt-5.3-codex` — was the default (verified 2026-05-09); the backend rotated off the `-codex` line on 2026-06-02 and this slug is now only accepted intermittently, so it sits on a late chain rung
 
@@ -646,11 +647,10 @@ To eliminate that risk class, HealthLog's `CodexClient` walks an ordered chain o
 
 ```ts
 const DEFAULT_SLUG_FALLBACK_CHAIN = [
-  "gpt-5.5", // current default across paid tiers as of 2026-06-02
-  "gpt-5.4", // documented fallback
-  "gpt-5.4-mini", // documented lighter-weight fallback
-  "gpt-5.3-codex", // late rung — still accepted intermittently
-  "gpt-5.2", // legacy floor
+  "gpt-5.6-terra", // current default, verified against the backend 2026-10-24
+  "gpt-5.6-luna", // lighter sibling on the same line
+  "gpt-5.6-sol", // heavier sibling on the same line
+  "gpt-5.5", // previous default, kept as the last rung while plans differ
 ];
 ```
 

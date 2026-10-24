@@ -51,23 +51,18 @@ import {
 const CODEX_ENDPOINT = "https://chatgpt.com/backend-api/codex/responses";
 
 /**
- * Default fallback chain — most-current-first as of 2026-06-02. Override
- * via `CODEX_MODEL_FALLBACK_CHAIN` (comma-separated) on apps01 if a
- * specific plan ladder needs different ordering. `CODEX_MODEL` is
- * folded into position 0 of the chain when set; duplicates are dropped.
- *
- * The ChatGPT Codex backend rotated its ChatGPT-auth slugs off the
- * `-codex` specialist line onto the plain `gpt-5.x` line on 2026-06-02;
- * the former `-codex` defaults are now rejected with a 503 "all
- * configured Codex slugs were rejected". The ladder below tracks the
- * current accepted set.
+ * Default fallback chain, most-current-first as of 2026-10-24. Override via
+ * `CODEX_MODEL_FALLBACK_CHAIN` (comma-separated); `CODEX_MODEL` is folded
+ * into position 0 when set, duplicates dropped. The backend rotates its
+ * ChatGPT-auth slugs without notice: by 2026-10-24 it rejected everything
+ * from `gpt-5.5` down and served the `gpt-5.6-*` line. The `gpt-6` line is
+ * left out until the reasoning, sampling and vision gates recognise it.
  */
 const DEFAULT_SLUG_FALLBACK_CHAIN = [
-  "gpt-5.5", // current default across paid tiers as of 2026-06-02
-  "gpt-5.4", // documented fallback
-  "gpt-5.4-mini", // documented lighter-weight fallback
-  "gpt-5.3-codex", // late rung — still accepted intermittently
-  "gpt-5.2", // legacy floor
+  "gpt-5.6-terra", // current default, verified against the backend 2026-10-24
+  "gpt-5.6-luna", // lighter sibling on the same line
+  "gpt-5.6-sol", // heavier sibling on the same line
+  "gpt-5.5", // previous default, kept as the last rung while plans differ
 ] as const;
 
 /**

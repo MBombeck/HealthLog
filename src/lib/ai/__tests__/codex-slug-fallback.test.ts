@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { CodexClient, __test } from "../codex-client";
 import { singleUserTurn } from "../types";
+import { openAIReasoningFamily } from "../reasoning/support";
 import {
   clearCodexSlugCache,
   getCachedCodexSlug,
@@ -341,15 +342,24 @@ describe("Codex slug fallback chain", () => {
   });
 
   it("DEFAULT_SLUG_FALLBACK_CHAIN tracks the current ChatGPT-auth ladder", () => {
-    // The backend rotated its ChatGPT-auth slugs onto the gpt-5.x line on
-    // 2026-06-02; the in-code default must match the accepted set, in order.
+    // The backend rejected every slug from gpt-5.5 down on 2026-10-24 and
+    // served the gpt-5.6 line; the in-code default must match the accepted
+    // set, in order.
     expect([...__test.DEFAULT_SLUG_FALLBACK_CHAIN]).toEqual([
+      "gpt-5.6-terra",
+      "gpt-5.6-luna",
+      "gpt-5.6-sol",
       "gpt-5.5",
-      "gpt-5.4",
-      "gpt-5.4-mini",
-      "gpt-5.3-codex",
-      "gpt-5.2",
     ]);
+  });
+
+  it("DEFAULT_SLUG_FALLBACK_CHAIN holds only slugs the reasoning gate recognises", () => {
+    // A slug whose family the reasoning gate does not know goes out with the
+    // wrong parameters. A new line (gpt-6) joins the default only together
+    // with its family support.
+    for (const slug of __test.DEFAULT_SLUG_FALLBACK_CHAIN) {
+      expect(openAIReasoningFamily(slug), slug).toBe("gpt-5.1+");
+    }
   });
 
   it("loadFallbackChain falls back to the default ladder with no env override", () => {
@@ -359,11 +369,10 @@ describe("Codex slug fallback chain", () => {
     delete process.env.CODEX_MODEL_FALLBACK_CHAIN;
     try {
       expect(__test.loadFallbackChain()).toEqual([
+        "gpt-5.6-terra",
+        "gpt-5.6-luna",
+        "gpt-5.6-sol",
         "gpt-5.5",
-        "gpt-5.4",
-        "gpt-5.4-mini",
-        "gpt-5.3-codex",
-        "gpt-5.2",
       ]);
     } finally {
       if (origModel === undefined) delete process.env.CODEX_MODEL;
