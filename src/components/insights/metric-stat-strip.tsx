@@ -41,7 +41,30 @@ import type { MetricWindowStats } from "@/lib/charts/window-stats";
  * to a denser rhythm so the numbers-first header gives away less vertical
  * space on every subpage without dropping below a readable value size or
  * the AA-contrast micro-labels.
+ *
+ * A value and its unit never part: they are joined by a no-break space, and
+ * the four cells go side by side only when the series has the room for them.
+ * That step follows the width of the series itself (a container query), not
+ * the window's: the blood-pressure halves are half a card wide, and with the
+ * day panel docked beside the content a four-up row left each cell narrower
+ * than "112 mmHg", so the systolic values broke onto two lines while the
+ * two-digit diastolic ones still fitted. A half-card column goes four-up from
+ * 28rem, a full-width strip from 36rem (where the window step it replaces,
+ * 640 px, put it), which leaves the longest unit the app writes
+ * ("mL/(kg·min)") a cell it fits in.
  */
+
+/** No-break space: the line may break around the pair, never inside it. */
+const NBSP = "\u00A0";
+
+/**
+ * The cell grid of one series. `column` is a series sharing the card with
+ * another (half its width); `full` is the only series of its strip.
+ */
+const CELL_GRID = {
+  column: "grid grid-cols-2 gap-x-3 gap-y-2 @md/stat-series:grid-cols-4",
+  full: "grid grid-cols-2 gap-x-3 gap-y-2 @xl/stat-series:grid-cols-4",
+} as const;
 
 /**
  * One series rendered inside the strip — its header (label + icon), the
@@ -127,6 +150,8 @@ export interface MetricStatSeries {
   windowPending?: boolean;
 }
 
+type SeriesLayout = keyof typeof CELL_GRID;
+
 type MetricStatStripProps = Partial<MetricStatSeries> & {
   /**
    * v1.12.7 — multi-series mode. When supplied, the strip renders ONE Card
@@ -173,7 +198,8 @@ function SeriesBlock({
   description,
   titleAs,
   windowPending = false,
-}: MetricStatSeries) {
+  layout,
+}: MetricStatSeries & { layout: SeriesLayout }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
 
@@ -192,7 +218,11 @@ function SeriesBlock({
   const holding = windowPending && !windowed;
 
   const format = (value: number | null): string =>
-    value === null ? "—" : `${fmt.number(value, fractionDigits)} ${unit}`;
+    value === null
+      ? "—"
+      : unit
+        ? `${fmt.number(value, fractionDigits)}${NBSP}${unit}`
+        : fmt.number(value, fractionDigits);
 
   const cells: Array<{ key: string; label: string; value: number | null }> = [
     { key: "min", label: t("insights.subPage.stats.min"), value: source.min },
@@ -215,7 +245,8 @@ function SeriesBlock({
       data-series={dataKey}
       data-windowed={windowed ? "true" : undefined}
       data-window-pending={holding ? "true" : undefined}
-      className="space-y-1.5"
+      data-layout={layout}
+      className="@container/stat-series space-y-1.5"
     >
       {seriesLabel ? (
         <TileHeader
@@ -227,7 +258,7 @@ function SeriesBlock({
       {description ? (
         <p className="text-foreground text-sm leading-relaxed">{description}</p>
       ) : null}
-      <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4 [&>div]:min-h-[44px]">
+      <div className={`${CELL_GRID[layout]} [&>div]:min-h-[44px]`}>
         {cells.map((cell) => (
           <div
             key={cell.key}
@@ -291,7 +322,11 @@ export function MetricStatStrip({
         <CardContent>
           <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
             {series.map((s, i) => (
-              <SeriesBlock key={s.dataKey ?? s.seriesLabel ?? i} {...s} />
+              <SeriesBlock
+                key={s.dataKey ?? s.seriesLabel ?? i}
+                {...s}
+                layout="column"
+              />
             ))}
           </div>
         </CardContent>
@@ -334,6 +369,7 @@ export function MetricStatStrip({
           description={description}
           titleAs={titleAs}
           windowPending={windowPending}
+          layout="full"
         />
       </CardContent>
     </Card>
@@ -367,10 +403,10 @@ export function MetricStatStripSkeleton({
           }
         >
           {Array.from({ length: Math.max(1, seriesCount) }).map((_, s) => (
-            <div key={s} className="space-y-1.5">
+            <div key={s} className="@container/stat-series space-y-1.5">
               {/* h-6: the TileHeader row is one 24 px line. */}
               <Skeleton className="h-6 w-32" />
-              <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4">
+              <div className={CELL_GRID[seriesCount > 1 ? "column" : "full"]}>
                 {Array.from({ length: 4 }).map((__, i) => (
                   <div key={i} className="min-h-[44px] space-y-1">
                     <Skeleton className="h-3 w-12" />

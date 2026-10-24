@@ -96,7 +96,7 @@ describe("<MetricStatStrip>", () => {
       />,
     );
     // No "100.0" — integer precision.
-    expect(html).toContain("100 mg/dL");
+    expect(html).toContain("100\u00A0mg/dL");
     expect(html).not.toContain("100.0");
   });
 
@@ -209,8 +209,8 @@ describe("<MetricStatStrip> waits for the chart's window", () => {
     );
     expect(html).toContain('data-stat="min"');
     expect(html).toContain('data-window-pending="true"');
-    expect(html).not.toContain("58.0 bpm");
-    expect(html).not.toContain("88.0 bpm");
+    expect(html).not.toContain("58.0\u00A0bpm");
+    expect(html).not.toContain("88.0\u00A0bpm");
   });
 
   it("paints the window's numbers once the chart reported", () => {
@@ -221,7 +221,101 @@ describe("<MetricStatStrip> waits for the chart's window", () => {
         windowStats={{ count: 5, min: 60, max: 80, median: 70, mean: 70 }}
       />,
     );
-    expect(html).toContain("60.0 bpm");
-    expect(html).not.toContain("58.0 bpm");
+    expect(html).toContain("60.0\u00A0bpm");
+    expect(html).not.toContain("58.0\u00A0bpm");
+  });
+});
+
+/**
+ * With the day panel docked beside the blood-pressure page (1280 px and up)
+ * each half of the card is a narrow column. A four-up row there left every
+ * cell narrower than "112 mmHg": the systolic values broke onto two lines,
+ * the two-digit diastolic ones did not. The pair is now unbreakable and the
+ * cell grid steps by the series' own width, not the window's.
+ */
+describe("<MetricStatStrip> keeps a value and its unit on one line", () => {
+  const sys: DataSummary = {
+    ...populated,
+    min: 104,
+    max: 131,
+    median: 112,
+    mean: 112.4,
+  };
+  const dia: DataSummary = { ...populated, min: 66, max: 84, median: 74 };
+
+  function bloodPressure(): string {
+    return render(
+      <MetricStatStrip
+        groupLabel="Blood pressure"
+        series={[
+          {
+            dataKey: "sys",
+            summary: sys,
+            unit: "mmHg",
+            fractionDigits: 0,
+            seriesLabel: "Systolic",
+          },
+          {
+            dataKey: "dia",
+            summary: dia,
+            unit: "mmHg",
+            fractionDigits: 0,
+            seriesLabel: "Diastolic",
+          },
+        ]}
+      />,
+    );
+  }
+
+  /** The text of every value cell, in order. */
+  function values(html: string): string[] {
+    return [
+      ...html.matchAll(
+        /data-stat="[a-z]+"[^>]*><p[^>]*>[^<]*<\/p><p[^>]*>([^<]*)<\/p>/g,
+      ),
+    ].map((m) => m[1]!);
+  }
+
+  it("joins every value to its unit with a no-break space", () => {
+    const cells = values(bloodPressure());
+    expect(cells).toEqual([
+      "104\u00A0mmHg",
+      "131\u00A0mmHg",
+      "112\u00A0mmHg",
+      "112\u00A0mmHg",
+      "66\u00A0mmHg",
+      "84\u00A0mmHg",
+      "74\u00A0mmHg",
+      "70\u00A0mmHg",
+    ]);
+    // No ordinary space is left for the line to break at.
+    for (const cell of cells) expect(cell).not.toMatch(/ /);
+  });
+
+  it("writes a value without a unit as the number alone", () => {
+    const html = render(<MetricStatStrip summary={populated} unit="" />);
+    for (const cell of values(html)) expect(cell).not.toMatch(/\s$/);
+  });
+
+  it("steps the cells of a half-card column by the column's width, not the window's", () => {
+    const html = bloodPressure();
+    const series = [
+      ...html.matchAll(/data-slot="metric-stat-series"[^>]*>/g),
+    ].map((m) => m[0]);
+    expect(series).toHaveLength(2);
+    for (const tag of series) {
+      expect(tag).toContain('data-layout="column"');
+      expect(tag).toContain("@container/stat-series");
+    }
+    // Two by two in a narrow column, four up only from 28rem of its own.
+    expect(html.match(/@md\/stat-series:grid-cols-4/g)).toHaveLength(2);
+    expect(html).not.toMatch(/(^|[\s"])sm:grid-cols-4/);
+  });
+
+  it("steps a full-width strip from 36rem, the width its old window step gave it", () => {
+    const html = render(<MetricStatStrip summary={populated} unit="bpm" />);
+    expect(html).toContain('data-layout="full"');
+    expect(html).toContain("@xl/stat-series:grid-cols-4");
+    expect(html).not.toMatch(/(^|[\s"])sm:grid-cols-4/);
   });
 });
