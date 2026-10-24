@@ -199,11 +199,26 @@ dev --create-only --name vX_Y_Z_rollback_<col>`), edit the SQL,
 
 ## Catalog templates
 
-A new required environment variable, or a change to the compose shape, needs a
-matching pull request to the TrueNAS apps catalog in the same release cycle
-(and an update to `docs/self-hosting/unraid/healthlog.xml` and
-`docs/self-hosting/portainer/templates.json`). See
-`docs/self-hosting/truenas.md` for what the catalog template carries.
+The TrueNAS catalog bot follows new image tags on its own, so a routine
+release needs nothing there. These changes do need a matching pull request to
+`truenas/apps` (`ix-dev/community/healthlog/`) in the same release cycle, and
+an update to `docs/self-hosting/unraid/healthlog.xml` and
+`docs/self-hosting/portainer/templates.json`:
+
+- a new required environment variable, or a new format or minimum for an
+  existing one (the form validates the secrets);
+- a changed listening port, health check path or health semantics, or start
+  time beyond the template's five-minute start period;
+- a required PostgreSQL major version, or an extension the stock `postgres`
+  image does not ship;
+- any other change to the compose shape: a new container, a volume the app
+  must write to, a different user.
+
+The catalog app sets `HEALTHLOG_PLATFORM=truenas`, `PORT`, `HOSTNAME`,
+`DATABASE_URL`, `ENCRYPTION_KEY`, `API_TOKEN_HMAC_KEY`, `APP_URL`,
+`NEXT_PUBLIC_APP_URL` and `SESSION_COOKIE_SECURE`; everything else reaches it
+through the form's additional environment variables. See
+`docs/self-hosting/truenas.md` for the operator side.
 
 ## Verify the served version
 
