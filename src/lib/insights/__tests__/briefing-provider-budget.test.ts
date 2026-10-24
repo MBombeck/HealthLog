@@ -147,6 +147,30 @@ describe("runBriefingCompletion — ledger accounting", () => {
     expect(ledgerTotal).toBe(1234 + 2700);
   });
 
+  it("reserves and sends nothing once the caller's bound fired (#1279)", async () => {
+    mockProviderReply(100);
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(
+      runBriefingCompletion(completionArgs({ signal: controller.signal })),
+    ).rejects.toThrow();
+
+    expect(runRawCompletionWithFallback).not.toHaveBeenCalled();
+    expect(ledgerTotal).toBe(0);
+  });
+
+  it("hands the bound's signal to the provider call", async () => {
+    mockProviderReply(100);
+    const controller = new AbortController();
+
+    await runBriefingCompletion(completionArgs({ signal: controller.signal }));
+
+    expect(runRawCompletionWithFallback.mock.calls[0][0].params.signal).toBe(
+      controller.signal,
+    );
+  });
+
   it("charges the reservation when the provider reports no token count", async () => {
     mockProviderReply(null);
 

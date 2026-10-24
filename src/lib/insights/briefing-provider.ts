@@ -112,6 +112,15 @@ export interface RunBriefingCompletionArgs {
    * Absent for the scheduled generator.
    */
   interactive?: boolean;
+  /**
+   * #1279 — the caller's outer bound (the nightly and forced warms, the
+   * morning refresh). It reaches every provider call, so a call the bound
+   * gave up on is torn down, and once it fired no further call is reserved
+   * or sent: a briefing that outlives its bound does not keep running
+   * detached. The on-demand route passes none on purpose: it finishes and
+   * writes its briefing after the browser stopped waiting (#786).
+   */
+  signal?: AbortSignal;
 }
 
 /**
@@ -131,6 +140,7 @@ export interface RunBriefingCompletionArgs {
 export async function runBriefingCompletion(
   args: RunBriefingCompletionArgs,
 ): Promise<RunRawWithFallbackResult> {
+  args.signal?.throwIfAborted();
   const dateKey = args.dateKey ?? (await buildDateKey(args.userId));
 
   // v1.41 — one resolution per call: the operator's switch and cap, the payer
@@ -195,6 +205,7 @@ export async function runBriefingCompletion(
           maxTokens: args.maxTokens,
           seed: args.seed,
           timeoutMs: args.timeoutMs,
+          signal: args.signal,
           // Every briefing call parses its reply with `JSON.parse`, so opt the
           // chains with a native JSON mode into it.
           responseFormat: "json",
