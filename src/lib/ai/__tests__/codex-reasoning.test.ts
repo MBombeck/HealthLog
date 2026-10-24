@@ -137,6 +137,49 @@ describe("Codex reasoning request", () => {
     expect(body.include).toEqual([]);
     expect(result.reasoning?.downgradedTo).toBeUndefined();
   });
+
+  it("on a slug that refuses none, steps up to its lowest effort and stays on the slug", async () => {
+    // gpt-6.1-sol, first on the default list, refuses "none" (seen 2026-10-24).
+    // That refusal is about the effort, not the model: no walk to the next slug.
+    const refusal = JSON.stringify({
+      error: {
+        message:
+          "Unsupported value: 'none' is not supported with the 'gpt-6.1-sol' model. Supported values are: 'low', 'medium', 'high', 'xhigh', and 'max'.",
+        type: "invalid_request_error",
+        param: "reasoning.effort",
+        code: "unsupported_value",
+      },
+    });
+    const mock = vi
+      .fn()
+      .mockResolvedValueOnce(errorResponse(400, refusal))
+      .mockImplementation(async () =>
+        sseResponse(fixture("codex-after-tool.sse")),
+      );
+    vi.stubGlobal("fetch", mock);
+    const c = new CodexClient({
+      accessToken: "test-token",
+      accountId: "acct-test",
+      onTokenRefresh: vi
+        .fn()
+        .mockResolvedValue({ accessToken: "x", accountId: "acct-test" }),
+      slugChain: ["gpt-6.1-sol", "gpt-6-sol"],
+    });
+
+    await c.generateCompletion(
+      params({ reasoning: { effort: "off", summaries: false } }),
+    );
+    expect(sentBody(mock, 0).reasoning).toEqual({ effort: "none" });
+    expect(sentBody(mock, 1).model).toBe("gpt-6.1-sol");
+    expect(sentBody(mock, 1).reasoning).toEqual({ effort: "low" });
+
+    await c.generateCompletion(
+      params({ reasoning: { effort: "off", summaries: false } }),
+    );
+    expect(mock).toHaveBeenCalledTimes(3);
+    expect(sentBody(mock, 2).model).toBe("gpt-6.1-sol");
+    expect(sentBody(mock, 2).reasoning).toEqual({ effort: "low" });
+  });
 });
 
 describe("Codex reasoning stream", () => {
