@@ -110,7 +110,7 @@ const medicationCourseFields = {
   canStartCourse: z
     .boolean()
     .describe(
-      "v1.40 — whether `POST /api/medications/{id}/courses` may start a new course now: the medication is active, not one-time, has a course and every course has ended, and the caller is the record's owner (starting a course is not delegable, so a delegate always reads false).",
+      "v1.40 — whether `POST /api/medications/{id}/courses` may start a new course now: the medication is active, not one-time, has a course and every course's last day is before today (a course ended today with `POST /api/medications/{id}/courses/end` is over, but a course starting today would share its last day, so the start is offered from the next day), and the caller is the record's owner (starting a course is not delegable, so a delegate always reads false).",
     ),
 };
 

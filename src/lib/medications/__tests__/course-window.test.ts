@@ -211,14 +211,11 @@ describe("ending a course now (#1280)", () => {
     );
   });
 
-  it("lets a new course start once the ended one is behind it", () => {
-    const base = { active: true, oneShot: false, todayKey: "2026-06-12" };
-    expect(canStartCourse({ ...base, courses: [MARCH, ended] })).toBe(true);
-    // The next course may start tomorrow, not on the ended course's day.
-    const next = course("2026-06-13", null);
-    expect(validateCourses([MARCH, ended, next], "2026-06-12", false)).toBe(
-      null,
-    );
+  it("offers a new course from the day after the ended one, as validation accepts it", () => {
+    const base = { active: true, oneShot: false, courses: [MARCH, ended] };
+    // On the day it was ended a course starting today would share that day,
+    // which the validation refuses, so it is not offered yet.
+    expect(canStartCourse({ ...base, todayKey: "2026-06-12" })).toBe(false);
     expect(
       validateCourses(
         [MARCH, ended, course("2026-06-12", null)],
@@ -226,6 +223,45 @@ describe("ending a course now (#1280)", () => {
         false,
       ),
     ).toBe("overlap");
+    // The next day it is, and a course starting that day is accepted.
+    expect(canStartCourse({ ...base, todayKey: "2026-06-13" })).toBe(true);
+    expect(
+      validateCourses(
+        [MARCH, ended, course("2026-06-13", null)],
+        "2026-06-13",
+        false,
+      ),
+    ).toBe(null);
+  });
+
+  it("reads an ended course as over after a move west, as the window does", () => {
+    // Ended at 00:30 in Warsaw on the 12th, read from New York where it is
+    // still the evening of the 11th.
+    const endedAt = new Date("2026-06-11T22:30:00.000Z");
+    const westward = { ...JUNE, endsOn: d("2026-06-12"), endedAt };
+    const now = new Date("2026-06-11T23:30:00.000Z");
+    const zone = "America/New_York";
+    expect(courseStatusAt(westward, now, zone)).toBe("ENDED");
+    // The course it ended is history to every rule that asks about today.
+    expect(previousCourseEndedOn([MARCH, westward], "2026-06-11")).toEqual(
+      d("2026-06-12"),
+    );
+    expect(
+      validateCourses(
+        [westward, course("2026-06-13", null)],
+        "2026-06-11",
+        false,
+      ),
+    ).toBe(null);
+    // And no course may start before the day after its last one.
+    expect(
+      canStartCourse({
+        active: true,
+        oneShot: false,
+        courses: [MARCH, westward],
+        todayKey: "2026-06-11",
+      }),
+    ).toBe(false);
   });
 });
 

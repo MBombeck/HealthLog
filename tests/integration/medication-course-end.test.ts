@@ -268,13 +268,35 @@ describe("POST /courses/end ends the course now", () => {
       canEndCourse: false,
       intakeActionable: false,
       remindersActive: false,
-      canStartCourse: true,
+      // A course starting today would share the ended one's last day, which
+      // the start refuses as an overlap; it is offered from tomorrow.
+      canStartCourse: false,
     });
     expect(read.courses[0]).toMatchObject({
       status: "ENDED",
       endsOn: "2026-06-10",
       endedAt: ENDED_AT,
     });
+    const startToday = await call(
+      "@/app/api/medications/[id]/courses/route",
+      "POST",
+      `/api/medications/${id}/courses`,
+      { id },
+      { startsOn: "2026-06-10" },
+    );
+    expect(startToday.status).toBe(422);
+    expect(startToday.body.meta.errorCode).toBe("medications.course.overlap");
+    at("2026-06-11T07:00:00.000Z");
+    expect((await detail(id)).canStartCourse).toBe(true);
+    const startTomorrow = await call(
+      "@/app/api/medications/[id]/courses/route",
+      "POST",
+      `/api/medications/${id}/courses`,
+      { id },
+      { startsOn: "2026-06-11" },
+    );
+    expect(startTomorrow.status, JSON.stringify(startTomorrow.body)).toBe(201);
+    at(ENDED_AT);
 
     // A second press finds nothing running.
     const again = await endCourse(id);

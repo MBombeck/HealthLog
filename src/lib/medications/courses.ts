@@ -25,7 +25,6 @@ import {
   courseEndNow,
   courseFromWindow,
   courseStatusAt,
-  courseStatusOn,
   dateOfDayKey,
   dayKeyOfDate,
   previousCourseEndedOn,
@@ -686,7 +685,9 @@ export function buildCourseFields(
       startsOn: dayKeyOfDate(c.startsOn),
       endsOn: c.endsOn ? dayKeyOfDate(c.endsOn) : null,
       endedAt: c.endedAt ? c.endedAt.toISOString() : null,
-      status: courseStatusOn(c, todayKey),
+      // The instant-aware reading the medication's own `courseStatus` uses,
+      // so a course and its medication never disagree about now.
+      status: courseStatusAt(c, now, timeZone),
       takenDoses: takenByCourse.get(c.id) ?? 0,
       note: c.noteEncrypted ? decryptFromBytes(c.noteEncrypted) : null,
     })),

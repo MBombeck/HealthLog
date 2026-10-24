@@ -95,10 +95,12 @@ export function projectCourseWindow(courses: readonly CourseSpan[]): {
 }
 
 /**
- * Where `todayKey` sits in one course. Both ends inclusive, except that a
- * course ended with "End course" is ENDED on its `endsOn` day already: the
- * instant it ended lies on that day, and every read that asks about that day
- * comes after the instant (it is written as the moment of the request).
+ * Where the day `dayKey` sits in one course. Both ends inclusive, except
+ * that a course ended with "End course" is ENDED on its `endsOn` day
+ * already. For a day in the past (the doctor report's last day); a question
+ * about NOW goes to {@link courseStatusAt}, which also holds when the person
+ * has since moved to a zone whose calendar is a day behind the one the
+ * course ended on.
  */
 export function courseStatusOn(
   course: CourseSpan,
@@ -177,6 +179,20 @@ export type CourseRefusal =
   | "oneShot";
 
 /**
+ * #1280 — whether a course is over as of today. A course ended with "End
+ * course" is, whatever day it is where the person now reads it: its instant
+ * is written as the moment of the request, so it lies in the past of every
+ * later question. Otherwise its last day is before today.
+ *
+ * The day-key form of {@link courseStatusAt}'s ENDED, for the rules that are
+ * handed a day (`validateCourses`, `previousCourseEndedOn`).
+ */
+export function courseIsOver(course: CourseSpan, todayKey: string): boolean {
+  if (course.endedAt) return true;
+  return course.endsOn !== null && todayKey > dayKeyOfDate(course.endsOn);
+}
+
+/**
  * Whether a course set may be stored. Adjacent courses (one ends the day
  * before the next starts) are fine; sharing a day is an overlap.
  */
@@ -202,7 +218,7 @@ export function validateCourses(
     }
   }
   for (let i = 0; i < sorted.length - 1; i += 1) {
-    if (courseStatusOn(sorted[i], todayKey) !== "ENDED") return "currentOpen";
+    if (!courseIsOver(sorted[i], todayKey)) return "currentOpen";
   }
   return null;
 }
@@ -235,17 +251,22 @@ export function previousCourseEndedOn(
   courses: readonly CourseSpan[],
   todayKey: string,
 ): Date | null {
-  const ended = sortCourses(courses).filter(
-    (c) => courseStatusOn(c, todayKey) === "ENDED",
-  );
+  const ended = sortCourses(courses).filter((c) => courseIsOver(c, todayKey));
   return ended.length === 0 ? null : ended[ended.length - 1].endsOn;
 }
 
 /**
- * Whether a new course may start: the medication is active and not a
- * one-time one, it has at least one course, and every course has ended. A
- * medication with no course is chronic and running, so it ends its course
- * first ("End course" writes one).
+ * Whether a new course may start TODAY: the medication is active and not a
+ * one-time one, it has at least one course, and every course's last day is
+ * before today. A medication with no course is chronic and running, so it
+ * ends its course first ("End course" writes one).
+ *
+ * #1280 — the last day must be BEFORE today, not merely ended. A course
+ * ended with "End course" is over from that instant, but its last day is
+ * today, and a course starting today would share it: `validateCourses`
+ * refuses that as an overlap, and the engine has no way to start a course at
+ * an instant. So the start is offered from the next day, the first day the
+ * validation accepts, and the flag, the validation and the engine agree.
  */
 export function canStartCourse(args: {
   active: boolean;
@@ -255,7 +276,7 @@ export function canStartCourse(args: {
 }): boolean {
   if (!args.active || args.oneShot || args.courses.length === 0) return false;
   return args.courses.every(
-    (c) => courseStatusOn(c, args.todayKey) === "ENDED",
+    (c) => c.endsOn !== null && dayKeyOfDate(c.endsOn) < args.todayKey,
   );
 }
 
