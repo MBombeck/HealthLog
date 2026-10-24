@@ -35,6 +35,7 @@
  * summary, never an overdue state, until a fresh block arrives.
  */
 import type { PrismaClient } from "@/generated/prisma/client";
+import { medicationWindow } from "@/lib/medications/course-window";
 import { projectTodayIntakesAndRecompute } from "@/lib/medications/scheduling/project-today-intakes";
 import { loadAutoTakeRollingAnchors } from "@/lib/medications/auto-take";
 import {
@@ -220,8 +221,7 @@ export async function buildMedsTodayBlock(
     const display = computeDisplayDue({
       medication: {
         id: m.id,
-        startsOn: m.startsOn,
-        endsOn: m.endsOn,
+        ...medicationWindow(m),
         oneShot: m.oneShot,
         createdAt: m.createdAt,
       },

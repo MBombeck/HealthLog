@@ -73,6 +73,11 @@ const ALLOWLIST: Record<string, { max: number; reason: string }> = {
     max: 2,
     reason: "the cases pin the clock with fake timers around the fixed dates",
   },
+  "tests/integration/medication-course-end.test.ts": {
+    max: 1,
+    reason:
+      "the cases pin the clock with fake timers; the history read starts on the fixed day the course was ended",
+  },
   "tests/integration/symptoms.test.ts": {
     max: 1,
     reason:

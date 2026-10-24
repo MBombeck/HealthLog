@@ -217,6 +217,7 @@ async function readDisplayDue(medId: string, now: Date): Promise<Date | null> {
       id: med.id,
       startsOn: med.startsOn,
       endsOn: med.endsOn,
+      endedAt: null,
       oneShot: med.oneShot,
       createdAt: med.createdAt,
     },

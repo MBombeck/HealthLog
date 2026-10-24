@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 87,
-  "total": 97468,
+  "total": 97455,
   "entries": {
     "app/medications/page-client.tsx": 839,
     "components/charts/mood-chart.tsx": 1166,
@@ -13,7 +13,7 @@
     "components/insights/health-score-card.tsx": 1023,
     "components/insights/insights-tab-strip.tsx": 1086,
     "components/measurements/measurement-form.tsx": 815,
-    "components/medications/detail/medication-detail-tabs.tsx": 1160,
+    "components/medications/detail/medication-detail-tabs.tsx": 1157,
     "components/medications/medication-table.tsx": 853,
     "components/medications/wizard/wizard-payload.ts": 1414,
     "components/mood/mood-list.tsx": 1408,
@@ -76,8 +76,8 @@
     "lib/mcp/rich-reads.ts": 1467,
     "lib/measurements/dense-intraday-retention.ts": 1057,
     "lib/measurements/import-apple-health-export.ts": 1722,
-    "lib/medications/scheduling/cadence.ts": 978,
-    "lib/medications/scheduling/recurrence.ts": 1108,
+    "lib/medications/scheduling/cadence.ts": 976,
+    "lib/medications/scheduling/recurrence.ts": 1100,
     "lib/medications/scheduling/slot-upsert.ts": 912,
     "lib/notifications/senders/apns.ts": 1100,
     "lib/oura/sync.ts": 900,

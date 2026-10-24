@@ -285,6 +285,8 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   // v1.40 (#1024) — a medication's courses, same again.
   "src/app/api/medications/[id]/courses/route.ts",
   "src/app/api/medications/[id]/courses/[courseId]/route.ts",
+  // #1280 — ending the running course is a write to the same course rows.
+  "src/app/api/medications/[id]/courses/end/route.ts",
   "src/app/api/medications/compliance/route.ts",
   "src/app/api/medications/intake/route.ts",
   "src/app/api/medications/intake/bulk/route.ts",

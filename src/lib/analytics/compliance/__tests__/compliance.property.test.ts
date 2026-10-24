@@ -55,6 +55,7 @@ function context(tz: string) {
     {
       startsOn: null,
       endsOn: null,
+      endedAt: null,
       oneShot: false,
       createdAt: new Date("2024-06-01T00:00:00Z"),
     },

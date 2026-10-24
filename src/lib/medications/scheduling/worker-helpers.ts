@@ -69,6 +69,8 @@ export interface WorkerMedicationRow {
   id: string;
   startsOn: Date | null;
   endsOn: Date | null;
+  /** #1280 — the instant "End course" ended the course (see the engine). */
+  endedAt: Date | null;
   oneShot: boolean;
   createdAt: Date;
 }
@@ -149,6 +151,7 @@ export function buildRecurrenceContext(input: {
       id: input.medication.id,
       startsOn: input.medication.startsOn,
       endsOn: input.medication.endsOn,
+      endedAt: input.medication.endedAt,
       oneShot: input.medication.oneShot,
       createdAt: input.medication.createdAt,
     },

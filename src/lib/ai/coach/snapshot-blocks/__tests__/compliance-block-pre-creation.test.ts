@@ -37,6 +37,7 @@ for (const tz of ["Asia/Kolkata", "America/New_York"]) {
         {
           startsOn: null,
           endsOn: null,
+          endedAt: null,
           oneShot: false,
           createdAt: d1(16, 5),
           schedules: [

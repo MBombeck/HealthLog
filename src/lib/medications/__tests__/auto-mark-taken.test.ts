@@ -25,6 +25,7 @@ describe("sendsMedicationReminders", () => {
         trackIntake: (bits & 8) !== 0,
         asNeeded: (bits & 16) !== 0,
         endsOn: ended ? new Date("2026-06-09T00:00:00.000Z") : null,
+        endedAt: null,
       };
       expect(sendsMedicationReminders(med, at), JSON.stringify(med)).toBe(
         med.notificationsEnabled &&
@@ -44,6 +45,7 @@ describe("sendsMedicationReminders", () => {
       active: true,
       trackIntake: true,
       asNeeded: false,
+      endedAt: null,
     };
     expect(
       sendsMedicationReminders(
@@ -64,6 +66,29 @@ describe("sendsMedicationReminders", () => {
         { ...at, now: new Date("2026-06-10T22:30:00.000Z") },
       ),
     ).toBe(false);
+  });
+
+  it("stops at the instant End course ended the course (#1280)", () => {
+    const med = {
+      notificationsEnabled: true,
+      autoMarkTaken: false,
+      active: true,
+      trackIntake: true,
+      asNeeded: false,
+      endsOn: new Date("2026-06-10T00:00:00.000Z"),
+      endedAt: new Date("2026-06-10T09:00:00.000Z"),
+    };
+    // 10:00Z is after the instant: no reminder for the rest of the day,
+    // follow-ups of an earlier dose included.
+    expect(sendsMedicationReminders(med, at)).toBe(false);
+    expect(
+      sendsMedicationReminders(med, {
+        ...at,
+        now: new Date("2026-06-10T08:59:00.000Z"),
+      }),
+    ).toBe(true);
+    // The same last day without the instant reminds all day.
+    expect(sendsMedicationReminders({ ...med, endedAt: null }, at)).toBe(true);
   });
 
   it("is the decision at every gate and on every published DTO", () => {

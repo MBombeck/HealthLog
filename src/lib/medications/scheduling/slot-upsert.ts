@@ -18,6 +18,7 @@ import type {
   MedicationIntakeEvent,
   PrismaClient,
 } from "@/generated/prisma/client";
+import { medicationWindow } from "@/lib/medications/course-window";
 
 import { prisma as defaultPrisma } from "@/lib/db";
 import { isP2002 } from "@/lib/prisma-errors";
@@ -472,6 +473,7 @@ const MEDICATION_SELECT = {
   id: true,
   startsOn: true,
   endsOn: true,
+  endedAt: true,
   oneShot: true,
   createdAt: true,
   schedules: { select: SCHEDULE_SELECT },
@@ -557,8 +559,7 @@ export async function resolveSlotInstantForWrite(
   return resolveCanonicalSlotInstant({
     medication: {
       id: medication.id,
-      startsOn: medication.startsOn,
-      endsOn: medication.endsOn,
+      ...medicationWindow(medication),
       oneShot: medication.oneShot,
       createdAt: medication.createdAt,
       schedules: medication.schedules as WorkerScheduleRow[],
@@ -612,8 +613,7 @@ async function loadAttributeMedication(input: {
   return {
     medication: {
       id: medication.id,
-      startsOn: medication.startsOn,
-      endsOn: medication.endsOn,
+      ...medicationWindow(medication),
       oneShot: medication.oneShot,
       createdAt: medication.createdAt,
       schedules: medication.schedules as WorkerScheduleRow[],

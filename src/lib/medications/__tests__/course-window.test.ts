@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  canEndCourse,
   canStartCourse,
+  courseEndNow,
   courseFromWindow,
+  courseStatusAt,
   courseStatusOn,
   dateOfDayKey,
   isInsideCourses,
@@ -26,11 +29,25 @@ describe("projectCourseWindow", () => {
     expect(projectCourseWindow([JUNE, MARCH])).toEqual({
       startsOn: d("2026-06-10"),
       endsOn: d("2026-06-16"),
+      endedAt: null,
     });
   });
 
   it("is empty with no course (chronic since creation)", () => {
-    expect(projectCourseWindow([])).toEqual({ startsOn: null, endsOn: null });
+    expect(projectCourseWindow([])).toEqual({
+      startsOn: null,
+      endsOn: null,
+      endedAt: null,
+    });
+  });
+
+  it("carries the instant the latest course was ended", () => {
+    const endedAt = new Date("2026-06-16T10:00:00.000Z");
+    expect(projectCourseWindow([MARCH, { ...JUNE, endedAt }])).toEqual({
+      startsOn: d("2026-06-10"),
+      endsOn: d("2026-06-16"),
+      endedAt,
+    });
   });
 
   it.each([
@@ -116,17 +133,99 @@ describe("courseStatusOn", () => {
 });
 
 describe("isInsideCourses", () => {
+  /** A slot at noon UTC of a day, the instant the day key belongs to. */
+  const noon = (key: string) => new Date(`${key}T12:00:00.000Z`);
+  const inside = (key: string, courses: CourseSpan[]) =>
+    isInsideCourses(key, courses, noon(key));
+
   it("admits the course days and not the gap", () => {
     const courses = [MARCH, JUNE];
-    expect(isInsideCourses("2026-03-01", courses)).toBe(true);
-    expect(isInsideCourses("2026-03-07", courses)).toBe(true);
-    expect(isInsideCourses("2026-03-08", courses)).toBe(false);
-    expect(isInsideCourses("2026-06-16", courses)).toBe(true);
-    expect(isInsideCourses("2026-06-17", courses)).toBe(false);
+    expect(inside("2026-03-01", courses)).toBe(true);
+    expect(inside("2026-03-07", courses)).toBe(true);
+    expect(inside("2026-03-08", courses)).toBe(false);
+    expect(inside("2026-06-16", courses)).toBe(true);
+    expect(inside("2026-06-17", courses)).toBe(false);
   });
 
   it("places no restriction without courses", () => {
-    expect(isInsideCourses("2026-03-08", [])).toBe(true);
+    expect(inside("2026-03-08", [])).toBe(true);
+  });
+
+  it("stops an ended course at the instant it was ended (#1280)", () => {
+    // MARCH ended with "End course" at 10:00Z on its last day: the morning
+    // slot belongs to it, the evening one does not.
+    const ended = { ...MARCH, endedAt: new Date("2026-03-07T10:00:00.000Z") };
+    const courses = [ended, JUNE];
+    const day = "2026-03-07";
+    expect(
+      isInsideCourses(day, courses, new Date("2026-03-07T06:00:00.000Z")),
+    ).toBe(true);
+    expect(
+      isInsideCourses(day, courses, new Date("2026-03-07T10:00:00.000Z")),
+    ).toBe(false);
+    expect(
+      isInsideCourses(day, courses, new Date("2026-03-07T18:00:00.000Z")),
+    ).toBe(false);
+    // The days before the last one are untouched.
+    expect(inside("2026-03-06", courses)).toBe(true);
+  });
+});
+
+describe("ending a course now (#1280)", () => {
+  const ENDED_AT = new Date("2026-06-12T10:00:00.000Z");
+  const ended = { ...JUNE, endsOn: d("2026-06-12"), endedAt: ENDED_AT };
+
+  it("reads ENDED on the last day already, by day and by instant", () => {
+    expect(courseStatusOn(ended, "2026-06-12")).toBe("ENDED");
+    expect(courseStatusOn(ended, "2026-06-11")).toBe("CURRENT");
+    // The same end date set in the editor keeps the whole day.
+    expect(courseStatusOn({ ...ended, endedAt: null }, "2026-06-12")).toBe(
+      "CURRENT",
+    );
+    const at = (iso: string) => courseStatusAt(ended, new Date(iso), "UTC");
+    expect(at("2026-06-12T09:59:59.999Z")).toBe("CURRENT");
+    expect(at("2026-06-12T10:00:00.000Z")).toBe("ENDED");
+    expect(at("2026-06-12T22:00:00.000Z")).toBe("ENDED");
+  });
+
+  it("offers End only while a course runs", () => {
+    expect(canEndCourse("CURRENT")).toBe(true);
+    expect(canEndCourse("ENDED")).toBe(false);
+    expect(canEndCourse("UPCOMING")).toBe(false);
+    // No dates at all is running.
+    expect(
+      canEndCourse(
+        courseStatusAt({ startsOn: null, endsOn: null }, ENDED_AT, "UTC"),
+      ),
+    ).toBe(true);
+  });
+
+  it("ends on the person's own day, at the moment itself", () => {
+    const late = new Date("2026-06-11T23:30:00.000Z");
+    expect(courseEndNow(late, "Europe/Warsaw")).toEqual({
+      endsOn: d("2026-06-12"),
+      endedAt: late,
+    });
+    expect(courseEndNow(late, "America/New_York").endsOn).toEqual(
+      d("2026-06-11"),
+    );
+  });
+
+  it("lets a new course start once the ended one is behind it", () => {
+    const base = { active: true, oneShot: false, todayKey: "2026-06-12" };
+    expect(canStartCourse({ ...base, courses: [MARCH, ended] })).toBe(true);
+    // The next course may start tomorrow, not on the ended course's day.
+    const next = course("2026-06-13", null);
+    expect(validateCourses([MARCH, ended, next], "2026-06-12", false)).toBe(
+      null,
+    );
+    expect(
+      validateCourses(
+        [MARCH, ended, course("2026-06-12", null)],
+        "2026-06-12",
+        false,
+      ),
+    ).toBe("overlap");
   });
 });
 

@@ -615,6 +615,8 @@ export interface DoctorReportComplianceMedication {
   trackIntake: boolean;
   startsOn: Date | null;
   endsOn: Date | null;
+  /** #1280 — the instant "End course" ended the latest course. */
+  endedAt: Date | null;
   oneShot: boolean;
   createdAt: Date;
   schedules: ComplianceSchedule[];
@@ -622,7 +624,7 @@ export interface DoctorReportComplianceMedication {
   /** v1.25 — pause eras so paused days drop out of the denominator. */
   pauseEras?: MedicationPauseEraLike[];
   /** v1.40 (#1024) — the courses, so a gap between two expects nothing. */
-  courses?: { startsOn: Date; endsOn: Date | null }[];
+  courses?: { startsOn: Date; endsOn: Date | null; endedAt: Date | null }[];
 }
 
 /** A window-bounded intake row keyed to its medication. */

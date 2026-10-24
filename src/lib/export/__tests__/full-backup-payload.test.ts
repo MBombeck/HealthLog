@@ -210,6 +210,8 @@ function makePrisma() {
               id: "course-march",
               startsOn: new Date("2026-03-01T00:00:00.000Z"),
               endsOn: new Date("2026-03-07T00:00:00.000Z"),
+              // #1280 — ended with "End course" after the morning dose.
+              endedAt: new Date("2026-03-07T09:30:00.000Z"),
               noteEncrypted: encryptToBytes("the March flu"),
               createdAt: new Date("2026-03-01T08:00:00.000Z"),
               updatedAt: new Date("2026-03-01T08:05:00.000Z"),
@@ -218,6 +220,7 @@ function makePrisma() {
               id: "course-june",
               startsOn: new Date("2026-06-10T00:00:00.000Z"),
               endsOn: null,
+              endedAt: null,
               noteEncrypted: null,
               createdAt: new Date("2026-06-10T08:00:00.000Z"),
               updatedAt: new Date("2026-06-10T08:05:00.000Z"),
@@ -806,12 +809,14 @@ describe("buildFullBackupPayload — medication courses (v1.40, #1024)", () => {
       {
         startsOn: "2026-03-01",
         endsOn: "2026-03-07",
+        endedAt: "2026-03-07T09:30:00.000Z",
         note: "the March flu",
         createdAt: "2026-03-01T08:00:00.000Z",
       },
       {
         startsOn: "2026-06-10",
         endsOn: null,
+        endedAt: null,
         note: null,
         createdAt: "2026-06-10T08:00:00.000Z",
       },
@@ -823,6 +828,7 @@ describe("buildFullBackupPayload — medication courses (v1.40, #1024)", () => {
     expect(march).toMatchObject({
       startsOn: "2026-03-01",
       endsOn: "2026-03-07",
+      endedAt: "2026-03-07T09:30:00.000Z",
       note: null,
       createdAt: "2026-03-01T08:00:00.000Z",
       updatedAt: "2026-03-01T08:05:00.000Z",

@@ -43,6 +43,10 @@
  * unregistered queue silently never drains.
  */
 import { prisma } from "@/lib/db";
+import {
+  MEDICATION_WINDOW_SELECT,
+  medicationWindow,
+} from "@/lib/medications/course-window";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { restoreForIntake } from "@/lib/medications/inventory/consumption";
 import { isP2002 } from "@/lib/prisma-errors";
@@ -201,8 +205,7 @@ export async function dedupeUserIntakeSlots(
     select: {
       id: true,
       userId: true,
-      startsOn: true,
-      endsOn: true,
+      ...MEDICATION_WINDOW_SELECT,
       oneShot: true,
       createdAt: true,
       schedules: {
@@ -348,8 +351,7 @@ export async function dedupeUserIntakeSlots(
       const canonical = resolveCanonicalSlotInstant({
         medication: {
           id: med.id,
-          startsOn: med.startsOn,
-          endsOn: med.endsOn,
+          ...medicationWindow(med),
           oneShot: med.oneShot,
           createdAt: med.createdAt,
           schedules: med.schedules,
@@ -551,8 +553,7 @@ async function convergeAdhocRowsOntoPendingSlots(input: {
 
   const medication: AttributeIntakeMedication = {
     id: med.id,
-    startsOn: med.startsOn,
-    endsOn: med.endsOn,
+    ...medicationWindow(med),
     oneShot: med.oneShot,
     createdAt: med.createdAt,
     schedules: med.schedules,

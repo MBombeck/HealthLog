@@ -108,6 +108,7 @@ function medication(
     userId: overrides.userId ?? "u1",
     startsOn: overrides.startsOn ?? null,
     endsOn: overrides.endsOn ?? null,
+    endedAt: null,
     oneShot: overrides.oneShot ?? false,
     createdAt: overrides.createdAt ?? new Date("2026-01-01T00:00:00Z"),
     autoMarkTakenSince:

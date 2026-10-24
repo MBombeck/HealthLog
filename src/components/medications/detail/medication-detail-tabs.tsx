@@ -193,6 +193,7 @@ export interface MedicationDetailSnapshot {
   /** v1.40 (#1024) — the server-resolved courses. */
   courses?: MedicationCourseWire[];
   canStartCourse?: boolean;
+  canEndCourse?: boolean;
   recordedSchedules?: ScheduleSnapshot[];
   schedules: ScheduleSnapshot[];
   /** v1.43 — the composition per unit, as the server delivered it. */
@@ -923,11 +924,7 @@ export function MedicationDetailTabs({
             defaultOpen={false}
           >
             <div className="py-3">
-              <LifecycleManageBody
-                medicationId={id}
-                medicationName={medication.name}
-                active={medication.active}
-              />
+              <LifecycleManageBody medication={medication} />
             </div>
             {/* v1.40 (#1024) — the courses: when it was taken, and a new
                 course once the last one has ended. */}

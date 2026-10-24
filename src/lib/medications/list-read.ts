@@ -13,6 +13,7 @@
  * readers. Mirrors `src/lib/dashboard/snapshot-read.ts` for the dashboard.
  */
 import { sendsMedicationReminders } from "@/lib/medications/auto-mark-taken";
+import { medicationWindow } from "@/lib/medications/course-window";
 import { loadAutoTakeRollingAnchors } from "@/lib/medications/auto-take";
 import { prisma } from "@/lib/db";
 import { annotate, getEvent } from "@/lib/logging/context";
@@ -244,8 +245,7 @@ export async function buildMedicationsList(
     const display = computeDisplayDue({
       medication: {
         id: m.id,
-        startsOn: m.startsOn,
-        endsOn: m.endsOn,
+        ...medicationWindow(m),
         oneShot: m.oneShot,
         createdAt: m.createdAt,
       },

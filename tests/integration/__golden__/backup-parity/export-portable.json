@@ -199,7 +199,7 @@
         "autoMarkTaken": true,
         "autoMarkTakenSince": "2026-06-30T12:34:56.789Z",
         "category": "custom:5f0c6a52-6a43-4f63-9b39-0c1f4d7e2a10",
-        "createdAt": "2026-05-01T11:50:00.000Z",
+        "createdAt": "2026-05-01T11:51:00.000Z",
         "schedules": [
           {
             "windowStart": "08:00",
@@ -250,14 +250,16 @@
           {
             "startsOn": "2026-03-01",
             "endsOn": "2026-03-07",
+            "endedAt": null,
             "note": "the March flu",
-            "createdAt": "2026-05-02T00:46:00.000Z"
+            "createdAt": "2026-05-02T00:47:00.000Z"
           },
           {
             "startsOn": "2026-06-10",
             "endsOn": "2026-06-16",
+            "endedAt": "2026-06-16T09:30:00.000Z",
             "note": null,
-            "createdAt": "2026-05-02T00:46:01.000Z"
+            "createdAt": "2026-05-02T00:47:01.000Z"
           }
         ],
         "doseChanges": [
@@ -1850,7 +1852,7 @@
         "autoMarkTaken": true,
         "autoMarkTakenSince": "2026-06-30T12:34:56.789Z",
         "category": "custom:5f0c6a52-6a43-4f63-9b39-0c1f4d7e2a10",
-        "createdAt": "2026-05-01T11:50:00.000Z",
+        "createdAt": "2026-05-01T11:51:00.000Z",
         "schedules": [
           {
             "windowStart": "08:00",
@@ -2022,14 +2024,16 @@
           {
             "startsOn": "2026-03-01",
             "endsOn": "2026-03-07",
+            "endedAt": null,
             "note": "the March flu",
-            "createdAt": "2026-05-02T00:46:00.000Z"
+            "createdAt": "2026-05-02T00:47:00.000Z"
           },
           {
             "startsOn": "2026-06-10",
             "endsOn": "2026-06-16",
+            "endedAt": "2026-06-16T09:30:00.000Z",
             "note": null,
-            "createdAt": "2026-05-02T00:46:01.000Z"
+            "createdAt": "2026-05-02T00:47:01.000Z"
           }
         ]
       }

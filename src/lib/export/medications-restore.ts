@@ -349,6 +349,7 @@ async function restoreCourses(
   const courseRows: Array<{
     startsOn: Date;
     endsOn: Date | null;
+    endedAt?: Date | null;
     note: string | null;
     noteEncrypted?: string | null;
     createdAt?: Date;
@@ -358,6 +359,7 @@ async function restoreCourses(
       ? m.courses.map((c) => ({
           startsOn: dateOfDayKey(c.startsOn),
           endsOn: c.endsOn ? dateOfDayKey(c.endsOn) : null,
+          endedAt: c.endedAt ? new Date(c.endedAt) : null,
           note: c.note ?? null,
           ...(c.noteEncrypted !== undefined
             ? { noteEncrypted: c.noteEncrypted }
@@ -380,6 +382,7 @@ async function restoreCourses(
       userId: ownerId,
       startsOn: c.startsOn,
       endsOn: c.endsOn,
+      endedAt: c.endedAt ?? null,
       // Ciphertext verbatim from a disaster-recovery file; the readable note
       // of a portable or older file sealed here.
       noteEncrypted:
@@ -397,7 +400,11 @@ async function restoreCourses(
   const window = projectCourseWindow(courseRows);
   await tx.medication.update({
     where: { id: created.id },
-    data: { startsOn: window.startsOn, endsOn: window.endsOn },
+    data: {
+      startsOn: window.startsOn,
+      endsOn: window.endsOn,
+      endedAt: window.endedAt,
+    },
   });
 }
 

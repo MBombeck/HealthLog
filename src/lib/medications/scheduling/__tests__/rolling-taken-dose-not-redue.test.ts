@@ -34,6 +34,7 @@ const medication: WorkerMedicationRow = {
   id: "med-1",
   startsOn: new Date("2026-06-02T00:00:00.000Z"),
   endsOn: null,
+  endedAt: null,
   oneShot: false,
   createdAt: new Date("2026-06-01T00:00:00.000Z"),
 };

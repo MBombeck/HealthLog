@@ -155,6 +155,7 @@ describe.each(EDGES)("day paths with the host in $zone", (edge) => {
           startsOn: null,
           // `endsOn` is a @db.Date column: the calendar date as UTC midnight.
           endsOn: dayKeyAsUtcMidnight(edge.localDay),
+          endedAt: null,
         },
         edge.now,
         edge.zone,

@@ -6861,6 +6861,49 @@ paths:
         "409": *a7
         "422": *a4
         "429": *a5
+  /api/medications/{id}/courses/end:
+    post:
+      tags:
+        - Medications
+      summary: End the running course now
+      description: "#1280 — \"End course\". No body. The running course's last day becomes today on the person's clock and the
+        moment is stored as its `endedAt`: a dose slot later today is not due, not reminded and not expected by
+        compliance, a dose taken earlier today still counts, and `courseStatus` reads ENDED at once. Pending
+        placeholders for slots at or after the moment are removed (tombstoned for sync). A medication with no dates gets
+        the course its window describes, from creation to today. An end date set through `PUT /api/medications/{id}` or
+        the course editor keeps meaning the whole day; only this action ends a course at an instant. Refused with 409
+        `medications.course.notRunning` while no course is running — the rule the reads publish as `canEndCourse`.
+        Owner-only."
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+        - *a6
+      responses:
+        "200":
+          description: The medication's window after ending.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EndMedicationCourseResponse"
+        "401": *a1
+        "403": *a9
+        "404":
+          description: Medication not found (`medications.course.notFound`), or another user's.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: "No course is running now (`medications.course.notRunning`): it has ended already or has not started."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
   /api/medications/{id}/courses/{courseId}:
     patch:
       tags:
@@ -38495,55 +38538,56 @@ components:
                 medication.intake.notTracked, medication.link.invalid; medications — medications.category.invalid,
                 medications.category.limitReached, medications.category.unknown, medications.course.currentOpen,
                 medications.course.invalid, medications.course.invalidRange, medications.course.notFound,
-                medications.course.oneShot, medications.course.overlap, medications.course.windowRequired,
-                medications.ingredients.extract.budgetExceeded, medications.ingredients.extract.failed,
-                medications.ingredients.extract.fileTooLarge, medications.ingredients.extract.fileType,
-                medications.ingredients.extract.rateLimited, medications.ingredients.invalid,
-                medications.ingredients.unitMismatch, medications.intake.bulk.apple_health_not_mirrored,
-                medications.intake.bulk.invalid, medications.intake.bulk.too_large,
-                medications.intake.force_slot.invalid, medications.intake.force_slot.occupied,
-                medications.intake.injection_site.disallowed, medications.intake.taken_at.before_start,
-                medications.mirror.limit_exceeded, medications.notFound; mentalHealth — mentalHealth.rateLimited; module
-                — module.disabled; modules — modules.body.invalid_json, modules.invalid; mood —
-                mood.bulk-delete.invalid, mood.bulk.invalid, mood.bulk.too_large, mood.create.external_id_not_delegable,
-                mood.create.invalid, mood.duplicate_timestamp, mood.linkedContext.invalid, mood.list.invalid,
-                mood.not_found, mood.ratedFactor.out_of_range, mood.restore.invalid, mood.update.invalid;
-                notification-prefs — notification-prefs.body.invalid_json; notification —
-                notification.action.already_used, notification.action.expired, notification.action.invalid,
-                notification.action.module_disabled; nutrient — nutrient.batch.invalid, nutrient.batch.too_large,
-                nutrient.daily.invalid, nutrient.read.invalid, nutrient.water.invalid, nutrient.water.invalid_day;
-                onboarding — onboarding.answers.invalid, onboarding.answers.rateLimited, onboarding.complete.invalid,
-                onboarding.complete.recordNotFound, onboarding.complete.recordTargetMismatch,
-                onboarding.disclaimer.invalid, onboarding.restart.invalid, onboarding.restart.rateLimited,
-                onboarding.tour.invalid; passkey — passkey.challenge.expired, passkey.response.invalid, passkey.unknown,
-                passkey.verification.failed; personal_records — personal_records.invalid_query; practitioner —
-                practitioner.invalid; profile — profile.update.emailInUse, profile.update.emailRateLimited,
-                profile.update.emailSecondFactorRequired, profile.update.invalidBody, profile.update.nothingSaved;
-                profile_claim — profile_claim.invalid, profile_claim.oidc_only_unsupported,
-                profile_claim.sso_unavailable, profile_claim.taken; record_write — record_write.rate_limited;
-                report-selection — report-selection.body.invalid_json, report-selection.body.invalid_shape,
-                report-selection.leaves.unknown; route — route.retired; search — search.invalid; security_activity —
-                security_activity.invalid; share-link — share-link.document.decryptFailed, share-link.document.notFound,
-                share-link.document.rateLimited, share-link.documents.invalid, share-link.report.notFound,
-                share-link.report.rateLimited, share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf;
-                sharing — sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending,
-                sharing.accept.revoked, sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid,
-                sharing.invite.invalid_scope, sharing.invite.manage_browser_only, sharing.invite.no_account,
-                sharing.invite.refused, sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended,
-                sharing.renounce.not_found, sharing.revoke.already_ended, sharing.revoke.not_found,
-                sharing.session.changed, sharing.switch.invalid, sharing.switch.wrong_transport; source-priority —
-                source-priority.body.invalid_json, source-priority.body.invalid_shape; symptoms —
-                symptoms.definition.limitReached, symptoms.definition.notFound, symptoms.episode.notOpen,
-                symptoms.event.notFound, symptoms.invalid; timeline — timeline.invalid; tokens —
-                tokens.documents.ceiling_reached, tokens.measurements.ceiling_reached,
-                tokens.mirror.not_measurement_token, tokens.workouts.ceiling_reached; vaccination —
-                vaccination.booster-invalid, vaccination.booster-no-antigen, vaccination.booster-out-of-scope,
-                vaccination.custom-vaccine-not-found, vaccination.custom.invalid, vaccination.custom.name-taken,
-                vaccination.custom.not-found, vaccination.encounter-not-found, vaccination.identity-required,
-                vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
-                vaccination.practitioner-not-found; workout — workout.batch.invalid, workout.batch.payload_too_large,
-                workout.batch.source_not_permitted, workout.batch.too_large, workout.delete.synced_source; (unprefixed)
-                — about_me_conflict, ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
+                medications.course.notRunning, medications.course.oneShot, medications.course.overlap,
+                medications.course.windowRequired, medications.ingredients.extract.budgetExceeded,
+                medications.ingredients.extract.failed, medications.ingredients.extract.fileTooLarge,
+                medications.ingredients.extract.fileType, medications.ingredients.extract.rateLimited,
+                medications.ingredients.invalid, medications.ingredients.unitMismatch,
+                medications.intake.bulk.apple_health_not_mirrored, medications.intake.bulk.invalid,
+                medications.intake.bulk.too_large, medications.intake.force_slot.invalid,
+                medications.intake.force_slot.occupied, medications.intake.injection_site.disallowed,
+                medications.intake.taken_at.before_start, medications.mirror.limit_exceeded, medications.notFound;
+                mentalHealth — mentalHealth.rateLimited; module — module.disabled; modules — modules.body.invalid_json,
+                modules.invalid; mood — mood.bulk-delete.invalid, mood.bulk.invalid, mood.bulk.too_large,
+                mood.create.external_id_not_delegable, mood.create.invalid, mood.duplicate_timestamp,
+                mood.linkedContext.invalid, mood.list.invalid, mood.not_found, mood.ratedFactor.out_of_range,
+                mood.restore.invalid, mood.update.invalid; notification-prefs — notification-prefs.body.invalid_json;
+                notification — notification.action.already_used, notification.action.expired,
+                notification.action.invalid, notification.action.module_disabled; nutrient — nutrient.batch.invalid,
+                nutrient.batch.too_large, nutrient.daily.invalid, nutrient.read.invalid, nutrient.water.invalid,
+                nutrient.water.invalid_day; onboarding — onboarding.answers.invalid, onboarding.answers.rateLimited,
+                onboarding.complete.invalid, onboarding.complete.recordNotFound,
+                onboarding.complete.recordTargetMismatch, onboarding.disclaimer.invalid, onboarding.restart.invalid,
+                onboarding.restart.rateLimited, onboarding.tour.invalid; passkey — passkey.challenge.expired,
+                passkey.response.invalid, passkey.unknown, passkey.verification.failed; personal_records —
+                personal_records.invalid_query; practitioner — practitioner.invalid; profile —
+                profile.update.emailInUse, profile.update.emailRateLimited, profile.update.emailSecondFactorRequired,
+                profile.update.invalidBody, profile.update.nothingSaved; profile_claim — profile_claim.invalid,
+                profile_claim.oidc_only_unsupported, profile_claim.sso_unavailable, profile_claim.taken; record_write —
+                record_write.rate_limited; report-selection — report-selection.body.invalid_json,
+                report-selection.body.invalid_shape, report-selection.leaves.unknown; route — route.retired; search —
+                search.invalid; security_activity — security_activity.invalid; share-link —
+                share-link.document.decryptFailed, share-link.document.notFound, share-link.document.rateLimited,
+                share-link.documents.invalid, share-link.report.notFound, share-link.report.rateLimited,
+                share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf; sharing —
+                sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending, sharing.accept.revoked,
+                sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid, sharing.invite.invalid_scope,
+                sharing.invite.manage_browser_only, sharing.invite.no_account, sharing.invite.refused,
+                sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended, sharing.renounce.not_found,
+                sharing.revoke.already_ended, sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
+                sharing.switch.wrong_transport; source-priority — source-priority.body.invalid_json,
+                source-priority.body.invalid_shape; symptoms — symptoms.definition.limitReached,
+                symptoms.definition.notFound, symptoms.episode.notOpen, symptoms.event.notFound, symptoms.invalid;
+                timeline — timeline.invalid; tokens — tokens.documents.ceiling_reached,
+                tokens.measurements.ceiling_reached, tokens.mirror.not_measurement_token,
+                tokens.workouts.ceiling_reached; vaccination — vaccination.booster-invalid,
+                vaccination.booster-no-antigen, vaccination.booster-out-of-scope, vaccination.custom-vaccine-not-found,
+                vaccination.custom.invalid, vaccination.custom.name-taken, vaccination.custom.not-found,
+                vaccination.encounter-not-found, vaccination.identity-required, vaccination.invalid,
+                vaccination.link.invalid, vaccination.not-found, vaccination.practitioner-not-found; workout —
+                workout.batch.invalid, workout.batch.payload_too_large, workout.batch.source_not_permitted,
+                workout.batch.too_large, workout.delete.synced_source; (unprefixed) — about_me_conflict,
+                ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
                 health_score_config_conflict, insights_layout_conflict, invalid_base_updated_at,
                 json_carries_no_intake_time, json_not_an_array, medication_layout_conflict, missing_required_columns,
                 modules_conflict, mood_tag_layout_conflict, not_configured, notification_prefs_conflict, oidc_only,
@@ -42033,6 +42077,11 @@ components:
                         - type: string
                           format: date
                           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                        - type: "null"
+                    endedAt:
+                      anyOf:
+                        - type: string
+                          minLength: 1
                         - type: "null"
                     note:
                       anyOf:
@@ -53787,9 +53836,10 @@ components:
           type: boolean
           description: "v1.42.2 — whether the server sends dose reminders for this medication: true only when
             `notificationsEnabled` is on, the medication is `active`, its course has not ended (`endsOn` is today or
-            later on the person's clock, or unset), its intake is tracked (`trackIntake`), it is not `asNeeded`, and
-            `autoMarkTaken` is off. The same decision gates every server-side reminder send. A client that arms local
-            reminders arms them from this, not from `notificationsEnabled`. Read-only — computed, not stored."
+            later on the person's clock, or unset, and no `endedAt` has passed), its intake is tracked (`trackIntake`),
+            it is not `asNeeded`, and `autoMarkTaken` is off. The same decision gates every server-side reminder send. A
+            client that arms local reminders arms them from this, not from `notificationsEnabled`. Read-only — computed,
+            not stored."
         nextDueAt:
           anyOf:
             - type: string
@@ -53813,6 +53863,15 @@ components:
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
           description: v1.5 course end (ISO date). NULL means chronic. Equals `startsOn` when `oneShot` is true.
+        endedAt:
+          description: "#1280 — the instant the latest course was ended with `POST /api/medications/{id}/courses/end` (the
+            course's own `endedAt`). From it on no dose is due or reminded and `courseStatus` is ENDED; NULL when the
+            course runs to the end of `endsOn`. Read-only — written by the course writer only."
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
         oneShot:
           type: boolean
           description: v1.5 single-administration flag. When true the medication has at most one schedule (no `rrule` /
@@ -53910,12 +53969,19 @@ components:
             - ENDED
           description: "v1.39.4 — where today (on the user's clock) sits in the course: UPCOMING before `startsOn`, ENDED after
             `endsOn`, CURRENT otherwise. Calendar days, both ends inclusive, so a course that ends today is CURRENT all
-            day. Read-only — computed, not stored."
+            day, unless it was ended with `POST /api/medications/{id}/courses/end`: then it is ENDED from that instant
+            (`endedAt`). Read-only — computed, not stored."
         intakeActionable:
           type: boolean
           description: "v1.39.4 — whether the medication offers taken / skip today: true only when it is `active`, its intake is
             tracked (`trackIntake`) and `courseStatus` is CURRENT. Clients render the dose actions from this and do not
             re-derive it. Logging a past dose from the history is not gated by it. Read-only — computed, not stored."
+        canEndCourse:
+          type: boolean
+          description: '#1280 — whether `POST /api/medications/{id}/courses/end` may end the course now: true exactly while a
+            course is running (`courseStatus` CURRENT; a medication with no dates is running). Clients offer "End
+            course" from this and do not re-derive it; the action refuses with 409 `medications.course.notRunning` when
+            it is false. Read-only — computed, not stored.'
         lastTakenAt:
           anyOf:
             - type: string
@@ -54001,6 +54067,7 @@ components:
         - nextDueScheduleId
         - courseStatus
         - intakeActionable
+        - canEndCourse
         - lastTakenAt
         - todayEventCount
         - stockUnitsRemaining
@@ -54037,13 +54104,23 @@ components:
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
             - type: "null"
           description: Last day, inclusive. NULL = open (only the latest course).
+        endedAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: "#1280 — the instant `POST /api/medications/{id}/courses/end` ended this course, on its `endsOn` day. No
+            dose slot at or after it is due, reminded or expected, and the course is ENDED from it on. NULL when the
+            whole `endsOn` day counts (an end date set in the editor). Any edit that moves `endsOn` clears it."
         status:
           type: string
           enum:
             - UPCOMING
             - CURRENT
             - ENDED
-          description: Where today, on the person's clock, sits in this course.
+          description: Where today, on the person's clock, sits in this course. A course with `endedAt` is ENDED on its `endsOn`
+            day already.
         takenDoses:
           type: integer
           minimum: 0
@@ -54058,6 +54135,7 @@ components:
         - id
         - startsOn
         - endsOn
+        - endedAt
         - status
         - takenDoses
         - note
@@ -54244,6 +54322,15 @@ components:
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
           description: v1.5 course end (ISO date). NULL means chronic. Equals `startsOn` when `oneShot` is true.
+        endedAt:
+          description: "#1280 — the instant the latest course was ended with `POST /api/medications/{id}/courses/end` (the
+            course's own `endedAt`). From it on no dose is due or reminded and `courseStatus` is ENDED; NULL when the
+            course runs to the end of `endsOn`. Read-only — written by the course writer only."
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
         oneShot:
           type: boolean
           description: v1.5 single-administration flag. When true the medication has at most one schedule (no `rrule` /
@@ -54336,12 +54423,19 @@ components:
             - ENDED
           description: "v1.39.4 — where today (on the user's clock) sits in the course: UPCOMING before `startsOn`, ENDED after
             `endsOn`, CURRENT otherwise. Calendar days, both ends inclusive, so a course that ends today is CURRENT all
-            day. Read-only — computed, not stored."
+            day, unless it was ended with `POST /api/medications/{id}/courses/end`: then it is ENDED from that instant
+            (`endedAt`). Read-only — computed, not stored."
         intakeActionable:
           type: boolean
           description: "v1.39.4 — whether the medication offers taken / skip today: true only when it is `active`, its intake is
             tracked (`trackIntake`) and `courseStatus` is CURRENT. Clients render the dose actions from this and do not
             re-derive it. Logging a past dose from the history is not gated by it. Read-only — computed, not stored."
+        canEndCourse:
+          type: boolean
+          description: '#1280 — whether `POST /api/medications/{id}/courses/end` may end the course now: true exactly while a
+            course is running (`courseStatus` CURRENT; a medication with no dates is running). Clients offer "End
+            course" from this and do not re-derive it; the action refuses with 409 `medications.course.notRunning` when
+            it is false. Read-only — computed, not stored.'
         stockUnitsRemaining:
           description: "v1.37.19 — usable inventory units left (same semantics as the list entry's field): NULL = inventory
             tracking off; 0 = tracking on, supply ran out."
@@ -54408,6 +54502,7 @@ components:
         - canStartCourse
         - courseStatus
         - intakeActionable
+        - canEndCourse
         - stockUnitsRemaining
         - stockDosesRemaining
         - runwayDays
@@ -54675,6 +54770,47 @@ components:
             - id
             - startsOn
             - endsOn
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    EndMedicationCourseResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            startsOn:
+              anyOf:
+                - type: string
+                  format: date
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                - type: "null"
+            endsOn:
+              anyOf:
+                - type: string
+                  format: date
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                - type: "null"
+            endedAt:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                - type: "null"
+          required:
+            - startsOn
+            - endsOn
+            - endedAt
           additionalProperties: false
         error:
           type: "null"
@@ -93793,6 +93929,15 @@ components:
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
           description: v1.5 course end (ISO date). NULL means chronic. Equals `startsOn` when `oneShot` is true.
+        endedAt:
+          description: "#1280 — the instant the latest course was ended with `POST /api/medications/{id}/courses/end` (the
+            course's own `endedAt`). From it on no dose is due or reminded and `courseStatus` is ENDED; NULL when the
+            course runs to the end of `endsOn`. Read-only — written by the course writer only."
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
         oneShot:
           type: boolean
           description: v1.5 single-administration flag. When true the medication has at most one schedule (no `rrule` /

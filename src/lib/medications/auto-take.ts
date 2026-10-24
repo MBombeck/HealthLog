@@ -14,6 +14,7 @@
  *     effective `lastIntakeAt`.
  */
 import type { PrismaClient } from "@/generated/prisma/client";
+import { MEDICATION_WINDOW_SELECT } from "@/lib/medications/course-window";
 
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 import {
@@ -361,8 +362,7 @@ export async function loadAutoTakeRollingAnchors(
     },
     select: {
       id: true,
-      startsOn: true,
-      endsOn: true,
+      ...MEDICATION_WINDOW_SELECT,
       oneShot: true,
       createdAt: true,
       autoMarkTakenSince: true,

@@ -143,6 +143,8 @@ export interface RecurrenceContext {
     id: string;
     startsOn: Date | null;
     endsOn: Date | null;
+    /** #1280 — when "End course" ended it; see `beforeCourseEnded`. */
+    endedAt?: Date | null;
     oneShot: boolean;
     createdAt: Date;
   };
@@ -212,31 +214,6 @@ const ONE_MINUTE_MS = 60_000;
 // ────────────────────────────────────────────────────────────────────
 
 /**
- * Where `now` sits relative to a medication's course, in calendar days on
- * the user's clock. `startsOn` / `endsOn` are calendar dates and are read as
- * such (never shifted through `timeZone`); only `now` is converted to the
- * local day it falls on. Both ends are inclusive: a course that ends today
- * is CURRENT for the whole of today, one that starts today is CURRENT from
- * local midnight.
- */
-export type CourseStatus = "UPCOMING" | "CURRENT" | "ENDED";
-
-export function courseStatusAt(
-  course: { startsOn: Date | null; endsOn: Date | null },
-  now: Date,
-  timeZone: string,
-): CourseStatus {
-  const today = civilDayOfInstant(now, timeZone).getTime();
-  if (course.startsOn && today < civilDayOfDate(course.startsOn).getTime()) {
-    return "UPCOMING";
-  }
-  if (course.endsOn && today > civilDayOfDate(course.endsOn).getTime()) {
-    return "ENDED";
-  }
-  return "CURRENT";
-}
-
-/**
  * Emit every occurrence in `[from, to]` (inclusive of both ends) in
  * chronological order. Pure: no DB access, no side effects.
  */
@@ -273,9 +250,22 @@ export function occurrencesBetween(
   // independent: the legacy stride filters weeks first, the cyclic gate
   // filters the surviving slots second.
   if (schedule.scheduleType === "CYCLIC") {
-    return slots.filter((s) => isInCyclicOnWeek(s.at, schedule, ctx));
+    slots = slots.filter((s) => isInCyclicOnWeek(s.at, schedule, ctx));
   }
-  return slots;
+  // #1280 — a course ended with "End course" stops at that instant.
+  return slots.filter((s) => beforeCourseEnded(s.at, ctx));
+}
+
+/**
+ * #1280 — the cut every expansion path applies on top of the `endsOn` day
+ * cap: no slot at or after the instant "End course" ended the course. A dose
+ * later that day is not due, reminded or expected; an earlier one is. Every
+ * medication context builder threads `endedAt` (the course-anchor guard
+ * holds the list); a measurement or booster reminder has no course to end.
+ */
+function beforeCourseEnded(at: Date, ctx: RecurrenceContext): boolean {
+  const endedAt = ctx.medication.endedAt;
+  return !endedAt || at.getTime() < endedAt.getTime();
 }
 
 /**
@@ -354,7 +344,7 @@ export function nextOccurrenceAfter(
     for (const s of slots) {
       if (s.at.getTime() <= after.getTime()) continue;
       if (cyclic && !isInCyclicOnWeek(s.at, schedule, ctx)) continue;
-      return s;
+      return beforeCourseEnded(s.at, ctx) ? s : null;
     }
     return null;
   }
@@ -405,7 +395,7 @@ export function nextOccurrenceAfter(
     for (const s of slots) {
       if (s.at.getTime() < floor.getTime()) continue;
       if (cyclic && !isInCyclicOnWeek(s.at, schedule, ctx)) continue;
-      return s;
+      return beforeCourseEnded(s.at, ctx) ? s : null;
     }
     return null;
   }
@@ -608,6 +598,7 @@ export function advanceRollingOccurrence(
     return null;
   }
   const at = applyTimeOfDayToCivilDay(nextDay, time, ctx.timeZone);
+  if (!beforeCourseEnded(at, ctx)) return null;
   return buildOccurrence(at, time, schedule);
 }
 
@@ -698,7 +689,8 @@ export function expandRollingRetrospective(
   const inWindow = (at: Date): boolean =>
     at.getTime() >= from.getTime() &&
     at.getTime() <= to.getTime() &&
-    at.getTime() <= endsCap;
+    at.getTime() <= endsCap &&
+    beforeCourseEnded(at, ctx);
 
   const slots: Occurrence[] = [];
 

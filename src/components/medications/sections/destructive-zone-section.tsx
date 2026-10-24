@@ -13,8 +13,10 @@
  *   - Tier 1 Pausieren: PUT `{ active: false | true }`. Server derives
  *     `pausedAt`. Switch wraps in `<label>` so the entire row is the
  *     AT hit target.
- *   - Tier 2 Beenden: PUT `{ endsOn: <today-iso> }`. AlertDialog
- *     confirm; Cancel autofocus stays default.
+ *   - Tier 2 Beenden: POST `/courses/end` (#1280), no body: the server ends
+ *     the running course at that moment, on the person's own day. Offered
+ *     while the read serves `canEndCourse`. AlertDialog confirm; Cancel
+ *     autofocus stays default.
  *   - Tier 3a Verlauf löschen: DELETE `/intake/purge`. Disabled when
  *     `intakeCount === 0`. AlertDialog confirm.
  *   - Tier 3b Medikament löschen: DELETE `/api/medications/[id]`.
@@ -48,7 +50,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useTranslations } from "@/lib/i18n/context";
 import { invalidateMedicationReads, queryKeys } from "@/lib/query-keys";
-import { apiDelete, apiPut } from "@/lib/api/api-fetch";
+import { apiDelete, apiPost, apiPut } from "@/lib/api/api-fetch";
 
 const PAUSE_SWITCH_ID = "medication-detail-pause-switch";
 const PAUSE_TITLE_ID = "medication-detail-pause-title";
@@ -59,23 +61,28 @@ const PAUSE_HELPER_ID = "medication-detail-pause-helper";
  * Bare (no section / card chrome); the caller supplies its own grouping.
  */
 export function LifecycleManageBody({
-  medicationId,
-  medicationName,
-  active,
+  medication,
   onAfterAction,
 }: {
-  medicationId: string;
-  medicationName: string;
-  active: boolean;
+  medication: {
+    id: string;
+    name: string;
+    active: boolean;
+    /**
+     * Whether a course is running that End may end now (server-resolved).
+     * Ending writes today as the course's last day, so on an ended course it
+     * would reopen it and on one not yet started invent a one-day course.
+     */
+    canEndCourse?: boolean;
+  };
   onAfterAction?: () => void;
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
+  const medicationId = medication.id;
 
-  const [paused, setPaused] = useState(!active);
+  const [paused, setPaused] = useState(!medication.active);
   const [tier1Busy, setTier1Busy] = useState(false);
-  const [endDialogOpen, setEndDialogOpen] = useState(false);
-  const [tier2Busy, setTier2Busy] = useState(false);
 
   async function tier1Toggle(pauseNext: boolean) {
     if (tier1Busy) return;
@@ -100,25 +107,6 @@ export function LifecycleManageBody({
       });
     } finally {
       setTier1Busy(false);
-    }
-  }
-
-  async function tier2End() {
-    if (tier2Busy) return;
-    setTier2Busy(true);
-    try {
-      const today = new Date().toISOString();
-      await apiPut(`/api/medications/${medicationId}`, { endsOn: today });
-      await invalidateMedicationReads(queryClient);
-      toast.success(t("medications.detail.zone.end.toast"));
-      setEndDialogOpen(false);
-      onAfterAction?.();
-    } catch (failure) {
-      showErrorToast(t("medications.detail.zone.end.failed"), {
-        cause: failure,
-      });
-    } finally {
-      setTier2Busy(false);
     }
   }
 
@@ -152,6 +140,60 @@ export function LifecycleManageBody({
         />
       </label>
 
+      {medication.canEndCourse === true && (
+        <EndCourseControl
+          medicationId={medicationId}
+          medicationName={medication.name}
+          onAfterAction={onAfterAction}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Tier 2: End the course today, behind a confirmation. Rendered only while
+ * the course runs, so when End stops being offered (the course ended in
+ * another tab) the open dialog and its state go away with it.
+ */
+function EndCourseControl({
+  medicationId,
+  medicationName,
+  onAfterAction,
+}: {
+  medicationId: string;
+  medicationName: string;
+  onAfterAction?: () => void;
+}) {
+  const { t } = useTranslations();
+  const queryClient = useQueryClient();
+
+  const [endDialogOpen, setEndDialogOpen] = useState(false);
+  const [tier2Busy, setTier2Busy] = useState(false);
+
+  async function tier2End() {
+    if (tier2Busy) return;
+    setTier2Busy(true);
+    try {
+      await apiPost(`/api/medications/${medicationId}/courses/end`);
+      await invalidateMedicationReads(queryClient);
+      toast.success(t("medications.detail.zone.end.toast"));
+      setEndDialogOpen(false);
+      onAfterAction?.();
+    } catch (failure) {
+      showErrorToast(t("medications.detail.zone.end.failed"), {
+        cause: failure,
+      });
+      // A 409 means the course is no longer running (ended in another tab):
+      // refetch, so the served `canEndCourse` takes the button away.
+      void invalidateMedicationReads(queryClient);
+    } finally {
+      setTier2Busy(false);
+    }
+  }
+
+  return (
+    <>
       <Separator />
 
       <div className="flex items-center justify-between gap-3">
@@ -211,7 +253,7 @@ export function LifecycleManageBody({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }
 

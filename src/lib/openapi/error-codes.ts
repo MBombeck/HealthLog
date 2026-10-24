@@ -312,6 +312,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "medications.course.invalid",
       "medications.course.invalidRange",
       "medications.course.notFound",
+      "medications.course.notRunning",
       "medications.course.oneShot",
       "medications.course.overlap",
       "medications.course.windowRequired",
