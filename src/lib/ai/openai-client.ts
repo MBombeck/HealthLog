@@ -15,8 +15,12 @@ import {
   learnedReasoningDialect,
   rememberReasoningDialect,
 } from "./reasoning/dialect-cache";
-import { REASONING_THINKING_BUDGET } from "./reasoning/levels";
 import {
+  REASONING_THINKING_BUDGET,
+  uncontrolledThinkingRoom,
+} from "./reasoning/levels";
+import {
+  answerOf,
   isOpenRouterEndpoint,
   levelOfWireEffort,
   openAIOffEffort,
@@ -206,9 +210,22 @@ export class OpenAIClient implements AIProvider {
       reasoningWire.kind === "none" || reasoningWire.effort === "none"
         ? null
         : levelOfWireEffort(reasoningWire.effort);
-    const thinkingTokens = wireLevel
-      ? REASONING_THINKING_BUDGET[wireLevel === "off" ? "low" : wireLevel]
-      : 0;
+    // #1276 — on a gateway the room follows the call's level, not the wire:
+    // a model behind it may reason whatever `reasoning_effort` says, `none`
+    // included, and a `none` sent because of the #1267 lesson or the
+    // person's Off must not leave it the bare answer budget to think in.
+    // Without a level of its own, a call gets the `low` room once the model
+    // has shown it reasons unasked.
+    const thinkingTokens = this.isGateway
+      ? params.reasoning
+        ? uncontrolledThinkingRoom(params.reasoning.effort)
+        : learnedReasoningDialect(this.reasoningDialectKey()) ===
+            ANSWERS_ONLY_UNREASONED
+          ? uncontrolledThinkingRoom("off")
+          : 0
+      : wireLevel
+        ? REASONING_THINKING_BUDGET[wireLevel === "off" ? "low" : wireLevel]
+        : 0;
     const tokenBudget = (params.maxTokens ?? 1000) + thinkingTokens;
     const capabilityParams = capabilities.supportsSamplingControls
       ? {
@@ -409,8 +426,37 @@ export class OpenAIClient implements AIProvider {
     }
 
     const choice = json.choices?.[0];
-    let content = choice?.message?.content;
     const toolCalls = parseOpenAIToolCalls(choice);
+    // v1.41 — what the call reasoned. Gateways return the text as
+    // `reasoning` (OpenRouter, vLLM, Ollama) or `reasoning_content`
+    // (LiteLLM, llama.cpp), some both with the same text; `api.openai.com`
+    // returns none on this wire. One copy is kept.
+    const message = (choice?.message ?? {}) as Record<string, unknown>;
+    const fieldedReasoning = [
+      message.reasoning,
+      message.reasoning_content,
+    ].find((v): v is string => typeof v === "string" && v.trim().length > 0);
+    // #1276 — reasoning the server did not separate never becomes the
+    // answer: an inline `<think>` block (or only its closing tag, when the
+    // chat template opened it), or a reply that filled a ceiling sized for
+    // thinking with unlabelled text. Only a gateway's ceiling is sized that
+    // way here; `api.openai.com` never inlines its reasoning.
+    const rawContent = choice?.message?.content ?? "";
+    const separated = answerOf(rawContent, {
+      fieldedReasoning: fieldedReasoning !== undefined,
+      finishReason: choice?.finish_reason,
+      hasToolCalls: toolCalls !== undefined,
+      reasoningRoom: this.isGateway && thinkingTokens > 0,
+    });
+    const inlineReasoning = separated.content !== rawContent;
+    if (separated.unseparated) {
+      emitSignal({
+        action: "ai.gateway.reasoning_unseparated",
+        level: "warn",
+        meta: { provider: this.type },
+      });
+    }
+    let content: string = separated.content;
 
     // v1.28.28 (#470) — gateway JSON-mode shim. LiteLLM (and similar
     // OpenAI-compatible proxies) translate `response_format: json_object`
@@ -422,7 +468,7 @@ export class OpenAIClient implements AIProvider {
     // into `content` so the payload parses instead of silently emptying
     // the insight. The real tool loop (Coach F1) always has tools and
     // never enters JSON mode, so it is untouched.
-    const trimmedContent = content?.trim() ?? "";
+    const trimmedContent = content.trim();
     if (useJsonFormat && (trimmedContent === "" || trimmedContent === "{}")) {
       const args = choice?.message?.tool_calls?.[0]?.function?.arguments;
       if (typeof args === "string" && args.trim().length > 0) {
@@ -439,10 +485,7 @@ export class OpenAIClient implements AIProvider {
       // and ask again. Same rule as the Local client.
       const sentEffort =
         reasoningWire.kind !== "none" ? reasoningWire.effort : entryEffort;
-      const message = (choice?.message ?? {}) as Record<string, unknown>;
-      const hadReasoning = [message.reasoning, message.reasoning_content].some(
-        (v) => typeof v === "string" && v.trim().length > 0,
-      );
+      const hadReasoning = fieldedReasoning !== undefined || inlineReasoning;
       if (
         this.isGateway &&
         sentEffort !== "none" &&
@@ -485,13 +528,7 @@ export class OpenAIClient implements AIProvider {
       throw err;
     }
 
-    // v1.41 — what the call reasoned. Gateways return the text as
-    // `reasoning` (OpenRouter, vLLM, Ollama) or `reasoning_content`
-    // (LiteLLM, llama.cpp); `api.openai.com` returns none on this wire.
-    const message = (choice?.message ?? {}) as Record<string, unknown>;
-    const reasoningText = [message.reasoning, message.reasoning_content].find(
-      (v): v is string => typeof v === "string" && v.trim().length > 0,
-    );
+    const reasoningText = fieldedReasoning ?? separated.reasoning;
     const summary = reasoningText ? [reasoningText.trim()] : [];
     const emit = params.reasoning ? params.onReasoning : undefined;
     if (emit) {
@@ -511,7 +548,7 @@ export class OpenAIClient implements AIProvider {
       learnedReasoningDialect(this.reasoningDialectKey()) === "none";
 
     return {
-      content: content ?? "",
+      content,
       tokensUsed: json.usage?.total_tokens ?? null,
       cachedInputTokens: parseCachedTokens(json),
       model: this.config.model,

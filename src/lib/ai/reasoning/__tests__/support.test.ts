@@ -175,6 +175,26 @@ describe("parsing helpers", () => {
     });
   });
 
+  it("splits reasoning whose opening tag was part of the prompt", () => {
+    // GLM, Qwen3 and DeepSeek-R1 chat templates end the generation prompt
+    // with `<think>`, so the reply carries only the closing tag. A server
+    // without a reasoning parser returns that verbatim.
+    expect(
+      splitThinkTags("The user asks about sleep.\n</think>\n\nDein Schlaf."),
+    ).toEqual({
+      content: "Dein Schlaf.",
+      reasoning: "The user asks about sleep.",
+    });
+    expect(splitThinkTags("</think>The answer.")).toEqual({
+      content: "The answer.",
+      reasoning: null,
+    });
+    expect(splitThinkTags("<think></think>\nThe answer.")).toEqual({
+      content: "The answer.",
+      reasoning: null,
+    });
+  });
+
   it("maps wire efforts back onto levels", () => {
     expect(levelOfWireEffort("none")).toBe("off");
     expect(levelOfWireEffort("minimal")).toBe("off");

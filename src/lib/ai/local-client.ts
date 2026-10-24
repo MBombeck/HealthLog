@@ -33,8 +33,8 @@ import {
   learnedReasoningDialect,
   rememberReasoningDialect,
 } from "./reasoning/dialect-cache";
-import { REASONING_THINKING_BUDGET } from "./reasoning/levels";
-import { reasoningTitleOf, splitThinkTags } from "./reasoning/support";
+import { uncontrolledThinkingRoom } from "./reasoning/levels";
+import { answerOf, reasoningTitleOf } from "./reasoning/support";
 
 interface LocalClientConfig {
   apiKey?: string | null;
@@ -225,6 +225,8 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     headers: Record<string, string>;
     body: string;
     jsonDialect: LocalJsonDialect;
+    /** The ceiling holds room for reasoning on top of the answer. */
+    reasoningRoom: boolean;
   } {
     const url = `${this.config.baseUrl.replace(/\/$/, "")}/chat/completions`;
     // v1.28.28 (#470) — per-endpoint JSON dialect (see json-dialect.ts).
@@ -251,15 +253,18 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     );
 
     const callEffort = this.callReasoningEffort(params);
-    const sentEffort = this.sentReasoningEffort(params);
     // Reasoning tokens count against `max_tokens` on these servers; the
     // thinking budget rides on top of the answer budget (a ceiling only).
-    const thinkingTokens =
-      params.reasoning &&
-      sentEffort &&
-      sentEffort !== "none" &&
-      params.reasoning.effort !== "off"
-        ? REASONING_THINKING_BUDGET[params.reasoning.effort]
+    // #1276 — by the call's level, not by what the wire says: a model may
+    // reason whatever `reasoning_effort` asks, `none` included, and the
+    // `none` sent for Off or after the #1267 lesson must not leave it the
+    // bare answer budget to think in. A call without a level gets the `low`
+    // room once the model has shown it reasons unasked.
+    const thinkingTokens = params.reasoning
+      ? uncontrolledThinkingRoom(params.reasoning.effort)
+      : learnedReasoningDialect(this.reasoningDialectKey()) ===
+          ANSWERS_ONLY_UNREASONED
+        ? uncontrolledThinkingRoom("off")
         : 0;
     const body = JSON.stringify({
       model: this.config.model,
@@ -298,7 +303,13 @@ export class LocalOpenAICompatibleClient implements AIProvider {
         : {}),
     });
 
-    return { url, headers, body, jsonDialect };
+    return {
+      url,
+      headers,
+      body,
+      jsonDialect,
+      reasoningRoom: thinkingTokens > 0,
+    };
   }
 
   private reasoningDialectKey() {
@@ -375,13 +386,52 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     return true;
   }
 
+  /**
+   * #1276 — the answer and the reasoning of a non-streamed message, for
+   * every caller: `reasoning_content` / `reasoning` beside `content`, an
+   * inline `<think>` block (or only its closing tag), or a reply that filled
+   * a ceiling sized for thinking with unlabelled text (`answerOf`). Reasoning
+   * never stays in `content`; only a caller that asked for it is told.
+   */
+  private separate(
+    params: CompletionParams,
+    message: { content?: string | null } | undefined,
+    finishReason: string | undefined,
+    reasoningRoom: boolean,
+  ): { content: string; hadReasoning: boolean; collector: ReasoningCollector } {
+    const collector = new ReasoningCollector(params);
+    const fielded = messageReasoning(message);
+    if (fielded) collector.add(fielded);
+    const raw = message?.content ?? "";
+    const separated = answerOf(raw, {
+      fieldedReasoning: fielded !== null,
+      finishReason,
+      hasToolCalls: false,
+      reasoningRoom,
+    });
+    if (separated.reasoning) collector.add(separated.reasoning);
+    if (separated.unseparated) this.signalUnseparated();
+    return {
+      content: separated.content,
+      hadReasoning: fielded !== null || separated.content !== raw,
+      collector,
+    };
+  }
+
+  /** A reply that was reasoning the server never separated from the answer. */
+  private signalUnseparated(): void {
+    emitSignal({
+      action: "ai.local.reasoning_unseparated",
+      level: "warn",
+      meta: { provider: "local" },
+    });
+  }
+
   async generateCompletion(
     params: CompletionParams,
   ): Promise<CompletionResult> {
-    const { url, headers, body, jsonDialect } = this.buildRequest(
-      params,
-      false,
-    );
+    const { url, headers, body, jsonDialect, reasoningRoom } =
+      this.buildRequest(params, false);
 
     // safeFetch defaults: no redirect-follow (the local endpoint is the
     // most exploitable on this surface — a user-controlled baseUrl that
@@ -509,23 +559,14 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       model: this.config.model,
     });
 
-    const collector = new ReasoningCollector(params);
-    let content = json.choices?.[0]?.message?.content;
-    if (params.reasoning) {
-      const fielded = messageReasoning(json.choices?.[0]?.message);
-      if (fielded) collector.add(fielded);
-      // Only a caller that asked for reasoning gets the inline block split
-      // off; every other caller keeps the text exactly as it came.
-      if (content) {
-        const split = splitThinkTags(content);
-        if (split.reasoning) collector.add(split.reasoning);
-        content = split.content;
-      }
-    }
     const finish = json.choices?.[0]?.finish_reason;
+    const { content, hadReasoning, collector } = this.separate(
+      params,
+      json.choices?.[0]?.message,
+      finish,
+      reasoningRoom,
+    );
     if (!content) {
-      const hadReasoning =
-        messageReasoning(json.choices?.[0]?.message) !== null;
       if (this.learnAnswerlessReasoning(params, hadReasoning, finish)) {
         return this.generateCompletion(params);
       }
@@ -583,7 +624,10 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     params: CompletionParams,
     onDelta: (delta: string) => void,
   ): Promise<CompletionResult> {
-    const { url, headers, body } = this.buildRequest(params, true);
+    const { url, headers, body, reasoningRoom } = this.buildRequest(
+      params,
+      true,
+    );
     const egress = aiEgressPolicyFor(url, {
       operatorTrusted: this.config.operatorTrusted,
     });
@@ -646,20 +690,17 @@ export class LocalOpenAICompatibleClient implements AIProvider {
         label: "local AI endpoint",
         model: this.config.model,
       });
-      const collector = new ReasoningCollector(params);
-      let buffered = json?.choices?.[0]?.message?.content;
-      if (params.reasoning) {
-        const fielded = messageReasoning(json?.choices?.[0]?.message);
-        if (fielded) collector.add(fielded);
-        if (buffered) {
-          const split = splitThinkTags(buffered);
-          if (split.reasoning) collector.add(split.reasoning);
-          buffered = split.content;
-        }
-      }
+      const {
+        content: buffered,
+        hadReasoning,
+        collector,
+      } = this.separate(
+        params,
+        json?.choices?.[0]?.message,
+        json?.choices?.[0]?.finish_reason,
+        reasoningRoom,
+      );
       if (!buffered) {
-        const hadReasoning =
-          messageReasoning(json?.choices?.[0]?.message) !== null;
         if (
           this.learnAnswerlessReasoning(
             params,
@@ -697,11 +738,10 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     // v1.41 — reasoning on the stream: the `reasoning_content` / `reasoning`
     // delta fields, or a leading `<think>` block inside `content`. Inline
     // reasoning never reaches `onDelta`; it would otherwise show up as the
-    // answer. Only for a caller that asked for reasoning.
+    // answer. #1276 — for every caller: reasoning is never an answer, and
+    // only a caller that asked for it hears about it (`ReasoningCollector`).
     const collector = new ReasoningCollector(params);
-    let thinkState: "detect" | "inside" | "passthrough" = params.reasoning
-      ? "detect"
-      : "passthrough";
+    let thinkState: "detect" | "inside" | "passthrough" = "detect";
     let pending = "";
     const passContent = (text: string) => {
       if (!text) return;
@@ -849,6 +889,21 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       collector.add(pending);
     }
     pending = "";
+    // #1276 — what the detector cannot see while streaming: a closing tag
+    // with no opening one (the chat template opened the block), or a reply
+    // that filled a ceiling sized for thinking with unlabelled text. The
+    // deltas already sent are a liveness signal only (the Coach counts
+    // them); the returned content is what every guard reads.
+    const separated = answerOf(content, {
+      fieldedReasoning: streamedReasoning,
+      finishReason,
+      hasToolCalls: false,
+      reasoningRoom,
+    });
+    if (separated.reasoning) collector.add(separated.reasoning);
+    if (separated.unseparated) this.signalUnseparated();
+    const tookReasoning = separated.content !== content;
+    content = separated.content;
     if (!content) {
       // A stream that ended with a failure frame and no token reports the
       // failure, not "empty content".
@@ -858,7 +913,8 @@ export class LocalOpenAICompatibleClient implements AIProvider {
         model: this.config.model,
       });
       // An unclosed inline `<think>` block is reasoning too.
-      const hadReasoning = streamedReasoning || endState === "inside";
+      const hadReasoning =
+        streamedReasoning || endState === "inside" || tookReasoning;
       if (this.learnAnswerlessReasoning(params, hadReasoning, finishReason)) {
         return this.generateCompletionStream(params, onDelta);
       }

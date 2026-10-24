@@ -268,19 +268,80 @@ export function reasoningTitleOf(text: string): string | null {
 
 /**
  * Split a reply that inlines its reasoning as a leading `<think>…</think>`
- * block (some local models do). Only a block at the very start counts; a
- * mention later in the prose stays prose. An unclosed block means the answer
- * budget ran out inside the reasoning: everything is reasoning, no answer.
+ * block (some local models do, and any server without a reasoning parser
+ * passes it through). Only a block at the very start counts; a mention later
+ * in the prose stays prose. An unclosed block means the answer budget ran out
+ * inside the reasoning: everything is reasoning, no answer.
+ *
+ * #1276 — a reply can also carry only the closing tag: GLM, Qwen3 and
+ * DeepSeek-R1 chat templates end the generation prompt with `<think>`, so the
+ * model's output starts inside the block. Everything before the first
+ * `</think>` of such a reply is reasoning.
  */
 export function splitThinkTags(content: string): {
   content: string;
   reasoning: string | null;
 } {
-  const m = /^\s*<think>([\s\S]*?)(<\/think>|$)/.exec(content);
+  const m =
+    /^\s*<think>([\s\S]*?)(<\/think>|$)/.exec(content) ??
+    /^([\s\S]*?)(<\/think>)/.exec(content);
   if (!m) return { content, reasoning: null };
   const reasoning = m[1].trim();
   const rest = m[2] ? content.slice(m[0].length).replace(/^\s+/, "") : "";
   return { content: rest, reasoning: reasoning.length > 0 ? reasoning : null };
+}
+
+/**
+ * #1276 — what a Chat Completions reply's `content` holds, for a wire whose
+ * reasoning switch the client does not control (a gateway, a local server).
+ *
+ *  - Inline reasoning (`<think>…</think>`, or only the closing tag) is split
+ *    off by {@link splitThinkTags}.
+ *  - A reply that ran into a ceiling which held room for reasoning
+ *    (`finish_reason: "length"`, `reasoningRoom`), with no reasoning field
+ *    beside it, no tag and no tool call, is reasoning the server did not
+ *    separate: the budget was sized for thinking plus an answer, so text
+ *    that fills all of it unlabelled is the thought, cut off. It is never
+ *    the answer.
+ *
+ * `reasoning` is the text taken out of `content`, for the reasoning channel.
+ * `unseparated` marks the second case so the caller can say so in its log.
+ */
+export function answerOf(
+  content: string | null | undefined,
+  reply: {
+    /** The reply carried `reasoning` / `reasoning_content` beside `content`. */
+    fieldedReasoning: boolean;
+    finishReason: string | null | undefined;
+    hasToolCalls: boolean;
+    /** The request's ceiling held room for reasoning on top of the answer. */
+    reasoningRoom: boolean;
+  },
+): { content: string; reasoning: string | null; unseparated: boolean } {
+  const text = content ?? "";
+  if (!text) return { content: "", reasoning: null, unseparated: false };
+  const split = splitThinkTags(text);
+  if (split.content !== text || split.reasoning !== null) {
+    return {
+      content: split.content,
+      reasoning: split.reasoning,
+      unseparated: false,
+    };
+  }
+  if (
+    reply.finishReason === "length" &&
+    reply.reasoningRoom &&
+    !reply.fieldedReasoning &&
+    !reply.hasToolCalls
+  ) {
+    const reasoning = text.trim();
+    return {
+      content: "",
+      reasoning: reasoning.length > 0 ? reasoning : null,
+      unseparated: true,
+    };
+  }
+  return { content: text, reasoning: null, unseparated: false };
 }
 
 /** The level a provider's wire effort corresponds to, for `downgradedTo`. */
