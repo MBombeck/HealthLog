@@ -91,6 +91,7 @@ import {
 } from "../src/lib/crypto";
 import { ENVIRONMENT_LOCATION_AAD } from "../src/lib/crypto/encrypted-columns";
 import { withBriefingGeneratedAt } from "../src/lib/insights/briefing-generated-at";
+import { dailyStatsExternalId } from "../src/lib/measurements/apple-health-mapping";
 import { sealInsightsCachedText } from "../src/lib/insights/cached-text-cipher";
 import {
   DEFAULT_CHART_OVERLAY_PREFS,
@@ -600,39 +601,49 @@ export async function seed() {
       settleLatest(series);
     }
 
+    // Each series carries the source that writes it on a real account, the
+    // way the integration writes it: the Withings scale and cuff (weight,
+    // body fat, blood pressure with its pulse) land as WITHINGS with no
+    // device type (`src/lib/withings/sync.ts`), the watch's resting heart
+    // rate, sleep and steps as APPLE_HEALTH. The list badges every row that
+    // is not MANUAL, and Settings > Sources names Withings for these
+    // metrics, so a hand-entered tag here left the demo's newest weight and
+    // blood-pressure rows without a source while the ladder named one. The
+    // waist stays MANUAL: it is a tape measure, and nothing syncs it.
     for (let i = 0; i < span; i++) {
       const date = daysAgo(days - i);
 
       // Weight (daily)
       await client.query(
         `INSERT INTO measurements (id, user_id, type, value, unit, source, measured_at, created_at, updated_at)
-         VALUES ($1, $2, 'WEIGHT', $3, 'kg', 'MANUAL', $4, $4, $4)`,
+         VALUES ($1, $2, 'WEIGHT', $3, 'kg', 'WITHINGS', $4, $4, $4)`,
         [cuid(), userId, weights[i], date],
       );
 
       // Blood pressure (daily)
       await client.query(
         `INSERT INTO measurements (id, user_id, type, value, unit, source, measured_at, created_at, updated_at)
-         VALUES ($1, $2, 'BLOOD_PRESSURE_SYS', $3, 'mmHg', 'MANUAL', $4, $4, $4)`,
+         VALUES ($1, $2, 'BLOOD_PRESSURE_SYS', $3, 'mmHg', 'WITHINGS', $4, $4, $4)`,
         [cuid(), userId, Math.round(sysBP[i]), date],
       );
       await client.query(
         `INSERT INTO measurements (id, user_id, type, value, unit, source, measured_at, created_at, updated_at)
-         VALUES ($1, $2, 'BLOOD_PRESSURE_DIA', $3, 'mmHg', 'MANUAL', $4, $4, $4)`,
+         VALUES ($1, $2, 'BLOOD_PRESSURE_DIA', $3, 'mmHg', 'WITHINGS', $4, $4, $4)`,
         [cuid(), userId, Math.round(diaBP[i]), date],
       );
 
-      // Spot pulse (daily)
+      // Spot pulse (daily), the heart pulse the cuff reports with each
+      // reading.
       await client.query(
         `INSERT INTO measurements (id, user_id, type, value, unit, source, measured_at, created_at, updated_at)
-         VALUES ($1, $2, 'PULSE', $3, 'bpm', 'MANUAL', $4, $4, $4)`,
+         VALUES ($1, $2, 'PULSE', $3, 'bpm', 'WITHINGS', $4, $4, $4)`,
         [cuid(), userId, Math.round(pulse[i]), date],
       );
 
       // Resting heart rate (daily) — scored by the resting-pulse tile
       await client.query(
-        `INSERT INTO measurements (id, user_id, type, value, unit, source, measured_at, created_at, updated_at)
-         VALUES ($1, $2, 'RESTING_HEART_RATE', $3, 'bpm', 'MANUAL', $4, $4, $4)`,
+        `INSERT INTO measurements (id, user_id, type, value, unit, source, device_type, measured_at, created_at, updated_at)
+         VALUES ($1, $2, 'RESTING_HEART_RATE', $3, 'bpm', 'APPLE_HEALTH', 'watch', $4, $4, $4)`,
         [cuid(), userId, Math.round(restingHr[i]), date],
       );
 
@@ -640,7 +651,7 @@ export async function seed() {
       if (i % 2 === 0 || Math.random() > 0.5) {
         await client.query(
           `INSERT INTO measurements (id, user_id, type, value, unit, source, measured_at, created_at, updated_at)
-           VALUES ($1, $2, 'BODY_FAT', $3, '%', 'MANUAL', $4, $4, $4)`,
+           VALUES ($1, $2, 'BODY_FAT', $3, '%', 'WITHINGS', $4, $4, $4)`,
           [cuid(), userId, bodyFat[i], date],
         );
       }
@@ -653,17 +664,27 @@ export async function seed() {
       const nightsAgo = days - i;
       if (nightsAgo >= 7) {
         await client.query(
-          `INSERT INTO measurements (id, user_id, type, value, unit, source, measured_at, created_at, updated_at)
-           VALUES ($1, $2, 'SLEEP_DURATION', $3, 'minutes', 'MANUAL', $4, $4, $4)`,
+          `INSERT INTO measurements (id, user_id, type, value, unit, source, device_type, measured_at, created_at, updated_at)
+           VALUES ($1, $2, 'SLEEP_DURATION', $3, 'minutes', 'APPLE_HEALTH', 'watch', $4, $4, $4)`,
           [cuid(), userId, Math.round(sleepMin[i]), date],
         );
       }
 
-      // Steps (daily)
+      // Steps (daily), as the one daily total the iOS app writes per day
+      // under its `stats:` key, so the legacy-step consolidation leaves it be.
       await client.query(
-        `INSERT INTO measurements (id, user_id, type, value, unit, source, measured_at, created_at, updated_at)
-         VALUES ($1, $2, 'ACTIVITY_STEPS', $3, 'steps', 'MANUAL', $4, $4, $4)`,
-        [cuid(), userId, Math.round(steps[i]), date],
+        `INSERT INTO measurements (id, user_id, type, value, unit, source, device_type, external_id, measured_at, created_at, updated_at)
+         VALUES ($1, $2, 'ACTIVITY_STEPS', $3, 'steps', 'APPLE_HEALTH', 'watch', $4, $5, $5, $5)`,
+        [
+          cuid(),
+          userId,
+          Math.round(steps[i]),
+          dailyStatsExternalId(
+            "HKQuantityTypeIdentifierStepCount",
+            berlinDayKey(date),
+          ),
+          date,
+        ],
       );
 
       // Waist circumference (fortnightly, plus today). The Health Score's
@@ -784,8 +805,12 @@ export async function seed() {
     // the same-day weight + body-fat series above so the numbers reconcile:
     // fat mass = weight × bodyFat%, fat-free mass = weight − fat mass, and
     // the muscle / water / bone / BMI components hang off those so the demo
-    // never contradicts its own headline weight + body-fat tiles. Source
-    // APPLE_HEALTH with device_type 'scale' so they read as device-tracked.
+    // never contradicts its own headline weight + body-fat tiles. The
+    // components the Withings scale measures arrive as WITHINGS, the way its
+    // sync writes them; lean body mass and BMI, which Withings does not
+    // report but its app writes to Apple Health, arrive as APPLE_HEALTH with
+    // device_type 'scale'. HealthKit has no fat-mass, muscle, water, bone or
+    // visceral-fat type, so none of those can come from Apple Health.
     // Canonical units (see prisma/schema.prisma + VALUE_RANGES): mass
     // components in kg, VISCERAL_FAT a 1–12 rating, BODY_MASS_INDEX kg/m².
     console.log("Creating body composition series...");
@@ -811,22 +836,65 @@ export async function seed() {
       const visceralFat = Math.round(7 - (i / span) * 1.5);
       const bmi = Math.round((weightKg / (HEIGHT_M * HEIGHT_M)) * 10) / 10;
 
-      const composition: Array<{ type: string; value: number; unit: string }> =
-        [
-          { type: "FAT_MASS", value: fatMass, unit: "kg" },
-          { type: "FAT_FREE_MASS", value: fatFree, unit: "kg" },
-          { type: "LEAN_BODY_MASS", value: leanMass, unit: "kg" },
-          { type: "MUSCLE_MASS", value: muscleMass, unit: "kg" },
-          { type: "TOTAL_BODY_WATER", value: bodyWater, unit: "kg" },
-          { type: "BONE_MASS", value: boneMass, unit: "kg" },
-          { type: "VISCERAL_FAT", value: visceralFat, unit: "rating" },
-          { type: "BODY_MASS_INDEX", value: bmi, unit: "kg/m²" },
-        ];
+      const composition: Array<{
+        type: string;
+        value: number;
+        unit: string;
+        source: "WITHINGS" | "APPLE_HEALTH";
+      }> = [
+        { type: "FAT_MASS", value: fatMass, unit: "kg", source: "WITHINGS" },
+        {
+          type: "FAT_FREE_MASS",
+          value: fatFree,
+          unit: "kg",
+          source: "WITHINGS",
+        },
+        {
+          type: "LEAN_BODY_MASS",
+          value: leanMass,
+          unit: "kg",
+          source: "APPLE_HEALTH",
+        },
+        {
+          type: "MUSCLE_MASS",
+          value: muscleMass,
+          unit: "kg",
+          source: "WITHINGS",
+        },
+        {
+          type: "TOTAL_BODY_WATER",
+          value: bodyWater,
+          unit: "kg",
+          source: "WITHINGS",
+        },
+        { type: "BONE_MASS", value: boneMass, unit: "kg", source: "WITHINGS" },
+        {
+          type: "VISCERAL_FAT",
+          value: visceralFat,
+          unit: "rating",
+          source: "WITHINGS",
+        },
+        {
+          type: "BODY_MASS_INDEX",
+          value: bmi,
+          unit: "kg/m²",
+          source: "APPLE_HEALTH",
+        },
+      ];
       for (const c of composition) {
         await client.query(
           `INSERT INTO measurements (id, user_id, type, value, unit, source, device_type, measured_at, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, $5, 'APPLE_HEALTH', 'scale', $6, $6, $6)`,
-          [cuid(), userId, c.type, c.value, c.unit, date],
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8, $8)`,
+          [
+            cuid(),
+            userId,
+            c.type,
+            c.value,
+            c.unit,
+            c.source,
+            c.source === "APPLE_HEALTH" ? "scale" : null,
+            date,
+          ],
         );
       }
     }
