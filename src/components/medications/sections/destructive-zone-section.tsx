@@ -98,24 +98,9 @@ export function LifecycleManageBody({
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const userTz = user?.timezone || DEFAULT_TIMEZONE;
-  const canEnd = canEndCourse(courseStatus);
 
   const [paused, setPaused] = useState(!active);
   const [tier1Busy, setTier1Busy] = useState(false);
-  const [endDialogOpen, setEndDialogOpen] = useState(false);
-  const [tier2Busy, setTier2Busy] = useState(false);
-
-  // A refetch can stop offering End while its confirmation is open (the
-  // course ended in another tab). Drop the open state with it, or the dialog
-  // would pop up by itself once a later course offers End again. Adjusted
-  // during render, React's pattern for state that follows a prop.
-  const [offeredEnd, setOfferedEnd] = useState(canEnd);
-  if (offeredEnd !== canEnd) {
-    setOfferedEnd(canEnd);
-    if (!canEnd) setEndDialogOpen(false);
-  }
 
   async function tier1Toggle(pauseNext: boolean) {
     if (tier1Busy) return;
@@ -140,27 +125,6 @@ export function LifecycleManageBody({
       });
     } finally {
       setTier1Busy(false);
-    }
-  }
-
-  async function tier2End() {
-    if (tier2Busy) return;
-    setTier2Busy(true);
-    try {
-      await apiPut(
-        `/api/medications/${medicationId}`,
-        endCourseBody(new Date(), userTz),
-      );
-      await invalidateMedicationReads(queryClient);
-      toast.success(t("medications.detail.zone.end.toast"));
-      setEndDialogOpen(false);
-      onAfterAction?.();
-    } catch (failure) {
-      showErrorToast(t("medications.detail.zone.end.failed"), {
-        cause: failure,
-      });
-    } finally {
-      setTier2Busy(false);
     }
   }
 
@@ -194,70 +158,122 @@ export function LifecycleManageBody({
         />
       </label>
 
-      {canEnd ? (
-        <>
-          <Separator />
-
-          <div className="flex items-center justify-between gap-3">
-            <div className="space-y-1">
-              <p className="text-foreground text-sm font-medium">
-                {t("medications.detail.zone.end.title")}
-              </p>
-              <p className="text-muted-foreground text-xs">
-                {t("medications.detail.zone.end.helper")}
-              </p>
-            </div>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setEndDialogOpen(true)}
-              className="min-h-11 font-semibold sm:min-h-9"
-              data-slot="destructive-zone-end"
-            >
-              <Archive aria-hidden="true" className="h-4 w-4" />
-              {t("medications.detail.zone.end.button")}
-            </Button>
-          </div>
-
-          {/* Tier 2 — Beenden confirm */}
-          <AlertDialog open={endDialogOpen} onOpenChange={setEndDialogOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  {t("medications.detail.zone.end.dialogTitle", {
-                    name: medicationName,
-                  })}
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  {t("medications.detail.zone.end.dialogBody")}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                <AlertDialogAction
-                  variant="destructive"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    void tier2End();
-                  }}
-                  disabled={tier2Busy}
-                  aria-busy={tier2Busy || undefined}
-                  className="font-semibold"
-                >
-                  {tier2Busy && (
-                    <Loader2
-                      aria-hidden="true"
-                      className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none"
-                    />
-                  )}
-                  {t("medications.detail.zone.end.button")}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </>
-      ) : null}
+      {canEndCourse(courseStatus) && (
+        <EndCourseControl
+          medicationId={medicationId}
+          medicationName={medicationName}
+          onAfterAction={onAfterAction}
+        />
+      )}
     </div>
+  );
+}
+
+/**
+ * Tier 2: End the course today, behind a confirmation. Rendered only while
+ * the course runs, so when End stops being offered (the course ended in
+ * another tab) the open dialog and its state go away with it.
+ */
+function EndCourseControl({
+  medicationId,
+  medicationName,
+  onAfterAction,
+}: {
+  medicationId: string;
+  medicationName: string;
+  onAfterAction?: () => void;
+}) {
+  const { t } = useTranslations();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userTz = user?.timezone || DEFAULT_TIMEZONE;
+
+  const [endDialogOpen, setEndDialogOpen] = useState(false);
+  const [tier2Busy, setTier2Busy] = useState(false);
+
+  async function tier2End() {
+    if (tier2Busy) return;
+    setTier2Busy(true);
+    try {
+      await apiPut(
+        `/api/medications/${medicationId}`,
+        endCourseBody(new Date(), userTz),
+      );
+      await invalidateMedicationReads(queryClient);
+      toast.success(t("medications.detail.zone.end.toast"));
+      setEndDialogOpen(false);
+      onAfterAction?.();
+    } catch (failure) {
+      showErrorToast(t("medications.detail.zone.end.failed"), {
+        cause: failure,
+      });
+    } finally {
+      setTier2Busy(false);
+    }
+  }
+
+  return (
+    <>
+      <Separator />
+
+      <div className="flex items-center justify-between gap-3">
+        <div className="space-y-1">
+          <p className="text-foreground text-sm font-medium">
+            {t("medications.detail.zone.end.title")}
+          </p>
+          <p className="text-muted-foreground text-xs">
+            {t("medications.detail.zone.end.helper")}
+          </p>
+        </div>
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => setEndDialogOpen(true)}
+          className="min-h-11 font-semibold sm:min-h-9"
+          data-slot="destructive-zone-end"
+        >
+          <Archive aria-hidden="true" className="h-4 w-4" />
+          {t("medications.detail.zone.end.button")}
+        </Button>
+      </div>
+
+      {/* Tier 2 — Beenden confirm */}
+      <AlertDialog open={endDialogOpen} onOpenChange={setEndDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("medications.detail.zone.end.dialogTitle", {
+                name: medicationName,
+              })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("medications.detail.zone.end.dialogBody")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={(e) => {
+                e.preventDefault();
+                void tier2End();
+              }}
+              disabled={tier2Busy}
+              aria-busy={tier2Busy || undefined}
+              className="font-semibold"
+            >
+              {tier2Busy && (
+                <Loader2
+                  aria-hidden="true"
+                  className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none"
+                />
+              )}
+              {t("medications.detail.zone.end.button")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
