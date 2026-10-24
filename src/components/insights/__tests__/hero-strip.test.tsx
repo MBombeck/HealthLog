@@ -302,13 +302,39 @@ describe("<HeroStrip>", () => {
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60_000).toISOString();
       const html = render(
         <HeroStrip
-          briefing={null}
+          briefing={sampleBriefing}
           updatedAt={fiveMinutesAgo}
           now={morningLocal}
         />,
       );
       expect(html).toMatch(/data-slot="insights-hero-strip-generated"/);
       expect(html).toContain("Updated today");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  /**
+   * The caption dates the subtitle. The read withholds a briefing written on
+   * an earlier day while the cache stamp still reads today (a warm that kept
+   * the old text re-stamps the row), so with no briefing the hero showed
+   * "Updated today" under the generic fallback sentence and the card below
+   * it said there was no briefing.
+   */
+  it("withholds the freshness caption when there is no briefing", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(morningLocal);
+    try {
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60_000).toISOString();
+      const html = render(
+        <HeroStrip
+          briefing={null}
+          updatedAt={fiveMinutesAgo}
+          now={morningLocal}
+        />,
+      );
+      expect(html).not.toContain('data-slot="insights-hero-strip-generated"');
+      expect(html).not.toContain("Updated today");
     } finally {
       vi.useRealTimers();
     }

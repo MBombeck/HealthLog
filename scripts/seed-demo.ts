@@ -78,6 +78,8 @@
 
 import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import pg from "pg";
 import { encryptToBytes } from "../src/lib/ai/coach/bytes-codec";
@@ -88,6 +90,7 @@ import {
   getKeyFingerprint,
 } from "../src/lib/crypto";
 import { ENVIRONMENT_LOCATION_AAD } from "../src/lib/crypto/encrypted-columns";
+import { withBriefingGeneratedAt } from "../src/lib/insights/briefing-generated-at";
 import { sealInsightsCachedText } from "../src/lib/insights/cached-text-cipher";
 import {
   DEFAULT_CHART_OVERLAY_PREFS,
@@ -416,7 +419,11 @@ function daylightHours(lat: number, doy: number): number {
 
 // ── Main ─────────────────────────────────────────
 
-async function seed() {
+/**
+ * Seed the demo tenant. Exported so an integration test can run the real
+ * seed and read its output back through the app's own readers.
+ */
+export async function seed() {
   const client = await pool.connect();
 
   try {
@@ -3369,11 +3376,15 @@ async function seed() {
     const bakedProvider = "anthropic";
 
     // ── Comprehensive insight + daily briefing ──
-    // Stored sealed on users.insights_cached_text_encrypted (JSON). The GET
-    // read opens and parses it and
-    // returns it as-is; setting insights_cached_at = NOW() keeps it inside the
-    // 24 h freshness window for the dashboard-snapshot briefing path. The shape
-    // is the union of insightResultSchema (summary / findings / correlations /
+    // Stored sealed on users.insights_cached_text_encrypted (JSON), written
+    // the way a generation writes it (`briefing-request/commit.ts`): the
+    // payload stamped with its generation moment, the cache stamp, and the
+    // language tag. Every briefing reader serves `dailyBriefing` only when
+    // that `briefingGeneratedAt` falls on the reader's today, so a payload
+    // without it reads as text of unknown age: the advisor card and the
+    // dashboard headline stay empty and a warm is asked for, which on the
+    // demo can only fail against the placeholder key. The shape is the union
+    // of insightResultSchema (summary / findings / correlations /
     // recommendations / dataQuality / disclaimer / classification) and the
     // richer optional blocks the dashboard validates (dailyBriefing with
     // paragraph + signalsOfDay + keyFindings, trendAnnotations).
@@ -3461,8 +3472,10 @@ async function seed() {
         "This is a reasoned observation of your own data, not medical advice " +
         "or a diagnosis. Discuss any concerns with your doctor.",
       dailyBriefing: {
+        // No salutation: the hero above it already greets by the hour, and
+        // a demo filmed in the evening read "Good evening" over "Good morning".
         paragraph:
-          "Good morning. Today's picture is a calm one: your most recent " +
+          "Today's picture is a calm one: your most recent " +
           "blood pressure sits comfortably in the optimal band, resting heart " +
           "rate is low, and last night's sleep landed right around your " +
           "target. Weight is holding at its new steady place and your mood " +
@@ -3552,10 +3565,12 @@ async function seed() {
       },
     };
 
+    const briefingWrittenAt = new Date();
     await client.query(
       `UPDATE users
          SET insights_cached_text_encrypted = $2,
-             insights_cached_at = NOW(),
+             insights_cached_at = $5,
+             insights_cached_locale = 'en',
              insights_snapshot_hash = $3,
              insights_briefing_reroll_date = $4
        WHERE id = $1`,
@@ -3563,7 +3578,11 @@ async function seed() {
         userId,
         // Sealed like every write since v1.43.7.
         Buffer.from(
-          sealInsightsCachedText(JSON.stringify(comprehensiveInsight)),
+          sealInsightsCachedText(
+            JSON.stringify(
+              withBriefingGeneratedAt(comprehensiveInsight, briefingWrittenAt),
+            ),
+          ),
         ),
         // A stable fingerprint. The 24 h cache window keeps the row fresh on
         // its own; this value just has to be present + non-null so a
@@ -3573,6 +3592,7 @@ async function seed() {
         // Mark today's briefing re-roll as already done so the once-per-day
         // re-roll path is a no-op (it would fail against the placeholder key).
         todayKey,
+        briefingWrittenAt,
       ],
     );
 
@@ -3841,4 +3861,9 @@ async function seed() {
   }
 }
 
-seed();
+if (
+  process.argv[1] &&
+  resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))
+) {
+  seed();
+}
