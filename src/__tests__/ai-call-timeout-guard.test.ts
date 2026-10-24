@@ -273,12 +273,27 @@ describe("outer bounds around model work allow every call they wait on", () => {
   });
 
   it("the on-demand regenerate makes no more calls in a row than the browser waits for", () => {
-    // The generation and its grounding retry, and the one repeat inside the
-    // client: FORCE_ADVISOR_MODEL_CALLS in the advisor hook.
-    expect([
-      ...stagesIn("lib/insights/briefing-request/completion.ts"),
-      ...stagesIn("lib/insights/briefing-request/grounding.ts"),
-    ]).toEqual(["generate", "grounding-retry"]);
+    // The route's own pipeline: the generation and its grounding retry, and
+    // the one repeat inside the client (FORCE_ADVISOR_MODEL_CALLS in the
+    // advisor hook). An unparseable reply or a screened payload is refused,
+    // not retried, and the background generator is never reached from here,
+    // which is why this is shorter than COMPREHENSIVE_MODEL_CALLS. A new
+    // stage anywhere on the route means recounting the browser's abort.
+    const pipeline = [
+      "app/api/insights/generate/route.ts",
+      ...walkSourceFiles(join(SRC, "lib/insights/briefing-request"), {
+        floor: 8,
+      })
+        .filter((f) => !f.includes("__tests__"))
+        .map((f) => `lib/insights/briefing-request/${f}`),
+    ];
+    expect(pipeline.flatMap(stagesIn).sort()).toEqual([
+      "generate",
+      "grounding-retry",
+    ]);
+    for (const rel of pipeline) {
+      expect(code(rel), rel).not.toMatch(/\bgenerateComprehensiveInsight\b/);
+    }
     expect(code("components/insights/use-insights-advisor.ts")).toMatch(
       /\bFORCE_ADVISOR_MODEL_CALLS\s*=\s*3\b/,
     );

@@ -128,6 +128,12 @@ const ADVISOR_TIMEOUT_MS = 8_000;
  * answered nothing is asked once more inside the first, so three calls at the
  * per-call timeout, at least the briefing's own 180 s default each. Never
  * shorter than the server: the abort is only for a request nobody answers.
+ *
+ * Fewer than `COMPREHENSIVE_MODEL_CALLS` on purpose: the route runs its own
+ * pipeline (`src/lib/insights/briefing-request/`), not the background
+ * generator, and answers an unparseable reply or a screened payload with a
+ * refusal instead of the generator's JSON retry and screen repair.
+ * `ai-call-timeout-guard.test.ts` holds that pipeline to these two stages.
  */
 const FORCE_ADVISOR_MODEL_CALLS = 3;
 
