@@ -42,10 +42,7 @@ import { prisma } from "@/lib/db";
 import { loadOwnedDocument } from "@/lib/documents/ai-route-support";
 import { loadDocumentChatText } from "@/lib/documents/content-index";
 import { refusalAsFailure } from "@/lib/documents/ai-runs/http";
-import {
-  DOCUMENT_EXTRACT_MODEL_CALLS,
-  executeDocumentExtract,
-} from "@/lib/documents/ai-runs/extract-run";
+import { executeDocumentExtract } from "@/lib/documents/ai-runs/extract-run";
 import {
   DOCUMENT_INDEX_MODEL_CALLS,
   executeDocumentIndex,
@@ -77,6 +74,10 @@ import {
   type DocumentAiRunKindValue,
 } from "@/lib/documents/ai-runs/types";
 import {
+  OCR_EXTRACT_MODEL_CALLS,
+  type OcrSchedule,
+} from "@/lib/documents/ocr-plan";
+import {
   requireDocumentTextProvider,
   requireDocumentVisionProvider,
 } from "@/lib/documents/provider-order";
@@ -85,11 +86,7 @@ import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { jobDeadline } from "@/lib/jobs/job-budget";
 import { jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { requireLabsOcrProvider } from "@/lib/labs/ocr-capability";
-import {
-  executeOcrExtraction,
-  OCR_EXTRACT_MODEL_CALLS,
-  type OcrSchedule,
-} from "@/lib/labs/ocr-run";
+import { executeOcrExtraction } from "@/lib/labs/ocr-run";
 import { annotate } from "@/lib/logging/context";
 import { logCaught } from "@/lib/logging/signal";
 import {
@@ -245,11 +242,14 @@ async function runDocumentIndex(
 }
 
 /**
- * Arm the deadline for one lab read and hand the read a schedule: it then
- * plans as many reads as the deadline allows (a long PDF a page at a time)
- * and moves the deadline to cover them.
+ * Arm the deadline for one report transcription (a lab scan or a document
+ * extraction) and hand it a schedule: it then plans as many reads as the
+ * deadline allows (a long PDF a page at a time, long text in parts) and
+ * moves the deadline to cover them. Both surfaces read under the same
+ * per-call timeout (`AI_BUDGETS.ocrExtract`), so the deadline is measured in
+ * the unit the reads actually run in.
  */
-async function labsOcrSchedule(
+async function ocrReadSchedule(
   runId: string,
   responseTimeoutSeconds: number | null | undefined,
   deadlineAt: number | undefined,
@@ -282,7 +282,7 @@ async function runLabsOcr(
   if (run.params.mode === "text") {
     const pick = await requireLabsOcrProvider(run.userId, "text");
     await assertRunMayEgress("labsOcr", run.userId, [pick.providerType]);
-    const schedule = await labsOcrSchedule(
+    const schedule = await ocrReadSchedule(
       run.id,
       pick.entry.instance.responseTimeoutSeconds,
       deadlineAt,
@@ -299,7 +299,7 @@ async function runLabsOcr(
   if (!mime) throw new Error("lab scan run without a MIME type");
   const pick = await requireLabsOcrProvider(run.userId, "vision");
   await assertRunMayEgress("labsOcr", run.userId, [pick.providerType]);
-  const schedule = await labsOcrSchedule(
+  const schedule = await ocrReadSchedule(
     run.id,
     pick.entry.instance.responseTimeoutSeconds,
     deadlineAt,
@@ -478,9 +478,24 @@ async function runDocumentExtractRead(
 ): Promise<AiRunOutcome<AiRunResult>> {
   const document = await loadRunDocument(run);
   const text = run.params.mode === "text" ? await extractText(run) : null;
-  const read = await pickForDocumentRead(
-    run,
-    DOCUMENT_EXTRACT_MODEL_CALLS,
+  // Picked the way the route picks, then the wire re-checked for exactly
+  // that provider.
+  const read =
+    run.params.mode === "text"
+      ? {
+          mode: "text" as const,
+          pick: await requireDocumentTextProvider(run.userId),
+        }
+      : {
+          mode: "vision" as const,
+          pick: await requireDocumentVisionProvider(run.userId),
+        };
+  await assertRunMayEgress("documentAi", run.userId, [read.pick.providerType]);
+  // The extraction reads a long document in parts, as the lab scan does, so
+  // its deadline is planned and armed the same way.
+  const schedule = await ocrReadSchedule(
+    run.id,
+    read.pick.entry.instance.responseTimeoutSeconds,
     deadlineAt,
     now,
   );
@@ -498,15 +513,19 @@ async function runDocumentExtractRead(
           }
         : { mode: "vision", pick: read.pick, budget },
     origin: { ipAddress: null, worker: true },
+    schedule,
   });
   if (!outcome.ok) return outcome;
-  // The facts are staged on the document; the run carries only the count.
+  // The facts are staged on the document; the run carries only the count,
+  // and whether part of the document may be missing from them.
+  const { document: staged, incomplete } = outcome.data;
   return {
     ok: true,
     data: {
-      documentId: outcome.data.id,
-      factsStaged: outcome.data.facts.length,
-      status: outcome.data.status,
+      documentId: staged.id,
+      factsStaged: staged.facts.length,
+      status: staged.status,
+      ...(incomplete ? { incomplete: true } : {}),
     },
   };
 }

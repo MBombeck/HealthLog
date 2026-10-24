@@ -107,6 +107,7 @@ beforeEach(() => {
     reportDate: "2026-07-10",
     kind: "OTHER",
     providerType: "anthropic",
+    incomplete: false,
     facts: [
       {
         factType: "OBSERVATION",

@@ -28,16 +28,17 @@ vi.mock("@/lib/labs/ocr-extract", async () => {
 
 import { reconcileSpend, reserveBudget } from "@/lib/ai/coach/budget";
 import { rasterizePdf } from "@/lib/documents/rasterize-pdf";
-import { OcrExtractError, runOcrExtraction } from "@/lib/labs/ocr-extract";
-import type { RunOcrExtractionArgs } from "@/lib/labs/ocr-extract";
 import {
-  executeOcrExtraction,
   OCR_MAX_PAGES,
   OCR_TEXT_READ_CHARS,
   OCR_TEXT_READ_MAX_CHARS,
   planPageReads,
   splitOcrText,
-} from "@/lib/labs/ocr-run";
+} from "@/lib/documents/ocr-plan";
+import { OcrExtractError } from "@/lib/documents/ocr-read";
+import { runOcrExtraction } from "@/lib/labs/ocr-extract";
+import type { RunOcrExtractionArgs } from "@/lib/labs/ocr-extract";
+import { executeOcrExtraction } from "@/lib/labs/ocr-run";
 import { AiUnavailableError } from "@/lib/ai/capabilities/refusal";
 import { annotate } from "@/lib/logging/context";
 

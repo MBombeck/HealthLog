@@ -40,4 +40,10 @@ describe("documentAiErrorKey", () => {
       "documents.assist.errorGeneric",
     );
   });
+
+  it("says the output limit stopped the read, not that the copy was unreadable", () => {
+    expect(
+      documentAiErrorKey(refusal("documents.inbound.outputLimit", 422)),
+    ).toBe("documents.assist.errorOutputLimit");
+  });
 });
