@@ -8537,7 +8537,7 @@
         "composeLabel": "Compose",
         "composeWhere": "La clé est ENCRYPTION_KEY (ou ENCRYPTION_KEYS) dans le fichier .env à côté de docker-compose.yml.",
         "truenasLabel": "TrueNAS",
-        "truenasWhere": "Ouvre Apps, sélectionne HealthLog, choisis Modifier et copie ENCRYPTION_KEY dans les variables d'environnement.",
+        "truenasWhere": "Ouvre Apps, sélectionne HealthLog et choisis Modifier. La clé se trouve dans le champ Encryption Key sous HealthLog Configuration ; pour une app installée via YAML, c'est ENCRYPTION_KEY dans les variables d'environnement.",
         "coolifyLabel": "Coolify",
         "coolifyWhere": "Ouvre l'application dans Coolify et copie ENCRYPTION_KEY depuis ses Environment Variables.",
         "unraidLabel": "Unraid",
