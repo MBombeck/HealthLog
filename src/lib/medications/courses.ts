@@ -10,16 +10,21 @@
  * and `intakeActionable` — which read the columns — can never disagree with
  * the course list.
  *
- * #1280 — a course may carry `endedAt`, the instant it was ended at. Every
- * write that moves a course's `endsOn` clears it: an end date chosen in the
- * editor means the whole day.
+ * #1280 — "End course" (`endCurrentCourse`) ends the running course at the
+ * moment it is pressed: `endsOn` becomes today and `endedAt` records the
+ * instant, so no slot after it is due, reminded or expected. Every other
+ * write that moves a course's `endsOn` clears `endedAt`: an end date chosen
+ * in the editor means the whole day.
  */
 import type { Prisma } from "@/generated/prisma/client";
 import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { prisma } from "@/lib/db";
 import {
+  canEndCourse,
   canStartCourse,
+  courseEndNow,
   courseFromWindow,
+  courseStatusAt,
   courseStatusOn,
   dateOfDayKey,
   dayKeyOfDate,
@@ -43,7 +48,9 @@ export type CourseWriteRefusal =
   /** Clearing the window of a medication that has several courses. */
   | "windowRequired"
   /** The course or the medication is not the caller's. */
-  | "notFound";
+  | "notFound"
+  /** #1280 — "End course" on a medication with no course running now. */
+  | "notRunning";
 
 export class CourseWriteError extends Error {
   constructor(readonly refusal: CourseWriteRefusal) {
@@ -88,6 +95,12 @@ export function courseRefusalResponse(refusal: CourseWriteRefusal): {
         status: 422,
         errorCode: "medications.course.invalidRange",
         message: "A course cannot end before it starts",
+      };
+    case "notRunning":
+      return {
+        status: 409,
+        errorCode: "medications.course.notRunning",
+        message: "No course is running to end",
       };
     case "windowRequired":
       return {
@@ -448,6 +461,87 @@ function keptEndedAt(
   return course.endsOn.getTime() === nextEndsOn.getTime()
     ? course.endedAt
     : null;
+}
+
+/**
+ * #1280 — "End course": end the running course now.
+ *
+ * The course's last day becomes today on the person's clock and `endedAt`
+ * records the moment. Doses earlier today stay inside the course and count;
+ * a slot later today is not due, not reminded and not expected, and the
+ * course reads as ENDED at once (`courseStatusAt`). A medication without a
+ * course row (chronic since creation, or a window never materialised) gets
+ * the course its window describes, ended now.
+ *
+ * The pending placeholders already minted for slots at or after that moment
+ * (the today projector mints the whole day) are tombstoned, as a schedule
+ * replace does, so no list shows them and the auto-miss pass never stamps
+ * them a miss. An actioned row is history and stays.
+ *
+ * Refused with `notRunning` unless a course is running now
+ * (`canEndCourse`): ending an ended course would reopen it up to today, and
+ * ending one that has not started would invent a one-day course.
+ */
+export async function endCurrentCourse(
+  args: WriteContext,
+): Promise<ProjectedWindow> {
+  const now = args.now ?? new Date();
+  const todayKey = userDayKey(now, args.timeZone);
+  const { endsOn: today, endedAt } = courseEndNow(now, args.timeZone);
+  return prisma.$transaction(async (tx) => {
+    await lockMedication(tx, args.medicationId);
+    const { medication, courses } = await loadOwned(
+      tx,
+      args.userId,
+      args.medicationId,
+    );
+    if (!canEndCourse(courseStatusAt(medication, now, args.timeZone))) {
+      throw new CourseWriteError("notRunning");
+    }
+    const latest = sortCourses(courses).at(-1);
+    if (latest) {
+      const ended = { startsOn: latest.startsOn, endsOn: today, endedAt };
+      refuseIfInvalid(
+        courses.map((c) => (c.id === latest.id ? ended : c)),
+        todayKey,
+        medication.oneShot,
+      );
+      await tx.medicationCourse.update({
+        where: { id: latest.id },
+        data: { endsOn: today, endedAt },
+      });
+    } else {
+      const implicit = windowAsCourse(
+        medication.startsOn,
+        today,
+        undefined,
+        medication.createdAt,
+        args.timeZone,
+      );
+      refuseIfInvalid([implicit], todayKey, medication.oneShot);
+      await tx.medicationCourse.create({
+        data: {
+          medicationId: args.medicationId,
+          userId: args.userId,
+          ...implicit,
+          endedAt,
+        },
+      });
+    }
+    await tx.medicationIntakeEvent.updateMany({
+      where: {
+        userId: args.userId,
+        medicationId: args.medicationId,
+        deletedAt: null,
+        takenAt: null,
+        skipped: false,
+        autoMissed: false,
+        scheduledFor: { gte: now },
+      },
+      data: { deletedAt: now, syncVersion: { increment: 1 } },
+    });
+    return project(tx, args.medicationId);
+  });
 }
 
 /**

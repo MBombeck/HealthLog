@@ -143,6 +143,29 @@ export function courseStatusAt(
   return "CURRENT";
 }
 
+/**
+ * #1280 — the end "End course" writes: the person's own calendar day as the
+ * course's last day (never the UTC one, a day off around midnight), and the
+ * moment itself as `endedAt`.
+ */
+export function courseEndNow(
+  now: Date,
+  timeZone: string,
+): { endsOn: Date; endedAt: Date } {
+  return { endsOn: dateOfDayKey(userDayKey(now, timeZone)), endedAt: now };
+}
+
+/**
+ * #1280 — whether "End course" may be pressed: a course is running now. On
+ * a course that has ended, ending it again would reopen it up to today; on
+ * one that has not started, it would turn into a one-day course today. The
+ * medication read wire publishes the answer as `canEndCourse`, and the End
+ * action refuses when it is false.
+ */
+export function canEndCourse(courseStatus: CourseStatus): boolean {
+  return courseStatus === "CURRENT";
+}
+
 export type CourseRefusal =
   /** `endsOn` before `startsOn`. */
   | "invalidRange"

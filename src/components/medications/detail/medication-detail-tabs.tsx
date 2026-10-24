@@ -193,6 +193,7 @@ export interface MedicationDetailSnapshot {
   /** v1.40 (#1024) — the server-resolved courses. */
   courses?: MedicationCourseWire[];
   canStartCourse?: boolean;
+  canEndCourse?: boolean;
   recordedSchedules?: ScheduleSnapshot[];
   schedules: ScheduleSnapshot[];
   /** v1.43 — the composition per unit, as the server delivered it. */

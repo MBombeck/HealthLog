@@ -13,8 +13,10 @@
  *   - Tier 1 Pausieren: PUT `{ active: false | true }`. Server derives
  *     `pausedAt`. Switch wraps in `<label>` so the entire row is the
  *     AT hit target.
- *   - Tier 2 Beenden: PUT `{ endsOn: <today YYYY-MM-DD> }`. AlertDialog
- *     confirm; Cancel autofocus stays default.
+ *   - Tier 2 Beenden: POST `/courses/end` (#1280), no body: the server ends
+ *     the running course at that moment, on the person's own day. Offered
+ *     while the read serves `canEndCourse`. AlertDialog confirm; Cancel
+ *     autofocus stays default.
  *   - Tier 3a Verlauf löschen: DELETE `/intake/purge`. Disabled when
  *     `intakeCount === 0`. AlertDialog confirm.
  *   - Tier 3b Medikament löschen: DELETE `/api/medications/[id]`.
@@ -46,33 +48,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { invalidateMedicationReads, queryKeys } from "@/lib/query-keys";
-import { apiDelete, apiPut } from "@/lib/api/api-fetch";
-import type { CourseStatus } from "@/lib/medications/course-window";
-import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
-
-/**
- * The PUT body that ends a course today: the person's own calendar day as
- * `YYYY-MM-DD`, the only shape `endsOn` accepts. A full ISO instant was
- * refused with 422 on every press, and its date was the UTC one, a day off
- * around midnight for anyone not on UTC.
- */
-export function endCourseBody(now: Date, timeZone: string): { endsOn: string } {
-  return { endsOn: userDayKey(now, timeZone) };
-}
-
-/**
- * Whether "End" may be offered. Only a course that is running today can be
- * ended today: the PUT rewrites the latest course's end, so pressing it on an
- * ended course would reopen it up to today, and on a course that has not
- * started it would turn into a one-day course today. Unknown (an older
- * server) keeps the button.
- */
-export function canEndCourse(courseStatus: CourseStatus | undefined): boolean {
-  return courseStatus === undefined || courseStatus === "CURRENT";
-}
+import { apiDelete, apiPost, apiPut } from "@/lib/api/api-fetch";
 
 const PAUSE_SWITCH_ID = "medication-detail-pause-switch";
 const PAUSE_TITLE_ID = "medication-detail-pause-title";
@@ -90,8 +68,12 @@ export function LifecycleManageBody({
     id: string;
     name: string;
     active: boolean;
-    /** Where today sits in the course (server-resolved). */
-    courseStatus?: CourseStatus;
+    /**
+     * Whether a course is running that End may end now (server-resolved).
+     * Ending writes today as the course's last day, so on an ended course it
+     * would reopen it and on one not yet started invent a one-day course.
+     */
+    canEndCourse?: boolean;
   };
   onAfterAction?: () => void;
 }) {
@@ -158,7 +140,7 @@ export function LifecycleManageBody({
         />
       </label>
 
-      {canEndCourse(medication.courseStatus) && (
+      {medication.canEndCourse === true && (
         <EndCourseControl
           medicationId={medicationId}
           medicationName={medication.name}
@@ -185,8 +167,6 @@ function EndCourseControl({
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const userTz = user?.timezone || DEFAULT_TIMEZONE;
 
   const [endDialogOpen, setEndDialogOpen] = useState(false);
   const [tier2Busy, setTier2Busy] = useState(false);
@@ -195,10 +175,7 @@ function EndCourseControl({
     if (tier2Busy) return;
     setTier2Busy(true);
     try {
-      await apiPut(
-        `/api/medications/${medicationId}`,
-        endCourseBody(new Date(), userTz),
-      );
+      await apiPost(`/api/medications/${medicationId}/courses/end`);
       await invalidateMedicationReads(queryClient);
       toast.success(t("medications.detail.zone.end.toast"));
       setEndDialogOpen(false);
@@ -207,6 +184,9 @@ function EndCourseControl({
       showErrorToast(t("medications.detail.zone.end.failed"), {
         cause: failure,
       });
+      // A 409 means the course is no longer running (ended in another tab):
+      // refetch, so the served `canEndCourse` takes the button away.
+      void invalidateMedicationReads(queryClient);
     } finally {
       setTier2Busy(false);
     }

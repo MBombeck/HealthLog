@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  canEndCourse,
   canStartCourse,
+  courseEndNow,
   courseFromWindow,
   courseStatusAt,
   courseStatusOn,
@@ -184,6 +186,29 @@ describe("ending a course now (#1280)", () => {
     expect(at("2026-06-12T09:59:59.999Z")).toBe("CURRENT");
     expect(at("2026-06-12T10:00:00.000Z")).toBe("ENDED");
     expect(at("2026-06-12T22:00:00.000Z")).toBe("ENDED");
+  });
+
+  it("offers End only while a course runs", () => {
+    expect(canEndCourse("CURRENT")).toBe(true);
+    expect(canEndCourse("ENDED")).toBe(false);
+    expect(canEndCourse("UPCOMING")).toBe(false);
+    // No dates at all is running.
+    expect(
+      canEndCourse(
+        courseStatusAt({ startsOn: null, endsOn: null }, ENDED_AT, "UTC"),
+      ),
+    ).toBe(true);
+  });
+
+  it("ends on the person's own day, at the moment itself", () => {
+    const late = new Date("2026-06-11T23:30:00.000Z");
+    expect(courseEndNow(late, "Europe/Warsaw")).toEqual({
+      endsOn: d("2026-06-12"),
+      endedAt: late,
+    });
+    expect(courseEndNow(late, "America/New_York").endsOn).toEqual(
+      d("2026-06-11"),
+    );
   });
 
   it("lets a new course start once the ended one is behind it", () => {

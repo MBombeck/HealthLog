@@ -46,6 +46,7 @@ describe.each(ZONES)("course window in %s", (tz) => {
       expect(r).toEqual({
         courseStatus: "CURRENT",
         intakeActionable: true,
+        canEndCourse: true,
       });
     }
   });
@@ -55,6 +56,7 @@ describe.each(ZONES)("course window in %s", (tz) => {
     expect(r).toEqual({
       courseStatus: "ENDED",
       intakeActionable: false,
+      canEndCourse: false,
     });
   });
 
@@ -63,10 +65,12 @@ describe.each(ZONES)("course window in %s", (tz) => {
     expect(resolveIntakeActionability(med, at(tz, 24, 23, 59), tz)).toEqual({
       courseStatus: "UPCOMING",
       intakeActionable: false,
+      canEndCourse: false,
     });
     expect(resolveIntakeActionability(med, at(tz, 25, 0, 0), tz)).toEqual({
       courseStatus: "CURRENT",
       intakeActionable: true,
+      canEndCourse: true,
     });
   });
 });
@@ -90,6 +94,7 @@ describe("resolveIntakeActionability", () => {
     expect(r).toEqual({
       courseStatus: "CURRENT",
       intakeActionable: false,
+      canEndCourse: true,
     });
   });
 
@@ -102,6 +107,7 @@ describe("resolveIntakeActionability", () => {
     expect(r).toEqual({
       courseStatus: "CURRENT",
       intakeActionable: false,
+      canEndCourse: true,
     });
   });
 
@@ -131,6 +137,7 @@ describe("a course ended with End course (#1280)", () => {
     expect(before).toEqual({
       courseStatus: "CURRENT",
       intakeActionable: true,
+      canEndCourse: true,
     });
     const after = resolveIntakeActionability(
       ended,
@@ -140,6 +147,7 @@ describe("a course ended with End course (#1280)", () => {
     expect(after).toEqual({
       courseStatus: "ENDED",
       intakeActionable: false,
+      canEndCourse: false,
     });
   });
 });

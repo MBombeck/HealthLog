@@ -23,10 +23,13 @@
  * Logging a past dose from the history is a different verb and is not
  * gated here; an ended course can still be completed after the fact.
  *
- * #1280 — a course ended at an instant (`endedAt`) is ENDED from it, so the
- * action row goes away at once instead of at midnight.
+ * #1280 — `canEndCourse` rides along: "End course" is offered exactly while
+ * the course is CURRENT, from the same resolution. A course ended with it is
+ * ENDED from that instant (`endedAt`), so the action row and the End button
+ * go away at once instead of at midnight.
  */
 import {
+  canEndCourse,
   courseStatusAt,
   type CourseStatus,
 } from "@/lib/medications/course-window";
@@ -35,6 +38,7 @@ import { isRecordOnly } from "@/lib/medications/intake-tracking";
 export interface IntakeActionability {
   courseStatus: CourseStatus;
   intakeActionable: boolean;
+  canEndCourse: boolean;
 }
 
 export function resolveIntakeActionability(
@@ -55,5 +59,6 @@ export function resolveIntakeActionability(
       medication.active &&
       !isRecordOnly(medication) &&
       courseStatus === "CURRENT",
+    canEndCourse: canEndCourse(courseStatus),
   };
 }

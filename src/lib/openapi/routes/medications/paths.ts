@@ -1178,6 +1178,45 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
     },
   },
+  "/api/medications/{id}/courses/end": {
+    post: {
+      parameters: [idempotencyKeyParameter],
+      tags: ["Medications"],
+      summary: "End the running course now",
+      description:
+        "#1280 — \"End course\". No body. The running course's last day becomes today on the person's clock and the moment is stored as its `endedAt`: a dose slot later today is not due, not reminded and not expected by compliance, a dose taken earlier today still counts, and `courseStatus` reads ENDED at once. Pending placeholders for slots at or after the moment are removed (tombstoned for sync). A medication with no dates gets the course its window describes, from creation to today. An end date set through `PUT /api/medications/{id}` or the course editor keeps meaning the whole day; only this action ends a course at an instant. Refused with 409 `medications.course.notRunning` while no course is running — the rule the reads publish as `canEndCourse`. Owner-only.",
+      requestParams: { path: z.object({ id: z.string() }) },
+      responses: {
+        ...idempotentWrite(),
+        "200": {
+          description: "The medication's window after ending.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({
+                  startsOn: z.iso.date().nullable(),
+                  endsOn: z.iso.date().nullable(),
+                  endedAt: isoDateTime().nullable(),
+                }),
+                "EndMedicationCourseResponse",
+              ),
+            },
+          },
+        },
+        "404": {
+          description:
+            "Medication not found (`medications.course.notFound`), or another user's.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "409": {
+          description:
+            "No course is running now (`medications.course.notRunning`): it has ended already or has not started.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
   "/api/medications/{id}/courses/{courseId}": {
     patch: {
       tags: ["Medications"],

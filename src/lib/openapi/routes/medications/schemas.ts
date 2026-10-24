@@ -69,7 +69,7 @@ export const medicationCourseResource = z
     endedAt: isoDateTime()
       .nullable()
       .describe(
-        '#1280 — the instant "End course" ended this course, on its `endsOn` day. No dose slot at or after it is due, reminded or expected, and the course is ENDED from it on. NULL when the whole `endsOn` day counts (an end date set in the editor). Any edit that moves `endsOn` clears it.',
+        "#1280 — the instant `POST /api/medications/{id}/courses/end` ended this course, on its `endsOn` day. No dose slot at or after it is due, reminded or expected, and the course is ENDED from it on. NULL when the whole `endsOn` day counts (an end date set in the editor). Any edit that moves `endsOn` clears it.",
       ),
     status: z
       .enum(["UPCOMING", "CURRENT", "ENDED"])
@@ -375,7 +375,7 @@ export const medicationResource = z
       .nullable()
       .optional()
       .describe(
-        '#1280 — the instant the latest course was ended with "End course" (the course\'s own `endedAt`). From it on no dose is due or reminded and `courseStatus` is ENDED; NULL when the course runs to the end of `endsOn`. Read-only — written by the course writer only.',
+        "#1280 — the instant the latest course was ended with `POST /api/medications/{id}/courses/end` (the course's own `endedAt`). From it on no dose is due or reminded and `courseStatus` is ENDED; NULL when the course runs to the end of `endsOn`. Read-only — written by the course writer only.",
       ),
     oneShot: z
       .boolean()
@@ -453,12 +453,17 @@ export const medicationListEntry = medicationResource
     courseStatus: z
       .enum(["UPCOMING", "CURRENT", "ENDED"])
       .describe(
-        'v1.39.4 — where today (on the user\'s clock) sits in the course: UPCOMING before `startsOn`, ENDED after `endsOn`, CURRENT otherwise. Calendar days, both ends inclusive, so a course that ends today is CURRENT all day, unless it was ended with "End course": then it is ENDED from that instant (`endedAt`). Read-only — computed, not stored.',
+        "v1.39.4 — where today (on the user's clock) sits in the course: UPCOMING before `startsOn`, ENDED after `endsOn`, CURRENT otherwise. Calendar days, both ends inclusive, so a course that ends today is CURRENT all day, unless it was ended with `POST /api/medications/{id}/courses/end`: then it is ENDED from that instant (`endedAt`). Read-only — computed, not stored.",
       ),
     intakeActionable: z
       .boolean()
       .describe(
         "v1.39.4 — whether the medication offers taken / skip today: true only when it is `active`, its intake is tracked (`trackIntake`) and `courseStatus` is CURRENT. Clients render the dose actions from this and do not re-derive it. Logging a past dose from the history is not gated by it. Read-only — computed, not stored.",
+      ),
+    canEndCourse: z
+      .boolean()
+      .describe(
+        '#1280 — whether `POST /api/medications/{id}/courses/end` may end the course now: true exactly while a course is running (`courseStatus` CURRENT; a medication with no dates is running). Clients offer "End course" from this and do not re-derive it; the action refuses with 409 `medications.course.notRunning` when it is false. Read-only — computed, not stored.',
       ),
     lastTakenAt: isoDateTime()
       .nullable()
@@ -519,12 +524,17 @@ export const medicationDetailEntry = medicationResource
     courseStatus: z
       .enum(["UPCOMING", "CURRENT", "ENDED"])
       .describe(
-        'v1.39.4 — where today (on the user\'s clock) sits in the course: UPCOMING before `startsOn`, ENDED after `endsOn`, CURRENT otherwise. Calendar days, both ends inclusive, so a course that ends today is CURRENT all day, unless it was ended with "End course": then it is ENDED from that instant (`endedAt`). Read-only — computed, not stored.',
+        "v1.39.4 — where today (on the user's clock) sits in the course: UPCOMING before `startsOn`, ENDED after `endsOn`, CURRENT otherwise. Calendar days, both ends inclusive, so a course that ends today is CURRENT all day, unless it was ended with `POST /api/medications/{id}/courses/end`: then it is ENDED from that instant (`endedAt`). Read-only — computed, not stored.",
       ),
     intakeActionable: z
       .boolean()
       .describe(
         "v1.39.4 — whether the medication offers taken / skip today: true only when it is `active`, its intake is tracked (`trackIntake`) and `courseStatus` is CURRENT. Clients render the dose actions from this and do not re-derive it. Logging a past dose from the history is not gated by it. Read-only — computed, not stored.",
+      ),
+    canEndCourse: z
+      .boolean()
+      .describe(
+        '#1280 — whether `POST /api/medications/{id}/courses/end` may end the course now: true exactly while a course is running (`courseStatus` CURRENT; a medication with no dates is running). Clients offer "End course" from this and do not re-derive it; the action refuses with 409 `medications.course.notRunning` when it is false. Read-only — computed, not stored.',
       ),
     stockUnitsRemaining: z
       .number()

@@ -3,13 +3,19 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { I18nProvider } from "@/lib/i18n/context";
-import { updateMedicationSchema } from "@/lib/validations/medication/create-update";
-
 import {
   canEndCourse,
-  endCourseBody,
-  LifecycleManageBody,
-} from "../destructive-zone-section";
+  courseEndNow,
+  dayKeyOfDate,
+} from "@/lib/medications/course-window";
+import { updateMedicationSchema } from "@/lib/validations/medication/create-update";
+
+import { LifecycleManageBody } from "../destructive-zone-section";
+
+/** The end day End writes, as the `YYYY-MM-DD` an `endsOn` field carries. */
+function endCourseBody(now: Date, timeZone: string): { endsOn: string } {
+  return { endsOn: dayKeyOfDate(courseEndNow(now, timeZone).endsOn) };
+}
 
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({
@@ -22,8 +28,9 @@ vi.mock("@/hooks/use-auth", () => ({
 /**
  * "End medication" sent `new Date().toISOString()`, a full instant, against an
  * `endsOn` that only takes `YYYY-MM-DD`, so every press answered 422 and the
- * toast said the medication could not be ended. The body now carries the
- * person's own calendar day.
+ * toast said the medication could not be ended. End now asks the server to
+ * end the course (`POST /courses/end`), which writes the person's own
+ * calendar day (`courseEndNow`) as the last day.
  */
 describe("endCourseBody", () => {
   it("is a date the update schema accepts", () => {
@@ -58,10 +65,12 @@ describe("endCourseBody", () => {
  * Ending writes today as the end of the latest course. On a course that has
  * already ended that would reopen it up to today, and on one that has not
  * started it would become a one-day course today, so End is only offered while
- * the course runs. A medication with no dates is CURRENT.
+ * the course runs. The server resolves that as `canEndCourse` (a medication
+ * with no dates is CURRENT); the controls render from it, and without it
+ * (a read that does not carry it) End stays hidden.
  */
 describe("End is offered only for a running course", () => {
-  function render(courseStatus?: "UPCOMING" | "CURRENT" | "ENDED") {
+  function render(served: boolean | undefined) {
     return renderToStaticMarkup(
       <I18nProvider initialLocale="en">
         <QueryClientProvider client={new QueryClient()}>
@@ -70,7 +79,7 @@ describe("End is offered only for a running course", () => {
               id: "med-1",
               name: "Example",
               active: true,
-              courseStatus,
+              canEndCourse: served,
             }}
           />
         </QueryClientProvider>
@@ -80,12 +89,13 @@ describe("End is offered only for a running course", () => {
 
   it.each([
     ["CURRENT", true],
-    [undefined, true],
+    [undefined, false],
     ["ENDED", false],
     ["UPCOMING", false],
   ] as const)("course %s → End shown: %s", (status, shown) => {
-    expect(canEndCourse(status)).toBe(shown);
-    const html = render(status);
+    const served = status === undefined ? undefined : canEndCourse(status);
+    expect(served ?? false).toBe(shown);
+    const html = render(served);
     expect(html.includes('data-slot="destructive-zone-end"')).toBe(shown);
     // Pausing stays available whatever the course.
     expect(html).toContain('id="medication-detail-pause-switch"');
