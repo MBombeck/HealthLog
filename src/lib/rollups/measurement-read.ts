@@ -39,6 +39,11 @@ import {
   parseSourcePriority,
 } from "@/lib/validations/source-priority";
 import { fitFromSums } from "@/lib/stats/linear-fit";
+import {
+  isTrendWindowSufficient,
+  trendEvidenceOf,
+} from "@/lib/analytics/window-confidence";
+import { toTrendSlope, type TrendSlope } from "@/lib/analytics/trends";
 
 /**
  * v1.11.1 — load a user's source-priority blob for the rollup collapse.
@@ -345,6 +350,28 @@ export function composeWindowedRegression(
 }
 
 /**
+ * The published trend over the DAY buckets on or after `since`: the
+ * regression `composeWindowedRegression` composes, withheld by `toTrendSlope`
+ * when the window's days with a reading are too few or span too little of
+ * `windowDays` (`isTrendWindowSufficient`). Days are the buckets' UTC days,
+ * the same days the live path counts with `TREND_EVIDENCE_SQL`.
+ */
+export function composeWindowedTrend(
+  rows: ReadonlyArray<AccumulatorBucketRow>,
+  since: Date,
+  windowDays: number,
+): TrendSlope | null {
+  const cutoff = since.getTime();
+  const evidence = trendEvidenceOf(
+    rows
+      .filter((r) => r.count > 0 && r.bucketStart.getTime() >= cutoff)
+      .map((r) => r.bucketStart.getTime()),
+  );
+  const { slope, r2 } = composeWindowedRegression(rows, since);
+  return toTrendSlope(slope, r2, evidence, windowDays);
+}
+
+/**
  * v1.20.0 — true iff any in-window DAY bucket carries a NULL
  * regression accumulator (a row that predates migration 0190, or whose
  * boot re-fold has not yet refilled it). `composeWindowedRegression`
@@ -516,6 +543,9 @@ interface FoldedBucketRow {
   sum_xy: number | null;
   sum_xx: number | null;
   sum_yy: number | null;
+  /** The bucket's first and last canonical day: the span of its trend evidence. */
+  first_day: Date;
+  last_day: Date;
   computed_at: Date;
 }
 
@@ -530,10 +560,14 @@ const COARSE_TRUNC_UNIT: Record<Exclude<RollupGranularity, "DAY">, string> = {
  * Compose one coarse bucket from the summed stats of its canonical days.
  * `count`, `min`, `max`, `sum` and the count-weighted `mean` are exact;
  * `sd`, `slope` and `r2` come from the summed regression accumulators
- * (`composeRegression`) and are `null` when a day lacks them.
+ * (`composeRegression`) and are `null` when a day lacks them. The bucket is
+ * the slope's window, so `slope` and `r2` are also `null` when its days do
+ * not cover enough of it for a trend (`isTrendWindowSufficient`): a year
+ * whose readings are one afternoon's has no slope per day worth reporting.
  */
 function composeFoldedBucket(
   row: FoldedBucketRow,
+  granularity: Exclude<RollupGranularity, "DAY">,
   weighting: WindowWeighting = "count",
 ): CanonicalRollupBucket {
   const count = Number(row.count);
@@ -558,8 +592,23 @@ function composeFoldedBucket(
         { count, mean: sampleMean, sumValue: sumY, sumX, sumXy, sumXx, sumYy },
       ])
     : { slope: null, r2: null, sdPop: null };
+  const bucketStart = new Date(row.bucket_start);
+  const bucketDays = Math.round(
+    (utcBucketEnd(bucketStart, granularity).getTime() - bucketStart.getTime()) /
+      DAY_MS,
+  );
+  const hasTrend = isTrendWindowSufficient(
+    {
+      days: Number(row.days),
+      spanDays: Math.round(
+        (new Date(row.last_day).getTime() - new Date(row.first_day).getTime()) /
+          DAY_MS,
+      ),
+    },
+    bucketDays,
+  );
   return {
-    bucketStart: new Date(row.bucket_start),
+    bucketStart,
     count,
     days: Number(row.days),
     dayMean,
@@ -569,8 +618,8 @@ function composeFoldedBucket(
     sumValue: sumY,
     // A single reading has no spread; STDDEV_POP of one value is 0.
     sd: count === 1 && accumulatorsComplete ? 0 : regression.sdPop,
-    slope: regression.slope,
-    r2: regression.r2,
+    slope: hasTrend ? regression.slope : null,
+    r2: hasTrend ? regression.r2 : null,
     sumX,
     sumXy,
     sumXx,
@@ -706,6 +755,8 @@ export async function readCanonicalRollupBuckets(opts: {
       CASE WHEN COUNT(c."sum_x") = COUNT(*) AND COUNT(c."sum_xy") = COUNT(*)
             AND COUNT(c."sum_xx") = COUNT(*) AND COUNT(c."sum_yy") = COUNT(*)
         THEN SUM(c."sum_yy") END::double precision           AS sum_yy,
+      MIN(c."bucket_start")                                  AS first_day,
+      MAX(c."bucket_start")                                  AS last_day,
       MAX(c."computed_at")                                   AS computed_at
     FROM canon c
     GROUP BY 1
@@ -715,7 +766,7 @@ export async function readCanonicalRollupBuckets(opts: {
   const toMs = to?.getTime() ?? null;
   const weighting = windowWeighting(type);
   return rows
-    .map((r) => composeFoldedBucket(r, weighting))
+    .map((r) => composeFoldedBucket(r, granularity, weighting))
     .filter((b) => {
       const start = b.bucketStart.getTime();
       if (start < fromMs) return false;

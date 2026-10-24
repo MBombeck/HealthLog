@@ -91,3 +91,52 @@ export const MAIN_SCROLL_CLASS =
  * widths in both the expanded and the collapsed rail.
  */
 export const SHELL_HEADER_BAND = "h-16 border-b";
+
+/**
+ * The rail's account band, the bottom counterpart of its logo band: the same
+ * height, the border on the other side, the avatar centred in it. Padded on
+ * its own (`p-3`, `p-2` on short windows) it came out 61 to 69 px tall with
+ * 18 px above the avatar and more below, and its divider sat at no height
+ * the logo band shares. The home-indicator inset stays under the band (the
+ * rail's `pb-(--safe-area-bottom)`), so the band itself never shifts.
+ */
+export const RAIL_ACCOUNT_BAND = "h-16 shrink-0 border-t";
+
+/**
+ * The rail's width, collapsed (4rem) and expanded (16rem), plus the window's
+ * left inset. The rail runs to the window's left edge and takes that inset as
+ * padding inside its own background (`pl-(--safe-area-left)` on the
+ * `<aside>`), so its content keeps the 4rem / 16rem it was laid out for and
+ * stays clear of the inset. The shell leaves the left side to the rail
+ * (`.shell-safe-area`, globals.css): an iPad in a Safari tab laid the shell
+ * out 10 px in from the left, and that strip showed the page colour beside
+ * the rail. Zero inset: exactly `w-16` / `w-64`.
+ */
+export const RAIL_WIDTH_COLLAPSED = "w-[calc(4rem+var(--safe-area-left))]";
+export const RAIL_WIDTH_EXPANDED = "w-[calc(16rem+var(--safe-area-left))]";
+
+/**
+ * A rail band that draws a border across the rail (the logo band, the footer
+ * group's scroll edge, the account band) reaches back over the left inset, so
+ * its line runs to the window's edge like the top bar's does, and adds the
+ * inset to its own left padding, so its content stays where it was.
+ */
+const RAIL_BAND_BLEED = "-ml-(--safe-area-left)";
+
+/** The logo band's and the footer group's horizontal padding, inset included. */
+export const RAIL_BAND_INSET = {
+  header: {
+    collapsed: `${RAIL_BAND_BLEED} pr-3 pl-[calc(0.75rem+var(--safe-area-left))]`,
+    expanded: `${RAIL_BAND_BLEED} pr-6 pl-[calc(1.5rem+var(--safe-area-left))]`,
+  },
+  footer: {
+    collapsed: `${RAIL_BAND_BLEED} pr-1.5 pl-[calc(0.375rem+var(--safe-area-left))]`,
+    expanded: `${RAIL_BAND_BLEED} pr-3 pl-[calc(0.75rem+var(--safe-area-left))]`,
+  },
+} as const;
+
+/** The account band, collapsed (the avatar centred) and expanded. */
+export const RAIL_ACCOUNT_BAND_CLASS = {
+  collapsed: `${RAIL_ACCOUNT_BAND} ${RAIL_BAND_BLEED} border-sidebar-border flex items-center justify-center pl-(--safe-area-left)`,
+  expanded: `${RAIL_ACCOUNT_BAND} ${RAIL_BAND_BLEED} border-sidebar-border flex items-center pr-3 pl-[calc(0.75rem+var(--safe-area-left))]`,
+} as const;

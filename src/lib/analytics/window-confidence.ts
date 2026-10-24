@@ -111,3 +111,82 @@ export function computeWindowConfidence(input: {
 
   return { effectiveSpanDays, sufficient };
 }
+
+/**
+ * Minimum evidence before a trailing window may report a TREND.
+ *
+ * Every windowed trend (`slope7` / `slope30` on a summary, the per-bucket
+ * slope of a coarse rollup bucket) is a least-squares slope in units per
+ * DAY. When the window's readings sit close together in time — two blood
+ * pressure readings a few minutes apart being the only ones of the week —
+ * the x-span is a few minutes, the slope per day explodes, and the 7-day
+ * projection the dashboard tile prints reads as thousands of mmHg. A reading
+ * count cannot catch this (`isWindowSufficient` admits five readings taken
+ * in one sitting), so the trend gate is about time, not count:
+ *
+ *   1. the readings fall on at least `MIN_TREND_DAYS` distinct days, and
+ *   2. the first and last of those days lie at least half the window apart
+ *      (`minTrendSpanDays`): 4 days for a 7-day window, 15 for a 30-day one.
+ *
+ * Why these two. A least-squares slope is the (Δx)²-weighted average of the
+ * slopes between every pair of readings, so once readings days apart exist,
+ * a same-session cluster carries almost no weight; the span floor guarantees
+ * such pairs exist and bounds how far a 7-day projection reaches beyond what
+ * was observed. Three days is the least that lets the fit tell a trend from
+ * a two-cluster difference: through two days a line fits perfectly and its
+ * R² says nothing. The same days-plus-span shape gates the medication
+ * segmented-effect fit (`SEGMENTED_MIN_DAYS_PER_SIDE` / `_SPAN_DAYS`).
+ *
+ * The fit itself stays over the individual readings, as it was: the window
+ * means beside it (`avg7` / `avg30`) average readings too, and the rollup
+ * accumulators the warm path composes from are per reading. The gate
+ * decides only whether the window has earned a slope at all.
+ *
+ * Days are UTC calendar days: the rollup tier and the live SQL bucket by UTC
+ * day, and the gate must give the same answer on the JS, rollup and live
+ * paths, or a coverage transition would flip a tile's trend on and off.
+ */
+export const MIN_TREND_DAYS = 3;
+
+/** How many days the trend evidence in a window covers. */
+export interface TrendEvidence {
+  /** Distinct UTC calendar days in the window that hold a reading. */
+  days: number;
+  /** Whole UTC days between the first and the last of those days. */
+  spanDays: number;
+}
+
+/** The least first-to-last span a window's readings must cover for a trend. */
+export function minTrendSpanDays(windowDays: number): number {
+  return Math.ceil(windowDays / 2);
+}
+
+/** `true` once a window's readings may carry a trend (see `MIN_TREND_DAYS`). */
+export function isTrendWindowSufficient(
+  evidence: TrendEvidence,
+  windowDays: number,
+): boolean {
+  return (
+    evidence.days >= MIN_TREND_DAYS &&
+    evidence.spanDays >= minTrendSpanDays(windowDays)
+  );
+}
+
+/**
+ * The trend evidence of a set of instants (epoch milliseconds): how many
+ * distinct UTC days they fall on and how many days lie between the first and
+ * the last of them.
+ */
+export function trendEvidenceOf(instantsMs: Iterable<number>): TrendEvidence {
+  let first = Infinity;
+  let last = -Infinity;
+  const days = new Set<number>();
+  for (const ms of instantsMs) {
+    const day = Math.floor(ms / DAY_MS);
+    days.add(day);
+    if (day < first) first = day;
+    if (day > last) last = day;
+  }
+  if (days.size === 0) return { days: 0, spanDays: 0 };
+  return { days: days.size, spanDays: last - first };
+}

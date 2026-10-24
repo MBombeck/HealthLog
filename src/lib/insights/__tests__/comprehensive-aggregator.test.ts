@@ -158,28 +158,45 @@ describe("buildComprehensiveAggregate", () => {
       // `collapseRollupRowsBySource` can resolve dual-source days; with
       // a single source per day every bucket passes through unchanged.
       //
-      // v1.20.0 — buckets are placed on the two most-recent UTC days so
-      // they fall inside the 7-day slope window, and carry the regression
+      // v1.20.0 — buckets are placed on recent UTC days so they fall
+      // inside the 7-day slope window, and carry the regression
       // accumulators the windowed slope / r² compose from. Each bucket
       // models its `count` readings as all landing at the bucket's day
       // midnight (x = bucketStart epoch-day) with value = mean, which is a
-      // valid, self-consistent accumulator set.
+      // valid, self-consistent accumulator set. The 81-mean readings are
+      // split over two days (5 and 3 days ago) so the window holds three
+      // days spanning five: enough evidence for a trend.
       const dayB = startOfUtcDay(now);
-      const dayA = startOfUtcDay(new Date(now.getTime() - 86_400_000));
+      const dayA = startOfUtcDay(new Date(now.getTime() - 5 * 86_400_000));
+      const dayA2 = startOfUtcDay(new Date(now.getTime() - 3 * 86_400_000));
       const xA = dayA.getTime() / 86_400_000;
+      const xA2 = dayA2.getTime() / 86_400_000;
       const xB = dayB.getTime() / 86_400_000;
       const bucketA = {
         type: "WEIGHT",
         source: "APPLE_HEALTH",
         bucketStart: dayA,
-        count: 20,
+        count: 10,
         mean: 81.0,
         minValue: 79.2,
         maxValue: 82.5,
-        sumX: 20 * xA,
-        sumXy: 20 * xA * 81.0,
-        sumXx: 20 * xA * xA,
-        sumYy: 20 * 81.0 * 81.0,
+        sumX: 10 * xA,
+        sumXy: 10 * xA * 81.0,
+        sumXx: 10 * xA * xA,
+        sumYy: 10 * 81.0 * 81.0,
+      };
+      const bucketA2 = {
+        type: "WEIGHT",
+        source: "APPLE_HEALTH",
+        bucketStart: dayA2,
+        count: 10,
+        mean: 81.0,
+        minValue: 79.2,
+        maxValue: 82.5,
+        sumX: 10 * xA2,
+        sumXy: 10 * xA2 * 81.0,
+        sumXx: 10 * xA2 * xA2,
+        sumYy: 10 * 81.0 * 81.0,
       };
       const bucketB = {
         type: "WEIGHT",
@@ -194,22 +211,24 @@ describe("buildComprehensiveAggregate", () => {
         sumXx: 22 * xB * xB,
         sumYy: 22 * 83.0 * 83.0,
       };
-      ROLLUP_FIND_MANY.mockResolvedValueOnce([bucketA, bucketB]);
+      ROLLUP_FIND_MANY.mockResolvedValueOnce([bucketA, bucketA2, bucketB]);
       // Expected slope7 — composed from the same accumulators the reader
       // sees (the buildSlope contract rounds slope to 3 dp, confidence to
       // 2 dp). Computed here from composeWindowedRegression so the test
       // tracks the closed form rather than a hand-typed magic number.
-      const accBuckets: AccumulatorBucketRow[] = [bucketA, bucketB].map(
-        (b) => ({
-          bucketStart: b.bucketStart,
-          count: b.count,
-          mean: b.mean,
-          sumX: b.sumX,
-          sumXy: b.sumXy,
-          sumXx: b.sumXx,
-          sumYy: b.sumYy,
-        }),
-      );
+      const accBuckets: AccumulatorBucketRow[] = [
+        bucketA,
+        bucketA2,
+        bucketB,
+      ].map((b) => ({
+        bucketStart: b.bucketStart,
+        count: b.count,
+        mean: b.mean,
+        sumX: b.sumX,
+        sumXy: b.sumXy,
+        sumXx: b.sumXx,
+        sumYy: b.sumYy,
+      }));
       const since7 = startOfUtcDay(new Date(Date.now() - 7 * 86_400_000));
       const expectedReg7 = composeWindowedRegression(accBuckets, since7);
 
@@ -235,9 +254,9 @@ describe("buildComprehensiveAggregate", () => {
       expect(weight.avg30).toBe(82.1);
       expect(weight.avg30LastMonth).toBe(83.0);
       expect(weight.anomalyCount).toBe(3);
-      // v1.20.0 — slope7 composes from the accumulator buckets. The two
-      // recent buckets (means 81 → 83 one day apart) yield a positive,
-      // perfect-fit slope; assert against the closed form the reader uses.
+      // v1.20.0 — slope7 composes from the accumulator buckets. The
+      // recent buckets (means 81, 81 → 83 over five days) yield a positive
+      // slope; assert against the closed form the reader uses.
       expect(expectedReg7.slope).not.toBeNull();
       expect(weight.slope7).toEqual({
         slope: Math.round((expectedReg7.slope as number) * 1000) / 1000,
@@ -249,6 +268,7 @@ describe("buildComprehensiveAggregate", () => {
       });
       expect(result.dailyByType.WEIGHT).toEqual([
         { day: dayA.toISOString().slice(0, 10), value: 81 },
+        { day: dayA2.toISOString().slice(0, 10), value: 81 },
         { day: dayB.toISOString().slice(0, 10), value: 83 },
       ]);
 
@@ -327,6 +347,11 @@ describe("buildComprehensiveAggregate", () => {
           r2_7: 0.65,
           slope30: -0.005,
           r2_30: 0.42,
+          // Readings on enough days, spread far enough, for both windows.
+          days7: 6,
+          span7: 6,
+          days30: 20,
+          span30: 29,
         },
       ])
         .mockResolvedValueOnce([
@@ -366,6 +391,53 @@ describe("buildComprehensiveAggregate", () => {
       // contract is: even on cold mount, if buckets do exist for some
       // type, they feed `dailyByType` so the v1.4.35 shape is stable.
       expect(result.dailyByType.WEIGHT).toBeUndefined();
+    });
+
+    it("withholds a slope whose window readings cover too few days", async () => {
+      const now = new Date();
+      RAW.mockResolvedValueOnce([
+        { type: "BLOOD_PRESSURE_SYS", has_buckets: false },
+      ]).mockResolvedValueOnce([{ first_at: now }]);
+      const queries: string[] = [];
+      UNSAFE.mockImplementationOnce((sql: string) => {
+        queries.push(sql);
+        return Promise.resolve([
+          {
+            type: "BLOOD_PRESSURE_SYS",
+            count: BigInt(3),
+            min_value: 118,
+            max_value: 130,
+            mean_value: 124,
+            stddev_value: 6,
+            anomaly_count: BigInt(0),
+            avg7: 124,
+            avg30: 124,
+            avg30_last_month: null,
+            // REGR_SLOPE over three readings minutes apart, one day.
+            slope7: -2160,
+            r2_7: 1,
+            slope30: -2160,
+            r2_30: 1,
+            days7: 1,
+            span7: 0,
+            days30: 1,
+            span30: 0,
+          },
+        ]);
+      })
+        .mockResolvedValueOnce([
+          { type: "BLOOD_PRESSURE_SYS", value: 124, measured_at: now },
+        ])
+        .mockResolvedValueOnce([]);
+
+      const result = await buildComprehensiveAggregate("user-cluster");
+      const sys = result.summaries.BLOOD_PRESSURE_SYS;
+      expect(sys.avg7).toBe(124);
+      expect(sys.slope7).toBeNull();
+      expect(sys.slope30).toBeNull();
+      // The evidence is read by the same aggregate that fits the slope.
+      expect(queries[0]).toContain("AS days7");
+      expect(queries[0]).toContain("AS span30");
     });
   });
 

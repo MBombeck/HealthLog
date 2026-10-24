@@ -197,11 +197,7 @@
             "direction": "down",
             "confidence": 0.01
           },
-          "slope30": {
-            "slope": -0.016,
-            "direction": "down",
-            "confidence": 0
-          },
+          "slope30": null,
           "anomalyCount": 0,
           "avg30LastMonth": null,
           "avg30LastYear": null

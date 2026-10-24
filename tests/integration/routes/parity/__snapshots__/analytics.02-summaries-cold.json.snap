@@ -101,11 +101,7 @@
           "median": 24.6,
           "avg7": 24,
           "avg30": 24.28,
-          "slope7": {
-            "slope": -0.014,
-            "direction": "down",
-            "confidence": 1
-          },
+          "slope7": null,
           "slope30": {
             "slope": -0.021,
             "direction": "down",
@@ -222,11 +218,7 @@
             "direction": "down",
             "confidence": 0.01
           },
-          "slope30": {
-            "slope": -0.018,
-            "direction": "down",
-            "confidence": 0
-          },
+          "slope30": null,
           "avg30LastMonth": null,
           "avg30LastYear": null
         },

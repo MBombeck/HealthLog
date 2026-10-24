@@ -72,6 +72,11 @@ import {
   windowMeanSql,
 } from "@/lib/measurements/day-mean";
 import { wireSummary, type DataSummary } from "@/lib/analytics/trends";
+import {
+  TREND_EVIDENCE_SQL,
+  liveTrend,
+  type LiveTrendColumns,
+} from "@/lib/analytics/trend-evidence-sql";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { annotate } from "@/lib/logging/context";
 import { caches, type ServerCache } from "@/lib/cache/server-cache";
@@ -84,7 +89,7 @@ import {
 import {
   aggregateBuckets,
   collapseRollupRowsBySource,
-  composeWindowedRegression,
+  composeWindowedTrend,
   hasPendingAccumulatorBackfill,
   loadUserSourcePriority,
   type AccumulatorBucketRow,
@@ -219,28 +224,7 @@ interface NarrowAggregateRow {
  * live REGR_* regression (no rollup accumulators to compose from yet), so it
  * carries the slope / r² columns the warm `NarrowAggregateRow` dropped.
  */
-interface WindowedAggregateRow extends NarrowAggregateRow {
-  slope7: number | null;
-  r2_7: number | null;
-  slope30: number | null;
-  r2_30: number | null;
-}
-
-/** Same threshold/rounding contract as `trendSlope()` in `trends.ts`. */
-function buildSlope(
-  slope: number | null,
-  rSquared: number | null,
-): DataSummary["slope7"] {
-  if (slope === null) return null;
-  const threshold = 0.01;
-  const direction: "up" | "down" | "stable" =
-    Math.abs(slope) < threshold ? "stable" : slope > 0 ? "up" : "down";
-  return {
-    slope: Math.round(slope * 1000) / 1000,
-    direction,
-    confidence: rSquared === null ? 0 : Math.round(rSquared * 100) / 100,
-  };
-}
+interface WindowedAggregateRow extends NarrowAggregateRow, LiveTrendColumns {}
 
 function round2(value: number | null): number | null {
   if (value === null || !Number.isFinite(value)) return null;
@@ -834,8 +818,6 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
     ) {
       regressionPendingBackfill = true;
     }
-    const reg7 = composeWindowedRegression(accBuckets, since7);
-    const reg30 = composeWindowedRegression(accBuckets, since30);
     // v1.37.19 — splice the pre-fold remainder into the all-time
     // figures: the rollup tier only covers the trailing fold window, so
     // count / min / max / mean composed from it alone truncated "all
@@ -862,8 +844,8 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
       median: round2(narrow?.median ?? null),
       avg7: round2(narrow?.avg7 ?? null),
       avg30: round2(narrow?.avg30 ?? null),
-      slope7: buildSlope(reg7.slope, reg7.r2),
-      slope30: buildSlope(reg30.slope, reg30.r2),
+      slope7: composeWindowedTrend(accBuckets, since7, 7),
+      slope30: composeWindowedTrend(accBuckets, since30, 30),
       avg30LastMonth: round2(narrow?.avg30_last_month ?? null),
       avg30LastYear: null,
     };
@@ -1047,7 +1029,8 @@ async function computeFromLiveAggregate(
           EXTRACT(EPOCH FROM m."measured_at") / 86400.0
         ) FILTER (
           WHERE m."measured_at" >= (date_trunc('day', NOW() AT TIME ZONE 'UTC') - INTERVAL '30 days')
-        )::double precision                                           AS r2_30
+        )::double precision                                           AS r2_30,
+        ${TREND_EVIDENCE_SQL}
       FROM ${dayWeightedRows("cm", SESSION_DAY_FRAME)} m
       GROUP BY m."type"
     `,
@@ -1113,8 +1096,8 @@ async function computeFromLiveAggregate(
       median: round2(win?.median ?? null),
       avg7: round2(win?.avg7 ?? null),
       avg30: round2(win?.avg30 ?? null),
-      slope7: buildSlope(win?.slope7 ?? null, win?.r2_7 ?? null),
-      slope30: buildSlope(win?.slope30 ?? null, win?.r2_30 ?? null),
+      slope7: liveTrend(win, 7),
+      slope30: liveTrend(win, 30),
       avg30LastMonth: round2(win?.avg30_last_month ?? null),
       avg30LastYear: null,
     };
