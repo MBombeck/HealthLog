@@ -3020,6 +3020,7 @@
       "refusalInjection": "I noticed wording that tries to override my instructions. I am the HealthLog Coach and only summarise your own health data. Please rephrase your question in those terms.",
       "errorBudget": "You've reached today's Coach usage limit. The budget refreshes at midnight in your time zone.",
       "errorProvider": "The Coach could not reach an Insights provider just now. Please try again in a moment.",
+      "errorReasoningOnly": "The model only reasoned and never wrote an answer. Try again, or choose a different model in your AI settings.",
       "errorDemo": "The Coach doesn't answer in the demo.",
       "errorNoProvider": "The Coach reads your logged health data and answers questions about it (not medical advice). HealthLog needs an AI provider for that. Connect your own key or a local model.",
       "errorNoProviderAction": "Connect an AI provider",

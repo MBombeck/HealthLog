@@ -817,6 +817,14 @@ describe("errorCodeToI18nKey", () => {
     );
   });
 
+  // #1276 — a model that only reasoned was reached; "try again in a
+  // moment" is the wrong advice for it.
+  it("maps coach.provider.reasoning_only to its own copy", () => {
+    expect(errorCodeToI18nKey("coach.provider.reasoning_only")).toBe(
+      "insights.coach.errorReasoningOnly",
+    );
+  });
+
   // v1.39 — a refused turn names its reason. The capability refusals carry
   // their code in `meta.errorCode`; each maps to copy that says what is off
   // and who can change it, never the generic "provider unavailable".

@@ -3020,6 +3020,7 @@
       "refusalInjection": "Percebi uma formulação que tenta substituir minhas instruções. Sou o Coach do HealthLog e só resumo seus próprios dados de saúde. Reformule sua pergunta nesses termos.",
       "errorBudget": "Você atingiu o limite de uso do Coach hoje. O orçamento é renovado à meia-noite no seu fuso horário.",
       "errorProvider": "O Coach não conseguiu alcançar um provedor de Insights agora. Tente novamente em instantes.",
+      "errorReasoningOnly": "O modelo apenas raciocinou e não escreveu uma resposta. Tente novamente ou escolha outro modelo nas configurações de IA.",
       "errorDemo": "O Coach não responde na demonstração.",
       "errorNoProvider": "O Coach lê seus dados de saúde registrados e responde perguntas sobre eles (não é aconselhamento médico). O HealthLog precisa de um provedor de IA para isso. Conecte sua própria chave ou um modelo local.",
       "errorNoProviderAction": "Conectar um provedor de IA",

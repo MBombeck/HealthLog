@@ -87,6 +87,11 @@ export function errorCodeToI18nKey(code: string): string {
       // the user to guided setup with a one-line explainer + a Settings
       // link rendered alongside the bubble copy.
       return "insights.coach.errorNoProvider";
+    case "coach.provider.reasoning_only":
+      // #1276 — the model was reached and answered with its reasoning
+      // only, even after being asked once more. "Try again in a moment"
+      // would be the wrong advice; the copy names what happened.
+      return "insights.coach.errorReasoningOnly";
     case "coach.provider.unavailable":
     case "coach.provider.empty":
     case "coach.stream":

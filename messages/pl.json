@@ -3020,6 +3020,7 @@
       "refusalInjection": "Twoja wiadomość zawiera instrukcje, które próbują nadpisać moje wytyczne. Jestem coachem HealthLog i podsumowuję wyłącznie twoje własne dane zdrowotne. Przeformułuj pytanie w tych ramach.",
       "errorBudget": "Osiągnięto dzienny limit coacha. Limit resetuje się o północy w Twojej strefie czasowej.",
       "errorProvider": "Coach nie mógł teraz skontaktować się z dostawcą analizy. Spróbuj za chwilę.",
+      "errorReasoningOnly": "Model tylko rozumował i nie napisał odpowiedzi. Spróbuj ponownie albo wybierz inny model w ustawieniach AI.",
       "errorDemo": "W wersji demo Coach nie odpowiada.",
       "errorNoProvider": "Coach czyta Twoje zapisane dane zdrowotne i odpowiada na pytania o nie (to nie porada medyczna). HealthLog potrzebuje do tego dostawcy AI: połącz własny klucz lub model lokalny.",
       "errorNoProviderAction": "Połącz dostawcę AI",

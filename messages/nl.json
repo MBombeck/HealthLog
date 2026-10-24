@@ -3020,6 +3020,7 @@
       "refusalInjection": "Ik zie formuleringen die proberen mijn instructies te omzeilen. Ik ben de HealthLog Coach en vat alleen je eigen gezondheidsgegevens samen. Formuleer je vraag opnieuw binnen dat kader.",
       "errorBudget": "Je hebt de gebruikslimiet van de Coach voor vandaag bereikt. Het budget wordt om middernacht in jouw tijdzone vernieuwd.",
       "errorProvider": "De Coach kan op dit moment geen provider voor Inzichten bereiken. Probeer het zo opnieuw.",
+      "errorReasoningOnly": "Het model heeft alleen nagedacht en geen antwoord geschreven. Probeer het opnieuw of kies een ander model in de AI-instellingen.",
       "errorDemo": "De Coach geeft in de demo geen antwoord.",
       "errorNoProvider": "De Coach leest je vastgelegde gezondheidsgegevens en beantwoordt vragen daarover (geen medisch advies). Daarvoor heeft HealthLog een AI-provider nodig. Koppel je eigen sleutel of een lokaal model.",
       "errorNoProviderAction": "AI-provider koppelen",

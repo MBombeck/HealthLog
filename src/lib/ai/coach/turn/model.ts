@@ -85,7 +85,7 @@ import type { TurnLedger } from "./budget";
 import type { TurnReasoning } from "./reasoning";
 import type { TurnChain } from "./chain";
 import type { TurnContext } from "./context";
-import { classifyBubblingProviderError } from "./errors";
+import { chainFailureCode, classifyBubblingProviderError } from "./errors";
 import { snapshotStep, toStep } from "./steps";
 import type { TurnEmitter } from "./types";
 
@@ -769,29 +769,9 @@ export async function runTurnModel(args: {
           credentialExpired: err.primaryCredentialExpired,
         },
       });
-      // v1.11.0 — when the user's PRIMARY provider failed with an
-      // auth-class status (401/403), the credential is dead, not the
-      // service. Surface a distinct `credential_expired` frame so the
-      // drawer can deep-link the user to reconnect rather than telling
-      // them to "try again later" — the gap that let an expired codex
-      // token silently kill all generation.
-      if (err.primaryCredentialExpired) {
-        return { ok: false, code: "coach.provider.credential_expired" };
-      }
-      // v1.4.25 — distinguish provider rate-limit (every attempt
-      // landed on 429) from generic unavailability. The drawer's
-      // error-decoder surfaces the rate-limit copy with a warning
-      // toast instead of the generic provider-down message, so the
-      // user understands the limit is transient.
-      const allRateLimited =
-        err.attempts.length > 0 &&
-        err.attempts.every((a) => a.httpStatus === 429);
-      return {
-        ok: false,
-        code: allRateLimited
-          ? "coach.provider.rate_limited"
-          : "coach.provider.unavailable",
-      };
+      // Credential expired, rate limited, reasoning without an answer
+      // (#1276), or unavailable: `chainFailureCode` says which and why.
+      return { ok: false, code: chainFailureCode(err) };
     }
     // v1.21.3 — defence in depth. The chain runner wraps every hard provider
     // failure in `AllProvidersFailedError`, but a provider client can still

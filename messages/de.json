@@ -3020,6 +3020,7 @@
       "refusalInjection": "In deiner Nachricht stehen Anweisungen, die meine Vorgaben überschreiben sollen. Ich bin der HealthLog-Coach und fasse ausschließlich deine eigenen Gesundheitsdaten zusammen. Formuliere deine Frage bitte in diesem Rahmen neu.",
       "errorBudget": "Du hast das heutige Coach-Limit erreicht. Das Budget setzt sich um Mitternacht in deiner Zeitzone zurück.",
       "errorProvider": "Der Coach konnte gerade keinen Auswertungs-Anbieter erreichen. Bitte versuche es in einem Moment erneut.",
+      "errorReasoningOnly": "Das Modell hat nur nachgedacht und keine Antwort geschrieben. Versuche es noch einmal oder wähle in den KI-Einstellungen ein anderes Modell.",
       "errorDemo": "In der Demo antwortet der Coach nicht.",
       "errorNoProvider": "Der Coach liest deine erfassten Gesundheitsdaten und beantwortet Fragen dazu (keine medizinische Beratung). Dafür braucht HealthLog einen KI-Anbieter. Verbinde deinen eigenen Schlüssel oder ein lokales Modell.",
       "errorNoProviderAction": "KI-Anbieter verbinden",
