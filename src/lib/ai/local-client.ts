@@ -34,7 +34,11 @@ import {
   rememberReasoningDialect,
 } from "./reasoning/dialect-cache";
 import { uncontrolledThinkingRoom } from "./reasoning/levels";
-import { answerOf, reasoningTitleOf } from "./reasoning/support";
+import {
+  ReasoningCollector,
+  separateMessage,
+  takeReasoning,
+} from "./local-reasoning";
 
 interface LocalClientConfig {
   apiKey?: string | null;
@@ -100,59 +104,6 @@ function withStrictJsonPrefix(messages: AiMessage[]): AiMessage[] {
 }
 
 /**
- * v1.41 — collects what a call reasoned and reports it to `onReasoning`.
- * Local servers return the reasoning as `reasoning_content` (llama.cpp,
- * LiteLLM) or `reasoning` (vLLM, Ollama, LM Studio), on the message and on
- * each streamed delta, or inline as a leading `<think>…</think>` block.
- * https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md,
- * https://docs.vllm.ai/en/latest/features/reasoning_outputs.html,
- * https://docs.ollama.com/api/openai-compatibility
- */
-class ReasoningCollector {
-  private text = "";
-  private titled = false;
-  private finished = false;
-  constructor(private readonly params: CompletionParams) {}
-
-  private get emit() {
-    return this.params.reasoning ? this.params.onReasoning : undefined;
-  }
-
-  /** A streamed piece of reasoning; the title goes out once it has closed. */
-  add(delta: string): void {
-    this.text += delta;
-    if (!this.titled && this.emit) {
-      const title = reasoningTitleOf(this.text);
-      if (title) {
-        this.titled = true;
-        this.emit({ kind: "title", text: title });
-      }
-    }
-  }
-
-  /** The reasoning is complete (the answer started, or the call ended). */
-  finish(): void {
-    if (this.finished) return;
-    this.finished = true;
-    const text = this.text.trim();
-    if (!text || !this.emit) return;
-    if (!this.titled) {
-      const title = reasoningTitleOf(text);
-      if (title) this.emit({ kind: "title", text: title });
-    }
-    this.emit({ kind: "text", text });
-  }
-
-  result(tokens: number | null): CompletionResult["reasoning"] {
-    this.finish();
-    if (!this.params.reasoning) return undefined;
-    this.emit?.({ kind: "done", text: "" });
-    const text = this.text.trim();
-    return { summary: text ? [text] : [], tokens };
-  }
-}
-
-/**
  * The empty-reply error. `httpStatus: 0` is the sentinel the chain classifier
  * treats as a hard failure; `kind` says whether the reply held reasoning and
  * no answer, or nothing at all, so the log names it instead of "network".
@@ -169,15 +120,6 @@ function emptyReplyError(hadReasoning: boolean): Error {
     upstream: "local",
   });
   return err;
-}
-
-/** The reasoning text a non-streamed message carries, if any. */
-function messageReasoning(message: unknown): string | null {
-  const m = (message ?? {}) as Record<string, unknown>;
-  const text = [m.reasoning_content, m.reasoning].find(
-    (v): v is string => typeof v === "string" && v.trim().length > 0,
-  );
-  return text ?? null;
 }
 
 /**
@@ -226,7 +168,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     body: string;
     jsonDialect: LocalJsonDialect;
     /** The ceiling holds room for reasoning on top of the answer. */
-    reasoningRoom: boolean;
+    room: boolean;
   } {
     const url = `${this.config.baseUrl.replace(/\/$/, "")}/chat/completions`;
     // v1.28.28 (#470) — per-endpoint JSON dialect (see json-dialect.ts).
@@ -308,7 +250,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       headers,
       body,
       jsonDialect,
-      reasoningRoom: thinkingTokens > 0,
+      room: thinkingTokens > 0,
     };
   }
 
@@ -386,52 +328,13 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     return true;
   }
 
-  /**
-   * #1276 — the answer and the reasoning of a non-streamed message, for
-   * every caller: `reasoning_content` / `reasoning` beside `content`, an
-   * inline `<think>` block (or only its closing tag), or a reply that filled
-   * a ceiling sized for thinking with unlabelled text (`answerOf`). Reasoning
-   * never stays in `content`; only a caller that asked for it is told.
-   */
-  private separate(
-    params: CompletionParams,
-    message: { content?: string | null } | undefined,
-    finishReason: string | undefined,
-    reasoningRoom: boolean,
-  ): { content: string; hadReasoning: boolean; collector: ReasoningCollector } {
-    const collector = new ReasoningCollector(params);
-    const fielded = messageReasoning(message);
-    if (fielded) collector.add(fielded);
-    const raw = message?.content ?? "";
-    const separated = answerOf(raw, {
-      fieldedReasoning: fielded !== null,
-      finishReason,
-      hasToolCalls: false,
-      reasoningRoom,
-    });
-    if (separated.reasoning) collector.add(separated.reasoning);
-    if (separated.unseparated) this.signalUnseparated();
-    return {
-      content: separated.content,
-      hadReasoning: fielded !== null || separated.content !== raw,
-      collector,
-    };
-  }
-
-  /** A reply that was reasoning the server never separated from the answer. */
-  private signalUnseparated(): void {
-    emitSignal({
-      action: "ai.local.reasoning_unseparated",
-      level: "warn",
-      meta: { provider: "local" },
-    });
-  }
-
   async generateCompletion(
     params: CompletionParams,
   ): Promise<CompletionResult> {
-    const { url, headers, body, jsonDialect, reasoningRoom } =
-      this.buildRequest(params, false);
+    const { url, headers, body, jsonDialect, room } = this.buildRequest(
+      params,
+      false,
+    );
 
     // safeFetch defaults: no redirect-follow (the local endpoint is the
     // most exploitable on this surface — a user-controlled baseUrl that
@@ -560,11 +463,11 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     });
 
     const finish = json.choices?.[0]?.finish_reason;
-    const { content, hadReasoning, collector } = this.separate(
+    const { content, hadReasoning, collector } = separateMessage(
       params,
       json.choices?.[0]?.message,
       finish,
-      reasoningRoom,
+      room,
     );
     if (!content) {
       if (this.learnAnswerlessReasoning(params, hadReasoning, finish)) {
@@ -624,10 +527,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     params: CompletionParams,
     onDelta: (delta: string) => void,
   ): Promise<CompletionResult> {
-    const { url, headers, body, reasoningRoom } = this.buildRequest(
-      params,
-      true,
-    );
+    const { url, headers, body, room } = this.buildRequest(params, true);
     const egress = aiEgressPolicyFor(url, {
       operatorTrusted: this.config.operatorTrusted,
     });
@@ -690,17 +590,13 @@ export class LocalOpenAICompatibleClient implements AIProvider {
         label: "local AI endpoint",
         model: this.config.model,
       });
-      const {
-        content: buffered,
-        hadReasoning,
-        collector,
-      } = this.separate(
+      const { content, hadReasoning, collector } = separateMessage(
         params,
         json?.choices?.[0]?.message,
         json?.choices?.[0]?.finish_reason,
-        reasoningRoom,
+        room,
       );
-      if (!buffered) {
+      if (!content) {
         if (
           this.learnAnswerlessReasoning(
             params,
@@ -714,9 +610,9 @@ export class LocalOpenAICompatibleClient implements AIProvider {
         throw emptyReplyError(hadReasoning);
       }
       const reasoning = collector.result(null);
-      onDelta(buffered);
+      onDelta(content);
       return {
-        content: buffered,
+        content,
         tokensUsed: json?.usage?.total_tokens ?? null,
         cachedInputTokens: json ? parseCachedTokens(json) : null,
         model: this.config.model,
@@ -738,8 +634,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     // v1.41 — reasoning on the stream: the `reasoning_content` / `reasoning`
     // delta fields, or a leading `<think>` block inside `content`. Inline
     // reasoning never reaches `onDelta`; it would otherwise show up as the
-    // answer. #1276 — for every caller: reasoning is never an answer, and
-    // only a caller that asked for it hears about it (`ReasoningCollector`).
+    // answer. #1276 — for every caller (only one that asked is told).
     const collector = new ReasoningCollector(params);
     let thinkState: "detect" | "inside" | "passthrough" = "detect";
     let pending = "";
@@ -889,21 +784,14 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       collector.add(pending);
     }
     pending = "";
-    // #1276 — what the detector cannot see while streaming: a closing tag
-    // with no opening one (the chat template opened the block), or a reply
-    // that filled a ceiling sized for thinking with unlabelled text. The
-    // deltas already sent are a liveness signal only (the Coach counts
-    // them); the returned content is what every guard reads.
-    const separated = answerOf(content, {
+    // #1276 — a lone `</think>`, or unlabelled text that filled the ceiling.
+    // Sent deltas are a liveness signal only; the guards read `content`.
+    const tail = takeReasoning(collector, content, {
       fieldedReasoning: streamedReasoning,
       finishReason,
-      hasToolCalls: false,
-      reasoningRoom,
+      reasoningRoom: room,
     });
-    if (separated.reasoning) collector.add(separated.reasoning);
-    if (separated.unseparated) this.signalUnseparated();
-    const tookReasoning = separated.content !== content;
-    content = separated.content;
+    content = tail.content;
     if (!content) {
       // A stream that ended with a failure frame and no token reports the
       // failure, not "empty content".
@@ -914,7 +802,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       });
       // An unclosed inline `<think>` block is reasoning too.
       const hadReasoning =
-        streamedReasoning || endState === "inside" || tookReasoning;
+        streamedReasoning || endState === "inside" || tail.took;
       if (this.learnAnswerlessReasoning(params, hadReasoning, finishReason)) {
         return this.generateCompletionStream(params, onDelta);
       }

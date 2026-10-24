@@ -48,11 +48,8 @@ import { translateOrNull } from "@/lib/i18n/translate-code";
 // per-message actions live in `chat-bubble.tsx`, the read-aloud stack in
 // `read-aloud.tsx`. The previously public names re-export from here so
 // external call sites are unchanged.
-export {
-  TypingDots,
-  errorCodeToI18nKey,
-  selectCoachChartTokens,
-} from "./chat-bubble";
+export { TypingDots, selectCoachChartTokens } from "./chat-bubble";
+export { errorCodeToI18nKey } from "./coach-error-key";
 
 /**
  * v1.4.20 — message-thread renderer.
