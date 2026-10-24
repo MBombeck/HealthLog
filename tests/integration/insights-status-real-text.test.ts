@@ -9,8 +9,10 @@
  *      sticky-stub bug used to break.
  *
  *   2. A negative-cache window opened by an earlier stall never stands in
- *      for a note: with no note stored for today, the generator regenerates
- *      and stores the real text, and writing it closes the window.
+ *      for a note: once it lapses, with no note stored for today, the
+ *      generator regenerates and stores the real text, and writing it closes
+ *      the window and resets the failure streak. While it is open (#1279),
+ *      no provider is asked and the window stays as it was.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -117,19 +119,20 @@ describe("status path delivers real provider text", () => {
     ).toBe(0);
   });
 
-  it("regenerates past a negative-cache window and closes it", async () => {
+  it("regenerates past a lapsed negative-cache window and closes it", async () => {
     const user = await seedRichWeightUser("status-stub-skip-user");
     const prisma = getPrismaClient();
 
-    // An earlier stall opened a window, with no note stored.
+    // Earlier stalls opened a window, now lapsed, with no note stored.
     await prisma.insightStatusCache.create({
       data: {
         userId: user.id,
         metric: "weight",
         locale: "en",
         dateKey: "2026-01-01",
-        retryAt: new Date(Date.now() + 60_000),
+        retryAt: new Date(Date.now() - 1_000),
         negativeReason: "timeout",
+        failureStreak: 3,
       },
     });
 
@@ -153,5 +156,49 @@ describe("status path delivers real provider text", () => {
     });
     expect(stored.retryAt).toBeNull();
     expect(stored.negativeReason).toBeNull();
+    expect(stored.failureStreak).toBe(0);
+  });
+
+  it("asks no provider while the window is open (#1279)", async () => {
+    const user = await seedRichWeightUser("status-cooling-user");
+    const prisma = getPrismaClient();
+    const retryAt = new Date(Date.now() + 60_000);
+    await prisma.insightStatusCache.create({
+      data: {
+        userId: user.id,
+        metric: "weight",
+        locale: "en",
+        dateKey: "2026-01-01",
+        retryAt,
+        negativeReason: "error",
+        failureStreak: 2,
+      },
+    });
+    const { resolveProviderChain } = await import("@/lib/ai/provider");
+    const [entry] = await vi.mocked(resolveProviderChain)(user.id);
+    const generate = vi.mocked(entry.instance.generateCompletion);
+    generate.mockClear();
+
+    const { generateWeightStatusForUser } =
+      await import("@/lib/insights/weight-status");
+    const result = await generateWeightStatusForUser(user.id, {
+      locale: "en",
+    });
+
+    expect(generate).not.toHaveBeenCalled();
+    expect(result.text).not.toBe(KNOWN_TEXT);
+    const stored = await prisma.insightStatusCache.findUniqueOrThrow({
+      where: {
+        userId_metric_locale: {
+          userId: user.id,
+          metric: "weight",
+          locale: "en",
+        },
+      },
+    });
+    // The window neither moved nor counted the refused generation.
+    expect(stored.retryAt?.getTime()).toBe(retryAt.getTime());
+    expect(stored.failureStreak).toBe(2);
+    expect(stored.textEncrypted).toBeNull();
   });
 });

@@ -25,7 +25,6 @@ import {
   type JsonModeDialect,
 } from "./json-dialect";
 import type { ReasoningEffort } from "./reasoning-effort";
-import { emitSignal } from "@/lib/logging/signal";
 import {
   ANSWERS_ONLY_UNREASONED,
   annotateReasoningDowngrade,
@@ -34,6 +33,11 @@ import {
   rememberReasoningDialect,
 } from "./reasoning/dialect-cache";
 import { uncontrolledThinkingRoom } from "./reasoning/levels";
+import {
+  askAgainUnreasoned,
+  reasonsUnasked,
+  withEarlierSpend,
+} from "./reasoning/answerless";
 import {
   ReasoningCollector,
   separateMessage,
@@ -108,7 +112,7 @@ function withStrictJsonPrefix(messages: AiMessage[]): AiMessage[] {
  * treats as a hard failure; `kind` says whether the reply held reasoning and
  * no answer, or nothing at all, so the log names it instead of "network".
  */
-function emptyReplyError(hadReasoning: boolean): Error {
+function emptyReplyError(hadReasoning: boolean, spent: number | null): Error {
   const err = new Error(
     hadReasoning
       ? "Local AI returned reasoning but no answer"
@@ -118,6 +122,8 @@ function emptyReplyError(hadReasoning: boolean): Error {
     httpStatus: 0,
     kind: hadReasoning ? "reasoning_only" : "empty_response",
     upstream: "local",
+    // #1279 — what the reply cost, for the day's ledger to charge.
+    ...(spent !== null ? { tokensUsed: spent } : {}),
   });
   return err;
 }
@@ -204,8 +210,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     // room once the model has shown it reasons unasked.
     const thinkingTokens = params.reasoning
       ? uncontrolledThinkingRoom(params.reasoning.effort)
-      : learnedReasoningDialect(this.reasoningDialectKey()) ===
-          ANSWERS_ONLY_UNREASONED
+      : reasonsUnasked(this.reasoningDialectKey())
         ? uncontrolledThinkingRoom("off")
         : 0;
     const body = JSON.stringify({
@@ -298,34 +303,32 @@ export class LocalOpenAICompatibleClient implements AIProvider {
    * "none"` answers in `content`. So when a request that did not already say
    * `none` comes back empty with reasoning (or after asking to reason), learn
    * that this endpoint and model answer only unreasoned, and tell the caller
-   * to ask once more. Returns false when the empty reply is final.
+   * to ask once more (#1279: at most once, and never again for a model whose
+   * `none` reply was answerless too). False when the empty reply is final.
    */
   private learnAnswerlessReasoning(
     params: CompletionParams,
     hadReasoning: boolean,
     finishReason: string | undefined,
   ): boolean {
-    const sent = this.sentReasoningEffort(params);
-    if (sent === "none") return false;
-    if (!hadReasoning && sent === null) return false;
-    rememberReasoningDialect(
-      this.reasoningDialectKey(),
-      ANSWERS_ONLY_UNREASONED,
-    );
-    annotateReasoningDowngrade("local", sent ?? "default", "none");
-    emitSignal({
-      action: "ai.local.reasoning_answerless",
-      level: "warn",
-      meta: {
-        effort: sent ?? "default",
-        finish:
-          finishReason === "length" || finishReason === "stop"
-            ? finishReason
-            : "other",
-        reasoning: hadReasoning,
-      },
+    return askAgainUnreasoned({
+      key: this.reasoningDialectKey(),
+      provider: "local",
+      signals: "ai.local",
+      sent: this.sentReasoningEffort(params),
+      hadReasoning,
+      finishReason,
     });
-    return true;
+  }
+
+  /** #1279 — the streamed call once more, carrying this reply's spend. */
+  private streamAgain(
+    params: CompletionParams,
+    onDelta: (delta: string) => void,
+    spent: number | null,
+  ): Promise<CompletionResult> {
+    const again = this.generateCompletionStream(params, onDelta);
+    return withEarlierSpend(again, spent);
   }
 
   async generateCompletion(
@@ -470,8 +473,9 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       room,
     );
     if (!content) {
+      const spent = json.usage?.total_tokens ?? null;
       if (this.learnAnswerlessReasoning(params, hadReasoning, finish)) {
-        return this.generateCompletion(params);
+        return withEarlierSpend(this.generateCompletion(params), spent);
       }
       // The reasoning that did arrive still reaches `onReasoning`, as before.
       collector.result(
@@ -480,7 +484,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       // v1.20.1 — sentinel httpStatus + kind so the chain classifier can tell
       // an empty 200-OK reply apart from a transport failure. Cascade unchanged
       // (`status <= 0` is already a hard failure).
-      throw emptyReplyError(hadReasoning);
+      throw emptyReplyError(hadReasoning, spent);
     }
     const reasoning = collector.result(
       json.usage?.completion_tokens_details?.reasoning_tokens ?? null,
@@ -597,17 +601,13 @@ export class LocalOpenAICompatibleClient implements AIProvider {
         room,
       );
       if (!content) {
-        if (
-          this.learnAnswerlessReasoning(
-            params,
-            hadReasoning,
-            json?.choices?.[0]?.finish_reason,
-          )
-        ) {
-          return this.generateCompletionStream(params, onDelta);
+        const spent = json?.usage?.total_tokens ?? null;
+        const finish = json?.choices?.[0]?.finish_reason;
+        if (this.learnAnswerlessReasoning(params, hadReasoning, finish)) {
+          return this.streamAgain(params, onDelta, spent);
         }
         collector.result(null);
-        throw emptyReplyError(hadReasoning);
+        throw emptyReplyError(hadReasoning, spent);
       }
       const reasoning = collector.result(null);
       onDelta(content);
@@ -804,10 +804,10 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       const hadReasoning =
         streamedReasoning || endState === "inside" || tail.took;
       if (this.learnAnswerlessReasoning(params, hadReasoning, finishReason)) {
-        return this.generateCompletionStream(params, onDelta);
+        return this.streamAgain(params, onDelta, tokensUsed);
       }
       collector.result(reasoningTokens);
-      throw emptyReplyError(hadReasoning);
+      throw emptyReplyError(hadReasoning, tokensUsed);
     }
     const reasoning = collector.result(reasoningTokens);
 

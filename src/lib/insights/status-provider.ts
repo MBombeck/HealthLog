@@ -12,6 +12,7 @@ import {
   runRawCompletionWithFallback,
   type ProviderChainResolved,
 } from "@/lib/ai/provider-runner";
+import { spentOnFailure } from "@/lib/ai/reasoning/answerless";
 import { aiEgressRefusal } from "@/lib/ai/capabilities/egress";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -35,6 +36,7 @@ import {
   type BackgroundReasoningJob,
 } from "@/lib/ai/reasoning/levels";
 import { resolveJobReasoning } from "@/lib/ai/reasoning/controls";
+import { statusNoteCoolingDown } from "./status-negative-window";
 
 /**
  * v1.41 — the fallback ceiling for a status-path call that reasons. Thinking
@@ -191,6 +193,17 @@ export async function runStatusCompletion(
     return { kind: "none", reason: "no_provider" };
   }
 
+  // #1279 — a note whose last generations ended without one waits out its
+  // window here, whichever path selected it again (a data sync, a warm pass,
+  // a queued job). Reported as `error`, the transient miss, like a stall.
+  if (await statusNoteCoolingDown(userId, cacheAction)) {
+    annotate({
+      action: { name: "insights.status.cooling_down" },
+      meta: { cacheAction },
+    });
+    return { kind: "error" };
+  }
+
   // The wire re-check for exactly this chain (`aiEgressRefusal`, the one
   // helper every chokepoint uses): the capability again, and whether sending
   // to these providers needs a consent receipt under the capability's rule
@@ -285,28 +298,7 @@ export async function runStatusCompletion(
     "job",
   );
   if (!reservation.allowed) {
-    // Over the day's ceiling. Reported as `error` — a TRANSIENT miss the caller
-    // serves the fallback for without persisting it — deliberately NOT `none`,
-    // which callers cache as the settled "no provider configured" assessment.
-    // The distinct annotation keeps the refusal observable even though the
-    // result shape is shared.
-    // v1.38.19 — the shared `error` outcome cannot say
-    // WHY the generation stopped, so the annotation has to. `surface: "job"`
-    // plus `cap` separates "this job used up the background share" from "the
-    // whole day is spent", and `limit` says which counter tripped. The operator
-    // sees the same split on the admin provider-health card.
-    annotate({
-      action: { name: "insights.status.budget_exceeded" },
-      meta: {
-        cacheAction,
-        owner: reservation.owner,
-        surface: "job",
-        limit: reservation.limit,
-        cap: jobCap,
-        totalAfter: reservation.totalAfter,
-        operatorAfter: reservation.operatorAfter,
-      },
-    });
+    annotateBudgetRefusal(cacheAction, reservation, jobCap);
     return { kind: "error" };
   }
 
@@ -340,22 +332,17 @@ export async function runStatusCompletion(
     null,
   );
 
-  if (raced.timedOut) {
-    // A timed-out generation may still have burned upstream tokens, but we have
-    // no reported count to charge — refund the reservation rather than bill an
-    // invented figure.
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+  if (raced.timedOut || raced.errored || raced.value === null) {
+    // A timeout or failure: charge only what a reply reported spending, never
+    // an invented figure. #1279 — a failed chain's report counts: a model
+    // that reasons without answering bills every call, and a full refund let
+    // background work spend without the day's ceiling ever seeing it.
+    const spent = spentOnFailure(raced.error);
+    await reconcileSpend(userId, reservation.reserved, spent, dateKey, 0, {
       servedBy: null,
       reservedOwner: reservation.owner,
     });
-    return { kind: "timeout" };
-  }
-  if (raced.errored || raced.value === null) {
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
-      servedBy: null,
-      reservedOwner: reservation.owner,
-    });
-    return { kind: "error" };
+    return { kind: raced.timedOut ? "timeout" : "error" };
   }
 
   const { result, workingProvider } = raced.value;
@@ -408,4 +395,36 @@ export async function runStatusCompletion(
     model: result.model ?? "unknown",
     tokensUsed: result.tokensUsed ?? null,
   };
+}
+
+/**
+ * Over the day's ceiling. Reported as `error` — a TRANSIENT miss the caller
+ * serves the fallback for without persisting it — deliberately NOT `none`,
+ * which callers cache as the settled "no provider configured" assessment.
+ * The distinct annotation keeps the refusal observable even though the
+ * result shape is shared.
+ *
+ * v1.38.19 — the shared `error` outcome cannot say WHY the generation
+ * stopped, so the annotation has to. `surface: "job"` plus `cap` separates
+ * "this job used up the background share" from "the whole day is spent", and
+ * `limit` says which counter tripped. The operator sees the same split on the
+ * admin provider-health card.
+ */
+function annotateBudgetRefusal(
+  cacheAction: string,
+  reservation: Awaited<ReturnType<typeof reserveBudget>>,
+  jobCap: number,
+): void {
+  annotate({
+    action: { name: "insights.status.budget_exceeded" },
+    meta: {
+      cacheAction,
+      owner: reservation.owner,
+      surface: "job",
+      limit: reservation.limit,
+      cap: jobCap,
+      totalAfter: reservation.totalAfter,
+      operatorAfter: reservation.operatorAfter,
+    },
+  });
 }

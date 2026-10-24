@@ -7849,6 +7849,9 @@ model InsightStatusCache {
   /// Why the last generation served the deterministic line instead of a note:
   /// `timeout` | `error` | `screened`. Set together with `retryAt`.
   negativeReason String?   @map("negative_reason")
+  /// Generations in a row that ended without a note; sets the length of the
+  /// next negative-cache window. Reset to 0 when a note is written or re-dated.
+  failureStreak  Int       @default(0) @map("failure_streak")
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 

@@ -37,6 +37,7 @@ import {
   type AssessmentStatus,
 } from "@/lib/insights/status-shared";
 import { runStatusCompletion } from "@/lib/insights/status-provider";
+import { persistTimeoutNegativeStub } from "@/lib/insights/timeout-fallback";
 import {
   readFreshStatusText,
   resolveReadOnlyStatusMiss,
@@ -224,6 +225,32 @@ export async function resolveDerivedAssessment(args: {
 // ── generate (worker entry) ──────────────────────────────────────────────
 
 /**
+ * A generation that timed out or failed. #1279 — it opens the same negative
+ * window every other note opens, so the score is not asked about again on
+ * the next sync while it keeps failing.
+ */
+async function failedAssessment(
+  userId: string,
+  cacheAction: string,
+  todayKey: string,
+  kind: "timeout" | "error",
+): Promise<AssessmentStatus> {
+  await persistTimeoutNegativeStub({
+    userId,
+    cacheAction,
+    todayKey,
+    reason: kind,
+  });
+  return {
+    kind,
+    text: null,
+    hasProvider: true,
+    updatedAt: null,
+    retryable: true,
+  };
+}
+
+/**
  * Worker entry: build the signal-led prompt for one derived score, run the
  * provider chain, and persist the AI assessment under the shared status-cache
  * row. Recomputes the derived value via the passed `derived` so the worker
@@ -341,13 +368,7 @@ export async function generateDerivedScoreAssessment(args: {
         retryable: false,
       };
     }
-    return {
-      kind: outcome.kind,
-      text: null,
-      hasProvider: true,
-      updatedAt: null,
-      retryable: true,
-    };
+    return failedAssessment(args.userId, cacheAction, todayKey, outcome.kind);
   }
 
   // Parse and screen through the same fail-closed chokepoint as every other

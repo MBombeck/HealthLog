@@ -227,9 +227,12 @@ const jobs: readonly JobDefinition[] = [
     work: { localConcurrency: 1 },
     load: async () => (await handlers()).handleCoachMemoryRefresh,
   }),
+  // #1279 — the nudge tick reaches a model; pg-boss's queue default retried
+  // a failed tick twice at once. The same two retries now back off.
   defineJob({
     queue: COACH_NUDGE_QUEUE,
     cron: COACH_NUDGE_CRON,
+    scheduleOptions: { retryLimit: 2, retryDelay: 60, retryBackoff: true },
     work: { localConcurrency: 1 },
     load: async () => (await handlers()).handleCoachNudge,
   }),

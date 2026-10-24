@@ -41,14 +41,18 @@ vi.mock("@/lib/db", () => ({
         async (args: {
           where: {
             OR: Array<{ metric: string; locale: string }>;
-            generatedAt: { gte: Date };
+            generatedAt?: { gte: Date };
           };
-        }) =>
-          args.where.OR.filter(
+        }) => {
+          // The second probe asks for open negative windows; every
+          // generation in this simulation succeeds, so there are none.
+          const since = args.where.generatedAt?.gte;
+          if (!since) return [];
+          return args.where.OR.filter(
             (key) =>
-              (sim.notes.get(key.metric) ?? -Infinity) >=
-              args.where.generatedAt.gte.getTime(),
-          ).map((key) => ({ metric: key.metric, locale: key.locale })),
+              (sim.notes.get(key.metric) ?? -Infinity) >= since.getTime(),
+          ).map((key) => ({ metric: key.metric, locale: key.locale }));
+        },
       ),
     },
   },

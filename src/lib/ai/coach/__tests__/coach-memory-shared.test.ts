@@ -34,6 +34,10 @@ describe("enqueueCoachMemoryRefresh", () => {
       singletonSeconds: COACH_MEMORY_QUIET_MS / 1000,
       startAfter: COACH_MEMORY_QUIET_MS / 1000,
       expireInSeconds: COACH_MEMORY_REFRESH_EXPIRE_SECONDS,
+      // #1279 — bounded, backed-off retries instead of pg-boss's two at once.
+      retryLimit: 2,
+      retryDelay: 60,
+      retryBackoff: true,
     });
     expect(COACH_MEMORY_QUIET_MS).toBe(30 * 60_000);
   });

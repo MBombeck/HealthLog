@@ -22,8 +22,9 @@ import {
 } from "@/lib/insights/status-shared";
 import {
   statusCacheAction,
-  statusNotesWrittenSince,
+  statusNotesNotDue,
 } from "@/lib/insights/status-cache";
+import { clearStatusNegativeWindows } from "@/lib/insights/status-negative-window";
 import {
   metricIdForMeasurementType,
   metricStatusScope,
@@ -275,6 +276,9 @@ export async function enqueueStatusRefillForUser(
     });
     return 0;
   }
+  // #1279 — the person asked for fresh notes: a note backing off after
+  // failed generations is asked again now, not when its window lapses.
+  await clearStatusNegativeWindows(userId);
   const scopes = new Set<InsightStatusScope>(PER_STATUS_SCOPES);
   try {
     // v1.42 — a loose index scan over the live-rows index (`live-types.ts`)
@@ -301,9 +305,9 @@ export async function enqueueStatusRefillForUser(
  * invalidator so a fresh assessment survives the sync drip.
  *
  * One indexed read per user answers it for every candidate scope at once.
- * Only a stored note counts: a row that carries nothing but a negative-cache
- * window is not fresh, so a scope that recently stalled still gets a retry
- * enqueued.
+ * #1279 — a scope inside an open negative-cache window counts too: it used to
+ * be re-enqueued by every sync batch however often its generation had just
+ * failed. Once the window lapses the next sync enqueues it again.
  */
 async function findRecentlyWarmedScopes(
   userId: string,
@@ -321,7 +325,7 @@ async function findRecentlyWarmedScopes(
     actionToScope.set(statusCacheAction(scope, locale), scope);
   }
 
-  const written = await statusNotesWrittenSince({
+  const written = await statusNotesNotDue({
     userId,
     cacheActions: candidateActions,
     since: cutoff,

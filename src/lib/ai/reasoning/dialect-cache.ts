@@ -47,10 +47,33 @@ export interface ReasoningDialectKey {
  */
 export const ANSWERS_ONLY_UNREASONED = "off";
 
+/**
+ * #1279 — the learned value for an endpoint and model that answered with
+ * reasoning alone even when asked with `none`: gpt-oss behind vLLM accepts
+ * only low / medium / high and ignores it, and a GLM chat template reads an
+ * effort it does not know as its maximum. Asking such a model with `none` is
+ * a wasted call, or a longer thought. Both clients send what the call asks
+ * for (with the thinking room) and never repeat an answerless reply while
+ * this holds.
+ */
+export const REASONS_REGARDLESS = "unswitchable";
+
 /** How long a learned downgrade holds before the full request is tried again. */
 export const DIALECT_TTL_MS = 60 * 60 * 1000;
 
-const learned = new Map<string, { value: string; expiresAt: number }>();
+/**
+ * Pinned on `globalThis`: a module imported from more than one bundler layer
+ * is instantiated once per layer (see `caches` in `server-cache.ts`), so the
+ * Coach's route handlers and the worker's jobs each kept a copy and paid for
+ * the same lesson separately. One map per process.
+ */
+const LEARNED_SLOT = Symbol.for("healthlog.ai.reasoningDialects");
+const learned: Map<string, { value: string; expiresAt: number }> = ((
+  globalThis as Record<symbol, unknown>
+)[LEARNED_SLOT] ??= new Map()) as Map<
+  string,
+  { value: string; expiresAt: number }
+>;
 
 function cacheKey(key: ReasoningDialectKey): string {
   return `${key.provider}\u0000${key.endpoint}\u0000${key.model}`;
