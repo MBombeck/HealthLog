@@ -1,5 +1,7 @@
 import type { AccountGrant } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import { runDetached } from "@/lib/logging/detached";
+import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import { SESSION_USER_SELECT, type SessionUser } from "@/lib/auth/session-user";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { recordDelegatedAccess } from "@/lib/auth/audit";
@@ -372,13 +374,15 @@ async function resolveSwitchedRecord(
   });
   // Fire-and-forget, the `ApiToken.lastUsedAt` posture: the read must not wait
   // on the bookkeeping, and the bookkeeping failing must not fail the read.
-  void touchGrantUsage(grant.id);
+  trackBackgroundTask(runDetached(() => touchGrantUsage(grant.id)));
   // The owner's copy of the same fact, and the one they can read: a day-
   // coalesced row on their own record saying who opened it. It lands here
   // rather than in the handlers because a route cannot forget what it never
   // had to remember — every delegated request in the product passes through
   // this line, and only requests that got past the grant check reach it.
-  void recordDelegatedAccess(owner.id, auth.user.id);
+  trackBackgroundTask(
+    runDetached(() => recordDelegatedAccess(owner.id, auth.user.id)),
+  );
 
   return {
     session: auth.session,

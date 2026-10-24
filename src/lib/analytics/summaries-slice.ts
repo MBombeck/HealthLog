@@ -59,6 +59,8 @@ import pLimit from "p-limit";
 import type { MeasurementType } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/db";
+import { runDetached } from "@/lib/logging/detached";
+import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import {
   HOURLY_MEAN_DAY_TYPES,
   usesHourlyMeanDay,
@@ -284,7 +286,7 @@ export async function computeSummariesSlice(
   // coverage probe falls back to live SQL for uncovered types, so
   // correctness is preserved; the read just doesn't block waiting
   // for the background refresh.
-  void ensureUserRollupsFresh(userId);
+  trackBackgroundTask(runDetached(() => ensureUserRollupsFresh(userId)));
 
   // v1.4.36 — per-type coverage probe replaces the legacy global
   // COUNT. The previous gate returned true as soon as ANY type had at

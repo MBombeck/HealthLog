@@ -4,6 +4,8 @@
  * Split out of `features.ts`, which builds the block from them.
  */
 import { prisma } from "@/lib/db";
+import { runDetached } from "@/lib/logging/detached";
+import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import {
   ensureUserMoodRollupsFresh,
   readMoodDayRollups,
@@ -39,7 +41,7 @@ export async function readMoodDailyPoints(
   totalEntries: number;
   latestScore: number | null;
 }> {
-  void ensureUserMoodRollupsFresh(userId);
+  trackBackgroundTask(runDetached(() => ensureUserMoodRollupsFresh(userId)));
   // Five-year window mirrors the mood-rollup writer default; covers
   // every realistic user history span without an unbounded scan.
   const fiveYearsAgo = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000);

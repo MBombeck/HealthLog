@@ -24,6 +24,8 @@
 import type { SessionUser } from "@/lib/auth/session-user";
 
 import { prisma } from "@/lib/db";
+import { runDetached } from "@/lib/logging/detached";
+import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import { annotate } from "@/lib/logging/context";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { dashboardSnapshotCacheKey } from "@/lib/cache/invalidate";
@@ -201,14 +203,18 @@ export async function readDashboardSnapshotCached(
   // its claim, never thrown.
   if (briefingAi.available) {
     const lastSeen = cached.tiles?.lastSeenByType ?? {};
-    void requestTodayBriefingWarm({
-      userId: user.id,
-      locale,
-      timezone: user.timezone,
-      generatedAt,
-      lastSeenAt: (type) => lastSeen[type]?.lastSeenAt ?? null,
-      now,
-    }).catch(() => undefined);
+    trackBackgroundTask(
+      runDetached(() =>
+        requestTodayBriefingWarm({
+          userId: user.id,
+          locale,
+          timezone: user.timezone,
+          generatedAt,
+          lastSeenAt: (type) => lastSeen[type]?.lastSeenAt ?? null,
+          now,
+        }),
+      ).catch(() => undefined),
+    );
   }
 
   return { body, locale };

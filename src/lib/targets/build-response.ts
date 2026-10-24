@@ -11,6 +11,8 @@
  * are read in the user's own calendar.
  */
 import { prisma } from "@/lib/db";
+import { runDetached } from "@/lib/logging/detached";
+import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import { annotate } from "@/lib/logging/context";
 import {
   COURSES_COMPLIANCE_SELECT,
@@ -102,7 +104,7 @@ export async function buildTargetsResponse(user: AuthedUser) {
     queryNow.getTime() - 5 * 365 * 24 * 60 * 60 * 1000,
   );
 
-  void ensureUserMoodRollupsFresh(userId);
+  trackBackgroundTask(runDetached(() => ensureUserMoodRollupsFresh(userId)));
 
   // All independent reads stay in one bounded fan-out. The medication event
   // read is the sole dependent query and remains chained to its medication

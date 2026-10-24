@@ -22,6 +22,8 @@
  * left on it deliberately (see their call sites in `build.ts`).
  */
 import { prisma } from "@/lib/db";
+import { runDetached } from "@/lib/logging/detached";
+import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import type { DataPoint } from "@/lib/analytics/trends";
 import {
   ensureUserMoodRollupsFresh,
@@ -41,7 +43,7 @@ export async function readOverviewMoodSeries(
   userId: string,
   since: Date,
 ): Promise<OverviewMoodSeries> {
-  void ensureUserMoodRollupsFresh(userId);
+  trackBackgroundTask(runDetached(() => ensureUserMoodRollupsFresh(userId)));
   const moodRollupDayRows = await readMoodDayRollups(userId, since);
   if (moodRollupDayRows.length > 0) {
     return {
