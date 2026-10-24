@@ -9,6 +9,7 @@ import { auditLog } from "@/lib/auth/audit";
 import { getClientIp, apiSuccess, apiError } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { forgetProviderHealth } from "@/lib/ai/provider-health-ledger";
+import { clearStatusNegativeWindows } from "@/lib/insights/status-negative-window";
 
 /**
  * Operator-shared central Codex — device-code poll (admin only).
@@ -94,7 +95,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
   cookieStore.delete("central_codex_device");
   // A new central sign-in: every account's ledger rows describe the refused
   // one, and the central connection is one credential shared by all of them.
-  await forgetProviderHealth({ providerType: "admin-codex" });
+  // #1279 — and every record's note windows close, as on the admin AI
+  // settings save, so no note sits out a window the broken one earned.
+  await Promise.all([
+    forgetProviderHealth({ providerType: "admin-codex" }),
+    clearStatusNegativeWindows(),
+  ]);
 
   await auditLog("admin.central-codex.connected", {
     userId: user.id,
