@@ -85,9 +85,11 @@ vi.mock(
   }),
 );
 
-vi.mock("@/lib/insights/status-cache", async (importOriginal) => {
+vi.mock("@/lib/insights/status-negative-window", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("@/lib/insights/status-cache")>();
+    await importOriginal<
+      typeof import("@/lib/insights/status-negative-window")
+    >();
   return {
     ...actual,
     writeStatusNegativeWindow: (

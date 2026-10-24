@@ -1,4 +1,4 @@
-import { writeStatusNegativeWindow } from "@/lib/insights/status-cache";
+import { writeStatusNegativeWindow } from "@/lib/insights/status-negative-window";
 import { annotate } from "@/lib/logging/context";
 
 /**
@@ -31,19 +31,18 @@ import { annotate } from "@/lib/logging/context";
  * but it tripped a safety contract (see `@/lib/ai/safety/outbound-screen`).
  * It rides the same envelope as a stall on purpose — the surface policy for a
  * background-generated cached card is WITHHOLD, and this path already means
- * exactly "serve the deterministic line, persist no model text". The 5-minute
- * negative stub gives the next generation a fresh attempt rather than blanking
- * the card until midnight.
+ * exactly "serve the deterministic line, persist no model text". The negative
+ * stub gives the next generation a fresh attempt once its window lapses
+ * rather than blanking the card until midnight.
  */
 export type StatusFallbackReason = "timeout" | "error" | "screened";
 
-/** Short retry window after a provider stall before a re-enqueue is allowed. */
-export const TIMEOUT_NEGATIVE_CACHE_MS = 5 * 60 * 1000;
-
 /**
- * Persist a short-TTL negative-cache stub for `(userId, cacheAction)`.
- * Best-effort: a failure here just means the read-only resolver may
- * re-enqueue sooner than the window intended.
+ * Persist a negative-cache stub for `(userId, cacheAction)`. Its window is five
+ * minutes after a first failure and grows with each failure in a row, up to
+ * two hours (#1279, `writeStatusNegativeWindow`). Best-effort: a failure here
+ * just means the read-only resolver may re-enqueue sooner than the window
+ * intended.
  */
 export async function persistTimeoutNegativeStub(args: {
   userId: string;
@@ -57,7 +56,6 @@ export async function persistTimeoutNegativeStub(args: {
       cacheAction: args.cacheAction,
       todayKey: args.todayKey,
       reason: args.reason,
-      retryAt: new Date(Date.now() + TIMEOUT_NEGATIVE_CACHE_MS),
     });
   } catch {
     // Negative cache is best-effort — never throw out of the timeout path.

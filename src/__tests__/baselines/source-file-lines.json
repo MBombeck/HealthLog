@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 88,
-  "total": 98310,
+  "count": 87,
+  "total": 97498,
   "entries": {
     "app/medications/page-client.tsx": 839,
     "components/charts/mood-chart.tsx": 1166,
@@ -64,7 +64,6 @@
     "lib/insights/correlations.ts": 1026,
     "lib/insights/features.ts": 1875,
     "lib/insights/mood-aggregates.ts": 1053,
-    "lib/insights/status-cache.ts": 812,
     "lib/integrations/status.ts": 1445,
     "lib/jobs/coach-nudge.ts": 1084,
     "lib/jobs/insight-pregenerate.ts": 1189,

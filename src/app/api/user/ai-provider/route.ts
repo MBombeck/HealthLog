@@ -23,8 +23,38 @@ import {
   serializeProviderChain,
 } from "@/lib/ai/provider-chain";
 import { reasoningEffortFor } from "@/lib/ai/reasoning-effort";
+import { forgetProviderHealth } from "@/lib/ai/provider-health-ledger";
+import type { ProviderChainType } from "@/lib/ai/provider-chain";
+import { clearStatusNegativeWindows } from "@/lib/insights/status-negative-window";
 
 export const dynamic = "force-dynamic";
+
+/** The chain entries this route configures (Codex signs in elsewhere). */
+const USER_SETTINGS_PROVIDERS: readonly ProviderChainType[] = [
+  "openai",
+  "anthropic",
+  "local",
+  "openai-compatible",
+];
+
+/**
+ * Write the changed provider settings. #1279 — and start background work
+ * afresh: it skips a provider the health ledger benched, and a status note
+ * waits out its negative window, so without this a fixed setup would sit out
+ * a pause the old one earned.
+ */
+async function saveProviderSettings(
+  userId: string,
+  updates: Record<string, unknown>,
+): Promise<void> {
+  await prisma.user.update({ where: { id: userId }, data: updates });
+  await Promise.all([
+    ...USER_SETTINGS_PROVIDERS.map((providerType) =>
+      forgetProviderHealth({ userId, providerType }),
+    ),
+    clearStatusNegativeWindows(userId),
+  ]);
+}
 
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
@@ -389,7 +419,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     : null;
 
   if (Object.keys(updates).length > 0) {
-    await prisma.user.update({ where: { id: user.id }, data: updates });
+    await saveProviderSettings(user.id, updates);
   }
 
   for (const [slot, value, column] of keySlots) {

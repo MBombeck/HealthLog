@@ -20,6 +20,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 let ledgerTotal = 0;
 /** …and of `coach_usage.operator_tokens`. */
 let ledgerOperator = 0;
+/** The status note row the cooling-down gate reads. */
+let noteWindow: { retryAt: Date | null } | null = null;
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -54,6 +56,10 @@ vi.mock("@/lib/db", () => ({
     ),
     user: {
       findUnique: vi.fn(async () => ({ aiResponseTimeoutSeconds: null })),
+    },
+    // #1279 — the note's negative window, read before any provider work.
+    insightStatusCache: {
+      findUnique: vi.fn(async () => noteWindow),
     },
   },
 }));
@@ -126,6 +132,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   ledgerTotal = 0;
   ledgerOperator = 0;
+  noteWindow = null;
   resolveProviderChain.mockResolvedValue(OPERATOR_CHAIN);
   resolveProvider.mockResolvedValue({ type: "none" });
   aiCapabilityForRecord.mockResolvedValue({
@@ -311,6 +318,24 @@ describe("runStatusCompletion — ledger accounting", () => {
 
     expect(result.kind).toBe("error");
     expect(ledgerTotal).toBe(0);
+  });
+
+  it("asks no provider about a note inside its negative window (#1279)", async () => {
+    noteWindow = { retryAt: new Date(Date.now() + 60_000) };
+    const result = await runStatusCompletion(
+      completionArgs({ cacheAction: "insights.weight-status.en" }),
+    );
+    expect(result.kind).toBe("error");
+    expect(runRawCompletionWithFallback).not.toHaveBeenCalled();
+    expect(ledgerTotal).toBe(0);
+
+    // The window lapsed: the note is generated again.
+    noteWindow = { retryAt: new Date(Date.now() - 1) };
+    mockProviderReply(100);
+    const again = await runStatusCompletion(
+      completionArgs({ cacheAction: "insights.weight-status.en" }),
+    );
+    expect(again.kind).toBe("ok");
   });
 
   it("charges what a failed chain reported spending (#1279)", async () => {

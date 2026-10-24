@@ -18,6 +18,12 @@ vi.mock("@/lib/insights/status-cache", () => ({
   gateUnchangedStatusInput: vi.fn().mockResolvedValue(null),
 }));
 
+const persistTimeoutNegativeStub = vi.fn();
+vi.mock("@/lib/insights/timeout-fallback", () => ({
+  persistTimeoutNegativeStub: (...a: unknown[]) =>
+    persistTimeoutNegativeStub(...a),
+}));
+
 const findUnique = vi.fn();
 vi.mock("@/lib/db", () => ({
   prisma: { user: { findUnique: (a: unknown) => findUnique(a) } },
@@ -154,5 +160,27 @@ describe("generateDerivedScoreAssessment — per-user tz label (QA F5)", () => {
 
     expect(capturedPrompt).toContain("(America/New_York)");
     expect(capturedPrompt).not.toContain("(Europe/Berlin)");
+  });
+});
+
+describe("generateDerivedScoreAssessment — a failed generation (#1279)", () => {
+  it("opens the note's negative window, so the next sync does not ask again", async () => {
+    vi.mocked(runStatusCompletion).mockResolvedValue({ kind: "error" });
+
+    const result = await generateDerivedScoreAssessment({
+      metric: "RECOVERY_SCORE",
+      userId: "u-ny",
+      derived: okDerived(),
+      locale: "en",
+      now: new Date("2026-06-20T12:00:00.000Z"),
+    });
+
+    expect(result).toMatchObject({ kind: "error", retryable: true });
+    expect(persistTimeoutNegativeStub).toHaveBeenCalledWith({
+      userId: "u-ny",
+      cacheAction: "insights.derived-score:RECOVERY_SCORE-status.en",
+      todayKey: "2026-06-20",
+      reason: "error",
+    });
   });
 });
