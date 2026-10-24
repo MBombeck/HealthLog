@@ -327,7 +327,7 @@ async function resolveChainOrder(
   userId: string,
   providers: ProviderChainResolved[],
   ledger: ProviderHealthLedger,
-  surface: BudgetSurface,
+  background: boolean,
 ): Promise<{
   ordered: ProviderChainResolved[];
   benched: Array<BenchedProvider<ProviderChainResolved>>;
@@ -344,10 +344,9 @@ async function resolveChainOrder(
     });
   }
   // #1279 — background work leaves a benched provider out entirely.
-  const { walkable, benched } =
-    surface === "job"
-      ? partitionForBackgroundWork(providers, skips, (t) => NEVER_SKIP.has(t))
-      : { walkable: providers, benched: [] };
+  const { walkable, benched } = background
+    ? partitionForBackgroundWork(providers, skips, (t) => NEVER_SKIP.has(t))
+    : { walkable: providers, benched: [] };
   const afterSkips = applyHealthLedgerSkips(walkable, skips);
   return { ordered: applyLastWorkingCache(userId, afterSkips), benched };
 }
@@ -511,6 +510,29 @@ function signalFailedHops(
   }
 }
 
+/** What both raw runners take. */
+interface ChainWalkArgs {
+  userId: string;
+  providers: ProviderChainResolved[];
+  params: CompletionParams;
+  /**
+   * Which ceiling an operator-funded FALLBACK hop is rationed against.
+   * `"job"` gets the background share, exactly as the reservation did;
+   * `"coach"` gets the whole ceiling.
+   */
+  surface: BudgetSurface;
+  /**
+   * #1279 — a person is waiting on this call although it is rationed as
+   * background work (the on-demand briefing). A `"job"` walk otherwise leaves
+   * every provider the health ledger benched out (`background-bench.ts`);
+   * this one walks them at the tail of the chain like any interactive call,
+   * so the person gets the provider's own answer or refusal.
+   */
+  interactive?: boolean;
+  /** The health ledger; the durable Postgres one unless a test passes its own. */
+  ledger?: ProviderHealthLedger;
+}
+
 /**
  * Shared chain walker for the two RAW runners (streaming + buffered). Owns the
  * one set of chain / fallback / health-ledger semantics — empty-chain guard,
@@ -522,13 +544,7 @@ function signalFailedHops(
  * Schema-class failures still bubble (they are not hard) exactly as before.
  */
 async function runRawChain(
-  args: {
-    userId: string;
-    providers: ProviderChainResolved[];
-    params: CompletionParams;
-    surface: BudgetSurface;
-    ledger?: ProviderHealthLedger;
-  },
+  args: ChainWalkArgs,
   // v1.41 — `params` reaches every candidate unchanged, `reasoning` and
   // `onReasoning` included. A fallback hop may see `providerState` another
   // provider made on an earlier round; each client re-inserts only its own
@@ -549,7 +565,7 @@ async function runRawChain(
     userId,
     providers,
     ledger,
-    surface,
+    surface === "job" && !args.interactive,
   );
   const hops: FallbackHop[] = [];
   const failedHops: HopSignal[] = [];
@@ -720,21 +736,12 @@ async function runRawChain(
  * full reply — to confirm real tokens flowed. The returned shape matches the
  * buffered runner so the route is path-agnostic.
  */
-export async function runStreamingRawCompletionWithFallback(args: {
-  userId: string;
-  providers: ProviderChainResolved[];
-  params: CompletionParams;
-  /**
-   * v1.38.19 — which ceiling an operator-funded FALLBACK
-   * hop is rationed against. `"job"` gets the background share, exactly as the
-   * reservation did; `"coach"` gets the whole ceiling.
-   */
-  surface: BudgetSurface;
-  /** Called once per streamed token/chunk for providers that stream. */
-  onDelta: (delta: string) => void;
-  /** See `RunWithFallbackParams.ledger`. */
-  ledger?: ProviderHealthLedger;
-}): Promise<RunRawWithFallbackResult> {
+export async function runStreamingRawCompletionWithFallback(
+  args: ChainWalkArgs & {
+    /** Called once per streamed token/chunk for providers that stream. */
+    onDelta: (delta: string) => void;
+  },
+): Promise<RunRawWithFallbackResult> {
   return runRawChain(
     args,
     // Prefer the provider's streaming wire; fall back to the buffered call for
@@ -772,15 +779,9 @@ export interface RunRawWithFallbackResult {
  * last-working cache + structured logging are shared with the streaming
  * sibling via `runRawChain`.
  */
-export async function runRawCompletionWithFallback(args: {
-  userId: string;
-  providers: ProviderChainResolved[];
-  params: CompletionParams;
-  /** See {@link runStreamingRawCompletionWithFallback}'s `surface`. */
-  surface: BudgetSurface;
-  /** See `RunWithFallbackParams.ledger`. */
-  ledger?: ProviderHealthLedger;
-}): Promise<RunRawWithFallbackResult> {
+export async function runRawCompletionWithFallback(
+  args: ChainWalkArgs,
+): Promise<RunRawWithFallbackResult> {
   return runRawChain(args, (candidate) =>
     candidate.instance.generateCompletion(args.params),
   );

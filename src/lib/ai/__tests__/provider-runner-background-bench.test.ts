@@ -141,6 +141,29 @@ describe("#1279: background work and a benched provider", () => {
     );
   });
 
+  it("walks the benched provider for a job-rationed call a person waits on", async () => {
+    const ledger = createInMemoryProviderHealthLedger();
+    const gateway = new AnswerlessProvider();
+    for (let i = 0; i < PROVIDER_PAUSE_THRESHOLD; i += 1) {
+      await walk("job", "u-rerun", "openai-compatible", gateway, ledger).catch(
+        () => undefined,
+      );
+    }
+    const before = gateway.calls;
+    const err = await runRawCompletionWithFallback({
+      userId: "u-rerun",
+      surface: "job",
+      interactive: true,
+      providers: [{ providerType: "openai-compatible", instance: gateway }],
+      params: singleUserTurn({ system: "s", user: "u" }),
+      ledger,
+    }).catch((e) => e);
+    expect(gateway.calls).toBe(before + 1);
+    expect((err as AllProvidersFailedError).attempts[0].failureKind).toBe(
+      "reasoning_only",
+    );
+  });
+
   it("logs once more when a new window opens", async () => {
     vi.useFakeTimers();
     const ledger = createInMemoryProviderHealthLedger();

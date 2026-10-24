@@ -71,6 +71,9 @@ vi.mock("@/lib/db", () => ({
     consentReceipt: {
       findFirst: vi.fn(async () => ({ id: "receipt-1" })),
     },
+    // The provider health ledger the chain walk reads. Nothing benched by
+    // default; the bench case below seeds a row.
+    providerHealth: { findMany: vi.fn(async () => []) },
   },
 }));
 
@@ -281,6 +284,35 @@ describe("POST /api/insights/generate — daily token ceiling", () => {
     // stays intact and the card does not blank.
     expect(prisma.user.updateMany).not.toHaveBeenCalled();
     expect(enqueueStatusRefillForUser).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/insights/generate — a provider the health ledger benched", () => {
+  // #1279 — "Re-run analysis" is a person waiting on the answer. Background
+  // work leaves a benched provider out; this call walks it at the tail of
+  // the chain, so it reaches the provider and reports what the provider
+  // said, not a connection failure that never happened.
+  it("still asks the benched provider and reports its own refusal", async () => {
+    vi.mocked(prisma.providerHealth.findMany).mockResolvedValueOnce([
+      {
+        providerType: "admin-openai",
+        lastResult: "auth_failed",
+        consecutiveFailures: 1,
+        nextRetryAt: new Date(Date.now() + 60 * 60 * 1000),
+      },
+    ] as never);
+    const err = Object.assign(new Error("OpenAI request failed (401)"), {
+      httpStatus: 401,
+    });
+    makeProviderThatThrows(err);
+    const provider = await vi.mocked(resolveProvider)("u-1");
+
+    const res = await POST(jsonRequest({ force: true }) as never);
+
+    expect(provider.generateCompletion).toHaveBeenCalledTimes(1);
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as ApiErrorEnvelope;
+    expect(body.error).toMatch(/AI provider rejected/i);
   });
 });
 

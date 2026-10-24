@@ -7,7 +7,9 @@
  * times in a row: a chain whose only entry answered every call with reasoning
  * and no answer was called by every background job, all day, because the tail
  * is still walked. So a job leaves every benched provider out until its
- * window lifts, and the window grows while the failures continue
+ * window lifts (a job-rationed call a person waits on, the on-demand
+ * briefing, passes `interactive` and walks it at the tail like any
+ * interactive call), and the window grows while the failures continue
  * (`hardFailureCooldownMs` in `provider-health-ledger.ts`). The ledger is
  * durable, so the bench holds across workers and restarts.
  *

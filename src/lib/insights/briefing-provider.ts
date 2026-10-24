@@ -104,6 +104,14 @@ export interface RunBriefingCompletionArgs {
    * budget; the client adds the thinking budget itself.
    */
   reasoningJob?: BackgroundReasoningJob;
+  /**
+   * #1279 — a person is waiting on this call: the on-demand "Re-run
+   * analysis". It keeps the background share of the day's ceiling, and walks
+   * a provider the health ledger benched at the tail of the chain instead of
+   * leaving it out, so the person gets that provider's own answer or refusal.
+   * Absent for the scheduled generator.
+   */
+  interactive?: boolean;
 }
 
 /**
@@ -175,9 +183,9 @@ export async function runBriefingCompletion(
   try {
     outcome = await runRawCompletionWithFallback({
       userId: args.userId,
-      // A background generator: an operator-funded fallback hop is rationed at
-      // the job share, exactly as the reservation above was.
+      // Rationed at the job share, exactly as the reservation above was.
       surface: "job",
+      ...(args.interactive ? { interactive: true } : {}),
       providers: args.chain,
       params: {
         ...singleUserTurn({

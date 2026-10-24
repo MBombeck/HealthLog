@@ -62,6 +62,8 @@ export function runBriefingCall(
     // the client's 60 s default on large accounts.
     timeoutMs: ctx.effectiveTimeoutMs,
     stage: options.stage,
+    // The person who pressed "Re-run analysis" is waiting on this call.
+    interactive: true,
     // A briefing asked for by hand reasons exactly like the scheduled one;
     // the retries repair a reply and do not.
     ...(options.reasoning ? { reasoningJob: "daily_briefing" as const } : {}),
