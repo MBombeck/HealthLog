@@ -60,9 +60,20 @@ const source = new Map(
   files.map((f) => [f, readFileSync(join(SRC, f), "utf8")]),
 );
 
-/** Strip comments so documentation that quotes code never matches. */
+/**
+ * Strip comments so documentation that quotes code never matches. Memoised
+ * per text: the planted cases rescan the whole tree once per finding, and
+ * stripping every file again each time made that one case take seconds,
+ * past the default timeout under a full parallel run.
+ */
+const stripped = new Map<string, string>();
 function code(text: string): string {
-  return stripComments(text);
+  let out = stripped.get(text);
+  if (out === undefined) {
+    out = stripComments(text);
+    stripped.set(text, out);
+  }
+  return out;
 }
 
 /** Index just past the bracket that closes the one at `open`. */
@@ -326,9 +337,7 @@ describe("every queue declares its runtime", () => {
         { definitions: [planted({})], ...scan(texts(budgeted)) },
       ),
     ).toEqual(["planted-long: expiry 900s out of range"]);
-    // Each finding rescans every send in the tree; under a full parallel run
-    // that took six to nine seconds against the five-second default.
-  }, 30_000);
+  });
 });
 
 /**

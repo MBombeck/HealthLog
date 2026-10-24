@@ -31,7 +31,7 @@ import {
   runThumbnailBackfillForUser,
   type ThumbnailBackfillPayload,
 } from "@/lib/jobs/document-thumbnail-backfill";
-import { jobBudget } from "@/lib/jobs/job-budget";
+import { jobBudget, jobDeadline } from "@/lib/jobs/job-budget";
 import { jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { recordError } from "@/lib/jobs/worker-status";
 
@@ -102,7 +102,7 @@ export async function handleContentIndexBackfill(
 /** One stored document's job, by the step that runs it. */
 function perDocument<P extends { userId?: string; documentId?: string }>(
   name: string,
-  run: (payload: P) => Promise<unknown>,
+  run: (payload: P, job: Job<P>) => Promise<unknown>,
 ): (jobs: Job<P>[]) => Promise<JobOutcome> {
   return async (jobs) => {
     let documents = 0;
@@ -114,7 +114,7 @@ function perDocument<P extends { userId?: string; documentId?: string }>(
         continue;
       }
       try {
-        await run(job.data);
+        await run(job.data, job);
         documents++;
       } catch (err) {
         recordError();
@@ -132,12 +132,18 @@ function perDocument<P extends { userId?: string; documentId?: string }>(
 
 /**
  * Content indexing on upload: the vision provider when configured and
- * consented, the local text layer otherwise.
+ * consented, the local text layer otherwise. The lab staging after it plans
+ * its reads against the job's own deadline (`jobDeadline`), so a long report
+ * read by a slow model stops before pg-boss's expiry instead of being retried
+ * beside itself (#1274).
  */
-export const handleDocumentIndex = perDocument<DocumentIndexPayload>(
-  "document-index",
-  runDocumentIndex,
-);
+export function handleDocumentIndex(
+  jobs: Job<DocumentIndexPayload>[],
+): Promise<JobOutcome> {
+  return perDocument<DocumentIndexPayload>("document-index", (payload, job) =>
+    runDocumentIndex(payload, { deadlineAt: jobDeadline(job) }),
+  )(jobs);
+}
 
 /** The preview thumbnail on upload: local decode and downscale, no egress. */
 export const handleDocumentThumbnail = perDocument<DocumentThumbnailPayload>(

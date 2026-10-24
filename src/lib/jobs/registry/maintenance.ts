@@ -667,6 +667,10 @@ const jobs: readonly JobDefinition[] = [
         "Per-document, no re-converging discovery pass. Collapse queued duplicates only, so a re-index after a content change is never dropped.",
     },
     work: { localConcurrency: DOCUMENT_INDEX_CONCURRENCY },
+    // One index per document at a time: a delivery after the expiry finds the
+    // reads still running and reports so instead of reading beside them.
+    lock: (job: Job<{ documentId?: string }>) =>
+      `document:${job.data.documentId ?? ""}`,
     load: async () => (await documents()).handleDocumentIndex,
   }),
   // One run per job under its run id's lock, so a redelivery never reads

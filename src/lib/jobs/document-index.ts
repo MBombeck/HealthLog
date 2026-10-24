@@ -12,12 +12,19 @@
  * The queue MUST be registered in the maintenance registrar
  * (`src/lib/jobs/reminder/register-maintenance.ts`) so pg-boss provisions it.
  */
+import { STATUS_MODEL_CALLS } from "@/lib/ai/ai-budgets";
 import { maybeAutoStageLabFacts } from "@/lib/documents/auto-stage-labs";
 import { indexDocumentContent } from "@/lib/documents/index-document";
+import type { OcrSchedule } from "@/lib/documents/ocr-plan";
+import { ocrReadCallMs } from "@/lib/documents/ocr-read";
+import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
 import { caughtAs, logCaught } from "@/lib/logging/signal";
-import { DOCUMENT_INDEX_QUEUE } from "./document-index-queue";
+import {
+  DOCUMENT_INDEX_EXPIRE_SECONDS,
+  DOCUMENT_INDEX_QUEUE,
+} from "./document-index-queue";
 
 export interface DocumentIndexPayload {
   userId: string;
@@ -38,6 +45,7 @@ export interface DocumentIndexPayload {
  */
 export async function runDocumentIndex(
   payload: DocumentIndexPayload,
+  options: { deadlineAt?: number; now?: () => number } = {},
 ): Promise<void> {
   const { userId, documentId } = payload;
   if (!userId || !documentId) return;
@@ -60,10 +68,37 @@ export async function runDocumentIndex(
   // A deferred import stages nothing: lab staging is an AI read, and the
   // person asked for those to wait.
   if (outcome.indexed && !localOnly) {
-    await maybeAutoStageLabFacts(userId, documentId).catch(
+    const schedule =
+      options.deadlineAt === undefined
+        ? undefined
+        : await stagingSchedule(userId, options.deadlineAt, options.now);
+    await maybeAutoStageLabFacts(userId, documentId, { schedule }).catch(
       caughtAs("documents.auto_index.lab_staging_failed"),
     );
   }
+}
+
+/**
+ * The lab staging's reads, planned against the job's deadline. One call of a
+ * read may take the person's timeout twice (the call and the one repeat a
+ * thinking model gets), so that is the unit the deadline is divided by.
+ * There is no run row to move: the deadline is the job's own, fixed.
+ */
+export async function stagingSchedule(
+  userId: string,
+  deadlineAt: number,
+  now: () => number = Date.now,
+): Promise<OcrSchedule> {
+  const owner = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { aiResponseTimeoutSeconds: true },
+  });
+  const perCallMs =
+    ocrReadCallMs(owner?.aiResponseTimeoutSeconds ?? null) * STATUS_MODEL_CALLS;
+  return {
+    maxModelCalls: () => Math.floor((deadlineAt - now()) / perCallMs),
+    arm: async () => {},
+  };
 }
 
 /**
@@ -93,6 +128,7 @@ export async function enqueueDocumentIndex(
       retryDelay: 30,
       retryBackoff: true,
       singletonKey: `document-index|${documentId}`,
+      expireInSeconds: DOCUMENT_INDEX_EXPIRE_SECONDS,
     });
     return { enqueued: Boolean(jobId) };
   } catch (err) {

@@ -36,7 +36,6 @@ import {
   PICK_DECIDED_REASONS,
   type AiCapabilityKey,
 } from "@/lib/ai/capabilities/types";
-import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 import { callTimeoutMs } from "@/lib/ai/effective-timeout";
 import { prisma } from "@/lib/db";
 import { loadOwnedDocument } from "@/lib/documents/ai-route-support";
@@ -77,6 +76,7 @@ import {
   OCR_EXTRACT_MODEL_CALLS,
   type OcrSchedule,
 } from "@/lib/documents/ocr-plan";
+import { ocrReadCallMs } from "@/lib/documents/ocr-read";
 import {
   requireDocumentTextProvider,
   requireDocumentVisionProvider,
@@ -220,7 +220,16 @@ async function runDocumentIndex(
       userId: run.userId,
       document,
       input: { mode: "text", text: run.input?.toString("utf8") ?? "" },
-      origin: { ipAddress: null, worker: true },
+      origin: {
+        ipAddress: null,
+        worker: true,
+        schedule: deadlineSchedule(
+          run.id,
+          ocrReadCallMs(owner?.aiResponseTimeoutSeconds ?? null),
+          deadlineAt,
+          now,
+        ),
+      },
     });
   }
   const pick = await requireDocumentVisionProvider(run.userId);
@@ -237,7 +246,16 @@ async function runDocumentIndex(
     userId: run.userId,
     document,
     input: { mode: "vision", pick, budget: run.params.budget },
-    origin: { ipAddress: null, worker: true },
+    origin: {
+      ipAddress: null,
+      worker: true,
+      schedule: deadlineSchedule(
+        run.id,
+        ocrReadCallMs(pick.entry.instance.responseTimeoutSeconds),
+        deadlineAt,
+        now,
+      ),
+    },
   });
 }
 
@@ -255,11 +273,22 @@ async function ocrReadSchedule(
   deadlineAt: number | undefined,
   now: () => number,
 ): Promise<OcrSchedule> {
-  const perCallMs = callTimeoutMs(
-    { timeoutMs: AI_BUDGETS.ocrExtract.timeoutMs },
-    responseTimeoutSeconds,
-  );
+  const perCallMs = ocrReadCallMs(responseTimeoutSeconds);
   await armDeadline(runId, perCallMs, OCR_EXTRACT_MODEL_CALLS, deadlineAt, now);
+  return deadlineSchedule(runId, perCallMs, deadlineAt, now);
+}
+
+/**
+ * The schedule of reads still to come before the job's deadline, armed only
+ * when the reads are planned: the lab staging after an index plans its reads
+ * once the transcription is done (#1274).
+ */
+function deadlineSchedule(
+  runId: string,
+  perCallMs: number,
+  deadlineAt: number | undefined,
+  now: () => number,
+): OcrSchedule {
   return {
     maxModelCalls: () =>
       deadlineAt === undefined

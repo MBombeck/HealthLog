@@ -12,6 +12,7 @@
  * (status, message, `documents.inbound.*` code); the caller renders it as a
  * response or stores it on the run.
  */
+import type { OcrSchedule } from "@/lib/documents/ocr-plan";
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 import type { ProviderChainType } from "@/lib/ai/provider-chain";
 import { auditLog } from "@/lib/auth/audit";
@@ -56,6 +57,11 @@ export const DOCUMENT_INDEX_RESERVE_TOKENS =
 export interface IndexOrigin {
   ipAddress: string | null;
   worker: boolean;
+  /**
+   * A background run's deadline, which the lab staging after the index plans
+   * its reads against. A request has none: it reads as before.
+   */
+  schedule?: OcrSchedule;
 }
 
 export type DocumentIndexInput =
@@ -109,9 +115,9 @@ async function finishIndex(
   // modules on, still STORED with no facts, provider + consent, looks like a
   // lab report) — a non-lab document is a tagged no-op, and a staging failure
   // never fails the index that just succeeded.
-  const staging = await maybeAutoStageLabFacts(userId, documentId).catch(
-    () => null,
-  );
+  const staging = await maybeAutoStageLabFacts(userId, documentId, {
+    schedule: origin.schedule,
+  }).catch(() => null);
   const labFactsStaged = staging?.staged === true ? staging.facts : 0;
   return {
     ok: true,

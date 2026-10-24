@@ -77,7 +77,8 @@ vi.mock("@/lib/ai/capabilities/gate", () => ({
   aiCapabilityForJob: vi.fn(),
   aiCapabilityForRecord: vi.fn(),
 }));
-vi.mock("@/lib/ai/ai-budgets", () => ({
+vi.mock("@/lib/ai/ai-budgets", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/ai/ai-budgets")>()),
   AI_BUDGETS: {
     documentSummary: { temperature: 0.3, maxTokens: 600 },
     documentTranscribe: { temperature: 0, maxTokens: 4000 },

@@ -41,6 +41,10 @@ import {
   runInboundExtraction,
   type InboundExtractionResult,
 } from "@/lib/documents/extract";
+import {
+  OCR_EXTRACT_MODEL_CALLS,
+  type OcrSchedule,
+} from "@/lib/documents/ocr-plan";
 import { OcrExtractError } from "@/lib/documents/ocr-read";
 import { encryptFactData, encryptFactProvenance } from "@/lib/documents/store";
 import { prisma } from "@/lib/db";
@@ -251,10 +255,16 @@ async function stageFactsIfStored(
  * Auto-stage lab facts for one freshly indexed document (owner-scoped). Called
  * fire-and-forget by the auto-index job after a successful index; every guard
  * miss returns a tagged no-op so the manual extract button stays the fallback.
+ *
+ * `schedule` is the run's deadline when a job reads (the auto-index job, the
+ * document run): the report's text is then split into as many reads as fit
+ * before it, instead of up to `OCR_MAX_PAGES` reads of two calls each that a
+ * slow model could stretch past the job's expiry (#1274).
  */
 export async function maybeAutoStageLabFacts(
   userId: string,
   documentId: string,
+  options: { schedule?: OcrSchedule } = {},
 ): Promise<AutoStageOutcome> {
   const [inboundOn, labsOn] = await Promise.all([
     isModuleEnabled(userId, "inboundDocuments"),
@@ -321,9 +331,14 @@ export async function maybeAutoStageLabFacts(
     { cap, surface: "job" },
   );
 
-  const plan = planInboundTextReads(chat.text, undefined);
+  const plan = planInboundTextReads(chat.text, options.schedule);
   let result: InboundExtractionResult;
   try {
+    // A run that cannot fit even one read before its deadline refuses here;
+    // the reservation is settled below like any other failed read.
+    await options.schedule?.arm(
+      plan.args.chunks.length * OCR_EXTRACT_MODEL_CALLS,
+    );
     result = await runInboundExtraction({
       userId,
       provider: provider.pick.entry.instance,

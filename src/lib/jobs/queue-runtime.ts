@@ -15,10 +15,11 @@
  *     quarters of the default expiry (`jobBudget`) and hands the rest to its
  *     next run, so it ends before fifteen minutes by construction.
  *   - `bounded`: one unit of model work (one account's note, refresh or
- *     memory pass) whose calls wait the person's response timeout each, up
- *     to ten minutes, which can outlast fifteen minutes. Every call sits
- *     behind an outer bound, so the job's longest run is known
- *     (`modelSeconds`, from `model-time.ts`); it carries an explicit
+ *     memory pass, a document summary) whose calls wait the person's
+ *     response timeout each, up to ten minutes, which can outlast fifteen
+ *     minutes. Every call carries its own abort and most sit behind an outer
+ *     bound, so the job's longest run is known (`modelSeconds`, from
+ *     `model-time.ts`); it carries an explicit
  *     `expireInSeconds` above that on every send, and no retry can start
  *     beside a run that is still going (#1274).
  *   - `long`: a job that may run for hours. It carries an explicit
@@ -58,9 +59,12 @@ import {
   COACH_MEMORY_REFRESH_EXPIRE_SECONDS,
 } from "@/lib/ai/coach/coach-memory-shared";
 import {
+  COMPLETION_CEILING_MS,
   COMPREHENSIVE_WARM_CEILING_MS,
   STATUS_RUN_CEILING_MS,
 } from "@/lib/jobs/model-time";
+import { DOCUMENT_INDEX_EXPIRE_SECONDS } from "@/lib/jobs/document-index-queue";
+import { DOCUMENT_SUMMARY_EXPIRE_SECONDS } from "@/lib/jobs/document-summary-queue";
 
 /** pg-boss's default job expiry, in seconds. */
 export const DEFAULT_JOB_EXPIRE_SECONDS = 15 * 60;
@@ -547,7 +551,17 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     exclusive: "lockedPass",
     why: "Up to 200 documents of one account, a provider transcription each.",
   },
-  "document-index": short("One document."),
+  "document-index": {
+    runtime: "long",
+    expireInSeconds: DOCUMENT_INDEX_EXPIRE_SECONDS,
+    expiryVia: ["DOCUMENT_INDEX_EXPIRE_SECONDS"],
+    stop: {
+      file: "lib/jobs/reminder/document-handlers.ts",
+      fn: "handleDocumentIndex",
+    },
+    exclusive: "lockedPass",
+    why: "One document: the transcription, then a lab report's staging reads, as many as fit before the job's deadline at the person's timeout.",
+  },
   "document-ai-run": {
     runtime: "long",
     expireInSeconds: DOCUMENT_AI_RUN_EXPIRE_SECONDS,
@@ -563,7 +577,13 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     "Up to 500 conditional updates and one deleteMany.",
   ),
   "document-thumbnail": short("One document."),
-  "document-summary": short("One document."),
+  "document-summary": {
+    runtime: "bounded",
+    modelSeconds: COMPLETION_CEILING_MS / 1000,
+    expireInSeconds: DOCUMENT_SUMMARY_EXPIRE_SECONDS,
+    expiryVia: ["DOCUMENT_SUMMARY_EXPIRE_SECONDS"],
+    why: "One document's summary: one call and its reasoning repeat at the person's timeout.",
+  },
   "document-summary-catchup": short("Enqueues at most 200 documents."),
   "document-thumbnail-backfill": short("Enqueues at most 1 000 documents."),
   "environment-fetch": short(

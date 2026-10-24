@@ -173,6 +173,27 @@ describe("maybeAutoStageLabFacts", () => {
     expect(created.data.every((f) => f.status === "PENDING")).toBe(true);
   });
 
+  it("plans a long report's reads against the run's deadline (#1274)", async () => {
+    // Four hundred lines of a panel, many reads of text.
+    const longReport = Array.from(
+      { length: 400 },
+      (_, i) => `Hämoglobin ${i} g/dl Referenzbereich 13-17 LDL 120 mg/dl`,
+    ).join("\n");
+    mockText.mockResolvedValue({ text: longReport, source: "verbatim" });
+
+    await maybeAutoStageLabFacts("u1", "d1");
+    const unbounded = mockExtract.mock.calls[0]![0].chunks.length;
+    expect(unbounded).toBeGreaterThan(1);
+
+    const arm = vi.fn(async () => {});
+    await maybeAutoStageLabFacts("u1", "d1", {
+      schedule: { maxModelCalls: () => 2, arm },
+    });
+    // Two calls left before the deadline: one read (a call and its retry).
+    expect(mockExtract.mock.calls[1]![0].chunks).toHaveLength(1);
+    expect(arm).toHaveBeenCalledWith(2);
+  });
+
   it("skips (manual path only) when a module is off", async () => {
     mockModule.mockImplementation(async (_u, key) => key !== "labs");
     const res = await maybeAutoStageLabFacts("u1", "d1");

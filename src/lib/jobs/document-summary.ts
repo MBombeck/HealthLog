@@ -49,7 +49,10 @@ import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
 import type { DocumentSummaryState } from "@/generated/prisma/client";
 import { logCaught } from "@/lib/logging/signal";
-import { DOCUMENT_SUMMARY_QUEUE } from "./document-summary-queue";
+import {
+  DOCUMENT_SUMMARY_EXPIRE_SECONDS,
+  DOCUMENT_SUMMARY_QUEUE,
+} from "./document-summary-queue";
 
 /**
  * Record what became of this document's summary. Never touches a READY row —
@@ -380,6 +383,7 @@ export async function enqueueDocumentSummary(
       retryDelay: 30,
       retryBackoff: true,
       singletonKey: `document-summary|${documentId}`,
+      expireInSeconds: DOCUMENT_SUMMARY_EXPIRE_SECONDS,
     });
     // PENDING is claimed only once a job genuinely exists. That is the whole
     // point: the detail view may say "being generated" for this state, so

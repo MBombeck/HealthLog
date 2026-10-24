@@ -59,11 +59,17 @@ export function comprehensiveWarmBudgetMs(
 }
 
 /**
- * The longest one status run (`runStatusCompletion`) waits at the largest
- * setting: each of its `STATUS_MODEL_CALLS` calls at the full timeout.
+ * The longest one completion takes at the largest setting, as the clients run
+ * it: the call and the one repeat the Local and gateway clients send when a
+ * thinking model answered with reasoning alone (`STATUS_MODEL_CALLS`), each
+ * at the full timeout. A document read's call and its corrective retry are
+ * two completions.
  */
-export const STATUS_RUN_CEILING_MS =
+export const COMPLETION_CEILING_MS =
   AI_RESPONSE_TIMEOUT_MAX_MS * STATUS_MODEL_CALLS;
+
+/** The longest one status run (`runStatusCompletion`, one completion) waits. */
+export const STATUS_RUN_CEILING_MS = COMPLETION_CEILING_MS;
 
 /**
  * Room a job's expiry leaves on top of its model work for what the handler

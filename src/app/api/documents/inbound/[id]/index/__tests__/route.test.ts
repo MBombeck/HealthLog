@@ -291,7 +291,10 @@ describe("POST /api/documents/inbound/[id]/index — staging continuation", () =
     } as never);
     const res = await POST(visionReq("doc-1") as never, ctx("doc-1") as never);
     expect(res.status).toBe(200);
-    expect(maybeAutoStageLabFacts).toHaveBeenCalledWith("user-1", "doc-1");
+    // A request has no deadline: the staging reads as it always did.
+    expect(maybeAutoStageLabFacts).toHaveBeenCalledWith("user-1", "doc-1", {
+      schedule: undefined,
+    });
     const body = await res.json();
     expect(body.data.labFactsStaged).toBe(4);
     // Read with AI ends an import's hold on automatic AI reading (#1038),

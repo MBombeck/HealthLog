@@ -25,6 +25,7 @@
  * The raw image / PDF bytes live in memory only; nothing here logs them.
  */
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
+import { callTimeoutMs } from "@/lib/ai/effective-timeout";
 import { aiEgressRefusal } from "@/lib/ai/capabilities/egress";
 import type { AiUnavailableError } from "@/lib/ai/capabilities/refusal";
 import {
@@ -67,6 +68,20 @@ export function ocrReadParams(prompt: {
     }),
     reasoning: TRANSCRIPTION_REASONING,
   };
+}
+
+/**
+ * The timeout one call of a read runs under for a record whose setting is
+ * `responseTimeoutSeconds`: the read's own default, lifted by the setting.
+ * What a deadline that plans reads divides its time by.
+ */
+export function ocrReadCallMs(
+  responseTimeoutSeconds: number | null | undefined,
+): number {
+  return callTimeoutMs(
+    { timeoutMs: AI_BUDGETS.ocrExtract.timeoutMs },
+    responseTimeoutSeconds,
+  );
 }
 
 /** Appended to the user turn when the first answer was not the schema. */

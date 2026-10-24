@@ -70,12 +70,18 @@ describe("transcription read core", () => {
     expect(setters).toEqual(["documents/ocr-read.ts"]);
   });
 
-  it("reads the per-read timeout in the core and in the deadline that plans the reads, nowhere else", () => {
+  it("reads the per-read timeout in the core only, and every deadline that plans reads asks it", () => {
     const readers = filesMatching(/\bAI_BUDGETS\.ocrExtract\.timeoutMs\b/);
-    requireFloor("files reading the transcription timeout", readers, 2);
-    expect(readers).toEqual([
-      "documents/ocr-read.ts",
+    requireFloor("files reading the transcription timeout", readers, 1);
+    expect(readers).toEqual(["documents/ocr-read.ts"]);
+    // The document run and the auto-index job divide their deadlines by the
+    // same per-call timeout the reads send (`ocrReadCallMs`).
+    const planners = filesMatching(/\bocrReadCallMs\s*\(/).filter(
+      (rel) => rel !== "documents/ocr-read.ts",
+    );
+    expect(planners).toEqual([
       "jobs/document-ai-run.ts",
+      "jobs/document-index.ts",
     ]);
   });
 
