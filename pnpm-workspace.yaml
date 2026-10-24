@@ -72,14 +72,6 @@ overrides:
   # (a ReDoS in the Address6 zone identifier, through 10.7.3).
   "ip-address@<10.7.4": "^10.7.4"
   "sharp@<0.35.0": "^0.35.3"
-  # A crafted PDF could run arbitrary JavaScript through the renderer. Our own
-  # copy is pinned past it in `devDependencies`, but a second copy arrives
-  # transitively, and `outputFileTracingIncludes` ships EVERY `pdfjs-dist@*` in
-  # the store into the standalone image — so an unused transitive copy is still
-  # a copy in the runtime image. The range is bounded on both ends deliberately:
-  # `pdf-parse` resolves 5.4.296, which predates the flaw and drives the local
-  # text-extraction path, so it must not be dragged onto a new major.
-  "pdfjs-dist@>=5.6.83 <6.2.108": "6.2.108"
   # Deeply nested input drives DeepmergeTS into unbounded recursion until the
   # stack gives out. The copy here is Prisma's: `@prisma/config` still asks for
   # 7.1.5 even on the current 7.9.1, so no Prisma bump reaches it and the

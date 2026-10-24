@@ -4,13 +4,14 @@
  *
  * ## The failure this freezes (GitHub #1124)
  *
- * The pnpm store holds two canvas versions: the one in package.json and an
- * older one that pdf-parse's own pdfjs-dist pulls in. The runner stage picked
- * the musl binary with `find | head -1`, got the old one, and copied it into
- * the new loader's directory, where the loader looks first. PDF rendering
- * still worked, so nothing looked wrong; `loadImage` called an
- * `Image.decode` the old binary lacks, and every preview thumbnail failed
- * with "image.decode is not a function" on both architectures.
+ * The pnpm store held two canvas versions: the one in package.json and an
+ * older one that a second, older pdfjs-dist pulled in (gone since #1277).
+ * The runner stage picked the musl binary with `find | head -1`, got the
+ * old one, and copied it into the new loader's directory, where the loader
+ * looks first. PDF rendering still worked, so nothing looked wrong;
+ * `loadImage` called an `Image.decode` the old binary lacks, and every
+ * preview thumbnail failed with "image.decode is not a function" on both
+ * architectures.
  *
  * ## What it proves and what it does not
  *

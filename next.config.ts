@@ -302,15 +302,15 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "*": [
       "./src/lib/ai/prompts/safety-contracts.*.yaml",
-      // Document AI local text extraction runs `pdf-parse` (→ pdfjs-dist)
-      // server-side in the content-index job — the provider-free fallback that
-      // keeps content search working with no AI configured. Both are pure JS +
-      // wasm; there is NO native `.node` on the text-layer path (`@napi-rs/canvas`
-      // is only pulled for image rendering, which `getText()` never invokes).
-      // The standalone tracer can miss pdfjs-dist's wasm decoders (they resolve
-      // via `new URL(..., import.meta.url)`), so pin both packages into the
-      // runtime image explicitly. pnpm keeps pdfjs-dist unhoisted under `.pnpm`.
-      "./node_modules/.pnpm/pdf-parse@*/node_modules/pdf-parse/**",
+      // Document AI local text extraction and rasterization both run the
+      // app's one pdfjs-dist (`src/lib/documents/pdfjs.ts`) server-side; the
+      // text read is the provider-free fallback that keeps content search
+      // working with no AI configured. The standalone tracer can miss
+      // pdfjs-dist's wasm decoders, standard fonts and CMaps (they are read
+      // from disk at runtime), so pin the package into the runtime image
+      // explicitly. pnpm keeps it unhoisted under `.pnpm`. The glob matches
+      // one copy only: `src/__tests__/single-pdfjs-guard.test.ts` fails when
+      // the lockfile resolves a second version (#1277).
       "./node_modules/.pnpm/pdfjs-dist@*/node_modules/pdfjs-dist/**",
       // Document AI rasterization (`src/lib/documents/rasterize-pdf.ts`) renders
       // a scanned/image-only PDF page to a JPEG via `@napi-rs/canvas` so an

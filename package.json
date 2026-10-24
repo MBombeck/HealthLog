@@ -129,7 +129,6 @@
     "fast-check": "4.10.2",
     "knip": "^6.42.0",
     "lefthook": "^2.2.2",
-    "pdf-parse": "^2.4.5",
     "pdfjs-dist": "6.4.299",
     "prettier": "^3.9.10",
     "prettier-plugin-tailwindcss": "^0.8.1",

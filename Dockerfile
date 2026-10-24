@@ -154,7 +154,7 @@ RUN node -e "require.resolve('pg-boss'); require.resolve('pg')"
 # before the platform package, so it decides which binary runs.
 #
 # Hoist the version the app pins, by name, exactly like pdfjs-dist below. The
-# store holds a second, older canvas that pdf-parse's own pdfjs-dist pulls in,
+# store once held a second, older canvas that a second pdfjs-dist pulled in,
 # and this step used to take whichever `find | head -1` returned first. It
 # returned the old binary, which then sat next to the new loader: rendering
 # still worked, but `loadImage` called an `Image.decode` the old binary does
@@ -190,13 +190,15 @@ RUN set -e; \
 # `import('pdfjs-dist/legacy/build/pdf.mjs')`. Node resolves that up to
 # /app/node_modules, so hoist the real pnpm-store copy to the top level too.
 #
-# Hoist the version the app pins, by name. More than one pdfjs-dist reaches the
-# store — `pdf-parse` carries its own, older copy for the text-extraction path —
-# and this step used to take whatever `find | head -1` returned first. That is
-# readdir order, so it could hoist the OLDER copy and the version named in
-# package.json would never run in the image: the renderer resolving one version
-# while every local check exercised another. Name the version and fail the build
-# when it is absent, instead of degrading to whichever copy comes back first.
+# Hoist the version the app pins, by name. More than one pdfjs-dist once reached
+# the store (a text-extraction dependency carried its own, older copy), and this
+# step used to take whatever `find | head -1` returned first. That is readdir
+# order, so it could hoist the OLDER copy and the version named in package.json
+# would never run in the image: the renderer resolving one version while every
+# local check exercised another. Name the version and fail the build when it is
+# absent, instead of degrading to whichever copy comes back first. Two copies in
+# one process also break each other (#1277); the lockfile now resolves one, and
+# `src/__tests__/single-pdfjs-guard.test.ts` keeps it that way.
 COPY --from=builder /app/.pdfjs-version /tmp/.pdfjs-version
 RUN set -e; \
     PDFJS_VERSION="$(cat /tmp/.pdfjs-version)"; \
