@@ -29,7 +29,10 @@ import {
   emitInsertedMeasurementArrivals,
   type InsertedMeasurementArrivalRow,
 } from "@/lib/arrivals/measurement-emit";
-import { invalidateUserDashboardSnapshot } from "@/lib/cache/invalidate";
+import {
+  invalidateUserDashboardSnapshot,
+  invalidateUserMeasurements,
+} from "@/lib/cache/invalidate";
 import { invalidateStatusInsightsForTypes } from "@/lib/insights/status-invalidation";
 import { getEvent } from "@/lib/logging/context";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
@@ -116,8 +119,14 @@ export function invalidateProviderStatus(
 
 /**
  * The end of a full-history backfill: refold the whole touched range once
- * (from the first touched day to the end of the last), then re-warm the
- * touched status cards. Throws when the fold fails, for the caller to count.
+ * (from the first touched day to the end of the last), mark the read caches
+ * stale back to the first touched day, then re-warm the touched status cards.
+ * Throws when the fold fails, for the caller to count.
+ *
+ * The caches are marked even when the fold fails: the rows changed either
+ * way, and a cached analytics body built before the backfill would otherwise
+ * be served until its TTL ran out. That is the same order and the same
+ * posture as the per-write tail (`afterMeasurementMutation`).
  */
 export async function afterProviderBackfill(input: {
   userId: string;
@@ -135,6 +144,10 @@ export async function afterProviderBackfill(input: {
   // The keys are UTC day starts; the end is past the last touched day so the
   // aggregator's `< to` bound covers it.
   const to = new Date(sorted[sorted.length - 1]! + 24 * 60 * 60 * 1000);
-  await recomputeUserRollups(input.userId, { types, from, to });
+  try {
+    await recomputeUserRollups(input.userId, { types, from, to });
+  } finally {
+    invalidateUserMeasurements(input.userId, { touchedFrom: from });
+  }
   invalidateProviderStatus(input.userId, input.provider, types);
 }
