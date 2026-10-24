@@ -163,6 +163,8 @@ vi.mock("@/lib/i18n/server-locale", () => ({
   resolveServerLocale: vi.fn(async () => "en"),
 }));
 
+import { NextRequest } from "next/server";
+
 import { GET, POST, resolveInsightsRateLimit } from "../route";
 import { enqueueStatusRefillForUser } from "@/lib/insights/comprehensive-generate";
 import { resolveProvider } from "@/lib/ai/provider";
@@ -293,26 +295,42 @@ describe("POST /api/insights/generate — a provider the health ledger benched",
   // the chain, so it reaches the provider and reports what the provider
   // said, not a connection failure that never happened.
   it("still asks the benched provider and reports its own refusal", async () => {
+    const now = Date.now();
     vi.mocked(prisma.providerHealth.findMany).mockResolvedValueOnce([
       {
+        id: "ph-1",
+        userId: "u-1",
         providerType: "admin-openai",
         lastResult: "auth_failed",
+        lastStatus: 401,
         consecutiveFailures: 1,
-        nextRetryAt: new Date(Date.now() + 60 * 60 * 1000),
+        lastOkAt: null,
+        lastFailureAt: new Date(now),
+        nextRetryAt: new Date(now + 60 * 60 * 1000),
+        updatedAt: new Date(now),
       },
-    ] as never);
+    ]);
     const err = Object.assign(new Error("OpenAI request failed (401)"), {
       httpStatus: 401,
     });
     makeProviderThatThrows(err);
     const provider = await vi.mocked(resolveProvider)("u-1");
+    const body = JSON.stringify({ force: true });
+    const request = new NextRequest("http://localhost/api/insights/generate", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "content-length": String(body.length),
+      },
+      body,
+    });
 
-    const res = await POST(jsonRequest({ force: true }) as never);
+    const res = await POST(request);
 
     expect(provider.generateCompletion).toHaveBeenCalledTimes(1);
     expect(res.status).toBe(422);
-    const body = (await res.json()) as ApiErrorEnvelope;
-    expect(body.error).toMatch(/AI provider rejected/i);
+    const envelope = (await res.json()) as ApiErrorEnvelope;
+    expect(envelope.error).toMatch(/AI provider rejected/i);
   });
 });
 
