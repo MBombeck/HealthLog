@@ -69,7 +69,6 @@ import * as medicationLayout from "@/app/api/medications/layout/route";
 import * as moodTagLayout from "@/app/api/mood/tags/layout/route";
 import * as documentsLayout from "@/app/api/documents/inbound/layout/route";
 import * as moduleListLayout from "@/app/api/settings/module-list-layout/route";
-import * as previewFeatures from "@/app/api/settings/preview-features/route";
 import * as activityGoals from "@/app/api/activity/goals/route";
 import * as healthKit from "@/app/api/integrations/healthkit/route";
 import { POST as exportHealthRecord } from "@/app/api/export/health-record/route";
@@ -887,21 +886,6 @@ function entries(user: Pick<User, "id">): Entry[] {
         ],
       },
       expected: ["list", "alphaAsc"],
-    },
-    {
-      columns: ["previewFeaturesJson"],
-      write: {
-        handler: previewFeatures.PATCH,
-        method: "PATCH",
-        route: "/api/settings/preview-features",
-        body: { topics: true },
-      },
-      read: get(
-        previewFeatures.GET,
-        "/api/settings/preview-features",
-        "topics",
-      ),
-      expected: true,
     },
     {
       columns: ["activityGoalsJson"],

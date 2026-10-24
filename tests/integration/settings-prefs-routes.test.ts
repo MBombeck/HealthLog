@@ -1,13 +1,10 @@
 /**
- * The two per-user Settings preferences that live outside the account
- * payload, end to end against Postgres:
- *
- * - `/api/settings/module-list-layout`: defaults without a write, one list
- *   changed per PUT with preserve-when-absent fields and untouched neighbours,
- *   the multi-issue 422 for unknown values, and the column carrying only what
- *   was chosen.
- * - `/api/settings/preview-features`: all off by default, PATCH keeps the
- *   flags it does not name, an unknown flag or an empty body is refused.
+ * The per-user list layout, a Settings preference that lives outside the
+ * account payload, end to end against Postgres:
+ * `/api/settings/module-list-layout` answers defaults without a write,
+ * changes one list per PUT with preserve-when-absent fields and untouched
+ * neighbours, refuses unknown values with the multi-issue 422, and stores
+ * only what was chosen.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -173,51 +170,8 @@ describe("/api/settings/module-list-layout — integration", () => {
   });
 });
 
-describe("/api/settings/preview-features — integration", () => {
-  const URL = "http://localhost/api/settings/preview-features";
-
-  it("is all off by default and keeps a flag once switched on", async () => {
-    const { userId } = await seedUser();
-    const { GET, PATCH } =
-      await import("@/app/api/settings/preview-features/route");
-
-    const before = await (GET as Handler)(new Request(URL));
-    expect(((await before.json()) as { data: unknown }).data).toEqual({
-      topics: false,
-    });
-
-    const on = await (PATCH as Handler)(json("PATCH", URL, { topics: true }));
-    expect(on.status).toBe(200);
-    expect(((await on.json()) as { data: unknown }).data).toEqual({
-      topics: true,
-    });
-
-    const after = await (GET as Handler)(new Request(URL));
-    expect(((await after.json()) as { data: unknown }).data).toEqual({
-      topics: true,
-    });
-    const row = await getPrismaClient().user.findUnique({
-      where: { id: userId },
-      select: { previewFeaturesJson: true },
-    });
-    expect(row?.previewFeaturesJson).toEqual({ topics: true });
-  });
-
-  it("refuses an unknown flag and an empty body", async () => {
-    await seedUser();
-    const { PATCH } = await import("@/app/api/settings/preview-features/route");
-    const unknown = await (PATCH as Handler)(
-      json("PATCH", URL, { topics: true, darkMagic: true }),
-    );
-    expect(unknown.status).toBe(422);
-    const empty = await (PATCH as Handler)(json("PATCH", URL, {}));
-    expect(empty.status).toBe(422);
-  });
-});
-
 describe("settings presentation follows the person, also while acting for a record", () => {
   const LAYOUT = "http://localhost/api/settings/module-list-layout";
-  const PREVIEW = "http://localhost/api/settings/preview-features";
 
   async function actingForAnotherRecord() {
     const prisma = getPrismaClient();
@@ -251,10 +205,9 @@ describe("settings presentation follows the person, also while acting for a reco
     return { ownerId: owner.id, actorId: actor.id };
   }
 
-  it("reads and saves the actor's own layout and preview switch", async () => {
+  it("reads and saves the actor's own layout", async () => {
     const { ownerId, actorId } = await actingForAnotherRecord();
     const layout = await import("@/app/api/settings/module-list-layout/route");
-    const preview = await import("@/app/api/settings/preview-features/route");
 
     expect((await (layout.GET as Handler)(new Request(LAYOUT))).status).toBe(
       200,
@@ -263,20 +216,12 @@ describe("settings presentation follows the person, also while acting for a reco
       json("PUT", LAYOUT, { version: 1, list: "labs", view: "cards" }),
     );
     expect(put.status).toBe(200);
-    expect((await (preview.GET as Handler)(new Request(PREVIEW))).status).toBe(
-      200,
-    );
-    const patch = await (preview.PATCH as Handler)(
-      json("PATCH", PREVIEW, { topics: true }),
-    );
-    expect(patch.status).toBe(200);
 
     const rows = await getPrismaClient().user.findMany({
       where: { id: { in: [ownerId, actorId] } },
       select: {
         id: true,
         moduleListLayoutJson: true,
-        previewFeaturesJson: true,
       },
     });
     const actor = rows.find((r) => r.id === actorId)!;
@@ -284,9 +229,7 @@ describe("settings presentation follows the person, also while acting for a reco
     expect(actor.moduleListLayoutJson).toMatchObject({
       labs: { view: "cards" },
     });
-    expect(actor.previewFeaturesJson).toEqual({ topics: true });
     expect(owner.moduleListLayoutJson).toBeNull();
-    expect(owner.previewFeaturesJson).toBeNull();
   });
 });
 
