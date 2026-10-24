@@ -13,7 +13,7 @@
  *   - Tier 1 Pausieren: PUT `{ active: false | true }`. Server derives
  *     `pausedAt`. Switch wraps in `<label>` so the entire row is the
  *     AT hit target.
- *   - Tier 2 Beenden: PUT `{ endsOn: <today-iso> }`. AlertDialog
+ *   - Tier 2 Beenden: PUT `{ endsOn: <today YYYY-MM-DD> }`. AlertDialog
  *     confirm; Cancel autofocus stays default.
  *   - Tier 3a Verlauf löschen: DELETE `/intake/purge`. Disabled when
  *     `intakeCount === 0`. AlertDialog confirm.
@@ -46,9 +46,33 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { invalidateMedicationReads, queryKeys } from "@/lib/query-keys";
 import { apiDelete, apiPut } from "@/lib/api/api-fetch";
+import type { CourseStatus } from "@/lib/medications/course-window";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
+
+/**
+ * The PUT body that ends a course today: the person's own calendar day as
+ * `YYYY-MM-DD`, the only shape `endsOn` accepts. A full ISO instant was
+ * refused with 422 on every press, and its date was the UTC one, a day off
+ * around midnight for anyone not on UTC.
+ */
+export function endCourseBody(now: Date, timeZone: string): { endsOn: string } {
+  return { endsOn: userDayKey(now, timeZone) };
+}
+
+/**
+ * Whether "End" may be offered. Only a course that is running today can be
+ * ended today: the PUT rewrites the latest course's end, so pressing it on an
+ * ended course would reopen it up to today, and on a course that has not
+ * started it would turn into a one-day course today. Unknown (an older
+ * server) keeps the button.
+ */
+export function canEndCourse(courseStatus: CourseStatus | undefined): boolean {
+  return courseStatus === undefined || courseStatus === "CURRENT";
+}
 
 const PAUSE_SWITCH_ID = "medication-detail-pause-switch";
 const PAUSE_TITLE_ID = "medication-detail-pause-title";
@@ -59,23 +83,24 @@ const PAUSE_HELPER_ID = "medication-detail-pause-helper";
  * Bare (no section / card chrome); the caller supplies its own grouping.
  */
 export function LifecycleManageBody({
-  medicationId,
-  medicationName,
-  active,
+  medication,
   onAfterAction,
 }: {
-  medicationId: string;
-  medicationName: string;
-  active: boolean;
+  medication: {
+    id: string;
+    name: string;
+    active: boolean;
+    /** Where today sits in the course (server-resolved). */
+    courseStatus?: CourseStatus;
+  };
   onAfterAction?: () => void;
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
+  const medicationId = medication.id;
 
-  const [paused, setPaused] = useState(!active);
+  const [paused, setPaused] = useState(!medication.active);
   const [tier1Busy, setTier1Busy] = useState(false);
-  const [endDialogOpen, setEndDialogOpen] = useState(false);
-  const [tier2Busy, setTier2Busy] = useState(false);
 
   async function tier1Toggle(pauseNext: boolean) {
     if (tier1Busy) return;
@@ -100,25 +125,6 @@ export function LifecycleManageBody({
       });
     } finally {
       setTier1Busy(false);
-    }
-  }
-
-  async function tier2End() {
-    if (tier2Busy) return;
-    setTier2Busy(true);
-    try {
-      const today = new Date().toISOString();
-      await apiPut(`/api/medications/${medicationId}`, { endsOn: today });
-      await invalidateMedicationReads(queryClient);
-      toast.success(t("medications.detail.zone.end.toast"));
-      setEndDialogOpen(false);
-      onAfterAction?.();
-    } catch (failure) {
-      showErrorToast(t("medications.detail.zone.end.failed"), {
-        cause: failure,
-      });
-    } finally {
-      setTier2Busy(false);
     }
   }
 
@@ -152,6 +158,62 @@ export function LifecycleManageBody({
         />
       </label>
 
+      {canEndCourse(medication.courseStatus) && (
+        <EndCourseControl
+          medicationId={medicationId}
+          medicationName={medication.name}
+          onAfterAction={onAfterAction}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Tier 2: End the course today, behind a confirmation. Rendered only while
+ * the course runs, so when End stops being offered (the course ended in
+ * another tab) the open dialog and its state go away with it.
+ */
+function EndCourseControl({
+  medicationId,
+  medicationName,
+  onAfterAction,
+}: {
+  medicationId: string;
+  medicationName: string;
+  onAfterAction?: () => void;
+}) {
+  const { t } = useTranslations();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userTz = user?.timezone || DEFAULT_TIMEZONE;
+
+  const [endDialogOpen, setEndDialogOpen] = useState(false);
+  const [tier2Busy, setTier2Busy] = useState(false);
+
+  async function tier2End() {
+    if (tier2Busy) return;
+    setTier2Busy(true);
+    try {
+      await apiPut(
+        `/api/medications/${medicationId}`,
+        endCourseBody(new Date(), userTz),
+      );
+      await invalidateMedicationReads(queryClient);
+      toast.success(t("medications.detail.zone.end.toast"));
+      setEndDialogOpen(false);
+      onAfterAction?.();
+    } catch (failure) {
+      showErrorToast(t("medications.detail.zone.end.failed"), {
+        cause: failure,
+      });
+    } finally {
+      setTier2Busy(false);
+    }
+  }
+
+  return (
+    <>
       <Separator />
 
       <div className="flex items-center justify-between gap-3">
@@ -211,7 +273,7 @@ export function LifecycleManageBody({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }
 
