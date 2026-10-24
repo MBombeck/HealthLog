@@ -1,80 +1,89 @@
 import { jsPDF } from "jspdf";
+import type {
+  TextItem,
+  TextMarkedContent,
+} from "pdfjs-dist/types/src/display/api";
 import { describe, expect, it } from "vitest";
 
-import { pageTextLayer, readPdfText, type PdfTextItem } from "../pdfjs";
+import { joinTextRuns, readPdfText } from "../pdfjs";
 
 /**
- * The text layer as the content index reads it. The layout is the one the
- * local text read produced before it moved onto the app's own pdf.js (#1277):
- * a break where pdf.js marks one or the next item sits on a lower line, a tab
- * between far-apart items on one line, each page followed by a blank line.
+ * The text layer as the content index reads it (#1277): runs in order, a line
+ * break where a run ends its line or the next one sits on another, a space
+ * where two runs on one line leave a gap, and nothing where they touch, so a
+ * word drawn in two fonts stays one word and a search for it still finds it.
  */
 
-/** A page whose viewport maps PDF space to itself, flipped like pdf.js. */
-function pageOf(items: PdfTextItem[]) {
-  return {
-    getViewport: () => ({
-      width: 600,
-      height: 800,
-      convertToViewportPoint: (x: number, y: number) => [x, 800 - y],
-    }),
-    getTextContent: async () => ({ items }),
-  };
-}
-
-function item(
+/** A 10 pt run starting at (x, y), 5 pt per character. */
+function run(
   str: string,
   x: number,
   y: number,
-  extra: Partial<PdfTextItem> = {},
-): PdfTextItem {
+  extra: Partial<TextItem> = {},
+): TextItem {
   return {
     str,
+    dir: "ltr",
     transform: [10, 0, 0, 10, x, y],
     width: str.length * 5,
     height: 10,
+    fontName: "g_d0_f1",
     hasEOL: false,
     ...extra,
   };
 }
 
-describe("pageTextLayer", () => {
-  it("breaks once where pdf.js marks the end of a line", async () => {
-    const text = await pageTextLayer(
-      pageOf([
-        item("Haemoglobin", 10, 700, { hasEOL: true }),
-        item("14.2 g/dL", 10, 688),
+describe("joinTextRuns", () => {
+  it("keeps a word drawn in two fonts whole", () => {
+    expect(
+      joinTextRuns([
+        run("Haem", 10, 700),
+        run("oglobin", 30, 700, { fontName: "g_d0_f2" }),
       ]),
-    );
-    expect(text).toBe("Haemoglobin\n14.2 g/dL");
+    ).toBe("Haemoglobin");
   });
 
-  it("breaks when the next item sits a line lower without a marked end", async () => {
-    const text = await pageTextLayer(
-      pageOf([item("Creatinine", 10, 700), item("0.9 mg/dL", 10, 680)]),
+  it("puts a space between runs on one line that leave a gap", () => {
+    expect(joinTextRuns([run("Glucose", 10, 700), run("92", 200, 700)])).toBe(
+      "Glucose 92",
     );
-    expect(text).toBe("Creatinine\n0.9 mg/dL");
   });
 
-  it("does not break for a small baseline shift on one line", async () => {
-    const text = await pageTextLayer(
-      pageOf([item("10", 10, 700), item("3", 21, 703)]),
-    );
-    expect(text).toBe("103");
+  it("breaks once where a run ends its line", () => {
+    expect(
+      joinTextRuns([
+        run("Haemoglobin", 10, 700, { hasEOL: true }),
+        run("14.2 g/dL", 10, 688),
+      ]),
+    ).toBe("Haemoglobin\n14.2 g/dL");
   });
 
-  it("separates far-apart items on one line with a tab", async () => {
-    const text = await pageTextLayer(
-      pageOf([item("Glucose", 10, 700), item("92", 200, 700)]),
-    );
-    expect(text).toBe("Glucose\t92");
+  it("breaks where the next run sits on another line without a marked end", () => {
+    expect(
+      joinTextRuns([run("Creatinine", 10, 700), run("0.9", 10, 680)]),
+    ).toBe("Creatinine\n0.9");
   });
 
-  it("skips marked-content items, which carry no text", async () => {
-    const text = await pageTextLayer(
-      pageOf([{ hasEOL: false } as PdfTextItem, item("Text", 10, 700)]),
-    );
-    expect(text).toBe("Text");
+  it("keeps a raised run on its line", () => {
+    expect(joinTextRuns([run("10", 10, 700), run("9", 20, 703)])).toBe("109");
+  });
+
+  it("adds no blank line for an empty run that only ends a line", () => {
+    expect(
+      joinTextRuns([
+        run("Line", 10, 700, { hasEOL: true }),
+        run("", 30, 700, { hasEOL: true }),
+        run("Next", 10, 688),
+      ]),
+    ).toBe("Line\nNext");
+  });
+
+  it("skips marked-content markers, which carry no text", () => {
+    const marker: TextMarkedContent = {
+      type: "beginMarkedContent",
+      id: "mc0",
+    };
+    expect(joinTextRuns([marker, run("Text", 10, 700)])).toBe("Text");
   });
 });
 
@@ -89,10 +98,10 @@ describe("readPdfText", () => {
     return Buffer.from(doc.output("arraybuffer"));
   }
 
-  it("joins pages with a blank line and adds no page markers", async () => {
+  it("reads the pages one after another and adds no page markers", async () => {
     const text = await readPdfText(pages(2));
     expect(text).toBe(
-      "Page 1 lab report\nsecond line\n\nPage 2 lab report\nsecond line\n\n",
+      "Page 1 lab report\nsecond line\nPage 2 lab report\nsecond line",
     );
   });
 
@@ -100,6 +109,17 @@ describe("readPdfText", () => {
     const text = await readPdfText(pages(3), 2);
     expect(text).toContain("Page 2");
     expect(text).not.toContain("Page 3");
+  });
+
+  it("keeps a word whole that a real PDF draws in two fonts", async () => {
+    const doc = new jsPDF();
+    doc.setFont("helvetica", "bold");
+    doc.text("Haem", 10, 10);
+    const joint = 10 + doc.getTextWidth("Haem");
+    doc.setFont("times", "normal");
+    doc.text("oglobin 14.2 g/dL", joint, 10);
+    const text = await readPdfText(Buffer.from(doc.output("arraybuffer")));
+    expect(text).toBe("Haemoglobin 14.2 g/dL");
   });
 
   it("throws what pdf.js throws on a file that is not a PDF", async () => {
