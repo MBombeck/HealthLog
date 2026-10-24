@@ -111,6 +111,19 @@ describe("#1279: background work and a benched provider", () => {
       ]);
     }
     expect(gateway.calls).toBe(HARD_FAILURE_SKIP_THRESHOLD);
+    // The bench sent nothing; a hop that reached the provider did.
+    const benched = await walk(
+      "job",
+      "u-bench",
+      "openai-compatible",
+      gateway,
+      ledger,
+    ).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(benched).toBeInstanceOf(AllProvidersFailedError);
+    expect((benched as AllProvidersFailedError).sentNothing).toBe(true);
     // One line for the window, not one per job.
     expect(signals("ai.chain.background_paused")).toHaveLength(1);
     expect(signals("ai.chain.background_paused")[0].meta).toMatchObject({
@@ -139,6 +152,7 @@ describe("#1279: background work and a benched provider", () => {
     expect((err as AllProvidersFailedError).attempts[0].failureKind).toBe(
       "reasoning_only",
     );
+    expect((err as AllProvidersFailedError).sentNothing).toBe(false);
   });
 
   it("walks the benched provider for a job-rationed call a person waits on", async () => {

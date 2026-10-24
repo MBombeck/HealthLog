@@ -73,6 +73,48 @@ export async function writeStatusNegativeWindow(args: {
 }
 
 /**
+ * #1279 — hold a note while its chain sent nothing: every provider was
+ * benched for background work (or refused by the operator cost cap). Such a
+ * run says nothing about the note, and counting it left the note waiting up
+ * to two hours after the provider recovered. Opens the first window unless
+ * one is open and leaves the streak as it was, so the caller's own failure
+ * write lands inside it and neither moves nor counts. Best-effort: a missed
+ * hold only lets that write count.
+ */
+export async function holdStatusNoteWhileBenched(args: {
+  userId: string;
+  cacheAction: string;
+  todayKey: string;
+}): Promise<void> {
+  const key = statusCacheKey(args.cacheAction);
+  if (!key) return;
+  const where = { userId_metric_locale: { userId: args.userId, ...key } };
+  try {
+    const row = await prisma.insightStatusCache.findUnique({
+      where,
+      select: { retryAt: true },
+    });
+    const now = Date.now();
+    if (row?.retryAt && row.retryAt.getTime() > now) return;
+    const retryAt = new Date(now + STATUS_NEGATIVE_WINDOW_BASE_MS);
+    await prisma.insightStatusCache.upsert({
+      where,
+      create: {
+        userId: args.userId,
+        ...key,
+        dateKey: args.todayKey,
+        retryAt,
+        negativeReason: "error",
+        failureStreak: 0,
+      },
+      update: { retryAt, negativeReason: "error" },
+    });
+  } catch {
+    // The caller's own write still opens a window.
+  }
+}
+
+/**
  * True while the note's negative-cache window is open. #1279 — checked right
  * before a status generation reaches a provider (`runStatusCompletion`), so
  * no path that selects the note again (the next data sync, a warm pass, a

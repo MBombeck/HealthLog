@@ -22,6 +22,7 @@ vi.mock("@/lib/db", () => ({
 import {
   STATUS_NEGATIVE_WINDOW_BASE_MS,
   clearStatusNegativeWindows,
+  holdStatusNoteWhileBenched,
   statusNegativeWindowMs,
   statusNoteCoolingDown,
   writeStatusNegativeWindow,
@@ -113,6 +114,57 @@ describe("writeStatusNegativeWindow", () => {
     });
     expect(findUnique).not.toHaveBeenCalled();
     expect(upsert).not.toHaveBeenCalled();
+  });
+});
+
+describe("holdStatusNoteWhileBenched", () => {
+  // A run that sent nothing because every provider was benched says nothing
+  // about the note: counting it left the note waiting up to two hours after
+  // the provider recovered.
+  it("opens the first window and leaves the streak as it was", async () => {
+    findUnique.mockResolvedValue({ retryAt: new Date(Date.now() - MINUTE) });
+    const before = Date.now();
+    await holdStatusNoteWhileBenched({
+      userId: "u1",
+      cacheAction: "insights.weight-status.en",
+      todayKey: TODAY,
+    });
+    const args = written();
+    expect(args.update).not.toHaveProperty("failureStreak");
+    expect(args.create).toMatchObject({ failureStreak: 0, dateKey: TODAY });
+    const window = args.update.retryAt.getTime() - before;
+    expect(window).toBeGreaterThanOrEqual(STATUS_NEGATIVE_WINDOW_BASE_MS);
+    expect(window).toBeLessThan(STATUS_NEGATIVE_WINDOW_BASE_MS + MINUTE);
+  });
+
+  it("leaves an open window alone, and the failure after it uncounted", async () => {
+    findUnique.mockResolvedValue({
+      retryAt: new Date(Date.now() + MINUTE),
+      failureStreak: 3,
+    });
+    await holdStatusNoteWhileBenched({
+      userId: "u1",
+      cacheAction: "insights.weight-status.en",
+      todayKey: TODAY,
+    });
+    await writeStatusNegativeWindow({
+      userId: "u1",
+      cacheAction: "insights.weight-status.en",
+      todayKey: TODAY,
+      reason: "error",
+    });
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it("never throws: a missed hold only lets the next failure count", async () => {
+    findUnique.mockRejectedValue(new Error("pool exhausted"));
+    await expect(
+      holdStatusNoteWhileBenched({
+        userId: "u1",
+        cacheAction: "insights.weight-status.en",
+        todayKey: TODAY,
+      }),
+    ).resolves.toBeUndefined();
   });
 });
 

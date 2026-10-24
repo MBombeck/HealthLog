@@ -60,6 +60,7 @@ vi.mock("@/lib/db", () => ({
     // #1279 — the note's negative window, read before any provider work.
     insightStatusCache: {
       findUnique: vi.fn(async () => noteWindow),
+      upsert: vi.fn(async () => ({})),
     },
   },
 }));
@@ -372,6 +373,36 @@ describe("runStatusCompletion — ledger accounting", () => {
       completionArgs({ cacheAction: "insights.weight-status.en" }),
     );
     expect(again.kind).toBe("ok");
+  });
+
+  it("holds the note without counting a run the bench sent nothing for (#1279)", async () => {
+    runRawCompletionWithFallback.mockRejectedValue(
+      Object.assign(new Error("All 1 configured providers failed"), {
+        sentNothing: true,
+      }),
+    );
+    const { prisma } = await import("@/lib/db");
+    const result = await runStatusCompletion(
+      completionArgs({ cacheAction: "insights.weight-status.en" }),
+    );
+    expect(result.kind).toBe("error");
+    expect(prisma.insightStatusCache.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ failureStreak: 0 }),
+        update: expect.not.objectContaining({
+          failureStreak: expect.anything(),
+        }),
+      }),
+    );
+  });
+
+  it("leaves a run that reached a provider to the caller's counted window", async () => {
+    runRawCompletionWithFallback.mockRejectedValue(new Error("upstream down"));
+    const { prisma } = await import("@/lib/db");
+    await runStatusCompletion(
+      completionArgs({ cacheAction: "insights.weight-status.en" }),
+    );
+    expect(prisma.insightStatusCache.upsert).not.toHaveBeenCalled();
   });
 
   it("charges what a failed chain reported spending (#1279)", async () => {

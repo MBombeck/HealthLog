@@ -21,6 +21,7 @@ import {
   reserveBudget,
   resolveCostOwner,
   resolveDailyCapFor,
+  type BudgetCostOwner,
 } from "@/lib/ai/coach/budget";
 import {
   AI_BUDGETS,
@@ -36,7 +37,10 @@ import {
   type BackgroundReasoningJob,
 } from "@/lib/ai/reasoning/levels";
 import { resolveJobReasoning } from "@/lib/ai/reasoning/controls";
-import { statusNoteCoolingDown } from "./status-negative-window";
+import {
+  holdStatusNoteWhileBenched,
+  statusNoteCoolingDown,
+} from "./status-negative-window";
 
 /**
  * v1.41 — the fallback ceiling for a status-path call that reasons. Thinking
@@ -332,16 +336,7 @@ export async function runStatusCompletion(
   );
 
   if (raced.timedOut || raced.errored || raced.value === null) {
-    // A timeout or failure: charge only what a reply reported spending, never
-    // an invented figure. #1279 — a failed chain's report counts: a model
-    // that reasons without answering bills every call, and a full refund let
-    // background work spend without the day's ceiling ever seeing it.
-    const spent = spentOnFailure(raced.error);
-    await reconcileSpend(userId, reservation.reserved, spent, dateKey, 0, {
-      servedBy: null,
-      reservedOwner: reservation.owner,
-    });
-    return { kind: raced.timedOut ? "timeout" : "error" };
+    return failedRun(raced, { userId, cacheAction, dateKey, reservation });
   }
 
   const { result, workingProvider, tokensSpent } = raced.value;
@@ -393,6 +388,44 @@ export async function runStatusCompletion(
     model: result.model ?? "unknown",
     tokensUsed: result.tokensUsed ?? null,
   };
+}
+
+/**
+ * A run that timed out or failed. It charges only what a reply reported
+ * spending, never an invented figure; #1279 — a failed chain's report counts,
+ * since a model that reasons without answering bills every call, and a full
+ * refund let background work spend without the day's ceiling seeing it. A
+ * chain that sent nothing (the bench) holds the note without counting it.
+ */
+async function failedRun(
+  raced: { timedOut: boolean; error?: unknown },
+  run: {
+    userId: string;
+    cacheAction: string;
+    dateKey: string;
+    reservation: { reserved: number; owner: BudgetCostOwner };
+  },
+): Promise<StatusProviderResult> {
+  const spent = spentOnFailure(raced.error);
+  await reconcileSpend(
+    run.userId,
+    run.reservation.reserved,
+    spent,
+    run.dateKey,
+    0,
+    {
+      servedBy: null,
+      reservedOwner: run.reservation.owner,
+    },
+  );
+  if ((raced.error as { sentNothing?: unknown } | null)?.sentNothing === true) {
+    await holdStatusNoteWhileBenched({
+      userId: run.userId,
+      cacheAction: run.cacheAction,
+      todayKey: run.dateKey,
+    });
+  }
+  return { kind: raced.timedOut ? "timeout" : "error" };
 }
 
 /**
