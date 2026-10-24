@@ -192,6 +192,13 @@ const PINNED_AFFORDANCES: Record<
   "src/components/documents/vault/use-vault-bulk.ts": {
     "toast.success": 2,
   },
+  // Recently deleted: the one restore's toast, which carries an "Open"
+  // action the shared outcome toast has no slot for. It fires only on the
+  // restore route's 200 for that one document, i.e. a document back in the
+  // vault. Restore-all and delete-now go through toastWrittenOutcome.
+  "src/components/documents/trash/use-recently-deleted.ts": {
+    "toast.success": 1,
+  },
   // The document picker's per-row result: tinted only for the `imported` /
   // `duplicate` outcome the import route returned for that one document, i.e.
   // a document the vault now holds. The run's headline goes through

@@ -11651,7 +11651,8 @@
     "toast": {
       "duplicate": "Już zapisano. Istniejący dokument został wyróżniony.",
       "deleted": "Dokument usunięty",
-      "restoreFailed": "Nie udało się przywrócić dokumentu."
+      "restoreFailed": "Nie udało się przywrócić dokumentu.",
+      "deletedHint": "Usunięte dokumenty zostają w sekcji Ostatnio usunięte przez {days} dni."
     },
     "timeline": {
       "loadingMore": "Wczytywanie…",
@@ -11889,6 +11890,7 @@
       "loadMore": "Wczytaj więcej",
       "stateImported": "W HealthLog",
       "stateDeleted": "Usunięty w HealthLog",
+      "stateInTrash": "W sekcji Ostatnio usunięte",
       "selectedCount": "Wybrano {count} z maksymalnie {max}",
       "importAction": "Importuj ({count})",
       "importing": "Importowanie, dokument po dokumencie…",
@@ -11902,7 +11904,9 @@
         "importedLinked": "Zaimportowano i powiązano",
         "duplicate": "Już jest w HealthLog",
         "duplicateLinked": "Już jest w HealthLog, teraz powiązany",
-        "deleted": "Usunięty w HealthLog, pozostaje usunięty"
+        "deleted": "Usunięty w HealthLog, pozostaje usunięty",
+        "restored": "Przywrócono z sekcji Ostatnio usunięte",
+        "restoredLinked": "Przywrócono z sekcji Ostatnio usunięte i powiązano"
       },
       "errors": {
         "unavailable": "Archiwa dokumentów nie są włączone na tym serwerze.",
@@ -11946,8 +11950,32 @@
     "deleteConfirm": {
       "titleOne": "Usunąć ten dokument?",
       "titleMany": "Usunąć dokumenty ({count})?",
-      "body": "Zaraz potem możesz to cofnąć. Po 30 dniach zostanie usunięte na stałe.",
+      "body": "Usunięte dokumenty zostają w sekcji Ostatnio usunięte przez {days} dni, a potem są usuwane na stałe.",
       "action": "Usuń"
+    },
+    "trash": {
+      "title": "Ostatnio usunięte",
+      "subtitle": "Usunięte dokumenty zostają tu przez {days} dni, a potem są usuwane na stałe.",
+      "back": "Dokumenty",
+      "entryLabel": "Ostatnio usunięte ({count})",
+      "loadError": "Nie udało się wczytać sekcji Ostatnio usunięte.",
+      "emptyTitle": "Brak elementów w sekcji Ostatnio usunięte",
+      "emptyDescription": "To, co usuniesz, czeka tu {days} dni, zanim zostanie usunięte na stałe.",
+      "count": "Usunięte dokumenty ({count})",
+      "restoreAll": "Przywróć wszystkie",
+      "restore": "Przywróć",
+      "purge": "Usuń teraz",
+      "deletedOn": "Usunięto {date}.",
+      "removesIn": "Zostanie usunięty na stałe za {days} dni.",
+      "removesSoon": "Zostanie usunięty na stałe w ciągu doby.",
+      "restored": "Przywrócono dokument",
+      "openRestored": "Otwórz",
+      "restoreDuplicate": "Identyczny dokument jest już zapisany, więc tej kopii nie można przywrócić.",
+      "restorePartial": "Nie udało się przywrócić {failed} z {total}",
+      "purged": "Dokument usunięty na stałe",
+      "purgeFailed": "Nie udało się usunąć dokumentu.",
+      "purgeConfirmTitle": "Usunąć ten dokument na stałe?",
+      "purgeConfirmBody": "Zostanie usunięty teraz zamiast po okresie oczekiwania i nie będzie można go przywrócić."
     }
   },
   "selfDescription": {

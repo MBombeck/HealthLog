@@ -36,7 +36,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { TOMBSTONE_RETENTION_DAYS } from "@/lib/auth/native-client";
 import { getCoachMessageRetentionDays } from "@/lib/jobs/coach-message-cleanup";
-import { DOCUMENT_PURGE_GRACE_DAYS } from "@/lib/jobs/document-purge";
+import { DOCUMENT_PURGE_GRACE_DAYS } from "@/lib/jobs/document-purge-queue";
 import {
   purgeTombstonesByAccount,
   type TombstonePurgeOutcome,

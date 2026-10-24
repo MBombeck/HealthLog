@@ -11651,7 +11651,8 @@
     "toast": {
       "duplicate": "Al opgeslagen. Het bestaande document is gemarkeerd.",
       "deleted": "Document verwijderd",
-      "restoreFailed": "Het document kon niet worden hersteld."
+      "restoreFailed": "Het document kon niet worden hersteld.",
+      "deletedHint": "Verwijderde documenten blijven {days} dagen in Recent verwijderd."
     },
     "timeline": {
       "loadingMore": "Meer laden…",
@@ -11889,6 +11890,7 @@
       "loadMore": "Meer laden",
       "stateImported": "Staat in HealthLog",
       "stateDeleted": "Verwijderd in HealthLog",
+      "stateInTrash": "In Recent verwijderd",
       "selectedCount": "{count} van maximaal {max} geselecteerd",
       "importAction": "{count} importeren",
       "importing": "Importeren, één document tegelijk…",
@@ -11902,7 +11904,9 @@
         "importedLinked": "Geïmporteerd en gekoppeld",
         "duplicate": "Staat al in HealthLog",
         "duplicateLinked": "Staat al in HealthLog, nu gekoppeld",
-        "deleted": "Verwijderd in HealthLog, ongemoeid gelaten"
+        "deleted": "Verwijderd in HealthLog, ongemoeid gelaten",
+        "restored": "Hersteld uit Recent verwijderd",
+        "restoredLinked": "Hersteld uit Recent verwijderd en gekoppeld"
       },
       "errors": {
         "unavailable": "Documentarchieven zijn niet ingeschakeld op deze server.",
@@ -11946,8 +11950,32 @@
     "deleteConfirm": {
       "titleOne": "Dit document verwijderen?",
       "titleMany": "{count} documenten verwijderen?",
-      "body": "Je kunt dit direct daarna ongedaan maken. Na 30 dagen wordt het definitief verwijderd.",
+      "body": "Verwijderde documenten blijven {days} dagen in Recent verwijderd en worden daarna definitief verwijderd.",
       "action": "Verwijderen"
+    },
+    "trash": {
+      "title": "Recent verwijderd",
+      "subtitle": "Verwijderde documenten blijven hier {days} dagen en worden daarna definitief verwijderd.",
+      "back": "Documenten",
+      "entryLabel": "Recent verwijderd ({count})",
+      "loadError": "Recent verwijderd kon niet worden geladen.",
+      "emptyTitle": "Niets in Recent verwijderd",
+      "emptyDescription": "Wat je verwijdert, wacht hier {days} dagen voordat het definitief wordt verwijderd.",
+      "count": "Verwijderde documenten ({count})",
+      "restoreAll": "Alles herstellen",
+      "restore": "Herstellen",
+      "purge": "Nu verwijderen",
+      "deletedOn": "Verwijderd op {date}.",
+      "removesIn": "Wordt over {days} dagen definitief verwijderd.",
+      "removesSoon": "Wordt binnen een dag definitief verwijderd.",
+      "restored": "Document hersteld",
+      "openRestored": "Openen",
+      "restoreDuplicate": "Er is al een identiek document opgeslagen, dus deze kopie kan niet worden hersteld.",
+      "restorePartial": "{failed} van {total} konden niet worden hersteld",
+      "purged": "Document definitief verwijderd",
+      "purgeFailed": "Het document kon niet worden verwijderd.",
+      "purgeConfirmTitle": "Dit document definitief verwijderen?",
+      "purgeConfirmBody": "Het wordt nu verwijderd in plaats van aan het einde van de wachttijd en kan niet worden hersteld."
     }
   },
   "selfDescription": {

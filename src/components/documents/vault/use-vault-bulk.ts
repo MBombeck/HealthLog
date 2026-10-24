@@ -5,7 +5,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { apiPost } from "@/lib/api/api-fetch";
-import { DOCUMENT_BULK_MAX_IDS } from "@/lib/documents/inbound-constants";
+import {
+  DOCUMENT_BULK_MAX_IDS,
+  DOCUMENT_PURGE_GRACE_DAYS,
+} from "@/lib/documents/inbound-constants";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
 import { invalidateKeys, queryKeys } from "@/lib/query-keys";
@@ -155,6 +158,9 @@ export function useVaultBulk({
               toast.success(
                 t("documents.bulk.deleted", { count: okIds.length }),
                 {
+                  description: t("documents.toast.deletedHint", {
+                    days: DOCUMENT_PURGE_GRACE_DAYS,
+                  }),
                   action: {
                     label: t("common.undo"),
                     onClick: () => restoreBulk(okIds),

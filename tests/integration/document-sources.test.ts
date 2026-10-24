@@ -522,14 +522,99 @@ describe("search and import", () => {
       where: { id: receipt.documentId },
       data: { deletedAt: new Date() },
     });
+    // Deleted but still in Recently deleted: the search names the document.
     expect(
       (await (await search("q=blood")).json()).data.results[0],
-    ).toMatchObject({ state: "deleted", documentId: null });
+    ).toMatchObject({ state: "deleted", documentId: receipt.documentId });
     const revived = await importDoc({ sourceId: "41" });
     expect(revived.status).toBe(200);
     expect((await revived.json()).data.outcome).toBe("deleted");
     expect(downloads()).toBe(1);
     expect(await prisma.inboundDocument.count()).toBe(1);
+  });
+
+  it("brings a deleted document back only when asked: restored from Recently deleted, or imported again after the purge", async () => {
+    await seedOwner();
+    await connect();
+    const prisma = getPrismaClient();
+
+    const first = await importDoc({ sourceId: "41" });
+    const id = (await first.json()).data.documentId as string;
+    await prisma.inboundDocument.update({
+      where: { id },
+      data: { deletedAt: new Date(), status: "DISCARDED" },
+    });
+
+    // Still in Recently deleted: `revive` restores the same document, and
+    // nothing is downloaded.
+    const restored = await importDoc({ sourceId: "41", revive: true });
+    expect(restored.status).toBe(200);
+    expect((await restored.json()).data).toEqual({
+      outcome: "restored",
+      documentId: id,
+      linked: false,
+    });
+    expect(downloads()).toBe(1);
+    expect(
+      (await prisma.inboundDocument.findUniqueOrThrow({ where: { id } }))
+        .deletedAt,
+    ).toBeNull();
+    expect(
+      await prisma.auditLog.count({
+        where: { userId, action: "documents.inbound.restore" },
+      }),
+    ).toBe(1);
+
+    // Deleted again and purged: the key is in the ledger, and an import that
+    // does not ask is still answered "deleted".
+    await prisma.inboundDocument.update({
+      where: { id },
+      data: { deletedAt: new Date(Date.now() - 31 * 86_400_000) },
+    });
+    const { purgeExpiredDocumentTombstones } =
+      await import("@/lib/jobs/document-purge");
+    expect(await purgeExpiredDocumentTombstones(prisma as never)).toBe(1);
+    expect(
+      (await (await search("q=blood")).json()).data.results[0],
+    ).toMatchObject({ state: "deleted", documentId: null });
+    const left = await importDoc({ sourceId: "41" });
+    expect((await left.json()).data).toEqual({
+      outcome: "deleted",
+      documentId: null,
+      linked: false,
+    });
+    expect(downloads()).toBe(1);
+
+    // Asked: fetched and stored again, and the ledger forgets the key.
+    const again = await importDoc({ sourceId: "41", revive: true });
+    expect(again.status).toBe(201);
+    const back = (await again.json()).data;
+    expect(back).toMatchObject({ outcome: "imported", linked: false });
+    expect(back.documentId).not.toBe(id);
+    expect(downloads()).toBe(2);
+    expect(await prisma.documentImportKey.count({ where: { userId } })).toBe(0);
+    expect(
+      (await (await search("q=blood")).json()).data.results[0],
+    ).toMatchObject({ state: "imported", documentId: back.documentId });
+  });
+
+  it("keeps the deletion when a revived import cannot fetch the file", async () => {
+    await seedOwner();
+    await connect();
+    const prisma = getPrismaClient();
+    await prisma.documentImportKey.create({
+      data: {
+        userId,
+        sourceSystem: "PAPERLESS",
+        sourceId: "42",
+        sourceInstance: ORIGIN,
+      },
+    });
+    fake.downloadStatus = 500;
+    const failed = await importDoc({ sourceId: "42", revive: true });
+    expect(failed.status).toBeGreaterThanOrEqual(400);
+    expect(await prisma.documentImportKey.count({ where: { userId } })).toBe(1);
+    expect(await prisma.inboundDocument.count()).toBe(0);
   });
 
   it("answers a file already uploaded by hand as a duplicate and remembers the key", async () => {

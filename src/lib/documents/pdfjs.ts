@@ -1,5 +1,6 @@
 /**
- * The one pdf.js this server runs, and the one way it is opened.
+ * The one pdf.js this server runs, the one way it is opened, and the one way
+ * its text layer is read.
  *
  * Under Node, pdf.js does not start a worker thread: it loads its worker code
  * into the same process and keeps it on `globalThis.pdfjsWorker`. Whichever
@@ -15,7 +16,9 @@
  * reads the browser-only `DOMMatrix` global, so a static import would make the
  * server chunk evaluate it at instantiation and throw `DOMMatrix is not
  * defined`, taking down every route and worker sharing the chunk. The import
- * resolves once and is module-cached after that.
+ * resolves once and is module-cached after that. The type imports below are
+ * erased at build, so they load nothing; they let the compiler check every
+ * call here against pdf.js' own API.
  *
  * This module has no logging of its own, so the end-to-end suite can read
  * report text with it; the callers say what failed.
@@ -25,74 +28,11 @@ import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 
-// Structural types for the slice of the pdf.js API used here and in the
-// rasterizer. Type-only, so nothing evaluates pdf.js for its types.
-export interface PdfViewport {
-  width: number;
-  height: number;
-  convertToViewportPoint(x: number, y: number): number[];
-}
-export interface PdfCanvas {
-  width: number;
-  height: number;
-  toBuffer(mime: "image/jpeg", quality?: number): Buffer;
-}
-export interface PdfContext2D {
-  getImageData(
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-  ): { data: Uint8ClampedArray };
-}
-interface PdfCanvasAndContext {
-  canvas: PdfCanvas;
-  context: PdfContext2D;
-}
-interface PdfCanvasFactory {
-  create(width: number, height: number): PdfCanvasAndContext;
-  destroy?(target: PdfCanvasAndContext): void;
-}
-/** A text-layer item; marked-content items carry no `str` and are skipped. */
-export interface PdfTextItem {
-  str?: string;
-  hasEOL?: boolean;
-  transform?: number[];
-  width?: number;
-  height?: number;
-}
-export interface PdfPage {
-  getViewport(opts: { scale: number }): PdfViewport;
-  render(opts: {
-    canvasContext: unknown;
-    viewport: PdfViewport;
-    canvas: unknown;
-  }): { promise: Promise<void> };
-  cleanup(): void;
-  getTextContent(): Promise<{ items: PdfTextItem[] }>;
-}
-export interface PdfDocument {
-  numPages: number;
-  canvasFactory: PdfCanvasFactory;
-  getPage(pageNumber: number): Promise<PdfPage>;
-}
-export interface PdfLoadingTask {
-  promise: Promise<PdfDocument>;
-  destroy(): Promise<void>;
-}
-interface PdfDocumentOptions {
-  data: Uint8Array;
-  verbosity?: number;
-  isEvalSupported?: boolean;
-  useSystemFonts?: boolean;
-  standardFontDataUrl?: string;
-  cMapUrl?: string;
-  cMapPacked?: boolean;
-  wasmUrl?: string;
-}
-interface PdfjsModule {
-  getDocument(opts: PdfDocumentOptions): PdfLoadingTask;
-}
+import type { PDFDocumentLoadingTask } from "pdfjs-dist";
+import type {
+  TextItem,
+  TextMarkedContent,
+} from "pdfjs-dist/types/src/display/api";
 
 /**
  * Where pdf.js finds the data it does not carry in its JS: the standard 14
@@ -169,15 +109,13 @@ export function __resetPdfjsAssetsForTests(): void {
  */
 export async function openPdfDocument(
   data: Uint8Array | Buffer,
-): Promise<PdfLoadingTask> {
-  const pdfjs =
-    (await import("pdfjs-dist/legacy/build/pdf.mjs")) as unknown as PdfjsModule;
+): Promise<PDFDocumentLoadingTask> {
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const assets = resolvePdfjsAssets();
   return pdfjs.getDocument({
     // A copy: pdf.js transfers the buffer it is given to its worker.
     data: new Uint8Array(data),
     verbosity: 0, // VerbosityLevel.ERRORS: no console noise on odd PDFs.
-    isEvalSupported: false, // never eval font programs (defence in depth).
     // There are no system fonts to use: substitutes come from pdf.js' own
     // standard font data (and, when rendering, the registered fallbacks).
     useSystemFonts: false,
@@ -192,73 +130,83 @@ export async function openPdfDocument(
   });
 }
 
-/** Vertical gap (pt) past which the next item starts a new line. */
-const LINE_THRESHOLD = 4.6;
-/** Horizontal gap (pt) on one line past which the next item is a new cell. */
-const CELL_THRESHOLD = 7;
-
 /**
- * One page's text layer as plain text: items in content order, a line break
- * where pdf.js marks one or where the next item sits on a lower line, and a
- * tab between items on one line that are far apart (table cells).
- *
- * This is the layout `pdf-parse` produced with its defaults, kept so that
- * swapping it out did not change what the content index sees.
+ * Where a text run sits on the page. pdfjs gives each run a text matrix
+ * `[a, b, c, d, x, y]`: `x` and `y` are where the run starts, and `d` is its
+ * vertical scale, which for upright text is the font size.
  */
-export async function pageTextLayer(
-  page: Pick<PdfPage, "getViewport" | "getTextContent">,
-): Promise<string> {
-  const viewport = page.getViewport({ scale: 1 });
-  const { items } = await page.getTextContent();
-  const parts: string[] = [];
-  let lastX: number | undefined;
-  let lastY: number | undefined;
-  let lineHeight = 0;
-  for (const item of items) {
-    if (typeof item.str !== "string") continue;
-    const transform = item.transform ?? [1, 0, 0, 1, 0, 0];
-    const [x = 0, y = 0] = viewport.convertToViewportPoint(
-      transform[4] ?? 0,
-      transform[5] ?? 0,
-    );
-    let str = item.str;
-    if (lastY !== undefined) {
-      const gap = Math.abs(lastY - y);
-      if (gap > LINE_THRESHOLD) {
-        const previous = parts.at(-1);
-        const opensLine =
-          str.startsWith("\n") || (str.trim() === "" && item.hasEOL === true);
-        if (
-          previous !== undefined &&
-          !previous.endsWith("\n") &&
-          !opensLine &&
-          gap - 1 > lineHeight
-        ) {
-          parts.push("\n");
-          lineHeight = 0;
-        }
-      } else if (
-        gap < LINE_THRESHOLD &&
-        lastX !== undefined &&
-        Math.abs(lastX - x) > CELL_THRESHOLD
-      ) {
-        str = `\t${str}`;
-      }
-    }
-    parts.push(str);
-    lastX = x + (item.width ?? 0);
-    lastY = y;
-    lineHeight = Math.max(lineHeight, item.height ?? 0);
-    if (item.hasEOL) parts.push("\n");
-    if (item.hasEOL || str.endsWith("\n")) lineHeight = 0;
-  }
-  return parts.join("");
+interface RunPosition {
+  x: number;
+  /** The baseline the run sits on. */
+  y: number;
+  /** Where the run ends: its start plus its width. */
+  end: number;
+  fontSize: number;
+}
+
+function positionOf(run: TextItem): RunPosition {
+  const [, , , scaleY, x = 0, y = 0] = run.transform as number[];
+  return {
+    x,
+    y,
+    end: x + run.width,
+    fontSize: Math.abs(scaleY ?? 0) || run.height || 1,
+  };
 }
 
 /**
- * The text layer of the first `maxPages` pages, each page followed by a blank
- * line. Throws what pdf.js throws (a malformed file, a password, a page that
- * will not parse); the document is torn down either way.
+ * The next run is on a new line when its baseline moved by more than half a
+ * font size. Runs on one line can sit a little higher or lower (a superscript,
+ * a mixed font), so a small shift does not count.
+ */
+function startsNewLine(previous: RunPosition, next: RunPosition): boolean {
+  return Math.abs(next.y - previous.y) > previous.fontSize / 2;
+}
+
+/**
+ * Two runs on one line are separate words when the gap between them is wider
+ * than a tenth of the font size. Runs that touch, such as a word drawn in two
+ * fonts, stay one word.
+ */
+function leavesWordGap(previous: RunPosition, next: RunPosition): boolean {
+  return next.x - previous.end > next.fontSize / 10;
+}
+
+/**
+ * One page's text: its runs in order, with a line break where a run ends a
+ * line or the next one starts a new line, and a space where two runs on one
+ * line leave a gap between words.
+ */
+export function joinTextRuns(
+  items: Array<TextItem | TextMarkedContent>,
+): string {
+  let text = "";
+  let previous: RunPosition | null = null;
+
+  for (const item of items) {
+    // Marked-content markers carry no text.
+    if (!("str" in item)) continue;
+    const position = positionOf(item);
+
+    if (previous && !text.endsWith("\n")) {
+      if (startsNewLine(previous, position)) {
+        text += "\n";
+      } else if (leavesWordGap(previous, position) && !/\s$/.test(text)) {
+        text += " ";
+      }
+    }
+    text += item.str;
+    if (item.hasEOL && !text.endsWith("\n")) text += "\n";
+
+    previous = position;
+  }
+  return text;
+}
+
+/**
+ * The text layer of the first `maxPages` pages, one page after another.
+ * Throws what pdf.js throws (a malformed file, a password, a page that will
+ * not parse); the document is torn down either way.
  */
 export async function readPdfText(
   data: Uint8Array | Buffer,
@@ -267,17 +215,17 @@ export async function readPdfText(
   const task = await openPdfDocument(data);
   try {
     const doc = await task.promise;
-    const last = Math.min(doc.numPages, maxPages);
-    let text = "";
-    for (let pageNumber = 1; pageNumber <= last; pageNumber++) {
-      const page = await doc.getPage(pageNumber);
+    const pageCount = Math.min(doc.numPages, maxPages);
+    const pages: string[] = [];
+    for (let n = 1; n <= pageCount; n++) {
+      const page = await doc.getPage(n);
       try {
-        text += `${await pageTextLayer(page)}\n\n`;
+        pages.push(joinTextRuns((await page.getTextContent()).items));
       } finally {
         page.cleanup();
       }
     }
-    return text;
+    return pages.join("\n");
   } finally {
     try {
       await task.destroy();

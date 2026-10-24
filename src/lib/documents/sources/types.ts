@@ -96,7 +96,11 @@ export interface DocumentSourceResultDto {
   tags: string[];
   sizeBytes: number | null;
   state: DocumentPickerResultState;
-  /** The vault document when `state` is `imported`. */
+  /**
+   * The vault document when `state` is `imported`. When `state` is `deleted`,
+   * the document while it is still in Recently deleted, and null once it has
+   * been removed for good.
+   */
   documentId: string | null;
 }
 
@@ -106,7 +110,12 @@ export interface DocumentSourceSearchDto {
   hasMore: boolean;
 }
 
-export type DocumentImportOutcome = "imported" | "duplicate" | "deleted";
+/**
+ * `restored` answers only an import that asked to bring a deleted document
+ * back (`revive`): the one still in Recently deleted was restored.
+ */
+export type DocumentImportOutcome =
+  "imported" | "duplicate" | "deleted" | "restored";
 
 export interface DocumentSourceImportDto {
   outcome: DocumentImportOutcome;

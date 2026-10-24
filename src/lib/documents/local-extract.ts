@@ -3,9 +3,18 @@
  *
  * When NO AI provider is configured — or the user has not consented to one —
  * content search still needs a baseline. This module extracts a PDF's embedded
- * text layer SERVER-SIDE through the app's one pdf.js (`./pdfjs`; reading the
- * text layer never draws, so the native canvas does no work here), in
- * milliseconds, with no OCR and no third-party egress.
+ * text layer SERVER-SIDE with pdfjs' `getTextContent` (the pure-JS/wasm core,
+ * never the native `@napi-rs/canvas`), in milliseconds, with no OCR and no
+ * third-party egress.
+ *
+ * It reads through `./pdfjs`, the one loader `./rasterize-pdf` opens documents
+ * with too, so both run the app's own `pdfjs-dist` with the same options. It
+ * used to go through `pdf-parse`, which brings a second pdfjs of its own, and
+ * the two cannot share a process: both take their worker from
+ * `globalThis.pdfjsWorker`, so whichever ran first broke the other ("The API
+ * version "6.4.299" does not match the Worker version "5.4.296""). Thumbnails
+ * and vision reads failed after a text extraction, and the text extraction
+ * failed after a raster.
  * The extracted text feeds the SAME blind, encrypted content index the provider
  * path writes (`upsertContentIndex`), so nothing readable is stored at rest.
  *
@@ -62,11 +71,10 @@ export type LocalExtractResult =
 export async function extractPdfText(
   buffer: Buffer,
 ): Promise<LocalExtractResult> {
-  let raw: string;
+  let text: string;
   try {
-    // Bounded page walk; pages joined by a blank line, with no page markers,
-    // so only real document text is tokenised.
-    raw = await readPdfText(buffer, LOCAL_MAX_PAGES);
+    // Bound the page walk so a pathological many-page PDF costs no more.
+    text = (await readPdfText(buffer, LOCAL_MAX_PAGES)).trim();
   } catch (err) {
     const errorType = err instanceof Error ? err.name || "Error" : typeof err;
     annotate({
@@ -78,7 +86,6 @@ export async function extractPdfText(
     });
     return { ok: false, reason: "error" };
   }
-  const text = raw.trim();
   if (text.length < LOCAL_TEXT_MIN_CHARS) {
     return { ok: false, reason: "empty" };
   }

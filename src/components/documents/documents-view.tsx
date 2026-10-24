@@ -29,6 +29,7 @@ import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import { DOCUMENT_PURGE_GRACE_DAYS } from "@/lib/documents/inbound-constants";
 import { useTranslations } from "@/lib/i18n/context";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
@@ -45,6 +46,9 @@ import { useVaultLibrary } from "./vault/use-vault-library";
 import { useVaultSelection } from "./vault/use-vault-selection";
 import { VaultDropOverlay } from "./vault/vault-drop-overlay";
 import { VaultPageActions } from "./vault/vault-page-actions";
+
+/** The grace window the delete confirmation names. */
+const GRACE = { days: DOCUMENT_PURGE_GRACE_DAYS };
 
 /**
  * The vault page. Its state lives in `./vault/`: the URL filters, the
@@ -334,7 +338,7 @@ export function DocumentsView() {
               })
             : t("documents.deleteConfirm.titleOne")
         }
-        body={t("documents.deleteConfirm.body")}
+        body={t("documents.deleteConfirm.body", GRACE)}
         confirmLabel={t("documents.deleteConfirm.action")}
         onConfirm={confirmDelete}
         slot="documents-delete"

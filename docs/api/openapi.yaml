@@ -19558,9 +19558,10 @@ paths:
       tags:
         - Documents
       summary: Restore a discarded document
-      description: Clears the soft-delete tombstone within the 30-day undo grace. 409 when the tombstone is already purged
-        (the undo window is over) or when an identical live document blocks the restore (`meta.reason =
-        "duplicateExists"`). Restoring an already-live document is a no-op success.
+      description: Clears the soft-delete tombstone within the 30-day undo grace, and forgets any import-ledger entry for the
+        document's source keys. 409 when the tombstone is already purged (the undo window is over, or the document was
+        deleted for good) or when an identical live document blocks the restore (`meta.reason = "duplicateExists"`).
+        Restoring an already-live document is a no-op success.
       parameters:
         - name: id
           in: path
@@ -19578,6 +19579,60 @@ paths:
         "403": *a9
         "409":
           description: "Not restorable: purged past the grace window, or an identical live document exists."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+  /api/documents/inbound/deleted:
+    get:
+      tags:
+        - Documents
+      summary: List Recently deleted
+      description: "The caller's deleted documents that the purge has not removed yet, newest deletion first, metadata only.
+        Each carries `purgeAt`, when the daily purge becomes due for it. Restore one with `POST
+        /api/documents/inbound/{id}/restore` (or the bulk `restore` action); remove one for good ahead of time with
+        `POST /api/documents/inbound/{id}/purge`. Capped at 200 rows (`meta.truncated`, `meta.limit`). Owner-only:
+        refused while acting inside somebody else's record."
+      responses:
+        "200":
+          description: Recently deleted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeletedDocumentListEnvelope"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
+  /api/documents/inbound/{id}/purge:
+    post:
+      tags:
+        - Documents
+      summary: Delete a deleted document for good
+      description: "Removes one deleted document now instead of when the grace window ends, through the same purge the daily
+        job runs: the row and everything that cascades from it go, and an imported document's source keys are kept in
+        the import ledger, so an importer re-sending it is still answered as deleted. Only a deleted document can be
+        purged: a live one answers 409 `documents.inbound.notDeleted`. 404 `documents.inbound.notFound` when the caller
+        has no such document. Owner-only."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Removed for good.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentPurgeResultEnvelope"
+        "401": *a1
+        "403": *a9
+        "409":
+          description: The document is not deleted.
           content:
             application/json:
               schema:
@@ -25432,9 +25487,12 @@ paths:
         waits and then answers `duplicate`. The key check counts toward the lookup allowance, the fetch toward the
         search allowance, and only a file that arrived toward the upload allowance. A source key the vault already holds
         is answered without a download: `duplicate` for a live document (same id), `deleted` for one the person deleted
-        in HealthLog, which is never stored again. Bytes already in the vault under another key are `duplicate` too, and
-        the key is remembered for that document. `link` files the document against the record the picker was opened from
-        (a condition, a visit or a vaccination, which must be the caller's own and live; checked before anything is
+        in HealthLog, which is not stored again unless the request sends `revive: true`: then a document still in
+        Recently deleted is restored (`restored`), and one already removed for good is fetched and stored again, its key
+        leaving the import ledger. A token upload (`POST /api/documents/inbound`) has no such switch, so an importer
+        never brings a deleted document back. Bytes already in the vault under another key are `duplicate` too, and the
+        key is remembered for that document. `link` files the document against the record the picker was opened from (a
+        condition, a visit or a vaccination, which must be the caller's own and live; checked before anything is
         fetched), including a duplicate. `kind` sets the document type (default OTHER). Automatic AI reading follows the
         person's own setting. Counts against the person's upload allowance (60 an hour) and storage quota. 201 for a new
         document, 200 otherwise. Cookie session only; not delegable."
@@ -25482,11 +25540,14 @@ paths:
                   required:
                     - kind
                     - id
+                revive:
+                  type: boolean
               required:
                 - sourceId
       responses:
         "200":
-          description: Already held (`duplicate`) or deleted in HealthLog (`deleted`).
+          description: Already held (`duplicate`), deleted in HealthLog (`deleted`), or brought back from Recently deleted
+            (`restored`).
           content:
             application/json:
               schema:
@@ -38386,14 +38447,15 @@ components:
                 documents.inbound.episodeNotFound, documents.inbound.extractFailed, documents.inbound.factNotFound,
                 documents.inbound.factNotPending, documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge,
                 documents.inbound.fileType, documents.inbound.invalidMetadata, documents.inbound.invalidQuery,
-                documents.inbound.invalidUpdate, documents.inbound.localOcrDisabled, documents.inbound.notFound,
-                documents.inbound.notIndexed, documents.inbound.outputLimit, documents.inbound.pdfNeedsAnthropic,
-                documents.inbound.providerUnsupported, documents.inbound.quotaExceeded, documents.inbound.rateLimited,
-                documents.inbound.restoreDuplicate, documents.inbound.restoreGone, documents.inbound.sourceAliasLimit,
-                documents.inbound.uploadBusy, documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound,
-                documents.sources.authRefused, documents.sources.badResponse, documents.sources.browserOnly,
-                documents.sources.invalidAddress, documents.sources.linkTargetNotFound, documents.sources.notConnected,
-                documents.sources.notFound, documents.sources.organizationRequired, documents.sources.originNotAllowed,
+                documents.inbound.invalidUpdate, documents.inbound.localOcrDisabled, documents.inbound.notDeleted,
+                documents.inbound.notFound, documents.inbound.notIndexed, documents.inbound.outputLimit,
+                documents.inbound.pdfNeedsAnthropic, documents.inbound.providerUnsupported,
+                documents.inbound.quotaExceeded, documents.inbound.rateLimited, documents.inbound.restoreDuplicate,
+                documents.inbound.restoreGone, documents.inbound.sourceAliasLimit, documents.inbound.uploadBusy,
+                documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound, documents.sources.authRefused,
+                documents.sources.badResponse, documents.sources.browserOnly, documents.sources.invalidAddress,
+                documents.sources.linkTargetNotFound, documents.sources.notConnected, documents.sources.notFound,
+                documents.sources.organizationRequired, documents.sources.originNotAllowed,
                 documents.sources.permissionMissing, documents.sources.rateLimited, documents.sources.redirected,
                 documents.sources.tokenRequired, documents.sources.unavailable, documents.sources.unreachable,
                 documents.sources.versionTooOld; encounter — encounter.invalid, encounter.link.invalid,
@@ -79845,6 +79907,13 @@ components:
             - indexedCount
             - totalCount
           additionalProperties: false
+        deletedCount:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: How many of the caller's documents are deleted and not yet purged (Recently deleted, `GET
+            /api/documents/inbound/deleted`). Always 0 while acting inside somebody else's record, where Recently
+            deleted is not offered.
       required:
         - usedBytes
         - quotaBytes
@@ -79854,6 +79923,7 @@ components:
         - linkedProcedures
         - assistAvailable
         - contentIndex
+        - deletedCount
       additionalProperties: false
     DocumentsLayoutEnvelope:
       type: object
@@ -80368,6 +80438,133 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    DeletedDocumentListEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/DeletedDocumentList"
+        error:
+          type: "null"
+        meta:
+          $ref: "#/components/schemas/ListCapMeta"
+      required:
+        - data
+        - error
+        - meta
+      additionalProperties: false
+    DeletedDocumentList:
+      type: object
+      properties:
+        documents:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeletedDocument"
+        graceDays:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Days a deleted document stays restorable.
+      required:
+        - documents
+        - graceDays
+      additionalProperties: false
+    DeletedDocument:
+      type: object
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum:
+            - DOCTOR_REPORT
+            - DISCHARGE_LETTER
+            - LAB_RESULT
+            - IMAGING
+            - PRESCRIPTION
+            - REFERRAL
+            - INSURANCE
+            - VACCINATION
+            - SICK_NOTE
+            - OTHER
+        title:
+          type:
+            - string
+            - "null"
+        filename:
+          type:
+            - string
+            - "null"
+        mimeType:
+          type: string
+        byteSize:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        documentDate:
+          description: User-set filing date (YYYY-MM-DD), or null.
+          type:
+            - string
+            - "null"
+        sourceSystem:
+          anyOf:
+            - type: string
+              enum:
+                - PAPERLESS
+                - PAPRA
+                - OTHER
+            - type: "null"
+          description: The system an imported document came from, or null for one added in HealthLog.
+        deletedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        purgeAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: "When the daily purge becomes due for this document: `deletedAt` plus `graceDays`. The purge runs once a
+            day, so the document is removed at the first run after this instant."
+      required:
+        - id
+        - kind
+        - title
+        - filename
+        - mimeType
+        - byteSize
+        - documentDate
+        - sourceSystem
+        - deletedAt
+        - purgeAt
+      additionalProperties: false
+    DocumentPurgeResultEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/DocumentPurgeResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DocumentPurgeResult:
+      type: object
+      properties:
+        id:
+          type: string
+        purged:
+          type: boolean
+          const: true
+      required:
+        - id
+        - purged
       additionalProperties: false
     InboundExtractEnvelope:
       type: object
@@ -90260,6 +90457,8 @@ components:
             - imported
             - deleted
         documentId:
+          description: The vault document for `imported`. For `deleted`, the document while it is still in Recently deleted
+            (restorable), null once it has been removed for good.
           type:
             - string
             - "null"
@@ -90298,6 +90497,9 @@ components:
             - imported
             - duplicate
             - deleted
+            - restored
+          description: "`restored` only answers a request that sent `revive: true`: the deleted document was still in Recently
+            deleted and is back in the vault."
         documentId:
           type:
             - string

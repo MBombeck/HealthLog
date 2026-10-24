@@ -89,6 +89,26 @@ export async function findSourceKey(
 }
 
 /**
+ * Forget the ledger's record that the person deleted the document a key named
+ * (`DocumentImportKey`, written by the purge), matching instances the way
+ * {@link findSourceKey} does. Only the person's own explicit "bring it back"
+ * from the document picker calls this, and only once the document is in the
+ * vault again; an importer's upload never does, so a deletion keeps holding
+ * against every automatic re-send.
+ */
+export async function forgetDeletedSourceKey(
+  userId: string,
+  sourceSystem: DocumentSourceSystemValue,
+  sourceId: string,
+  sourceInstance: string | null = null,
+): Promise<number> {
+  const { count } = await prisma.documentImportKey.deleteMany({
+    where: { userId, sourceSystem, sourceId, ...instanceMatch(sourceInstance) },
+  });
+  return count;
+}
+
+/**
  * How many further keys one document may collect. Real archives hold a file
  * under one or two ids; the cap stops a leaked token from growing the table
  * by sending the same bytes under id after id. Past it the upload is refused
@@ -142,9 +162,14 @@ export function checkSourceLookupRateLimit(
   );
 }
 
-/** What the vault holds for one source key, as the picker lists it. */
+/**
+ * What the vault holds for one source key, as the picker lists it. A deleted
+ * key names its document while that is still in Recently deleted (restorable)
+ * and null once the purge removed it.
+ */
 export type SourceKeyState =
-  { state: "imported"; documentId: string } | { state: "deleted" };
+  | { state: "imported"; documentId: string }
+  | { state: "deleted"; documentId: string | null };
 
 /**
  * {@link findSourceKey} for a page of results at once: the same three places,
@@ -205,12 +230,14 @@ export async function findSourceKeyStates(
 
   // Lowest precedence first, so the document's own key wins, as it does in
   // `findSourceKey`.
-  for (const row of purged) states.set(row.sourceId, { state: "deleted" });
+  for (const row of purged) {
+    states.set(row.sourceId, { state: "deleted", documentId: null });
+  }
   for (const row of wildcardFirst(aliases)) {
     states.set(
       row.sourceId,
       row.document.deletedAt
-        ? { state: "deleted" }
+        ? { state: "deleted", documentId: row.document.id }
         : { state: "imported", documentId: row.document.id },
     );
   }
@@ -219,7 +246,7 @@ export async function findSourceKeyStates(
     states.set(
       row.sourceId,
       row.deletedAt
-        ? { state: "deleted" }
+        ? { state: "deleted", documentId: row.id }
         : { state: "imported", documentId: row.id },
     );
   }

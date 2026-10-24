@@ -627,9 +627,17 @@ const REGISTRY: DestructiveEntry[] = [
       {
         control: "bulk delete, and the Delete/Backspace key on a focused card",
         reason:
-          "Same undo-not-confirmation choice as the detail sheet, and the bulk path raises one aggregate undo for the whole batch. The keyboard path is the weakest link in that argument, since a keystroke needs no aim and the undo lives only in a toast with no trash view behind it; it is recorded here rather than silently accepted, and closing it means giving documents a recovery surface, not a dialog.",
+          "Same undo-not-confirmation choice as the detail sheet, and the bulk path raises one aggregate undo for the whole batch. The keyboard path was the weakest link in that argument while the undo lived only in a toast; Recently deleted (/documents/deleted) is now the recovery surface behind it, where every deleted document can be restored for 30 days.",
       },
     ],
+  },
+  {
+    file: "components/documents/trash/use-recently-deleted.ts",
+    destroys:
+      "one already-deleted document, for good, ahead of the 30-day purge (Delete now in Recently deleted)",
+    triggers: ["components/documents/trash/recently-deleted-view.tsx"],
+    recovery: "permanent",
+    confirm: ["ConfirmDialog"],
   },
 
   // ── Account sharing ─────────────────────────────────────────────────────

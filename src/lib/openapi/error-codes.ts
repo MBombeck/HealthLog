@@ -161,6 +161,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "documents.inbound.invalidQuery",
       "documents.inbound.invalidUpdate",
       "documents.inbound.localOcrDisabled",
+      "documents.inbound.notDeleted",
       "documents.inbound.notFound",
       "documents.inbound.notIndexed",
       "documents.inbound.outputLimit",

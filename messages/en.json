@@ -11651,7 +11651,8 @@
     "toast": {
       "duplicate": "Already stored. The existing document is highlighted.",
       "deleted": "Document deleted",
-      "restoreFailed": "Couldn't restore the document."
+      "restoreFailed": "Couldn't restore the document.",
+      "deletedHint": "Deleted documents stay in Recently deleted for {days} days."
     },
     "timeline": {
       "loadingMore": "Loading more…",
@@ -11889,6 +11890,7 @@
       "loadMore": "Load more",
       "stateImported": "In HealthLog",
       "stateDeleted": "Deleted in HealthLog",
+      "stateInTrash": "In Recently deleted",
       "selectedCount": "{count} of up to {max} selected",
       "importAction": "Import {count}",
       "importing": "Importing, one document at a time…",
@@ -11902,7 +11904,9 @@
         "importedLinked": "Imported and linked",
         "duplicate": "Already in HealthLog",
         "duplicateLinked": "Already in HealthLog, now linked",
-        "deleted": "Deleted in HealthLog, left alone"
+        "deleted": "Deleted in HealthLog, left alone",
+        "restored": "Restored from Recently deleted",
+        "restoredLinked": "Restored from Recently deleted and linked"
       },
       "errors": {
         "unavailable": "Document archives are not enabled on this server.",
@@ -11946,8 +11950,32 @@
     "deleteConfirm": {
       "titleOne": "Delete this document?",
       "titleMany": "Delete {count} documents?",
-      "body": "You can undo this right afterwards. After 30 days it is removed for good.",
+      "body": "Deleted documents stay in Recently deleted for {days} days, then they are removed for good.",
       "action": "Delete"
+    },
+    "trash": {
+      "title": "Recently deleted",
+      "subtitle": "Deleted documents stay here for {days} days, then they are removed for good.",
+      "back": "Documents",
+      "entryLabel": "Recently deleted ({count})",
+      "loadError": "Couldn't load Recently deleted.",
+      "emptyTitle": "Nothing in Recently deleted",
+      "emptyDescription": "Documents you delete wait here for {days} days before they are removed for good.",
+      "count": "Deleted documents ({count})",
+      "restoreAll": "Restore all",
+      "restore": "Restore",
+      "purge": "Delete now",
+      "deletedOn": "Deleted {date}.",
+      "removesIn": "Removed for good in {days} days.",
+      "removesSoon": "Removed for good within a day.",
+      "restored": "Document restored",
+      "openRestored": "Open",
+      "restoreDuplicate": "An identical document is already stored, so this copy cannot be restored.",
+      "restorePartial": "{failed} of {total} could not be restored",
+      "purged": "Document deleted for good",
+      "purgeFailed": "Couldn't delete the document.",
+      "purgeConfirmTitle": "Delete this document for good?",
+      "purgeConfirmBody": "It is removed now instead of at the end of the waiting period, and cannot be restored."
     }
   },
   "selfDescription": {

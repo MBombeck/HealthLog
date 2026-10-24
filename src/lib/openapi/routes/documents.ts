@@ -44,6 +44,7 @@ import {
   errorEnvelope,
   idempotencyKeyParameter,
   idempotentWrite,
+  listEnvelope,
   recordRefusal,
   stdResponses,
 } from "./shared";
@@ -462,6 +463,47 @@ export const documentIndexResponse = z
   })
   .meta({ id: "DocumentIndexResponse" });
 
+// ─── Recently deleted ──────────────────────────────────────────────────────
+
+const deletedDocument = z
+  .object({
+    id: z.string(),
+    kind: kindEnum,
+    title: z.string().nullable(),
+    filename: z.string().nullable(),
+    mimeType: z.string(),
+    byteSize: z.number().int(),
+    documentDate: z
+      .string()
+      .nullable()
+      .describe("User-set filing date (YYYY-MM-DD), or null."),
+    sourceSystem: z
+      .enum(DOCUMENT_SOURCE_SYSTEMS)
+      .nullable()
+      .describe(
+        "The system an imported document came from, or null for one added in HealthLog.",
+      ),
+    deletedAt: isoDateTime(),
+    purgeAt: isoDateTime().describe(
+      "When the daily purge becomes due for this document: `deletedAt` plus `graceDays`. The purge runs once a day, so the document is removed at the first run after this instant.",
+    ),
+  })
+  .meta({ id: "DeletedDocument" });
+
+const deletedDocumentList = z
+  .object({
+    documents: z.array(deletedDocument),
+    graceDays: z
+      .number()
+      .int()
+      .describe("Days a deleted document stays restorable."),
+  })
+  .meta({ id: "DeletedDocumentList" });
+
+const documentPurgeResult = z
+  .object({ id: z.string(), purged: z.literal(true) })
+  .meta({ id: "DocumentPurgeResult" });
+
 export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/documents/inbound": {
     get: {
@@ -837,6 +879,12 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                       indexedCount: z.number(),
                       totalCount: z.number(),
                     }),
+                    deletedCount: z
+                      .number()
+                      .int()
+                      .describe(
+                        "How many of the caller's documents are deleted and not yet purged (Recently deleted, `GET /api/documents/inbound/deleted`). Always 0 while acting inside somebody else's record, where Recently deleted is not offered.",
+                      ),
                   })
                   .meta({ id: "DocumentUsage" }),
                 "DocumentUsageEnvelope",
@@ -1027,7 +1075,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Documents"],
       summary: "Restore a discarded document",
       description:
-        'Clears the soft-delete tombstone within the 30-day undo grace. 409 when the tombstone is already purged (the undo window is over) or when an identical live document blocks the restore (`meta.reason = "duplicateExists"`). Restoring an already-live document is a no-op success.',
+        'Clears the soft-delete tombstone within the 30-day undo grace, and forgets any import-ledger entry for the document\'s source keys. 409 when the tombstone is already purged (the undo window is over, or the document was deleted for good) or when an identical live document blocks the restore (`meta.reason = "duplicateExists"`). Restoring an already-live document is a no-op success.',
       parameters: [
         {
           name: "id",
@@ -1051,6 +1099,62 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         "409": {
           description:
             "Not restorable: purged past the grace window, or an identical live document exists.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/documents/inbound/deleted": {
+    get: {
+      tags: ["Documents"],
+      summary: "List Recently deleted",
+      description:
+        "The caller's deleted documents that the purge has not removed yet, newest deletion first, metadata only. Each carries `purgeAt`, when the daily purge becomes due for it. Restore one with `POST /api/documents/inbound/{id}/restore` (or the bulk `restore` action); remove one for good ahead of time with `POST /api/documents/inbound/{id}/purge`. Capped at 200 rows (`meta.truncated`, `meta.limit`). Owner-only: refused while acting inside somebody else's record.",
+      responses: {
+        "200": {
+          description: "Recently deleted.",
+          content: {
+            "application/json": {
+              schema: listEnvelope(
+                deletedDocumentList,
+                "DeletedDocumentListEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/documents/inbound/{id}/purge": {
+    post: {
+      tags: ["Documents"],
+      summary: "Delete a deleted document for good",
+      description:
+        "Removes one deleted document now instead of when the grace window ends, through the same purge the daily job runs: the row and everything that cascades from it go, and an imported document's source keys are kept in the import ledger, so an importer re-sending it is still answered as deleted. Only a deleted document can be purged: a live one answers 409 `documents.inbound.notDeleted`. 404 `documents.inbound.notFound` when the caller has no such document. Owner-only.",
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "string" },
+        },
+      ],
+      responses: {
+        "200": {
+          description: "Removed for good.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                documentPurgeResult,
+                "DocumentPurgeResultEnvelope",
+              ),
+            },
+          },
+        },
+        "409": {
+          description: "The document is not deleted.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
