@@ -302,11 +302,14 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "*": [
       "./src/lib/ai/prompts/safety-contracts.*.yaml",
-      // Document AI local text extraction runs `pdf-parse` (→ pdfjs-dist)
-      // server-side in the content-index job — the provider-free fallback that
-      // keeps content search working with no AI configured. Both are pure JS +
-      // wasm; there is NO native `.node` on the text-layer path (`@napi-rs/canvas`
-      // is only pulled for image rendering, which `getText()` never invokes).
+      // Document AI local text extraction reads the text layer with pdfjs-dist
+      // (`getTextContent`, `src/lib/documents/local-extract.ts`) server-side in
+      // the content-index job — the provider-free fallback that keeps content
+      // search working with no AI configured. It is pure JS + wasm; there is NO
+      // native `.node` on the text-layer path (`@napi-rs/canvas` is only pulled
+      // for image rendering). Nothing at runtime imports `pdf-parse` any more
+      // (its own older pdfjs clashed with the app's); its glob below is dead
+      // weight kept until the image is rebuilt and checked without it.
       // The standalone tracer can miss pdfjs-dist's wasm decoders (they resolve
       // via `new URL(..., import.meta.url)`), so pin both packages into the
       // runtime image explicitly. pnpm keeps pdfjs-dist unhoisted under `.pnpm`.

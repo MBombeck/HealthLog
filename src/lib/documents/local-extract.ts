@@ -3,9 +3,17 @@
  *
  * When NO AI provider is configured — or the user has not consented to one —
  * content search still needs a baseline. This module extracts a PDF's embedded
- * text layer SERVER-SIDE with `pdf-parse` (already a direct dependency; its
- * `getText()` touches only the pure-JS/wasm pdfjs core, never the native
- * `@napi-rs/canvas`), in milliseconds, with no OCR and no third-party egress.
+ * text layer SERVER-SIDE with pdfjs' `getTextContent` (the pure-JS/wasm core,
+ * never the native `@napi-rs/canvas`), in milliseconds, with no OCR and no
+ * third-party egress.
+ *
+ * It reads through the app's own `pdfjs-dist`, the copy `./rasterize-pdf`
+ * renders with. It used to go through `pdf-parse`, which brings a second
+ * pdfjs of its own, and the two cannot share a process: both take their
+ * worker from `globalThis.pdfjsWorker`, so whichever ran first broke the
+ * other ("The API version "6.4.299" does not match the Worker version
+ * "5.4.296""). Thumbnails and vision reads failed after a text extraction,
+ * and the text extraction failed after a raster.
  * The extracted text feeds the SAME blind, encrypted content index the provider
  * path writes (`upsertContentIndex`), so nothing readable is stored at rest.
  *
@@ -20,18 +28,92 @@
  */
 import { Buffer } from "node:buffer";
 
-// `pdf-parse` pulls in pdfjs, whose module top-level references the browser-only
-// `DOMMatrix` global. A STATIC import makes the Turbopack server chunk evaluate
-// that reference at instantiation and throw `DOMMatrix is not defined`, taking
-// down every route/worker that shares the chunk (the document routes among
-// them). The value is therefore loaded lazily inside `extractPdfText` via a
-// runtime `import()`, which lets pdf-parse initialise pdfjs on its own terms and
-// never touches DOMMatrix at load — verified to extract a real text layer under
-// plain Node. Keep the surface type as a type-only import (fully erased at
-// build, no runtime module evaluation).
-import type { PDFParse } from "pdf-parse";
+import type { PDFDocumentLoadingTask } from "pdfjs-dist";
+import type {
+  TextItem,
+  TextMarkedContent,
+} from "pdfjs-dist/types/src/display/api";
 
 import { annotate } from "@/lib/logging/context";
+
+// pdfjs' module top-level references the browser-only `DOMMatrix` global. A
+// STATIC import makes the Turbopack server chunk evaluate that reference at
+// instantiation and throw `DOMMatrix is not defined`, taking down every
+// route/worker that shares the chunk (the document routes among them). The
+// module is therefore loaded lazily inside `extractPdfText` via a runtime
+// `import()`. The type imports above are erased at build, so they load
+// nothing; they let the compiler check this file against pdfjs' own API.
+
+/**
+ * Where a text run sits on the page. pdfjs gives each run a text matrix
+ * `[a, b, c, d, x, y]`: `x` and `y` are where the run starts, and `d` is its
+ * vertical scale, which for upright text is the font size.
+ */
+interface RunPosition {
+  x: number;
+  /** The baseline the run sits on. */
+  y: number;
+  /** Where the run ends: its start plus its width. */
+  end: number;
+  fontSize: number;
+}
+
+function positionOf(run: TextItem): RunPosition {
+  const [, , , scaleY, x = 0, y = 0] = run.transform as number[];
+  return {
+    x,
+    y,
+    end: x + run.width,
+    fontSize: Math.abs(scaleY ?? 0) || run.height || 1,
+  };
+}
+
+/**
+ * The next run is on a new line when its baseline moved by more than half a
+ * font size. Runs on one line can sit a little higher or lower (a superscript,
+ * a mixed font), so a small shift does not count.
+ */
+function startsNewLine(previous: RunPosition, next: RunPosition): boolean {
+  return Math.abs(next.y - previous.y) > previous.fontSize / 2;
+}
+
+/**
+ * Two runs on one line are separate words when the gap between them is wider
+ * than a tenth of the font size. Runs that touch, such as a word drawn in two
+ * fonts, stay one word.
+ */
+function leavesWordGap(previous: RunPosition, next: RunPosition): boolean {
+  return next.x - previous.end > next.fontSize / 10;
+}
+
+/**
+ * One page's text: its runs in order, with a line break where a run ends a
+ * line or the next one starts a new line, and a space where two runs on one
+ * line leave a gap between words.
+ */
+function pageText(items: Array<TextItem | TextMarkedContent>): string {
+  let text = "";
+  let previous: RunPosition | null = null;
+
+  for (const item of items) {
+    // Marked-content markers carry no text.
+    if (!("str" in item)) continue;
+    const position = positionOf(item);
+
+    if (previous && !text.endsWith("\n")) {
+      if (startsNewLine(previous, position)) {
+        text += "\n";
+      } else if (leavesWordGap(previous, position) && !/\s$/.test(text)) {
+        text += " ";
+      }
+    }
+    text += item.str;
+    if (item.hasEOL && !text.endsWith("\n")) text += "\n";
+
+    previous = position;
+  }
+  return text;
+}
 
 /**
  * Minimum joined text length for a PDF to count as a real text-layer document.
@@ -68,19 +150,29 @@ export type LocalExtractResult =
 export async function extractPdfText(
   buffer: Buffer,
 ): Promise<LocalExtractResult> {
-  let parser: PDFParse | null = null;
+  let task: PDFDocumentLoadingTask | null = null;
   try {
     // Lazy load: keeps pdfjs/DOMMatrix out of the eager server chunk (see the
     // import-site note). Resolved at first PDF extraction, then module-cached.
-    const { PDFParse } = await import("pdf-parse");
-    parser = new PDFParse({ data: new Uint8Array(buffer) });
-    const result = await parser.getText({
-      // Bound the page walk and drop the default "-- N of M --" page markers so
-      // only real document text is tokenised.
-      first: LOCAL_MAX_PAGES,
-      pageJoiner: "",
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    task = pdfjs.getDocument({
+      data: new Uint8Array(buffer),
+      verbosity: 0, // VerbosityLevel.ERRORS — no console spam on odd PDFs.
+      useSystemFonts: false,
     });
-    const text = (result.text ?? "").trim();
+    const doc = await task.promise;
+    // Bound the page walk so a pathological many-page PDF costs no more.
+    const pageCount = Math.min(doc.numPages, LOCAL_MAX_PAGES);
+    const pages: string[] = [];
+    for (let n = 1; n <= pageCount; n++) {
+      const page = await doc.getPage(n);
+      try {
+        pages.push(pageText((await page.getTextContent()).items));
+      } finally {
+        page.cleanup();
+      }
+    }
+    const text = pages.join("\n").trim();
     if (text.length < LOCAL_TEXT_MIN_CHARS) {
       return { ok: false, reason: "empty" };
     }
@@ -88,9 +180,9 @@ export async function extractPdfText(
   } catch {
     return { ok: false, reason: "error" };
   } finally {
-    if (parser) {
+    if (task) {
       try {
-        await parser.destroy();
+        await task.destroy();
       } catch {
         // Best-effort teardown; a destroy failure must not mask the result.
       }
