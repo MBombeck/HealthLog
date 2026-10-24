@@ -150,8 +150,8 @@ export interface DataSummary {
    * for the snapshot builder, …). It is NOT guaranteed to be the trailing
    * 90-day window. The insights stat strip does not read this value — its
    * median comes from the SQL `summaries-slice` path, which fixes the
-   * window to the trailing 90 days (`PERCENTILE_CONT(0.5) … FILTER (WHERE
-   * measured_at >= NOW() - INTERVAL '90 days')`). A consumer comparing the
+   * window to the trailing 90 days (`PERCENTILE_CONT(0.5)` over the readings
+   * from 90 days before the request's `now`). A consumer comparing the
    * two must account for the differing windows. The percentile *algorithm*
    * matches (linear-interpolated midpoint), only the window differs.
    */

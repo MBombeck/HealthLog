@@ -111,16 +111,30 @@ export function startOfUtcToday(): Date {
 }
 
 /**
+ * A fixed anchor day, for a walk whose route cuts every window on the
+ * request's clock (`src/lib/analytics/request-clock-sql.ts`), so a pinned
+ * `Date` reaches all of them.
+ *
+ * A record laid out from today is not the same record on every day: its
+ * weekdays move with the date. The chronotype's work and free nights and the
+ * weight-by-weekday points follow them, so a snapshot taken on a Friday
+ * failed on a Saturday. A Friday, the day those walks were first recorded.
+ * A walk that still meets `NOW()` keeps `startOfUtcToday`: against a fixed
+ * day, the database clock would sit months away.
+ */
+export const FIXED_ANCHOR_DAY = new Date("2026-10-23T00:00:00.000Z");
+
+/**
  * A copy of `value` with every ISO instant written as days and time from
  * `anchor` (`anchor-13d+06:30:00`) and every `YYYY-MM-DD` day key as days from
  * the anchor's day (`day-13`), inside any string.
  *
- * For a walk whose route reads windows against the database clock, which a
- * pinned `Date` cannot reach: the record is laid out from the start of the
- * current UTC day, the clock is pinned to that day, and the snapshot holds
- * only positions relative to it, so it reads the same on every day it runs.
- * Keep the account in UTC, so a daylight-saving change between two runs
- * cannot move a local day boundary against the anchor.
+ * The record is laid out from the anchor day (`FIXED_ANCHOR_DAY`, or
+ * `startOfUtcToday` for a walk whose route reads windows against the database
+ * clock, which a pinned `Date` cannot reach), the clock is pinned to that day,
+ * and the snapshot holds only positions relative to it. Keep the account in
+ * UTC, so a daylight-saving change between two runs cannot move a local day
+ * boundary against the anchor.
  */
 export function relativeToAnchor(value: unknown, anchor: Date): unknown {
   const base = anchor.getTime();

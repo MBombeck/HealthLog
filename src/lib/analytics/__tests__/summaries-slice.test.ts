@@ -46,15 +46,15 @@ vi.mock("@/lib/logging/context", () => ({
 // coupling the slice unit test to the rank builder's enum-whitelist
 // internals.
 vi.mock("@/lib/analytics/source-rank-sql", () => {
-  const cte = (_rank: string, sinceInterval?: string) =>
+  const cte = (_rank: string, window?: { from: string; interval?: string }) =>
     `
         SELECT mm.*
         FROM measurements mm
         WHERE mm."user_id" = $1
           AND mm."deleted_at" IS NULL
           ${
-            sinceInterval
-              ? `AND mm."measured_at" >= NOW() - INTERVAL '${sinceInterval}'`
+            window
+              ? `AND mm."measured_at" >= ${window.from} - INTERVAL '${window.interval}'`
               : ""
           }`;
   return {
@@ -605,20 +605,20 @@ describe("computeSummariesSlice", () => {
       // raw alias (`mm.`) rather than the outer `m.`. Pin that the cap
       // survives the source-rank refactor.
       const narrowsCap = joined.match(
-        /AND mm\."measured_at" >= NOW\(\) - INTERVAL '90 days'/g,
+        /AND mm\."measured_at" >= \$2::timestamp - INTERVAL '90 days'/g,
       );
       expect(narrowsCap).not.toBeNull();
       expect(narrowsCap?.length).toBeGreaterThanOrEqual(1);
 
       // v1.11.1 — the cold-fallback `windowed` scan delegates its outer
-      // 90-day cap to `canonicalMeasurementsCte(rank, "90 days")` (a CTE
-      // now, so the day weights can read it twice). The
-      // helper lives in `@/lib/analytics/source-rank-sql` (stubbed
-      // above), so pin the contract at the call boundary: the slice
-      // must ask for the 90-day window.
+      // 90-day cap to `canonicalMeasurementsCte` (a CTE now, so the day
+      // weights can read it twice). The helper lives in
+      // `@/lib/analytics/source-rank-sql` (stubbed above), so pin the
+      // contract at the call boundary: the slice must ask for the 90-day
+      // window, counted from the request's `now` bound at `$2`.
       expect(canonicalMeasurementsCte).toHaveBeenCalledWith(
         expect.any(String),
-        "90 days",
+        { from: "$2::timestamp", interval: "90 days" },
       );
       // v1.18.10 — the `allTime` aggregate is now capped at a generous
       // 15-year scan-DoS floor (far beyond any real history) so a
@@ -626,8 +626,16 @@ describe("computeSummariesSlice", () => {
       // scan. It no longer calls the helper without an interval.
       expect(canonicalMeasurementsCte).toHaveBeenCalledWith(
         expect.any(String),
-        "15 years",
+        { from: "$2::timestamp", interval: "15 years" },
       );
+      // Every window is cut against the request's clock, bound with each
+      // statement; none reads the database clock.
+      expect(joined).not.toMatch(/NOW\(\)|CURRENT_TIMESTAMP|CURRENT_DATE/i);
+      for (const call of UNSAFE.mock.calls) {
+        if (String(call[0]).includes("$2::timestamp")) {
+          expect(call[2]).toBeInstanceOf(Date);
+        }
+      }
     });
   });
 
@@ -736,8 +744,8 @@ describe("computeSummariesSlice", () => {
    * `computeFromRollups` path windows the regression on UTC-midnight
    * (`startOfUtcDay(now − N days)` + `composeWindowedRegression`). The
    * cold-fallback `windowed` query must anchor its REGR_* FILTERs on the
-   * SAME UTC-midnight boundary — `date_trunc('day', NOW() AT TIME ZONE
-   * 'UTC') − INTERVAL 'N days'` — so a warm→cold coverage transition
+   * SAME UTC-midnight boundary of the same `now` — `date_trunc('day',
+   * $2::timestamp) − INTERVAL 'N days'` — so a warm→cold coverage transition
    * returns identical boundary-day membership for slope7/30/90 instead of
    * a cache-dependent answer to the same request.
    */
@@ -766,11 +774,11 @@ describe("computeSummariesSlice", () => {
       // read the same rows the regression fits.
       for (const days of ["7 days", "30 days"]) {
         expect(sql).toContain(
-          `m."measured_at" >= (date_trunc('day', NOW() AT TIME ZONE 'UTC') - INTERVAL '${days}')`,
+          `m."measured_at" >= (date_trunc('day', $2::timestamp) - INTERVAL '${days}')`,
         );
       }
       const anchored = sql.match(
-        /date_trunc\('day', NOW\(\) AT TIME ZONE 'UTC'\) - INTERVAL '(?:7|30) days'\)/g,
+        /date_trunc\('day', \$2::timestamp\) - INTERVAL '(?:7|30) days'\)/g,
       );
       expect(anchored?.length).toBe(10);
       // The bound stays a naive UTC timestamp like measured_at: converting
@@ -778,14 +786,14 @@ describe("computeSummariesSlice", () => {
       // time zone.
       expect(sql).not.toMatch(/INTERVAL '(?:7|30) days'\) AT TIME ZONE/);
 
-      // The regression windows must NOT fall back to the bare wall-clock
-      // `NOW() - INTERVAL 'N days'` bound the warm path never uses for the
-      // slope. Isolate the slope columns (everything from the first
-      // REGR_SLOPE onward) so the avg7/avg30 windows above — which DO stay
-      // wall-clock by design — don't trip the assertion.
+      // The regression windows must NOT fall back to the bare instant
+      // bound the warm path never uses for the slope. Isolate the slope
+      // columns (everything from the first REGR_SLOPE onward) so the
+      // avg7/avg30 windows above, which DO count from the instant by
+      // design, don't trip the assertion.
       const slopeBlock = sql.slice(sql.indexOf("REGR_SLOPE"));
       expect(slopeBlock).not.toMatch(
-        /WHERE m\."measured_at" >= \(?NOW\(\)( AT TIME ZONE 'UTC'\))? -/,
+        /WHERE m\."measured_at" >= \$2::timestamp -/,
       );
     });
   });

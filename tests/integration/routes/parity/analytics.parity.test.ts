@@ -15,8 +15,8 @@
  * event, the rollup refreshes the request handed off, and the stored health
  * scores and correlation patterns.
  *
- * The clock is pinned (`Date` only) to noon of the day the test runs; see
- * `NOW`. The record's rollups are built once
+ * The clock is pinned (`Date` only) to noon of a fixed day; see `NOW`. The
+ * record's rollups are built once
  * before the walk; the fire-and-forget refresh the route starts on every
  * request is recorded instead of run, so the wide event never depends on
  * whether it finished first.
@@ -32,9 +32,9 @@ import {
   effectRecorder,
   eventFacts,
   expectParity,
+  FIXED_ANCHOR_DAY,
   relativeToAnchor,
   stable,
-  startOfUtcToday,
   wideEventRecorder,
 } from "../../../kit/parity";
 import { getPrismaClient, truncateAllTables } from "../../setup";
@@ -66,13 +66,13 @@ vi.mock("@/lib/rollups/measurement-rollups", async (importOriginal) => {
 
 const prisma = getPrismaClient();
 /**
- * Noon of the current UTC day. The summaries read their 90-day windows in SQL
- * against the database clock, which a pinned `Date` cannot move, so the clock
- * is pinned to today and the snapshot records positions relative to today's
- * start (`relativeToAnchor`). The record is under sixty days old, so no
- * reading sits on a SQL window's edge whatever the time of day.
+ * Noon of a fixed day. Every window the route cuts, in JS and in SQL, counts
+ * from the request's clock, which the pin reaches, so the walk reads the same
+ * at any hour and on any date it runs; the weekday-keyed figures need the
+ * fixed date (`FIXED_ANCHOR_DAY`). The snapshot records positions relative to
+ * the day's start (`relativeToAnchor`).
  */
-const ANCHOR = startOfUtcToday();
+const ANCHOR = FIXED_ANCHOR_DAY;
 const NOW = new Date(ANCHOR.getTime() + 12 * 60 * 60 * 1000);
 const TZ = "UTC";
 const OWNER_ID = parityId("analytics", 1);

@@ -9,9 +9,11 @@
  * read it, without credentials, and for an account with no data. The
  * fire-and-forget rollup refresh is recorded instead of run.
  *
- * The clock is pinned to noon of the current UTC day and the snapshot is
- * written relative to the start of that day (`relativeToAnchor`), because
- * the per-type reads cut their windows in SQL against the database clock.
+ * The clock is pinned to noon of a fixed day (`FIXED_ANCHOR_DAY`: the
+ * chronotype reads work and free nights by weekday) and the snapshot is
+ * written relative to the start of that day (`relativeToAnchor`). Every
+ * window the summary cuts, in JS and in SQL, counts from the request's
+ * clock, so the walk reads the same at any hour it runs.
  */
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -24,9 +26,9 @@ import {
   effectRecorder,
   eventFacts,
   expectParity,
+  FIXED_ANCHOR_DAY,
   relativeToAnchor,
   stable,
-  startOfUtcToday,
   wideEventRecorder,
 } from "../../../kit/parity";
 import {
@@ -60,7 +62,7 @@ vi.mock("@/lib/rollups/measurement-rollups", async (importOriginal) => {
 });
 
 const prisma = getPrismaClient();
-const ANCHOR = startOfUtcToday();
+const ANCHOR = FIXED_ANCHOR_DAY;
 const NOW = new Date(ANCHOR.getTime() + 12 * 60 * 60 * 1000);
 const TZ = "UTC";
 const OWNER_ID = parityId("dashsum", 1);
@@ -170,11 +172,16 @@ describe("GET /api/dashboard/summary parity", () => {
         modulePreferencesJson: { glucose: false, sleep: false, mood: false },
       },
     });
-    await step("03-modules-off");
-    await prisma.user.update({
-      where: { id: OWNER_ID },
-      data: { modulePreferencesJson: {} },
-    });
+    try {
+      await step("03-modules-off");
+    } finally {
+      // Restored even when the case fails, so the cases after it are not
+      // read with the modules still off.
+      await prisma.user.update({
+        where: { id: OWNER_ID },
+        data: { modulePreferencesJson: {} },
+      });
+    }
   });
 
   it("04 another language, served from the cache", async () => {

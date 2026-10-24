@@ -2,7 +2,9 @@
  * The canonical-source pick, against a real Postgres: the shipped statement
  * (group the window to `(type, day, source)` first, then `DISTINCT ON`)
  * against the statement it replaced (`DISTINCT ON` over every raw row),
- * kept verbatim below as the reference.
+ * kept verbatim below as the reference. Only its window anchor changed: it
+ * counts from the same bound instant the shipped helper takes, where it read
+ * `NOW()`, so both cut one window.
  *
  * Both must return exactly the same rows, for every reader shape the helper
  * serves (all types or one type, a trailing window or none), under the
@@ -18,6 +20,7 @@ import type {
   MeasurementSource,
   MeasurementType,
 } from "@/generated/prisma/client";
+import { boundInstantSql } from "@/lib/analytics/request-clock-sql";
 import {
   buildSourceRankCase,
   canonicalMeasurementsCte,
@@ -29,6 +32,8 @@ import { getPrismaClient, truncateAllTables } from "./setup";
 
 const USER_ID = "user-canonical-parity";
 const DAY_MS = 86_400_000;
+/** The instant both statements count their window from, bound at `$2`. */
+const NOW_SQL = boundInstantSql(2);
 
 /** The pick as it stood before it grouped first. */
 function legacyCanonicalMeasurementsCte(
@@ -37,10 +42,10 @@ function legacyCanonicalMeasurementsCte(
   onlyType?: MeasurementType,
 ): string {
   const sinceInner = sinceInterval
-    ? `AND "measured_at" >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '${sinceInterval}'`
+    ? `AND "measured_at" >= ${NOW_SQL} - INTERVAL '${sinceInterval}'`
     : "";
   const sinceOuter = sinceInterval
-    ? `AND mm."measured_at" >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '${sinceInterval}'`
+    ? `AND mm."measured_at" >= ${NOW_SQL} - INTERVAL '${sinceInterval}'`
     : "";
   const typeInner = onlyType
     ? `AND "type" = '${onlyType}'::"measurement_type"`
@@ -200,15 +205,18 @@ describe("canonical-source pick parity", () => {
       it(`returns the same rows: ${ladderLabel}, ${shapeLabel}`, async () => {
         const prisma = getPrismaClient();
         const rank = buildSourceRankCase(ladder, '"type"', '"source"');
+        const at = new Date();
+        const window = since ? { from: NOW_SQL, interval: since } : undefined;
         const select = (cte: string) =>
           prisma.$queryRawUnsafe<
             Array<{ id: string; type: string; source: string }>
           >(
             `WITH cm AS (${cte}) SELECT id, type::text AS type, source::text AS source FROM cm ORDER BY id`,
             USER_ID,
+            ...(window ? [at] : []),
           );
         const [now, before] = await Promise.all([
-          select(canonicalMeasurementsCte(rank, since, onlyType)),
+          select(canonicalMeasurementsCte(rank, window, onlyType)),
           select(legacyCanonicalMeasurementsCte(rank, since, onlyType)),
         ]);
         expect(now.length).toBeGreaterThan(0);

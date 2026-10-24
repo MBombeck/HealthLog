@@ -152,7 +152,6 @@ describe("readActivityDays", () => {
       tz: TZ,
       fromKey,
       toKey,
-      now: NOW,
       includeWorkouts: true,
     });
     const by = new Map(days.map((d) => [d.date, d]));

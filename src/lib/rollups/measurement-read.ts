@@ -331,7 +331,7 @@ export interface AccumulatorBucketRow extends RegressionAccumulators {
  * The window is DAY-aligned (a bucket is in-window iff its `bucketStart`
  * is `>= since`), matching the DAY-rollup grain. Callers anchor `since` on
  * a UTC-day boundary (`startOfUtcDay(now − N days)`) so the window is the
- * day-aligned equivalent of the live `measured_at >= NOW() - INTERVAL 'N
+ * day-aligned equivalent of the live `measured_at >= now - INTERVAL 'N
  * days'` filter. The accumulator-composed result over a given bucket set
  * is bit-identical to live REGR_* / STDDEV_POP over the same buckets' raw
  * rows — the parity test pins this.
@@ -354,7 +354,7 @@ export function composeWindowedRegression(
  * regression `composeWindowedRegression` composes, withheld by `toTrendSlope`
  * when the window's days with a reading are too few or span too little of
  * `windowDays` (`isTrendWindowSufficient`). Days are the buckets' UTC days,
- * the same days the live path counts with `TREND_EVIDENCE_SQL`.
+ * the same days the live path counts with `liveTrendSql`.
  */
 export function composeWindowedTrend(
   rows: ReadonlyArray<AccumulatorBucketRow>,

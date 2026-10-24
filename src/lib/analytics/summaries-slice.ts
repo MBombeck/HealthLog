@@ -73,10 +73,15 @@ import {
 } from "@/lib/measurements/day-mean";
 import { wireSummary, type DataSummary } from "@/lib/analytics/trends";
 import {
-  TREND_EVIDENCE_SQL,
   liveTrend,
+  liveTrendSql,
   type LiveTrendColumns,
 } from "@/lib/analytics/trend-evidence-sql";
+import {
+  avg7Sql,
+  boundInstantSql,
+  windowMeanColumnsSql,
+} from "@/lib/analytics/request-clock-sql";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { annotate } from "@/lib/logging/context";
 import { caches, type ServerCache } from "@/lib/cache/server-cache";
@@ -167,30 +172,6 @@ interface RollupAggregateRow {
   max: number;
   mean: number;
 }
-
-/**
- * The window means over canonical readings that carry a `day_weight` (see
- * `day-mean.ts`): the mean of the day values for an hourly-mean type (pulse),
- * the unchanged `AVG(value)` for every other type. Days are UTC days, the
- * frame the canonical-source pick and the rollup tier bucket by.
- */
-function windowedMean(filter: string): string {
-  return windowMeanSql({
-    typeColumn: 'm."type"',
-    value: 'm."value"',
-    weight: "m.day_weight",
-    filter,
-  });
-}
-const AVG7_SQL = windowedMean(
-  `m."measured_at" >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '7 days'`,
-);
-const AVG30_SQL = windowedMean(
-  `m."measured_at" >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '30 days'`,
-);
-const AVG30_LAST_MONTH_SQL = windowedMean(
-  `m."measured_at" >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '60 days' AND m."measured_at" <  (NOW() AT TIME ZONE 'UTC') - INTERVAL '30 days'`,
-);
 
 interface NarrowAggregateRow {
   type: string;
@@ -293,6 +274,9 @@ export async function computeSummariesSlice(
    */
   precomputedCoverage?: RollupCoverageMap,
 ): Promise<SummariesSlice> {
+  // One clock for every window of the slice, JS and SQL alike (see
+  // `request-clock-sql.ts`).
+  const now = new Date();
   // v1.4.37.1 — fire-and-forget. See `src/app/api/analytics/route.ts`
   // for the full rationale: awaiting this on the read path can stall
   // the event loop for tens of seconds on tenants with large iOS step
@@ -318,7 +302,7 @@ export async function computeSummariesSlice(
   if (isFullyCovered(coverage)) {
     return withLatestDayValues(
       userId,
-      await withSleepNightTotals(userId, await computeFromRollups(userId)),
+      await withSleepNightTotals(userId, await computeFromRollups(userId, now)),
     );
   }
   // v1.4.38.7 — annotate the live fallback with the per-type
@@ -343,7 +327,10 @@ export async function computeSummariesSlice(
   });
   return withLatestDayValues(
     userId,
-    await withSleepNightTotals(userId, await computeFromLiveAggregate(userId)),
+    await withSleepNightTotals(
+      userId,
+      await computeFromLiveAggregate(userId, now),
+    ),
   );
 }
 
@@ -510,15 +497,16 @@ export async function readSevenDayMeans(
     Array<{ type: string; avg7: number | null }>
   >(
     `
-      WITH cm AS (${canonicalMeasurementsCte(rankUnqualified, "90 days")}
+      WITH cm AS (${canonicalMeasurementsCte(rankUnqualified, { from: boundInstantSql(2), interval: "90 days" })}
       )
       SELECT
         m."type"::text                    AS type,
-        ${AVG7_SQL}::double precision     AS avg7
+        ${avg7Sql(boundInstantSql(2))}::double precision     AS avg7
       FROM ${dayWeightedRows("cm", SESSION_DAY_FRAME)} m
       GROUP BY m."type"
     `,
     userId,
+    new Date(),
   );
   const out: Record<string, number | null> = {};
   for (const row of rows) {
@@ -545,7 +533,10 @@ export async function readSevenDayMeans(
  * large measurement partitions this lifts the slim slice from
  * multi-second cold to sub-second; output is bit-identical.
  */
-async function computeFromRollups(userId: string): Promise<SummariesSlice> {
+async function computeFromRollups(
+  userId: string,
+  now: Date,
+): Promise<SummariesSlice> {
   // v1.11.1 — resolve the user's source-priority ladders once, then build the
   // rank CASE expressions used to collapse overlapping sources to the canonical
   // reading per (type, day) inside each query. `"type"`/`"source"` variants for
@@ -577,7 +568,8 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
   // passed — so bounding only the raw half counted each reading on such a
   // day twice. Split on a boundary, a reading is in exactly one half
   // whichever buckets exist.
-  const foldSplit = startOfUtcDay(new Date(Date.now() - ROLLUP_FOLD_WINDOW_MS));
+  const nowMs = now.getTime();
+  const foldSplit = startOfUtcDay(new Date(nowMs - ROLLUP_FOLD_WINDOW_MS));
 
   const [narrows, latests, dayBuckets, accumulatorRows, preFoldRemainder] =
     await Promise.all([
@@ -589,22 +581,20 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
       // (`windowedMean`); the median stays over every reading.
       prisma.$queryRawUnsafe<NarrowAggregateRow[]>(
         `
-      WITH cm AS (${canonicalMeasurementsCte(rankUnqualified, "90 days")}
+      WITH cm AS (${canonicalMeasurementsCte(rankUnqualified, { from: boundInstantSql(2), interval: "90 days" })}
       )
       SELECT
         m."type"::text                                                AS type,
-        ${AVG7_SQL}::double precision                                 AS avg7,
-        ${AVG30_SQL}::double precision                                AS avg30,
-        ${AVG30_LAST_MONTH_SQL}::double precision                     AS avg30_last_month,
+        ${windowMeanColumnsSql(boundInstantSql(2))},
+        -- The canonical set above is already the 90-day window.
         PERCENTILE_CONT(0.5) WITHIN GROUP (
           ORDER BY m."value"
-        ) FILTER (
-          WHERE m."measured_at" >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '90 days'
         )::double precision                                           AS median
       FROM ${dayWeightedRows("cm", SESSION_DAY_FRAME)} m
       GROUP BY m."type"
     `,
         userId,
+        now,
       ),
       readLatestCanonical(userId, priorityJson),
       // v1.4.37.2 — the v1.4.35 implementation read EVERY DAY
@@ -670,7 +660,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
           userId,
           granularity: "DAY",
           bucketStart: {
-            gte: startOfUtcDay(new Date(Date.now() - 90 * DAY_MS)),
+            gte: startOfUtcDay(new Date(nowMs - 90 * DAY_MS)),
           },
         },
         orderBy: [{ type: "asc" }, { bucketStart: "asc" }],
@@ -738,8 +728,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
   }
 
   // Day-aligned 7/30/90-day anchors — the rollup-grain equivalent of the
-  // live `measured_at >= NOW() - INTERVAL 'N days'` filter.
-  const nowMs = Date.now();
+  // live `measured_at >= now - INTERVAL 'N days'` filter.
   const since7 = startOfUtcDay(new Date(nowMs - 7 * DAY_MS));
   const since30 = startOfUtcDay(new Date(nowMs - 30 * DAY_MS));
   const since90 = startOfUtcDay(new Date(nowMs - 90 * DAY_MS));
@@ -769,11 +758,8 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
     lastSeenByType[type] = null;
   }
 
-  const nowForStaleness = Date.now();
   for (const [type, measuredAt] of lastSeenAtByType.entries()) {
-    const daysAgo = Math.floor(
-      (nowForStaleness - measuredAt.getTime()) / (24 * 60 * 60 * 1000),
-    );
+    const daysAgo = Math.floor((nowMs - measuredAt.getTime()) / DAY_MS);
     lastSeenByType[type] = {
       lastSeenAt: measuredAt.toISOString(),
       daysAgo,
@@ -880,9 +866,9 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
   // with data in the current window are probed so we don't pay the per-type
   // round-trip on the long tail of unlogged measurement enums. Types with no
   // reading in the year-ago window surface as `null`.
-  const avg30LastYearMap = await computeAvg30LastYearMap(userId, typesWithData);
+  const lastYear = await computeAvg30LastYearMap(userId, typesWithData, nowMs);
   let yearOverYearTypeCount = 0;
-  for (const [type, value] of avg30LastYearMap.entries()) {
+  for (const [type, value] of lastYear.entries()) {
     if (value === null) continue;
     const summary = summaries[type];
     if (!summary) continue;
@@ -939,7 +925,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
  *
  *   2. `windowed` — `avg7 / avg30` and the slope/r² tuples are all
  *      already filtered to a 7/30/90 day window inside the SELECT.
- *      Adding an outer `measured_at >= NOW() - INTERVAL '90 days'`
+ *      Adding an outer `measured_at >= now - INTERVAL '90 days'`
  *      cap lets the planner do an index range scan on
  *      `(user_id, type, measured_at)` instead of a full-partition
  *      sequential scan and discarding 95 % of rows inside FILTER
@@ -950,7 +936,9 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
  */
 async function computeFromLiveAggregate(
   userId: string,
+  now: Date,
 ): Promise<SummariesSlice> {
+  const nowMs = now.getTime();
   // v1.11.1 — collapse overlapping sources to the ladder-canonical reading per
   // (type, day) BEFORE aggregating, exactly as the rollup path does, so a
   // coverage-miss tenant gets the same numbers as a warm one (live/rollup
@@ -966,7 +954,7 @@ async function computeFromLiveAggregate(
   const [allTime, windowed, latests] = await Promise.all([
     prisma.$queryRawUnsafe<AllTimeAggregateRow[]>(
       `
-      WITH cm AS (${canonicalMeasurementsCte(rankUnqualified, ALL_TIME_LIVE_CAP_INTERVAL)}
+      WITH cm AS (${canonicalMeasurementsCte(rankUnqualified, { from: boundInstantSql(2), interval: ALL_TIME_LIVE_CAP_INTERVAL })}
       )
       SELECT
         m."type"::text                                                AS type,
@@ -979,62 +967,24 @@ async function computeFromLiveAggregate(
       GROUP BY m."type"
     `,
       userId,
+      now,
     ),
     prisma.$queryRawUnsafe<WindowedAggregateRow[]>(
       `
-      WITH cm AS (${canonicalMeasurementsCte(rankUnqualified, "90 days")}
+      WITH cm AS (${canonicalMeasurementsCte(rankUnqualified, { from: boundInstantSql(2), interval: "90 days" })}
       )
       SELECT
         m."type"::text                                                AS type,
-        ${AVG7_SQL}::double precision                                 AS avg7,
-        ${AVG30_SQL}::double precision                                AS avg30,
-        ${AVG30_LAST_MONTH_SQL}::double precision                     AS avg30_last_month,
+        ${windowMeanColumnsSql(boundInstantSql(2))},
         PERCENTILE_CONT(0.5) WITHIN GROUP (
           ORDER BY m."value"
-        ) FILTER (
-          WHERE m."measured_at" >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '90 days'
         )::double precision                                           AS median,
-        -- A2-M2 — anchor the regression windows on the UTC-midnight day
-        -- boundary so this cold-fallback path returns the SAME boundary-day
-        -- membership the warm computeFromRollups composes via
-        -- startOfUtcDay(now - N days) + composeWindowedRegression. The
-        -- expression date_trunc('day', NOW() AT TIME ZONE 'UTC') - INTERVAL
-        -- 'N days' is the SQL twin of startOfUtcDay. It stays a naive UTC
-        -- timestamp, like measured_at itself, so the comparison never
-        -- passes through the session time zone. The wall-clock NOW() - INTERVAL
-        -- bound let the boundary day flip in/out of the slope window across
-        -- a warm-to-cold coverage transition (cache-dependent slope on the
-        -- same request); the avg7/30/median windows above stay wall-clock
-        -- because the warm narrow query computes THOSE the same way.
-        REGR_SLOPE(
-          m."value",
-          EXTRACT(EPOCH FROM m."measured_at") / 86400.0
-        ) FILTER (
-          WHERE m."measured_at" >= (date_trunc('day', NOW() AT TIME ZONE 'UTC') - INTERVAL '7 days')
-        )::double precision                                           AS slope7,
-        REGR_R2(
-          m."value",
-          EXTRACT(EPOCH FROM m."measured_at") / 86400.0
-        ) FILTER (
-          WHERE m."measured_at" >= (date_trunc('day', NOW() AT TIME ZONE 'UTC') - INTERVAL '7 days')
-        )::double precision                                           AS r2_7,
-        REGR_SLOPE(
-          m."value",
-          EXTRACT(EPOCH FROM m."measured_at") / 86400.0
-        ) FILTER (
-          WHERE m."measured_at" >= (date_trunc('day', NOW() AT TIME ZONE 'UTC') - INTERVAL '30 days')
-        )::double precision                                           AS slope30,
-        REGR_R2(
-          m."value",
-          EXTRACT(EPOCH FROM m."measured_at") / 86400.0
-        ) FILTER (
-          WHERE m."measured_at" >= (date_trunc('day', NOW() AT TIME ZONE 'UTC') - INTERVAL '30 days')
-        )::double precision                                           AS r2_30,
-        ${TREND_EVIDENCE_SQL}
+        ${liveTrendSql(boundInstantSql(2))}
       FROM ${dayWeightedRows("cm", SESSION_DAY_FRAME)} m
       GROUP BY m."type"
     `,
       userId,
+      now,
     ),
     readLatestCanonical(userId, priorityJson),
   ]);
@@ -1058,11 +1008,8 @@ async function computeFromLiveAggregate(
     lastSeenByType[type] = null;
   }
 
-  const nowForStaleness = Date.now();
   for (const [type, measuredAt] of lastSeenAtByType.entries()) {
-    const daysAgo = Math.floor(
-      (nowForStaleness - measuredAt.getTime()) / (24 * 60 * 60 * 1000),
-    );
+    const daysAgo = Math.floor((nowMs - measuredAt.getTime()) / DAY_MS);
     lastSeenByType[type] = {
       lastSeenAt: measuredAt.toISOString(),
       daysAgo,
@@ -1107,9 +1054,9 @@ async function computeFromLiveAggregate(
   // the year-ago DAY buckets may already exist because the boot-time
   // backfill folds the whole history once per user, so a partial-coverage
   // cold mount still surfaces `avg30LastYear`.
-  const avg30LastYearMap = await computeAvg30LastYearMap(userId, typesWithData);
+  const lastYear = await computeAvg30LastYearMap(userId, typesWithData, nowMs);
   let yearOverYearTypeCount = 0;
-  for (const [type, value] of avg30LastYearMap.entries()) {
+  for (const [type, value] of lastYear.entries()) {
     if (value === null) continue;
     const summary = summaries[type];
     if (!summary) continue;
@@ -1205,12 +1152,12 @@ export const WMY_FANOUT_CONCURRENCY = 4;
 export async function computeAvg30LastYearMap(
   userId: string,
   types: ReadonlyArray<string>,
+  now: number,
 ): Promise<Map<string, number | null>> {
   const out = new Map<string, number | null>();
   if (types.length === 0) return out;
   const limit = pLimit(WMY_FANOUT_CONCURRENCY);
   const priorityJson = await loadUserSourcePriority(userId);
-  const now = Date.now();
   const results = await Promise.all(
     types.map((type) =>
       limit(async () => {

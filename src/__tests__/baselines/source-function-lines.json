@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 352,
-  "total": 113987,
+  "total": 113984,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 314,
@@ -262,7 +262,7 @@
     "lib/analytics/correlations-fast-path.ts :: computeCorrelationHypothesesFastPath": 256,
     "lib/analytics/intraday-pulse-io.ts :: loadIntradayPulse": 206,
     "lib/analytics/score/reader.ts :: computeUserHealthScore": 324,
-    "lib/analytics/summaries-slice.ts :: computeFromRollups": 375,
+    "lib/analytics/summaries-slice.ts :: computeFromRollups": 373,
     "lib/api-handler.ts :: apiHandler": 207,
     "lib/api-handler.ts :: apiHandler > wrapped": 201,
     "lib/auth/profile-update.ts :: applyProfileUpdate": 353,
@@ -295,7 +295,7 @@
     "lib/illness/correlation.ts :: computeIllnessCorrelation": 233,
     "lib/import/labs-csv.ts :: importLabsCsv": 309,
     "lib/import/labs-csv.ts :: importLabsCsv > flush": 231,
-    "lib/insights/comprehensive-aggregator.ts :: buildFromRollups": 218,
+    "lib/insights/comprehensive-aggregator.ts :: buildFromRollups": 217,
     "lib/insights/comprehensive-generate.ts :: generateComprehensiveInsight": 876,
     "lib/insights/features.ts :: extractFeatures": 796,
     "lib/insights/mood-aggregates.ts :: fetchMoodAggregates": 246,

@@ -19,6 +19,7 @@
  * The user id is always passed as a bound parameter, never spliced.
  */
 import type { MeasurementType } from "@/generated/prisma/client";
+import { assertInstantSql } from "@/lib/analytics/request-clock-sql";
 import { metricKeyForType } from "@/lib/measurements/cumulative-day-sum";
 import {
   getSourceLadder,
@@ -109,6 +110,15 @@ function assertInterval(value: string): string {
 }
 
 /**
+ * A trailing window: the readings from the instant `from` on, or from
+ * `interval` before it when one is given.
+ */
+export interface CanonicalWindow {
+  from: string;
+  interval?: string;
+}
+
+/**
  * Build the canonical-source SELECT body — the raw `measurements` rows
  * restricted to the ladder-winning source per (type, day) — WITHOUT the
  * outer `( … ) m` alias wrapper. The inner `DISTINCT ON` picks the
@@ -123,10 +133,13 @@ function assertInterval(value: string): string {
  * `canonicalMeasurementsFrom`, which wraps this body in the alias.
  *
  * The user id is bound as `$1`. `rankUnqualified` must be a CASE built with
- * unqualified `"type"`/`"source"` columns. `sinceInterval` (e.g. `"90 days"`)
- * is whitelisted and, when given, scopes both the inner pick and the outer
- * filter to a trailing window. `onlyType`, when given, scopes both halves to
- * that one metric.
+ * unqualified `"type"`/`"source"` columns. `window`, when given, scopes both
+ * the inner pick and the outer filter to the readings from `from` on, or from
+ * `interval` (e.g. `"90 days"`, whitelisted) before it. `from` is an instant
+ * the caller took (`boundInstantSql` or `instantLiteralSql`, see
+ * `request-clock-sql.ts`), the request's `now` for a trailing window, so the
+ * cut runs on the caller's clock and never on the database's. `onlyType`, when given, scopes both
+ * halves to that one metric.
  *
  * The pick groups before it sorts. Its order (rank, then source name) depends
  * only on a row's `(type, source)`, so every reading of one source on one day
@@ -140,15 +153,16 @@ function assertInterval(value: string): string {
  */
 export function canonicalMeasurementsCte(
   rankUnqualified: string,
-  sinceInterval?: string,
+  window?: CanonicalWindow,
   onlyType?: MeasurementType,
 ): string {
-  const sinceInner = sinceInterval
-    ? `AND "measured_at" >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '${assertInterval(sinceInterval)}'`
-    : "";
-  const sinceOuter = sinceInterval
-    ? `AND mm."measured_at" >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '${assertInterval(sinceInterval)}'`
-    : "";
+  const bound = !window
+    ? null
+    : window.interval === undefined
+      ? assertInstantSql(window.from)
+      : `${assertInstantSql(window.from)} - INTERVAL '${assertInterval(window.interval)}'`;
+  const sinceInner = bound ? `AND "measured_at" >= ${bound}` : "";
+  const sinceOuter = bound ? `AND mm."measured_at" >= ${bound}` : "";
   // A single-type reader (a series for one metric) scopes both halves to that
   // type, so the pick scans one metric's rows instead of every row the user
   // has in the window.
@@ -194,16 +208,14 @@ export function canonicalMeasurementsCte(
  * an overlapping vital never blends two devices — the same collapse the rollup
  * readers apply, kept in lockstep for live/rollup parity.
  *
- * The user id is bound as `$1`. `rankUnqualified` must be a CASE built with
- * unqualified `"type"`/`"source"` columns. `sinceInterval` (e.g. `"90 days"`)
- * is whitelisted and, when given, scopes both the inner pick and the outer
- * filter to a trailing window.
+ * The user id is bound as `$1`; `rankUnqualified`, `window` and `onlyType` are
+ * those of `canonicalMeasurementsCte`.
  */
 export function canonicalMeasurementsFrom(
   rankUnqualified: string,
-  sinceInterval?: string,
+  window?: CanonicalWindow,
   onlyType?: MeasurementType,
 ): string {
-  return `(${canonicalMeasurementsCte(rankUnqualified, sinceInterval, onlyType)}
+  return `(${canonicalMeasurementsCte(rankUnqualified, window, onlyType)}
       ) m`;
 }

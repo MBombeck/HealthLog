@@ -100,10 +100,14 @@
 import { prisma } from "@/lib/db";
 import type { DataSummary } from "@/lib/analytics/trends";
 import {
-  TREND_EVIDENCE_SQL,
   liveTrend,
+  liveTrendSql,
   type LiveTrendColumns,
 } from "@/lib/analytics/trend-evidence-sql";
+import {
+  boundInstantSql,
+  windowMeanColumnsSql,
+} from "@/lib/analytics/request-clock-sql";
 import { annotate } from "@/lib/logging/context";
 import type {
   MeasurementSource,
@@ -137,29 +141,9 @@ import {
 } from "@/lib/rollups/measurement-coverage";
 import { dateOnlyKey } from "@/lib/tz/date-only";
 
-/**
- * Window means over canonical readings carrying a `day_weight` (see
- * `day-mean.ts`): the mean of the day values for an hourly-mean type (pulse),
- * the unchanged `AVG(value)` otherwise. Days are UTC days, the frame the
- * canonical-source pick buckets by.
- */
-function windowedMean(filter: string): string {
-  return windowMeanSql({
-    typeColumn: 'm."type"',
-    value: 'm."value"',
-    weight: "m.day_weight",
-    filter,
-  });
-}
-const AVG7_SQL = windowedMean(
-  `m."measured_at" >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '7 days'`,
-);
-const AVG30_SQL = windowedMean(
-  `m."measured_at" >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '30 days'`,
-);
-const AVG30_LAST_MONTH_SQL = windowedMean(
-  `m."measured_at" >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '60 days' AND m."measured_at" <  (NOW() AT TIME ZONE 'UTC') - INTERVAL '30 days'`,
-);
+/** The request's `now`, bound at `$2` of every live aggregate here. */
+const NOW_SQL = boundInstantSql(2);
+const NINETY_DAYS = { from: NOW_SQL, interval: "90 days" } as const;
 
 /**
  * Heavy aggregate row — count/min/max/mean alongside the non-composable
@@ -198,11 +182,6 @@ interface NarrowAggregateRow {
   // v1.20.0 — the slope7/30/90 + r2_7/30/90 columns have moved off this
   // live query onto the rollup accumulators (composeWindowedRegression);
   // they no longer scan the raw measurements partition on the warm path.
-}
-
-/** The latest canonical reading per type is read only inside the 90-day window. */
-function latestFloor(): Date {
-  return new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 }
 
 /**
@@ -265,7 +244,9 @@ function round2(value: number | null): number | null {
 export async function buildComprehensiveAggregate(
   userId: string,
 ): Promise<ComprehensiveAggregate> {
-  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+  // One clock for every window, JS and SQL alike (see `request-clock-sql.ts`).
+  const now = new Date();
+  const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
 
   // v1.4.38 — per-sub-query wall-clock timing. Emitted under
   // `meta.insights.sub_*_ms` so the next perf-verify can attribute
@@ -297,8 +278,8 @@ export async function buildComprehensiveAggregate(
   timings["insights.sub_coverage_ms"] = Date.now() - probeStart;
 
   const result = isFullyCovered(coverage)
-    ? await buildFromRollups(userId, ninetyDaysAgo, timings)
-    : await buildFromLiveAggregate(userId, ninetyDaysAgo, timings);
+    ? await buildFromRollups(userId, now, ninetyDaysAgo, timings)
+    : await buildFromLiveAggregate(userId, now, ninetyDaysAgo, timings);
 
   annotate({ meta: timings });
   return result;
@@ -351,10 +332,7 @@ interface BpRawRow {
  */
 async function fetchBpRawRows(
   userId: string,
-  // The 90-day window is expressed as a SQL interval inside the canonical
-  // subquery (parity with the rollup fast-path's `"90 days"`); the bound
-  // `Date` arg is retained for call-site symmetry and is exactly 90 days.
-  ninetyDaysAgo: Date,
+  now: Date,
   // The source-rank CASE built once by the caller (over unqualified
   // `"type"`/`"source"` columns) — reused so the BP pull doesn't re-load the
   // user's source-priority blob the caller already resolved.
@@ -364,7 +342,6 @@ async function fetchBpRawRows(
   dia: Array<{ measuredAt: Date; value: number }>;
   weight: Array<{ measuredAt: Date; value: number }>;
 }> {
-  void ninetyDaysAgo;
   // v1.32.17 — WEIGHT rides this same canonical-dedup pull (one extra
   // sparse type, no new round-trip) so the route can derive a local-day
   // mood × weight series without re-scanning raw rows.
@@ -374,11 +351,12 @@ async function fetchBpRawRows(
         m."type"::text                  AS type,
         m."measured_at"                 AS measured_at,
         m."value"::double precision     AS value
-      FROM ${canonicalMeasurementsFrom(rankUnqualified, "90 days")}
+      FROM ${canonicalMeasurementsFrom(rankUnqualified, NINETY_DAYS)}
       WHERE m."type" IN ('BLOOD_PRESSURE_SYS', 'BLOOD_PRESSURE_DIA', 'WEIGHT')
       ORDER BY m."measured_at" ASC
     `,
     userId,
+    now,
   );
   const sys: Array<{ measuredAt: Date; value: number }> = [];
   const dia: Array<{ measuredAt: Date; value: number }> = [];
@@ -403,6 +381,7 @@ async function fetchBpRawRows(
  */
 async function buildFromRollups(
   userId: string,
+  now: Date,
   ninetyDaysAgo: Date,
   timings: Record<string, number>,
 ): Promise<ComprehensiveAggregate> {
@@ -428,7 +407,7 @@ async function buildFromRollups(
       -- cost; bind it ONCE as a CTE and reference it from both window_stats
       -- and the outer aggregate so the DISTINCT-ON pick runs a single time
       -- instead of twice per rebuild. Output is identical.
-      WITH cm AS (${canonicalMeasurementsCte(rankUnqualified, "90 days")}
+      WITH cm AS (${canonicalMeasurementsCte(rankUnqualified, NINETY_DAYS)}
       ),
       -- The z-score's mean and spread stay over every reading: they measure
       -- how far one reading sits from the others, a per-reading dispersion,
@@ -454,19 +433,17 @@ async function buildFromRollups(
               (ROUND(((m."value" - ws.mean_value) / ws.stddev_value)::numeric, 2))
             ) > 2
         )                                                             AS anomaly_count,
-        ${AVG7_SQL}::double precision                                 AS avg7,
-        ${AVG30_SQL}::double precision                                AS avg30,
-        -- Prior 30d window (days [30, 60) ago) used by tile delta callout.
-        ${AVG30_LAST_MONTH_SQL}::double precision                     AS avg30_last_month
+        ${windowMeanColumnsSql(NOW_SQL)}
       FROM ${dayWeightedRows("cm", SESSION_DAY_FRAME)} m
       JOIN window_stats ws ON ws."type" = m."type"
       GROUP BY m."type", ws.stddev_value
     `,
           userId,
+          now,
         ),
       ),
       timeSubquery(timings, "latests", () =>
-        readLatestCanonical(userId, priorityJson, latestFloor()),
+        readLatestCanonical(userId, priorityJson, ninetyDaysAgo),
       ),
       // v1.4.35 — DAY rollup buckets for the trailing 90 days, every
       // type. Drives both the per-type `count / min / max / mean`
@@ -489,7 +466,7 @@ async function buildFromRollups(
       // readings; the per-type partition in `fetchBpRawRows` preserves
       // the legacy `bpRawRows.sys` / `bpRawRows.dia` byte-shape.
       timeSubquery(timings, "bpRaw", () =>
-        fetchBpRawRows(userId, ninetyDaysAgo, rankUnqualified),
+        fetchBpRawRows(userId, now, rankUnqualified),
       ),
       timeSubquery(
         timings,
@@ -522,11 +499,11 @@ async function buildFromRollups(
   let totalMeasurements = 0;
   // v1.20.0 — day-aligned 7/30/90-day window anchors, matching the
   // DAY-rollup grain. `startOfUtcDay(now − N days)` is the day-aligned
-  // equivalent of the live `measured_at >= NOW() - INTERVAL 'N days'`.
-  const now = Date.now();
-  const since7 = startOfUtcDay(new Date(now - 7 * 24 * 60 * 60 * 1000));
-  const since30 = startOfUtcDay(new Date(now - 30 * 24 * 60 * 60 * 1000));
-  const since90 = startOfUtcDay(new Date(now - 90 * 24 * 60 * 60 * 1000));
+  // equivalent of the live `measured_at >= now - INTERVAL 'N days'`.
+  const nowMs = now.getTime();
+  const since7 = startOfUtcDay(new Date(nowMs - 7 * 24 * 60 * 60 * 1000));
+  const since30 = startOfUtcDay(new Date(nowMs - 30 * 24 * 60 * 60 * 1000));
+  const since90 = startOfUtcDay(new Date(nowMs - 90 * 24 * 60 * 60 * 1000));
   // v1.20.0 — set once any in-window bucket carries a NULL
   // accumulator (pre-0190 row, or boot re-fold pending). The slope stays
   // null then — it converges after backfill — but the miss must be
@@ -629,6 +606,7 @@ async function buildFromRollups(
  */
 async function buildFromLiveAggregate(
   userId: string,
+  now: Date,
   ninetyDaysAgo: Date,
   timings: Record<string, number>,
 ): Promise<ComprehensiveAggregate> {
@@ -651,7 +629,7 @@ async function buildFromLiveAggregate(
       -- v1.18.11 perf#3a — bind the canonical-source self-join once (see the
       -- warm narrow query). window_stats + the outer aggregate both read cm,
       -- so the DISTINCT-ON pick runs once. Output is identical.
-      WITH cm AS (${canonicalMeasurementsCte(rankUnqualified, "90 days")}
+      WITH cm AS (${canonicalMeasurementsCte(rankUnqualified, NINETY_DAYS)}
       ),
       -- The z-score's mean and spread stay over every reading: they measure
       -- how far one reading sits from the others, a per-reading dispersion,
@@ -679,55 +657,18 @@ async function buildFromLiveAggregate(
               (ROUND(((m."value" - ws.mean_value) / ws.stddev_value)::numeric, 2))
             ) > 2
         )                                                             AS anomaly_count,
-        ${AVG7_SQL}::double precision                                 AS avg7,
-        ${AVG30_SQL}::double precision                                AS avg30,
-        ${AVG30_LAST_MONTH_SQL}::double precision                     AS avg30_last_month,
-        -- A2-M2 — the regression windows anchor on the UTC-midnight day
-        -- boundary, NOT the wall-clock instant, so this cold-fallback path
-        -- returns the SAME boundary-day membership the warm rollup path
-        -- composes from (startOfUtcDay(now - N days) +
-        -- composeWindowedRegression). The expression
-        -- date_trunc('day', NOW() AT TIME ZONE 'UTC') - INTERVAL 'N days'
-        -- is the SQL twin of startOfUtcDay. It stays a naive UTC timestamp,
-        -- like measured_at itself, so the comparison never passes through
-        -- the session time zone. Without this anchor an account that
-        -- crosses a coverage boundary (warm to cold) saw the boundary day
-        -- flip in/out of the slope window, giving a cache-dependent answer
-        -- to the same request.
-        REGR_SLOPE(
-          m."value",
-          EXTRACT(EPOCH FROM m."measured_at") / 86400.0
-        ) FILTER (
-          WHERE m."measured_at" >= (date_trunc('day', NOW() AT TIME ZONE 'UTC') - INTERVAL '7 days')
-        )::double precision                                           AS slope7,
-        REGR_R2(
-          m."value",
-          EXTRACT(EPOCH FROM m."measured_at") / 86400.0
-        ) FILTER (
-          WHERE m."measured_at" >= (date_trunc('day', NOW() AT TIME ZONE 'UTC') - INTERVAL '7 days')
-        )::double precision                                           AS r2_7,
-        REGR_SLOPE(
-          m."value",
-          EXTRACT(EPOCH FROM m."measured_at") / 86400.0
-        ) FILTER (
-          WHERE m."measured_at" >= (date_trunc('day', NOW() AT TIME ZONE 'UTC') - INTERVAL '30 days')
-        )::double precision                                           AS slope30,
-        REGR_R2(
-          m."value",
-          EXTRACT(EPOCH FROM m."measured_at") / 86400.0
-        ) FILTER (
-          WHERE m."measured_at" >= (date_trunc('day', NOW() AT TIME ZONE 'UTC') - INTERVAL '30 days')
-        )::double precision                                           AS r2_30,
-        ${TREND_EVIDENCE_SQL}
+        ${windowMeanColumnsSql(NOW_SQL)},
+        ${liveTrendSql(NOW_SQL)}
       FROM ${dayWeightedRows("cm", SESSION_DAY_FRAME)} m
       JOIN window_stats ws ON ws."type" = m."type"
       GROUP BY m."type", ws.stddev_value
     `,
         userId,
+        now,
       ),
     ),
     timeSubquery(timings, "latests", () =>
-      readLatestCanonical(userId, priorityJson, latestFloor()),
+      readLatestCanonical(userId, priorityJson, ninetyDaysAgo),
     ),
     // Buckets may exist for some types even when the COUNT probe came
     // back zero (race window between the probe and a sibling
@@ -745,7 +686,7 @@ async function buildFromLiveAggregate(
     ),
     // v1.4.38 — bp sys + dia in one round-trip (see `fetchBpRawRows`).
     timeSubquery(timings, "bpRaw", () =>
-      fetchBpRawRows(userId, ninetyDaysAgo, rankUnqualified),
+      fetchBpRawRows(userId, now, rankUnqualified),
     ),
   ]);
 

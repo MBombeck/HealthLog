@@ -71,7 +71,7 @@ describe("computeAvg30LastYearMap — WMY fan-out cap (v1.4.43)", () => {
     });
 
     const types = Array.from({ length: 15 }, (_, i) => `TYPE_${i}`);
-    const promise = computeAvg30LastYearMap("user-1", types);
+    const promise = computeAvg30LastYearMap("user-1", types, Date.now());
 
     // Let the scheduler hand out the initial batch before we start
     // draining. Two macrotask flushes is enough for `p-limit` to fill
@@ -103,7 +103,7 @@ describe("computeAvg30LastYearMap — WMY fan-out cap (v1.4.43)", () => {
   });
 
   it("returns an empty map without invoking the reader when given no types", async () => {
-    const result = await computeAvg30LastYearMap("user-1", []);
+    const result = await computeAvg30LastYearMap("user-1", [], Date.now());
     expect(result.size).toBe(0);
     expect(READ).not.toHaveBeenCalled();
   });

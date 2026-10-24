@@ -20,6 +20,7 @@ import {
   buildSourceRankCase,
   canonicalMeasurementsFrom,
 } from "@/lib/analytics/source-rank-sql";
+import { boundInstantSql } from "@/lib/analytics/request-clock-sql";
 
 vi.mock("@/lib/db-compat", () => ({
   ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
@@ -56,9 +57,10 @@ async function canonicalSources(): Promise<Map<string, string[]>> {
     `SELECT DISTINCT m."type"::text AS type,
             date_trunc('day', m."measured_at") AS day,
             m."source"::text AS source
-     FROM ${canonicalMeasurementsFrom(rank, "90 days")}
+     FROM ${canonicalMeasurementsFrom(rank, { from: boundInstantSql(2), interval: "90 days" })}
      ORDER BY 1, 2, 3`,
     USER,
+    new Date(),
   );
   const out = new Map<string, string[]>();
   for (const r of rows) {

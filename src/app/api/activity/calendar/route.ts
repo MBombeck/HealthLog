@@ -71,7 +71,6 @@ export const GET = apiHandler(async (request: NextRequest) => {
       tz,
       fromKey: bounds.readStart,
       toKey: lastRead,
-      now,
       includeWorkouts: true,
     }),
     prisma.user.findUnique({

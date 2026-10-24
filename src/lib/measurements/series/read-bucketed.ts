@@ -66,7 +66,7 @@ export async function readBucketedSeries(
     loadUserSourcePriority(userId),
   ]);
   const type = KIND_TO_TYPE[kind];
-  const seriesRows = seriesRowsFrom(priorityJson, type, days);
+  const seriesRows = seriesRowsFrom(priorityJson, type, since);
   // A day of a type with an activity-dependent sampling rate (pulse) is the
   // weighted mean of its local hours' means, so a workout hour with hundreds
   // of times the readings does not outweigh the rest of the day (see

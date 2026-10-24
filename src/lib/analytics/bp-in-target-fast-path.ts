@@ -58,6 +58,7 @@ import {
   buildSourceRankCase,
   canonicalMeasurementsFrom,
 } from "@/lib/analytics/source-rank-sql";
+import { boundInstantSql } from "@/lib/analytics/request-clock-sql";
 import {
   probeRollupCoverage,
   type RollupCoverageMap,
@@ -599,12 +600,11 @@ async function computeFromLive(
 async function fetchSeriesChunked(
   userId: string,
   type: "BLOOD_PRESSURE_SYS" | "BLOOD_PRESSURE_DIA",
-  // The 365-day window is expressed as a SQL interval inside the canonical
-  // subquery; the bound `Date` arg is retained for call-site symmetry.
+  // The window's start (365 days before the request's `now`), bound as the
+  // canonical pick's lower edge so the cut runs on the caller's clock.
   since: Date,
   rankUnqualified: string,
 ): Promise<BpReading[]> {
-  void since;
   const rows = await prisma.$queryRawUnsafe<
     Array<{ measured_at: Date; value: number }>
   >(
@@ -612,11 +612,12 @@ async function fetchSeriesChunked(
       SELECT
         m."measured_at"              AS measured_at,
         m."value"::double precision  AS value
-      FROM ${canonicalMeasurementsFrom(rankUnqualified, "365 days")}
+      FROM ${canonicalMeasurementsFrom(rankUnqualified, { from: boundInstantSql(2) })}
       WHERE m."type" = '${type}'
       ORDER BY m."measured_at" ASC
     `,
     userId,
+    since,
   );
   return rows.map((r) => ({
     measuredAt: new Date(r.measured_at),

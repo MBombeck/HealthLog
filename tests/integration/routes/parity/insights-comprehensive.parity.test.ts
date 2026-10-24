@@ -14,12 +14,12 @@
  * resting series, a medication with no schedule, an as-needed one, and no
  * height. An account with no data closes the walk.
  *
- * The clock is pinned (`Date` only) to noon of the day the test runs. The
- * aggregator cuts its 7-, 30- and 60-day windows in SQL against the
- * database clock, which the pin cannot reach, so the record's measurements
- * on exactly those days back are removed: a reading there would fall in or
- * out of a window with the hour the test runs. Every instant and day key in
- * the snapshot is written relative to the start of the day.
+ * The clock is pinned (`Date` only) to noon of a fixed day
+ * (`FIXED_ANCHOR_DAY`); every window the aggregator cuts, in JS and in SQL,
+ * counts from that clock. The record leaves out its measurements on the 7th,
+ * 30th and 60th day back, from when the aggregator cut those windows against
+ * the database clock; the snapshot was recorded so. Every instant and day key
+ * in the snapshot is written relative to the start of the day.
  *
  * The rollup refreshes the route starts and does not await are recorded
  * instead of run; the record's rollups are built once before the walk.
@@ -42,9 +42,9 @@ import {
   effectRecorder,
   eventFacts,
   expectParity,
+  FIXED_ANCHOR_DAY,
   relativeToAnchor,
   stable,
-  startOfUtcToday,
   wideEventRecorder,
 } from "../../../kit/parity";
 import {
@@ -92,9 +92,9 @@ vi.mock("@/lib/rollups/mood-rollups", async (importOriginal) => {
 
 const prisma = getPrismaClient();
 const DAY = 86_400_000;
-const ANCHOR = startOfUtcToday();
+const ANCHOR = FIXED_ANCHOR_DAY;
 const NOW = new Date(ANCHOR.getTime() + 12 * 60 * 60 * 1000);
-/** Days back on which a SQL window edge falls (see the header). */
+/** Days back the record leaves out (see the header). */
 const EDGE_DAYS = [7, 30, 60];
 
 const OWNER_ID = parityId("insightscomp", 1);

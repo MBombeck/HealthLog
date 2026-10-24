@@ -51,7 +51,7 @@ export async function readRawSeries(
   >(
     `
     SELECT m."id", m."value", m."measured_at", m."value_min", m."value_max"
-    FROM ${seriesRowsFrom(sourcePriority, type, days)}
+    FROM ${seriesRowsFrom(sourcePriority, type, since)}
     WHERE m."measured_at" >= $2
     ORDER BY m."measured_at" ASC, m."id" ASC
   `,

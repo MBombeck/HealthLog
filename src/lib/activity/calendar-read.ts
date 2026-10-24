@@ -38,8 +38,6 @@ export const LOAD_TYPES: readonly MeasurementType[] = [
   "STRAIN_SCORE",
 ];
 
-const DAY_MS = 86_400_000;
-
 interface DayAggregateRow {
   day: string;
   total: number;
@@ -54,15 +52,10 @@ async function dailyAggregate(
   type: MeasurementType,
   from: Date,
   to: Date,
-  now: Date,
 ): Promise<Map<string, DayAggregateRow>> {
-  // `seriesRowsFrom` scopes its canonical pick to a trailing window counted
-  // from now; it is widened by a day so the edge day's source is picked from
-  // all of its readings, and the outer filter trims to the exact window.
-  const days = Math.min(
-    3649,
-    Math.max(1, Math.ceil((now.getTime() - from.getTime()) / DAY_MS) + 1),
-  );
+  // `seriesRowsFrom` scopes its canonical pick to the window from a day
+  // before `from`, so the edge day's source is picked from all of its
+  // readings; the outer filter trims to the exact window.
   const rows = await prisma.$queryRawUnsafe<DayAggregateRow[]>(
     `
     SELECT
@@ -72,7 +65,7 @@ async function dailyAggregate(
       )                               AS day,
       SUM(m."value")::double precision AS total,
       COUNT(*)::int                    AS n
-    FROM ${seriesRowsFrom(priorityJson, type, days)}
+    FROM ${seriesRowsFrom(priorityJson, type, from)}
     WHERE m."measured_at" >= $3
       AND m."measured_at" < $4
     GROUP BY 1
@@ -103,21 +96,19 @@ export async function readActivityDays(args: {
   tz: string;
   fromKey: string;
   toKey: string;
-  now?: Date;
   includeWorkouts: boolean;
 }): Promise<ActivityReadResult> {
   const { userId, tz, fromKey, toKey, includeWorkouts } = args;
-  const now = args.now ?? new Date();
   const from = startOfLocalDayKey(fromKey, tz);
   const to = startOfLocalDayKey(shiftDateKey(toKey, 1), tz);
   const priorityJson = await loadUserSourcePriority(userId);
 
   const [steps, exercise, loads, workoutRows] = await Promise.all([
-    dailyAggregate(userId, tz, priorityJson, "ACTIVITY_STEPS", from, to, now),
-    dailyAggregate(userId, tz, priorityJson, "EXERCISE_MINUTES", from, to, now),
+    dailyAggregate(userId, tz, priorityJson, "ACTIVITY_STEPS", from, to),
+    dailyAggregate(userId, tz, priorityJson, "EXERCISE_MINUTES", from, to),
     Promise.all(
       LOAD_TYPES.map((type) =>
-        dailyAggregate(userId, tz, priorityJson, type, from, to, now),
+        dailyAggregate(userId, tz, priorityJson, type, from, to),
       ),
     ),
     includeWorkouts

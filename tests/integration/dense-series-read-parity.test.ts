@@ -158,13 +158,14 @@ describe("dense-series read parity", () => {
   for (const [type, grain, days] of CASES) {
     for (const userTz of ZONES) {
       it(`matches the two statements: ${type}, ${grain}, ${days} d, ${userTz}`, async () => {
+        const since = new Date(Date.now() - days * DAY_MS);
         const args = {
           userId,
           type,
           grain,
           userTz,
-          since: new Date(Date.now() - days * DAY_MS),
-          seriesRows: seriesRowsFrom(null, type, days),
+          since,
+          seriesRows: seriesRowsFrom(null, type, since),
         };
         const [now, before] = await Promise.all([
           readDenseSeries(args),
@@ -191,13 +192,14 @@ describe("dense-series read parity", () => {
 
   it("answers no figures row for an hourly-mean type without readings, as before", async () => {
     const empty = await makeUser();
+    const since = new Date(Date.now() - 365 * DAY_MS);
     const args = {
       userId: empty.id,
       type: "PULSE" as const,
       grain: "day" as const,
       userTz: "UTC",
-      since: new Date(Date.now() - 365 * DAY_MS),
-      seriesRows: seriesRowsFrom(null, "PULSE", 365),
+      since,
+      seriesRows: seriesRowsFrom(null, "PULSE", since),
     };
     const [now, before] = await Promise.all([
       readDenseSeries(args),
