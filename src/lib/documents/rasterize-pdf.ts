@@ -33,15 +33,7 @@ import { Buffer } from "node:buffer";
 import { annotate } from "@/lib/logging/context";
 
 import { nativeCanvasSupported } from "./native-canvas-support";
-import {
-  openPdfDocument,
-  resolvePdfjsAssets,
-  type PdfContext2D,
-  type PdfDocument,
-  type PdfjsAssets,
-  type PdfLoadingTask,
-  type PdfPage,
-} from "./pdfjs";
+import { openPdfDocument, resolvePdfjsAssets, type PdfjsAssets } from "./pdfjs";
 
 /**
  * Whether the PDF rasterizer is available in this build. The native
@@ -114,6 +106,33 @@ export type RasterResult =
     }
   | { ok: false; reason: "unsupported" | "render-failed" };
 
+/**
+ * The canvas pdf.js draws into under Node is `@napi-rs/canvas`. pdf.js' own
+ * declarations are written for the DOM and type the document's canvas factory
+ * as a bare `object`, so the slice used here is named: a DOM-shaped canvas
+ * and 2D context, plus the JPEG encoder the native canvas adds.
+ */
+interface RenderTarget {
+  canvas: HTMLCanvasElement & {
+    toBuffer(mime: "image/jpeg", quality?: number): Buffer;
+  };
+  context: CanvasRenderingContext2D;
+}
+interface RenderTargetFactory {
+  create(width: number, height: number): RenderTarget;
+  destroy?(target: RenderTarget): void;
+}
+
+/**
+ * A page's text layer, as far as `pageText` reads it: text runs, and
+ * marked-content markers that carry only a `type` and no text.
+ */
+interface TextLayerPage {
+  getTextContent(): Promise<{
+    items: Array<{ str?: string; hasEOL?: boolean; type?: string }>;
+  }>;
+}
+
 interface GlobalFontsLike {
   registerFromPath(path: string, nameAlias?: string): unknown;
 }
@@ -144,7 +163,11 @@ async function registerFallbackFamilies(assets: PdfjsAssets): Promise<void> {
 }
 
 /** Share of dark pixels on a rendered page (luminance below half). */
-function inkRatio(context: PdfContext2D, width: number, height: number) {
+function inkRatio(
+  context: Pick<CanvasRenderingContext2D, "getImageData">,
+  width: number,
+  height: number,
+) {
   const { data } = context.getImageData(0, 0, width, height);
   let dark = 0;
   for (let i = 0; i < data.length; i += 4) {
@@ -188,9 +211,7 @@ function headThatFits(text: string, room: number): string {
  * `RASTER_PAGE_TEXT_MAX` it is cut (at a line, else a space, else hard) and
  * marked.
  */
-export async function pageText(
-  page: Pick<PdfPage, "getTextContent">,
-): Promise<string> {
+export async function pageText(page: TextLayerPage): Promise<string> {
   const max = RASTER_PAGE_TEXT_MAX;
   try {
     const { items } = await page.getTextContent();
@@ -248,8 +269,7 @@ export async function rasterizePdf(
   maxPages: number = RASTER_MAX_PAGES,
   opts: { withText?: boolean } = {},
 ): Promise<RasterResult> {
-  let doc: PdfDocument | null = null;
-  let task: PdfLoadingTask | null = null;
+  let task: Awaited<ReturnType<typeof openPdfDocument>> | null = null;
   // CPU-feature gate: pdfjs renders through @napi-rs/canvas (Skia), whose x64
   // build uses AVX2 — an unsupported CPU dies with an uncatchable SIGILL on
   // the first render. Degrade to the existing no-raster path instead (scanned
@@ -273,7 +293,7 @@ export async function rasterizePdf(
     }
 
     task = await openPdfDocument(buffer);
-    doc = await task.promise;
+    const doc = await task.promise;
 
     // Never exceed the standing DoS ceiling, even if a caller asks for more.
     const cap = Math.min(Math.max(1, maxPages), RASTER_HARD_MAX_PAGES);
@@ -292,7 +312,7 @@ export async function rasterizePdf(
           longEdge > 0 ? Math.min(1, RASTER_TARGET_LONG_EDGE / longEdge) : 1;
         const viewport = page.getViewport({ scale });
 
-        const factory = doc.canvasFactory;
+        const factory = doc.canvasFactory as RenderTargetFactory;
         const cc = factory.create(
           Math.ceil(viewport.width),
           Math.ceil(viewport.height),
