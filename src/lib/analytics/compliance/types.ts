@@ -161,10 +161,10 @@ export interface ComplianceMedicationContext {
   /**
    * #1280 — the instant "End course" ended the latest course: no slot at or
    * after it is expected. Earlier courses carry their own in `courses`.
-   * Every production context comes from `buildComplianceMedicationContext`,
-   * whose input requires it.
+   * Required, null when the whole `endsOn` day counts: a context built
+   * without it would expect the dose after the end.
    */
-  endedAt?: Date | null;
+  endedAt: Date | null;
   oneShot: boolean;
   createdAt: Date;
   lastIntakeAt: Date | null;

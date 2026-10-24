@@ -128,8 +128,8 @@ export interface ScheduleLike {
 export interface CadenceEngineContext {
   startsOn: Date | null;
   endsOn: Date | null;
-  /** #1280 — when "End course" ended the latest course (see the engine). */
-  endedAt?: Date | null;
+  /** #1280 — when "End course" ended the latest course; null: whole day. */
+  endedAt: Date | null;
   oneShot: boolean;
   createdAt: Date;
   /** Latest non-skipped intake — only read by rolling cadences. */
