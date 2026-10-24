@@ -74,6 +74,11 @@ describe("OpenAI families", () => {
   it.each([
     ["gpt-5.5", "gpt-5.1+", "none"],
     ["gpt-5.1-mini", "gpt-5.1+", "none"],
+    ["gpt-6-sol", "gpt-5.1+", "none"],
+    ["gpt-6-luna", "gpt-5.1+", "none"],
+    ["gpt-6-astra", "gpt-5.1+", "none"],
+    ["gpt-6.1-sol", "gpt-5.1+", "none"],
+    ["openai/gpt-6-sol", "gpt-5.1+", "none"],
     ["gpt-5", "gpt-5", "minimal"],
     ["gpt-5-mini", "gpt-5", "minimal"],
     ["o3", "o", "low"],
@@ -81,6 +86,15 @@ describe("OpenAI families", () => {
   ] as const)("%s", (model, family, off) => {
     expect(openAIReasoningFamily(model)).toBe(family);
     expect(openAIOffEffort(family)).toBe(off);
+  });
+
+  it("gives the gpt-6 line an effort and a real off on the operator's key", () => {
+    for (const model of ["gpt-6-sol", "gpt-6.1-sol", "gpt-6-luna"]) {
+      expect(reasoningSupport("admin-key", model), model).toMatchObject({
+        effort: true,
+        offIsReal: true,
+      });
+    }
   });
 
   it("does not treat a non-reasoning model as one", () => {

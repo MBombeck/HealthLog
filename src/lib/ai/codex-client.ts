@@ -24,6 +24,12 @@ import {
   invalidateCachedCodexSlug,
   setCachedCodexSlug,
 } from "./codex-slug-cache";
+import {
+  DEFAULT_SLUG_FALLBACK_CHAIN,
+  loadFallbackChain,
+} from "./codex-slug-chain";
+
+export { resolveCodexVisionSlug } from "./codex-slug-chain";
 
 /**
  * Codex backend client — talks to `chatgpt.com/backend-api/codex/responses`
@@ -49,56 +55,6 @@ import {
  */
 
 const CODEX_ENDPOINT = "https://chatgpt.com/backend-api/codex/responses";
-
-/**
- * Default fallback chain, most-current-first as of 2026-10-24. Override via
- * `CODEX_MODEL_FALLBACK_CHAIN` (comma-separated); `CODEX_MODEL` is folded
- * into position 0 when set, duplicates dropped. The backend rotates its
- * ChatGPT-auth slugs without notice: by 2026-10-24 it rejected everything
- * from `gpt-5.5` down and served the `gpt-5.6-*` line. The `gpt-6` line is
- * left out until the reasoning, sampling and vision gates recognise it.
- */
-const DEFAULT_SLUG_FALLBACK_CHAIN = [
-  "gpt-5.6-terra", // current default, verified against the backend 2026-10-24
-  "gpt-5.6-luna", // lighter sibling on the same line
-  "gpt-5.6-sol", // heavier sibling on the same line
-  "gpt-5.5", // previous default, kept as the last rung while plans differ
-] as const;
-
-/**
- * The slug the codex vision gate reasons about *before* a request runs: the
- * cached working slug if one is live, else the first chain entry. Lets the
- * Lab-OCR capability resolver decide whether codex can read images without
- * standing up a client or making a network call. Best-effort — the actual
- * routed slug may differ once the chain walk runs, which the runtime probe +
- * graceful fallback (text/local OCR) covers.
- */
-export function resolveCodexVisionSlug(): string | null {
-  const cached = getCachedCodexSlug();
-  if (cached) return cached;
-  return loadFallbackChain()[0] ?? null;
-}
-
-function loadFallbackChain(): string[] {
-  const envChain = process.env.CODEX_MODEL_FALLBACK_CHAIN?.trim();
-  const fromEnv = envChain
-    ? envChain
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean)
-    : [...DEFAULT_SLUG_FALLBACK_CHAIN];
-  const pinned = process.env.CODEX_MODEL?.trim();
-  const merged = pinned ? [pinned, ...fromEnv] : fromEnv;
-  // Stable de-duplication.
-  const seen = new Set<string>();
-  const result: string[] = [];
-  for (const slug of merged) {
-    if (seen.has(slug)) continue;
-    seen.add(slug);
-    result.push(slug);
-  }
-  return result;
-}
 
 /**
  * Triggers per spec §7b — body / status that mean "this slug is no

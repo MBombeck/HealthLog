@@ -157,6 +157,9 @@ describe("OpenAIClient", () => {
     ["o3-mini", 321, "https://api.openai.com/v1"],
     ["o4-mini-2025-04-16", 321, "https://api.openai.com/v1"],
     ["gpt-5.4-mini", 321, "https://API.OPENAI.COM:443/v1/"],
+    ["gpt-6-sol", 321, "https://api.openai.com/v1"],
+    ["gpt-6-luna", 1000, "https://api.openai.com/v1"],
+    ["gpt-6.1-sol", 321, "https://api.openai.com/v1"],
   ])(
     "uses the canonical modern token wire for %s",
     async (model, expectedBudget, baseUrl) => {

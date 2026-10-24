@@ -20,8 +20,8 @@
  *    https://developers.openai.com/cookbook/examples/responses_api/reasoning_items
  *  - OpenAI Chat Completions: `reasoning_effort`, no summaries and no
  *    reasoning items to hand back between tool rounds, so reasoning is only
- *    sent on rounds without tools. `none` exists from gpt-5.1 on; gpt-5 knows
- *    `minimal`; the o-series starts at `low`.
+ *    sent on rounds without tools. `none` exists from gpt-5.1 on (the gpt-6
+ *    line included); gpt-5 knows `minimal`; the o-series starts at `low`.
  *    https://platform.openai.com/docs/api-reference/chat/create
  *  - Anthropic: manual `thinking: { type: "enabled", budget_tokens }` up to
  *    the 4.5 generation; adaptive `thinking: { type: "adaptive" }` with
@@ -46,6 +46,10 @@
  *
  * Client-safe: no server import.
  */
+import {
+  openAIModelFamily,
+  type OpenAIReasoningFamily,
+} from "../openai-model-family";
 import type { ProviderType } from "../types";
 import type { ReasoningLevel } from "./levels";
 
@@ -147,19 +151,17 @@ export function anthropicThinksAlways(model: string): boolean {
 
 // ── OpenAI ──────────────────────────────────────────────────────────────────
 
+export type { OpenAIReasoningFamily };
+
 /**
  * The reasoning family of an OpenAI model id, or `null` for a model that does
- * not reason (`gpt-4o`, `gpt-4.1`). `gpt-5.1+` knows `none`, bare `gpt-5`
- * (and its mini / nano) stops at `minimal`, the o-series at `low`.
+ * not reason (`gpt-4o`, `gpt-4.1`) or is not recognised. `gpt-5.1+` (every
+ * generation from 5.1 on, the gpt-6 line included) knows `none`, bare `gpt-5`
+ * (and its mini / nano) stops at `minimal`, the o-series at `low`. The
+ * reading itself lives in `openai-model-family.ts`.
  */
-export type OpenAIReasoningFamily = "gpt-5.1+" | "gpt-5" | "o" | null;
-
 export function openAIReasoningFamily(model: string): OpenAIReasoningFamily {
-  const m = model.toLowerCase().replace(/^openai\//, "");
-  const gpt5 = /^gpt-5(?:\.(\d+))?(?:$|-)/.exec(m);
-  if (gpt5) return gpt5[1] && Number(gpt5[1]) >= 1 ? "gpt-5.1+" : "gpt-5";
-  if (/^o[134](?:$|-)/.test(m)) return "o";
-  return null;
+  return openAIModelFamily(model)?.reasoning ?? null;
 }
 
 /** The lowest `reasoning_effort` an OpenAI reasoning family accepts. */

@@ -12,6 +12,7 @@
  * still resolve to a dead provider at call time (revoked key, unreachable
  * local host); the route surfaces that as an extract failure.
  */
+import { openAIModelFamily } from "./openai-model-family";
 
 /**
  * Anthropic vision models. The Messages API `image` + `document` blocks are
@@ -45,69 +46,22 @@ function anthropicSupportsVision(model: string): boolean {
 }
 
 /**
- * OpenAI vision models (also covers the operator's admin key + Codex when it
- * runs an OpenAI model — though Codex is excluded by `providerType`). `gpt-4o`,
- * `gpt-4.1`, `gpt-4-turbo`, and the full `o1` / `o3` / `o4` reasoning models
- * read image content; `gpt-3.5*` and the legacy `gpt-4` (non-turbo) 400 on an
- * image block.
+ * OpenAI and Codex vision models. Both read the same model families, so both
+ * ask `openAIModelFamily`, which owns the list: every GPT from 5 on (the
+ * gpt-6 line and the `-codex` specialists included), gpt-4o, gpt-4.1,
+ * gpt-4-turbo and the full o1 / o3 / o4. The o-series `-mini` / `-preview`
+ * variants are text-only and must stay excluded, or a user pinned to one is
+ * told OCR works and the provider 400s at the image block; so are gpt-4 and
+ * gpt-3.5.
  *
- * The `o*` reasoning line has text-only variants that DO accept the `o*` prefix
- * but reject an image block: `o1-mini` / `o1-preview` and `o3-mini` have no
- * vision input (only the full `o1` / `o3` are multimodal). They must be
- * excluded or a user pinned to one is told OCR works, then the provider 400s at
- * the image block. We treat an `o1` / `o3` / `o4` slug as vision-capable only
- * when it is NOT a `-mini` / `-preview` variant — the conservative default for
- * any unverified narrow slug.
+ * For Codex (ChatGPT OAuth), image input rides the `codex/responses`
+ * endpoint (docs/codex-protocol-spec.md §2b) with no API key. The slug tested
+ * is the codex client's resolved working slug (cached or chain head), so a
+ * slug rotation onto a model this reading does not know degrades to false
+ * rather than 400-ing the user at the image block.
  */
-function isVisionReasoningSlug(m: string): boolean {
-  if (!(m.startsWith("o1") || m.startsWith("o3") || m.startsWith("o4"))) {
-    return false;
-  }
-  return !m.includes("-mini") && !m.includes("-preview");
-}
-
-function openaiSupportsVision(model: string): boolean {
-  const m = model.toLowerCase();
-  return (
-    m.startsWith("gpt-5") ||
-    m.startsWith("gpt-4o") ||
-    m.startsWith("gpt-4.1") ||
-    m.startsWith("gpt-4-turbo") ||
-    isVisionReasoningSlug(m)
-  );
-}
-
-/**
- * Codex (ChatGPT-OAuth) vision models. Image INPUT is reachable over the
- * `codex/responses` endpoint (docs/codex-protocol-spec.md §2b) on a multimodal
- * slug — no API key needed. The whole GPT-5.x line is text+vision, including
- * the `-codex` specialist slugs (gpt-5.x-codex); only the legacy `gpt-4`-class
- * non-multimodal pins are text-only. The slug we test is the codex client's
- * resolved working slug
- * (cached or chain head), so a slug rotation onto a non-vision model degrades
- * to false rather than 400-ing the user at the image block.
- *
- * `gpt-4o` / `o*` are folded in for completeness (a future codex slug could
- * land there), reusing the same multimodal families the OpenAI gate accepts.
- */
-function codexSupportsVision(model: string): boolean {
-  const m = model.toLowerCase();
-  return (
-    // GPT-5.x line is multimodal (text + vision) — INCLUDING the `-codex`
-    // specialist slugs (gpt-5.x-codex), which gained vision in the 5.2-Codex
-    // line (screenshots / diagrams / charts). Verified against
-    // docs/codex-protocol-spec.md (an `input_image` block on a gpt-5-codex
-    // request) plus OpenAI's current model lineup. The historical
-    // "-codex is text-only" exclusion was stale — the wire reads images on
-    // these slugs, so lab-OCR and document reads both succeed on a `-codex` pin.
-    m.startsWith("gpt-5") ||
-    m.startsWith("gpt-4o") ||
-    m.startsWith("gpt-4.1") ||
-    m.startsWith("gpt-4-turbo") ||
-    // Same `-mini` / `-preview` text-only exclusion as the OpenAI gate: a
-    // future codex slug rotation onto e.g. `o3-mini` must not claim vision.
-    isVisionReasoningSlug(m)
-  );
+function openAIFamilySupportsVision(model: string): boolean {
+  return openAIModelFamily(model)?.vision ?? false;
 }
 
 /**
@@ -130,7 +84,8 @@ export type VisionProviderType =
  * Pure capability check over a (providerType, model) pair.
  *
  *  - anthropic            → vision when the model is a 3.5+/4 family pin.
- *  - openai / admin-*     → vision when the model is a gpt-4o/4.1/turbo/o* pin.
+ *  - openai / admin-*     → vision when the model is a gpt-5+/4o/4.1/turbo/o*
+ *                           pin (the gpt-6 line included).
  *  - local                → trust-by-default true: the operator opted in by
  *                           configuring a self-hosted model and we cannot sniff
  *                           its capabilities; a non-vision local model surfaces
@@ -141,7 +96,7 @@ export type VisionProviderType =
  *                           (and accept incapable ones) on the strength of a
  *                           string the gateway owner picked.
  *  - codex                → vision when the resolved codex slug is a
- *                           multimodal model (GPT-5.x / gpt-4o-class). Image
+ *                           multimodal model (GPT-5.x, gpt-6, gpt-4o-class). Image
  *                           input rides the ChatGPT plan — no API key. A
  *                           non-multimodal slug (or unknown) → false.
  *  - none                 → false (nothing configured).
@@ -156,15 +111,15 @@ export function supportsVisionForConfig(
     case "openai":
     case "admin-openai":
     case "admin-key":
-      return model ? openaiSupportsVision(model) : false;
+      return model ? openAIFamilySupportsVision(model) : false;
     case "local":
     case "openai-compatible":
       return true;
     case "codex":
     // The operator-shared central Codex runs the same `codex/responses` wire on
-    // a resolved GPT-5.x slug, so its vision capability is identical to `codex`.
+    // a resolved Codex slug, so its vision capability is identical to `codex`.
     case "admin-codex":
-      return model ? codexSupportsVision(model) : false;
+      return model ? openAIFamilySupportsVision(model) : false;
     case "none":
     default:
       return false;

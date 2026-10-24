@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { CodexClient, __test } from "../codex-client";
 import { singleUserTurn } from "../types";
-import { openAIReasoningFamily } from "../reasoning/support";
+import {
+  openAIModelFamily,
+  type OpenAIReasoningFamily,
+} from "../openai-model-family";
+import { openAIOffEffort } from "../reasoning/support";
+import { supportsVisionForConfig } from "../vision-capability";
 import {
   clearCodexSlugCache,
   getCachedCodexSlug,
@@ -343,22 +348,39 @@ describe("Codex slug fallback chain", () => {
 
   it("DEFAULT_SLUG_FALLBACK_CHAIN tracks the current ChatGPT-auth ladder", () => {
     // The backend rejected every slug from gpt-5.5 down on 2026-10-24 and
-    // served the gpt-5.6 line; the in-code default must match the accepted
-    // set, in order.
+    // served the gpt-5.6 and gpt-6 lines. Terra, verified live, leads; its
+    // upstream successor and the rest of the gpt-6 line follow before terra's
+    // own siblings, which a line rotation would retire together with it.
     expect([...__test.DEFAULT_SLUG_FALLBACK_CHAIN]).toEqual([
       "gpt-5.6-terra",
+      "gpt-6-sol",
+      "gpt-6.1-sol",
+      "gpt-6-luna",
       "gpt-5.6-luna",
       "gpt-5.6-sol",
       "gpt-5.5",
     ]);
   });
 
-  it("DEFAULT_SLUG_FALLBACK_CHAIN holds only slugs the reasoning gate recognises", () => {
-    // A slug whose family the reasoning gate does not know goes out with the
-    // wrong parameters. A new line (gpt-6) joins the default only together
-    // with its family support.
+  it("DEFAULT_SLUG_FALLBACK_CHAIN holds only slugs every family gate recognises", () => {
+    // A slug whose family the gates do not know goes out with the wrong
+    // reasoning parameters and is denied image input. Every rung, whatever
+    // its generation, must be a recognised reasoning family with a real
+    // "off" (the Codex client sends `effort: "none"` for it) that reads
+    // images. Nothing is filtered out first: a new line joins the default
+    // only together with its family support.
+    expect(__test.DEFAULT_SLUG_FALLBACK_CHAIN.length).toBeGreaterThan(0);
     for (const slug of __test.DEFAULT_SLUG_FALLBACK_CHAIN) {
-      expect(openAIReasoningFamily(slug), slug).toBe("gpt-5.1+");
+      const family = openAIModelFamily(slug);
+      expect(family, slug).not.toBeNull();
+      expect(family?.reasoning, slug).not.toBeNull();
+      expect(
+        openAIOffEffort(
+          family!.reasoning as NonNullable<OpenAIReasoningFamily>,
+        ),
+        slug,
+      ).toBe("none");
+      expect(supportsVisionForConfig("codex", slug), slug).toBe(true);
     }
   });
 
@@ -370,6 +392,9 @@ describe("Codex slug fallback chain", () => {
     try {
       expect(__test.loadFallbackChain()).toEqual([
         "gpt-5.6-terra",
+        "gpt-6-sol",
+        "gpt-6.1-sol",
+        "gpt-6-luna",
         "gpt-5.6-luna",
         "gpt-5.6-sol",
         "gpt-5.5",

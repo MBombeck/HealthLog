@@ -630,7 +630,8 @@ Confirmed-rejected slugs (despite the source-tree references in the table above)
 
 Confirmed-accepted slugs on a ChatGPT Plus subscription (per `available_in_plans` in `models.json`):
 
-- `gpt-5.6-terra` — HealthLog's default (first chain entry) as of 2026-10-24, with `gpt-5.6-luna` and `gpt-5.6-sol` behind it; the backend rejected `gpt-5.5` and everything below it that day
+- `gpt-5.6-terra` — HealthLog's default (first chain entry) as of 2026-10-24; the backend rejected `gpt-5.5` and everything below it that day. `gpt-5.6-luna` and `gpt-5.6-sol` are its siblings on the same line
+- `gpt-6-sol`, `gpt-6.1-sol`, `gpt-6-luna`, `gpt-6-astra` — the gpt-6 line, listed in `models.json` since 2026-09-22 (`gpt-6.1-sol` the catalog default since 2026-09-29). The catalog names `gpt-6-sol` as the upgrade of `gpt-5.6-terra` and `gpt-5.6-sol`, and `gpt-6-luna` as that of `gpt-5.6-luna`. Every gpt-6 slug lists `input_modalities: ["text", "image"]` and the same reasoning presets as the gpt-5.6 line (`low` to `max`, sol and astra also `ultra`). The presets omit `none`, as they do for `gpt-5.5`, which a live probe on 2026-10-06 showed accepts it; HealthLog sends `none` for "off" on the gpt-6 line too and learns a refusal per slug. The gpt-6 slugs were not probed against a live backend when they joined the chain
 - `gpt-5.5` — the default from 2026-06 until 2026-10-24
 - `gpt-5.4` / `gpt-5.4-mini` / `gpt-5.2` — accepted per plan
 - `gpt-5.3-codex` — was the default (verified 2026-05-09); the backend rotated off the `-codex` line on 2026-06-02 and this slug is now only accepted intermittently, so it sits on a late chain rung
@@ -643,18 +644,23 @@ The ChatGPT-Codex allow-list is rotated by OpenAI without prior notice (`gpt-5-c
 
 To eliminate that risk class, HealthLog's `CodexClient` walks an ordered chain on every fresh request series.
 
-**Chain** (top = first try; default order is the empirically-safest most-current-first ordering as of 2026-06, after the backend rotated off the `-codex` line on 2026-06-02):
+**Chain** (top = first try). `gpt-5.6-terra` leads because it is the slug verified against the backend. The gpt-6 rungs follow before terra's own siblings: the catalog names `gpt-6-sol` as terra's upgrade, and the 2026-10-24 rotation retired a whole line at once, so a rotation that takes terra most likely takes `gpt-5.6-luna` and `gpt-5.6-sol` with it. `gpt-6.1-sol` (the catalog default, also on plans `gpt-6-sol` is not offered on) and `gpt-6-luna` (the lighter one) come next. `gpt-6-astra`, the frontier tier, stays out of the default:
 
 ```ts
 const DEFAULT_SLUG_FALLBACK_CHAIN = [
-  "gpt-5.6-terra", // current default, verified against the backend 2026-10-24
-  "gpt-5.6-luna", // lighter sibling on the same line
-  "gpt-5.6-sol", // heavier sibling on the same line
+  "gpt-5.6-terra", // verified against the backend 2026-10-24
+  "gpt-6-sol", // terra's upgrade in the upstream catalog
+  "gpt-6.1-sol", // the catalog default, on every plan
+  "gpt-6-luna", // lighter gpt-6 sibling
+  "gpt-5.6-luna", // lighter sibling on terra's line
+  "gpt-5.6-sol", // heavier sibling on terra's line
   "gpt-5.5", // previous default, kept as the last rung while plans differ
 ];
 ```
 
-The shipped constant in `src/lib/ai/codex-client.ts` is authoritative; when the upstream rotates again, that file moves first and this listing follows.
+Every default rung must be a model family the reasoning, sampling and vision gates recognise (`src/lib/ai/openai-model-family.ts`); `codex-slug-fallback.test.ts` holds the chain to that.
+
+The shipped constant in `src/lib/ai/codex-slug-chain.ts` is authoritative; when the upstream rotates again, that file moves first and this listing follows.
 
 The chain is overridable via the env var `CODEX_MODEL_FALLBACK_CHAIN` (comma-separated). The first env-var-named slug supersedes `CODEX_MODEL`; if both are set, `CODEX_MODEL` is folded into position 0 and de-duplicated.
 
