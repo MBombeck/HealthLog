@@ -19662,19 +19662,25 @@ paths:
         capability envelope when it is closed), then rate / budget gated. With no provider configured this returns 422
         (`documents.inbound.providerUnsupported`, with `meta.capability` and `meta.reason = \"no_provider\"`) — the
         stored document is untouched, only the enhancement fails. Three modes: VISION (empty body) decrypts and scans
-        the stored original (PDF needs an Anthropic vision provider); TEXT (`application/json`, opt-in local OCR) `{
-        mode: \"text\", text }` structures browser-OCR'd text; STORED (`application/json`) `{ mode: \"stored\" }`
-        structures the document's own stored extracted text (its content index) — the manual recovery for a
-        skipped/failed automatic staging run, 422 `documents.inbound.notIndexed` when no stored text exists. Extraction
-        reproduces what the document states — it never interprets. Nothing reaches the structured stores here; the
-        confirm route is the only write path. With `Prefer: respond-async` (v1.40) the extraction runs in the
-        background: after the same quick refusals the route answers 202 with a run id, a second request while an
-        extraction of this document from the same input is queued or running answers with that run, and `GET
-        /api/ai-runs/{id}` serves `DocumentExtractRunResult` (`{ documentId, factsStaged, status }`, not the document
-        detail) as the run's `result`. Staging re-checks the document under a row lock, so a review finished while the
-        read ran fails the run with `documents.inbound.alreadyPartlyConfirmed` (409) or
-        `documents.inbound.alreadyConfirmed` (422) and leaves the review untouched; the synchronous form answers the
-        same in that race."
+        the stored original (a PDF is rendered and read a page at a time; one that cannot be rendered needs a provider
+        that reads PDFs natively, else 422 `documents.inbound.pdfNeedsAnthropic`); TEXT (`application/json`, opt-in
+        local OCR) `{ mode: \"text\", text }` structures browser-OCR'd text; STORED (`application/json`) `{ mode:
+        \"stored\" }` structures the document's own stored extracted text (its content index) — the manual recovery for
+        a skipped/failed automatic staging run, 422 `documents.inbound.notIndexed` when no stored text exists. A long
+        document is read a page or a part at a time under the same per-read limits as the lab scan (`LABS_OCR_EXTRACT`),
+        each read after the first reserved against the day's budget on its own; an extraction in which no read produced
+        a complete fact fails with 422 `documents.inbound.outputLimit` when the reads stopped at the provider's output
+        limit, 429 `documents.inbound.budgetExceeded` when the budget refused the reads, and 422
+        `documents.inbound.extractFailed` only when the provider's answers were not the schema. Extraction reproduces
+        what the document states — it never interprets. Nothing reaches the structured stores here; the confirm route is
+        the only write path. With `Prefer: respond-async` (v1.40) the extraction runs in the background: after the same
+        quick refusals the route answers 202 with a run id, a second request while an extraction of this document from
+        the same input is queued or running answers with that run, and `GET /api/ai-runs/{id}` serves
+        `DocumentExtractRunResult` (`{ documentId, factsStaged, status }`, plus `incomplete` when part of the document
+        may be missing from the staged facts; not the document detail) as the run's `result`. Staging re-checks the
+        document under a row lock, so a review finished while the read ran fails the run with
+        `documents.inbound.alreadyPartlyConfirmed` (409) or `documents.inbound.alreadyConfirmed` (422) and leaves the
+        review untouched; the synchronous form answers the same in that race."
       parameters:
         - name: id
           in: path
@@ -35482,7 +35488,7 @@ components:
       properties:
         decisions:
           minItems: 1
-          maxItems: 120
+          maxItems: 400
           type: array
           items:
             type: object
@@ -38381,7 +38387,7 @@ components:
                 documents.inbound.factNotPending, documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge,
                 documents.inbound.fileType, documents.inbound.invalidMetadata, documents.inbound.invalidQuery,
                 documents.inbound.invalidUpdate, documents.inbound.localOcrDisabled, documents.inbound.notFound,
-                documents.inbound.notIndexed, documents.inbound.pdfNeedsAnthropic,
+                documents.inbound.notIndexed, documents.inbound.outputLimit, documents.inbound.pdfNeedsAnthropic,
                 documents.inbound.providerUnsupported, documents.inbound.quotaExceeded, documents.inbound.rateLimited,
                 documents.inbound.restoreDuplicate, documents.inbound.restoreGone, documents.inbound.sourceAliasLimit,
                 documents.inbound.uploadBusy, documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound,
@@ -75913,6 +75919,14 @@ components:
             - FAILED
             - CONFIRMED
             - DISCARDED
+        incomplete:
+          description: "Present when part of the document's facts may be missing from the staged ones: a long document is read a
+            page or a part at a time, and a read stopped at the provider's output limit (its complete facts kept), a
+            part could not be read or was not reached (the day's budget, the run's deadline, AI turned off meanwhile),
+            or the document holds more facts than one review takes. The staged facts are still worth reviewing; the
+            person should check them against the document."
+          type: boolean
+          const: true
       required:
         - documentId
         - factsStaged

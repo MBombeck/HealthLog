@@ -622,9 +622,12 @@ describe("extract runs", () => {
     executeDocumentExtract.mockResolvedValue({
       ok: true,
       data: {
-        id: "d1",
-        status: "EXTRACTED",
-        facts: [{ id: "f1" }, { id: "f2" }],
+        document: {
+          id: "d1",
+          status: "EXTRACTED",
+          facts: [{ id: "f1" }, { id: "f2" }],
+        },
+        incomplete: false,
       },
     });
     loadDocumentChatText.mockResolvedValue({ text: "Hb 14 g/dL" });
@@ -652,6 +655,65 @@ describe("extract runs", () => {
       { documentId: "d1", factsStaged: 2, status: "EXTRACTED" },
       new Date(NOW),
     );
+  });
+
+  it("says so when part of the document may be missing from the staged facts", async () => {
+    claimAiRun.mockResolvedValue(extractRun("stored"));
+    executeDocumentExtract.mockResolvedValue({
+      ok: true,
+      data: {
+        document: { id: "d1", status: "EXTRACTED", facts: [{ id: "f1" }] },
+        incomplete: true,
+      },
+    });
+    expect(await runDocumentAiRun("run1", NOW + 2_700_000, now)).toBe(
+      "succeeded",
+    );
+    expect(completeAiRun).toHaveBeenCalledWith(
+      "run1",
+      {
+        documentId: "d1",
+        factsStaged: 1,
+        status: "EXTRACTED",
+        incomplete: true,
+      },
+      new Date(NOW),
+    );
+  });
+
+  it("hands an extract the lab scan's schedule: the read's own timeout per call, moved as it plans", async () => {
+    claimAiRun.mockResolvedValue(extractRun("stored"));
+    requireDocumentTextProvider.mockResolvedValue({
+      entry: {
+        providerType: "local",
+        instance: { responseTimeoutSeconds: null },
+      },
+      providerType: "local",
+    });
+    executeDocumentExtract.mockImplementation(async (args) => {
+      // As for a lab scan: 2 700 s of job budget, a 60 s margin and a second
+      // of slack, at the read's own 120 s per call.
+      expect(args.schedule.maxModelCalls()).toBe(21);
+      await args.schedule.arm(12);
+      return {
+        ok: true,
+        data: {
+          document: { id: "d1", status: "EXTRACTED", facts: [] },
+          incomplete: false,
+        },
+      };
+    });
+    expect(await runDocumentAiRun("run1", NOW + 2_700_000, now)).toBe(
+      "succeeded",
+    );
+    expect(updateMany).toHaveBeenNthCalledWith(1, {
+      where: { id: "run1", status: "RUNNING" },
+      data: { expiresAt: new Date(NOW + 2 * 120_000 + 60_000) },
+    });
+    expect(updateMany).toHaveBeenLastCalledWith({
+      where: { id: "run1", status: "RUNNING" },
+      data: { expiresAt: new Date(NOW + 12 * 120_000 + 60_000) },
+    });
   });
 
   it("reads the stored text for a stored extract and re-checks the text provider's wire", async () => {

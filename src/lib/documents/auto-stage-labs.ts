@@ -30,17 +30,18 @@
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 import {
   buildDateKey,
-  reconcileSpend,
   reserveBudget,
   resolveDailyCapFor,
 } from "@/lib/ai/coach/budget";
+import { meteredReadBudget } from "@/lib/documents/ai-runs/metered-budget";
 import { loadDocumentChatText } from "@/lib/documents/content-index";
 import { resolveIndexProvider } from "@/lib/documents/index-document";
 import {
-  InboundExtractError,
+  planInboundTextReads,
   runInboundExtraction,
   type InboundExtractionResult,
 } from "@/lib/documents/extract";
+import { OcrExtractError } from "@/lib/documents/ocr-read";
 import { encryptFactData, encryptFactProvenance } from "@/lib/documents/store";
 import { prisma } from "@/lib/db";
 import { stripDiacritics } from "@/lib/i18n/fold-for-match";
@@ -297,44 +298,44 @@ export async function maybeAutoStageLabFacts(
   // A text-structuring pass, not a vision call — reserve the proportionate
   // ceiling under the cost owner the auto-index resolved.
   // v1.38.19 — auto-staging runs off the upload, with no one waiting
-  // on it: a background surface, so half the day's ceiling.
+  // on it: a background surface, so half the day's ceiling. A long report is
+  // read in parts, as the manual extract reads it; every part after the
+  // first is reserved under the same ceiling, and the whole is settled
+  // against what the provider reported.
   const dateKey = await buildDateKey(userId);
+  const servedBy = provider.pick.entry.providerType;
+  const cap = resolveDailyCapFor("job", [{ providerType: servedBy }]);
   const reservation = await reserveBudget(
     userId,
     AI_BUDGETS.ocrExtractText.maxTokens,
     dateKey,
-    resolveDailyCapFor("job", [
-      { providerType: provider.pick.entry.providerType },
-    ]),
+    cap,
     provider.costOwner,
     "job",
   );
   if (!reservation.allowed) return { staged: false, reason: "budget" };
+  const { meter, reserveRead, settle } = meteredReadBudget(
+    userId,
+    { reserved: reservation.reserved, owner: reservation.owner, dateKey },
+    servedBy,
+    { cap, surface: "job" },
+  );
 
+  const plan = planInboundTextReads(chat.text, undefined);
   let result: InboundExtractionResult;
   try {
     result = await runInboundExtraction({
+      userId,
       provider: provider.pick.entry.instance,
       providerType: provider.pick.providerType,
-      ocrText: chat.text,
+      ...plan.args,
+      meter,
+      reserveRead,
     });
-    await reconcileSpend(
-      userId,
-      reservation.reserved,
-      reservation.reserved,
-      dateKey,
-      0,
-      {
-        servedBy: provider.pick.entry.providerType,
-        reservedOwner: reservation.owner,
-      },
-    );
+    await settle(true);
   } catch (err) {
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
-      servedBy: null,
-      reservedOwner: reservation.owner,
-    });
-    if (!(err instanceof InboundExtractError)) {
+    await settle(false);
+    if (!(err instanceof OcrExtractError)) {
       annotate({
         action: { name: "documents.autoStage.failed" },
         meta: { documentId, reason: "provider_error" },
@@ -353,6 +354,9 @@ export async function maybeAutoStageLabFacts(
       facts: staged,
       provider: provider.pick.providerType,
       byKind: doc.kind === "LAB_RESULT",
+      // Part of the document may be missing from the staged facts; the
+      // manual extract says so to the person, this records it.
+      incomplete: result.incomplete || plan.partial,
     },
   });
   return { staged: true, facts: staged };

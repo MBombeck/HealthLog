@@ -163,6 +163,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "documents.inbound.localOcrDisabled",
       "documents.inbound.notFound",
       "documents.inbound.notIndexed",
+      "documents.inbound.outputLimit",
       "documents.inbound.pdfNeedsAnthropic",
       "documents.inbound.providerUnsupported",
       "documents.inbound.quotaExceeded",

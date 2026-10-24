@@ -15,9 +15,8 @@
  * STATED assertion about the patient, never as the app's conclusion.
  *
  * This module holds:
- *   - `inboundExtractionSchema` — the schema the provider's JSON is validated
- *     against (UNTRUSTED model output). Liberal on shape; the review screen is
- *     the safety boundary.
+ *   - the fact types and code systems a provider may name (its JSON is
+ *     validated in `inbound-extraction.ts`).
  *   - the staged-fact DTO shapes the routes return + the UI consumes.
  *   - `inboundFactEditSchema` — the per-fact correction the review screen sends
  *     before approval (fixes OCR / units / dates / codes).
@@ -36,6 +35,7 @@ import {
 } from "@/lib/documents/inbound-constants";
 
 import type { AiCapabilityState } from "@/lib/ai/capabilities/types";
+import { OCR_MAX_ROWS } from "@/lib/validations/labs-ocr";
 
 // The constants and label lists a client needs live in a zod-free module, so
 // a component that wants the list of document kinds does not pull the schema
@@ -48,8 +48,13 @@ export {
   type InboundDocumentKindValue,
 } from "@/lib/documents/inbound-constants";
 
-/** Max facts a single document may stage / confirm. A dense letter is ~40. */
-export const INBOUND_MAX_FACTS = 120;
+/**
+ * Max facts a single document may stage / confirm. A dense letter is ~40, but
+ * a multi-page lab report read through the document runs to the hundreds of
+ * readings the lab scan takes, so it is the lab scan's own cap: the same
+ * report keeps the same rows whichever way it is read.
+ */
+export const INBOUND_MAX_FACTS = OCR_MAX_ROWS;
 
 /**
  * Confidence floor. A fact scoring below this fails closed: it is staged with
@@ -153,93 +158,6 @@ export const INBOUND_CODE_SYSTEMS = [
   "ATC",
 ] as const;
 export type InboundCodeSystem = (typeof INBOUND_CODE_SYSTEMS)[number];
-
-const confidenceScore = z.number().min(0).max(1).catch(0);
-const nullableText = (max: number) =>
-  z.string().trim().min(1).max(max).nullable().catch(null);
-
-/**
- * One fact as the PROVIDER returns it (untrusted). A single flat shape across
- * the three fact types so the wire stays simple; the route maps it to the
- * per-type staged payload. Everything is `.catch`-guarded so a malformed field
- * degrades to null + low confidence rather than 422-ing the whole extraction.
- */
-const extractedFactRawFields = z.object({
-  type: z.enum(INBOUND_FACT_TYPES),
-  /** Verbatim label / diagnosis text / medication name as written. */
-  label: z.string().trim().min(1).max(300).catch(""),
-  /** STATED code, present only when the document writes one. */
-  code: nullableText(64),
-  codeSystem: z.enum(INBOUND_CODE_SYSTEMS).nullable().catch(null),
-  /** Condition: stated clinical / verification status (verbatim). */
-  clinicalStatus: nullableText(64),
-  verificationStatus: nullableText(64),
-  /** Observation: numeric XOR qualitative value, unit, stated ref bounds. */
-  value: z.number().finite().nullable().catch(null),
-  valueText: nullableText(300),
-  unit: nullableText(80),
-  referenceLow: z.number().finite().nullable().catch(null),
-  referenceHigh: z.number().finite().nullable().catch(null),
-  /**
-   * Observation: the reference range EXACTLY as printed, verbatim. A report
-   * writes its window in prose ("3,5 - 5,0", "< 5", "bis 5,0", "negativ"), and
-   * `referenceLow` / `referenceHigh` above can only carry the cases that
-   * reduce to two numbers. This field is what stops every other case from
-   * being dropped on the floor — the string is kept whether or not the parser
-   * gets bounds out of it.
-   */
-  referenceText: nullableText(120),
-  /** MedicationStatement: dose + stated status (verbatim). */
-  dose: nullableText(120),
-  medicationStatus: nullableText(64),
-  /** A stated date for the fact (onset / effective / report), ISO or null. */
-  effectiveDate: z.string().nullable().catch(null),
-  /** Provenance: the verbatim source span this fact came from. */
-  sourceText: z.string().trim().max(2000).catch(""),
-  /** Optional 0-based page index the fact was read from. */
-  page: z.number().int().min(0).max(10000).nullable().catch(null),
-  /** The model's self-reported overall confidence for this fact (0..1). */
-  confidence: confidenceScore.default(0),
-});
-
-/**
- * A window whose floor sits above its ceiling cannot be true, so it is dropped
- * rather than repaired. Swapping the pair would invent a range the report never
- * printed, and this schema cannot reject the fact the way `labs.ts` does —
- * every field above is `.catch()`ed precisely so one bad value does not sink a
- * whole extraction. `referenceText` survives either way, so nothing the
- * document actually stated is lost: the verbatim string is still there for a
- * person to read on the review screen.
- *
- * `parseReferenceRange` already answers a transposed PRINTED window this way.
- * These are the numbers the model reported instead, and they travelled
- * unchecked: an integration run against a real Postgres wrote a 100/30 pair
- * onto the row AND onto the freshly minted catalog marker, which then handed
- * the impossible window to every later reading of that analyte.
- */
-export const extractedFactRawSchema = extractedFactRawFields.transform(
-  (fact) => {
-    if (
-      fact.referenceLow !== null &&
-      fact.referenceHigh !== null &&
-      fact.referenceLow > fact.referenceHigh
-    ) {
-      return { ...fact, referenceLow: null, referenceHigh: null };
-    }
-    return fact;
-  },
-);
-
-export type ExtractedFactRaw = z.infer<typeof extractedFactRawSchema>;
-
-/** The full JSON envelope the provider returns. */
-export const inboundExtractionSchema = z.object({
-  reportDate: z.string().nullable().catch(null),
-  kind: z.enum(INBOUND_DOCUMENT_KINDS).nullable().catch(null),
-  facts: z.array(extractedFactRawSchema).max(INBOUND_MAX_FACTS).catch([]),
-});
-
-export type InboundExtraction = z.infer<typeof inboundExtractionSchema>;
 
 // ─── Staged-fact payloads (FHIR-staged, stated status only) ────────────────
 

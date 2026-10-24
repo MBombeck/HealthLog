@@ -6,12 +6,18 @@
  * confidence gate. These tests pin "extract, never interpret" at the unit
  * level with a canned provider response (no network).
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// Every read re-checks the wire; it is open here.
+vi.mock("@/lib/ai/capabilities/egress", () => ({
+  aiEgressRefusal: async () => null,
+}));
 
 import {
-  InboundExtractError,
   runInboundExtraction,
+  type RunInboundExtractionArgs,
 } from "@/lib/documents/extract";
+import { OcrExtractError } from "@/lib/documents/ocr-read";
 import type { AIProvider } from "@/lib/ai/types";
 import type {
   ConditionFactData,
@@ -25,6 +31,29 @@ function fakeProvider(content: string): AIProvider {
     // Only `generateCompletion` is exercised by the extractor.
     generateCompletion: async () => ({ content }),
   } as unknown as AIProvider;
+}
+
+/** One read: of `ocrText` when given (text mode), else of an attached image. */
+function oneRead(
+  provider: AIProvider,
+  ocrText?: string,
+): RunInboundExtractionArgs {
+  return ocrText === undefined
+    ? {
+        userId: "u1",
+        provider,
+        providerType: "mock",
+        mode: "vision",
+        chunks: [{ images: [], pages: [] }],
+      }
+    : {
+        userId: "u1",
+        provider,
+        providerType: "mock",
+        mode: "text",
+        chunks: [{ text: ocrText, pages: [] }],
+        ocrText,
+      };
 }
 
 describe("runInboundExtraction — stated-status-only mapping", () => {
@@ -57,10 +86,7 @@ describe("runInboundExtraction — stated-status-only mapping", () => {
       }),
     );
 
-    const result = await runInboundExtraction({
-      provider,
-      providerType: "mock",
-    });
+    const result = await runInboundExtraction(oneRead(provider));
 
     expect(result.reportDate).toBe("2026-01-02");
     expect(result.facts).toHaveLength(2);
@@ -99,10 +125,7 @@ describe("runInboundExtraction — stated-status-only mapping", () => {
       }),
     );
 
-    const result = await runInboundExtraction({
-      provider,
-      providerType: "mock",
-    });
+    const result = await runInboundExtraction(oneRead(provider));
     const obs = result.facts[0]!.data as ObservationFactData;
     expect(obs.value).toBe(95);
     expect(obs.valueText).toBeNull();
@@ -132,10 +155,7 @@ describe("runInboundExtraction — stated-status-only mapping", () => {
       }),
     );
 
-    const result = await runInboundExtraction({
-      provider,
-      providerType: "mock",
-    });
+    const result = await runInboundExtraction(oneRead(provider));
     const fact = result.facts[0]!;
     expect(fact.needsReview).toBe(true);
     const med = fact.data as MedicationStatementFactData;
@@ -164,11 +184,7 @@ describe("runInboundExtraction — stated-status-only mapping", () => {
       }),
     );
 
-    const result = await runInboundExtraction({
-      provider,
-      providerType: "mock",
-      ocrText,
-    });
+    const result = await runInboundExtraction(oneRead(provider, ocrText));
     const { provenance } = result.facts[0]!;
     expect(provenance.anchored).toBe(true);
     expect(provenance.sourceText).toBe("Hämoglobin    14.2 g/dL   (13.5-17.5)");
@@ -198,11 +214,7 @@ describe("runInboundExtraction — stated-status-only mapping", () => {
       }),
     );
 
-    const result = await runInboundExtraction({
-      provider,
-      providerType: "mock",
-      ocrText,
-    });
+    const result = await runInboundExtraction(oneRead(provider, ocrText));
     const { provenance } = result.facts[0]!;
     expect(provenance.anchored).toBe(false);
     expect(provenance.sourceText).toBe("");
@@ -225,19 +237,16 @@ describe("runInboundExtraction — stated-status-only mapping", () => {
       }),
     );
 
-    const result = await runInboundExtraction({
-      provider,
-      providerType: "mock",
-    });
+    const result = await runInboundExtraction(oneRead(provider));
     const { provenance } = result.facts[0]!;
     expect(provenance.anchored).toBe(false);
     expect(provenance.sourceText).toBe("");
   });
 
-  it("throws InboundExtractError on unparseable provider output", async () => {
+  it("throws an unparseable OcrExtractError on output that is not the schema", async () => {
     const provider = fakeProvider("not json at all");
-    await expect(
-      runInboundExtraction({ provider, providerType: "mock" }),
-    ).rejects.toBeInstanceOf(InboundExtractError);
+    const err = await runInboundExtraction(oneRead(provider)).catch((e) => e);
+    expect(err).toBeInstanceOf(OcrExtractError);
+    expect((err as OcrExtractError).reason).toBe("unparseable");
   });
 });
