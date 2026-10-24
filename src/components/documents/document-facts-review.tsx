@@ -40,6 +40,7 @@ import { Label } from "@/components/ui/label";
 import { MarkerMatchField } from "@/components/labs/marker-match-field";
 import type { BiomarkerListResponse } from "@/components/labs/types";
 import { apiGet } from "@/lib/api/api-fetch";
+import type { DocumentExtractRunResult } from "@/lib/documents/ai-runs/types";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
@@ -473,6 +474,25 @@ function FactRow({
  * or nothing. Owner-only: staging and confirming write to the caller's own
  * record, so a delegate never sees these controls.
  */
+/**
+ * What the person is told when a stored extract finishes. The staged facts
+ * arrive with the document refetch the hook starts; the review opens onto
+ * them. A long document read in parts may have had a part cut at the
+ * provider's output limit or not reached, and then the review is not the
+ * whole document.
+ */
+function announceExtract(
+  result: DocumentExtractRunResult,
+  t: (key: string) => string,
+  openReview: () => void,
+): void {
+  if (result.factsStaged > 0) openReview();
+  else toast.info(t("documents.review.extractEmpty"));
+  if (result.incomplete) {
+    toast.warning(t("documents.review.extractIncomplete"));
+  }
+}
+
 export function DocumentFactsSection({
   doc,
   canManage,
@@ -680,13 +700,7 @@ export function DocumentFactsSection({
                   onSuccess: (result) => {
                     setFailures({});
                     setIncluded({});
-                    // The staged facts arrive with the document refetch the
-                    // hook starts; the review opens onto them.
-                    if (result.factsStaged > 0) {
-                      setOpen(true);
-                    } else {
-                      toast.info(t("documents.review.extractEmpty"));
-                    }
+                    announceExtract(result, t, () => setOpen(true));
                   },
                   onError: (error) =>
                     showErrorToast(aiErrorText(error), { cause: error }),

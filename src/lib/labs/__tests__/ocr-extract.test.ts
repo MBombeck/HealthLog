@@ -42,11 +42,10 @@ import {
   cutAtLine,
   OCR_READ_TEXT_MAX,
   OcrExtractError,
-  ocrChunkParams,
-  runOcrExtraction,
   salvageTruncatedJson,
   type OcrChunk,
-} from "@/lib/labs/ocr-extract";
+} from "@/lib/documents/ocr-read";
+import { ocrChunkParams, runOcrExtraction } from "@/lib/labs/ocr-extract";
 import { OCR_MAX_ROWS } from "@/lib/validations/labs-ocr";
 
 const row = (analyte: string, value: number, unit = "mg/dl") => ({

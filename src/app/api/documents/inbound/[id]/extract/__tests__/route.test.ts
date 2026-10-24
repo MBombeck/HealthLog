@@ -76,9 +76,9 @@ vi.mock("@/lib/ai/coach/budget", () => ({
   resolveDailyCapFor: vi.fn(() => 1000),
   resolveCostOwner: vi.fn(() => "operator" as const),
 }));
-vi.mock("@/lib/documents/extract", () => ({
+vi.mock("@/lib/documents/extract", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/documents/extract")>()),
   runInboundExtraction: vi.fn(),
-  InboundExtractError: class InboundExtractError extends Error {},
 }));
 
 vi.mock("@/lib/modules/gate", () => ({

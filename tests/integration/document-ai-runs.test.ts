@@ -102,6 +102,7 @@ vi.mock("@/lib/documents/extract", async (importOriginal) => ({
     reportDate: "2027-01-10",
     kind: "OTHER",
     providerType: "anthropic",
+    incomplete: false,
     facts: [
       {
         factType: "OBSERVATION",

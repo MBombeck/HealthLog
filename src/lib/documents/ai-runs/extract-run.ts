@@ -3,10 +3,13 @@
  * extract route and the background run execute, so the two paths cannot
  * drift.
  *
- * One extraction (a read and its one corrective retry) over text the browser
- * read, the document's own stored text, or the stored original, against a
- * reservation the caller already took and which is settled here. The facts
- * land PENDING for the mandatory review step; the confirm route stays the only
+ * One extraction over text the browser read, the document's own stored text,
+ * or the stored original, split into reads the way the lab scan splits a
+ * report (`planInboundReads`: a PDF a page at a time, text in parts, as many
+ * reads as the run's deadline allows), against a reservation the caller
+ * already took. Every read after the first is reserved on its own, and the
+ * whole is settled here against what the provider reported. The facts land
+ * PENDING for the mandatory review step; the confirm route stays the only
  * write into the person's record.
  *
  * Staging re-checks the document under a row lock. The route refuses a
@@ -16,7 +19,7 @@
  * (which could then be approved a second time). So the staging transaction
  * locks the document row, asks again, and refuses with the route's own code.
  */
-import { Buffer } from "node:buffer";
+import type { Buffer } from "node:buffer";
 
 import type { ProviderChainType } from "@/lib/ai/provider-chain";
 import { auditLog } from "@/lib/auth/audit";
@@ -26,11 +29,16 @@ import {
   type LoadedDocument,
 } from "@/lib/documents/ai-route-support";
 import {
-  InboundExtractError,
+  planInboundReads,
   runInboundExtraction,
   type InboundExtractionResult,
-  type RunInboundExtractionArgs,
+  type InboundReadSource,
 } from "@/lib/documents/extract";
+import {
+  OCR_EXTRACT_MODEL_CALLS,
+  type OcrSchedule,
+} from "@/lib/documents/ocr-plan";
+import { OcrExtractError } from "@/lib/documents/ocr-read";
 import {
   decryptDocumentContent,
   encryptFactData,
@@ -40,6 +48,8 @@ import { detectOcrMimeType } from "@/lib/labs/ocr-upload";
 import { annotate } from "@/lib/logging/context";
 import { dateOnlyAtNoonUtc } from "@/lib/tz/date-only";
 
+import { refusalAsFailure } from "./http";
+import { meteredReadBudget } from "./metered-budget";
 import {
   runFailure,
   unreadableDocument,
@@ -47,11 +57,11 @@ import {
   type DocumentVisionPick,
   type RunOrigin,
 } from "./run-support";
-import { settleAiRunBudget } from "./store";
-import type { AiRunBudget, AiRunOutcome } from "./types";
-
-/** The extraction and its one corrective retry. */
-export const DOCUMENT_EXTRACT_MODEL_CALLS = 2;
+import {
+  AI_RUN_ERROR_CODES,
+  type AiRunBudget,
+  type AiRunOutcome,
+} from "./types";
 
 /**
  * What the extraction reads: text the browser read (`text`), the document's
@@ -69,6 +79,13 @@ export type DocumentExtractInput =
 
 /** The staged document with its facts, for the route's detail body. */
 export type StagedDocument = Awaited<ReturnType<typeof stageExtraction>>;
+
+/** A finished extraction: the staged document, and whether part of it was not read. */
+export interface DocumentExtraction {
+  document: StagedDocument;
+  /** Part of the document's facts may be missing (`InboundExtractionResult.incomplete`, or text / pages planned out of the reads). */
+  incomplete: boolean;
+}
 
 class StagingRefused extends Error {
   constructor(readonly outcome: AiRunOutcome<never>) {
@@ -158,15 +175,13 @@ async function stageExtraction(
 }
 
 /**
- * The provider input for the stored original: decrypted, its MIME re-derived
- * from the bytes (never the stored label), a PDF only for a provider that
- * reads one. Every miss happens before the dispatch.
+ * The stored original as a read source: decrypted, its MIME re-derived from
+ * the bytes (never the stored label). Every miss happens before the dispatch.
  */
-function visionArgs(
+function visionSource(
   document: LoadedDocument,
   pick: DocumentVisionPick,
-):
-  Pick<RunInboundExtractionArgs, "images" | "documents"> | AiRunOutcome<never> {
+): InboundReadSource | AiRunOutcome<never> {
   let buffer: Buffer;
   try {
     buffer = decryptDocumentContent(
@@ -188,18 +203,64 @@ function visionArgs(
       errorCode: "documents.inbound.fileType",
     });
   }
-  if (mime === "application/pdf" && !pick.pdfSupported) {
-    return runFailure({
-      status: 422,
-      message:
-        "PDF scanning needs a Claude vision provider; use local OCR instead.",
-      errorCode: "documents.inbound.pdfNeedsAnthropic",
-    });
+  return {
+    mode: "vision",
+    bytes: buffer,
+    mime,
+    pdfSupported: pick.pdfSupported,
+  };
+}
+
+/** A PDF this provider can read neither rendered nor whole. */
+const pdfUnreadable = (): AiRunOutcome<never> =>
+  runFailure({
+    status: 422,
+    message:
+      "PDF scanning needs a Claude vision provider; use local OCR instead.",
+    errorCode: "documents.inbound.pdfNeedsAnthropic",
+  });
+
+/**
+ * The answer for an extraction no read produced anything from. Honest about
+ * why: an answer cut at the provider's output limit is not an unreadable copy,
+ * and a read the budget or the record's AI settings stopped says so.
+ */
+function extractionFailure(err: OcrExtractError): AiRunOutcome<never> {
+  switch (err.reason) {
+    case "output_limit":
+      return runFailure({
+        status: 422,
+        message:
+          "The AI provider stopped at its output limit before it returned a fact.",
+        errorCode: "documents.inbound.outputLimit",
+      });
+    case "budget":
+      return runFailure({
+        status: 429,
+        message: "Your AI usage budget for today is reached.",
+        errorCode: "documents.inbound.budgetExceeded",
+      });
+    case "unavailable": {
+      // The wire's own refusal (the client reads its code: consent, the
+      // operator's switch, the module).
+      const refused = err.refusal ? refusalAsFailure(err.refusal) : null;
+      if (refused) return runFailure(refused);
+      return runFailure({
+        status: 500,
+        message: "The background read failed.",
+        errorCode: AI_RUN_ERROR_CODES.failed,
+      });
+    }
+    case "error":
+      // The check before the first read failed itself.
+      return runFailure({
+        status: 500,
+        message: "The background read failed.",
+        errorCode: AI_RUN_ERROR_CODES.failed,
+      });
+    default:
+      return unreadableDocument(true);
   }
-  const dataBase64 = buffer.toString("base64");
-  return mime === "application/pdf"
-    ? { images: [], documents: [{ mediaType: "application/pdf", dataBase64 }] }
-    : { images: [{ mediaType: mime, dataBase64 }], documents: [] };
 }
 
 /** Extract and stage facts from one owned document. The caller authorised and charged it. */
@@ -208,47 +269,57 @@ export async function executeDocumentExtract(args: {
   document: LoadedDocument;
   input: DocumentExtractInput;
   origin: RunOrigin;
-}): Promise<AiRunOutcome<StagedDocument>> {
-  const { userId, document, input, origin } = args;
+  /** The run's deadline; absent, the reads are planned without one. */
+  schedule?: OcrSchedule;
+}): Promise<AiRunOutcome<DocumentExtraction>> {
+  const { userId, document, input, origin, schedule } = args;
   const { pick, budget } = input;
   const servedBy = pick.entry.providerType as ProviderChainType;
+  const { meter, reserveRead, settle } = meteredReadBudget(
+    userId,
+    budget,
+    servedBy,
+  );
+  // A miss before any provider dispatch: the reservation and the slot go back.
+  const refused = async (outcome: AiRunOutcome<never>) => {
+    await settle(false);
+    await refundDocumentAiSlot(userId);
+    return outcome;
+  };
 
-  let source: Pick<
-    RunInboundExtractionArgs,
-    "images" | "documents" | "ocrText"
-  >;
+  let source: InboundReadSource;
   if (input.mode === "vision") {
-    const prepared = visionArgs(document, input.pick);
-    if ("ok" in prepared) {
-      // Preparation failed before any provider dispatch: the reservation and
-      // the slot go back.
-      await settleAiRunBudget(userId, budget, 0, null);
-      await refundDocumentAiSlot(userId);
-      return prepared;
-    }
+    const prepared = visionSource(document, input.pick);
+    if ("ok" in prepared) return refused(prepared);
     source = prepared;
   } else {
-    source = { ocrText: input.text };
+    source = { mode: "text", text: input.text };
   }
+  const plan = await planInboundReads(source, schedule);
+  if (!plan.ok) return refused(pdfUnreadable());
+  await schedule?.arm(plan.args.chunks.length * OCR_EXTRACT_MODEL_CALLS);
 
   let result: InboundExtractionResult;
   try {
     result = await runInboundExtraction({
+      userId,
       provider: pick.entry.instance,
       providerType: pick.providerType,
-      ...source,
+      ...plan.args,
+      meter,
+      reserveRead,
     });
   } catch (err) {
-    await settleAiRunBudget(userId, budget, 0, null);
-    if (!(err instanceof InboundExtractError)) {
-      annotate({
-        action: { name: "documents.inbound.extractFailed" },
-        meta: { reason: "provider_error", mode: input.mode },
-      });
-    }
-    return unreadableDocument(err instanceof InboundExtractError);
+    // Charged for the calls that were made, a failed read included.
+    await settle(false);
+    if (err instanceof OcrExtractError) return extractionFailure(err);
+    annotate({
+      action: { name: "documents.inbound.extractFailed" },
+      meta: { reason: "provider_error", mode: input.mode },
+    });
+    return unreadableDocument(false);
   }
-  await settleAiRunBudget(userId, budget, budget.reserved, servedBy);
+  await settle(true);
 
   let staged: StagedDocument;
   try {
@@ -283,5 +354,8 @@ export async function executeDocumentExtract(args: {
       mode: input.mode,
     },
   });
-  return { ok: true, data: staged };
+  return {
+    ok: true,
+    data: { document: staged, incomplete: result.incomplete || plan.partial },
+  };
 }
