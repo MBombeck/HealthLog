@@ -251,7 +251,7 @@ describe("#1276: a gateway model that always reasons", () => {
   });
 
   it.each<Parser>(["fielded", "template-opened", "raw"])(
-    "keeps room to reason after one answerless reply taught it `none` (%s)",
+    "keeps room to reason after the `none` repeat came back answerless too (%s)",
     async (mode) => {
       parser = mode;
       // A long round reasons past the whole ceiling once; the #1267 rule
@@ -281,8 +281,10 @@ describe("#1276: a gateway model that always reasons", () => {
       expect(out.result.content).toBe(ANSWER);
       expect(executeCoachTool).toHaveBeenCalledTimes(1);
       for (const body of bodies()) {
-        expect(body.reasoning_effort).toBe("none");
-        // `none` is a request, not a promise: the thinking room stays.
+        // #1279 — the `none` repeat came back answerless too, so the model
+        // is not asked with `none` again: the turn goes out at its own level.
+        expect(body.reasoning_effort).toBe("medium");
+        // The thinking room stays.
         expect(body.max_tokens).toBe(600 + 4096);
       }
     },

@@ -21,6 +21,11 @@ import {
   rememberReasoningDialect,
 } from "./reasoning/dialect-cache";
 import {
+  nextAnswerlessStep,
+  reasonsUnasked,
+  withEarlierSpend,
+} from "./reasoning/answerless";
+import {
   REASONING_THINKING_BUDGET,
   uncontrolledThinkingRoom,
 } from "./reasoning/levels";
@@ -437,34 +442,42 @@ export class OpenAIClient implements AIProvider {
       // #1267 — a gateway in front of a thinking model (Ollama serving
       // Gemma 4, say) can answer with the thought in `reasoning` and no
       // content. Asked with `none`, the same model answers; learn that once
-      // and ask again. Same rule as the Local client.
+      // and ask again. #1279 — once, and never `none` again for a model the
+      // repeat showed ignores it. Same rule as the Local client.
       const sentEffort =
         reasoningWire.kind !== "none" ? reasoningWire.effort : entryEffort;
       const hadReasoning = reply.hadReasoning;
-      if (
-        this.isGateway &&
-        sentEffort !== "none" &&
-        (hadReasoning || sentEffort !== null)
-      ) {
-        rememberReasoningDialect(
-          this.reasoningDialectKey(),
-          ANSWERS_ONLY_UNREASONED,
-        );
+      const spent = json.usage?.total_tokens ?? null;
+      const finish =
+        choice?.finish_reason === "length" || choice?.finish_reason === "stop"
+          ? choice.finish_reason
+          : "other";
+      const step = this.isGateway
+        ? nextAnswerlessStep(
+            this.reasoningDialectKey(),
+            sentEffort,
+            hadReasoning,
+          )
+        : null;
+      if (step?.kind === "ask_unreasoned") {
         annotateReasoningDowngrade(this.type, sentEffort ?? "default", "none");
         emitSignal({
           action: "ai.gateway.reasoning_answerless",
           level: "warn",
           meta: {
             effort: sentEffort ?? "default",
-            finish:
-              choice?.finish_reason === "length" ||
-              choice?.finish_reason === "stop"
-                ? choice.finish_reason
-                : "other",
+            finish,
             reasoning: hadReasoning,
           },
         });
-        return this.generateCompletion(params);
+        return withEarlierSpend(this.generateCompletion(params), spent);
+      }
+      if (step?.kind === "final" && step.learnedRegardless) {
+        emitSignal({
+          action: "ai.gateway.reasoning_unswitchable",
+          level: "warn",
+          meta: { finish },
+        });
       }
       // v1.20.1 — tag the empty-reply throw with a sentinel `httpStatus: 0` +
       // `kind` so the provider-chain classifier can tell an empty 200-OK reply
@@ -479,6 +492,9 @@ export class OpenAIClient implements AIProvider {
         httpStatus: 0,
         kind: hadReasoning ? "reasoning_only" : "empty_response",
         upstream: this.isGateway ? "openai-compatible" : "openai",
+        // #1279 — what the reply cost upstream, so the day's ledger charges
+        // it instead of refunding a call that was paid for.
+        ...(spent !== null ? { tokensUsed: spent } : {}),
       });
       throw err;
     }
@@ -561,8 +577,7 @@ export class OpenAIClient implements AIProvider {
       if (params.reasoning) {
         return uncontrolledThinkingRoom(params.reasoning.effort);
       }
-      return learnedReasoningDialect(this.reasoningDialectKey()) ===
-        ANSWERS_ONLY_UNREASONED
+      return reasonsUnasked(this.reasoningDialectKey())
         ? uncontrolledThinkingRoom("off")
         : 0;
     }
