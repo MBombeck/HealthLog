@@ -45,6 +45,7 @@ import {
   resolveDailyCap,
   type BudgetCostOwner,
 } from "@/lib/ai/coach/budget";
+import { spentTokensOf } from "@/lib/ai/reasoning/answerless";
 import {
   loadOwnedDocument,
   prepareVisionInput,
@@ -289,13 +290,22 @@ async function tryProviderIndex(
       outcome: { indexed: true, source: "vision", tokenCount },
       note: null,
     };
-  } catch {
+  } catch (err) {
     // Refund the reservation and let the caller fall through to local — a
     // transient provider miss must never leave a text-layer PDF unsearchable.
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
-      servedBy: null,
-      reservedOwner: reservation.owner,
-    });
+    // #1279 — what the reply reported spending stays charged: a model that
+    // reasons without answering bills every call.
+    await reconcileSpend(
+      userId,
+      reservation.reserved,
+      spentTokensOf(err) ?? 0,
+      dateKey,
+      0,
+      {
+        servedBy: null,
+        reservedOwner: reservation.owner,
+      },
+    );
     return { outcome: null, note: "provider-error" };
   }
 }

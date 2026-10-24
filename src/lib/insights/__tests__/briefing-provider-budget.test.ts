@@ -185,6 +185,17 @@ describe("runBriefingCompletion — ledger accounting", () => {
     expect(ledgerTotal).toBe(0);
   });
 
+  it("charges what a failed chain reported spending (#1279)", async () => {
+    runRawCompletionWithFallback.mockRejectedValue(
+      Object.assign(new Error("chain exhausted"), { tokensSpent: 5400 }),
+    );
+
+    await expect(runBriefingCompletion(completionArgs())).rejects.toThrow(
+      "chain exhausted",
+    );
+    expect(ledgerTotal).toBe(5400);
+  });
+
   it("re-throws the provider error unchanged so callers keep their mapping", async () => {
     class AllProvidersFailedError extends Error {}
     runRawCompletionWithFallback.mockRejectedValue(

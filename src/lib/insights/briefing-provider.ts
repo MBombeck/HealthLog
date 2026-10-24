@@ -35,6 +35,7 @@ import {
   type ProviderChainResolved,
   type RunRawWithFallbackResult,
 } from "@/lib/ai/provider-runner";
+import { spentOnFailure } from "@/lib/ai/reasoning/answerless";
 import {
   buildDateKey,
   reconcileSpend,
@@ -195,14 +196,23 @@ export async function runBriefingCompletion(
       },
     });
   } catch (err) {
-    // No usable reply: refund the whole reservation rather than bill an
-    // invented figure. A partially-burned upstream call is possible here, but
-    // we have no reported count to charge, and over-charging a failed
-    // generation would ration the retry the user is entitled to.
-    await reconcileSpend(args.userId, reservation.reserved, 0, dateKey, 0, {
-      servedBy: null,
-      reservedOwner: reservation.owner,
-    }).catch(() => {
+    // No usable reply: refund the reservation rather than bill an invented
+    // figure. A partially-burned upstream call is possible here, but without
+    // a reported count there is nothing to charge, and over-charging a
+    // failed generation would ration the retry the user is entitled to.
+    // #1279 — what the hops did report spending is charged: a model that
+    // reasons without answering bills every call.
+    await reconcileSpend(
+      args.userId,
+      reservation.reserved,
+      spentOnFailure(err),
+      dateKey,
+      0,
+      {
+        servedBy: null,
+        reservedOwner: reservation.owner,
+      },
+    ).catch(() => {
       // Best-effort: a failed refund leaves the conservative reservation in
       // place (never an undercount) and must not mask the provider error.
     });

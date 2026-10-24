@@ -13,6 +13,12 @@ import {
   type ProviderFailure,
   type ProviderFailureKind,
 } from "./failure-kind";
+import { spentTokensOf } from "./reasoning/answerless";
+import {
+  partitionForBackgroundWork,
+  signalBackgroundBench,
+  type BenchedProvider,
+} from "./background-bench";
 import {
   isOperatorFundedProvider,
   readDailySpend,
@@ -182,9 +188,15 @@ export interface FallbackHop {
   httpStatus: number | null;
   /**
    * #1267 — what the call ran into (`failure-kind.ts`). Absent on a hop that
-   * never called the provider (the operator cost cap).
+   * never called the provider (the operator cost cap); `paused` on one that
+   * background work skipped (#1279).
    */
   failureKind?: ProviderFailureKind;
+  /**
+   * #1279 — tokens the failed call spent upstream, when its reply said so
+   * (an answer that never came still billed its reasoning).
+   */
+  tokensSpent?: number;
 }
 
 /**
@@ -205,6 +217,12 @@ export class AllProvidersFailedError extends Error {
    * the thing that broke.
    */
   readonly primaryCredentialExpired: boolean;
+  /**
+   * #1279 — tokens the failed hops spent upstream, summed. A caller that
+   * reserved budget charges this rather than refunding the whole reservation:
+   * a model that reasons without answering is paid for every time.
+   */
+  readonly tokensSpent: number;
 
   constructor(attempts: FallbackHop[]) {
     super(
@@ -214,6 +232,10 @@ export class AllProvidersFailedError extends Error {
     );
     this.name = "AllProvidersFailedError";
     this.attempts = attempts;
+    this.tokensSpent = attempts.reduce(
+      (sum, a) => sum + (a.tokensSpent ?? 0),
+      0,
+    );
     const first = attempts[0];
     this.primaryCredentialExpired =
       first !== undefined &&
@@ -305,7 +327,11 @@ async function resolveChainOrder(
   userId: string,
   providers: ProviderChainResolved[],
   ledger: ProviderHealthLedger,
-): Promise<ProviderChainResolved[]> {
+  surface: BudgetSurface,
+): Promise<{
+  ordered: ProviderChainResolved[];
+  benched: Array<BenchedProvider<ProviderChainResolved>>;
+}> {
   const skips = await ledger.getSkipHints(userId);
   if (skips.size > 0) {
     annotate({
@@ -317,8 +343,13 @@ async function resolveChainOrder(
       },
     });
   }
-  const afterSkips = applyHealthLedgerSkips(providers, skips);
-  return applyLastWorkingCache(userId, afterSkips);
+  // #1279 — background work leaves a benched provider out entirely.
+  const { walkable, benched } =
+    surface === "job"
+      ? partitionForBackgroundWork(providers, skips, (t) => NEVER_SKIP.has(t))
+      : { walkable: providers, benched: [] };
+  const afterSkips = applyHealthLedgerSkips(walkable, skips);
+  return { ordered: applyLastWorkingCache(userId, afterSkips), benched };
 }
 
 function summariseError(e: unknown): {
@@ -514,9 +545,35 @@ async function runRawChain(
     throw new AllProvidersFailedError([]);
   }
 
-  const ordered = await resolveChainOrder(userId, providers, ledger);
+  const { ordered, benched } = await resolveChainOrder(
+    userId,
+    providers,
+    ledger,
+    surface,
+  );
   const hops: FallbackHop[] = [];
   const failedHops: HopSignal[] = [];
+
+  // #1279 — background work skips a provider the ledger benched; no request
+  // is sent. The skip is recorded after the walked hops, so a chain left
+  // with nothing fails as `AllProvidersFailedError` like any other, and it
+  // is logged once per window.
+  const benchedHops: FallbackHop[] = benched.map(({ candidate }, i) => ({
+    providerType: candidate.providerType,
+    attempt: ordered.length + i + 1,
+    failureReason: "benched-for-background-work",
+    httpStatus: null,
+    failureKind: "paused",
+  }));
+  for (const { candidate, hint } of benched) {
+    annotate({
+      meta: {
+        ai_chain_background_benched: candidate.providerType,
+        ai_chain_background_benched_reason: hint.reason,
+      },
+    });
+    signalBackgroundBench(userId, candidate.providerType, hint);
+  }
 
   for (let i = 0; i < ordered.length; i += 1) {
     const candidate = ordered[i];
@@ -621,12 +678,14 @@ async function runRawChain(
         ...failure,
       });
       void ledger.recordFailure(userId, candidate.providerType, summary.status);
+      const spent = spentTokensOf(error);
       const hop: FallbackHop = {
         providerType: candidate.providerType,
         attempt: i + 1,
         failureReason: summary.reason,
         httpStatus: summary.status,
         failureKind: failure.failure,
+        ...(spent !== null ? { tokensSpent: spent } : {}),
       };
       hops.push(hop);
       annotate({
@@ -648,7 +707,7 @@ async function runRawChain(
     },
   });
   signalFailedHops(failedHops, false, surface);
-  throw new AllProvidersFailedError(hops);
+  throw new AllProvidersFailedError([...hops, ...benchedHops]);
 }
 
 /**

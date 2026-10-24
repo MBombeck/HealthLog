@@ -312,6 +312,21 @@ describe("runStatusCompletion — ledger accounting", () => {
     expect(result.kind).toBe("error");
     expect(ledgerTotal).toBe(0);
   });
+
+  it("charges what a failed chain reported spending (#1279)", async () => {
+    // A model that reasons and never answers is billed for every call; a
+    // full refund let background work spend without the ceiling seeing it.
+    runRawCompletionWithFallback.mockRejectedValue(
+      Object.assign(new Error("All 1 configured providers failed"), {
+        tokensSpent: 5400,
+      }),
+    );
+
+    const result = await runStatusCompletion(completionArgs());
+
+    expect(result.kind).toBe("error");
+    expect(ledgerTotal).toBe(5400);
+  });
 });
 
 describe("runStatusCompletion — cost owner decides the ceiling", () => {

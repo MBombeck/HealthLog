@@ -18,9 +18,11 @@
  * work off a provider that keeps failing (`provider-runner.ts`), and each job
  * backs off the record it failed on.
  */
+import { emitSignal } from "@/lib/logging/signal";
 import {
   ANSWERS_ONLY_UNREASONED,
   REASONS_REGARDLESS,
+  annotateReasoningDowngrade,
   learnedReasoningDialect,
   rememberReasoningDialect,
   type ReasoningDialectKey,
@@ -58,6 +60,49 @@ export function nextAnswerlessStep(
   }
   rememberReasoningDialect(key, ANSWERS_ONLY_UNREASONED);
   return { kind: "ask_unreasoned" };
+}
+
+/**
+ * The clients' whole answerless step: decide, mark the downgrade, and write
+ * the one line each lesson gets (`<signals>.reasoning_answerless` when the
+ * repeat is learned, `<signals>.reasoning_unswitchable` when it is learned
+ * useless), never one per call. True when the call goes out once more.
+ */
+export function askAgainUnreasoned(args: {
+  key: ReasoningDialectKey;
+  /** The provider tag for the downgrade mark (`local`, `openai-compatible`). */
+  provider: string;
+  signals: "ai.local" | "ai.gateway";
+  sent: string | null;
+  hadReasoning: boolean;
+  finishReason: string | null | undefined;
+}): boolean {
+  const finish =
+    args.finishReason === "length" || args.finishReason === "stop"
+      ? args.finishReason
+      : "other";
+  const step = nextAnswerlessStep(args.key, args.sent, args.hadReasoning);
+  if (step.kind === "final") {
+    if (step.learnedRegardless) {
+      emitSignal({
+        action: `${args.signals}.reasoning_unswitchable`,
+        level: "warn",
+        meta: { finish },
+      });
+    }
+    return false;
+  }
+  annotateReasoningDowngrade(args.provider, args.sent ?? "default", "none");
+  emitSignal({
+    action: `${args.signals}.reasoning_answerless`,
+    level: "warn",
+    meta: {
+      effort: args.sent ?? "default",
+      finish,
+      reasoning: args.hadReasoning,
+    },
+  });
+  return true;
 }
 
 /**
@@ -107,4 +152,17 @@ export function addSpentTokens(err: unknown, tokens: number | null): void {
   if (tokens === null || tokens <= 0) return;
   if (err === null || typeof err !== "object") return;
   Object.assign(err, { tokensUsed: (spentTokensOf(err) ?? 0) + tokens });
+}
+
+/**
+ * Tokens a failed provider chain reported spending upstream
+ * (`AllProvidersFailedError.tokensSpent`), or 0 when it reported none. What a
+ * caller that reserved budget charges instead of a full refund: a model that
+ * reasons without answering is billed for every call.
+ */
+export function spentOnFailure(err: unknown): number {
+  const value = (err as { tokensSpent?: unknown } | null)?.tokensSpent;
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : 0;
 }

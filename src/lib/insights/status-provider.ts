@@ -12,6 +12,7 @@ import {
   runRawCompletionWithFallback,
   type ProviderChainResolved,
 } from "@/lib/ai/provider-runner";
+import { spentOnFailure } from "@/lib/ai/reasoning/answerless";
 import { aiEgressRefusal } from "@/lib/ai/capabilities/egress";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -340,22 +341,17 @@ export async function runStatusCompletion(
     null,
   );
 
-  if (raced.timedOut) {
-    // A timed-out generation may still have burned upstream tokens, but we have
-    // no reported count to charge — refund the reservation rather than bill an
-    // invented figure.
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+  if (raced.timedOut || raced.errored || raced.value === null) {
+    // A timeout or failure: charge only what a reply reported spending, never
+    // an invented figure. #1279 — a failed chain's report counts: a model
+    // that reasons without answering bills every call, and a full refund let
+    // background work spend without the day's ceiling ever seeing it.
+    const spent = spentOnFailure(raced.error);
+    await reconcileSpend(userId, reservation.reserved, spent, dateKey, 0, {
       servedBy: null,
       reservedOwner: reservation.owner,
     });
-    return { kind: "timeout" };
-  }
-  if (raced.errored || raced.value === null) {
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
-      servedBy: null,
-      reservedOwner: reservation.owner,
-    });
-    return { kind: "error" };
+    return { kind: raced.timedOut ? "timeout" : "error" };
   }
 
   const { result, workingProvider } = raced.value;

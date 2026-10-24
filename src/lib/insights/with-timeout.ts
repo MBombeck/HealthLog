@@ -26,6 +26,8 @@ export interface TimeoutEnvelope<T> {
   /** True when the upstream rejected before the budget expired. */
   errored: boolean;
   value: T;
+  /** What the upstream rejected with, when `errored`. */
+  error?: unknown;
 }
 
 export function withTimeout<T>(
@@ -83,7 +85,7 @@ export function withTimeout<T>(
           action: { name: "insights.status.provider_error" },
           meta: { reason: reason.slice(0, 240) },
         });
-        resolve({ timedOut: false, errored: true, value: fallback });
+        resolve({ timedOut: false, errored: true, value: fallback, error });
       });
   });
 }

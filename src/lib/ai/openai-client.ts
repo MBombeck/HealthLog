@@ -21,7 +21,7 @@ import {
   rememberReasoningDialect,
 } from "./reasoning/dialect-cache";
 import {
-  nextAnswerlessStep,
+  askAgainUnreasoned,
   reasonsUnasked,
   withEarlierSpend,
 } from "./reasoning/answerless";
@@ -439,64 +439,13 @@ export class OpenAIClient implements AIProvider {
     // A reply with tool calls and no prose is valid (F1 tool loop); only an
     // empty reply with neither content NOR tool calls is an error.
     if (!content && !toolCalls) {
-      // #1267 — a gateway in front of a thinking model (Ollama serving
-      // Gemma 4, say) can answer with the thought in `reasoning` and no
-      // content. Asked with `none`, the same model answers; learn that once
-      // and ask again. #1279 — once, and never `none` again for a model the
-      // repeat showed ignores it. Same rule as the Local client.
-      const sentEffort =
-        reasoningWire.kind !== "none" ? reasoningWire.effort : entryEffort;
-      const hadReasoning = reply.hadReasoning;
-      const spent = json.usage?.total_tokens ?? null;
-      const finish =
-        choice?.finish_reason === "length" || choice?.finish_reason === "stop"
-          ? choice.finish_reason
-          : "other";
-      const step = this.isGateway
-        ? nextAnswerlessStep(
-            this.reasoningDialectKey(),
-            sentEffort,
-            hadReasoning,
-          )
-        : null;
-      if (step?.kind === "ask_unreasoned") {
-        annotateReasoningDowngrade(this.type, sentEffort ?? "default", "none");
-        emitSignal({
-          action: "ai.gateway.reasoning_answerless",
-          level: "warn",
-          meta: {
-            effort: sentEffort ?? "default",
-            finish,
-            reasoning: hadReasoning,
-          },
-        });
-        return withEarlierSpend(this.generateCompletion(params), spent);
-      }
-      if (step?.kind === "final" && step.learnedRegardless) {
-        emitSignal({
-          action: "ai.gateway.reasoning_unswitchable",
-          level: "warn",
-          meta: { finish },
-        });
-      }
-      // v1.20.1 — tag the empty-reply throw with a sentinel `httpStatus: 0` +
-      // `kind` so the provider-chain classifier can tell an empty 200-OK reply
-      // apart from a genuine transport failure (ECONNRESET, DNS, timeout) in
-      // observability. The cascade is unchanged: `isHardProviderFailure`
-      // already treats `status <= 0` as a hard failure and walks to the next
-      // provider.
-      const err = new Error(
-        `${this.isGateway ? "OpenAI-compatible gateway" : "OpenAI"} returned empty content`,
-      );
-      Object.assign(err, {
-        httpStatus: 0,
-        kind: hadReasoning ? "reasoning_only" : "empty_response",
-        upstream: this.isGateway ? "openai-compatible" : "openai",
-        // #1279 — what the reply cost upstream, so the day's ledger charges
-        // it instead of refunding a call that was paid for.
-        ...(spent !== null ? { tokensUsed: spent } : {}),
+      return this.answerless(params, {
+        sent:
+          reasoningWire.kind !== "none" ? reasoningWire.effort : entryEffort,
+        hadReasoning: reply.hadReasoning,
+        finishReason: choice?.finish_reason,
+        spent: json.usage?.total_tokens ?? null,
       });
-      throw err;
     }
 
     const summary = reply.reasoning ? [reply.reasoning.trim()] : [];
@@ -552,6 +501,54 @@ export class OpenAIClient implements AIProvider {
           }
         : {}),
     };
+  }
+
+  /**
+   * A reply with neither an answer nor tool calls. #1267 — a gateway in front
+   * of a thinking model (Ollama serving Gemma 4, say) can answer with the
+   * thought in `reasoning` and no content; asked with `none`, the same model
+   * answers, so that is learned once and the call asked again. #1279 — once,
+   * and never `none` again for a model the repeat showed ignores it. Same
+   * rule as the Local client (`reasoning/answerless.ts`).
+   *
+   * Otherwise the empty reply is thrown, tagged with a sentinel
+   * `httpStatus: 0` and its `kind` (v1.20.1) so the chain classifier can tell
+   * it apart from a transport failure (ECONNRESET, DNS, timeout). The cascade
+   * is unchanged: `isHardProviderFailure` treats `status <= 0` as hard. It
+   * carries what the reply cost, for the day's ledger to charge.
+   */
+  private answerless(
+    params: CompletionParams,
+    reply: {
+      sent: string | null;
+      hadReasoning: boolean;
+      finishReason: string | null | undefined;
+      spent: number | null;
+    },
+  ): Promise<CompletionResult> {
+    if (
+      this.isGateway &&
+      askAgainUnreasoned({
+        key: this.reasoningDialectKey(),
+        provider: this.type,
+        signals: "ai.gateway",
+        sent: reply.sent,
+        hadReasoning: reply.hadReasoning,
+        finishReason: reply.finishReason,
+      })
+    ) {
+      return withEarlierSpend(this.generateCompletion(params), reply.spent);
+    }
+    const err = new Error(
+      `${this.isGateway ? "OpenAI-compatible gateway" : "OpenAI"} returned empty content`,
+    );
+    Object.assign(err, {
+      httpStatus: 0,
+      kind: reply.hadReasoning ? "reasoning_only" : "empty_response",
+      upstream: this.isGateway ? "openai-compatible" : "openai",
+      ...(reply.spent !== null ? { tokensUsed: reply.spent } : {}),
+    });
+    throw err;
   }
 
   // ── v1.41 reasoning ───────────────────────────────────────────────────────

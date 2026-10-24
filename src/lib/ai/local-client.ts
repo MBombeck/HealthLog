@@ -25,7 +25,6 @@ import {
   type JsonModeDialect,
 } from "./json-dialect";
 import type { ReasoningEffort } from "./reasoning-effort";
-import { emitSignal } from "@/lib/logging/signal";
 import {
   ANSWERS_ONLY_UNREASONED,
   annotateReasoningDowngrade,
@@ -35,7 +34,7 @@ import {
 } from "./reasoning/dialect-cache";
 import { uncontrolledThinkingRoom } from "./reasoning/levels";
 import {
-  nextAnswerlessStep,
+  askAgainUnreasoned,
   reasonsUnasked,
   withEarlierSpend,
 } from "./reasoning/answerless";
@@ -123,8 +122,7 @@ function emptyReplyError(hadReasoning: boolean, spent: number | null): Error {
     httpStatus: 0,
     kind: hadReasoning ? "reasoning_only" : "empty_response",
     upstream: "local",
-    // #1279 — what the reply cost, so the day's ledger charges it instead of
-    // refunding a call that was paid for.
+    // #1279 — what the reply cost, for the day's ledger to charge.
     ...(spent !== null ? { tokensUsed: spent } : {}),
   });
   return err;
@@ -305,48 +303,32 @@ export class LocalOpenAICompatibleClient implements AIProvider {
    * "none"` answers in `content`. So when a request that did not already say
    * `none` comes back empty with reasoning (or after asking to reason), learn
    * that this endpoint and model answer only unreasoned, and tell the caller
-   * to ask once more. Returns false when the empty reply is final.
-   *
-   * #1279 — once per call, and a model whose `none` reply was answerless too
-   * is not asked with `none` again while the lesson holds
-   * (`reasoning/answerless.ts`).
+   * to ask once more (#1279: at most once, and never again for a model whose
+   * `none` reply was answerless too). False when the empty reply is final.
    */
   private learnAnswerlessReasoning(
     params: CompletionParams,
     hadReasoning: boolean,
     finishReason: string | undefined,
   ): boolean {
-    const sent = this.sentReasoningEffort(params);
-    const finish =
-      finishReason === "length" || finishReason === "stop"
-        ? finishReason
-        : "other";
-    const step = nextAnswerlessStep(
-      this.reasoningDialectKey(),
-      sent,
+    return askAgainUnreasoned({
+      key: this.reasoningDialectKey(),
+      provider: "local",
+      signals: "ai.local",
+      sent: this.sentReasoningEffort(params),
       hadReasoning,
-    );
-    if (step.kind === "final") {
-      if (step.learnedRegardless) {
-        emitSignal({
-          action: "ai.local.reasoning_unswitchable",
-          level: "warn",
-          meta: { finish },
-        });
-      }
-      return false;
-    }
-    annotateReasoningDowngrade("local", sent ?? "default", "none");
-    emitSignal({
-      action: "ai.local.reasoning_answerless",
-      level: "warn",
-      meta: {
-        effort: sent ?? "default",
-        finish,
-        reasoning: hadReasoning,
-      },
+      finishReason,
     });
-    return true;
+  }
+
+  /** #1279 — the streamed call once more, carrying this reply's spend. */
+  private streamAgain(
+    params: CompletionParams,
+    onDelta: (delta: string) => void,
+    spent: number | null,
+  ): Promise<CompletionResult> {
+    const again = this.generateCompletionStream(params, onDelta);
+    return withEarlierSpend(again, spent);
   }
 
   async generateCompletion(
@@ -620,17 +602,9 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       );
       if (!content) {
         const spent = json?.usage?.total_tokens ?? null;
-        if (
-          this.learnAnswerlessReasoning(
-            params,
-            hadReasoning,
-            json?.choices?.[0]?.finish_reason,
-          )
-        ) {
-          return withEarlierSpend(
-            this.generateCompletionStream(params, onDelta),
-            spent,
-          );
+        const finish = json?.choices?.[0]?.finish_reason;
+        if (this.learnAnswerlessReasoning(params, hadReasoning, finish)) {
+          return this.streamAgain(params, onDelta, spent);
         }
         collector.result(null);
         throw emptyReplyError(hadReasoning, spent);
@@ -830,10 +804,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       const hadReasoning =
         streamedReasoning || endState === "inside" || tail.took;
       if (this.learnAnswerlessReasoning(params, hadReasoning, finishReason)) {
-        return withEarlierSpend(
-          this.generateCompletionStream(params, onDelta),
-          tokensUsed,
-        );
+        return this.streamAgain(params, onDelta, tokensUsed);
       }
       collector.result(reasoningTokens);
       throw emptyReplyError(hadReasoning, tokensUsed);
