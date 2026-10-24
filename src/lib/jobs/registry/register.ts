@@ -208,8 +208,13 @@ export async function preloadHandlers(
       failed.push(queue);
       try {
         await report(queue, error);
-      } catch {
-        // The report is the last line of defence; it must not stop the sweep.
+      } catch (reportError) {
+        // The report failing must not stop the sweep; say so on stderr.
+        workerLog(
+          "error",
+          `[registry] reporting the load failure of ${queue} failed`,
+          reportError,
+        );
       }
     }
   }

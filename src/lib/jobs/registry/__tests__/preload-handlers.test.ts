@@ -7,9 +7,6 @@
  * with nobody told at deploy time. The worker now loads every handler once in
  * the background after binding and reports each failure by queue name.
  */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Job, PgBoss } from "pg-boss";
 
@@ -46,6 +43,8 @@ import { workerLog } from "@/lib/jobs/reminder/shared";
 import { emitSignal } from "@/lib/logging/signal";
 import { reportWorkerError } from "@/lib/jobs/report-worker-error";
 import { reportHandlerLoadFailure } from "@/lib/jobs/run-job";
+
+import { readSource } from "@/__tests__/helpers/source-files";
 
 import type { JobDefinition, JobGroup } from "../define-job";
 import {
@@ -156,10 +155,10 @@ describe("preloading the job handlers at worker boot", () => {
   });
 
   it("is started by the worker after binding, without holding up the boot", () => {
-    const source = readFileSync(
-      join(process.cwd(), "src/lib/jobs/reminder-worker.ts"),
-      "utf8",
-    );
+    const source = readSource("src/lib/jobs/reminder-worker.ts", [
+      "registry.registerAllJobGroups(",
+      "void registry.preloadHandlers(bound)",
+    ]);
     const register = source.indexOf("registry.registerAllJobGroups(");
     const preload = source.indexOf("void registry.preloadHandlers(bound)");
     expect(register).toBeGreaterThan(-1);
