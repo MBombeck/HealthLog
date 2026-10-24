@@ -2272,8 +2272,8 @@ const ACTOR_ROUTES: Record<string, string> = {
  * owner-only, and a delegate sees the goals only as the calendar reports them.
  * 270 -> 273.
  *
- * v1.46 -- the preview-feature switch is removed with its column; the topic
- * pages it was kept for were dropped. 273 -> 272.
+ * The preview-feature switch went with its column in the next release; the
+ * topic pages it was kept for were dropped. 273 -> 272.
  */
 const FROZEN_ENTRY_COUNT = 272;
 
