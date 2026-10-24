@@ -132,7 +132,8 @@ const INVENTORY: Readonly<Record<string, Poll>> = {
   "components/insights/use-insights-advisor.ts": {
     sites: 1,
     shape: "bounded",
-    cadence: "25 s, nextAdvisorPollInterval, 10 attempts (advisor)",
+    cadence:
+      "25 s, nextAdvisorPollInterval, attempts from the response timeout so the warm can land (advisor); 10 while settling",
   },
   "components/insights/insights-layout-shell.tsx": {
     sites: 1,

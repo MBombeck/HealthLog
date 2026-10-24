@@ -139,6 +139,11 @@ import {
   loadedHandler,
 } from "../registry/__tests__/registry-helpers";
 import { AI_BUDGETS, COMPREHENSIVE_MODEL_CALLS } from "@/lib/ai/ai-budgets";
+import {
+  ADVISOR_REVALIDATE_POLL_MS,
+  advisorRevalidatePollMaxAttempts,
+  nextAdvisorPollInterval,
+} from "@/components/insights/use-insights-advisor";
 
 function makePrisma(
   users: Array<{
@@ -1472,6 +1477,31 @@ describe("comprehensiveWarmBudgetMs — the warm waits for every call of one gen
     // A value beyond the write-time bound can never reach here, but the clamp
     // is the structural backstop against a wedged call regardless.
     expect(comprehensiveWarmBudgetMs(100_000)).toBe(ceiling);
+  });
+
+  it("the Insights page polls for the warm at least as long as the warm may run", () => {
+    // The page reads the published `responseTimeoutMs`: the setting in ms, or
+    // the 60 s provider default when nothing is set.
+    const cases: Array<[number | null, number]> = [
+      [null, 60_000],
+      [10, 10_000],
+      [60, 60_000],
+      [180, 180_000],
+      [300, 300_000],
+      [600, 600_000],
+    ];
+    for (const [seconds, published] of cases) {
+      const attempts = advisorRevalidatePollMaxAttempts(published);
+      let count = 1; // the read that enqueued the warm
+      let lastPollMs = 0;
+      while (nextAdvisorPollInterval(true, count, null, attempts) !== false) {
+        lastPollMs += ADVISOR_REVALIDATE_POLL_MS;
+        count += 1;
+      }
+      expect(lastPollMs, `setting ${seconds ?? "unset"}`).toBeGreaterThan(
+        comprehensiveWarmBudgetMs(seconds),
+      );
+    }
   });
 });
 

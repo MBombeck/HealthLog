@@ -15,8 +15,17 @@
  * `use-insights-advisor-force.test.ts` proves the behaviour for the
  * regenerate with fake timers.
  *
+ * #1274 — the same holds for a browser that waits on a model by polling: the
+ * briefing read polls while the warm it enqueued runs, and a fixed ten polls
+ * (225 s) gave up on a warm the setting allowed far longer, so a briefing that
+ * landed later never reached the open page. The read's poll ceiling comes
+ * from `advisorRevalidatePollMaxAttempts(responseTimeoutMs)`;
+ * `insight-pregenerate.test.ts` proves it outlasts the warm's own bound for
+ * every setting.
+ *
  * Mutation check: put `FORCE_ADVISOR_TIMEOUT_MS = 45_000` back into the
- * advisor, or drop the `signal` from one about-me save, and this goes red.
+ * advisor, drop the `signal` from one about-me save, or drop the ceiling
+ * argument from the advisor read's poll, and this goes red.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -54,6 +63,23 @@ describe("browser aborts for model-backed requests", () => {
     );
     expect(source).toMatch(
       /fetchAdvisor\(\{\s*force:\s*true,\s*responseTimeoutMs\s*\}\)/,
+    );
+  });
+
+  it("the briefing read polls for the warm as long as the setting allows", () => {
+    const source = stripComments(
+      readFileSync(
+        join(SRC, "components/insights/use-insights-advisor.ts"),
+        "utf8",
+      ),
+    );
+    const polls = [...source.matchAll(/\bnextAdvisorPollInterval\s*\(/g)]
+      .map((m) => callText(source, (m.index ?? 0) + m[0].length - 1))
+      // The definition, not a call.
+      .filter((text) => !/:\s*boolean\s*\|\s*undefined/.test(text));
+    expect(polls).toHaveLength(1);
+    expect(polls[0]).toMatch(
+      /advisorRevalidatePollMaxAttempts\(\s*responseTimeoutMs\s*\)/,
     );
   });
 
