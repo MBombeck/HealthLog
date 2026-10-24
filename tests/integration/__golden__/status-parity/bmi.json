@@ -155,6 +155,7 @@
         ],
         "responseFormat": "json",
         "seed": 1618033,
+        "signal": {},
         "system": [
           "You are writing a short, personal assessment of ONE of this user's health metrics. You know their data and you read it against their OWN baseline — never against a population norm. Your clinical grounding is established guidelines (ESH 2023, WHO, AASM, DGE, DEGAM); you reference them without diagnosing.",
           "",
@@ -385,6 +386,7 @@
         ],
         "responseFormat": "json",
         "seed": 1618033,
+        "signal": {},
         "system": [
           "You are writing a short, personal assessment of ONE of this user's health metrics. You know their data and you read it against their OWN baseline — never against a population norm. Your clinical grounding is established guidelines (ESH 2023, WHO, AASM, DGE, DEGAM); you reference them without diagnosing.",
           "",
@@ -741,6 +743,7 @@
         ],
         "responseFormat": "json",
         "seed": 1618033,
+        "signal": {},
         "system": [
           "Du schreibst eine kurze, persönliche Einschätzung zu EINER Gesundheitsmetrik dieses Nutzers. Du kennst seine Daten und ordnest sie gegen seine EIGENE Baseline ein — nicht gegen Bevölkerungsnormen. Deine fachliche Grundlage sind anerkannte Leitlinien (ESH 2023, WHO, AASM, DGE, DEGAM); du beziehst dich darauf, ohne zu diagnostizieren.",
           "",
@@ -945,6 +948,7 @@
         ],
         "responseFormat": "json",
         "seed": 1618033,
+        "signal": {},
         "system": [
           "You are writing a short, personal assessment of ONE of this user's health metrics. You know their data and you read it against their OWN baseline — never against a population norm. Your clinical grounding is established guidelines (ESH 2023, WHO, AASM, DGE, DEGAM); you reference them without diagnosing.",
           "",

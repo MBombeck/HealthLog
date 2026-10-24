@@ -228,15 +228,11 @@ export async function runStatusCompletion(
     return { kind: "none", reason: refusal.reason };
   }
 
-  // Honour the per-user response-timeout setting the operator dials in for a
-  // slow self-hosted / local backend (Settings → AI). This is the single
-  // chokepoint every status / reference surface funnels through — per-metric
-  // cards, the batched assessment, the derived assessments, and the period
-  // narratives — so resolving it here threads the setting onto all of them at
-  // once. A positive stored value wins (seconds → ms); unset falls back to the
-  // status-path budget. Applied to the upstream call's own `timeoutMs` and,
-  // times the calls a run may make, to the outer `withTimeout` cap, so a
-  // raised value is not silently clipped by a wall-clock sized for less.
+  // The per-user response-timeout setting (Settings → AI), threaded here onto
+  // every status / reference surface at once. A positive stored value wins
+  // (seconds → ms); unset falls back to the status-path budget. Applied to the
+  // call's own `timeoutMs` and, times the calls a run may make, to the outer
+  // `withTimeout` cap, so a raised value is not clipped by a shorter bound.
   const settingsRow = await prisma.user.findUnique({
     where: { id: userId },
     select: { aiResponseTimeoutSeconds: true },
@@ -260,12 +256,9 @@ export async function runStatusCompletion(
   // The answer budget. Each client adds the thinking budget on top itself.
   const maxTokens = args.maxTokens ?? AI_BUDGETS.status.maxTokens;
 
-  // The day's token ledger. Until now this chokepoint — the provider entry for
-  // EVERY status/reference family (the specialised cards, the generic metric
-  // cards, biomarker cards, the batched assessment, the derived scores, the
-  // period narrative, and the off-request Coach memory workers: rolling
-  // summary, fact extraction, plan proposals) — ran with no accounting at all,
-  // so none of that spend appeared in `coach_usage` and no ceiling applied.
+  // The day's token ledger, for EVERY status/reference family (the cards, the
+  // batched assessment, the derived scores, the period narrative, and the
+  // off-request Coach memory workers).
   //
   // The reservation is atomic (single upsert-increment), matching the Coach and
   // document paths: a read-then-write check would let concurrent generations
@@ -302,6 +295,10 @@ export async function runStatusCompletion(
     return { kind: "error" };
   }
 
+  // #1279 — the run's bound aborts the call it cuts off, so a provider call
+  // the bound gave up on (and any repeat inside it) stops instead of running
+  // on detached, with its spend reported nowhere.
+  const abort = new AbortController();
   const raced = await withTimeout(
     () =>
       runRawCompletionWithFallback({
@@ -324,12 +321,14 @@ export async function runStatusCompletion(
             responseFormat: args.responseFormat === "text" ? undefined : "json",
             timeoutMs: effectiveTimeoutMs,
           }),
+          signal: abort.signal,
           // v1.41 — only a named job ever carries this; see `reasoningJob`.
           ...(reasoning ? { reasoning } : {}),
         },
       }),
     statusRunBoundMs(effectiveTimeoutMs),
     null,
+    () => abort.abort(),
   );
 
   if (raced.timedOut || raced.errored || raced.value === null) {

@@ -11,8 +11,14 @@
  * and a GLM chat template reads an effort it does not know as its maximum
  * (vllm-project/vllm#54744). That is learned too (`REASONS_REGARDLESS`): later
  * calls go out as the call asks, with the thinking room #1276 keeps, and an
- * answerless reply is final. So one call costs two requests at most, and
- * after the first such call, one.
+ * answerless reply is final. After the first such call, one request.
+ *
+ * An endpoint that refuses the reasoning field altogether can be asked
+ * neither way: it learns `"none"` (no field), and once its model is seen
+ * reasoning unasked, `FIELD_REFUSED_REASONS_REGARDLESS`. Its `none` repeat is
+ * the refused field itself, so a refusal of that repeat is learned as both.
+ * Every request of a call, these repeats included, counts against its budget
+ * of two (`request-hops.ts`).
  *
  * What bounds the calls themselves is not here: the chain keeps background
  * work off a provider that keeps failing (`provider-runner.ts`), and each job
@@ -21,6 +27,7 @@
 import { emitSignal } from "@/lib/logging/signal";
 import {
   ANSWERS_ONLY_UNREASONED,
+  FIELD_REFUSED_REASONS_REGARDLESS,
   REASONS_REGARDLESS,
   annotateReasoningDowngrade,
   learnedReasoningDialect,
@@ -47,8 +54,18 @@ export function nextAnswerlessStep(
   sent: string | null,
   hadReasoning: boolean,
 ): AnswerlessStep {
-  if (learnedReasoningDialect(key) === REASONS_REGARDLESS) {
+  const learned = learnedReasoningDialect(key);
+  if (
+    learned === REASONS_REGARDLESS ||
+    learned === FIELD_REFUSED_REASONS_REGARDLESS
+  ) {
     return { kind: "final", learnedRegardless: false };
+  }
+  // The endpoint refuses the field: there is no `none` to ask with.
+  if (learned === "none") {
+    if (!hadReasoning) return { kind: "final", learnedRegardless: false };
+    rememberReasoningDialect(key, FIELD_REFUSED_REASONS_REGARDLESS);
+    return { kind: "final", learnedRegardless: true };
   }
   if (sent === "none") {
     if (!hadReasoning) return { kind: "final", learnedRegardless: false };
@@ -111,7 +128,28 @@ export function askAgainUnreasoned(args: {
  */
 export function reasonsUnasked(key: ReasoningDialectKey): boolean {
   const learned = learnedReasoningDialect(key);
-  return learned === ANSWERS_ONLY_UNREASONED || learned === REASONS_REGARDLESS;
+  return (
+    learned === ANSWERS_ONLY_UNREASONED ||
+    learned === REASONS_REGARDLESS ||
+    learned === FIELD_REFUSED_REASONS_REGARDLESS
+  );
+}
+
+/**
+ * The endpoint refused the reasoning field `sent`: send none from now on. A
+ * model already known to reason unasked keeps that lesson too, so it is never
+ * asked with `none` again.
+ */
+export function learnReasoningFieldRefused(
+  key: ReasoningDialectKey,
+  provider: string,
+  sent: string,
+): void {
+  rememberReasoningDialect(
+    key,
+    reasonsUnasked(key) ? FIELD_REFUSED_REASONS_REGARDLESS : "none",
+  );
+  annotateReasoningDowngrade(provider, sent, "none");
 }
 
 /**
@@ -133,6 +171,27 @@ export async function withEarlierSpend<T extends { tokensUsed: number | null }>(
   } catch (err) {
     addSpentTokens(err, earlier);
     throw err;
+  }
+}
+
+/**
+ * The `none` repeat after an answerless reply, carrying that reply's spend.
+ * When the endpoint refused the `none` itself on the call's last request
+ * (`reasoningRefused` on the error), the call ends with the first reply's
+ * failure (`answerless`): the model reasoned without answering, and that is
+ * what the call ran into, not the field the client then tried.
+ */
+export async function repeatUnreasoned<T extends { tokensUsed: number | null }>(
+  repeat: Promise<T>,
+  earlier: number | null,
+  answerless: () => Error,
+): Promise<T> {
+  try {
+    return await withEarlierSpend(repeat, earlier);
+  } catch (err) {
+    const refused = (err as { reasoningRefused?: unknown } | null)
+      ?.reasoningRefused;
+    throw refused === true ? answerless() : err;
   }
 }
 

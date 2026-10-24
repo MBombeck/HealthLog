@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 351,
-  "total": 113672,
+  "total": 113581,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 314,
@@ -254,8 +254,8 @@
     "lib/ai/coach/turn/pipeline.ts :: runTurn": 274,
     "lib/ai/coach/turn/reply-guards.ts :: guardReply": 331,
     "lib/ai/codex-client.ts :: parseResponse": 302,
-    "lib/ai/local-client.ts :: generateCompletionStream": 294,
-    "lib/ai/openai-client.ts :: generateCompletion": 335,
+    "lib/ai/local-client.ts :: generateCompletionStream": 263,
+    "lib/ai/openai-client.ts :: generateCompletion": 276,
     "lib/analytics/bp-in-target-fast-path.ts :: computeFromRollups": 203,
     "lib/analytics/compliance/display.ts :: calculateCompliance": 212,
     "lib/analytics/correlations-fast-path.ts :: computeCorrelationHypothesesFastPath": 256,
@@ -298,7 +298,7 @@
     "lib/insights/comprehensive-generate.ts :: generateComprehensiveInsight": 876,
     "lib/insights/features.ts :: extractFeatures": 796,
     "lib/insights/mood-aggregates.ts :: fetchMoodAggregates": 246,
-    "lib/insights/status-provider.ts :: runStatusCompletion": 226,
+    "lib/insights/status-provider.ts :: runStatusCompletion": 225,
     "lib/integrations/connection-health-load.ts :: loadConnectionFacts": 227,
     "lib/integrations/status.ts :: recordSyncFailure": 292,
     "lib/jobs/apple-health-import-worker.ts :: handleAppleHealthImport": 300,

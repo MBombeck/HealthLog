@@ -1,4 +1,3 @@
-import { safeFetch } from "@/lib/safe-fetch";
 import { callTimeoutMs } from "./effective-timeout";
 import { annotate } from "@/lib/logging/context";
 import { emitSignal } from "@/lib/logging/signal";
@@ -15,16 +14,16 @@ import {
 } from "./openai-capabilities";
 import {
   ANSWERS_ONLY_UNREASONED,
-  annotateReasoningDowngrade,
-  isReasoningParameterRejection,
   learnedReasoningDialect,
-  rememberReasoningDialect,
+  refusesReasoningField,
 } from "./reasoning/dialect-cache";
 import {
   askAgainUnreasoned,
   reasonsUnasked,
-  withEarlierSpend,
+  repeatUnreasoned,
 } from "./reasoning/answerless";
+import { RequestHops } from "./request-hops";
+import { learnFromRefusal } from "./wire-refusal";
 import {
   REASONING_THINKING_BUDGET,
   uncontrolledThinkingRoom,
@@ -39,7 +38,6 @@ import {
 } from "./reasoning/support";
 import {
   hasLearnedJsonModeDialect,
-  isResponseFormatRejection,
   jsonModeDialectFor,
   rememberJsonModeDialect,
 } from "./json-dialect";
@@ -167,8 +165,13 @@ export class OpenAIClient implements AIProvider {
     return this.type === "openai-compatible";
   }
 
+  /**
+   * `hops` is the call's request budget (`request-hops.ts`): a caller never
+   * passes it, every repeat inside the call hands it on.
+   */
   async generateCompletion(
     params: CompletionParams,
+    hops: RequestHops = new RequestHops(),
   ): Promise<CompletionResult> {
     const url = `${this.config.baseUrl.replace(/\/$/, "")}/chat/completions`;
 
@@ -234,7 +237,7 @@ export class OpenAIClient implements AIProvider {
     const trimmedKey = this.config.apiKey?.trim();
     if (trimmedKey) headers.Authorization = `Bearer ${trimmedKey}`;
 
-    const res = await safeFetch(
+    const res = await hops.fetch(
       url,
       {
         method: "POST",
@@ -309,68 +312,7 @@ export class OpenAIClient implements AIProvider {
     );
 
     if (!res.ok) {
-      // Pull as much of the body as we can so upstream incidents (OpenAI 5xx,
-      // model-not-found, quota exceeded) are diagnosable from logs instead of
-      // surfacing as an opaque "OpenAI request failed (500)". Strip anything
-      // that looks like an API key from the excerpt before logging.
-      const rawBody = await res.text().catch(() => "");
-      const bodyExcerpt = sanitiseBodyExcerpt(rawBody);
-      // v1.41 — an endpoint or model that refuses the reasoning field is
-      // asked once more without it and remembers, so the answer never fails
-      // on a reasoning parameter. Checked before the JSON dialect: a body
-      // naming the reasoning field must not switch JSON mode off.
-      if (
-        reasoningWire.kind !== "none" &&
-        isReasoningParameterRejection(
-          res.status,
-          bodyExcerpt,
-          /reasoning|thinking/i,
-          this.config.model,
-        )
-      ) {
-        rememberReasoningDialect(this.reasoningDialectKey(), "none");
-        annotateReasoningDowngrade(this.type, reasoningWire.effort, "none");
-        return this.generateCompletion(params);
-      }
-      // v1.33.1 (#470) — dialect self-heal, gateway only. A 4xx whose body
-      // names `response_format` (or an unknown parameter) means this endpoint
-      // rejects the standard JSON flag: learn the no-flag dialect for the base
-      // URL and retry ONCE without it. The recursion terminates because the
-      // cached dialect is now "none". Unrelated 4xx/5xx errors are not retried
-      // and surface as the structured error they always were.
-      if (
-        this.isGateway &&
-        sendJsonFormat &&
-        isResponseFormatRejection(res.status, bodyExcerpt)
-      ) {
-        rememberJsonModeDialect(this.config.baseUrl, "none");
-        annotate({
-          action: { name: "ai.compat.jsonDialect" },
-          meta: { dialect: "none", httpStatus: res.status },
-        });
-        return this.generateCompletion(params);
-      }
-      // v1.42 — a proxy that stopped offering the configured model answers
-      // with a bare 500 that names nothing. Ask its model listing (free, no
-      // completion) and say so plainly when the name is gone, so the chain,
-      // the health card and the log name the actual fix.
-      const modelNotServed = await this.modelNoLongerServed(res.status);
-      const err = new Error(
-        modelNotServed
-          ? `${this.isGateway ? "OpenAI-compatible gateway" : "OpenAI"} request failed (${res.status}): model "${this.config.model}" is not offered by this endpoint`
-          : `${this.isGateway ? "OpenAI-compatible gateway" : "OpenAI"} request failed (${res.status})`,
-      );
-      // Keep the body in a structured field rather than the message so
-      // Error.message stays short and the excerpt lands in dedicated log
-      // fields (bodyExcerpt) that can be filtered/truncated centrally.
-      Object.assign(err, {
-        httpStatus: res.status,
-        upstream: this.isGateway ? "openai-compatible" : "openai",
-        model: this.config.model,
-        bodyExcerpt,
-        ...(modelNotServed ? { modelNotServed: true } : {}),
-      });
-      throw err;
+      return this.failed(res, params, hops, { reasoningWire, sendJsonFormat });
     }
 
     // v1.33.1 (#470) — the standard `response_format` request succeeded: pin
@@ -439,7 +381,7 @@ export class OpenAIClient implements AIProvider {
     // A reply with tool calls and no prose is valid (F1 tool loop); only an
     // empty reply with neither content NOR tool calls is an error.
     if (!content && !toolCalls) {
-      return this.answerless(params, {
+      return this.answerless(params, hops, {
         sent:
           reasoningWire.kind !== "none" ? reasoningWire.effort : entryEffort,
         hadReasoning: reply.hadReasoning,
@@ -464,8 +406,9 @@ export class OpenAIClient implements AIProvider {
     ).map((field) => ({ [field]: message[field] }));
     const usage = json.usage as
       { completion_tokens_details?: { reasoning_tokens?: number } } | undefined;
-    const learnedNone =
-      learnedReasoningDialect(this.reasoningDialectKey()) === "none";
+    const learnedNone = refusesReasoningField(
+      learnedReasoningDialect(this.reasoningDialectKey()),
+    );
 
     return {
       content,
@@ -519,6 +462,7 @@ export class OpenAIClient implements AIProvider {
    */
   private answerless(
     params: CompletionParams,
+    hops: RequestHops,
     reply: {
       sent: string | null;
       hadReasoning: boolean;
@@ -526,8 +470,21 @@ export class OpenAIClient implements AIProvider {
       spent: number | null;
     },
   ): Promise<CompletionResult> {
+    const failure = () =>
+      Object.assign(
+        new Error(
+          `${this.isGateway ? "OpenAI-compatible gateway" : "OpenAI"} returned empty content`,
+        ),
+        {
+          httpStatus: 0,
+          kind: reply.hadReasoning ? "reasoning_only" : "empty_response",
+          upstream: this.isGateway ? "openai-compatible" : "openai",
+          ...(reply.spent !== null ? { tokensUsed: reply.spent } : {}),
+        },
+      );
     if (
       this.isGateway &&
+      // The lesson holds even when the budget leaves no repeat for it.
       askAgainUnreasoned({
         key: this.reasoningDialectKey(),
         provider: this.type,
@@ -535,20 +492,78 @@ export class OpenAIClient implements AIProvider {
         sent: reply.sent,
         hadReasoning: reply.hadReasoning,
         finishReason: reply.finishReason,
-      })
+      }) &&
+      hops.canSend
     ) {
-      return withEarlierSpend(this.generateCompletion(params), reply.spent);
+      return repeatUnreasoned(
+        this.generateCompletion(params, hops),
+        reply.spent,
+        failure,
+      );
     }
-    const err = new Error(
-      `${this.isGateway ? "OpenAI-compatible gateway" : "OpenAI"} returned empty content`,
-    );
-    Object.assign(err, {
-      httpStatus: 0,
-      kind: reply.hadReasoning ? "reasoning_only" : "empty_response",
-      upstream: this.isGateway ? "openai-compatible" : "openai",
-      ...(reply.spent !== null ? { tokensUsed: reply.spent } : {}),
+    throw failure();
+  }
+
+  /**
+   * A non-2xx reply. As much of the body as can be read goes into a
+   * structured field (with anything key-shaped stripped), so an upstream
+   * incident is diagnosable from the log instead of an opaque status.
+   *
+   * An endpoint or model that refuses the reasoning field, or (#470, gateway
+   * only) the JSON flag, is asked once more without it and remembers
+   * (`wire-refusal.ts`), inside the call's request budget. A refusal the
+   * budget leaves no repeat for is marked `reasoningRefused`.
+   *
+   * A proxy that stopped offering the configured model answers with a bare
+   * 500 that names nothing; its model listing (free, no completion) says so
+   * plainly, so the chain, the health card and the log name the fix.
+   */
+  private async failed(
+    res: Response,
+    params: CompletionParams,
+    hops: RequestHops,
+    sent: { reasoningWire: OpenAIReasoningWire; sendJsonFormat: boolean },
+  ): Promise<CompletionResult> {
+    const bodyExcerpt = sanitiseBodyExcerpt(await res.text().catch(() => ""));
+    const wire = sent.reasoningWire;
+    const lesson = learnFromRefusal({
+      status: res.status,
+      body: bodyExcerpt,
+      model: this.config.model,
+      reasoning:
+        wire.kind === "none"
+          ? null
+          : {
+              sent: wire.effort,
+              key: this.reasoningDialectKey(),
+              provider: this.type,
+              names: /reasoning|thinking/i,
+            },
+      json:
+        this.isGateway && sent.sendJsonFormat
+          ? { endpoint: this.config.baseUrl, action: "ai.compat.jsonDialect" }
+          : null,
     });
-    throw err;
+    if (lesson && hops.canSend) return this.generateCompletion(params, hops);
+    const modelNotServed = await this.modelNoLongerServed(res.status);
+    const label = this.isGateway ? "OpenAI-compatible gateway" : "OpenAI";
+    // The excerpt rides a structured field, not the message, so it lands in
+    // the log fields that are filtered and truncated centrally.
+    throw Object.assign(
+      new Error(
+        modelNotServed
+          ? `${label} request failed (${res.status}): model "${this.config.model}" is not offered by this endpoint`
+          : `${label} request failed (${res.status})`,
+      ),
+      {
+        httpStatus: res.status,
+        upstream: this.isGateway ? "openai-compatible" : "openai",
+        model: this.config.model,
+        bodyExcerpt,
+        ...(modelNotServed ? { modelNotServed: true } : {}),
+        ...(lesson === "reasoning" ? { reasoningRefused: true } : {}),
+      },
+    );
   }
 
   // ── v1.41 reasoning ───────────────────────────────────────────────────────
@@ -663,7 +678,7 @@ export class OpenAIClient implements AIProvider {
         : { kind: "reasoning_effort", effort: "none" };
     }
     if (!reasoning) return { kind: "none" };
-    if (learned === "none") return { kind: "none" };
+    if (refusesReasoningField(learned)) return { kind: "none" };
     const level = reasoning.effort;
     if (this.isGateway) {
       const effort = level === "off" ? "none" : level;

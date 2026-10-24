@@ -320,6 +320,27 @@ describe("runStatusCompletion — ledger accounting", () => {
     expect(ledgerTotal).toBe(0);
   });
 
+  it("aborts the call its bound cut off, so nothing runs on detached (#1279)", async () => {
+    vi.useFakeTimers();
+    try {
+      let signal: AbortSignal | undefined;
+      runRawCompletionWithFallback.mockImplementation(
+        (args: { params: { signal?: AbortSignal } }) => {
+          signal = args.params.signal;
+          return new Promise(() => {});
+        },
+      );
+      const pending = runStatusCompletion(completionArgs());
+      await vi.waitFor(() => expect(signal).toBeDefined());
+      expect(signal?.aborted).toBe(false);
+      await vi.advanceTimersByTimeAsync(10 * 60_000);
+      expect((await pending).kind).toBe("timeout");
+      expect(signal?.aborted).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("asks no provider about a note inside its negative window (#1279)", async () => {
     noteWindow = { retryAt: new Date(Date.now() + 60_000) };
     const result = await runStatusCompletion(

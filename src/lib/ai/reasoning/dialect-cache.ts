@@ -58,6 +58,21 @@ export const ANSWERS_ONLY_UNREASONED = "off";
  */
 export const REASONS_REGARDLESS = "unswitchable";
 
+/**
+ * #1279 — the learned value for an endpoint that refuses the reasoning field
+ * outright (LiteLLM in front of Ollama: "does not support parameters:
+ * ['reasoning_effort']") in front of a model that reasons unasked. Both facts
+ * at once: no field is sent, as with `"none"`, and the thinking room stays
+ * and an answerless reply is final, as with `REASONS_REGARDLESS`. Held as one
+ * value each, the two lessons overwrote each other on every request.
+ */
+export const FIELD_REFUSED_REASONS_REGARDLESS = "none-unswitchable";
+
+/** True when `learned` says the endpoint refuses the reasoning field. */
+export function refusesReasoningField(learned: string | undefined): boolean {
+  return learned === "none" || learned === FIELD_REFUSED_REASONS_REGARDLESS;
+}
+
 /** How long a learned downgrade holds before the full request is tried again. */
 export const DIALECT_TTL_MS = 60 * 60 * 1000;
 
