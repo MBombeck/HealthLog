@@ -11651,7 +11651,8 @@
     "toast": {
       "duplicate": "Già archiviato. Il documento esistente è evidenziato.",
       "deleted": "Documento eliminato",
-      "restoreFailed": "Impossibile ripristinare il documento."
+      "restoreFailed": "Impossibile ripristinare il documento.",
+      "deletedHint": "I documenti eliminati restano in Eliminati di recente per {days} giorni."
     },
     "timeline": {
       "loadingMore": "Caricamento…",
@@ -11946,8 +11947,32 @@
     "deleteConfirm": {
       "titleOne": "Eliminare questo documento?",
       "titleMany": "Eliminare {count} documenti?",
-      "body": "Puoi annullare subito dopo. Dopo 30 giorni viene rimosso definitivamente.",
+      "body": "I documenti eliminati restano in Eliminati di recente per {days} giorni, poi vengono rimossi definitivamente.",
       "action": "Elimina"
+    },
+    "trash": {
+      "title": "Eliminati di recente",
+      "subtitle": "I documenti eliminati restano qui per {days} giorni, poi vengono rimossi definitivamente.",
+      "back": "Documenti",
+      "entryLabel": "Eliminati di recente ({count})",
+      "loadError": "Impossibile caricare Eliminati di recente.",
+      "emptyTitle": "Niente in Eliminati di recente",
+      "emptyDescription": "Ciò che elimini resta qui per {days} giorni prima di essere rimosso definitivamente.",
+      "count": "Documenti eliminati ({count})",
+      "restoreAll": "Ripristina tutto",
+      "restore": "Ripristina",
+      "purge": "Elimina ora",
+      "deletedOn": "Eliminato il {date}.",
+      "removesIn": "Rimosso definitivamente tra {days} giorni.",
+      "removesSoon": "Rimosso definitivamente entro un giorno.",
+      "restored": "Documento ripristinato",
+      "openRestored": "Apri",
+      "restoreDuplicate": "Un documento identico è già salvato, quindi questa copia non può essere ripristinata.",
+      "restorePartial": "{failed} su {total} non sono stati ripristinati",
+      "purged": "Documento eliminato definitivamente",
+      "purgeFailed": "Impossibile eliminare il documento.",
+      "purgeConfirmTitle": "Eliminare definitivamente questo documento?",
+      "purgeConfirmBody": "Viene rimosso ora anziché alla fine del periodo di attesa e non può essere ripristinato."
     }
   },
   "selfDescription": {

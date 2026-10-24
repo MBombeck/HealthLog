@@ -15,6 +15,7 @@ import {
   apiPatch,
   apiPost,
 } from "@/lib/api/api-fetch";
+import { DOCUMENT_PURGE_GRACE_DAYS } from "@/lib/documents/inbound-constants";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
 import { invalidateKeys, queryKeys } from "@/lib/query-keys";
@@ -304,6 +305,9 @@ function useDocumentWrites({
       onOpenChange(false);
       void invalidateKeys(queryClient, [queryKeys.documents()]);
       toast.success(t("documents.toast.deleted"), {
+        description: t("documents.toast.deletedHint", {
+          days: DOCUMENT_PURGE_GRACE_DAYS,
+        }),
         action: {
           label: t("common.undo"),
           onClick: () => restore.mutate(id),

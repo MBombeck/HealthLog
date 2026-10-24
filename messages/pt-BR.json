@@ -11651,7 +11651,8 @@
     "toast": {
       "duplicate": "Já armazenado. O documento existente está destacado.",
       "deleted": "Documento excluído",
-      "restoreFailed": "Não foi possível restaurar o documento."
+      "restoreFailed": "Não foi possível restaurar o documento.",
+      "deletedHint": "Documentos excluídos ficam em Excluídos recentemente por {days} dias."
     },
     "timeline": {
       "loadingMore": "Carregando mais…",
@@ -11946,8 +11947,32 @@
     "deleteConfirm": {
       "titleOne": "Excluir este documento?",
       "titleMany": "Excluir {count} documentos?",
-      "body": "Você pode desfazer isso logo depois. Após 30 dias, é removido para sempre.",
+      "body": "Documentos excluídos ficam em Excluídos recentemente por {days} dias e depois são removidos para sempre.",
       "action": "Excluir"
+    },
+    "trash": {
+      "title": "Excluídos recentemente",
+      "subtitle": "Documentos excluídos ficam aqui por {days} dias e depois são removidos para sempre.",
+      "back": "Documentos",
+      "entryLabel": "Excluídos recentemente ({count})",
+      "loadError": "Não foi possível carregar Excluídos recentemente.",
+      "emptyTitle": "Nada em Excluídos recentemente",
+      "emptyDescription": "O que você exclui espera aqui por {days} dias antes de ser removido para sempre.",
+      "count": "Documentos excluídos ({count})",
+      "restoreAll": "Restaurar todos",
+      "restore": "Restaurar",
+      "purge": "Excluir agora",
+      "deletedOn": "Excluído em {date}.",
+      "removesIn": "Removido para sempre em {days} dias.",
+      "removesSoon": "Removido para sempre em menos de um dia.",
+      "restored": "Documento restaurado",
+      "openRestored": "Abrir",
+      "restoreDuplicate": "Já existe um documento idêntico salvo, então esta cópia não pode ser restaurada.",
+      "restorePartial": "{failed} de {total} não puderam ser restaurados",
+      "purged": "Documento excluído para sempre",
+      "purgeFailed": "Não foi possível excluir o documento.",
+      "purgeConfirmTitle": "Excluir este documento para sempre?",
+      "purgeConfirmBody": "Ele é removido agora, e não no fim do período de espera, e não pode ser restaurado."
     }
   },
   "selfDescription": {

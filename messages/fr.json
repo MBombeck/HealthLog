@@ -11651,7 +11651,8 @@
     "toast": {
       "duplicate": "Déjà enregistré. Le document existant est mis en évidence.",
       "deleted": "Document supprimé",
-      "restoreFailed": "Impossible de restaurer le document."
+      "restoreFailed": "Impossible de restaurer le document.",
+      "deletedHint": "Les documents supprimés restent {days} jours dans Supprimés récemment."
     },
     "timeline": {
       "loadingMore": "Chargement…",
@@ -11946,8 +11947,32 @@
     "deleteConfirm": {
       "titleOne": "Supprimer ce document ?",
       "titleMany": "Supprimer {count} documents ?",
-      "body": "Vous pouvez annuler juste après. Au bout de 30 jours, la suppression est définitive.",
+      "body": "Les documents supprimés restent {days} jours dans Supprimés récemment, puis ils sont supprimés définitivement.",
       "action": "Supprimer"
+    },
+    "trash": {
+      "title": "Supprimés récemment",
+      "subtitle": "Les documents supprimés restent ici {days} jours, puis ils sont supprimés définitivement.",
+      "back": "Documents",
+      "entryLabel": "Supprimés récemment ({count})",
+      "loadError": "Impossible de charger Supprimés récemment.",
+      "emptyTitle": "Rien dans Supprimés récemment",
+      "emptyDescription": "Ce que vous supprimez attend ici {days} jours avant d'être supprimé définitivement.",
+      "count": "Documents supprimés ({count})",
+      "restoreAll": "Tout restaurer",
+      "restore": "Restaurer",
+      "purge": "Supprimer maintenant",
+      "deletedOn": "Supprimé le {date}.",
+      "removesIn": "Supprimé définitivement dans {days} jours.",
+      "removesSoon": "Supprimé définitivement dans moins d'un jour.",
+      "restored": "Document restauré",
+      "openRestored": "Ouvrir",
+      "restoreDuplicate": "Un document identique est déjà enregistré, cette copie ne peut donc pas être restaurée.",
+      "restorePartial": "{failed} sur {total} n'ont pas pu être restaurés",
+      "purged": "Document supprimé définitivement",
+      "purgeFailed": "Impossible de supprimer le document.",
+      "purgeConfirmTitle": "Supprimer ce document définitivement ?",
+      "purgeConfirmBody": "Il est supprimé maintenant plutôt qu'à la fin du délai d'attente et ne peut pas être restauré."
     }
   },
   "selfDescription": {

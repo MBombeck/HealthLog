@@ -26,6 +26,7 @@ import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VaccinationDocumentSuggestion } from "@/components/vaccinations/vaccination-document-suggestion";
+import { DOCUMENT_PURGE_GRACE_DAYS } from "@/lib/documents/inbound-constants";
 import { formatBytes } from "@/lib/format/bytes";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { RelatedLink } from "@/lib/links/related";
@@ -44,6 +45,9 @@ import { DocumentFactsSection } from "./document-facts-review";
 import { DocumentRecordLinks } from "./document-record-links";
 import { DocumentShareSheet } from "./document-share-sheet";
 import { DocumentSummaryBlock } from "./document-summary-block";
+
+/** The grace window the delete confirmation names. */
+const GRACE = { days: DOCUMENT_PURGE_GRACE_DAYS };
 
 export function DocumentDetailSheet({
   documentId,
@@ -359,7 +363,7 @@ export function DocumentDetailSheet({
           open={confirmDeleteOpen}
           onOpenChange={setConfirmDeleteOpen}
           title={t("documents.deleteConfirm.titleOne")}
-          body={t("documents.deleteConfirm.body")}
+          body={t("documents.deleteConfirm.body", GRACE)}
           confirmLabel={t("documents.deleteConfirm.action")}
           onConfirm={() => remove.mutate(doc.id)}
           pending={remove.isPending}

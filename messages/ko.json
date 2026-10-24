@@ -11651,7 +11651,8 @@
     "toast": {
       "duplicate": "이미 저장돼 있어요. 기존 문서를 표시해요.",
       "deleted": "문서를 삭제했어요",
-      "restoreFailed": "문서를 복구하지 못했어요."
+      "restoreFailed": "문서를 복구하지 못했어요.",
+      "deletedHint": "삭제한 문서는 {days}일 동안 최근 삭제됨에 남아 있어요."
     },
     "timeline": {
       "loadingMore": "더 불러오는 중…",
@@ -11946,8 +11947,32 @@
     "deleteConfirm": {
       "titleOne": "이 문서를 삭제할까요?",
       "titleMany": "문서 {count}개를 삭제할까요?",
-      "body": "삭제 직후에는 되돌릴 수 있습니다. 30일이 지나면 완전히 삭제됩니다.",
+      "body": "삭제한 문서는 {days}일 동안 최근 삭제됨에 남아 있다가 완전히 삭제됩니다.",
       "action": "삭제"
+    },
+    "trash": {
+      "title": "최근 삭제됨",
+      "subtitle": "삭제한 문서는 {days}일 동안 여기 남아 있다가 완전히 삭제됩니다.",
+      "back": "문서",
+      "entryLabel": "최근 삭제됨 ({count})",
+      "loadError": "최근 삭제됨을 불러오지 못했어요.",
+      "emptyTitle": "최근 삭제됨이 비어 있어요",
+      "emptyDescription": "삭제한 문서는 완전히 삭제되기 전까지 {days}일 동안 여기서 기다려요.",
+      "count": "삭제한 문서 ({count})",
+      "restoreAll": "모두 복구",
+      "restore": "복구",
+      "purge": "지금 삭제",
+      "deletedOn": "{date}에 삭제함.",
+      "removesIn": "{days}일 후 완전히 삭제됩니다.",
+      "removesSoon": "하루 안에 완전히 삭제됩니다.",
+      "restored": "문서를 복구했어요",
+      "openRestored": "열기",
+      "restoreDuplicate": "같은 문서가 이미 저장되어 있어서 이 사본은 복구할 수 없어요.",
+      "restorePartial": "{total}개 중 {failed}개를 복구하지 못했어요",
+      "purged": "문서를 완전히 삭제했어요",
+      "purgeFailed": "문서를 삭제하지 못했어요.",
+      "purgeConfirmTitle": "이 문서를 완전히 삭제할까요?",
+      "purgeConfirmBody": "대기 기간이 끝나기 전에 지금 삭제되며 복구할 수 없습니다."
     }
   },
   "selfDescription": {

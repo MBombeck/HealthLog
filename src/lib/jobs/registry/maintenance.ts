@@ -70,7 +70,7 @@ import {
 import {
   DOCUMENT_PURGE_CRON,
   DOCUMENT_PURGE_QUEUE,
-} from "@/lib/jobs/document-purge";
+} from "@/lib/jobs/document-purge-queue";
 import {
   DOCUMENT_SUMMARY_CATCHUP_CONCURRENCY,
   DOCUMENT_SUMMARY_CATCHUP_QUEUE,

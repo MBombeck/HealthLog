@@ -11651,7 +11651,8 @@
     "toast": {
       "duplicate": "Bereits gespeichert. Das vorhandene Dokument ist hervorgehoben.",
       "deleted": "Dokument gelöscht",
-      "restoreFailed": "Das Dokument konnte nicht wiederhergestellt werden."
+      "restoreFailed": "Das Dokument konnte nicht wiederhergestellt werden.",
+      "deletedHint": "Gelöschte Dokumente bleiben {days} Tage unter Zuletzt gelöscht."
     },
     "timeline": {
       "loadingMore": "Mehr wird geladen…",
@@ -11946,8 +11947,32 @@
     "deleteConfirm": {
       "titleOne": "Dieses Dokument löschen?",
       "titleMany": "{count} Dokumente löschen?",
-      "body": "Direkt danach lässt sich das noch rückgängig machen. Nach 30 Tagen wird es endgültig entfernt.",
+      "body": "Gelöschte Dokumente bleiben {days} Tage unter Zuletzt gelöscht, danach werden sie endgültig entfernt.",
       "action": "Löschen"
+    },
+    "trash": {
+      "title": "Zuletzt gelöscht",
+      "subtitle": "Gelöschte Dokumente bleiben {days} Tage hier, danach werden sie endgültig entfernt.",
+      "back": "Dokumente",
+      "entryLabel": "Zuletzt gelöscht ({count})",
+      "loadError": "Zuletzt gelöscht konnte nicht geladen werden.",
+      "emptyTitle": "Nichts unter Zuletzt gelöscht",
+      "emptyDescription": "Was du löschst, wartet hier {days} Tage, bevor es endgültig entfernt wird.",
+      "count": "Gelöschte Dokumente ({count})",
+      "restoreAll": "Alle wiederherstellen",
+      "restore": "Wiederherstellen",
+      "purge": "Jetzt löschen",
+      "deletedOn": "Gelöscht am {date}.",
+      "removesIn": "Wird in {days} Tagen endgültig entfernt.",
+      "removesSoon": "Wird innerhalb eines Tages endgültig entfernt.",
+      "restored": "Dokument wiederhergestellt",
+      "openRestored": "Öffnen",
+      "restoreDuplicate": "Ein identisches Dokument ist schon gespeichert, deshalb kann diese Kopie nicht wiederhergestellt werden.",
+      "restorePartial": "{failed} von {total} konnten nicht wiederhergestellt werden",
+      "purged": "Dokument endgültig gelöscht",
+      "purgeFailed": "Das Dokument konnte nicht gelöscht werden.",
+      "purgeConfirmTitle": "Dieses Dokument endgültig löschen?",
+      "purgeConfirmBody": "Es wird jetzt entfernt statt am Ende der Wartezeit und lässt sich nicht wiederherstellen."
     }
   },
   "selfDescription": {

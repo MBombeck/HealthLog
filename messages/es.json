@@ -11651,7 +11651,8 @@
     "toast": {
       "duplicate": "Ya estaba guardado. Se resalta el documento existente.",
       "deleted": "Documento eliminado",
-      "restoreFailed": "No se pudo restaurar el documento."
+      "restoreFailed": "No se pudo restaurar el documento.",
+      "deletedHint": "Los documentos eliminados se quedan en Eliminados recientemente durante {days} días."
     },
     "timeline": {
       "loadingMore": "Cargando más…",
@@ -11946,8 +11947,32 @@
     "deleteConfirm": {
       "titleOne": "¿Eliminar este documento?",
       "titleMany": "¿Eliminar {count} documentos?",
-      "body": "Puedes deshacerlo justo después. A los 30 días se elimina definitivamente.",
+      "body": "Los documentos eliminados se quedan en Eliminados recientemente durante {days} días; después se eliminan definitivamente.",
       "action": "Eliminar"
+    },
+    "trash": {
+      "title": "Eliminados recientemente",
+      "subtitle": "Los documentos eliminados se quedan aquí {days} días; después se eliminan definitivamente.",
+      "back": "Documentos",
+      "entryLabel": "Eliminados recientemente ({count})",
+      "loadError": "No se pudo cargar Eliminados recientemente.",
+      "emptyTitle": "No hay nada en Eliminados recientemente",
+      "emptyDescription": "Lo que eliminas espera aquí {days} días antes de eliminarse definitivamente.",
+      "count": "Documentos eliminados ({count})",
+      "restoreAll": "Restaurar todo",
+      "restore": "Restaurar",
+      "purge": "Eliminar ahora",
+      "deletedOn": "Eliminado el {date}.",
+      "removesIn": "Se elimina definitivamente en {days} días.",
+      "removesSoon": "Se elimina definitivamente en menos de un día.",
+      "restored": "Documento restaurado",
+      "openRestored": "Abrir",
+      "restoreDuplicate": "Ya hay un documento idéntico guardado, así que esta copia no se puede restaurar.",
+      "restorePartial": "No se pudieron restaurar {failed} de {total}",
+      "purged": "Documento eliminado definitivamente",
+      "purgeFailed": "No se pudo eliminar el documento.",
+      "purgeConfirmTitle": "¿Eliminar este documento definitivamente?",
+      "purgeConfirmBody": "Se elimina ahora en lugar de al final del periodo de espera y no se puede restaurar."
     }
   },
   "selfDescription": {

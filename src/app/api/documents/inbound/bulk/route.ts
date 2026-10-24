@@ -17,6 +17,7 @@ import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
+import { restoreDocumentTombstone } from "@/lib/documents/tombstones";
 import { linkTargets, unlinkTargets } from "@/lib/links";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
@@ -95,7 +96,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // then never touches a row the caller does not own.
   const owned = await prisma.inboundDocument.findMany({
     where: { id: { in: uniqueIds }, userId: user.id },
-    select: { id: true, deletedAt: true, contentSha256: true },
+    select: { id: true, deletedAt: true },
   });
   const byId = new Map(owned.map((d) => [d.id, d]));
 
@@ -182,39 +183,18 @@ export const POST = apiHandler(async (request: NextRequest) => {
           break;
         }
         case "restore": {
-          if (row.deletedAt === null) {
-            // Already live — restoring twice is a no-op success.
-            break;
+          // The shared restore: the duplicate check, the status the staged
+          // facts imply, and the import-ledger cleanup. Already live is a
+          // no-op success.
+          const outcome = await restoreDocumentTombstone(user.id, id);
+          if (outcome.kind === "gone") {
+            results.push({ id, ok: false, error: "notFound" });
+            continue;
           }
-          if (row.contentSha256) {
-            const conflict = await prisma.inboundDocument.findFirst({
-              where: {
-                userId: user.id,
-                contentSha256: row.contentSha256,
-                deletedAt: null,
-                id: { not: id },
-              },
-              select: { id: true },
-            });
-            if (conflict) {
-              results.push({ id, ok: false, error: "conflict" });
-              continue;
-            }
+          if (outcome.kind === "duplicate") {
+            results.push({ id, ok: false, error: "conflict" });
+            continue;
           }
-          const facts = await prisma.extractedFact.findMany({
-            where: { documentId: id, userId: user.id },
-            select: { status: true },
-          });
-          const status =
-            facts.length === 0
-              ? "STORED"
-              : facts.some((f) => f.status === "PENDING")
-                ? "EXTRACTED"
-                : "CONFIRMED";
-          await prisma.inboundDocument.update({
-            where: { id },
-            data: { deletedAt: null, status },
-          });
           break;
         }
       }

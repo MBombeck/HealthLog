@@ -878,44 +878,14 @@ export interface DocumentBulkResultDto {
   error: string | null;
 }
 
-/** The usage endpoint payload the UI reads before offering an upload. */
-export interface DocumentUsageDto {
-  usedBytes: number;
-  quotaBytes: number;
-  maxFileBytes: number;
-  acceptedExtensions: string[];
-  /**
-   * Episodes carrying at least one LIVE document link — the vault filter
-   * bar's condition chips. Sourced server-side so a chip exists even when
-   * every linked document sits pages deep in the timeline.
-   */
-  linkedEpisodes: DocumentConditionLinkDto[];
-  /**
-   * Procedures and surgeries (visits of kind PROCEDURE) carrying at least one
-   * LIVE document link — the filter bar's procedure choices, sourced
-   * server-side for the same reason as `linkedEpisodes`. Empty when the
-   * caller's grant does not cover the visits section, because the label is
-   * the visit's own text.
-   */
-  linkedProcedures: DocumentLinkedProcedureDto[];
-  /**
-   * Whether the AI "Suggest details" action can run for this caller — true when
-   * a provider (vision, or text + local OCR) is configured. The UI hides the
-   * action when false so it never offers what the endpoint would 422.
-   */
-  assistAvailable: boolean;
-  /**
-   * Content-search index state: whether indexing is available to the caller
-   * (`enabled`, same provider precondition as assist), how many live documents
-   * are indexed, and the live-document total — so the UI can gauge coverage and
-   * offer the "index all documents" backfill.
-   */
-  contentIndex: {
-    enabled: boolean;
-    indexedCount: number;
-    totalCount: number;
-  };
-}
+// The usage and Recently deleted payloads live in their own module; kept
+// importable from here like every other vault DTO.
+export type {
+  DeletedDocumentDto,
+  DeletedDocumentListDto,
+  DocumentPurgeDto,
+  DocumentUsageDto,
+} from "@/lib/documents/vault-read-dtos";
 
 /** Where a document read egresses, vendor-blind. */
 export type DocumentEgressClass = "local" | "external";

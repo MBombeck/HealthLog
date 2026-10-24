@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { useIllnessEpisodes } from "@/components/illness/use-illness";
@@ -11,16 +11,14 @@ import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
 import { useDocumentsLayout } from "@/lib/queries/use-documents-layout";
 import { queryKeys } from "@/lib/query-keys";
-import type {
-  DocumentUsageDto,
-  InboundDocumentDto,
-} from "@/lib/validations/inbound-documents";
+import type { InboundDocumentDto } from "@/lib/validations/inbound-documents";
 
 import { useReindexAll } from "../use-content-index";
 import { useDocumentUpload } from "../use-document-upload";
 import { usePageFileDrop } from "../use-page-file-drop";
 import { buildVaultListApiSearch, hasProcessingDocument } from "../vault-utils";
 
+import { useDocumentUsage } from "./use-document-usage";
 import type { VaultFilters } from "./use-vault-filters";
 import { useVaultFilterChoices } from "./use-vault-filter-choices";
 
@@ -51,11 +49,7 @@ export function useVaultLibrary({
   timezone: string;
 }) {
   const { t } = useTranslations();
-  const usage = useQuery({
-    queryKey: queryKeys.inboundDocumentUsage(),
-    enabled: moduleEnabled,
-    queryFn: () => apiGet<DocumentUsageDto>("/api/documents/inbound/usage"),
-  });
+  const usage = useDocumentUsage(moduleEnabled);
 
   const list = useInfiniteQuery({
     queryKey: queryKeys.inboundDocumentList(filters),
