@@ -141,6 +141,8 @@ function folded(
     sum_xy: withAccumulators ? sumXy : null,
     sum_xx: withAccumulators ? sumXx : null,
     sum_yy: withAccumulators ? sumYy : null,
+    first_day: new Date(`${[...byDay.keys()].sort()[0]}T00:00:00.000Z`),
+    last_day: new Date(`${[...byDay.keys()].sort().at(-1)}T00:00:00.000Z`),
     computed_at: new Date("2026-06-01T00:00:00.000Z"),
   };
 }
@@ -252,8 +254,29 @@ describe("readBestGranularityRollups", () => {
   });
 
   it("composes a coarse bucket's mean, spread and slope from its days", async () => {
-    // Three days of one reading each: 70, 72, 74 → mean 72, slope 2 per
-    // day, population sd sqrt(8/3), r² 1.
+    // Three days of one reading each, eight days apart: 70, 86, 102 → mean
+    // 86, slope 2 per day, population sd sqrt(512/3), r² 1. The days span
+    // 16 of the month's 30, enough of the bucket to carry a trend.
+    queryRaw.mockResolvedValueOnce([
+      folded("2025-11-01T00:00:00.000Z", [
+        ["2025-11-03", 70],
+        ["2025-11-11", 86],
+        ["2025-11-19", 102],
+      ]),
+    ]);
+    const result = await readBestGranularityRollups("user", "WEIGHT", 365);
+    const month = result?.rows[0];
+    expect(month?.count).toBe(3);
+    expect(month?.mean).toBeCloseTo(86, 9);
+    expect(month?.sumValue).toBe(258);
+    expect(month?.slope).toBeCloseTo(2, 6);
+    expect(month?.r2).toBeCloseTo(1, 6);
+    expect(month?.sd).toBeCloseTo(Math.sqrt(512 / 3), 6);
+  });
+
+  it("reports no slope for a bucket whose days cover too little of it", async () => {
+    // Three consecutive days of a 30-day month: the spread composes, but a
+    // slope per day over two days of a month is no monthly trend.
     queryRaw.mockResolvedValueOnce([
       folded("2025-11-01T00:00:00.000Z", [
         ["2025-11-03", 70],
@@ -263,12 +286,47 @@ describe("readBestGranularityRollups", () => {
     ]);
     const result = await readBestGranularityRollups("user", "WEIGHT", 365);
     const month = result?.rows[0];
-    expect(month?.count).toBe(3);
     expect(month?.mean).toBeCloseTo(72, 9);
-    expect(month?.sumValue).toBe(216);
-    expect(month?.slope).toBeCloseTo(2, 6);
-    expect(month?.r2).toBeCloseTo(1, 6);
     expect(month?.sd).toBeCloseTo(Math.sqrt(8 / 3), 6);
+    expect(month?.slope).toBeNull();
+    expect(month?.r2).toBeNull();
+  });
+
+  it("reports no slope for a year whose readings are one sitting", async () => {
+    // Three readings minutes apart on one day: the slope per day composed
+    // from them is thousands of units, and the year bucket withholds it.
+    const day = Date.parse("2024-06-10T08:00:00.000Z") / DAY_MS - ORIGIN_DAYS;
+    const minute = 1 / (24 * 60);
+    const xs = [day, day + 2 * minute, day + 4 * minute];
+    const ys = [130, 124, 118];
+    queryRaw.mockResolvedValueOnce([
+      {
+        bucket_start: new Date("2024-01-01T00:00:00.000Z"),
+        count: 3,
+        days: 1,
+        sum_day_mean: 124,
+        sum_y: 372,
+        min_value: 118,
+        max_value: 130,
+        sum_x: xs.reduce((a, x) => a + x, 0),
+        sum_xy: xs.reduce((a, x, i) => a + x * ys[i], 0),
+        sum_xx: xs.reduce((a, x) => a + x * x, 0),
+        sum_yy: ys.reduce((a, y) => a + y * y, 0),
+        first_day: new Date("2024-06-10T00:00:00.000Z"),
+        last_day: new Date("2024-06-10T00:00:00.000Z"),
+        computed_at: new Date("2026-06-01T00:00:00.000Z"),
+      },
+    ]);
+    const result = await readBestGranularityRollups(
+      "user",
+      "BLOOD_PRESSURE_SYS",
+      1100,
+    );
+    const year = result?.rows[0];
+    expect(year?.count).toBe(3);
+    expect(year?.mean).toBeCloseTo(124, 9);
+    expect(year?.slope).toBeNull();
+    expect(year?.r2).toBeNull();
   });
 
   it("reports no spread or slope for a bucket with a day lacking accumulators", async () => {

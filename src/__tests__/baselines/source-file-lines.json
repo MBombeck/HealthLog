@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 89,
-  "total": 99483,
+  "total": 99450,
   "entries": {
     "app/medications/page-client.tsx": 839,
     "components/charts/mood-chart.tsx": 1166,
@@ -35,7 +35,7 @@
     "lib/ai/provider.ts": 1632,
     "lib/analytics/score/reader.ts": 998,
     "lib/analytics/sleep-night.ts": 1345,
-    "lib/analytics/summaries-slice.ts": 1248,
+    "lib/analytics/summaries-slice.ts": 1231,
     "lib/auth/session.ts": 811,
     "lib/cache/server-cache.ts": 848,
     "lib/cycle/prediction.ts": 883,
@@ -58,7 +58,7 @@
     "lib/illness/correlation.ts": 1059,
     "lib/import/health-connect/import.ts": 1689,
     "lib/import/unzip-export-xml.ts": 825,
-    "lib/insights/comprehensive-aggregator.ts": 943,
+    "lib/insights/comprehensive-aggregator.ts": 927,
     "lib/insights/comprehensive-generate.ts": 1674,
     "lib/insights/correlation-channel-series.ts": 1339,
     "lib/insights/correlation-discovery.ts": 1240,

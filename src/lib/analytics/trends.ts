@@ -5,6 +5,11 @@
 
 import { READING_SPREAD, standardDeviation } from "@/lib/stats/spread";
 import { linearFit } from "@/lib/stats/linear-fit";
+import {
+  isTrendWindowSufficient,
+  trendEvidenceOf,
+  type TrendEvidence,
+} from "@/lib/analytics/window-confidence";
 
 export interface DataPoint {
   date: Date;
@@ -20,6 +25,35 @@ export interface TrendSlope {
 }
 
 /**
+ * The one place a fitted slope becomes a published trend, shared by the JS
+ * fit below and the rollup / live-SQL summaries (which fit in Postgres or
+ * compose the fit from stored accumulators). `null` when the window's
+ * readings do not cover enough days for a trend (`isTrendWindowSufficient`),
+ * so slope, direction and confidence are present or absent together on
+ * every path.
+ */
+export function toTrendSlope(
+  slope: number | null,
+  rSquared: number | null,
+  evidence: TrendEvidence,
+  windowDays: number,
+): TrendSlope | null {
+  if (slope === null || !Number.isFinite(slope)) return null;
+  if (!isTrendWindowSufficient(evidence, windowDays)) return null;
+
+  const threshold = 0.01; // units per day threshold for "stable"
+  const direction: "up" | "down" | "stable" =
+    Math.abs(slope) < threshold ? "stable" : slope > 0 ? "up" : "down";
+
+  return {
+    slope: Math.round(slope * 1000) / 1000,
+    direction,
+    // No variance in y: a flat line explains nothing, as it always read.
+    confidence: rSquared === null ? 0 : Math.round(rSquared * 100) / 100,
+  };
+}
+
+/**
  * Linear regression slope over the last N days.
  * Uses least squares fit.
  *
@@ -28,6 +62,10 @@ export interface TrendSlope {
  * same way `summarize().avg7/avg30` returns `null`. The v3 audit caught the
  * mismatch where `trendSlope` reported a "trend" from old data while the
  * dashboard tile correctly hid the average.
+ *
+ * `null` too when the in-window readings fall on fewer than three days or
+ * span less than half the window: a fit across readings minutes apart turns
+ * a few mmHg into thousands per day (see `MIN_TREND_DAYS`).
  */
 export function trendSlope(
   data: DataPoint[],
@@ -39,8 +77,10 @@ export function trendSlope(
   const sorted = [...data].sort((a, b) => a.date.getTime() - b.date.getTime());
   const cutoff = now - windowDays * 24 * 60 * 60 * 1000;
   const window = sorted.filter((p) => p.date.getTime() >= cutoff);
-
   if (window.length < 2) return null;
+
+  const evidence = trendEvidenceOf(window.map((p) => p.date.getTime()));
+  if (!isTrendWindowSufficient(evidence, windowDays)) return null;
 
   // Convert dates to days from start
   const startTime = window[0].date.getTime();
@@ -54,19 +94,7 @@ export function trendSlope(
     points.map((p) => p.y),
   );
   if (!fit) return null;
-  const { slope } = fit;
-  // No variance in y: a flat line explains nothing, as it always read.
-  const rSquared = fit.r2 ?? 0;
-
-  const threshold = 0.01; // units per day threshold for "stable"
-  const direction: "up" | "down" | "stable" =
-    Math.abs(slope) < threshold ? "stable" : slope > 0 ? "up" : "down";
-
-  return {
-    slope: Math.round(slope * 1000) / 1000,
-    direction,
-    confidence: Math.round(rSquared * 100) / 100,
-  };
+  return toTrendSlope(fit.slope, fit.r2, evidence, windowDays);
 }
 
 // ── Anomaly Detection ────────────────────────────────────

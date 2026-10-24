@@ -333,6 +333,11 @@ describe("GET /api/analytics", () => {
           slope30: -0.02,
           r2_30: 0.3,
           r2_90: 0.2,
+          // Twelve readings on twelve days across the month.
+          days7: 3,
+          span7: 5,
+          days30: 12,
+          span30: 27,
         },
       ] as never)
       .mockResolvedValueOnce([

@@ -1941,7 +1941,7 @@ export const dataSummary = z
     slope30: trendSlope
       .nullable()
       .describe(
-        "Regression over the trailing window, anchored on NOW rather than on the newest reading — a series that stopped weeks ago reports null rather than a stale slope.",
+        "Regression over the trailing window, anchored on NOW rather than on the newest reading — a series that stopped weeks ago reports null rather than a stale slope. Null as well (for `slope7` too) when the window's readings fall on fewer than 3 calendar days (UTC) or span less than half the window.",
       ),
     avg30LastMonth: z
       .number()

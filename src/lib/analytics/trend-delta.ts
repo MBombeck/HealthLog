@@ -24,6 +24,14 @@
  * a 7-day window for label consistency. Returning `null` is reserved
  * for the truly insufficient case where neither slope is available.
  *
+ * Neither slope reaches this function unless its window earned it: a
+ * window whose readings fall on fewer than three days, or cover less than
+ * half the window, publishes no slope (`MIN_TREND_DAYS` in
+ * `window-confidence.ts`). Before that rule two blood-pressure readings a
+ * few minutes apart, the only ones of the week, fitted a slope of thousands
+ * of mmHg per day and the tile printed it as the 7-day trend. The 30-day
+ * fallback obeys the same rule over its own window.
+ *
  * Pure & deterministic — pinned by unit test.
  */
 import type { TrendSlope } from "@/lib/analytics/trends";

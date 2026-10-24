@@ -6,6 +6,7 @@ import {
   wireSummary,
   type DataPoint,
 } from "../trends";
+import { summaryToTrend7Delta } from "../trend-delta";
 
 function makePoints(values: number[], startDaysAgo = 30): DataPoint[] {
   const now = Date.now();
@@ -44,6 +45,128 @@ describe("trendSlope", () => {
     expect(result).not.toBeNull();
     expect(result!.direction).toBe("stable");
     expect(Math.abs(result!.slope)).toBeLessThan(0.01);
+  });
+});
+
+/**
+ * A window earns a trend only when its readings cover enough days. A
+ * dashboard blood-pressure tile read "7-Tage-Trend: 125 (−11.412)" because
+ * the only readings of the week were taken minutes apart: the fit's x-span
+ * was minutes, the slope per day exploded, and the tile multiplied it by 7.
+ */
+describe("trendSlope minimum evidence", () => {
+  const NOW = Date.UTC(2026, 9, 24, 18, 0, 0);
+  const MINUTE = 60 * 1000;
+  const DAY = 24 * 60 * MINUTE;
+  const at = (msAgo: number, value: number): DataPoint => ({
+    date: new Date(NOW - msAgo),
+    value,
+  });
+
+  it("withholds the slope when the readings are minutes apart", () => {
+    // Three readings in one sitting this morning: 130, 124, 118 mmHg.
+    const sitting = [
+      at(10 * MINUTE, 130),
+      at(8 * MINUTE, 124),
+      at(6 * MINUTE, 118),
+    ];
+    expect(trendSlope(sitting, 7, NOW)).toBeNull();
+    expect(trendSlope(sitting, 30, NOW)).toBeNull();
+  });
+
+  it("withholds the slope across midnight even though two days are touched", () => {
+    const today = Math.floor(NOW / DAY) * DAY;
+    const straddle = [
+      { date: new Date(today - 2 * MINUTE), value: 130 },
+      { date: new Date(today + 2 * MINUTE), value: 118 },
+    ];
+    expect(trendSlope(straddle, 7, NOW)).toBeNull();
+  });
+
+  it("withholds the slope for two readings on two days", () => {
+    // Two days five days apart: a line through two points says nothing
+    // about noise, so it is not a trend.
+    const two = [at(5 * DAY, 130), at(0, 120)];
+    expect(trendSlope(two, 7, NOW)).toBeNull();
+    expect(trendSlope(two, 30, NOW)).toBeNull();
+  });
+
+  it("withholds the slope when three days cover too little of the window", () => {
+    // Three consecutive days: a span of 2 against the 4 a 7-day window
+    // needs, and the 15 a 30-day window needs.
+    const consecutive = [at(2 * DAY, 128), at(1 * DAY, 126), at(0, 124)];
+    expect(trendSlope(consecutive, 7, NOW)).toBeNull();
+    expect(trendSlope(consecutive, 30, NOW)).toBeNull();
+  });
+
+  it("fits sparse 30-day data that spans the window, not the empty week", () => {
+    // Three readings 25, 14 and 9 days ago: nothing in the 7-day window,
+    // 16 days of span in the 30-day one.
+    const sparse = [at(25 * DAY, 130), at(14 * DAY, 127), at(9 * DAY, 125)];
+    expect(trendSlope(sparse, 7, NOW)).toBeNull();
+    const slope30 = trendSlope(sparse, 30, NOW);
+    expect(slope30).not.toBeNull();
+    expect(slope30!.direction).toBe("down");
+    // About −0.31 mmHg per day: a plausible drift, not thousands.
+    expect(slope30!.slope).toBeGreaterThan(-0.5);
+    expect(slope30!.slope).toBeLessThan(-0.2);
+  });
+
+  it("fits normal daily data", () => {
+    const daily = [0, 1, 2, 3, 4, 5, 6].map((d) => at((6 - d) * DAY, 80 + d));
+    const slope7 = trendSlope(daily, 7, NOW);
+    expect(slope7).toEqual({ slope: 1, direction: "up", confidence: 1 });
+  });
+
+  it("keeps a same-session cluster from dominating a window that earned a trend", () => {
+    // A week of single daily readings, rising one mmHg a day, plus a
+    // morning session of three readings minutes apart that wobble by 12.
+    const week = [0, 1, 2, 3, 4, 5].map((d) => at((7 - d) * DAY, 120 + d));
+    const sitting = [
+      at(10 * MINUTE, 130),
+      at(8 * MINUTE, 124),
+      at(6 * MINUTE, 118),
+    ];
+    const slope7 = trendSlope([...week, ...sitting], 7, NOW);
+    expect(slope7).not.toBeNull();
+    expect(Math.abs(slope7!.slope)).toBeLessThan(2);
+  });
+
+  it("leaves the dashboard tile without a 7-day delta for one sitting", () => {
+    // The tile's delta is `summaryToTrend7Delta(summary)`: slope7 × 7,
+    // else slope30 × 7. Before the minimum-evidence rule this summary
+    // yielded about −15,000 mmHg; now neither window carries a slope.
+    const sitting = [
+      { date: new Date(Date.now() - 10 * MINUTE), value: 130 },
+      { date: new Date(Date.now() - 8 * MINUTE), value: 124 },
+      { date: new Date(Date.now() - 6 * MINUTE), value: 118 },
+    ];
+    const summary = summarize(sitting);
+    expect(summary.avg7).toBe(124);
+    expect(summary.slope7).toBeNull();
+    expect(summary.slope30).toBeNull();
+    expect(summaryToTrend7Delta(summary)).toBeNull();
+  });
+
+  it("falls back to a sane 30-day delta when only the week is one sitting", () => {
+    // Earlier readings across the month earn the 30-day window a trend;
+    // the week's sitting does not earn the 7-day window one. The tile
+    // shows the 30-day slope projected onto 7 days: a few mmHg.
+    const month = [28, 21, 14, 9].map((d, i) => ({
+      date: new Date(Date.now() - d * DAY),
+      value: 132 - i,
+    }));
+    const sitting = [
+      { date: new Date(Date.now() - 10 * MINUTE), value: 130 },
+      { date: new Date(Date.now() - 8 * MINUTE), value: 124 },
+      { date: new Date(Date.now() - 6 * MINUTE), value: 118 },
+    ];
+    const summary = summarize([...month, ...sitting]);
+    expect(summary.slope7).toBeNull();
+    expect(summary.slope30).not.toBeNull();
+    const delta = summaryToTrend7Delta(summary);
+    expect(delta).not.toBeNull();
+    expect(Math.abs(delta!)).toBeLessThan(10);
   });
 });
 

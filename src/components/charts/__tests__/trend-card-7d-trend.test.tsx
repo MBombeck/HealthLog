@@ -5,6 +5,8 @@ import { Activity, Smile } from "lucide-react";
 import { TrendCard } from "../trend-card";
 import { I18nProvider } from "@/lib/i18n/context";
 import { primeLocales } from "@/__tests__/helpers/prime-locales";
+import { summarize } from "@/lib/analytics/trends";
+import { summaryToTrend7Delta } from "@/lib/analytics/trend-delta";
 
 primeLocales("de");
 
@@ -164,5 +166,44 @@ describe("<TrendCard> 7-day trend label", () => {
     expect(html).toContain("text-muted-foreground");
     expect(html).not.toContain("text-success");
     expect(html).not.toContain("text-warning");
+  });
+});
+
+/**
+ * The blood-pressure tile read "7-Tage-Trend: 125 (−11.412)" when the
+ * week's only readings were one sitting minutes apart: the regression's
+ * slope per day exploded and the tile printed seven days of it. The tile is
+ * fed the way `strip-tiles.tsx` feeds it, from `summarize()` through
+ * `summaryToTrend7Delta()`, so the delta it renders is the one the
+ * dashboard would.
+ */
+describe("<TrendCard> blood-pressure tile after one sitting", () => {
+  it("renders the 7-day mean, not a thousands-of-mmHg trend", () => {
+    const MINUTE = 60 * 1000;
+    const summary = summarize([
+      { date: new Date(Date.now() - 10 * MINUTE), value: 130 },
+      { date: new Date(Date.now() - 8 * MINUTE), value: 124 },
+      { date: new Date(Date.now() - 6 * MINUTE), value: 118 },
+    ]);
+    const html = render(
+      <TrendCard
+        label="BD (SYS)"
+        latest={summary.latest}
+        unit="mmHg"
+        fractionDigits={0}
+        avg7={summary.avg7}
+        avg30={summary.avg30}
+        slope30={summary.slope30}
+        trend7Delta={summaryToTrend7Delta(summary)}
+        icon={Activity}
+        directionSentiment="up-bad"
+      />,
+      "de",
+    );
+    expect(html).not.toContain('data-slot="trend7-delta"');
+    expect(html).not.toContain("7-Tage-Trend");
+    expect(html).toContain("7T");
+    // No grouped thousands anywhere on the tile.
+    expect(html).not.toMatch(/\d\.\d{3}/);
   });
 });
