@@ -85,6 +85,42 @@ describe("Codex slug fallback chain", () => {
     clearCodexSlugCache();
   });
 
+  it("an account without gpt-6.1-sol walks the default list on to gpt-6-sol", async () => {
+    const origModel = process.env.CODEX_MODEL;
+    const origChain = process.env.CODEX_MODEL_FALLBACK_CHAIN;
+    delete process.env.CODEX_MODEL;
+    delete process.env.CODEX_MODEL_FALLBACK_CHAIN;
+    try {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce(rejectionResponse(400))
+        .mockResolvedValueOnce(sseSuccessResponse());
+      vi.stubGlobal("fetch", mockFetch);
+
+      const client = new CodexClient({
+        accessToken: "test",
+        accountId: "acct",
+        onTokenRefresh,
+      });
+      await client.generateCompletion(
+        singleUserTurn({ system: "s", user: "u" }),
+      );
+
+      expect(client.getLastDiagnostics()?.attempted).toEqual([
+        "gpt-6.1-sol",
+        "gpt-6-sol",
+      ]);
+      expect(client.getLastDiagnostics()?.workingSlug).toBe("gpt-6-sol");
+      expect(getCachedCodexSlug()).toBe("gpt-6-sol");
+    } finally {
+      if (origModel === undefined) delete process.env.CODEX_MODEL;
+      else process.env.CODEX_MODEL = origModel;
+      if (origChain === undefined)
+        delete process.env.CODEX_MODEL_FALLBACK_CHAIN;
+      else process.env.CODEX_MODEL_FALLBACK_CHAIN = origChain;
+    }
+  });
+
   it("first slug succeeds — uses head-of-chain and caches it", async () => {
     const mockFetch = vi.fn().mockResolvedValue(sseSuccessResponse());
     vi.stubGlobal("fetch", mockFetch);
@@ -334,22 +370,38 @@ describe("Codex slug fallback chain", () => {
     ).toBe(true);
     expect(helper(400, '{"error":{"code":"model_not_found"}}')).toBe(true);
     expect(helper(400, "model gpt-5 does not exist")).toBe(true);
+    // The refusal a ChatGPT sign-in got for gpt-5.5 after its retirement
+    // (seen 2026-10-24).
+    expect(
+      helper(
+        400,
+        '{"detail":"The \'gpt-5.5\' model is not supported when using Codex with a ChatGPT account.","error":{"type":"invalid_request_error","code":"model_not_found"}}',
+      ),
+    ).toBe(true);
     expect(helper(404, "anything")).toBe(true);
     expect(helper(500, "internal error")).toBe(false);
     expect(helper(429, "rate limited")).toBe(false);
     expect(helper(400, "unrelated 400")).toBe(false);
   });
 
-  it("DEFAULT_SLUG_FALLBACK_CHAIN tracks the current ChatGPT-auth ladder", () => {
-    // The backend rotated its ChatGPT-auth slugs onto the gpt-5.x line on
-    // 2026-06-02; the in-code default must match the accepted set, in order.
+  it("DEFAULT_SLUG_FALLBACK_CHAIN holds OpenAI's replacements, none of the retired models", () => {
+    // OpenAI retired the 5.x line from Codex for ChatGPT sign-in: 5.2 and
+    // 5.3-Codex on 2026-05-26, 5.4 and 5.4 mini on 2026-08-31, 5.5 on
+    // 2026-10-14. A retired rung costs every account a refused request.
     expect([...__test.DEFAULT_SLUG_FALLBACK_CHAIN]).toEqual([
+      "gpt-6.1-sol",
+      "gpt-6-sol",
+      "gpt-6-luna",
+    ]);
+    for (const retired of [
       "gpt-5.5",
       "gpt-5.4",
       "gpt-5.4-mini",
       "gpt-5.3-codex",
       "gpt-5.2",
-    ]);
+    ]) {
+      expect(__test.DEFAULT_SLUG_FALLBACK_CHAIN).not.toContain(retired);
+    }
   });
 
   it("loadFallbackChain falls back to the default ladder with no env override", () => {
@@ -359,11 +411,9 @@ describe("Codex slug fallback chain", () => {
     delete process.env.CODEX_MODEL_FALLBACK_CHAIN;
     try {
       expect(__test.loadFallbackChain()).toEqual([
-        "gpt-5.5",
-        "gpt-5.4",
-        "gpt-5.4-mini",
-        "gpt-5.3-codex",
-        "gpt-5.2",
+        "gpt-6.1-sol",
+        "gpt-6-sol",
+        "gpt-6-luna",
       ]);
     } finally {
       if (origModel === undefined) delete process.env.CODEX_MODEL;
@@ -381,7 +431,7 @@ describe("Codex slug fallback chain", () => {
       const chain = __test.loadFallbackChain();
       expect(chain[0]).toBe("custom-pinned-slug");
       // Defaults still present after position 0.
-      expect(chain).toContain("gpt-5.5");
+      expect(chain).toContain("gpt-6.1-sol");
       // No duplicates.
       const seen = new Set(chain);
       expect(seen.size).toBe(chain.length);

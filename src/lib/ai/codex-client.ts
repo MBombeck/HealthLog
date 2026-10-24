@@ -51,23 +51,20 @@ import {
 const CODEX_ENDPOINT = "https://chatgpt.com/backend-api/codex/responses";
 
 /**
- * Default fallback chain — most-current-first as of 2026-06-02. Override
- * via `CODEX_MODEL_FALLBACK_CHAIN` (comma-separated) on apps01 if a
- * specific plan ladder needs different ordering. `CODEX_MODEL` is
- * folded into position 0 of the chain when set; duplicates are dropped.
+ * Default fallback chain, newest first. Override via
+ * `CODEX_MODEL_FALLBACK_CHAIN` (comma-separated) on apps01 if a specific plan
+ * ladder needs different ordering. `CODEX_MODEL` is folded into position 0 of
+ * the chain when set; duplicates are dropped.
  *
- * The ChatGPT Codex backend rotated its ChatGPT-auth slugs off the
- * `-codex` specialist line onto the plain `gpt-5.x` line on 2026-06-02;
- * the former `-codex` defaults are now rejected with a 503 "all
- * configured Codex slugs were rejected". The ladder below tracks the
- * current accepted set.
+ * OpenAI retired the 5.x line from Codex for ChatGPT sign-in: GPT-5.2 and
+ * GPT-5.3-Codex on 2026-05-26, GPT-5.4 and GPT-5.4 mini on 2026-08-31, and
+ * GPT-5.5 on 2026-10-14. These are the replacements it names, and an account's
+ * live list (`GET /backend-api/codex/models`) offers them (checked 2026-10-24).
  */
 const DEFAULT_SLUG_FALLBACK_CHAIN = [
-  "gpt-5.5", // current default across paid tiers as of 2026-06-02
-  "gpt-5.4", // documented fallback
-  "gpt-5.4-mini", // documented lighter-weight fallback
-  "gpt-5.3-codex", // late rung — still accepted intermittently
-  "gpt-5.2", // legacy floor
+  "gpt-6.1-sol", // replaces GPT-5.5; the Codex CLI's own default
+  "gpt-6-sol", // replaces GPT-5.4
+  "gpt-6-luna", // replaces GPT-5.4 mini; the light model
 ] as const;
 
 /**
@@ -300,9 +297,9 @@ function readCodexDialect(slug: string): CodexReasoningDialect {
 }
 
 function wantedEffort(level: ReasoningLevel): string {
-  // "Off" is a real off on the current slugs: a 2026-10-06 probe answered
-  // `effort: "none"` on gpt-5.5 with a non-reasoning reply. A slug that
-  // refuses it learns its lowest supported value instead.
+  // "Off" asks for `effort: "none"`, which a 2026-10-06 probe saw gpt-5.5
+  // answer with a non-reasoning reply. A slug that refuses it learns its
+  // lowest supported value instead.
   return level === "off" ? "none" : level;
 }
 
