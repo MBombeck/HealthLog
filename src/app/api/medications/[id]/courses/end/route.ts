@@ -12,12 +12,17 @@
  * `medications.course.notRunning` while no course is running, the same rule
  * the reads publish as `canEndCourse`.
  *
- * Owner-only, like the other course routes.
+ * MANAGE over the record's medications, the level the medication's own PUT
+ * (which used to carry the end date) is written at: a manager running
+ * somebody's regimen may end a course they could already end through the
+ * edit. Starting, editing and removing courses stay owner-only. The reads
+ * publish `canEndCourse` false to a caller below that level
+ * (`course-authority.ts`), so no client offers the button this refuses.
  */
 import { NextRequest } from "next/server";
 
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { withIdempotency } from "@/lib/idempotency";
@@ -28,6 +33,7 @@ import {
   endCurrentCourse,
 } from "@/lib/medications/courses";
 import { dayKeyOfDate } from "@/lib/medications/course-window";
+import { overwriteDetails } from "@/lib/sharing/audit-details";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 export const dynamic = "force-dynamic";
@@ -42,11 +48,11 @@ async function postEndCourse(
   request: NextRequest,
   { params }: RouteParams,
 ): Promise<Response> {
-  const { user } = await requireAuth();
+  const { user } = await requireRecordAuth("manage", "medications");
   const { id } = await params;
 
   try {
-    const window = await endCurrentCourse({
+    const { window, previous, droppedPlaceholders } = await endCurrentCourse({
       userId: user.id,
       medicationId: id,
       timeZone: user.timezone || DEFAULT_TIMEZONE,
@@ -60,7 +66,16 @@ async function postEndCourse(
     await auditLog("medication.course.end", {
       userId: user.id,
       ipAddress: getClientIp(request),
-      details: { medicationId: id, ...body },
+      // C4: the end the course had before, so a manager's End reads back
+      // out of the trail; and how many pending slots it took with it.
+      details: {
+        medicationId: id,
+        ...overwriteDetails({
+          before: { endsOn: previous.endsOn, endedAt: previous.endedAt },
+          after: { endsOn: window.endsOn, endedAt: window.endedAt },
+        }),
+        droppedPlaceholders,
+      },
     });
     annotate({
       action: { name: "medication.course.end" },

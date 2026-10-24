@@ -68,6 +68,7 @@ export type CreateMedicationOutcome =
  */
 async function existingMirrorBody(
   user: ReadUser,
+  grantId: string | null,
   medication: Medication & { schedules: MedicationSchedule[] },
 ): Promise<CreateMedicationOutcome> {
   annotate({
@@ -81,7 +82,7 @@ async function existingMirrorBody(
   // The read model, exactly as `GET /api/medications/{id}` answers it.
   const body = await medicationDetail({
     user,
-    grantId: null,
+    grantId,
     medication,
     announce: false,
   });
@@ -98,6 +99,7 @@ async function existingMirrorBody(
  */
 async function existingMirrorOrCap(
   user: ReadUser,
+  grantId: string | null,
   externalSource: NonNullable<CreateMedicationInput["externalSource"]>,
   externalId: string,
 ): Promise<CreateMedicationOutcome | null> {
@@ -107,7 +109,7 @@ async function existingMirrorOrCap(
     include: { schedules: { orderBy: MEDICATION_SCHEDULE_ORDER } },
   });
   if (existing) {
-    return existingMirrorBody(user, existing);
+    return existingMirrorBody(user, grantId, existing);
   }
 
   // Growth guard. This point is only reached when the idempotency lookup
@@ -410,10 +412,12 @@ function insertMedication(
 
 export async function createMedication(input: {
   user: ReadUser;
+  /** The grant the request was resolved under; null for the owner. */
+  grantId: string | null;
   data: CreateMedicationInput;
   ipAddress: string | null;
 }): Promise<CreateMedicationOutcome> {
-  const { user, data } = input;
+  const { user, grantId, data } = input;
   const {
     name,
     category,
@@ -439,7 +443,12 @@ export async function createMedication(input: {
   }
 
   if (externalSource !== undefined && externalId !== undefined) {
-    const mirror = await existingMirrorOrCap(user, externalSource, externalId);
+    const mirror = await existingMirrorOrCap(
+      user,
+      grantId,
+      externalSource,
+      externalId,
+    );
     if (mirror) return mirror;
   }
 
@@ -483,7 +492,7 @@ export async function createMedication(input: {
         where: { userId: user.id, externalSource, externalId },
         include: { schedules: { orderBy: MEDICATION_SCHEDULE_ORDER } },
       });
-      if (winner) return existingMirrorBody(user, winner);
+      if (winner) return existingMirrorBody(user, grantId, winner);
     }
     throw err;
   }
@@ -517,7 +526,7 @@ export async function createMedication(input: {
   // The read model, exactly as `GET /api/medications/{id}` answers it.
   const body = await medicationDetail({
     user,
-    grantId: null,
+    grantId,
     medication,
     announce: false,
   });

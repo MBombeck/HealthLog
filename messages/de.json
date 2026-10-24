@@ -12715,6 +12715,7 @@
       "practitionerContactRestore": "{name} hat einen Adressbucheintrag wiederhergestellt",
       "illnessDayLogUpsert": "{name} hat einen Krankheitstag erfasst",
       "medicationUpdate": "{name} hat ein Medikament geändert",
+      "medicationCourseEnd": "{name} hat eine Medikamenteneinnahme beendet",
       "medicationDelete": "{name} hat ein Medikament gelöscht",
       "medicationGlp1Update": "{name} hat eine GLP-1-Therapie geändert",
       "medicationScheduleCreate": "{name} hat einen Einnahmeplan angelegt",

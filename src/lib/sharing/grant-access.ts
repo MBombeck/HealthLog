@@ -265,3 +265,27 @@ export function touchGrantUsage(
     .then(() => undefined)
     .catch(() => undefined);
 }
+
+/**
+ * Whether the request resolved under `grantId` may `need` over `domain` —
+ * the question a READ answers when it publishes an action the caller may or
+ * may not be allowed to take (`canEndCourse` on the medication reads).
+ *
+ * `null` is the record's owner, who may do everything the record allows. A
+ * grant is re-read here rather than trusted from the resolver because the
+ * resolver only proved the level the READ route declared; the action the
+ * read advertises is declared on another route at another level, and the
+ * answer has to be the one that route would give.
+ */
+export async function grantIdAllows(
+  grantId: string | null,
+  need: GrantNeed,
+  domain: ShareScope,
+  db: GrantDb = prisma,
+  now: Date = new Date(),
+): Promise<boolean> {
+  if (grantId === null) return true;
+  const grant = await db.accountGrant.findUnique({ where: { id: grantId } });
+  if (!grant) return false;
+  return grantAllows(grant, need, now) && grantCoversDomain(grant, domain);
+}

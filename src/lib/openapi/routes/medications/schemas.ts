@@ -110,7 +110,7 @@ const medicationCourseFields = {
   canStartCourse: z
     .boolean()
     .describe(
-      "v1.40 — whether `POST /api/medications/{id}/courses` may start a new course now: the medication is active, not one-time, has a course and every course has ended.",
+      "v1.40 — whether `POST /api/medications/{id}/courses` may start a new course now: the medication is active, not one-time, has a course and every course has ended, and the caller is the record's owner (starting a course is not delegable, so a delegate always reads false).",
     ),
 };
 
@@ -463,7 +463,7 @@ export const medicationListEntry = medicationResource
     canEndCourse: z
       .boolean()
       .describe(
-        '#1280 — whether `POST /api/medications/{id}/courses/end` may end the course now: true exactly while a course is running (`courseStatus` CURRENT; a medication with no dates is running). Clients offer "End course" from this and do not re-derive it; the action refuses with 409 `medications.course.notRunning` when it is false. Read-only — computed, not stored.',
+        '#1280 — whether `POST /api/medications/{id}/courses/end` may end the course now: true exactly while a course is running (`courseStatus` CURRENT; a medication with no dates is running) and the caller may end it: the owner of the record, or a delegate whose grant manages its medications. False to every other caller. Clients offer "End course" from this and do not re-derive it; the action refuses with 409 `medications.course.notRunning` when it is false. Read-only — computed, not stored.',
       ),
     lastTakenAt: isoDateTime()
       .nullable()
@@ -534,7 +534,7 @@ export const medicationDetailEntry = medicationResource
     canEndCourse: z
       .boolean()
       .describe(
-        '#1280 — whether `POST /api/medications/{id}/courses/end` may end the course now: true exactly while a course is running (`courseStatus` CURRENT; a medication with no dates is running). Clients offer "End course" from this and do not re-derive it; the action refuses with 409 `medications.course.notRunning` when it is false. Read-only — computed, not stored.',
+        '#1280 — whether `POST /api/medications/{id}/courses/end` may end the course now: true exactly while a course is running (`courseStatus` CURRENT; a medication with no dates is running) and the caller may end it: the owner of the record, or a delegate whose grant manages its medications. False to every other caller. Clients offer "End course" from this and do not re-derive it; the action refuses with 409 `medications.course.notRunning` when it is false. Read-only — computed, not stored.',
       ),
     stockUnitsRemaining: z
       .number()

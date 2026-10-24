@@ -24,7 +24,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
-import { getPrismaClient, truncateAllTables } from "./setup";
+import { getPrismaClient, switchSessionTo, truncateAllTables } from "./setup";
 
 vi.mock("next/headers", async () => {
   const { cookieJar, headerJar } = await import("./mock-next-headers");
@@ -445,6 +445,129 @@ describe("canEndCourse follows the course", () => {
 
     const res = await endCourse(id);
     expect(res.status).toBe(expected ? 200 : 409);
+  });
+});
+
+describe("End follows what the caller may do in a shared record", () => {
+  /** A second person who signs in and opens the owner's record at `access`. */
+  async function openAs(
+    ownerId: string,
+    access: "READ" | "WRITE" | "MANAGE",
+  ): Promise<string> {
+    const prisma = getPrismaClient();
+    const delegate = await prisma.user.create({
+      data: {
+        username: `course-end-${access.toLowerCase()}`,
+        email: `course-end-${access.toLowerCase()}@example.test`,
+        timezone: TZ,
+        locale: "en",
+      },
+    });
+    const { inviteGrant, acceptGrant } = await import("@/lib/sharing/grants");
+    const invited = await inviteGrant({
+      grantorId: ownerId,
+      granteeId: delegate.id,
+      access,
+      scope: null,
+    });
+    await acceptGrant({ grantId: invited.id, granteeId: delegate.id });
+    const session = await prisma.session.create({
+      data: {
+        userId: delegate.id,
+        expiresAt: new Date("2030-01-01T00:00:00.000Z"),
+      },
+    });
+    cookieJar.set("healthlog_session", session.id);
+    await switchSessionTo(session.id, ownerId);
+    return delegate.id;
+  }
+
+  async function listed(id: string) {
+    const list = await call(
+      "@/app/api/medications/route",
+      "GET",
+      "/api/medications",
+      {},
+    );
+    expect(list.status).toBe(200);
+    return (
+      list.body.data as Array<{
+        id: string;
+        canEndCourse: boolean;
+        canStartCourse: boolean;
+      }>
+    ).find((m) => m.id === id);
+  }
+
+  it("lets a manager end the course and names them in the trail", async () => {
+    at(ENDED_AT);
+    const ownerId = await makeUser();
+    const id = await seedTwiceDaily(ownerId);
+    const managerId = await openAs(ownerId, "MANAGE");
+
+    expect((await detail(id)).canEndCourse).toBe(true);
+    expect((await listed(id))?.canEndCourse).toBe(true);
+
+    const res = await endCourse(id);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    const row = await getPrismaClient().medication.findUniqueOrThrow({
+      where: { id },
+      select: { endedAt: true },
+    });
+    expect(row.endedAt?.toISOString()).toBe(ENDED_AT);
+
+    const audit = await getPrismaClient().auditLog.findFirstOrThrow({
+      where: { action: "medication.course.end" },
+    });
+    expect(audit.userId).toBe(ownerId);
+    expect(audit.actorUserId).toBe(managerId);
+    expect(
+      typeof audit.details === "string"
+        ? JSON.parse(audit.details)
+        : audit.details,
+    ).toMatchObject({
+      medicationId: id,
+      fields: ["endedAt", "endsOn"],
+      previous: { endsOn: null, endedAt: null },
+    });
+  });
+
+  it.each(["READ", "WRITE"] as const)(
+    "offers a %s delegate neither End nor Start, and refuses End",
+    async (access) => {
+      at(ENDED_AT);
+      const ownerId = await makeUser();
+      const id = await seedTwiceDaily(ownerId);
+      await openAs(ownerId, access);
+
+      const read = await detail(id);
+      expect(read.courseStatus).toBe("CURRENT");
+      expect(read.canEndCourse).toBe(false);
+      expect(read.canStartCourse).toBe(false);
+      const entry = await listed(id);
+      expect(entry?.canEndCourse).toBe(false);
+      expect(entry?.canStartCourse).toBe(false);
+
+      const res = await endCourse(id);
+      expect(res.status).toBe(403);
+      const row = await getPrismaClient().medication.findUniqueOrThrow({
+        where: { id },
+        select: { endedAt: true },
+      });
+      expect(row.endedAt).toBeNull();
+    },
+  );
+
+  it("does not let the delegate's view leak into the owner's cached list", async () => {
+    at(ENDED_AT);
+    const ownerId = await makeUser();
+    const id = await seedTwiceDaily(ownerId);
+    const ownerSession = cookieJar.get("healthlog_session")!;
+    await openAs(ownerId, "READ");
+    expect((await listed(id))?.canEndCourse).toBe(false);
+
+    cookieJar.set("healthlog_session", ownerSession);
+    expect((await listed(id))?.canEndCourse).toBe(true);
   });
 });
 

@@ -282,7 +282,7 @@ const ROUTE_IMPORTS = import.meta.glob<Record<string, unknown>>(
 
 describe("the complete MANAGE handler matrix", () => {
   it("starts with a non-empty, exact handler inventory", () => {
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(92);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(93);
   });
 });
 
@@ -2133,6 +2133,20 @@ proveManageRoute("PUT /api/medications/[id]", {
     )?.dose === "20mg",
 });
 
+proveManageRoute("POST /api/medications/[id]/courses/end", {
+  route: "/api/medications/[id]/courses/end",
+  prepare: (ownerId) => makeMedication(ownerId),
+  params: (medication) => ({ id: medication.id }),
+  ok: 200,
+  auditAction: "medication.course.end",
+  applied: async (medication) =>
+    (
+      await getPrismaClient().medication.findUnique({
+        where: { id: medication.id },
+      })
+    )?.endedAt != null,
+});
+
 proveManageRoute("POST /api/medications/[id]/schedule-revisions", {
   route: "/api/medications/[id]/schedule-revisions",
   prepare: async (ownerId) => ({
@@ -3006,13 +3020,13 @@ describe("the conditions the admissions were granted on", () => {
 describe("the complete MANAGE handler matrix", () => {
   it("registers one strict actor-and-effect driver for every admission", () => {
     const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-    expect(STRICT_DRIVER_KEYS.size).toBe(92);
+    expect(STRICT_DRIVER_KEYS.size).toBe(93);
     expect([...STRICT_DRIVER_KEYS].sort()).toEqual(expected);
   });
 
   it("executes every registered driver through its owned effect and actor audit", () => {
     const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-    expect(REAL_EFFECT_KEYS.size).toBe(92);
+    expect(REAL_EFFECT_KEYS.size).toBe(93);
     expect([...REAL_EFFECT_KEYS].sort()).toEqual(expected);
   });
 });

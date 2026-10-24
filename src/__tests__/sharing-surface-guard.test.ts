@@ -1202,6 +1202,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "medications",
     why: "One medication of the record, fetch-then-guard against the resolved user before anything is serialised.",
   },
+  "app/api/medications/[id]/courses/end/route.ts": {
+    domain: "medications",
+    why: "Ending one medication's running course now (#1280), behind the course write's own ownership check against the resolved record. The POST is the route's only verb and is manage-level, the level the medication's PUT carried the end date at; starting, editing and removing courses stay owner-only.",
+  },
   "app/api/medications/[id]/ingredients/route.ts": {
     domain: "medications",
     why: "One medication's composition per unit (v1.43), behind the ownership check against the resolved record. The PUT is the route's only verb and is manage-level; the label read beside it stays owner-only, because provider work is never admitted inside somebody else's record.",
@@ -1882,6 +1886,11 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
     conditions: ["C4", "C7"],
     why: "Replacing a medication and its schedule. C4, and C7 because the previous cadence and the tombstoned pending slots are the only unrecoverable part. The DELETE beside it stays refused.",
   },
+  "app/api/medications/[id]/courses/end/route.ts": {
+    domain: "medications",
+    conditions: ["C4"],
+    why: "Ending the running course at this instant, which the medication's PUT already admitted as an end date. C4: the end the course had before is filed beside the new one, with the count of pending slots it took.",
+  },
   "app/api/medications/[id]/ingredients/route.ts": {
     domain: "medications",
     conditions: ["C1", "C4"],
@@ -2273,8 +2282,12 @@ const ACTOR_ROUTES: Record<string, string> = {
  * side). The activity goals route does not: setting or changing goals stays
  * owner-only, and a delegate sees the goals only as the calendar reports them.
  * 270 -> 273.
+ *
+ * Ending a running course (#1280) joins the record list and the
+ * manage literal: it was refused under a switch while the medication's PUT,
+ * which used to carry the end, admitted a manager. 273 -> 275.
  */
-const FROZEN_ENTRY_COUNT = 273;
+const FROZEN_ENTRY_COUNT = 275;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
@@ -3052,7 +3065,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
   it("keeps the admitted mutation inventory complete and discoverable", () => {
     expect(ADMITTED_MUTATING_HANDLERS.length).toBeGreaterThan(0);
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(92);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(93);
 
     const expected = ADMITTED_MUTATING_HANDLERS.map(
       ({ handlerModule, action, level }) =>

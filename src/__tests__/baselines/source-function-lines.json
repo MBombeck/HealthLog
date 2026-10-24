@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 351,
-  "total": 113672,
+  "total": 113619,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 314,
@@ -342,7 +342,7 @@
     "lib/notifications/senders/web-push.ts :: sendViaWebPush": 268,
     "lib/personal-records/pr-detection-worker.ts :: detectPersonalRecordsForUser": 239,
     "lib/personal-records/pr-direction.ts :: getPRDirection": 202,
-    "lib/record-activity/activity-verb.ts :: recordActivityVerbLine": 325,
+    "lib/record-activity/activity-verb.ts :: recordActivityVerbLine": 272,
     "lib/strava/sync.ts :: runStravaSync": 219,
     "lib/support/report.ts :: collectSupportReportFacts": 332,
     "lib/targets/build-response.ts :: buildTargetsResponse": 330,

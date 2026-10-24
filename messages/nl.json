@@ -12715,6 +12715,7 @@
       "practitionerContactRestore": "{name} heeft een item in het adresboek hersteld",
       "illnessDayLogUpsert": "{name} heeft een ziektedag vastgelegd",
       "medicationUpdate": "{name} heeft een medicijn gewijzigd",
+      "medicationCourseEnd": "{name} heeft een medicijnkuur beëindigd",
       "medicationDelete": "{name} heeft een medicijn verwijderd",
       "medicationGlp1Update": "{name} heeft een GLP-1-kuur gewijzigd",
       "medicationScheduleCreate": "{name} heeft een doseerschema toegevoegd",

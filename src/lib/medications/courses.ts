@@ -482,9 +482,14 @@ function keptEndedAt(
  * (`canEndCourse`): ending an ended course would reopen it up to today, and
  * ending one that has not started would invent a one-day course.
  */
-export async function endCurrentCourse(
-  args: WriteContext,
-): Promise<ProjectedWindow> {
+export async function endCurrentCourse(args: WriteContext): Promise<{
+  /** The window the medication reads after the end. */
+  window: ProjectedWindow;
+  /** The window it read before, for the audit row's overwrite (C4). */
+  previous: ProjectedWindow;
+  /** How many pending placeholders at or after the moment were tombstoned. */
+  droppedPlaceholders: number;
+}> {
   const now = args.now ?? new Date();
   const todayKey = userDayKey(now, args.timeZone);
   const { endsOn: today, endedAt } = courseEndNow(now, args.timeZone);
@@ -528,7 +533,7 @@ export async function endCurrentCourse(
         },
       });
     }
-    await tx.medicationIntakeEvent.updateMany({
+    const dropped = await tx.medicationIntakeEvent.updateMany({
       where: {
         userId: args.userId,
         medicationId: args.medicationId,
@@ -540,7 +545,15 @@ export async function endCurrentCourse(
       },
       data: { deletedAt: now, syncVersion: { increment: 1 } },
     });
-    return project(tx, args.medicationId);
+    return {
+      window: await project(tx, args.medicationId),
+      previous: {
+        startsOn: medication.startsOn,
+        endsOn: medication.endsOn,
+        endedAt: medication.endedAt,
+      },
+      droppedPlaceholders: dropped.count,
+    };
   });
 }
 

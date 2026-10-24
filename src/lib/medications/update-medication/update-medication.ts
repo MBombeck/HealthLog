@@ -300,13 +300,15 @@ async function auditMedicationEdit(
 /** Edit one medication the route found and authorised. */
 export async function updateMedication(input: {
   user: EditUser;
+  /** The grant the request was resolved under; null for the owner. */
+  grantId: string | null;
   authMethod: string;
   id: string;
   existing: EditableMedication;
   data: MedicationEdit;
   ipAddress: string | null;
 }): Promise<MedicationEditOutcome> {
-  const { user, id } = input;
+  const { user, grantId, id } = input;
   const plan = await planMedicationEdit(input);
   if (!plan.ok) return plan;
   const { write } = plan;
@@ -361,7 +363,7 @@ export async function updateMedication(input: {
   // The read model, exactly as `GET /api/medications/{id}` answers it.
   const body = await medicationDetail({
     user,
-    grantId: null,
+    grantId,
     medication,
     announce: false,
   });

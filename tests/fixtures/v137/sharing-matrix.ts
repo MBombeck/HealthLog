@@ -515,6 +515,14 @@ export const ADMITTED_MUTATING_HANDLERS = [
     "update",
   ),
   handler(
+    "app/api/medications/[id]/courses/end/route.ts",
+    "/api/medications/[id]/courses/end",
+    "POST",
+    "medications",
+    "manage",
+    "update",
+  ),
+  handler(
     "app/api/medications/[id]/schedule-revisions/route.ts",
     "/api/medications/[id]/schedule-revisions",
     "POST",

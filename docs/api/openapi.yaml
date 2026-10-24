@@ -6872,8 +6872,9 @@ paths:
         placeholders for slots at or after the moment are removed (tombstoned for sync). A medication with no dates gets
         the course its window describes, from creation to today. An end date set through `PUT /api/medications/{id}` or
         the course editor keeps meaning the whole day; only this action ends a course at an instant. Refused with 409
-        `medications.course.notRunning` while no course is running — the rule the reads publish as `canEndCourse`.
-        Owner-only."
+        `medications.course.notRunning` while no course is running — the rule the reads publish as `canEndCourse`. The
+        record's owner, or a delegate whose grant manages the record's medications (the level of the medication's PUT);
+        any other delegate is refused with 403."
       parameters:
         - in: path
           name: id
@@ -6889,7 +6890,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/EndMedicationCourseResponse"
         "401": *a1
-        "403": *a9
+        "403": *a15
         "404":
           description: Medication not found (`medications.course.notFound`), or another user's.
           content:
@@ -53955,7 +53956,8 @@ components:
         canStartCourse:
           type: boolean
           description: "v1.40 — whether `POST /api/medications/{id}/courses` may start a new course now: the medication is active,
-            not one-time, has a course and every course has ended."
+            not one-time, has a course and every course has ended, and the caller is the record's owner (starting a
+            course is not delegable, so a delegate always reads false)."
         nextDueScheduleId:
           description: The schedule `nextDueAt` belongs to; null when nothing is due.
           type:
@@ -53979,9 +53981,10 @@ components:
         canEndCourse:
           type: boolean
           description: '#1280 — whether `POST /api/medications/{id}/courses/end` may end the course now: true exactly while a
-            course is running (`courseStatus` CURRENT; a medication with no dates is running). Clients offer "End
-            course" from this and do not re-derive it; the action refuses with 409 `medications.course.notRunning` when
-            it is false. Read-only — computed, not stored.'
+            course is running (`courseStatus` CURRENT; a medication with no dates is running) and the caller may end it:
+            the owner of the record, or a delegate whose grant manages its medications. False to every other caller.
+            Clients offer "End course" from this and do not re-derive it; the action refuses with 409
+            `medications.course.notRunning` when it is false. Read-only — computed, not stored.'
         lastTakenAt:
           anyOf:
             - type: string
@@ -54414,7 +54417,8 @@ components:
         canStartCourse:
           type: boolean
           description: "v1.40 — whether `POST /api/medications/{id}/courses` may start a new course now: the medication is active,
-            not one-time, has a course and every course has ended."
+            not one-time, has a course and every course has ended, and the caller is the record's owner (starting a
+            course is not delegable, so a delegate always reads false)."
         courseStatus:
           type: string
           enum:
@@ -54433,9 +54437,10 @@ components:
         canEndCourse:
           type: boolean
           description: '#1280 — whether `POST /api/medications/{id}/courses/end` may end the course now: true exactly while a
-            course is running (`courseStatus` CURRENT; a medication with no dates is running). Clients offer "End
-            course" from this and do not re-derive it; the action refuses with 409 `medications.course.notRunning` when
-            it is false. Read-only — computed, not stored.'
+            course is running (`courseStatus` CURRENT; a medication with no dates is running) and the caller may end it:
+            the owner of the record, or a delegate whose grant manages its medications. False to every other caller.
+            Clients offer "End course" from this and do not re-derive it; the action refuses with 409
+            `medications.course.notRunning` when it is false. Read-only — computed, not stored.'
         stockUnitsRemaining:
           description: "v1.37.19 — usable inventory units left (same semantics as the list entry's field): NULL = inventory
             tracking off; 0 = tracking on, supply ran out."

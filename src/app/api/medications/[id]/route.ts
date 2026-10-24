@@ -36,7 +36,7 @@ export const PUT = apiHandler(
     // excludes every actioned row — and the previous cadence is the one
     // genuinely unrecoverable part, which is what C7 puts in the audit row.
     // The DELETE beside it stays refused.
-    const { user, authMethod } = await requireRecordAuth(
+    const { user, authMethod, grantId } = await requireRecordAuth(
       "manage",
       "medications",
     );
@@ -60,6 +60,7 @@ export const PUT = apiHandler(
 
     const outcome = await updateMedication({
       user,
+      grantId,
       authMethod,
       id,
       existing,

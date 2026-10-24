@@ -36,6 +36,10 @@ import { floorWhole } from "@/lib/medications/units-per-dose";
 import { resolveIntakeActionability } from "@/lib/medications/intake-actionable";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { buildRelated } from "@/lib/links/related";
+import {
+  courseActionAuthority,
+  withCourseActionAuthority,
+} from "@/lib/medications/course-authority";
 
 export type ReadUser = Pick<SessionUser, "id" | "timezone" | "locale">;
 type MedicationWithSchedules = Medication & {
@@ -262,7 +266,7 @@ export async function medicationDetail(input: {
     )
   ).get(id);
 
-  return {
+  const body = {
     ...medication,
     unitsPerDose: Number(medication.unitsPerDose),
     // `schedules: []` plus `recordedSchedules` when intake tracking is off
@@ -296,4 +300,6 @@ export async function medicationDetail(input: {
       id,
     }),
   };
+  // End and Start as the CALLER may press them (#1280).
+  return withCourseActionAuthority(body, await courseActionAuthority(grantId));
 }

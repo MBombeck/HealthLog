@@ -13,12 +13,16 @@ import {
   unstableExternalIdShape,
 } from "@/lib/validations/external-id";
 import { readMedicationsListCached } from "@/lib/medications/list-read";
+import {
+  courseActionAuthority,
+  withCourseActionAuthority,
+} from "@/lib/medications/course-authority";
 import { createMedication } from "@/lib/medications/create-medication";
 import { withIdempotency } from "@/lib/idempotency";
 import { NextRequest } from "next/server";
 
 export const GET = apiHandler(async () => {
-  const { user } = await requireRecordAuth("read", "medications");
+  const { user, grantId } = await requireRecordAuth("read", "medications");
 
   // Cache the list shape on userId. The 60 s fresh TTL bounds the
   // cross-midnight staleness window for `todayEventCount` and the
@@ -30,7 +34,11 @@ export const GET = apiHandler(async () => {
   // `invalidateUserMedications({ evict: true })` before the next read
   // lands; background sync paths mark the bucket stale instead. The RSC
   // wrapper (`src/app/medications/page.tsx`) shares this exact cell.
-  const result = await readMedicationsListCached(user);
+  const cached = await readMedicationsListCached(user);
+  // The cell is the record's; End and Start are narrowed to the caller after
+  // it, so one caller's authority never lands in another's answer (#1280).
+  const authority = await courseActionAuthority(grantId);
+  const result = cached.map((row) => withCourseActionAuthority(row, authority));
 
   annotate({
     action: { name: "medication.list" },
@@ -55,7 +63,7 @@ async function postMedication(request: NextRequest): Promise<Response> {
   // it afterwards — `PUT /api/medications/[id]` and the DELETE beside it stay
   // on `requireAuth()` and refuse under a switch. Adding is help; rewriting
   // the owner's cabinet is not.
-  const { user } = await requireRecordAuth("write", "medications");
+  const { user, grantId } = await requireRecordAuth("write", "medications");
 
   const { data: body, error: jsonError } = await safeJson(request, {
     maxBytes: 64 * 1024,
@@ -80,6 +88,7 @@ async function postMedication(request: NextRequest): Promise<Response> {
 
   const outcome = await createMedication({
     user,
+    grantId,
     data: parsed.data,
     ipAddress: getClientIp(request),
   });
