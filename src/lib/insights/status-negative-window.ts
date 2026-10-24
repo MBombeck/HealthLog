@@ -136,15 +136,17 @@ export async function statusNoteCoolingDown(
 /**
  * Close every open window on one record's notes, streaks included: the person
  * asked for fresh notes (the regenerate action) or changed what answers them.
- * Best-effort: a failed write leaves windows that lapse on their own.
+ * Without `userId`, on every record's notes: the operator changed the
+ * provider every account may fall back on. Best-effort: a failed write leaves
+ * windows that lapse on their own.
  */
 export async function clearStatusNegativeWindows(
-  userId: string,
+  userId?: string,
 ): Promise<void> {
   try {
     await prisma.insightStatusCache.updateMany({
       where: {
-        userId,
+        ...(userId ? { userId } : {}),
         OR: [{ retryAt: { not: null } }, { failureStreak: { gt: 0 } }],
       },
       data: { retryAt: null, negativeReason: null, failureStreak: 0 },

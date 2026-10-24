@@ -16,6 +16,10 @@ vi.mock("@/lib/db", () => ({
       upsert: vi.fn(),
     },
     user: { findMany: vi.fn().mockResolvedValue([]) },
+    providerHealth: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+    insightStatusCache: {
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
   },
 }));
 
@@ -216,6 +220,31 @@ describe("PUT /api/admin/ai-settings", () => {
     await expect(PUT(jsonReq({ model: "gpt-4o" }))).rejects.toMatchObject({
       statusCode: 429,
     });
+  });
+
+  // #1279 — background work leaves a provider the health ledger benched out
+  // of every account's chain. A fixed operator provider must not sit out a
+  // pause the broken one earned, so a saved change forgets what the ledger
+  // recorded for it on every account, and lets their notes try again.
+  it("forgets the operator provider's recorded failures on every account", async () => {
+    upsertEcho();
+    await PUT(jsonReq({ model: "gpt-4o-mini" }));
+    expect(prisma.providerHealth.deleteMany).toHaveBeenCalledWith({
+      where: { providerType: "admin-openai" },
+    });
+    expect(prisma.insightStatusCache.updateMany).toHaveBeenCalledWith({
+      where: {
+        OR: [{ retryAt: { not: null } }, { failureStreak: { gt: 0 } }],
+      },
+      data: { retryAt: null, negativeReason: null, failureStreak: 0 },
+    });
+  });
+
+  it("forgets nothing when the change is refused", async () => {
+    await expect(
+      PUT(jsonReq({ baseUrl: "https://attacker.example/v1" })),
+    ).rejects.toMatchObject({ statusCode: 422 });
+    expect(prisma.providerHealth.deleteMany).not.toHaveBeenCalled();
   });
 });
 

@@ -209,4 +209,14 @@ describe("clearStatusNegativeWindows", () => {
     updateMany.mockRejectedValue(new Error("pool exhausted"));
     await expect(clearStatusNegativeWindows("u1")).resolves.toBeUndefined();
   });
+
+  it("closes them for every record when the operator's provider changed", async () => {
+    await clearStatusNegativeWindows();
+    expect(updateMany).toHaveBeenCalledWith({
+      where: {
+        OR: [{ retryAt: { not: null } }, { failureStreak: { gt: 0 } }],
+      },
+      data: { retryAt: null, negativeReason: null, failureStreak: 0 },
+    });
+  });
 });

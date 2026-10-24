@@ -8,6 +8,8 @@ import { encrypt, decrypt } from "@/lib/crypto";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
 import { legacyPrivateHostReport } from "@/lib/ai/legacy-private-host-report";
+import { forgetProviderHealth } from "@/lib/ai/provider-health-ledger";
+import { clearStatusNegativeWindows } from "@/lib/insights/status-negative-window";
 
 export const dynamic = "force-dynamic";
 
@@ -133,6 +135,16 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     ipAddress: getClientIp(request),
     details: auditDetails,
   });
+
+  // #1279 — background work leaves out a provider the health ledger benched,
+  // on every account whose chain falls back on this one, and a status note
+  // waits out its negative window. A fixed operator provider must not sit out
+  // a pause the broken one earned, so what was recorded against it is
+  // forgotten on every account, as a person's own save does for theirs.
+  await Promise.all([
+    forgetProviderHealth({ providerType: "admin-openai" }),
+    clearStatusNegativeWindows(),
+  ]);
 
   const hasKey = Boolean(settings.adminAiKeyEncrypted);
 
