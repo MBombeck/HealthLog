@@ -210,6 +210,7 @@ beforeEach(() => {
     },
     workingProvider: { providerType: "anthropic", instance: {} },
     fallbackHops: [],
+    tokensSpent: 0,
   } as never);
 });
 
@@ -356,6 +357,7 @@ describe("POST — numeric grounding", () => {
       },
       workingProvider: { providerType: "anthropic", instance: {} },
       fallbackHops: [],
+      tokensSpent: 0,
     } as never);
     const res = await POST(
       req("doc-1", { message: "what is my ldl?" }) as never,
@@ -393,6 +395,7 @@ describe("POST — numeric grounding", () => {
       },
       workingProvider: { providerType: "anthropic", instance: {} },
       fallbackHops: [],
+      tokensSpent: 0,
     } as never);
     const res = await POST(
       req("doc-1", { message: "how is my ldl?" }) as never,

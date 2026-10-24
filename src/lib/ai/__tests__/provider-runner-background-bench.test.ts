@@ -210,6 +210,36 @@ describe("#1279: background work and a benched provider", () => {
     expect(local.calls).toBe(PROVIDER_PAUSE_THRESHOLD);
   });
 
+  it("reports what the hops before the answering one spent", async () => {
+    const ledger = createInMemoryProviderHealthLedger();
+    const out = await runRawCompletionWithFallback({
+      userId: "u-spent-then-answered",
+      surface: "job",
+      providers: [
+        {
+          providerType: "openai-compatible",
+          instance: new AnswerlessProvider(),
+        },
+        {
+          providerType: "anthropic",
+          instance: {
+            type: "anthropic",
+            generateCompletion: async () => ({
+              content: "ok",
+              tokensUsed: 100,
+              model: "m",
+              providerType: "anthropic",
+            }),
+          } as AIProvider,
+        },
+      ],
+      params: singleUserTurn({ system: "s", user: "u" }),
+      ledger,
+    });
+    expect(out.result.tokensUsed).toBe(100);
+    expect(out.tokensSpent).toBe(2700);
+  });
+
   it("sums what the failed hops reported spending", async () => {
     const ledger = createInMemoryProviderHealthLedger();
     const err = await runRawCompletionWithFallback({

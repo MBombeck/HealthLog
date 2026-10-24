@@ -106,6 +106,7 @@ beforeEach(() => {
     result: { content: "ok", tokensUsed: 10, model: "m" },
     workingProvider: { providerType: "anthropic" },
     fallbackHops: [],
+    tokensSpent: 0,
   } as never);
 });
 
@@ -194,6 +195,7 @@ describe("streamFencedReply — numeric grounding over the UNION", () => {
       },
       workingProvider: { providerType: "anthropic" },
       fallbackHops: [],
+      tokensSpent: 0,
     } as never);
     const res = await streamFencedReply({
       ...baseArgs,

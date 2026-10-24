@@ -292,6 +292,7 @@ beforeEach(() => {
       model: "m",
     },
     workingProvider: { providerType: "admin-openai" },
+    tokensSpent: 0,
   });
   isModuleEnabled.mockResolvedValue(true);
 });

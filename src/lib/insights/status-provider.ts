@@ -344,13 +344,12 @@ export async function runStatusCompletion(
     return { kind: raced.timedOut ? "timeout" : "error" };
   }
 
-  const { result, workingProvider } = raced.value;
-  // Reconcile against what the provider actually reported. This runs for the
-  // empty-content branch too: those tokens were burned upstream even though the
-  // reply was unusable, so they stay on the ledger rather than being refunded
-  // into a free retry loop. Falls back to the reservation when the provider
-  // reports no count, so an unreported generation is never billed as zero.
-  const actualTokens = result.tokensUsed ?? reservation.reserved;
+  const { result, workingProvider, tokensSpent } = raced.value;
+  // What the provider reported, plus (#1279) what the hops that failed before
+  // it spent. The empty-content branch is charged too: those tokens were
+  // burned upstream. No count falls back to the reservation, never to zero.
+  const actualTokens =
+    (result.tokensUsed ?? reservation.reserved) + tokensSpent;
   await reconcileSpend(userId, reservation.reserved, actualTokens, dateKey, 0, {
     servedBy: workingProvider.providerType,
     reservedOwner: reservation.owner,

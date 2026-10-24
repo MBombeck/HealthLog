@@ -220,6 +220,7 @@ describe("coach chat — stateless no-tools snapshot grounding", () => {
     runStreamingRawCompletionWithFallback.mockResolvedValue({
       result: { content: "Your BP looks stable.", tokensUsed: 42, model: "m" },
       workingProvider: { providerType: "admin-openai" },
+      tokensSpent: 0,
     });
   });
 
@@ -276,6 +277,7 @@ describe("coach chat — snapshot stays grounded across transcript elision", () 
     runStreamingRawCompletionWithFallback.mockResolvedValue({
       result: { content: "Your BP looks stable.", tokensUsed: 42, model: "m" },
       workingProvider: { providerType: "admin-openai" },
+      tokensSpent: 0,
     });
   });
 

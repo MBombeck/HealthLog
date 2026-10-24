@@ -181,6 +181,7 @@ describe("POST /api/insights/chat — integration", () => {
       },
       workingProvider: { providerType: "openai", instance: {} },
       fallbackHops: [],
+      tokensSpent: 0,
     });
     const { POST } = await import("@/app/api/insights/chat/route");
 
@@ -331,6 +332,7 @@ describe("POST /api/insights/chat — integration", () => {
       },
       workingProvider: { providerType: "openai", instance: {} },
       fallbackHops: [],
+      tokensSpent: 0,
     });
     const { POST } = await import("@/app/api/insights/chat/route");
 
@@ -399,6 +401,7 @@ describe("POST /api/insights/chat — integration", () => {
       },
       workingProvider: { providerType: "openai", instance: {} },
       fallbackHops: [],
+      tokensSpent: 0,
     });
     const { POST } = await import("@/app/api/insights/chat/route");
 
@@ -509,6 +512,7 @@ describe("POST /api/insights/chat — integration", () => {
       },
       workingProvider: { providerType: "openai", instance: {} },
       fallbackHops: [],
+      tokensSpent: 0,
     });
     const { POST } = await import("@/app/api/insights/chat/route");
 

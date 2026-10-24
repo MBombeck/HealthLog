@@ -167,6 +167,7 @@ describe("generateComprehensiveInsight — consent withdrawn in flight", () => {
       },
       workingProvider: { providerType: "openai" },
       fallbackHops: [],
+      tokensSpent: 0,
     });
     userUpdateMany.mockResolvedValue({ count: 1 });
     const { AiUnavailableError } =
@@ -209,6 +210,7 @@ describe("generateComprehensiveInsight — scope/version commit guard", () => {
       },
       workingProvider: { providerType: "openai" },
       fallbackHops: [],
+      tokensSpent: 0,
     });
     // Some User update landed: the guarded commit matches zero rows.
     userUpdateMany.mockResolvedValue({ count: 0 });
@@ -258,6 +260,7 @@ describe("generateComprehensiveInsight — scope/version commit guard", () => {
       },
       workingProvider: { providerType: "openai" },
       fallbackHops: [],
+      tokensSpent: 0,
     });
     // The real DB returns count: 1 here too, since the guarded predicate
     // never references `updatedAt` — the credential-refresh write cannot
@@ -304,6 +307,7 @@ describe("generateComprehensiveInsight — scope/version commit guard", () => {
       },
       workingProvider: { providerType: "openai" },
       fallbackHops: [],
+      tokensSpent: 0,
     });
     // Simulates a genuine concurrent settings/profile change (exclude list,
     // gender, or display name edited) between the read above and the
@@ -349,6 +353,7 @@ describe("generateComprehensiveInsight — scope/version commit guard", () => {
       },
       workingProvider: { providerType: "openai" },
       fallbackHops: [],
+      tokensSpent: 0,
     });
     userUpdateMany.mockResolvedValue({ count: 1 });
 
@@ -388,6 +393,7 @@ describe("generateComprehensiveInsight — scope/version commit guard", () => {
       },
       workingProvider: { providerType: "openai" },
       fallbackHops: [],
+      tokensSpent: 0,
     });
     userUpdateMany.mockResolvedValue({ count: 0 });
 

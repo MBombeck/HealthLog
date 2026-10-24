@@ -125,6 +125,8 @@ function mockProviderReply(tokensUsed: number | null) {
   runRawCompletionWithFallback.mockResolvedValue({
     result: { content: '{"summary":"ok"}', model: "m", tokensUsed },
     workingProvider: { providerType: "admin-openai" },
+    fallbackHops: [],
+    tokensSpent: 0,
   });
 }
 
@@ -269,6 +271,19 @@ describe("runStatusCompletion — ledger accounting", () => {
     expect(chat.allowed).toBe(true);
   });
 
+  it("charges what the hops that failed before the answer spent (#1279)", async () => {
+    runRawCompletionWithFallback.mockResolvedValue({
+      result: { content: '{"summary":"ok"}', model: "m", tokensUsed: 100 },
+      workingProvider: { providerType: "admin-openai" },
+      fallbackHops: [],
+      tokensSpent: 2700,
+    });
+
+    await runStatusCompletion(completionArgs());
+
+    expect(ledgerTotal).toBe(100 + 2700);
+  });
+
   it("charges the reservation when the provider reports no token count", async () => {
     mockProviderReply(null);
 
@@ -398,6 +413,7 @@ describe("runStatusCompletion — cost owner decides the ceiling", () => {
     runRawCompletionWithFallback.mockResolvedValue({
       result: { content: '{"summary":"ok"}', model: "m", tokensUsed: 100 },
       workingProvider: { providerType: "anthropic" },
+      tokensSpent: 0,
     });
 
     const result = await runStatusCompletion(completionArgs());

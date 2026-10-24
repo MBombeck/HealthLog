@@ -674,6 +674,7 @@ async function runRawChain(
         result,
         workingProvider: candidate,
         fallbackHops: hops,
+        tokensSpent: hops.reduce((sum, h) => sum + (h.tokensSpent ?? 0), 0),
       };
     } catch (error) {
       if (!isHardProviderFailure(error)) {
@@ -766,6 +767,12 @@ export interface RunRawWithFallbackResult {
   result: CompletionResult;
   workingProvider: ProviderChainResolved;
   fallbackHops: FallbackHop[];
+  /**
+   * #1279 — tokens the hops that failed before `workingProvider` answered
+   * reported spending, summed. Not in `result.tokensUsed`, which is the
+   * answering call's alone; a caller that reconciles budget charges both.
+   */
+  tokensSpent: number;
 }
 
 /**

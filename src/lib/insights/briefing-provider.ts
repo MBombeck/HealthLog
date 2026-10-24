@@ -227,7 +227,9 @@ export async function runBriefingCompletion(
     throw err;
   }
 
-  const actualTokens = outcome.result.tokensUsed ?? reservation.reserved;
+  // #1279 — plus what the hops that failed before it spent.
+  const actualTokens =
+    (outcome.result.tokensUsed ?? reservation.reserved) + outcome.tokensSpent;
   await reconcileSpend(
     args.userId,
     reservation.reserved,

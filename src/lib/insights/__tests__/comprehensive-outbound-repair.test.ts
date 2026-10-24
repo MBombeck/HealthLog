@@ -137,6 +137,7 @@ function reply(content: string) {
     result: { content, tokensUsed: 10, model: "m" },
     workingProvider: { providerType: "openai" },
     fallbackHops: [],
+    tokensSpent: 0,
   };
 }
 

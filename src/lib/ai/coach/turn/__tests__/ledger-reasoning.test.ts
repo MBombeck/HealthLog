@@ -106,6 +106,14 @@ describe("reserveTurnBudget and the turn ledger", () => {
     ]);
   });
 
+  it("keeps what a failed call reported spending when the turn closes (#1279)", async () => {
+    const l = await ledger();
+    await l.close(2_700);
+    expect(b.reconcileSpend.mock.calls.map((c) => [c[1], c[2]])).toEqual([
+      [9_000, 2_700],
+    ]);
+  });
+
   it("settles a forced final round against the final reserve", async () => {
     const l = await ledger();
     await l.settleRound({

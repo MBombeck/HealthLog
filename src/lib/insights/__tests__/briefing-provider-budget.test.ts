@@ -110,6 +110,7 @@ function mockProviderReply(
     },
     workingProvider: { providerType: "admin-openai" },
     fallbackHops: [],
+    tokensSpent: 0,
   });
 }
 
@@ -131,6 +132,19 @@ describe("runBriefingCompletion — ledger accounting", () => {
     // existed the total stayed at zero forever, no matter how many briefings
     // the account generated.
     expect(ledgerTotal).toBe(1234);
+  });
+
+  it("charges what the hops that failed before the answer spent (#1279)", async () => {
+    runRawCompletionWithFallback.mockResolvedValue({
+      result: { content: "{}", model: "m", tokensUsed: 1234 },
+      workingProvider: { providerType: "admin-openai" },
+      fallbackHops: [],
+      tokensSpent: 2700,
+    });
+
+    await runBriefingCompletion(completionArgs());
+
+    expect(ledgerTotal).toBe(1234 + 2700);
   });
 
   it("charges the reservation when the provider reports no token count", async () => {

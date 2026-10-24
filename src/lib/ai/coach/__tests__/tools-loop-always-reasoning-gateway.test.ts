@@ -209,6 +209,7 @@ async function turn(level: ReasoningLevel) {
       result: await client.generateCompletion(params),
       workingProvider: { providerType: "openai-compatible" },
       fallbackHops: [],
+      tokensSpent: 0,
     }),
   );
   return runCoachToolLoop({

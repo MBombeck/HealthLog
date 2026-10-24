@@ -145,6 +145,7 @@ describe("comprehensive warm-path timeout + failure observability", () => {
       result: { content: VALID, tokensUsed: 10, model: "m" },
       workingProvider: { providerType: "codex" },
       fallbackHops: [],
+      tokensSpent: 0,
     });
 
     const outcome = await generateComprehensiveInsight("u1", { locale: "de" });

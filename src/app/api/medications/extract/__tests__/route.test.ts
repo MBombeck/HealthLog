@@ -192,6 +192,7 @@ describe("POST /api/medications/extract — happy path", () => {
       },
       workingProvider: { providerType: "openai", instance: {} as never },
       fallbackHops: [],
+      tokensSpent: 0,
     });
 
     const res = await POST(
@@ -237,6 +238,7 @@ describe("POST /api/medications/extract — happy path", () => {
       },
       workingProvider: { providerType: "openai", instance: {} as never },
       fallbackHops: [],
+      tokensSpent: 0,
     });
 
     const res = await POST(
@@ -261,6 +263,7 @@ describe("POST /api/medications/extract — daily budget", () => {
       },
       workingProvider: { providerType: "openai", instance: {} as never },
       fallbackHops: [],
+      tokensSpent: 0,
     };
   }
 
@@ -409,6 +412,7 @@ describe("POST /api/medications/extract — validation + provider errors", () =>
       },
       workingProvider: { providerType: "openai", instance: {} as never },
       fallbackHops: [],
+      tokensSpent: 0,
     });
 
     const res = await POST(postReq({ text: "Mounjaro 5mg weekly" }) as never);
