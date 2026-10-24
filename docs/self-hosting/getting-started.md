@@ -274,13 +274,13 @@ Encryption: the step shows the key id and a fingerprint (the first 12 hex
 characters of SHA-256 over the key) and can check a pasted copy without
 storing it. Admins see a dashboard reminder until the active key is confirmed.
 
-| Platform  | Where the key is set                                            |
-| --------- | --------------------------------------------------------------- |
-| Compose   | `.env` next to `docker-compose.yml`                             |
-| TrueNAS   | Apps, HealthLog, Edit, Environment                              |
-| Coolify   | the application's Environment Variables                         |
-| Unraid    | the container template (Docker tab, Edit) or the Compose `.env` |
-| Portainer | the stack's Environment variables                               |
+| Platform  | Where the key is set                                                                               |
+| --------- | -------------------------------------------------------------------------------------------------- |
+| Compose   | `.env` next to `docker-compose.yml`                                                                |
+| TrueNAS   | Apps, HealthLog, Edit: the Encryption Key field (`ENCRYPTION_KEY` in a YAML install's environment) |
+| Coolify   | the application's Environment Variables                                                            |
+| Unraid    | the container template (Docker tab, Edit) or the Compose `.env`                                    |
+| Portainer | the stack's Environment variables                                                                  |
 
 Set `HEALTHLOG_PLATFORM` (`compose`, `truenas`, `coolify`, `unraid`,
 `portainer`) to open the step on your platform's instructions.

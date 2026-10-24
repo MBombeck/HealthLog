@@ -89,7 +89,7 @@ curl -s http://localhost:3000/api/version   # returns version + buildSha + built
 
 Persistent state lives in exactly one named volume (`pgdata`, the Postgres data dir); the app container is stateless, so backing up the database backs up everything.
 
-NAS and homelab users have ready-made paths: [Unraid Community Applications](docs/self-hosting/unraid.md) and [Portainer app templates](docs/self-hosting/portainer/README.md).
+NAS and homelab users have ready-made paths: [Unraid Community Applications](docs/self-hosting/unraid.md), [Portainer app templates](docs/self-hosting/portainer/README.md) and [TrueNAS](docs/self-hosting/truenas.md) (the Community train app is pending catalog review).
 
 ## Self-hosting
 

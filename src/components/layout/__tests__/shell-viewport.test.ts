@@ -12,6 +12,10 @@ import { readSource } from "@/__tests__/helpers/source-files";
 
 import {
   MAIN_SCROLL_CLASS,
+  RAIL_ACCOUNT_BAND,
+  RAIL_WIDTH_COLLAPSED,
+  RAIL_WIDTH_EXPANDED,
+  SHELL_HEADER_BAND,
   SHELL_ROOT_CLASS,
   SUB_SHELL_GRID_FLOOR,
 } from "../shell-metrics";
@@ -135,5 +139,55 @@ describe("the bottom edge is cleared in both shells", () => {
     expect(SUB_SHELL_GRID_FLOOR).toContain(
       `shell-desktop:min-h-[calc(100dvh-${4 + 1.5 + desktopPad}rem)]`,
     );
+  });
+});
+
+/**
+ * The side insets. An iPad in a Safari tab laid the shell out 10 px in from
+ * the left edge in portrait; the shell padded that inset and its strip showed
+ * the page colour beside the rail, from the logo band to the account row.
+ * Desktop browsers report no side inset, so `e2e/tablet-shell.spec.ts`
+ * simulates one through `--safe-area-left` and measures the result; these
+ * hold the decisions that route the inset to the rail.
+ */
+describe("the side insets belong to what meets them", () => {
+  const css = () => readSource("src/app/globals.css", ".shell-safe-area {");
+  const rail = () =>
+    readSource(
+      "src/components/layout/sidebar-nav.tsx",
+      "export function SidebarNav",
+    );
+
+  it("are env() behind one property each, which the shell and the rail read", () => {
+    const root = readSource("src/app/globals.css", "--safe-area-left");
+    expect(root).toMatch(
+      /--safe-area-left:\s*env\(safe-area-inset-left,\s*0px\);/,
+    );
+    expect(root).toMatch(
+      /--safe-area-right:\s*env\(safe-area-inset-right,\s*0px\);/,
+    );
+    expect(css()).not.toMatch(/padding-(?:left|right):\s*env\(/);
+  });
+
+  it("the desktop shell pads no side, the phone shell pads both", () => {
+    const block = /\.shell-safe-area\s*\{([\s\S]*?)\n  \}/.exec(css())![1];
+    expect(block).toMatch(/padding-left:\s*var\(--safe-area-left\);/);
+    expect(block).toMatch(/padding-right:\s*var\(--safe-area-right\);/);
+    expect(block).toMatch(
+      /@variant shell-desktop\s*\{\s*padding-right:\s*0;\s*padding-left:\s*0;\s*\}/,
+    );
+  });
+
+  it("the rail takes the left inset inside its own background", () => {
+    const source = rail();
+    expect(source).toMatch(/<aside[\s\S]*?pl-\(--safe-area-left\)/);
+    expect(RAIL_WIDTH_COLLAPSED).toBe("w-[calc(4rem+var(--safe-area-left))]");
+    expect(RAIL_WIDTH_EXPANDED).toBe("w-[calc(16rem+var(--safe-area-left))]");
+  });
+
+  it("the account band mirrors the logo band", () => {
+    const height = (value: string) => /\bh-(\d+)\b/.exec(value)?.[1];
+    expect(height(RAIL_ACCOUNT_BAND)).toBe(height(SHELL_HEADER_BAND));
+    expect(RAIL_ACCOUNT_BAND).toContain("border-t");
   });
 });
