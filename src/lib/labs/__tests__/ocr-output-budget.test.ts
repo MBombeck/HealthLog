@@ -115,8 +115,12 @@ describe("OpenAI", () => {
   });
 });
 
+// #1276 — a gateway or local server cannot promise that `none` is honoured
+// (a model behind it may reason anyway), so these wires add the minimum's
+// thinking budget on top like a model that always thinks: the answer keeps
+// its full allowance either way.
 describe("an OpenAI-compatible gateway (Gemini, OpenRouter, LiteLLM)", () => {
-  it("asks for no reasoning on the endpoint's own dialect", async () => {
+  it("asks for no reasoning on the endpoint's own dialect, with the minimum's budget on top", async () => {
     const body = await sentBody(
       new OpenAIClient({
         apiKey: "k",
@@ -126,12 +130,14 @@ describe("an OpenAI-compatible gateway (Gemini, OpenRouter, LiteLLM)", () => {
       }),
     );
     expect(body.reasoning_effort).toBe("none");
-    expect(body.max_tokens ?? body.max_completion_tokens).toBe(ANSWER);
+    expect(body.max_tokens ?? body.max_completion_tokens).toBe(
+      ANSWER + REASONING_THINKING_BUDGET.low,
+    );
   });
 });
 
 describe("a local server", () => {
-  it("asks for no reasoning and keeps the answer budget", async () => {
+  it("asks for no reasoning and keeps the answer budget, with the minimum's on top", async () => {
     const body = await sentBody(
       new LocalOpenAICompatibleClient({
         apiKey: null,
@@ -140,7 +146,7 @@ describe("a local server", () => {
       }),
     );
     expect(body.reasoning_effort).toBe("none");
-    expect(body.max_tokens).toBe(ANSWER);
+    expect(body.max_tokens).toBe(ANSWER + REASONING_THINKING_BUDGET.low);
   });
 });
 
