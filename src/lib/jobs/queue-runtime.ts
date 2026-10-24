@@ -154,7 +154,7 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
       fn: "handleInsightPregenerateJob",
     },
     exclusive: "lockedPass",
-    why: "Up to 200 accounts, a comprehensive generation each (a provider call bounded by the account's timeout, up to ten minutes) plus the status warm.",
+    why: "Up to 200 accounts, a comprehensive generation each (up to five provider calls in a row, each bounded by the account's timeout of at most ten minutes) plus the status warm.",
   },
   "morning-digest-refresh": short(
     "One account, one comprehensive generation, bounded by the provider timeout.",

@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2897,
-  "total": 9285,
+  "total": 9283,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -2324,7 +2324,7 @@
     "lib/jobs/google-health-oauth-state-cleanup.ts": 1,
     "lib/jobs/google-health-sleep-repair.ts": 1,
     "lib/jobs/insight-pregenerate-shared.ts": 1,
-    "lib/jobs/insight-pregenerate.ts": 39,
+    "lib/jobs/insight-pregenerate.ts": 37,
     "lib/jobs/insight-status-generate-shared.ts": 3,
     "lib/jobs/insight-status-generate.ts": 3,
     "lib/jobs/intake-auto-skip.ts": 8,

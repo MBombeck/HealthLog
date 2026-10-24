@@ -76,7 +76,8 @@ export const AI_BUDGETS = {
    * per-user `aiResponseTimeoutSeconds` setting still overrides this default
    * for operators on even slower backends; this only lifts the floor for
    * accounts that never set it. The worker cap in `insight-pregenerate.ts`
-   * derives from this value plus fixed headroom, so it tracks automatically.
+   * derives from this value times `COMPREHENSIVE_MODEL_CALLS` plus fixed
+   * headroom, so it tracks automatically.
    */
   comprehensive: { temperature: 0.3, timeoutMs: 180_000 },
 
@@ -248,6 +249,21 @@ export const AI_BUDGETS = {
    */
   documentChat: { temperature: 0.3, maxTokens: 600 },
 } as const satisfies Record<string, AiBudget>;
+
+/**
+ * The most model calls one comprehensive generation makes one after another:
+ * the generation itself, the JSON retry when its reply does not parse, the
+ * grounding retry when the briefing quotes a figure the server never
+ * computed and the repair when the outbound screen withholds the payload,
+ * plus the one repeat the Local and gateway clients send when a thinking
+ * model answered with reasoning alone. Every one of them has the person's
+ * response timeout (or `comprehensive.timeoutMs`) to itself, so whatever
+ * waits on the whole generation from outside (the warm's abort in
+ * `insight-pregenerate.ts`, the Insights page's poll for the warm) waits for
+ * this many (#1274). `ai-call-timeout-guard.test.ts` holds the generator's
+ * stages to this count.
+ */
+export const COMPREHENSIVE_MODEL_CALLS = 5;
 
 /** Bounds + default for the comprehensive / briefing output-token ceiling. */
 const INSIGHTS_MAX_TOKENS_DEFAULT = 2500;
