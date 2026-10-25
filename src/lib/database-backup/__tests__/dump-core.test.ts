@@ -25,6 +25,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   applyRetention,
+  bucketConfigFromEnv,
+  pickBucketDump,
   buildManifest,
   compareKeyFingerprints,
   compareRowCounts,
@@ -626,5 +628,62 @@ describe("an off-host copy read back by the restore", () => {
       }),
     ).rejects.toThrow(/neither BACKUP_ENCRYPTION_KEY nor/);
     expect(await readdir(dir)).toEqual([name]);
+  });
+});
+
+describe("finding a dump in the bucket", () => {
+  const keys = [
+    "database/healthlog-20261023T013000Z-daily.dump.enc",
+    "database/healthlog-20261023T013000Z-daily.manifest.json.enc",
+    "database/healthlog-20261024T013000Z-daily.dump.enc",
+    "database/healthlog-20261024T013000Z-daily.manifest.json.enc",
+    // The newest dump whose manifest never arrived, and things that are
+    // not dumps at all.
+    "database/healthlog-20261025T013000Z-daily.dump.enc",
+    "2026-10-25/user-abc.json.enc",
+    "database/notes.txt",
+  ];
+
+  it("takes the newest dump whose manifest is there too", () => {
+    expect(pickBucketDump(keys)).toEqual({
+      dumpKey: "database/healthlog-20261024T013000Z-daily.dump.enc",
+      manifestKey:
+        "database/healthlog-20261024T013000Z-daily.manifest.json.enc",
+    });
+  });
+
+  it("finds a named one with or without its suffix, and nothing else", () => {
+    for (const name of [
+      "healthlog-20261023T013000Z-daily.dump",
+      "healthlog-20261023T013000Z-daily.dump.enc",
+      "database/healthlog-20261023T013000Z-daily.dump.enc",
+    ]) {
+      expect(pickBucketDump(keys, name)?.dumpKey).toBe(
+        "database/healthlog-20261023T013000Z-daily.dump.enc",
+      );
+    }
+    expect(
+      pickBucketDump(keys, "healthlog-20261025T013000Z-daily.dump"),
+    ).toBeNull();
+    expect(pickBucketDump([])).toBeNull();
+  });
+
+  it("reads the bucket from the four required variables", () => {
+    const env = {
+      BACKUP_S3_ENDPOINT: "https://s3.example.test",
+      BACKUP_S3_BUCKET: "b",
+      BACKUP_S3_ACCESS_KEY: "a",
+      BACKUP_S3_SECRET_KEY: "s",
+    };
+    expect(bucketConfigFromEnv(env)).toEqual({
+      endpoint: "https://s3.example.test",
+      bucket: "b",
+      accessKey: "a",
+      secretKey: "s",
+      region: "auto",
+    });
+    expect(
+      bucketConfigFromEnv({ ...env, BACKUP_S3_SECRET_KEY: "" }),
+    ).toBeNull();
   });
 });

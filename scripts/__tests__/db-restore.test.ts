@@ -147,6 +147,12 @@ describe("db-restore refuses before it writes", () => {
     expect(await main([], env())).toBe(2);
   });
 
+  it("refuses --from-bucket without a configured bucket, before it connects", async () => {
+    expect(await main(["latest", "--from-bucket"], env())).toBe(1);
+    expect(errors.join("\n")).toMatch(/--from-bucket needs BACKUP_S3_ENDPOINT/);
+    expect(runTool).not.toHaveBeenCalled();
+  });
+
   it("lists what is there", async () => {
     writeDump();
     expect(await main(["list"], env())).toBe(0);

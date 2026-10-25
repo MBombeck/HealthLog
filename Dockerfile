@@ -265,9 +265,11 @@ RUN node scripts/reset-password.mjs 2>&1 | grep -q "reset-password: usage:"
 RUN env -u DATABASE_URL node scripts/pending-migrations.mjs && \
     node --input-type=module -e "await import('pg')" && \
     node --input-type=module -e "await import('./scripts/migrate-deploy.mjs')"
-# The dump and restore scripts load, and the client tools they run are the
-# major the bundled database runs.
+# The dump and restore scripts load, the client tools they run are the
+# major the bundled database runs, and the S3 client `db-restore --from-bucket`
+# loads resolves from the shared module's place in the tree.
 RUN node scripts/db-dump.mjs 2>&1 | grep -q "db-dump: usage:" && \
+    node --input-type=module -e "import { createRequire } from 'node:module'; createRequire('/app/src/lib/database-backup/dump-core.mjs').resolve('@aws-sdk/client-s3')" && \
     node scripts/db-restore.mjs 2>&1 | grep -q "db-restore: usage:" && \
     pg_dump --version | grep -q "(PostgreSQL) 18\." && \
     pg_restore --version | grep -q "(PostgreSQL) 18\."

@@ -1127,6 +1127,140 @@ export function offhostKeysFromEnv(env = process.env) {
     .map((k) => /** @type {Buffer} */ (k));
 }
 
+/**
+ * @typedef {{
+ *   endpoint: string;
+ *   bucket: string;
+ *   accessKey: string;
+ *   secretKey: string;
+ *   region: string;
+ * }} BucketConfig
+ */
+
+/**
+ * The off-host bucket an environment names (`BACKUP_S3_*`), or null when one
+ * of the four required variables is missing.
+ *
+ * @param {Env} env
+ * @returns {BucketConfig | null}
+ */
+export function bucketConfigFromEnv(env = process.env) {
+  const value = (/** @type {string} */ name) => (env[name] ?? "").trim();
+  const config = {
+    endpoint: value("BACKUP_S3_ENDPOINT"),
+    bucket: value("BACKUP_S3_BUCKET"),
+    accessKey: value("BACKUP_S3_ACCESS_KEY"),
+    secretKey: value("BACKUP_S3_SECRET_KEY"),
+    region: value("BACKUP_S3_REGION") || "auto",
+  };
+  return config.endpoint &&
+    config.bucket &&
+    config.accessKey &&
+    config.secretKey
+    ? config
+    : null;
+}
+
+/**
+ * The newest database dump in a bucket listing whose manifest is there too,
+ * or the one `name` asks for. Pure. `name` may carry the `.enc` suffix or
+ * not. Answers both object keys, or null.
+ *
+ * @param {string[]} keys every key under the `database/` prefix
+ * @param {string | null} name
+ * @returns {{ dumpKey: string; manifestKey: string } | null}
+ */
+export function pickBucketDump(keys, name = null) {
+  const present = new Set(keys);
+  const wanted = name
+    ? name.replace(/\.enc$/, "").replace(/^database\//, "")
+    : null;
+  const candidates = keys
+    .map((key) => ({
+      key,
+      parsed: parseDumpFileName(key.slice(OFFHOST_DATABASE_PREFIX.length)),
+    }))
+    .filter(
+      ({ key, parsed }) =>
+        key.startsWith(OFFHOST_DATABASE_PREFIX) &&
+        parsed !== null &&
+        parsed.role === "dump" &&
+        parsed.variant === "encrypted" &&
+        (wanted === null || `${parsed.base}.dump` === wanted),
+    )
+    .map(({ parsed }) => {
+      const p = /** @type {ParsedDumpName} */ (parsed);
+      return {
+        timestamp: p.timestamp.getTime(),
+        dumpKey: offhostObjectKey(`${p.base}.dump.enc`),
+        manifestKey: offhostObjectKey(`${p.base}.manifest.json.enc`),
+      };
+    })
+    .filter((c) => present.has(c.manifestKey))
+    .sort((a, b) => b.timestamp - a.timestamp);
+  return candidates[0]
+    ? { dumpKey: candidates[0].dumpKey, manifestKey: candidates[0].manifestKey }
+    : null;
+}
+
+/**
+ * A minimal reader of the off-host bucket for the restore: list a prefix and
+ * download an object to a file, streamed. Uses the AWS SDK the app ships
+ * (path-style requests, as the app's own uploader does).
+ *
+ * @param {BucketConfig} config
+ */
+export async function openBucket(config) {
+  const sdk = await import("@aws-sdk/client-s3");
+  const client = new sdk.S3Client({
+    endpoint: config.endpoint,
+    region: config.region,
+    forcePathStyle: true,
+    credentials: {
+      accessKeyId: config.accessKey,
+      secretAccessKey: config.secretKey,
+    },
+  });
+  return {
+    /** @param {string} prefix */
+    async list(prefix) {
+      /** @type {string[]} */
+      const keys = [];
+      /** @type {string | undefined} */
+      let token;
+      for (let page = 0; page < 200; page++) {
+        const out = await client.send(
+          new sdk.ListObjectsV2Command({
+            Bucket: config.bucket,
+            Prefix: prefix,
+            ContinuationToken: token,
+          }),
+        );
+        for (const c of out.Contents ?? []) if (c.Key) keys.push(c.Key);
+        if (!out.IsTruncated || !out.NextContinuationToken) return keys;
+        token = out.NextContinuationToken;
+      }
+      throw new Error(`the bucket listing under ${prefix} did not end`);
+    },
+    /**
+     * @param {string} key
+     * @param {string} outPath
+     */
+    async download(key, outPath) {
+      const out = await client.send(
+        new sdk.GetObjectCommand({ Bucket: config.bucket, Key: key }),
+      );
+      if (!out.Body) throw new Error(`the bucket returned no body for ${key}`);
+      await pipeline(
+        /** @type {NodeJS.ReadableStream} */ (
+          /** @type {unknown} */ (out.Body)
+        ),
+        createWriteStream(outPath, { flags: "wx", mode: 0o600 }),
+      );
+    },
+  };
+}
+
 // ── Restore ────────────────────────────────────────────────────────────────
 
 /**

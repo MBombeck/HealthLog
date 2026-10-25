@@ -2,7 +2,8 @@
  * Restore a whole-database dump into an empty database.
  *
  *   docker compose run --rm db-restore list [directory]
- *   docker compose run --rm db-restore latest
+ *   docker compose run --rm db-restore list --from-bucket
+ *   docker compose run --rm db-restore latest [--from-bucket]
  *   docker compose run --rm db-restore <file> [--ignore-key-mismatch]
  *
  * Runs in the app image with plain `node` (no `tsx`, no source checkout), as
@@ -10,7 +11,10 @@
  * file, the keys and the dump. `<file>` is a name in `DB_BACKUP_DIR` or a
  * path inside the container: a `.dump` written on a server, or a `.dump.enc`
  * downloaded from the off-host bucket (`database/` prefix), with its manifest
- * (`.manifest.json` or `.manifest.json.enc`) beside it.
+ * (`.manifest.json` or `.manifest.json.enc`) beside it. With `--from-bucket`
+ * it fetches the pair from the bucket the `BACKUP_S3_*` variables name (the
+ * newest for `latest`), which is the restore after the host and its local
+ * dumps are gone.
  *
  * In this order, and it stops at the first thing that is wrong, before it
  * writes anything:
@@ -54,6 +58,10 @@ import {
   runTool,
   statOrNull,
   connectionFromUrl,
+  bucketConfigFromEnv,
+  openBucket,
+  pickBucketDump,
+  OFFHOST_DATABASE_PREFIX,
 } from "../src/lib/database-backup/dump-core.mjs";
 import { shippedMigrations } from "./pending-migrations.mjs";
 
@@ -193,12 +201,85 @@ async function resolveInput(arg, dir, env) {
   }
 }
 
+/**
+ * Fetch a dump and its manifest from the off-host bucket (`BACKUP_S3_*`) into
+ * a scratch directory: the newest pair for `latest`, the named one otherwise.
+ * Answers the downloaded `.dump.enc` and the directory to remove afterwards.
+ */
+async function downloadFromBucket(arg, dir, env) {
+  const config = bucketConfigFromEnv(env);
+  if (!config) {
+    throw new Refusal(
+      "--from-bucket needs BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET, BACKUP_S3_ACCESS_KEY and BACKUP_S3_SECRET_KEY",
+    );
+  }
+  const bucket = await openBucket(config);
+  const keys = await bucket.list(OFFHOST_DATABASE_PREFIX);
+  const pick = pickBucketDump(keys, arg === "latest" ? null : basename(arg));
+  if (!pick) {
+    throw new Refusal(
+      arg === "latest"
+        ? `no database dump with its manifest under ${OFFHOST_DATABASE_PREFIX} in bucket ${config.bucket}`
+        : `${basename(arg)} and its manifest are not both under ${OFFHOST_DATABASE_PREFIX} in bucket ${config.bucket}`,
+    );
+  }
+  const scratch = await mkdtemp(
+    join(isWritableDirectory(dir) ? dir : tmpdir(), ".download-"),
+  );
+  try {
+    say(
+      `downloading ${pick.dumpKey} and its manifest from ${config.bucket}...`,
+    );
+    const dumpPath = join(scratch, basename(pick.dumpKey));
+    await bucket.download(
+      pick.manifestKey,
+      join(scratch, basename(pick.manifestKey)),
+    );
+    await bucket.download(pick.dumpKey, dumpPath);
+    return { dumpPath, scratch };
+  } catch (error) {
+    await rm(scratch, { recursive: true, force: true });
+    throw new Refusal(
+      `could not download from the bucket: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
+async function listBucketCommand(env) {
+  const config = bucketConfigFromEnv(env);
+  if (!config)
+    throw new Refusal("--from-bucket needs the BACKUP_S3_* variables");
+  const keys = (await (await openBucket(config)).list(OFFHOST_DATABASE_PREFIX))
+    .filter((k) => k.endsWith(".dump.enc"))
+    .sort()
+    .reverse();
+  out(
+    `Dumps in bucket ${config.bucket} under ${OFFHOST_DATABASE_PREFIX}, newest first:`,
+  );
+  for (const key of keys) out(`  ${key}`);
+  if (keys.length === 0) say("none");
+  return 0;
+}
+
 async function restoreCommand(arg, flags, env) {
   const dir = resolveBackupDir(env);
   const databaseUrl = env.DATABASE_URL;
   if (!databaseUrl) throw new Refusal("DATABASE_URL is not set");
 
-  const { dumpPath, manifest, scratch } = await resolveInput(arg, dir, env);
+  let input = arg;
+  let download = null;
+  if (flags.has("--from-bucket")) {
+    download = await downloadFromBucket(arg, dir, env);
+    input = download.dumpPath;
+  }
+  let resolved;
+  try {
+    resolved = await resolveInput(input, dir, env);
+  } finally {
+    // The sealed copy is not needed once it is opened (or failed to open).
+    if (download) await rm(download.scratch, { recursive: true, force: true });
+  }
+  const { dumpPath, manifest, scratch } = resolved;
   try {
     say(
       `dump ${manifest.file}: taken ${manifest.createdAt} by HealthLog ${manifest.appVersion ?? "(unknown version)"}, ` +
@@ -308,11 +389,14 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
   const [command] = argv.filter((a) => !a.startsWith("--"));
   if (!command) {
     console.error(
-      "db-restore: usage: db-restore list [directory] | latest | <file> [--ignore-key-mismatch]",
+      "db-restore: usage: db-restore list [directory] | latest | <file> [--from-bucket] [--ignore-key-mismatch]",
     );
     return 2;
   }
   try {
+    if (command === "list" && flags.has("--from-bucket")) {
+      return await listBucketCommand(env);
+    }
     if (command === "list") {
       const [, other] = argv.filter((a) => !a.startsWith("--"));
       return listCommand(other ?? resolveBackupDir(env));

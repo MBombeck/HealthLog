@@ -806,15 +806,18 @@ services:
   #   docker compose run --rm db-restore list
   #   docker compose run --rm db-restore latest
   #   docker compose run --rm db-restore healthlog-<time>-daily.dump
+  #   docker compose run --rm db-restore latest --from-bucket
   #
   # It checks the dump against its manifest and the keys in .env against the
   # keys the dump was written with, refuses a database that already holds
   # tables, restores in one transaction and compares every table's row count
   # with the manifest. Start the app only after it says "Restored".
-  # An off-host copy (`database/…dump.enc` and its `.manifest.json.enc`)
-  # restores the same way once both files are in the backups volume, or from a
-  # directory you mount: `docker compose run --rm -v ./from-bucket:/restore:ro
-  # db-restore /restore/healthlog-<time>-daily.dump.enc`.
+  # `--from-bucket` downloads the dump and its manifest from the off-host bucket
+  # (`database/`, the BACKUP_S3_* variables) and opens them with
+  # BACKUP_ENCRYPTION_KEY: the restore after the host and its local dumps are
+  # gone. Files you downloaded yourself restore from a directory you mount:
+  # `docker compose run --rm -v ./restore:/restore:ro db-restore
+  # /restore/healthlog-<time>-daily.dump.enc`.
   db-restore:
     image: ghcr.io/mbombeck/healthlog${HEALTHLOG_IMAGE_REF:-:latest}
     profiles: ["restore"]
