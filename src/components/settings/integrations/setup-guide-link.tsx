@@ -17,11 +17,16 @@ import { ExternalLink } from "lucide-react";
 import { useTranslations } from "@/lib/i18n/context";
 
 /**
- * Base for every provider setup runbook. The provider key is appended as a
- * path segment, e.g. `https://docs.healthlog.dev/integrations/whoop`. Kept as
- * a single constant so the host never drifts across cards.
+ * The docs site's guides, where every provider runbook lives at
+ * `connect-<provider>/`, e.g. `https://docs.healthlog.dev/guides/connect-whoop/`.
+ * These are the pages themselves: the older `/integrations/<provider>` paths
+ * only resolve through redirects. Kept as a single constant so the host never
+ * drifts across cards.
  */
-export const INTEGRATION_DOCS_BASE = "https://docs.healthlog.dev/integrations";
+export const DOCS_GUIDES_BASE = "https://docs.healthlog.dev/guides";
+
+/** Garmin has no connector; the Google Health guide explains the route. */
+export const GARMIN_DOCS_HREF = `${DOCS_GUIDES_BASE}/connect-google-health/#garmin-owners`;
 
 export type IntegrationDocsProvider =
   | "whoop"
@@ -30,15 +35,12 @@ export type IntegrationDocsProvider =
   | "polar"
   | "oura"
   | "nightscout"
-  // v1.27.0 — Google Health runbook (docs.healthlog.dev/integrations/google-health).
   | "google-health"
-  // v1.28.x — Strava runbook (docs.healthlog.dev/integrations/strava).
   | "strava"
-  // v1.43 — Dawarich runbook (docs.healthlog.dev/integrations/dawarich).
   | "dawarich";
 
 export function integrationDocsHref(provider: IntegrationDocsProvider): string {
-  return `${INTEGRATION_DOCS_BASE}/${provider}`;
+  return `${DOCS_GUIDES_BASE}/connect-${provider}/`;
 }
 
 /**

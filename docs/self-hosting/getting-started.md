@@ -9,8 +9,7 @@ already installed, longer if a TLS-fronted public hostname is in scope
 
 - **Docker 24+ with Compose v2.** The bundled `docker-compose.yml`
   pulls a multi-arch image from GitHub Container Registry (linux/amd64
-  - linux/arm64), so a Raspberry Pi 5 or an x86 VPS both work
-    unchanged.
+  and linux/arm64), so a Raspberry Pi 5 or an x86 VPS both work unchanged.
 - **3 GB RAM (4 GB recommended), 10 GB free disk.** The Postgres data
   volume grows with measurement history; the Apple Health import worker
   can briefly hold a 1.5 GB upload in `/tmp` while it parses. The app
@@ -23,11 +22,12 @@ already installed, longer if a TLS-fronted public hostname is in scope
   below the supported floor. On a busy instance, raise it.
 - **Outbound HTTPS** to `ghcr.io` (image pulls) plus whichever
   integration endpoints you plan to enable (Withings, OpenAI, etc.).
-  The opt-in environmental-context module additionally reaches
-  `archive-api.open-meteo.com` and `geocoding-api.open-meteo.com` for
-  weather and daylight; it stays off until you
-  enable it and set a home location, and every outbound call goes
-  through the SSRF-guarded egress wrapper.
+  The environmental-context module additionally reaches
+  `archive-api.open-meteo.com`, `air-quality-api.open-meteo.com` and
+  `geocoding-api.open-meteo.com` for weather, air quality and the city
+  search. It is on by default, but nothing leaves the host until someone
+  sets a home location, and every outbound call goes through the
+  SSRF-guarded egress wrapper.
   Three requests happen by default without anything connected: the
   HaveIBeenPwned range query when a password is set (only the first five
   characters of the password's SHA-1 are sent), a daily check of the

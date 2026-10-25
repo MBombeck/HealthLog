@@ -28,7 +28,11 @@ import {
   coachStopSchema,
   coachTrailSchema,
 } from "./stream-events";
-import { ACTIVITY_MAX_ENTRIES, TRAIL_MAX_BYTES } from "./activity/contract";
+import {
+  ACTIVITY_MAX_ENTRIES,
+  MAX_TURN_STEPS,
+  TRAIL_MAX_BYTES,
+} from "./activity/contract";
 import { commitTurnWrites } from "./memory/turn-writes";
 import { COACH_CONVERSATION_TITLE_MAX } from "./types";
 import { isRedundantViewChip } from "./follow-ups/view-chip";
@@ -56,7 +60,6 @@ import type {
   CoachResultEntry,
   CoachResultMeta,
   CoachResultTable,
-  CoachStep,
   CoachStepDomain,
   CoachSuggestion,
   CoachTrail,
@@ -225,11 +228,6 @@ function restoreOne<T>(raw: unknown, schema: z.ZodType<T>): T | undefined {
   return parsed.success ? parsed.data : undefined;
 }
 
-/** The live steps a turn persisted (at most 48 per turn since v1.41). */
-function restoreSteps(raw: unknown): CoachStep[] | undefined {
-  return restoreEach(raw, coachStepSchema, 48);
-}
-
 /** The method line; dropped whole when it does not parse. */
 function restoreMethod(raw: unknown): CoachMethod | undefined {
   const parsed = coachMethodSchema.safeParse(raw);
@@ -341,7 +339,8 @@ function provenanceFromJson(raw: string | null): CoachProvenance | null {
     const toolCalls = restoreToolCalls(parsed.toolCalls);
     // v1.39.4 — the dialog fields: steps, method, table metadata, chips, the
     // clarification choices, and the forced-answer marker.
-    const steps = restoreSteps(parsed.steps);
+    // Up to the same cap the turn records steps under.
+    const steps = restoreEach(parsed.steps, coachStepSchema, MAX_TURN_STEPS);
     const method = restoreMethod(parsed.method);
     const results = restoreResultMetas(parsed.results);
     // A reply stored before view chips were withheld for a table the answer

@@ -41,6 +41,13 @@ export const ACTIVITY_TEXT_MAX_CHARS = 400;
 /** `a1`..`a99`: the 100th entry of a turn is not recorded. */
 export const ACTIVITY_MAX_ENTRIES = 99;
 
+/**
+ * `s1`..`s64`: the live steps of one turn (four per round of the longest
+ * turn). Later tool calls still run but show no step. The turn records up to
+ * this many and a reload restores up to this many, from this one constant.
+ */
+export const MAX_TURN_STEPS = 64;
+
 export interface ActivityStart {
   phase: CoachActivityPhase;
   round: number;

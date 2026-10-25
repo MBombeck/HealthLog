@@ -19,7 +19,7 @@ on top of it, see [building skills](../api/mcp-skills.md).
 
 > **Read this before enabling writes.** A remote, write-capable connector
 > reached over OAuth is a powerful combination. Read the
-> [trust model](#trust-model-read-this-before-enabling-writes) at the end
+> [trust model](#trust-model--read-this-before-enabling-writes) at the end
 > of this page first.
 
 ## Prerequisites
@@ -43,7 +43,7 @@ LAN-only origin works for Claude Desktop over stdio).
 The switch lives with every other module: **Settings → Modules**, the
 **MCP** row. Turn it on and the `/mcp` endpoint goes live for your account.
 
-**Settings → MCP** is where you use it. The page has three parts:
+**Settings → MCP connector** is where you use it. The page has three parts:
 
 - **State** — whether the module is on, with a link to its switch in
   Modules, and your endpoint URL (`<origin>/mcp`). Turning the module off
@@ -55,7 +55,7 @@ The switch lives with every other module: **Settings → Modules**, the
 
 ## 2. Mint a connector token
 
-Still in **Settings → MCP → Tokens**:
+Still in **Settings → MCP connector → Tokens**:
 
 1. Choose the scope with the **write** toggle:
    - **off** → a read-only token (`health:read`). This is the default and
@@ -106,7 +106,7 @@ refused (`403`) as a DNS-rebinding defence.
    client-id-metadata-document clients with dynamic registration as a
    fallback.
 3. Approve the consent screen. The connection then appears under
-   **Settings → MCP → Connections**, where you can revoke it.
+   **Settings → MCP connector → Connections**, where you can revoke it.
 
 No token to paste — OAuth mints and rotates a short-lived `health:read`
 access token (60 minutes, with a refresh token) behind the scenes.

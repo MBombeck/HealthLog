@@ -48,8 +48,9 @@
  * `userId` is narrowed from the authenticated session by the caller and feeds
  * the Prisma `where` field-by-field; it is never an input. Unlike the illness
  * block, Labs is intentionally NOT module-gated (mirrors `/api/labs` — the data
- * is always owner-scoped and safe to read), so the block is `null` only when the
- * account has no recent readings.
+ * is always owner-scoped and safe to read). The block is `null` only when no
+ * reading falls inside the lookback limit (the whole record when there is
+ * none), or, for a named read, when no marker matches the analyte.
  */
 import { sameLabUnit } from "@/lib/labs/unit-normalise";
 import {

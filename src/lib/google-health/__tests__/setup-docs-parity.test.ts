@@ -2,8 +2,8 @@
  * Doc ↔ code parity guard for the Google Health operator runbook.
  *
  * The setup-guide link on the Settings card sends a mid-setup user to
- * `docs.healthlog.dev/integrations/google-health`, rendered from
- * `docs/integrations/google-health.md`. If the client ever requests a scope the
+ * `docs.healthlog.dev/guides/connect-google-health/`; the operator runbook in
+ * this repository is `docs/integrations/google-health.md`. If the client ever requests a scope the
  * runbook doesn't list, or the walkthrough regresses back to a wrong provider
  * (the file was once a Fitbit-Web-API walkthrough), a self-hoster follows a
  * broken recipe and the OAuth consent screen rejects the connection.
@@ -20,7 +20,7 @@ import { describe, expect, it } from "vitest";
 
 import { GOOGLE_HEALTH_CORE_SCOPES } from "@/lib/google-health/oauth";
 import {
-  INTEGRATION_DOCS_BASE,
+  DOCS_GUIDES_BASE,
   integrationDocsHref,
 } from "@/components/settings/integrations/setup-guide-link";
 
@@ -70,7 +70,7 @@ describe("google-health setup runbook parity", () => {
     // The literal argument also compile-checks that "google-health" is a member
     // of the IntegrationDocsProvider union.
     expect(integrationDocsHref("google-health")).toBe(
-      `${INTEGRATION_DOCS_BASE}/google-health`,
+      `${DOCS_GUIDES_BASE}/connect-google-health/`,
     );
   });
 });
