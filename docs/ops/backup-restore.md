@@ -77,6 +77,14 @@ only those:
   was deleted is removed by the upload itself.
 - **The connection test** deletes its own `_healthcheck/<ts>.bin`.
 
+The database dumps are not purged per account. A dump is the whole database
+at one moment, so an account deleted since stays in the dumps taken before
+its deletion until they age out: after `DB_BACKUP_KEEP` nights on the server,
+and in the bucket after the lifecycle rule for `database/`. That is backup
+retention, and the period to state to the people using your instance; the
+backups page shows both numbers and warns when no rule covers `database/`
+([`disaster-recovery.md`](disaster-recovery.md)).
+
 The admin wipe of every account deletes nothing in the bucket. It is you
 clearing your own host, the bucket is yours, and its copies are the way back
 from a wipe pressed by mistake. If you are handing the host on, empty the

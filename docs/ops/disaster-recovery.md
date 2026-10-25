@@ -39,7 +39,10 @@ per-account copies use.
 A dump holds every account that existed when it was taken, including one
 deleted since. Deleted accounts leave the dumps as they age out: after
 `DB_BACKUP_KEEP` nights on the server, and after your lifecycle rule in the
-bucket. Give that rule a prefix that covers `database/` too.
+bucket. Give that rule a prefix that covers `database/` too; the admin
+backups page reads the bucket's rules and says when none does. This is the
+retention period to state where you tell people that deleting their account
+deletes their data.
 
 Without a writable `DB_BACKUP_DIR` (an install that runs the image without the
 `backups` volume), the nightly dump is uploaded off-host and nothing is kept
@@ -78,11 +81,25 @@ different.
    docker compose up -d db
    ```
 
-4. Put the dump and its manifest in a directory, for example `./restore`, and
-   make them readable for the container (`chmod a+r restore/*`). From the
-   bucket, download both `database/<name>.dump.enc` and
-   `database/<name>.manifest.json.enc`; the restore opens them with
-   `BACKUP_ENCRYPTION_KEY`.
+4. Restore. When the host is lost, its local dumps went with it, and the
+   copy is the one in your bucket: put the `BACKUP_S3_*` variables and
+   `BACKUP_ENCRYPTION_KEY` (with any `BACKUP_ENCRYPTION_PREVIOUS_KEYS`) in
+   `.env` as on the old server, then
+
+   ```bash
+   docker compose run --rm db-restore list --from-bucket
+   docker compose run --rm db-restore latest --from-bucket
+   ```
+
+   `latest --from-bucket` downloads the newest `database/…dump.enc` whose
+   manifest is in the bucket too, opens both with `BACKUP_ENCRYPTION_KEY`
+   and restores. Name a dump instead of `latest` to take an older one.
+
+   With the files in hand instead (copied off the host, or downloaded from
+   the bucket with your own tools: both `<name>.dump.enc` and
+   `<name>.manifest.json.enc`, or a `.dump` with its `.manifest.json`), put
+   them in a directory such as `./restore`, make them readable for the
+   container (`chmod a+r restore/*`) and name the dump:
 
    ```bash
    docker compose run --rm -v "$PWD/restore:/restore:ro" db-restore list /restore
@@ -90,11 +107,11 @@ different.
      /restore/healthlog-20261024T233000Z-daily.dump
    ```
 
-   It checks the archive against the manifest's SHA-256, the keys against
-   the manifest's fingerprints, and that the database is empty. Then it
-   restores in one transaction, gathers planner statistics and counts every
-   table against the manifest. A count that differs empties the database
-   again and fails. Wait for the line that starts with `Restored`.
+   Either way it checks the archive against the manifest's SHA-256, the keys
+   against the manifest's fingerprints, and that the database is empty. Then
+   it restores in one transaction, gathers planner statistics and counts
+   every table against the manifest. A count that differs empties the
+   database again and fails. Wait for the line that starts with `Restored`.
 
 5. Start the stack and check it:
 
@@ -141,14 +158,18 @@ starts without it, once.
 `scripts/compose-dr-drill.sh` plays this page against real containers: it
 builds the image, seeds several accounts (the demo account with documents
 and encrypted notes, a Guardian with a managed profile), lets the scheduled
-job take the dump, destroys every volume, restores with
-`docker compose run --rm db-restore latest` on a new stack given only the dump
-and the keys, counts every table against the manifest and boots the app:
-health, sign-in, an encrypted note read back, a document opened, the Guardian
-still seeing the profile. It runs in CI nightly and on every change to the
+job take the dump and upload it to an S3-compatible bucket, destroys every
+volume of the stack (the local dumps included), and restores on a new stack
+given only the bucket and the keys
+(`docker compose run --rm db-restore latest --from-bucket`). A second run
+restores from the dump files instead (`DRILL_SOURCE=local`). Both then count
+every table against the manifest and boot the app: health, sign-in, an
+encrypted note read back, a document opened, the Guardian still seeing the
+profile. It runs in CI nightly and on every change to the
 compose file, the image or the dump and restore code
 (`.github/workflows/compose-dr-drill.yml`), and it is checked to fail on a
-wrong key, a dump that lost a table's rows and a target that is not empty.
+wrong encryption key, a wrong off-host key, a dump that lost a table's rows
+and a target that is not empty.
 
 Test your own copies too: once, and after any change to how the server is
 run, restore last night's dump on a spare machine with the steps above.
