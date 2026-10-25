@@ -11877,7 +11877,8 @@
           "raster-failed": "Le pagine del PDF non possono essere elaborate per la lettura. I formati di compressione fax digitalizzati sono una causa nota.",
           "provider-error": "Il provider IA non è riuscito a leggere questo documento all’ultimo tentativo.",
           "pdf-needs-anthropic": "Il provider IA configurato non può leggere i file PDF. Un provider Claude o l’OCR locale sì.",
-          "empty-transcription": "Il provider IA non ha restituito testo per questo documento."
+          "empty-transcription": "Il provider IA non ha restituito testo per questo documento.",
+          "resource-limit": "Questo PDF è troppo grande o complesso per essere letto qui. Il file in sé è a posto e si apre ancora."
         }
       },
       "loadError": "Impossibile caricare questo documento.",

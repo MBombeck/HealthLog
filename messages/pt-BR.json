@@ -11877,7 +11877,8 @@
           "raster-failed": "As páginas do PDF não puderam ser renderizadas para leitura. Formatos de compressão de fax digitalizado são uma causa conhecida.",
           "provider-error": "O provedor de IA não conseguiu ler este documento na última tentativa.",
           "pdf-needs-anthropic": "O provedor de IA configurado não consegue ler arquivos PDF. Um provedor Claude ou OCR local consegue.",
-          "empty-transcription": "O provedor de IA não retornou texto para este documento."
+          "empty-transcription": "O provedor de IA não retornou texto para este documento.",
+          "resource-limit": "Este PDF é grande ou complexo demais para ser lido aqui. O arquivo em si está bem e continua abrindo."
         }
       },
       "loadError": "Não foi possível carregar este documento.",

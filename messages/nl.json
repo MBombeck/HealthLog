@@ -11877,7 +11877,8 @@
           "raster-failed": "De PDF-pagina's konden niet worden weergegeven om te lezen. Compressieformaten van gescande faxen zijn een bekende oorzaak.",
           "provider-error": "De AI-provider kon dit document bij de laatste poging niet lezen.",
           "pdf-needs-anthropic": "De ingestelde AI-provider kan geen PDF-bestanden lezen. Een Claude-provider of lokale OCR kan dat wel.",
-          "empty-transcription": "De AI-provider gaf geen tekst terug voor dit document."
+          "empty-transcription": "De AI-provider gaf geen tekst terug voor dit document.",
+          "resource-limit": "Deze pdf is te groot of te complex om hier te lezen. Het bestand zelf is in orde en opent nog steeds."
         }
       },
       "loadError": "Dit document kon niet worden geladen.",

@@ -300,6 +300,7 @@ const inboundDocument = z
         "local-empty",
         "local-unsupported",
         "decrypt-error",
+        "resource-limit",
         "raster-failed",
         "provider-error",
         "pdf-needs-anthropic",

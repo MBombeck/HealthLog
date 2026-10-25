@@ -11877,7 +11877,8 @@
           "raster-failed": "Nie udało się przetworzyć stron PDF do odczytu. Znaną przyczyną są skany w faksowych formatach kompresji.",
           "provider-error": "Dostawca AI nie zdołał odczytać tego dokumentu przy ostatniej próbie.",
           "pdf-needs-anthropic": "Skonfigurowany dostawca AI nie odczytuje plików PDF. Poradzi sobie z tym dostawca Claude lub lokalny OCR.",
-          "empty-transcription": "Dostawca AI nie zwrócił tekstu dla tego dokumentu."
+          "empty-transcription": "Dostawca AI nie zwrócił tekstu dla tego dokumentu.",
+          "resource-limit": "Ten PDF jest zbyt duży lub zbyt złożony, żeby odczytać go tutaj. Sam plik jest w porządku i nadal się otwiera."
         }
       },
       "loadError": "Nie udało się wczytać tego dokumentu.",

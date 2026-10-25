@@ -11877,7 +11877,8 @@
           "raster-failed": "The PDF pages couldn't be rendered for reading. Scanned fax compression formats are a known cause.",
           "provider-error": "The AI provider couldn't read this document on the last try.",
           "pdf-needs-anthropic": "The configured AI provider can't read PDF files. A Claude provider or local OCR can.",
-          "empty-transcription": "The AI provider returned no text for this document."
+          "empty-transcription": "The AI provider returned no text for this document.",
+          "resource-limit": "This PDF is too large or complex to read here. The file itself is fine and still opens."
         }
       },
       "loadError": "Couldn't load this document.",

@@ -78,6 +78,7 @@ export type IndexFailureReason =
   | "local-empty"
   | "local-unsupported"
   | "decrypt-error"
+  | "resource-limit"
   | "raster-failed"
   | "provider-error"
   | "pdf-needs-anthropic"
@@ -341,6 +342,12 @@ async function tryLocalIndex(
   }
   if (result.reason === "unsupported") {
     return { indexed: false, reason: "local-unsupported" };
+  }
+  if (result.reason === "resource-limit") {
+    // Too large or too complex for the reader's bounds: said as such, and
+    // final like the thumbnail's refusal of the same bytes. Nothing retries
+    // it on its own; a person can still ask for a read.
+    return { indexed: false, reason: "resource-limit" };
   }
   if (result.reason === "error") {
     return { indexed: false, reason: "decrypt-error" };

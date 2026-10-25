@@ -79798,6 +79798,7 @@ components:
                 - local-empty
                 - local-unsupported
                 - decrypt-error
+                - resource-limit
                 - raster-failed
                 - provider-error
                 - pdf-needs-anthropic
@@ -80370,6 +80371,7 @@ components:
                 - local-empty
                 - local-unsupported
                 - decrypt-error
+                - resource-limit
                 - raster-failed
                 - provider-error
                 - pdf-needs-anthropic

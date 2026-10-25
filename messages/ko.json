@@ -11877,7 +11877,8 @@
           "raster-failed": "PDF 페이지를 읽기용으로 렌더링하지 못했어요. 스캔 팩스 압축 형식이 흔한 원인이에요.",
           "provider-error": "지난번에 AI 제공자가 이 문서를 읽지 못했어요.",
           "pdf-needs-anthropic": "설정된 AI 제공자는 PDF 파일을 읽을 수 없어요. Claude 제공자나 로컬 OCR로는 읽을 수 있어요.",
-          "empty-transcription": "AI 제공자가 이 문서에서 텍스트를 찾지 못했어요."
+          "empty-transcription": "AI 제공자가 이 문서에서 텍스트를 찾지 못했어요.",
+          "resource-limit": "이 PDF는 너무 크거나 복잡해서 여기서 읽을 수 없습니다. 파일 자체는 정상이며 계속 열 수 있습니다."
         }
       },
       "loadError": "이 문서를 불러오지 못했어요.",

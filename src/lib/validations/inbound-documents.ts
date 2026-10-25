@@ -115,6 +115,7 @@ export const DOCUMENT_INDEX_OUTCOMES = [
   "local-empty",
   "local-unsupported",
   "decrypt-error",
+  "resource-limit",
   "raster-failed",
   "provider-error",
   "pdf-needs-anthropic",

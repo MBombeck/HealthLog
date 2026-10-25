@@ -9077,10 +9077,10 @@ model InboundDocument {
   /// Why the most recent index attempt produced NO index — a closed string
   /// enum (`DocumentIndexOutcomeValue` in
   /// `src/lib/validations/inbound-documents.ts`): local-empty |
-  /// local-unsupported | decrypt-error | raster-failed | provider-error |
-  /// pdf-needs-anthropic | empty-transcription. Null after a successful
-  /// attempt (the `DocumentContentIndex` row itself is the success signal)
-  /// and before the first attempt. Lets the detail view tell "never tried"
+  /// local-unsupported | decrypt-error | resource-limit | raster-failed |
+  /// provider-error | pdf-needs-anthropic | empty-transcription. Null after a
+  /// successful attempt (the `DocumentContentIndex` row itself is the success
+  /// signal) and before the first attempt. Lets the detail view tell "never tried"
   /// from "tried and here is why it failed" instead of showing a bare
   /// not-indexed state for both.
   lastIndexOutcome     String?               @map("last_index_outcome")

@@ -290,6 +290,36 @@ describe("indexDocumentContent — local fallback path", () => {
     expect(outcome).toEqual({ indexed: false, reason: "local-empty" });
     expect(upsertContentIndex).not.toHaveBeenCalled();
   });
+
+  it("reports a PDF past the reader's limits as resource-limit, not as a file that would not open", async () => {
+    vi.mocked(resolveDocumentVisionProvider).mockResolvedValue({
+      chain: [],
+      pick: null,
+    } as never);
+    vi.mocked(localExtractText).mockResolvedValue({
+      ok: false,
+      reason: "resource-limit",
+    });
+
+    const outcome = await indexDocumentContent("user-1", "doc-1");
+    expect(outcome).toEqual({ indexed: false, reason: "resource-limit" });
+    expect(upsertContentIndex).not.toHaveBeenCalled();
+  });
+
+  it("keeps resource-limit over a provider note: the provider never got further either", async () => {
+    vi.mocked(resolveDocumentVisionProvider).mockResolvedValue(PICK as never);
+    vi.mocked(prepareVisionInput).mockReturnValue({
+      ok: false,
+      reason: "rasterFailed",
+    } as never);
+    vi.mocked(localExtractText).mockResolvedValue({
+      ok: false,
+      reason: "resource-limit",
+    });
+
+    const outcome = await indexDocumentContent("user-1", "doc-1");
+    expect(outcome).toEqual({ indexed: false, reason: "resource-limit" });
+  });
 });
 
 describe("indexDocumentContent — the documentAi capability", () => {

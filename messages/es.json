@@ -11877,7 +11877,8 @@
           "raster-failed": "Las páginas del PDF no se pudieron procesar para su lectura. Los formatos de compresión de fax escaneados son una causa conocida.",
           "provider-error": "El proveedor de IA no pudo leer este documento en el último intento.",
           "pdf-needs-anthropic": "El proveedor de IA configurado no puede leer archivos PDF. Un proveedor Claude o el OCR local sí pueden.",
-          "empty-transcription": "El proveedor de IA no devolvió texto para este documento."
+          "empty-transcription": "El proveedor de IA no devolvió texto para este documento.",
+          "resource-limit": "Este PDF es demasiado grande o complejo para leerlo aquí. El archivo en sí está bien y se sigue pudiendo abrir."
         }
       },
       "loadError": "No se pudo cargar este documento.",

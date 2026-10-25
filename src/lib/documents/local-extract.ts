@@ -32,7 +32,7 @@ import { Buffer } from "node:buffer";
 import { annotate } from "@/lib/logging/context";
 import { logCaught } from "@/lib/logging/signal";
 
-import { readPdfText } from "./pdfjs";
+import { PdfResourceLimitError, readPdfText } from "./pdfjs";
 
 /**
  * Minimum joined text length for a PDF to count as a real text-layer document.
@@ -54,15 +54,23 @@ export type LocalExtractSource = "local-pdf" | "local-ocr";
  *                     a provider vision pass is the only way to read it.
  *   - `unsupported` → a MIME the local path cannot read without OCR (images) or
  *                     at all; leave un-indexed locally.
+ *   - `resource-limit` → the PDF crossed the reader's memory or time bound
+ *                     (`PdfResourceLimitError`): too large or too complex to
+ *                     read here. The same bytes cross it again, so it is a
+ *                     final answer, as it is for thumbnails.
  *   - `error`       → the file was malformed / unreadable; treat as un-indexed.
  */
 export type LocalExtractResult =
   | { ok: true; text: string; source: LocalExtractSource }
-  | { ok: false; reason: "empty" | "unsupported" | "error" };
+  | {
+      ok: false;
+      reason: "empty" | "unsupported" | "resource-limit" | "error";
+    };
 
 /**
  * Extract a text-layer PDF's embedded text server-side. Returns `empty` for a
- * scanned/no-text-layer PDF and `error` for a malformed/encrypted one — never
+ * scanned/no-text-layer PDF, `resource-limit` for one past the reader's memory
+ * or time bound, and `error` for a malformed/encrypted one — never
  * throws, so a bad document can never abort the caller (the upload/backfill job
  * just leaves it un-indexed). An `error` leaves a `warn` line naming what
  * pdf.js threw, because the outcome alone does not say why a document stayed
@@ -76,6 +84,15 @@ export async function extractPdfText(
     // Bound the page walk so a pathological many-page PDF costs no more.
     text = (await readPdfText(buffer, LOCAL_MAX_PAGES)).trim();
   } catch (err) {
+    if (err instanceof PdfResourceLimitError) {
+      // Not a fault of the file's bytes being unreadable: they are readable,
+      // only not within the bounds this server gives one document.
+      annotate({
+        action: { name: "documents.localIndex.resourceLimit" },
+        meta: { limit: err.limit, bytes: buffer.length },
+      });
+      return { ok: false, reason: "resource-limit" };
+    }
     const errorType = err instanceof Error ? err.name || "Error" : typeof err;
     annotate({
       action: { name: "documents.localIndex.extractFailed" },

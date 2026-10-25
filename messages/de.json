@@ -11877,7 +11877,8 @@
           "raster-failed": "Die PDF-Seiten konnten zum Lesen nicht gerendert werden. Gescannte Fax-Kompressionsformate sind eine bekannte Ursache.",
           "provider-error": "Der KI-Anbieter konnte dieses Dokument beim letzten Versuch nicht lesen.",
           "pdf-needs-anthropic": "Der eingerichtete KI-Anbieter kann keine PDF-Dateien lesen. Ein Claude-Anbieter oder lokale OCR kann es.",
-          "empty-transcription": "Der KI-Anbieter hat für dieses Dokument keinen Text geliefert."
+          "empty-transcription": "Der KI-Anbieter hat für dieses Dokument keinen Text geliefert.",
+          "resource-limit": "Dieses PDF ist zu groß oder zu komplex, um es hier zu lesen. Die Datei selbst ist in Ordnung und lässt sich weiterhin öffnen."
         }
       },
       "loadError": "Dieses Dokument konnte nicht geladen werden.",
