@@ -87,7 +87,7 @@ curl -s http://localhost:3000/api/version   # returns version + buildSha + built
 
 `SESSION_COOKIE_SECURE=false` is the one setting plain-HTTP self-hosts must set: without it the session cookie carries the `Secure` flag, the browser drops it over HTTP, and login silently fails. Leave it unset (or `true`) only when a TLS reverse proxy serves HTTPS — and then set `NEXT_PUBLIC_APP_URL` and `APP_URL` to the public URL first (see the [self-hosting guide](https://docs.healthlog.dev/getting-started/self-host-in-10-minutes/)).
 
-Persistent state lives in exactly one named volume (`postgres-data`, the Postgres data); the app container is stateless, so backing up the database backs up everything. An install from v1.45 or earlier moves its Postgres 16 database into it on the first start ([details](docs/ops/postgres-major-upgrade.md)).
+Persistent state lives in the database volume (`postgres-data`) and in `backups`, which holds the nightly database dumps; the app container is stateless. An install from v1.45 or earlier moves its Postgres 16 database from `pgdata` into the new volume on the first start ([details](docs/ops/postgres-major-upgrade.md)); recovering a lost server is in [disaster-recovery.md](docs/ops/disaster-recovery.md).
 
 NAS and homelab users have ready-made paths: [Unraid Community Applications](docs/self-hosting/unraid.md), [Portainer app templates](docs/self-hosting/portainer/README.md) and [TrueNAS](docs/self-hosting/truenas.md) (the Community train app is pending catalog review).
 
