@@ -34,7 +34,7 @@ default the device-native capture (Apple Watch, WHOOP, Withings) wins over the
 Strava copy, because a Strava activity is often a re-upload with lower-fidelity
 or missing heart-rate data. A run you record **only** on Strava (phone GPS)
 survives untouched. You can promote Strava above the wearables in
-**Settings → Sources** if you prefer the Strava copy.
+**Settings → Source priority** if you prefer the Strava copy.
 
 ## 1. Register a Strava API application
 

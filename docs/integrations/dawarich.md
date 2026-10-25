@@ -70,7 +70,7 @@ The variable is on the `environment:` whitelist in `docker-compose.yml`.
 - Time away from home and the distance travelled join the correlation scan as
   two more factors.
 - Runs of at least two travel days that no trip covers yet are offered as
-  trips under **Settings → Environment → Location periods**. Using one fills
+  trips under **Settings → Location & weather → Location periods**. Using one fills
   in the dates; you pick the place.
 - The Coach and the MCP `get_day` tool see the figures and whether it was a
   travel day, never the country.
