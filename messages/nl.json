@@ -5735,7 +5735,7 @@
             "passphrasePlaceholder": "Wachtzin (min. 12 tekens)",
             "passphraseHelp": "Leidt de archiefsleutel af met Argon2id en versleutelt het archief met AES-256-GCM. Sla het bestand op met de extensie .hlx.",
             "noRecoveryWarning": "Herstellen is niet mogelijk. Als je deze wachtzin kwijtraakt, kan het archief niet worden geopend. Bewaar hem op een veilige plek.",
-            "detail": "Zelfde opbouw als de wekelijkse automatische back-up. Sommige soorten gegevens worden nog niet meegenomen; het manifest van het bestand vermeldt wat erin zit.",
+            "detail": "Een draagbare kopie van je dossier om te bewaren en te lezen: waarden als gewone JSON, documenten alleen als metadata. Het is niet de wekelijkse accountkopie die deze server bewaart om een account terug te zetten, en het kan geen account op een andere server opnieuw aanmaken. Sommige soorten gegevens zitten er nog niet in; het manifest van het bestand noemt wat erin staat.",
             "contents": "Je metingen, medicatie, stemming, cyclus, labuitslagen, ziekte-episodes, allergieën, familiegeschiedenis, voedingsstoffen, trainingen, gezondheidsprofiel en eigen meetwaarden in één JSON-bestand."
           }
         },
@@ -5781,7 +5781,7 @@
             "cycleDaysFailed": "{count} cyclusdagen konden niet worden opgeslagen: {reason}"
           },
           "json": {
-            "title": "JSON-bestand",
+            "title": "Metingen en stemming (JSON)",
             "description": "Plak JSON of upload een .json-bestand met metingen en stemmingsregistraties.",
             "pasteLabel": "JSON plakken",
             "fileInputLabel": "Kies een JSON-bestand om te importeren",
@@ -5800,7 +5800,8 @@
             "droppedLinks": "Geïmporteerd zonder deze tags, omdat dit account er geen met die naam heeft: {keys}",
             "keptLabels": "Dit account heeft al tags of groepen met deze sleutels onder een eigen naam, die zijn behouden: {keys}",
             "resultNothing": "Er is niets geïmporteerd. Alle {skipped} registraties zijn overgeslagen.",
-            "resultEmpty": "Dat bestand bevatte geen metingen en geen stemmingsregistraties."
+            "resultEmpty": "Dat bestand bevatte geen metingen en geen stemmingsregistraties.",
+            "limitsHint": "Tot {mb} MB en tot {rows} items per lijst. Het voegt items toe aan je dossier; het zet geen volledige back-up terug."
           },
           "csv": {
             "title": "CSV-bestand",
@@ -5946,7 +5947,7 @@
             }
           }
         },
-        "subtitle": "Exporteer je gegevens of importeer ze uit een back-up."
+        "subtitle": "Exporteer je gegevens, of importeer metingen en gegevens uit andere apps en bestanden."
       },
       "about": {
         "title": "Over deze app",
@@ -8160,8 +8161,8 @@
       },
       "backups": {
         "title": "Back-ups",
-        "subtitle": "Wekelijkse snapshots van de gegevens per gebruiker, opgeslagen in PostgreSQL.",
-        "description": "Elke gebruiker krijgt per back-uptype één doorlopende snapshot. De getoonde grootte is die van de versleutelde blob. Bij downloaden wordt de snapshot ontsleuteld voor de beheerder die erom vraagt; de versleutelde gegevens blijven in de database.",
+        "subtitle": "Accountkopieën in de database van deze server, om één account op deze server terug te zetten.",
+        "description": "Elk account heeft één wekelijkse kopie, die elke zondag wordt vervangen, plus kopieën die hier zijn geüpload en de kopie die vóór 'Alle gegevens verwijderen' wordt gemaakt. Een kopie zet een bestaand account op deze server terug. Een verloren server kan ze niet herbouwen: daarvoor zijn een databasedump en de encryptiesleutels nodig. De groottes gelden voor de versleutelde kopie. Downloaden ontsleutelt die voor de beheerder die erom vraagt; de versleutelde tekst blijft in de database.",
         "runNow": "Nu back-up maken",
         "runEnqueued": "Back-uptaak in de wachtrij gezet",
         "runFailed": "Back-up in de wachtrij zetten mislukt",
@@ -8171,7 +8172,7 @@
         "emptyDescription": "Back-ups worden automatisch elke zondag om 03:00 gemaakt. Je kunt er ook nu een starten om de eerste snapshot te maken.",
         "colUser": "Gebruiker",
         "colType": "Type",
-        "typeWeeklyAuto": "Wekelijks (automatisch)",
+        "typeWeeklyAuto": "Wekelijkse accountkopie",
         "typeManual": "Handmatig",
         "colSize": "Grootte",
         "colCreatedAt": "Laatste snapshot",
@@ -8194,7 +8195,7 @@
         "downloadFailed": "Downloaden mislukt",
         "downloadStarted": "Download gestart",
         "uploadTitle": "Back-up uploaden",
-        "uploadDescription": "Controleer een back-upbestand en sla het op als handmatige snapshot. Terugzetten is een aparte stap.",
+        "uploadDescription": "Controleert een accountkopie en bewaart die naast de kopieën van deze server. Het account waar ze bij hoort, moet op deze server bestaan. Terugzetten is een aparte stap.",
         "uploadButton": "Bestand uploaden",
         "uploadHelp": "Een HealthLog-back-up als .json of .json.gz. Het bestand wordt vóór het uploaden gecomprimeerd; gecomprimeerd mag het maximaal 512 MB zijn.",
         "uploadSuccess": "Back-up geüpload ({count} records)",
@@ -8254,7 +8255,7 @@
         "restoreSkippedAccountSetting": "Accountinstelling",
         "restoreMissingTitle": "Terugzetten geweigerd: het bestand is onvolledig",
         "restoreMissingDescription": "Volgens het eigen manifest van het bestand bevat het de onderstaande sectie, maar die ontbreekt. Er is niets gewijzigd: terugzetten vervangt een complete categorie records, dus het terugzetten van een sectie die niet in het bestand staat, zou die categorie hebben leeggemaakt.",
-        "restoreMissingRemedy": "Gebruik een snapshot voor noodherstel, of exporteer het account opnieuw en upload het nieuwe bestand. Een sectie die het manifest als weggelaten aanmerkt, is iets anders en wordt normaal teruggezet.",
+        "restoreMissingRemedy": "Gebruik een van de accountkopieën van deze server of een kopie buiten de server, of exporteer het account opnieuw en upload het nieuwe bestand. Een sectie die het manifest als weggelaten opgeeft, is iets anders en wordt gewoon teruggezet.",
         "restoreMissingDocuments": "Documenten",
         "restoreMissingWorkouts": "Trainingen",
         "restoreMissingMentalHealth": "Vragenlijsten mentale gezondheid",
@@ -8307,7 +8308,7 @@
         "restoreFailureOwnerMismatch": "Het bestand in de back-up hoort bij een ander account dan de back-uprij.",
         "restoreFailureOwnerMissing": "Het account waar deze back-up bij hoort bestaat niet meer.",
         "restoreFailureSectionMissing": "Het bestand is onvolledig: het manifest noemt een sectie die er niet in staat.",
-        "restoreFailureDocument": "Het bestand bevat documenten zonder hun inhoud, zoals bij een overdraagbare export. Gebruik een back-up voor noodherstel.",
+        "restoreFailureDocument": "Het bestand bevat documenten zonder hun inhoud, zoals een draagbare export. Gebruik in plaats daarvan een van de accountkopieën van deze server of een kopie buiten de server.",
         "restoreFailureTimeBudget": "Deze back-up is te groot om binnen de tijdslimiet van de achtergrondtaak terug te zetten.",
         "restoreFailureTransaction": "De database weigerde het terugzetten halverwege, dus alles is teruggedraaid. In het serverlog staat de fout.",
         "restoreFailureCauseTimeout": "Het terugzetten duurde langer dan de database toestond, dus alles is teruggedraaid. Als de databasehost druk was, start het terugzetten dan opnieuw wanneer het rustiger is. In het serverlog staat de stap.",

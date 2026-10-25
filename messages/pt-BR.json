@@ -5735,7 +5735,7 @@
             "passphrasePlaceholder": "Frase-senha (mín. 12 caracteres)",
             "passphraseHelp": "Deriva a chave do arquivo com Argon2id e a sela com AES-256-GCM. Salve o arquivo com a extensão .hlx.",
             "noRecoveryWarning": "Não há recuperação. Se você perder esta frase-senha, o arquivo não poderá ser aberto. Guarde-a em um lugar seguro.",
-            "detail": "Mesmo formato do backup automático semanal. Alguns tipos de registro ainda não são incluídos; o manifesto do arquivo indica o que está nele.",
+            "detail": "Uma cópia portátil do seu registro para guardar e ler: valores em JSON simples, documentos apenas com os metadados. Não é a cópia semanal da conta que este servidor mantém para reverter uma conta, e não consegue recriar uma conta em outro servidor. Alguns tipos de dados ainda não estão incluídos; o manifesto do arquivo informa o que ele contém.",
             "contents": "Suas medições, medicamentos, humor, ciclo, exames, episódios de doença, alergias, histórico familiar, nutrientes, treinos, perfil de saúde e métricas personalizadas em um único arquivo JSON."
           }
         },
@@ -5781,7 +5781,7 @@
             "cycleDaysFailed": "{count} dias de ciclo não puderam ser gravados: {reason}"
           },
           "json": {
-            "title": "Arquivo JSON",
+            "title": "Medições e humor (JSON)",
             "description": "Cole um JSON ou envie um arquivo .json com medições e registros de humor.",
             "pasteLabel": "Cole o JSON",
             "fileInputLabel": "Escolha um arquivo JSON para importar",
@@ -5800,7 +5800,8 @@
             "droppedLinks": "Importado sem estas tags, porque esta conta não tem nenhuma com esse nome: {keys}",
             "keptLabels": "Esta conta já tem tags ou grupos com essas chaves e com nome próprio, então eles foram mantidos: {keys}",
             "resultNothing": "Nada foi importado. Todas as {skipped} entradas foram puladas.",
-            "resultEmpty": "Esse arquivo não continha medições nem registros de humor."
+            "resultEmpty": "Esse arquivo não continha medições nem registros de humor.",
+            "limitsHint": "Até {mb} MB e até {rows} entradas em cada lista. Isso adiciona entradas ao seu registro; não restaura um backup completo."
           },
           "csv": {
             "title": "Arquivo CSV",
@@ -5946,7 +5947,7 @@
             }
           }
         },
-        "subtitle": "Exporte seus dados ou importe de um backup."
+        "subtitle": "Exporte seus dados ou importe medições e registros de outros apps e arquivos."
       },
       "about": {
         "title": "Sobre este aplicativo",
@@ -8160,8 +8161,8 @@
       },
       "backups": {
         "title": "Backups",
-        "subtitle": "Instantâneos semanais de dados por usuário armazenados no PostgreSQL.",
-        "description": "Cada usuário recebe um instantâneo contínuo por tipo de backup. Os tamanhos mostram o blob criptografado. O download descriptografa o instantâneo para o administrador que o solicita; o texto cifrado permanece no banco de dados.",
+        "subtitle": "Cópias de contas mantidas no banco de dados deste servidor, para reverter uma conta neste servidor.",
+        "description": "Cada conta tem uma cópia semanal, substituída todo domingo, além das cópias enviadas aqui e da cópia feita antes de \"Excluir todos os dados\". Uma cópia reverte uma conta existente neste servidor. Ela não reconstrói um servidor perdido: para isso são necessários um dump do banco de dados e as chaves de criptografia. Os tamanhos mostram a cópia criptografada. O download a descriptografa para o administrador que pede; o texto cifrado fica no banco de dados.",
         "runNow": "Fazer backup agora",
         "runEnqueued": "Tarefa de backup enfileirada",
         "runFailed": "Falha ao enfileirar o backup",
@@ -8171,7 +8172,7 @@
         "emptyDescription": "Os backups rodam automaticamente todos os domingos às 03:00, ou acione um agora para criar o primeiro instantâneo.",
         "colUser": "Usuário",
         "colType": "Tipo",
-        "typeWeeklyAuto": "Semanal (automático)",
+        "typeWeeklyAuto": "Cópia semanal da conta",
         "typeManual": "Manual",
         "colSize": "Tamanho",
         "colCreatedAt": "Último instantâneo",
@@ -8194,7 +8195,7 @@
         "downloadFailed": "Falha no download",
         "downloadStarted": "Download iniciado",
         "uploadTitle": "Enviar backup",
-        "uploadDescription": "Valide um arquivo de backup e armazene-o como instantâneo manual. A restauração é uma etapa separada.",
+        "uploadDescription": "Verifica uma cópia de conta e a guarda junto às cópias deste servidor. A conta a que ela pertence precisa existir neste servidor. Restaurar é uma etapa separada.",
         "uploadButton": "Enviar arquivo",
         "uploadHelp": "Um backup do HealthLog como .json ou .json.gz. O arquivo é comprimido antes do envio; comprimido, pode ter até 512 MB.",
         "uploadSuccess": "Backup enviado ({count} registros)",
@@ -8254,7 +8255,7 @@
         "restoreSkippedAccountSetting": "Configuração da conta",
         "restoreMissingTitle": "Restauração recusada: o arquivo está incompleto",
         "restoreMissingDescription": "O próprio manifesto do arquivo diz que ele carrega a seção abaixo, e não carrega. Nada foi alterado: uma restauração substitui uma classe inteira de registros, então recolocar uma seção que não está no arquivo a teria esvaziado.",
-        "restoreMissingRemedy": "Use um instantâneo de recuperação de desastre, ou exporte a conta novamente e envie o novo arquivo. Uma seção que o manifesto declara como omitida é uma coisa diferente e restaura normalmente.",
+        "restoreMissingRemedy": "Use uma das cópias de conta deste servidor ou uma cópia fora do servidor, ou exporte a conta de novo e envie o arquivo novo. Uma seção que o manifesto declara como omitida é outra coisa e é restaurada normalmente.",
         "restoreMissingDocuments": "Documentos",
         "restoreMissingWorkouts": "Treinos",
         "restoreMissingMentalHealth": "Triagens de saúde mental",
@@ -8307,7 +8308,7 @@
         "restoreFailureOwnerMismatch": "O arquivo dentro do backup pertence a uma conta diferente da linha de backup.",
         "restoreFailureOwnerMissing": "A conta à qual este backup pertence não existe mais.",
         "restoreFailureSectionMissing": "O arquivo está incompleto: seu manifesto nomeia uma seção que ele não carrega.",
-        "restoreFailureDocument": "O arquivo carrega documentos sem seu conteúdo, como faz uma exportação portátil. Use um backup de recuperação de desastre.",
+        "restoreFailureDocument": "O arquivo traz documentos sem o conteúdo, como uma exportação portátil. Use uma das cópias de conta deste servidor ou uma cópia fora do servidor.",
         "restoreFailureTimeBudget": "Este backup é grande demais para restaurar dentro do limite de tempo da tarefa em segundo plano.",
         "restoreFailureTransaction": "O banco de dados recusou a restauração no meio do caminho, então tudo foi revertido. O log do servidor nomeia o erro.",
         "restoreFailureCauseTimeout": "A restauração levou mais tempo do que o banco de dados permitia, então tudo foi revertido. Se o host do banco estava ocupado, inicie a restauração novamente quando estiver mais tranquilo. O log do servidor nomeia a etapa.",

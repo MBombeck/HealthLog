@@ -43,7 +43,7 @@ const restoreRequest = z
   .meta({
     id: "AdminBackupRestoreRequest",
     description:
-      "`confirm` is the literal typed gate; anything else is refused with 422 and nothing is read. `restoreInstanceSettings` defaults to false: the restore then replaces the snapshot owner's data tables and leaves the singleton instance settings — registration, MFA requirement, default locale and timezone, module availability, notification and AI configuration, document cap and quota — exactly as they are. Send `true` only when rebuilding a host from a snapshot, because those settings apply to every account on the installation.",
+      "`confirm` is the literal typed gate; anything else is refused with 422 and nothing is read. `restoreInstanceSettings` defaults to false: the restore then replaces the snapshot owner's data tables and leaves the singleton instance settings — registration, MFA requirement, default locale and timezone, module availability, notification and AI configuration, document cap and quota — exactly as they are. Send `true` only when this server's instance settings themselves need to go back to the ones in the copy, because those settings apply to every account on the installation. An account copy restores one existing account on this server; it does not rebuild a lost server, which takes a database dump and the encryption keys (`docs/ops/disaster-recovery.md`).",
   });
 
 const restoreSkipEntry = z

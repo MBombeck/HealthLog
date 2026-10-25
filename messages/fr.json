@@ -5735,7 +5735,7 @@
             "passphrasePlaceholder": "Phrase secrète (12 caractères min.)",
             "passphraseHelp": "Dérive la clé de l'archive avec Argon2id et la scelle avec AES-256-GCM. Enregistrez le fichier avec l'extension .hlx.",
             "noRecoveryWarning": "Aucune récupération possible : si vous perdez cette phrase secrète, l'archive ne pourra pas être ouverte. Conservez-la en lieu sûr.",
-            "detail": "Même format que la sauvegarde automatique hebdomadaire. Certains types d'enregistrement ne sont pas encore inclus : le manifeste du fichier indique ce qu'il contient.",
+            "detail": "Une copie portable de votre dossier, à conserver et à lire : valeurs en JSON simple, documents limités à leurs métadonnées. Ce n’est pas la copie hebdomadaire du compte que ce serveur garde pour restaurer un compte, et elle ne peut pas recréer un compte sur un autre serveur. Certains types de données ne sont pas encore inclus ; le manifeste du fichier indique ce qu’il contient.",
             "contents": "Vos mesures, médicaments, humeur, cycle, analyses, épisodes de maladie, allergies, antécédents familiaux, nutriments, séances, votre profil de santé et vos mesures personnalisées dans un seul fichier JSON."
           }
         },
@@ -5781,7 +5781,7 @@
             "cycleDaysFailed": "{count} jours de cycle n'ont pas pu être écrits : {reason}"
           },
           "json": {
-            "title": "Fichier JSON",
+            "title": "Mesures et humeur (JSON)",
             "description": "Collez du JSON ou importez un fichier .json contenant des mesures et des entrées d'humeur.",
             "pasteLabel": "Coller du JSON",
             "fileInputLabel": "Choisir un fichier JSON à importer",
@@ -5800,7 +5800,8 @@
             "droppedLinks": "Importé sans ces étiquettes, car ce compte n’en a aucune de ce nom : {keys}",
             "keptLabels": "Ce compte a déjà des étiquettes ou des groupes avec ces clés sous son propre nom, ils ont été conservés : {keys}",
             "resultNothing": "Rien n'a été importé. Les {skipped} entrées ont toutes été ignorées.",
-            "resultEmpty": "Ce fichier ne contenait ni mesures ni entrées d'humeur."
+            "resultEmpty": "Ce fichier ne contenait ni mesures ni entrées d'humeur.",
+            "limitsHint": "Jusqu’à {mb} Mo et jusqu’à {rows} entrées par liste. Cela ajoute des entrées à votre dossier ; cela ne restaure pas une sauvegarde complète."
           },
           "csv": {
             "title": "Fichier CSV",
@@ -5946,7 +5947,7 @@
             }
           }
         },
-        "subtitle": "Exportez vos données ou importez depuis une sauvegarde."
+        "subtitle": "Exportez vos données, ou importez des mesures et des entrées depuis d’autres applis et fichiers."
       },
       "about": {
         "title": "À propos de cette app",
@@ -8160,8 +8161,8 @@
       },
       "backups": {
         "title": "Sauvegardes",
-        "subtitle": "Instantanés de données hebdomadaires par utilisateur stockés dans PostgreSQL.",
-        "description": "Chaque utilisateur dispose d'un instantané glissant par type de sauvegarde. Les tailles indiquent le blob chiffré. Télécharger déchiffre l'instantané pour l'administrateur qui le demande ; le texte chiffré reste dans la base de données.",
+        "subtitle": "Copies de comptes conservées dans la base de données de ce serveur, pour restaurer un compte sur ce serveur.",
+        "description": "Chaque compte dispose d’une copie hebdomadaire, remplacée chaque dimanche, ainsi que des copies téléversées ici et de la copie prise avant « Supprimer toutes les données ». Une copie restaure un compte existant sur ce serveur. Elle ne peut pas reconstruire un serveur perdu : il faut pour cela une sauvegarde de la base de données et les clés de chiffrement. Les tailles indiquent la copie chiffrée. Le téléchargement la déchiffre pour l’administrateur qui la demande ; le texte chiffré reste dans la base de données.",
         "runNow": "Sauvegarder maintenant",
         "runEnqueued": "Tâche de sauvegarde mise en file d'attente",
         "runFailed": "Échec de la mise en file d'attente de la sauvegarde",
@@ -8171,7 +8172,7 @@
         "emptyDescription": "Les sauvegardes s'exécutent automatiquement chaque dimanche à 03:00, ou lancez-en une maintenant pour créer le premier instantané.",
         "colUser": "Utilisateur",
         "colType": "Type",
-        "typeWeeklyAuto": "Hebdomadaire (auto)",
+        "typeWeeklyAuto": "Copie hebdomadaire du compte",
         "typeManual": "Manuelle",
         "colSize": "Taille",
         "colCreatedAt": "Dernier instantané",
@@ -8194,7 +8195,7 @@
         "downloadFailed": "Échec du téléchargement",
         "downloadStarted": "Téléchargement démarré",
         "uploadTitle": "Téléverser une sauvegarde",
-        "uploadDescription": "Validez un fichier de sauvegarde et stockez-le comme instantané manuel. La restauration est une étape distincte.",
+        "uploadDescription": "Vérifie une copie de compte et la stocke à côté des copies de ce serveur. Le compte auquel elle appartient doit exister sur ce serveur. La restauration est une étape distincte.",
         "uploadButton": "Téléverser un fichier",
         "uploadHelp": "Une sauvegarde HealthLog au format .json ou .json.gz. Le fichier est compressé avant l’envoi ; compressé, il peut atteindre 512 Mo.",
         "uploadSuccess": "Sauvegarde téléversée ({count} enregistrements)",
@@ -8254,7 +8255,7 @@
         "restoreSkippedAccountSetting": "Réglage du compte",
         "restoreMissingTitle": "Restauration refusée : le fichier est incomplet",
         "restoreMissingDescription": "Le manifeste du fichier indique qu'il contient la section ci-dessous, et il ne la contient pas. Rien n'a été modifié : une restauration remplace toute une classe d'enregistrements, une section absente l'aurait donc vidée.",
-        "restoreMissingRemedy": "Utilise une sauvegarde de reprise après sinistre, ou réexporte le compte et téléverse le nouveau fichier. Une section que le manifeste déclare omise est autre chose et se restaure normalement.",
+        "restoreMissingRemedy": "Utilisez l’une des copies de compte de ce serveur ou une copie hors du serveur, ou exportez à nouveau le compte et téléversez le nouveau fichier. Une section que le manifeste déclare omise est un autre cas et se restaure normalement.",
         "restoreMissingDocuments": "Documents",
         "restoreMissingWorkouts": "Séances",
         "restoreMissingMentalHealth": "Questionnaires de santé mentale",
@@ -8307,7 +8308,7 @@
         "restoreFailureOwnerMismatch": "Le fichier de la sauvegarde appartient à un autre compte que la ligne de sauvegarde.",
         "restoreFailureOwnerMissing": "Le compte auquel appartient cette sauvegarde n'existe plus.",
         "restoreFailureSectionMissing": "Le fichier est incomplet : son manifeste nomme une section qu'il ne contient pas.",
-        "restoreFailureDocument": "Le fichier contient des documents sans leur contenu, comme un export portable. Utilise une sauvegarde de reprise après sinistre.",
+        "restoreFailureDocument": "Le fichier contient des documents sans leur contenu, comme un export portable. Utilisez plutôt l’une des copies de compte de ce serveur ou une copie hors du serveur.",
         "restoreFailureTimeBudget": "Cette sauvegarde est trop volumineuse pour être restaurée dans le temps imparti au processus en arrière-plan.",
         "restoreFailureTransaction": "La base de données a refusé la restauration en cours de route, tout a donc été annulé. Le journal du serveur indique l'erreur.",
         "restoreFailureCauseTimeout": "La restauration a duré plus longtemps que la base de données ne l'autorise, tout a donc été annulé. Si l'hôte de la base était chargé, relancez-la quand il est plus calme. Le journal du serveur indique l'étape.",

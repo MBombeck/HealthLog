@@ -64,7 +64,7 @@ describe("RestoreRefusalNotice", () => {
     const html = render(["documents"]);
 
     expect(html).toContain("Nothing was changed");
-    expect(html).toContain("disaster-recovery snapshot");
+    expect(html).toContain("account copies or an off-host copy");
   });
 
   it("renders nothing when no section was missing", () => {

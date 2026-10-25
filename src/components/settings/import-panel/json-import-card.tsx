@@ -12,6 +12,10 @@ import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { ImportCardShell } from "./import-card-shell";
 import { IMPORT_GUIDE_URL, MAX_PASTE_CHARS } from "./constants";
 import {
+  JSON_IMPORT_MAX_BYTES,
+  JSON_IMPORT_MAX_ROWS,
+} from "@/lib/import/json/limits";
+import {
   EXAMPLE_IMPORT_DOWNLOAD_HREF,
   parseImportJson,
 } from "./import-examples";
@@ -122,7 +126,7 @@ export function JsonImportResultView({ result }: { result: JsonImportResult }) {
 }
 
 export function JsonImportCard() {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [text, setText] = useState("");
@@ -226,6 +230,15 @@ export function JsonImportCard() {
         onChange={onFileChange}
       />
 
+      {/* What this import is, and its limits: it adds measurements and mood
+          entries; it is not a way back from a full backup. The numbers are
+          the ones the route enforces. */}
+      <p className="text-muted-foreground text-xs">
+        {t("settings.sections.export.import.json.limitsHint", {
+          mb: JSON_IMPORT_MAX_BYTES / (1024 * 1024),
+          rows: JSON_IMPORT_MAX_ROWS.toLocaleString(locale),
+        })}
+      </p>
       <p className="text-muted-foreground text-xs">
         {t("settings.sections.export.import.json.schemaHint")}{" "}
         {/* The import guide lives on the external docs site — the app

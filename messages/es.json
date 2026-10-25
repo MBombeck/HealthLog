@@ -5735,7 +5735,7 @@
             "passphrasePlaceholder": "Contraseña (mín. 12 caracteres)",
             "passphraseHelp": "Deriva la clave del archivo con Argon2id y lo sella con AES-256-GCM. Guarda el archivo con la extensión .hlx.",
             "noRecoveryWarning": "No hay recuperación: si pierdes esta contraseña, el archivo no se podrá abrir. Guárdala en un lugar seguro.",
-            "detail": "El mismo formato que la copia automática semanal. Algunos tipos de registro aún no se incluyen: el manifiesto del archivo indica qué contiene.",
+            "detail": "Una copia portátil de tu historial para guardarla y leerla: valores en JSON simple, documentos solo con sus metadatos. No es la copia semanal de la cuenta que este servidor guarda para restaurar una cuenta, y no puede recrear una cuenta en otro servidor. Algunos tipos de datos aún no se incluyen; el manifiesto del archivo indica qué contiene.",
             "contents": "Tus mediciones, medicamentos, estado de ánimo, ciclo, analíticas, episodios de enfermedad, alergias, antecedentes familiares, nutrientes, entrenamientos, tu perfil de salud y tus métricas personalizadas en un archivo JSON."
           }
         },
@@ -5781,7 +5781,7 @@
             "cycleDaysFailed": "{count} días de ciclo no se pudieron escribir: {reason}"
           },
           "json": {
-            "title": "Archivo JSON",
+            "title": "Mediciones y estado de ánimo (JSON)",
             "description": "Pega JSON o sube un archivo .json con mediciones y entradas de ánimo.",
             "pasteLabel": "Pegar JSON",
             "fileInputLabel": "Elegir un archivo JSON para importar",
@@ -5800,7 +5800,8 @@
             "droppedLinks": "Importado sin estas etiquetas, porque esta cuenta no tiene ninguna con ese nombre: {keys}",
             "keptLabels": "Esta cuenta ya tiene etiquetas o grupos con estas claves y con su propio nombre, así que se han conservado: {keys}",
             "resultNothing": "No se importó nada. Se omitieron las {skipped} entradas.",
-            "resultEmpty": "Ese archivo no contenía mediciones ni entradas de ánimo."
+            "resultEmpty": "Ese archivo no contenía mediciones ni entradas de ánimo.",
+            "limitsHint": "Hasta {mb} MB y hasta {rows} entradas por lista. Añade entradas a tu historial; no restaura una copia de seguridad completa."
           },
           "csv": {
             "title": "Archivo CSV",
@@ -5946,7 +5947,7 @@
             }
           }
         },
-        "subtitle": "Exporta tus datos o importa desde una copia de seguridad."
+        "subtitle": "Exporta tus datos o importa mediciones y registros de otras apps y archivos."
       },
       "about": {
         "title": "Acerca de esta app",
@@ -8160,8 +8161,8 @@
       },
       "backups": {
         "title": "Copias de seguridad",
-        "subtitle": "Instantáneas de datos semanales por usuario almacenadas en PostgreSQL.",
-        "description": "Cada usuario tiene una instantánea rotativa por tipo de copia. Los tamaños muestran el blob cifrado. Descargar descifra la instantánea para el administrador que la pide; el texto cifrado permanece en la base de datos.",
+        "subtitle": "Copias de cuentas guardadas en la base de datos de este servidor, para restaurar una cuenta en este servidor.",
+        "description": "Cada cuenta tiene una copia semanal, que se reemplaza cada domingo, además de las copias subidas aquí y la copia que se toma antes de «Eliminar todos los datos». Una copia restaura una cuenta existente en este servidor. No puede reconstruir un servidor perdido: para eso hacen falta un volcado de la base de datos y las claves de cifrado. Los tamaños muestran la copia cifrada. La descarga la descifra para el administrador que la pide; el texto cifrado se queda en la base de datos.",
         "runNow": "Hacer copia ahora",
         "runEnqueued": "Tarea de copia de seguridad en cola",
         "runFailed": "No se pudo poner en cola la copia de seguridad",
@@ -8171,7 +8172,7 @@
         "emptyDescription": "Las copias de seguridad se ejecutan automáticamente cada domingo a las 03:00, o inicia una ahora para crear la primera instantánea.",
         "colUser": "Usuario",
         "colType": "Tipo",
-        "typeWeeklyAuto": "Semanal (auto)",
+        "typeWeeklyAuto": "Copia semanal de la cuenta",
         "typeManual": "Manual",
         "colSize": "Tamaño",
         "colCreatedAt": "Última instantánea",
@@ -8194,7 +8195,7 @@
         "downloadFailed": "La descarga falló",
         "downloadStarted": "Descarga iniciada",
         "uploadTitle": "Subir copia de seguridad",
-        "uploadDescription": "Valida un archivo de copia de seguridad y guárdalo como instantánea manual. La restauración es un paso aparte.",
+        "uploadDescription": "Comprueba una copia de cuenta y la guarda junto a las copias de este servidor. La cuenta a la que pertenece debe existir en este servidor. Restaurar es un paso aparte.",
         "uploadButton": "Subir archivo",
         "uploadHelp": "Una copia de seguridad de HealthLog en .json o .json.gz. El archivo se comprime antes de subirlo; comprimido puede ocupar hasta 512 MB.",
         "uploadSuccess": "Copia de seguridad subida ({count} registros)",
@@ -8254,7 +8255,7 @@
         "restoreSkippedAccountSetting": "Ajuste de la cuenta",
         "restoreMissingTitle": "Restauración rechazada: el archivo está incompleto",
         "restoreMissingDescription": "El propio manifiesto del archivo dice que incluye la sección siguiente, y no la incluye. No se cambió nada: una restauración sustituye toda una clase de registros, así que una sección ausente la habría vaciado.",
-        "restoreMissingRemedy": "Usa una copia de recuperación ante desastres, o vuelve a exportar la cuenta y sube el archivo nuevo. Una sección que el manifiesto declara omitida es otra cosa y se restaura con normalidad.",
+        "restoreMissingRemedy": "Usa una de las copias de cuenta de este servidor o una copia fuera del servidor, o exporta de nuevo la cuenta y sube el archivo nuevo. Una sección que el manifiesto declara omitida es otra cosa y se restaura con normalidad.",
         "restoreMissingDocuments": "Documentos",
         "restoreMissingWorkouts": "Entrenamientos",
         "restoreMissingMentalHealth": "Cuestionarios de salud mental",
@@ -8307,7 +8308,7 @@
         "restoreFailureOwnerMismatch": "El archivo de la copia pertenece a otra cuenta que la fila de la copia.",
         "restoreFailureOwnerMissing": "La cuenta a la que pertenece esta copia ya no existe.",
         "restoreFailureSectionMissing": "El archivo está incompleto: su manifiesto nombra una sección que no contiene.",
-        "restoreFailureDocument": "El archivo contiene documentos sin su contenido, como una exportación portátil. Usa una copia de recuperación ante desastres.",
+        "restoreFailureDocument": "El archivo contiene documentos sin su contenido, como una exportación portátil. Usa en su lugar una de las copias de cuenta de este servidor o una copia fuera del servidor.",
         "restoreFailureTimeBudget": "Esta copia es demasiado grande para restaurarse dentro del límite de tiempo del proceso en segundo plano.",
         "restoreFailureTransaction": "La base de datos rechazó la restauración a mitad, así que se deshizo todo. El registro del servidor indica el error.",
         "restoreFailureCauseTimeout": "La restauración tardó más de lo que permite la base de datos, así que se deshizo todo. Si el servidor de la base de datos estaba ocupado, vuelve a iniciarla cuando esté más tranquilo. El registro del servidor indica el paso.",

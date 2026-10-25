@@ -5735,7 +5735,7 @@
             "passphrasePlaceholder": "Hasło-fraza (min. 12 znaków)",
             "passphraseHelp": "Wyprowadza klucz archiwum za pomocą Argon2id i pieczętuje je AES-256-GCM. Zapisz plik z rozszerzeniem .hlx.",
             "noRecoveryWarning": "Nie ma odzyskiwania: jeśli zgubisz tę frazę, archiwum nie da się otworzyć. Przechowuj ją bezpiecznie.",
-            "detail": "Ten sam kształt co cotygodniowa kopia automatyczna. Niektóre rodzaje wpisów nie są jeszcze przenoszone; manifest pliku wskazuje, co zawiera.",
+            "detail": "Przenośna kopia twojej dokumentacji do przechowywania i czytania: wartości w zwykłym JSON, dokumenty tylko jako metadane. To nie jest cotygodniowa kopia konta, którą ten serwer trzyma do przywracania konta, i nie odtworzy konta na innym serwerze. Niektóre rodzaje danych nie są jeszcze uwzględnione; manifest pliku wymienia, co zawiera.",
             "contents": "Twoje pomiary, leki, nastrój, cykl, wyniki badań, epizody chorobowe, alergie, wywiad rodzinny, składniki odżywcze, treningi, Twój profil zdrowia i własne wskaźniki w jednym pliku JSON."
           }
         },
@@ -5781,7 +5781,7 @@
             "cycleDaysFailed": "{count} dni cyklu nie udało się zapisać: {reason}"
           },
           "json": {
-            "title": "Plik JSON",
+            "title": "Pomiary i nastrój (JSON)",
             "description": "Wklej JSON lub prześlij plik .json z pomiarami i wpisami nastroju.",
             "pasteLabel": "Wklej JSON",
             "fileInputLabel": "Wybierz plik JSON do zaimportowania",
@@ -5800,7 +5800,8 @@
             "droppedLinks": "Zaimportowano bez tych tagów, bo to konto nie ma żadnego o tej nazwie: {keys}",
             "keptLabels": "To konto ma już tagi lub grupy z tymi kluczami pod własną nazwą, więc zostały zachowane: {keys}",
             "resultNothing": "Nic nie zaimportowano. Pominięto wszystkie {skipped} wpisów.",
-            "resultEmpty": "Ten plik nie zawierał pomiarów ani wpisów nastroju."
+            "resultEmpty": "Ten plik nie zawierał pomiarów ani wpisów nastroju.",
+            "limitsHint": "Do {mb} MB i do {rows} wpisów na listę. Dodaje wpisy do twojej dokumentacji; nie przywraca pełnej kopii zapasowej."
           },
           "csv": {
             "title": "Plik CSV",
@@ -5946,7 +5947,7 @@
             }
           }
         },
-        "subtitle": "Wyeksportuj dane lub zaimportuj z kopii zapasowej."
+        "subtitle": "Eksportuj swoje dane albo importuj pomiary i wpisy z innych aplikacji i plików."
       },
       "about": {
         "title": "O tej aplikacji",
@@ -8160,8 +8161,8 @@
       },
       "backups": {
         "title": "Kopie zapasowe",
-        "subtitle": "Cotygodniowe migawki danych dla każdego użytkownika przechowywane w PostgreSQL.",
-        "description": "Każdy użytkownik ma jedną przesuwaną migawkę na typ kopii. Rozmiary pokazują zaszyfrowany blob. Pobieranie odszyfrowuje migawkę dla proszącego administratora; szyfrogram zostaje w bazie danych.",
+        "subtitle": "Kopie kont przechowywane w bazie danych tego serwera, do przywracania pojedynczego konta na tym serwerze.",
+        "description": "Każde konto ma jedną cotygodniową kopię, zastępowaną w każdą niedzielę, a do tego kopie przesłane tutaj i kopię wykonaną przed „Usuń wszystkie dane”. Kopia przywraca istniejące konto na tym serwerze. Nie odtworzy utraconego serwera: do tego potrzebny jest zrzut bazy danych i klucze szyfrowania. Rozmiary dotyczą zaszyfrowanej kopii. Pobieranie odszyfrowuje ją dla administratora, który o nią prosi; szyfrogram zostaje w bazie danych.",
         "runNow": "Utwórz kopię teraz",
         "runEnqueued": "Zadanie kopii zapasowej dodano do kolejki",
         "runFailed": "Nie udało się dodać kopii do kolejki",
@@ -8171,7 +8172,7 @@
         "emptyDescription": "Kopie zapasowe wykonują się automatycznie w każdą niedzielę o 03:00. Możesz też uruchomić jedną teraz, aby utworzyć pierwszą migawkę.",
         "colUser": "Użytkownik",
         "colType": "Typ",
-        "typeWeeklyAuto": "Cotygodniowo (auto)",
+        "typeWeeklyAuto": "Cotygodniowa kopia konta",
         "typeManual": "Ręcznie",
         "colSize": "Rozmiar",
         "colCreatedAt": "Ostatnia migawka",
@@ -8194,7 +8195,7 @@
         "downloadFailed": "Pobieranie nie powiodło się",
         "downloadStarted": "Rozpoczęto pobieranie",
         "uploadTitle": "Prześlij kopię zapasową",
-        "uploadDescription": "Sprawdź plik kopii zapasowej i zapisz go jako ręczną migawkę. Przywracanie to osobny krok.",
+        "uploadDescription": "Sprawdza kopię konta i zapisuje ją obok kopii tego serwera. Konto, do którego należy, musi istnieć na tym serwerze. Przywracanie to osobny krok.",
         "uploadButton": "Prześlij plik",
         "uploadHelp": "Kopia zapasowa HealthLog w formacie .json lub .json.gz. Plik jest kompresowany przed wysłaniem; po kompresji może mieć do 512 MB.",
         "uploadSuccess": "Przesłano kopię zapasową ({count} rekordów)",
@@ -8254,7 +8255,7 @@
         "restoreSkippedAccountSetting": "Ustawienie konta",
         "restoreMissingTitle": "Przywracanie odrzucone: plik jest niekompletny",
         "restoreMissingDescription": "Manifest pliku mówi, że zawiera on poniższą sekcję, a jej nie zawiera. Nic nie zostało zmienione: przywracanie zastępuje całą klasę rekordów, więc brakująca sekcja by ją opróżniła.",
-        "restoreMissingRemedy": "Użyj kopii do odtwarzania po awarii albo wyeksportuj konto ponownie i wgraj nowy plik. Sekcja, którą manifest jawnie deklaruje jako pominiętą, to co innego i przywraca się normalnie.",
+        "restoreMissingRemedy": "Użyj jednej z kopii konta z tego serwera lub kopii spoza serwera albo wyeksportuj konto ponownie i prześlij nowy plik. Sekcja, którą manifest deklaruje jako pominiętą, to co innego i przywraca się normalnie.",
         "restoreMissingDocuments": "Dokumenty",
         "restoreMissingWorkouts": "Treningi",
         "restoreMissingMentalHealth": "Kwestionariusze zdrowia psychicznego",
@@ -8307,7 +8308,7 @@
         "restoreFailureOwnerMismatch": "Plik w kopii należy do innego konta niż wiersz kopii.",
         "restoreFailureOwnerMissing": "Konto, do którego należy ta kopia, już nie istnieje.",
         "restoreFailureSectionMissing": "Plik jest niekompletny: jego manifest wymienia sekcję, której nie zawiera.",
-        "restoreFailureDocument": "Plik zawiera dokumenty bez ich treści, jak eksport przenośny. Użyj kopii do odtwarzania po awarii.",
+        "restoreFailureDocument": "Plik zawiera dokumenty bez ich treści, jak przenośny eksport. Użyj zamiast tego jednej z kopii konta z tego serwera lub kopii spoza serwera.",
         "restoreFailureTimeBudget": "Ta kopia jest za duża, by przywrócić ją w limicie czasu procesu w tle.",
         "restoreFailureTransaction": "Baza danych odrzuciła przywracanie w trakcie, więc wszystko wycofano. Dziennik serwera podaje błąd.",
         "restoreFailureCauseTimeout": "Przywracanie trwało dłużej, niż pozwala baza danych, więc wszystko wycofano. Jeśli serwer bazy był obciążony, uruchom je ponownie, gdy będzie spokojniej. Dziennik serwera podaje krok.",

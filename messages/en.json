@@ -5735,7 +5735,7 @@
             "passphrasePlaceholder": "Passphrase (min. 12 characters)",
             "passphraseHelp": "Derives the archive key with Argon2id and seals it with AES-256-GCM. Save the file with a .hlx extension.",
             "noRecoveryWarning": "There is no recovery. If you lose this passphrase, the archive cannot be opened. Keep it somewhere safe.",
-            "detail": "Same shape as the weekly auto-backup. Some record types are not carried yet; the file's manifest names what is in it.",
+            "detail": "A portable copy of your record for you to keep and read: values in plain JSON, documents as metadata only. It is not the weekly account copy this server keeps for rolling an account back, and it cannot recreate an account on another server. Some record types are not carried yet; the file's manifest names what is in it.",
             "contents": "Your measurements, medications, mood, cycle, labs, illness episodes, allergies, family history, nutrients, workouts, health profile and custom metrics in one JSON file."
           }
         },
@@ -5781,7 +5781,7 @@
             "cycleDaysFailed": "{count} cycle days couldn't be written: {reason}"
           },
           "json": {
-            "title": "JSON file",
+            "title": "Measurements and mood (JSON)",
             "description": "Paste JSON or upload a .json file with measurements and mood entries.",
             "pasteLabel": "Paste JSON",
             "fileInputLabel": "Choose a JSON file to import",
@@ -5800,7 +5800,8 @@
             "droppedLinks": "Imported without these tags, because this account has none by that name: {keys}",
             "keptLabels": "This account already has tags or groups with these keys under its own names, so those were kept: {keys}",
             "resultNothing": "Nothing was imported. All {skipped} entries were skipped.",
-            "resultEmpty": "That file carried no measurements and no mood entries."
+            "resultEmpty": "That file carried no measurements and no mood entries.",
+            "limitsHint": "Up to {mb} MB and up to {rows} entries in each list. It adds entries to your record; it does not restore a full backup."
           },
           "csv": {
             "title": "CSV file",
@@ -5946,7 +5947,7 @@
             }
           }
         },
-        "subtitle": "Export your data or import from a backup."
+        "subtitle": "Export your data, or import measurements and records from other apps and files."
       },
       "about": {
         "title": "About this app",
@@ -8160,8 +8161,8 @@
       },
       "backups": {
         "title": "Backups",
-        "subtitle": "Weekly per-user data snapshots stored in PostgreSQL.",
-        "description": "Each user gets one rolling snapshot per backup type. Sizes show the encrypted blob. Download decrypts the snapshot for the admin who asks; the ciphertext stays in the database.",
+        "subtitle": "Account copies kept in this server's database, for rolling one account back on this server.",
+        "description": "Each account has one weekly copy, replaced every Sunday, plus any copy uploaded here and the copy taken before \"Delete all data\". A copy brings one existing account back on this server. It cannot rebuild a lost server: that takes a database dump and the encryption keys. Sizes show the encrypted copy. Download decrypts it for the admin who asks; the ciphertext stays in the database.",
         "runNow": "Backup now",
         "runEnqueued": "Backup job enqueued",
         "runFailed": "Failed to enqueue backup",
@@ -8171,7 +8172,7 @@
         "emptyDescription": "Backups run automatically every Sunday at 03:00, or trigger one now to create the first snapshot.",
         "colUser": "User",
         "colType": "Type",
-        "typeWeeklyAuto": "Weekly (auto)",
+        "typeWeeklyAuto": "Weekly account rollback",
         "typeManual": "Manual",
         "colSize": "Size",
         "colCreatedAt": "Last snapshot",
@@ -8194,7 +8195,7 @@
         "downloadFailed": "Download failed",
         "downloadStarted": "Download started",
         "uploadTitle": "Upload backup",
-        "uploadDescription": "Validate a backup file and store it as a manual snapshot. Restoring is a separate step.",
+        "uploadDescription": "Check an account copy and store it beside this server's copies. The account it belongs to must exist on this server. Restoring is a separate step.",
         "uploadButton": "Upload file",
         "uploadHelp": "A HealthLog backup as .json or .json.gz. The file is compressed before upload; compressed, it may be up to 512 MB.",
         "uploadSuccess": "Backup uploaded ({count} records)",
@@ -8254,7 +8255,7 @@
         "restoreSkippedAccountSetting": "Account setting",
         "restoreMissingTitle": "Restore refused: the file is incomplete",
         "restoreMissingDescription": "The file's own manifest says it carries the section below, and it does not. Nothing was changed: a restore replaces a whole class of records, so putting back a section that is not in the file would have emptied it.",
-        "restoreMissingRemedy": "Use a disaster-recovery snapshot, or export the account again and upload the new file. A section the manifest declares as omitted is a different thing and restores normally.",
+        "restoreMissingRemedy": "Use one of this server's account copies or an off-host copy, or export the account again and upload the new file. A section the manifest declares as omitted is a different thing and restores normally.",
         "restoreMissingDocuments": "Documents",
         "restoreMissingWorkouts": "Workouts",
         "restoreMissingMentalHealth": "Mental-health screeners",
@@ -8307,7 +8308,7 @@
         "restoreFailureOwnerMismatch": "The file inside the backup belongs to a different account than the backup row.",
         "restoreFailureOwnerMissing": "The account this backup belongs to no longer exists.",
         "restoreFailureSectionMissing": "The file is incomplete: its manifest names a section it does not carry.",
-        "restoreFailureDocument": "The file carries documents without their content, as a portable export does. Use a disaster-recovery backup.",
+        "restoreFailureDocument": "The file carries documents without their content, as a portable export does. Use one of this server's account copies or an off-host copy instead.",
         "restoreFailureTimeBudget": "This backup is too large to restore within the background job's time limit.",
         "restoreFailureTransaction": "The database refused the restore part-way, so everything was rolled back. The server log names the error.",
         "restoreFailureCauseTimeout": "The restore ran longer than the database allowed, so everything was rolled back. If the database host was busy, start the restore again when it is quieter. The server log names the step.",

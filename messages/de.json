@@ -5735,7 +5735,7 @@
             "passphrasePlaceholder": "Passphrase (mind. 12 Zeichen)",
             "passphraseHelp": "Leitet den Archivschlüssel per Argon2id ab und versiegelt ihn mit AES-256-GCM. Speichere die Datei mit der Endung .hlx.",
             "noRecoveryWarning": "Es gibt keine Wiederherstellung. Geht diese Passphrase verloren, lässt sich das Archiv nicht mehr öffnen. Bewahre sie sicher auf.",
-            "detail": "Gleiche Form wie die wöchentliche automatische Sicherung. Einige Satzarten sind noch nicht enthalten; das Manifest der Datei nennt, was drinsteht.",
+            "detail": "Eine portable Kopie deiner Akte zum Aufbewahren und Lesen: Werte als einfaches JSON, Dokumente nur mit ihren Metadaten. Sie ist nicht die wöchentliche Kontokopie, mit der dieser Server ein Konto zurücksetzt, und sie kann kein Konto auf einem anderen Server neu anlegen. Einige Datenarten fehlen noch; das Manifest der Datei nennt, was enthalten ist.",
             "contents": "Deine Messwerte, Medikamente, Stimmung, Zyklus, Laborwerte, Krankheitsepisoden, Allergien, Familienanamnese, Nährstoffe, Workouts, dein Gesundheitsprofil und deine eigenen Messgrößen in einer JSON-Datei."
           }
         },
@@ -5781,7 +5781,7 @@
             "cycleDaysFailed": "{count} Zyklustage konnten nicht geschrieben werden: {reason}"
           },
           "json": {
-            "title": "JSON-Datei",
+            "title": "Messwerte und Stimmung (JSON)",
             "description": "JSON einfügen oder eine .json-Datei mit Messwerten und Stimmungseinträgen hochladen.",
             "pasteLabel": "JSON einfügen",
             "fileInputLabel": "Eine JSON-Datei zum Import auswählen",
@@ -5800,7 +5800,8 @@
             "droppedLinks": "Ohne diese Tags importiert, weil dieses Konto keine mit dem Namen hat: {keys}",
             "keptLabels": "Dieses Konto hat Tags oder Gruppen mit diesen Schlüsseln schon unter eigenem Namen, die wurden behalten: {keys}",
             "resultNothing": "Nichts importiert. Alle {skipped} Einträge wurden übersprungen.",
-            "resultEmpty": "Diese Datei enthielt weder Messwerte noch Stimmungseinträge."
+            "resultEmpty": "Diese Datei enthielt weder Messwerte noch Stimmungseinträge.",
+            "limitsHint": "Bis {mb} MB und bis zu {rows} Einträge je Liste. Das ergänzt deine Akte um Einträge; ein vollständiges Backup lässt sich so nicht wiederherstellen."
           },
           "csv": {
             "title": "CSV-Datei",
@@ -5946,7 +5947,7 @@
             }
           }
         },
-        "subtitle": "Exportiere deine Daten oder importiere aus einer Sicherung."
+        "subtitle": "Exportiere deine Daten oder importiere Messwerte und Einträge aus anderen Apps und Dateien."
       },
       "about": {
         "title": "Über diese App",
@@ -8160,8 +8161,8 @@
       },
       "backups": {
         "title": "Backups",
-        "subtitle": "Wöchentliche Daten-Snapshots pro Nutzer in PostgreSQL.",
-        "description": "Jeder Nutzer hat einen rollierenden Snapshot pro Backup-Typ. Größen zeigen den verschlüsselten Blob. Download entschlüsselt den Snapshot für den anfragenden Admin; der Chiffretext bleibt in der Datenbank.",
+        "subtitle": "Kontokopien in der Datenbank dieses Servers, um ein einzelnes Konto auf diesem Server zurückzusetzen.",
+        "description": "Jedes Konto hat eine wöchentliche Kopie, die jeden Sonntag ersetzt wird, dazu hier hochgeladene Kopien und die Kopie, die vor „Alle Daten löschen“ angelegt wird. Eine Kopie setzt ein bestehendes Konto auf diesem Server zurück. Einen verlorenen Server kann sie nicht wiederherstellen: Dafür braucht es einen Datenbank-Dump und die Verschlüsselungsschlüssel. Die Größen zeigen die verschlüsselte Kopie. Beim Herunterladen wird sie für den anfragenden Admin entschlüsselt; der Geheimtext bleibt in der Datenbank.",
         "runNow": "Jetzt sichern",
         "runEnqueued": "Backup-Job eingeplant",
         "runFailed": "Backup konnte nicht eingeplant werden",
@@ -8171,7 +8172,7 @@
         "emptyDescription": "Backups laufen automatisch jeden Sonntag um 03:00 Uhr, oder erstelle jetzt einen ersten Snapshot.",
         "colUser": "Nutzer",
         "colType": "Typ",
-        "typeWeeklyAuto": "Wöchentlich (auto)",
+        "typeWeeklyAuto": "Wöchentliche Kontokopie",
         "typeManual": "Manuell",
         "colSize": "Größe",
         "colCreatedAt": "Letzter Snapshot",
@@ -8194,7 +8195,7 @@
         "downloadFailed": "Download fehlgeschlagen",
         "downloadStarted": "Download gestartet",
         "uploadTitle": "Backup hochladen",
-        "uploadDescription": "Eine Backup-Datei validieren und als manuellen Snapshot speichern. Das Wiederherstellen ist ein separater Schritt.",
+        "uploadDescription": "Prüft eine Kontokopie und speichert sie neben den Kopien dieses Servers. Das Konto, zu dem sie gehört, muss auf diesem Server existieren. Das Wiederherstellen ist ein eigener Schritt.",
         "uploadButton": "Datei hochladen",
         "uploadHelp": "HealthLog-Backup als .json oder .json.gz. Die Datei wird vor dem Hochladen komprimiert; komprimiert darf sie bis zu 512 MB groß sein.",
         "uploadSuccess": "Backup hochgeladen ({count} Datensätze)",
@@ -8254,7 +8255,7 @@
         "restoreSkippedAccountSetting": "Kontoeinstellung",
         "restoreMissingTitle": "Wiederherstellung abgelehnt: Die Datei ist unvollständig",
         "restoreMissingDescription": "Das Manifest der Datei sagt, sie enthalte den folgenden Abschnitt, und sie enthält ihn nicht. Es wurde nichts geändert: Eine Wiederherstellung ersetzt eine ganze Datenklasse, ein fehlender Abschnitt hätte sie also geleert.",
-        "restoreMissingRemedy": "Nimm eine Notfall-Sicherung oder exportiere das Konto erneut und lade die neue Datei hoch. Ein Abschnitt, den das Manifest ausdrücklich als weggelassen ausweist, ist etwas anderes und wird normal wiederhergestellt.",
+        "restoreMissingRemedy": "Nutze eine der Kontokopien dieses Servers oder eine Kopie außerhalb des Servers, oder exportiere das Konto erneut und lade die neue Datei hoch. Ein Abschnitt, den das Manifest als ausgelassen angibt, ist etwas anderes und wird normal wiederhergestellt.",
         "restoreMissingDocuments": "Dokumente",
         "restoreMissingWorkouts": "Workouts",
         "restoreMissingMentalHealth": "Psychische Fragebögen",
@@ -8307,7 +8308,7 @@
         "restoreFailureOwnerMismatch": "Die Datei im Backup gehört zu einem anderen Konto als die Backup-Zeile.",
         "restoreFailureOwnerMissing": "Das Konto, zu dem dieses Backup gehört, gibt es nicht mehr.",
         "restoreFailureSectionMissing": "Die Datei ist unvollständig: Ihr Manifest nennt einen Bereich, den sie nicht enthält.",
-        "restoreFailureDocument": "Die Datei enthält Dokumente ohne deren Inhalt, wie ein portabler Export. Nimm eine Notfall-Sicherung.",
+        "restoreFailureDocument": "Die Datei enthält Dokumente ohne ihren Inhalt, wie ein portabler Export. Nutze stattdessen eine der Kontokopien dieses Servers oder eine Kopie außerhalb des Servers.",
         "restoreFailureTimeBudget": "Dieses Backup ist zu groß, um innerhalb des Zeitlimits des Hintergrundauftrags wiederhergestellt zu werden.",
         "restoreFailureTransaction": "Die Datenbank hat die Wiederherstellung mittendrin abgelehnt, deshalb wurde alles zurückgerollt. Das Server-Log nennt den Fehler.",
         "restoreFailureCauseTimeout": "Die Wiederherstellung hat länger gedauert, als die Datenbank zulässt, deshalb wurde alles zurückgerollt. War der Datenbank-Host ausgelastet, starte sie erneut, wenn er ruhiger ist. Das Server-Log nennt den Schritt.",

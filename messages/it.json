@@ -5735,7 +5735,7 @@
             "passphrasePlaceholder": "Passphrase (min. 12 caratteri)",
             "passphraseHelp": "Deriva la chiave dell'archivio con Argon2id e lo sigilla con AES-256-GCM. Salva il file con estensione .hlx.",
             "noRecoveryWarning": "Non c'è recupero: se perdi questa passphrase, l'archivio non potrà essere aperto. Conservala in un luogo sicuro.",
-            "detail": "Stesso formato del backup automatico settimanale. Alcuni tipi di dato non sono ancora inclusi: il manifest del file indica cosa contiene.",
+            "detail": "Una copia portabile della tua cartella da conservare e leggere: valori in JSON semplice, documenti solo con i metadati. Non è la copia settimanale dell’account che questo server tiene per riportare indietro un account, e non può ricreare un account su un altro server. Alcuni tipi di dati non sono ancora inclusi; il manifest del file indica cosa contiene.",
             "contents": "Le tue misurazioni, i farmaci, l'umore, il ciclo, le analisi, gli episodi di malattia, le allergie, l'anamnesi familiare, i nutrienti, gli allenamenti, il tuo profilo di salute e le tue metriche personalizzate in un unico file JSON."
           }
         },
@@ -5781,7 +5781,7 @@
             "cycleDaysFailed": "{count} giorni del ciclo non sono stati scritti: {reason}"
           },
           "json": {
-            "title": "File JSON",
+            "title": "Misurazioni e umore (JSON)",
             "description": "Incolla JSON o carica un file .json con misurazioni e voci dell'umore.",
             "pasteLabel": "Incolla JSON",
             "fileInputLabel": "Scegli un file JSON da importare",
@@ -5800,7 +5800,8 @@
             "droppedLinks": "Importato senza questi tag, perché questo account non ne ha nessuno con quel nome: {keys}",
             "keptLabels": "Questo account ha già tag o gruppi con queste chiavi e con il proprio nome, quindi sono stati mantenuti: {keys}",
             "resultNothing": "Non è stato importato nulla. Tutte le {skipped} voci sono state saltate.",
-            "resultEmpty": "Questo file non conteneva né misurazioni né voci dell'umore."
+            "resultEmpty": "Questo file non conteneva né misurazioni né voci dell'umore.",
+            "limitsHint": "Fino a {mb} MB e fino a {rows} voci per elenco. Aggiunge voci alla tua cartella; non ripristina un backup completo."
           },
           "csv": {
             "title": "File CSV",
@@ -5946,7 +5947,7 @@
             }
           }
         },
-        "subtitle": "Esporta i tuoi dati o importa da un backup."
+        "subtitle": "Esporta i tuoi dati o importa misurazioni e voci da altre app e file."
       },
       "about": {
         "title": "Informazioni su questa app",
@@ -8160,8 +8161,8 @@
       },
       "backups": {
         "title": "Backup",
-        "subtitle": "Istantanee settimanali dei dati per utente archiviate in PostgreSQL.",
-        "description": "Ogni utente ha un'istantanea a rotazione per tipo di backup. Le dimensioni mostrano il blob cifrato. Il download decifra l'istantanea per l'amministratore che la richiede; il testo cifrato resta nel database.",
+        "subtitle": "Copie degli account conservate nel database di questo server, per riportare indietro un account su questo server.",
+        "description": "Ogni account ha una copia settimanale, sostituita ogni domenica, più le copie caricate qui e la copia presa prima di «Elimina tutti i dati». Una copia riporta indietro un account esistente su questo server. Non può ricostruire un server perso: per quello servono un dump del database e le chiavi di cifratura. Le dimensioni indicano la copia cifrata. Il download la decifra per l’amministratore che la chiede; il testo cifrato resta nel database.",
         "runNow": "Esegui backup ora",
         "runEnqueued": "Processo di backup messo in coda",
         "runFailed": "Impossibile mettere in coda il backup",
@@ -8171,7 +8172,7 @@
         "emptyDescription": "I backup vengono eseguiti automaticamente ogni domenica alle 03:00, oppure avviane uno ora per creare la prima istantanea.",
         "colUser": "Utente",
         "colType": "Tipo",
-        "typeWeeklyAuto": "Settimanale (auto)",
+        "typeWeeklyAuto": "Copia settimanale dell’account",
         "typeManual": "Manuale",
         "colSize": "Dimensione",
         "colCreatedAt": "Ultima istantanea",
@@ -8194,7 +8195,7 @@
         "downloadFailed": "Download non riuscito",
         "downloadStarted": "Download avviato",
         "uploadTitle": "Carica backup",
-        "uploadDescription": "Convalida un file di backup e archivialo come istantanea manuale. Il ripristino è un passaggio separato.",
+        "uploadDescription": "Controlla una copia dell’account e la conserva accanto alle copie di questo server. L’account a cui appartiene deve esistere su questo server. Il ripristino è un passaggio a parte.",
         "uploadButton": "Carica file",
         "uploadHelp": "Un backup di HealthLog in formato .json o .json.gz. Il file viene compresso prima del caricamento; compresso può arrivare a 512 MB.",
         "uploadSuccess": "Backup caricato ({count} record)",
@@ -8254,7 +8255,7 @@
         "restoreSkippedAccountSetting": "Impostazione dell'account",
         "restoreMissingTitle": "Ripristino rifiutato: il file è incompleto",
         "restoreMissingDescription": "Il manifesto del file dichiara di contenere la sezione qui sotto, e non la contiene. Non è stato modificato nulla: un ripristino sostituisce un'intera classe di record, quindi una sezione assente l'avrebbe svuotata.",
-        "restoreMissingRemedy": "Usa uno snapshot di disaster recovery, oppure esporta di nuovo l'account e carica il file nuovo. Una sezione che il manifesto dichiara omessa è un'altra cosa e si ripristina normalmente.",
+        "restoreMissingRemedy": "Usa una delle copie dell’account di questo server o una copia fuori dal server, oppure esporta di nuovo l’account e carica il nuovo file. Una sezione che il manifest dichiara omessa è un’altra cosa e si ripristina normalmente.",
         "restoreMissingDocuments": "Documenti",
         "restoreMissingWorkouts": "Allenamenti",
         "restoreMissingMentalHealth": "Questionari sulla salute mentale",
@@ -8307,7 +8308,7 @@
         "restoreFailureOwnerMismatch": "Il file nel backup appartiene a un account diverso da quello della riga di backup.",
         "restoreFailureOwnerMissing": "L'account a cui appartiene questo backup non esiste più.",
         "restoreFailureSectionMissing": "Il file è incompleto: il suo manifesto nomina una sezione che non contiene.",
-        "restoreFailureDocument": "Il file contiene documenti senza il loro contenuto, come un'esportazione portabile. Usa un backup di disaster recovery.",
+        "restoreFailureDocument": "Il file contiene documenti senza il loro contenuto, come un’esportazione portabile. Usa invece una delle copie dell’account di questo server o una copia fuori dal server.",
         "restoreFailureTimeBudget": "Questo backup è troppo grande per essere ripristinato entro il tempo concesso al processo in background.",
         "restoreFailureTransaction": "Il database ha rifiutato il ripristino a metà, quindi tutto è stato annullato. Il log del server indica l'errore.",
         "restoreFailureCauseTimeout": "Il ripristino è durato più di quanto il database consente, quindi tutto è stato annullato. Se l'host del database era sotto carico, riavvialo quando è più tranquillo. Il log del server indica il passaggio.",

@@ -5735,7 +5735,7 @@
             "passphrasePlaceholder": "암호문구 (12자 이상)",
             "passphraseHelp": "Argon2id로 보관 파일 키를 만들고 AES-256-GCM으로 봉인해요. 파일은 .hlx 확장자로 저장해 주세요.",
             "noRecoveryWarning": "복구 수단이 없어요. 이 암호문구를 잃어버리면 보관 파일을 열 수 없어요. 안전한 곳에 보관해 주세요.",
-            "detail": "주간 자동 백업과 같은 형식이에요. 아직 담기지 않는 기록 유형이 있고, 파일의 매니페스트에 무엇이 들었는지 적혀 있어요.",
+            "detail": "보관하고 읽기 위한 기록의 휴대용 사본이에요. 값은 일반 JSON으로, 문서는 메타데이터만 들어 있어요. 이 서버가 계정을 되돌리려고 보관하는 주간 계정 사본이 아니며, 다른 서버에서 계정을 다시 만들 수 없어요. 아직 포함되지 않는 기록 유형도 있어요. 파일의 매니페스트에 들어 있는 항목이 나와요.",
             "contents": "측정, 복약, 기분, 생리 주기, 검사, 아픈 날 에피소드, 알레르기, 가족력, 영양, 운동, 건강 프로필, 사용자 지표를 JSON 파일 하나에."
           }
         },
@@ -5781,7 +5781,7 @@
             "cycleDaysFailed": "생리 주기 {count}일치를 쓰지 못했어요: {reason}"
           },
           "json": {
-            "title": "JSON 파일",
+            "title": "측정값과 기분 (JSON)",
             "description": "측정과 기분 기록이 담긴 JSON을 붙여 넣거나 .json 파일을 올려 주세요.",
             "pasteLabel": "JSON 붙여 넣기",
             "fileInputLabel": "불러올 JSON 파일 선택",
@@ -5800,7 +5800,8 @@
             "droppedLinks": "이 계정에 같은 이름의 태그가 없어 다음 태그 없이 가져왔습니다: {keys}",
             "keptLabels": "이 계정에는 이미 같은 키의 태그나 그룹이 자체 이름으로 있어서 그대로 유지했어요: {keys}",
             "resultNothing": "불러온 게 없어요. {skipped}개 기록을 모두 건너뛰었어요.",
-            "resultEmpty": "그 파일에는 측정도 기분 기록도 없었어요."
+            "resultEmpty": "그 파일에는 측정도 기분 기록도 없었어요.",
+            "limitsHint": "최대 {mb}MB, 목록마다 최대 {rows}개 항목까지 가능해요. 기록에 항목을 추가할 뿐이며, 전체 백업을 복원하지는 않아요."
           },
           "csv": {
             "title": "CSV 파일",
@@ -5946,7 +5947,7 @@
             }
           }
         },
-        "subtitle": "데이터를 내보내거나 백업에서 불러와요."
+        "subtitle": "데이터를 내보내거나, 다른 앱과 파일에서 측정값과 기록을 가져와요."
       },
       "about": {
         "title": "앱 정보",
@@ -8135,8 +8136,8 @@
       },
       "backups": {
         "title": "백업",
-        "subtitle": "PostgreSQL에 저장되는 주간 사용자별 데이터 스냅샷이에요.",
-        "description": "사용자마다 백업 유형별로 최신 스냅샷 하나를 굴려가며 보관해요. 크기는 암호화된 blob 기준이에요. 내려받기는 요청한 관리자에게만 스냅샷을 복호화해 주고, 암호문은 데이터베이스에 그대로 남아요.",
+        "subtitle": "이 서버의 데이터베이스에 보관된 계정 사본이에요. 이 서버에서 계정 하나를 되돌릴 때 써요.",
+        "description": "각 계정에는 매주 일요일마다 교체되는 주간 사본 하나와, 여기서 올린 사본, \"모든 데이터 삭제\" 전에 만든 사본이 있어요. 사본은 이 서버에 있는 계정 하나를 되돌려요. 잃어버린 서버를 다시 만들 수는 없어요. 그러려면 데이터베이스 덤프와 암호화 키가 필요해요. 크기는 암호화된 사본 기준이에요. 다운로드하면 요청한 관리자를 위해 복호화되고, 암호문은 데이터베이스에 남아요.",
         "runNow": "지금 백업",
         "runEnqueued": "백업 작업을 큐에 넣었어요",
         "runFailed": "백업을 큐에 넣지 못했어요",
@@ -8146,7 +8147,7 @@
         "emptyDescription": "백업은 매주 일요일 03:00에 자동으로 돌아요. 지금 실행해서 첫 스냅샷을 만들 수도 있어요.",
         "colUser": "사용자",
         "colType": "유형",
-        "typeWeeklyAuto": "주간 (자동)",
+        "typeWeeklyAuto": "주간 계정 사본",
         "typeManual": "수동",
         "colSize": "크기",
         "colCreatedAt": "최근 스냅샷",
@@ -8169,7 +8170,7 @@
         "downloadFailed": "다운로드하지 못했어요",
         "downloadStarted": "다운로드를 시작했어요",
         "uploadTitle": "백업 업로드",
-        "uploadDescription": "백업 파일을 검사한 뒤 수동 스냅샷으로 저장해요. 복원은 별도 단계예요.",
+        "uploadDescription": "계정 사본을 확인하고 이 서버의 사본 옆에 저장해요. 사본의 계정이 이 서버에 있어야 해요. 복원은 별도 단계예요.",
         "uploadButton": "파일 업로드",
         "uploadHelp": "HealthLog 백업 파일(.json 또는 .json.gz)이에요. 업로드 전에 압축되며, 압축된 크기는 최대 512 MB까지 가능해요.",
         "uploadSuccess": "백업을 업로드했어요 (기록 {count}개)",
@@ -8229,7 +8230,7 @@
         "restoreSkippedAccountSetting": "계정 설정",
         "restoreMissingTitle": "복원을 중단했어요. 파일이 불완전해요",
         "restoreMissingDescription": "파일의 매니페스트에는 아래 항목이 들어 있다고 적혀 있는데 실제로는 없어요. 아무것도 바꾸지 않았어요. 복원은 해당 기록 전체를 갈아엎기 때문에, 파일에 없는 항목을 되돌리면 그 항목이 통째로 비워졌을 거예요.",
-        "restoreMissingRemedy": "재해 복구용 스냅샷을 쓰거나, 계정을 다시 내보내서 새 파일을 업로드해 주세요. 매니페스트가 처음부터 '빠졌다'고 표시한 항목은 다른 경우라 정상적으로 복원돼요.",
+        "restoreMissingRemedy": "이 서버의 계정 사본이나 서버 밖 사본을 쓰거나, 계정을 다시 내보내 새 파일을 올려요. 매니페스트에서 생략됐다고 밝힌 섹션은 다른 경우이며 정상적으로 복원돼요.",
         "restoreMissingDocuments": "문서",
         "restoreMissingWorkouts": "운동",
         "restoreMissingMentalHealth": "정신 건강 선별 검사",
@@ -8282,7 +8283,7 @@
         "restoreFailureOwnerMismatch": "백업 안의 파일이 백업 행과 다른 계정의 것이에요.",
         "restoreFailureOwnerMissing": "이 백업이 속한 계정이 더 이상 없어요.",
         "restoreFailureSectionMissing": "파일이 불완전해요. 매니페스트에 적힌 항목이 파일에 없어요.",
-        "restoreFailureDocument": "휴대용 내보내기처럼 내용 없이 문서만 담긴 파일이에요. 재해 복구용 백업을 사용해 주세요.",
+        "restoreFailureDocument": "이 파일에는 휴대용 내보내기처럼 내용 없이 문서만 들어 있어요. 대신 이 서버의 계정 사본이나 서버 밖 사본을 써요.",
         "restoreFailureTimeBudget": "이 백업은 너무 커서 백그라운드 작업의 시간 제한 안에 복원할 수 없어요.",
         "restoreFailureTransaction": "데이터베이스가 복원 도중에 거부해서 모든 변경을 되돌렸어요. 서버 로그에 오류가 나와 있어요.",
         "restoreFailureCauseTimeout": "복원이 데이터베이스가 허용하는 시간보다 오래 걸려서 모든 변경을 되돌렸어요. 데이터베이스 호스트가 바빴다면 한가할 때 다시 시작하세요. 서버 로그에 해당 단계가 나와 있어요.",

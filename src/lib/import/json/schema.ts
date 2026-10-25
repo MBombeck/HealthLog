@@ -36,9 +36,8 @@ import { SLEEP_STAGE_NAMES } from "@/lib/validations/sleep-stage-entry";
 
 import { fallbackMoodDateStart } from "./mood-instant";
 
-/** Rows per section, and the file as a whole, as the route has always capped them. */
-export const JSON_IMPORT_MAX_ROWS = 10_000;
-export const JSON_IMPORT_MAX_BYTES = 16 * 1024 * 1024;
+import { JSON_IMPORT_MAX_ROWS } from "./limits";
+export { JSON_IMPORT_MAX_BYTES, JSON_IMPORT_MAX_ROWS } from "./limits";
 
 // The type is the canonical enum, so every type the exporters write comes
 // back; a hand-kept subset once dropped four of eleven.
