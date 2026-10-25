@@ -27,6 +27,7 @@
     "/custom-metrics/[id]/page": 303,
     "/custom-metrics/[id]/values/page": 311,
     "/cycle/page": 412,
+    "/documents/deleted/page": 291,
     "/documents/page": 378,
     "/enroll-mfa/page": 305,
     "/illness/[id]/page": 447,
