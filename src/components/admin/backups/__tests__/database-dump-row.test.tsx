@@ -49,7 +49,8 @@ describe("<DatabaseDumpRow>", () => {
   it("names the newest good dump, where it is, and how long dumps keep deleted accounts", () => {
     const html = render(HEALTHY);
     expect(html).toContain("kept on this server and off-host");
-    expect(html).toContain("the newest 7 are kept on this server");
+    expect(html).toContain("the newest 7 nightly dumps are kept on this server");
+    expect(html).toContain("before the latest update stays until the next update");
     expect(html).toContain("removed after 30 days");
     expect(html).not.toContain('data-slot="database-dump-failed"');
     expect(html).not.toContain('data-slot="database-dump-setup"');

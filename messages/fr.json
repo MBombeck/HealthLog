@@ -8344,7 +8344,7 @@
           "disabled": "Les dumps de la base de données sont désactivés (DB_BACKUP_ENABLED=false). Sauvegardez la base de données autrement.",
           "noDirectoryOffhost": "Ce serveur ne peut pas écrire dans {dir} : les dumps partent uniquement hors site et aucun n'est conservé ici. Montez le volume de sauvegarde.",
           "noDirectory": "Ce serveur ne peut pas écrire dans {dir} et aucun stockage hors site n'est configuré : aucun dump ne peut être fait. Montez le volume de sauvegarde.",
-          "retentionLocal": "Les comptes supprimés restent dans les dumps jusqu'à leur expiration : ce serveur conserve les {nights} plus récents.",
+          "retentionLocal": "Les comptes supprimés restent dans les dumps jusqu'à leur expiration : ce serveur conserve les {nights} dumps nocturnes les plus récents, et le dump pris avant la dernière mise à jour reste jusqu'à la suivante.",
           "retentionOffhost": "La règle de cycle de vie du bucket supprime les copies hors site après {days} jours.",
           "retentionOffhostMissing": "Aucune règle de cycle de vie du bucket ne couvre database/ : les dumps qui s'y trouvent, et les comptes supprimés qu'ils contiennent, ne sont jamais effacés. Ajoutez une règle pour ce préfixe.",
           "notPersistentOffhost": "{dir} n'est pas sur un stockage persistant (il se trouve dans le conteneur et non sur un volume monté, ou en mémoire) : un dump écrit là serait perdu à la prochaine mise à jour. Les dumps partent uniquement hors site : aucun n'est conservé ici et aucun n'est pris avant une migration. Montez le volume de sauvegarde.",

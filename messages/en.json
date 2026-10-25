@@ -8344,7 +8344,7 @@
           "disabled": "Database dumps are switched off (DB_BACKUP_ENABLED=false). Back the database up another way.",
           "noDirectoryOffhost": "This server cannot write to {dir}, so dumps go off-host only and none is kept here. Mount the backups volume.",
           "noDirectory": "This server cannot write to {dir} and no off-host bucket is set, so no database dump can be taken. Mount the backups volume.",
-          "retentionLocal": "Deleted accounts stay in the dumps until those age out: the newest {nights} are kept on this server.",
+          "retentionLocal": "Deleted accounts stay in the dumps until those age out: the newest {nights} nightly dumps are kept on this server, and the dump taken before the latest update stays until the next update.",
           "retentionOffhost": "Off-host copies are removed after {days} days by the bucket's lifecycle rule.",
           "retentionOffhostMissing": "No lifecycle rule in the bucket covers database/, so dumps there, and the deleted accounts inside them, are never removed. Add a rule for that prefix.",
           "notPersistentOffhost": "{dir} is not on persistent storage (it sits inside the container rather than on a mounted volume, or in memory), so a dump written there would be lost at the next update. Dumps go off-host only: none is kept here and none is taken before a migration. Mount the backups volume.",

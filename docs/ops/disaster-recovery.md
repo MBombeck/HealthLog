@@ -39,7 +39,11 @@ per-account copies use.
 A dump holds every account that existed when it was taken, including one
 deleted since. Deleted accounts leave the dumps as they age out: after
 `DB_BACKUP_KEEP` nights on the server, and after your lifecycle rule in the
-bucket. Give that rule a prefix that covers `database/` too; the admin
+bucket. A pre-migration dump goes once it is older than every nightly dump
+kept, except the one taken before the latest update: that one is the way back
+from it and stays until the next update writes a newer one. On an install
+that rarely updates, delete it by hand once you no longer want the way back,
+or state that exception with the retention period. Give that rule a prefix that covers `database/` too; the admin
 backups page reads the bucket's rules and says when none does, and the
 recovery readiness card calls it attention and tells the admins once. This is the
 retention period to state where you tell people that deleting their account
@@ -206,10 +210,10 @@ run, restore last night's dump on a spare machine with the steps above.
 
 ## Settings
 
-| Variable                   | Default                      | What it does                                                                     |
-| -------------------------- | ---------------------------- | -------------------------------------------------------------------------------- |
-| `DB_BACKUP_ENABLED`        | on                           | `false` stops the nightly dump.                                                  |
-| `DB_BACKUP_DIR`            | `/var/lib/healthlog/backups` | Where dumps are written and read. Change it only together with the volume mount. |
-| `DB_BACKUP_SCHEDULE`       | `30 1 * * *`                 | Five-field cron, Europe/Berlin time like every HealthLog schedule.               |
-| `DB_BACKUP_KEEP`           | `7`                          | Nightly dumps kept (at least 1). Two pre-migration dumps are kept besides.       |
-| `DB_BACKUP_BEFORE_MIGRATE` | on                           | `false` starts an update without the dump before its migrations.                 |
+| Variable                   | Default                      | What it does                                                                                                                                |
+| -------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DB_BACKUP_ENABLED`        | on                           | `false` stops the nightly dump.                                                                                                             |
+| `DB_BACKUP_DIR`            | `/var/lib/healthlog/backups` | Where dumps are written and read. Change it only together with the volume mount.                                                            |
+| `DB_BACKUP_SCHEDULE`       | `30 1 * * *`                 | Five-field cron, Europe/Berlin time like every HealthLog schedule.                                                                          |
+| `DB_BACKUP_KEEP`           | `7`                          | Nightly dumps kept (at least 1). Up to two pre-migration dumps are kept besides, none older than the oldest nightly dump except the newest. |
+| `DB_BACKUP_BEFORE_MIGRATE` | on                           | `false` starts an update without the dump before its migrations.                                                                            |

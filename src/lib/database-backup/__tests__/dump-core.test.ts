@@ -284,15 +284,62 @@ describe("retention", () => {
       set("pre-migration", "2026-10-20T08:00:00Z"),
       set("pre-migration", "2026-10-10T08:00:00Z"),
       set("pre-migration", "2026-10-01T08:00:00Z"),
-      set("daily", "2026-10-24T01:30:00Z"),
+      // Nightly dumps back to the 8th, so both newer pre-migration dumps are
+      // inside the nightly retention.
+      ...[8, 9, 10, 11, 12, 13, 14].map((d) =>
+        set("daily", `2026-10-${String(d).padStart(2, "0")}T01:30:00Z`),
+      ),
     ];
     const doomed = selectForDeletion(sets, {
-      keep: { daily: 1, "pre-migration": 2 },
+      keep: { daily: 7, "pre-migration": 2 },
       now,
     });
     expect(doomed).toEqual([
       "/b/healthlog-20261001T080000Z-pre-migration.dump",
       "/b/healthlog-20261001T080000Z-pre-migration.manifest.json",
+    ]);
+  });
+
+  // The retention an operator states for deleted accounts is the nightly
+  // one. Kept by count alone, an install that updates rarely held its last
+  // two pre-migration dumps, and every account deleted since, for good.
+  it("removes a pre-migration dump older than every nightly dump kept, except the newest", () => {
+    const sets = [
+      set("pre-migration", "2026-08-20T08:00:00Z"),
+      set("pre-migration", "2026-07-10T08:00:00Z"),
+      set("daily", "2026-10-23T01:30:00Z"),
+      set("daily", "2026-10-24T01:30:00Z"),
+    ];
+    const doomed = selectForDeletion(sets, {
+      keep: { daily: 7, "pre-migration": 2 },
+      now,
+    });
+    expect(doomed).toEqual([
+      "/b/healthlog-20260710T080000Z-pre-migration.dump",
+      "/b/healthlog-20260710T080000Z-pre-migration.manifest.json",
+    ]);
+    // One taken after the oldest nightly kept stays beside the newest.
+    const recent = [
+      set("pre-migration", "2026-10-24T08:00:00Z"),
+      set("pre-migration", "2026-10-23T08:00:00Z"),
+      set("daily", "2026-10-23T01:30:00Z"),
+    ];
+    expect(
+      selectForDeletion(recent, {
+        keep: { daily: 7, "pre-migration": 2 },
+        now,
+      }),
+    ).toEqual([]);
+    // No nightly dump on disk: as many days as nightly dumps are kept.
+    const alone = [
+      set("pre-migration", "2026-10-24T08:00:00Z"),
+      set("pre-migration", "2026-10-20T08:00:00Z"),
+    ];
+    expect(
+      selectForDeletion(alone, { keep: { daily: 2, "pre-migration": 2 }, now }),
+    ).toEqual([
+      "/b/healthlog-20261020T080000Z-pre-migration.dump",
+      "/b/healthlog-20261020T080000Z-pre-migration.manifest.json",
     ]);
   });
 

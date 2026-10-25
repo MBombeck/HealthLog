@@ -9,7 +9,7 @@
  * this image brings migrations the database has not applied, it first writes
  * `healthlog-<timestamp>-pre-migration.dump` with its manifest into
  * `DB_BACKUP_DIR` (`src/lib/database-backup/dump-core.mjs`), and keeps the
- * newest two.
+ * newest two, neither older than the oldest nightly dump except the newest.
  *
  * Exit 0: the dump was written, or there was nothing to do (no pending
  * migration, a new database, `DB_BACKUP_BEFORE_MIGRATE=false`), or there is no

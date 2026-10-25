@@ -8344,7 +8344,7 @@
           "disabled": "Zrzuty bazy danych są wyłączone (DB_BACKUP_ENABLED=false). Zrób kopię bazy danych w inny sposób.",
           "noDirectoryOffhost": "Ten serwer nie może zapisywać w {dir}, więc zrzuty trafiają tylko poza serwer i żaden nie zostaje tutaj. Podłącz wolumin kopii.",
           "noDirectory": "Ten serwer nie może zapisywać w {dir} i nie ustawiono magazynu zewnętrznego, więc nie da się wykonać zrzutu bazy. Podłącz wolumin kopii.",
-          "retentionLocal": "Usunięte konta pozostają w zrzutach, dopóki te nie wygasną: na tym serwerze zostaje {nights} najnowszych.",
+          "retentionLocal": "Usunięte konta pozostają w zrzutach, dopóki te nie wygasną: na tym serwerze zostaje {nights} najnowszych zrzutów nocnych, a zrzut sprzed ostatniej aktualizacji zostaje do następnej.",
           "retentionOffhost": "Reguła cyklu życia bucketu usuwa kopie zewnętrzne po {days} dniach.",
           "retentionOffhostMissing": "Żadna reguła cyklu życia bucketu nie obejmuje database/, więc zrzuty tam, wraz z usuniętymi kontami w nich, nigdy nie są usuwane. Dodaj regułę dla tego prefiksu.",
           "notPersistentOffhost": "{dir} nie leży na trwałym nośniku (jest wewnątrz kontenera zamiast na podłączonym woluminie albo w pamięci), więc zapisany tam zrzut przepadnie przy następnej aktualizacji. Zrzuty trafiają tylko poza serwer: żaden nie zostaje tutaj i żaden nie powstaje przed migracją. Podłącz wolumin kopii.",

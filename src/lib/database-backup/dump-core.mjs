@@ -1136,7 +1136,15 @@ export function isGoodSet(set) {
  *
  * Per kind, the newest `keep` good dumps stay (at least one, so the newest
  * good dump is never removed) and every older good dump goes, archive and
- * manifest together. A `.partial` or a manifest without its archive goes once
+ * manifest together.
+ *
+ * Pre-migration dumps are bounded by age as well: one older than the oldest
+ * nightly dump kept goes, except the newest pre-migration dump, which is the
+ * way back from the latest update. Kept by count alone, an install that
+ * updates rarely held its last two pre-migration dumps, and every account
+ * deleted since, with no limit, while the stated retention of deleted
+ * accounts was the nightly one. With no nightly dump on disk, the bound is
+ * as many days as nightly dumps are kept. A `.partial` or a manifest without its archive goes once
  * it is older than twelve hours, so a run still in progress keeps its files.
  * A final-named archive without a manifest is not something this module
  * leaves behind, so it is not touched. Encrypted copies (`.enc`) an operator
@@ -1149,17 +1157,30 @@ export function isGoodSet(set) {
 export function selectForDeletion(sets, options) {
   /** @type {string[]} */
   const remove = [];
-  for (const kind of DUMP_KINDS) {
-    const keep = Math.max(1, options.keep[kind] ?? 1);
-    const good = sets
+  const goodOf = (/** @type {DumpKind} */ kind) =>
+    sets
       .filter((s) => s.kind === kind && isGoodSet(s))
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-    for (const set of good.slice(keep)) {
+  const dailyKeep = Math.max(1, options.keep.daily ?? 1);
+  const keptDaily = goodOf("daily").slice(0, dailyKeep);
+  const preMigrationFloor =
+    keptDaily.length > 0
+      ? keptDaily[keptDaily.length - 1].timestamp.getTime()
+      : options.now - dailyKeep * 24 * 60 * 60 * 1000;
+  for (const kind of DUMP_KINDS) {
+    const keep = Math.max(1, options.keep[kind] ?? 1);
+    goodOf(kind).forEach((set, index) => {
+      const stays =
+        index < keep &&
+        (kind !== "pre-migration" ||
+          index === 0 ||
+          set.timestamp.getTime() >= preMigrationFloor);
+      if (stays) return;
       remove.push(
         /** @type {{ path: string }} */ (set.dump).path,
         /** @type {string} */ (set.manifest),
       );
-    }
+    });
   }
   for (const set of sets) {
     for (const leftover of set.leftovers) {

@@ -8344,7 +8344,7 @@
           "disabled": "I dump del database sono disattivati (DB_BACKUP_ENABLED=false). Esegui il backup del database in un altro modo.",
           "noDirectoryOffhost": "Questo server non può scrivere in {dir}, quindi i dump vanno solo fuori sede e qui non ne resta nessuno. Monta il volume dei backup.",
           "noDirectory": "Questo server non può scrivere in {dir} e non è configurato alcuno storage esterno, quindi non si può fare alcun dump. Monta il volume dei backup.",
-          "retentionLocal": "Gli account eliminati restano nei dump finché questi non scadono: su questo server restano i {nights} più recenti.",
+          "retentionLocal": "Gli account eliminati restano nei dump finché questi non scadono: su questo server restano i {nights} dump notturni più recenti, e il dump fatto prima dell'ultimo aggiornamento resta fino al successivo.",
           "retentionOffhost": "La regola del ciclo di vita del bucket elimina le copie esterne dopo {days} giorni.",
           "retentionOffhostMissing": "Nessuna regola del ciclo di vita del bucket copre database/, quindi i dump lì, e gli account eliminati che contengono, non vengono mai rimossi. Aggiungi una regola per quel prefisso.",
           "notPersistentOffhost": "{dir} non è su uno spazio persistente (si trova dentro il container e non su un volume montato, oppure in memoria), quindi un dump scritto lì andrebbe perso al prossimo aggiornamento. I dump vanno solo fuori sede: qui non ne resta nessuno e prima di una migrazione non ne viene fatto nessuno. Monta il volume dei backup.",

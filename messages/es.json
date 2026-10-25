@@ -8344,7 +8344,7 @@
           "disabled": "Los volcados de la base de datos están desactivados (DB_BACKUP_ENABLED=false). Haz la copia de la base de datos de otra forma.",
           "noDirectoryOffhost": "Este servidor no puede escribir en {dir}, así que los volcados solo se guardan fuera y aquí no queda ninguno. Monta el volumen de copias.",
           "noDirectory": "Este servidor no puede escribir en {dir} y no hay almacenamiento externo configurado, así que no se puede hacer ningún volcado. Monta el volumen de copias.",
-          "retentionLocal": "Las cuentas eliminadas siguen en los volcados hasta que estos caducan: en este servidor se guardan los {nights} más recientes.",
+          "retentionLocal": "Las cuentas eliminadas siguen en los volcados hasta que estos caducan: en este servidor se guardan los {nights} volcados nocturnos más recientes, y el volcado tomado antes de la última actualización se queda hasta la siguiente.",
           "retentionOffhost": "La regla de ciclo de vida del bucket elimina las copias externas tras {days} días.",
           "retentionOffhostMissing": "Ninguna regla de ciclo de vida del bucket cubre database/, así que los volcados de ahí, y las cuentas eliminadas que contienen, nunca se borran. Añade una regla para ese prefijo.",
           "notPersistentOffhost": "{dir} no está en almacenamiento persistente (está dentro del contenedor y no en un volumen montado, o en memoria), así que un volcado guardado ahí se perdería en la próxima actualización. Los volcados solo se guardan fuera: aquí no queda ninguno y no se hace ninguno antes de una migración. Monta el volumen de copias.",
