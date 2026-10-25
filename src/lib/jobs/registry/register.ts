@@ -25,6 +25,8 @@
 import type { Job, PgBoss } from "pg-boss";
 
 import { heavyLane } from "@/lib/jobs/heavy-lane";
+import { jobDone } from "@/lib/jobs/job-outcome";
+import { dropJobsOfPendingAccounts } from "@/lib/jobs/pending-deletion-gate";
 import { lockedPass } from "@/lib/jobs/long-pass";
 import {
   createAndSchedule,
@@ -74,15 +76,23 @@ export function handlerLoader(
 
 /**
  * The handler a definition binds: its loaded module behind the lock and the
- * lane it declares.
+ * lane it declares, and behind the gate that drops a job for an account
+ * pending deletion.
  */
 export function bindableHandler(
   definition: JobDefinition,
   ctx: JobContext,
   load: HandlerLoader = handlerLoader(definition, ctx),
 ): BatchHandler<Job<unknown>> {
-  let handler: BatchHandler<Job<unknown>> = async (jobs) =>
-    (await load())(jobs);
+  // A job for an account pending deletion completes without running: it
+  // was queued before the account was frozen (see `pending-deletion-gate`).
+  let handler: BatchHandler<Job<unknown>> = async (jobs) => {
+    const { live, dropped } = await dropJobsOfPendingAccounts(jobs);
+    if (live.length === 0) {
+      return jobDone({ jobs_skipped_deletion_pending: dropped });
+    }
+    return (await load())(live);
+  };
   if (definition.lane) {
     handler = heavyLane(
       definition.queue,

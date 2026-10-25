@@ -154,6 +154,7 @@ export async function runCoachReminderSweep(
         deletedAt: null,
         status: "proposed",
         createdAt: { lt: lapseBefore },
+        ...OWNED_BY_ACTIVE_ACCOUNT,
       },
       data: { status: "abandoned", reviewDate: null },
     });
@@ -163,6 +164,7 @@ export async function runCoachReminderSweep(
         deletedAt: null,
         source: PROPOSED_FACT_SOURCE,
         createdAt: { lt: lapseBefore },
+        ...OWNED_BY_ACTIVE_ACCOUNT,
       },
       data: { deletedAt: now },
     });
@@ -336,6 +338,7 @@ export async function runCoachReminderSweep(
       status: "surfaced",
       lastSurfacedAt: { lte: new Date(now.getTime() - NAG_STALE_MS) },
       ...notHeld,
+      ...OWNED_BY_ACTIVE_ACCOUNT,
     },
     data: { surfaceCount: { increment: 1 } },
   });
@@ -345,6 +348,7 @@ export async function runCoachReminderSweep(
       status: "surfaced",
       surfaceCount: { gte: REMINDER_NAG_CAP },
       ...notHeld,
+      ...OWNED_BY_ACTIVE_ACCOUNT,
     },
     data: { status: "dismissed" },
   });

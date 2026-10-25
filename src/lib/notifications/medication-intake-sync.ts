@@ -57,6 +57,7 @@
  * must never fail the intake mutation that triggered it; the canonical
  * row is already persisted.
  */
+import { pendingDeletionOf } from "@/lib/account-deletion/pending";
 import { prisma } from "@/lib/db";
 import { annotate, getEvent } from "@/lib/logging/context";
 import {
@@ -190,6 +191,19 @@ async function flushIntakeSync(
     if (!config) {
       // APNs not configured on this deployment — nothing to do. No ledger
       // row: the silent-sync channel is a no-op, not a delivery attempt.
+      return;
+    }
+
+    // The dispatcher refuses every delivery for an account pending deletion;
+    // this push does not go through it, so it asks the same question.
+    if (await pendingDeletionOf(userId)) {
+      recordPushAttempt({
+        userId,
+        channel: "APNS",
+        eventType: EVENT_TYPE,
+        result: "skipped",
+        reason: "deletion_pending",
+      });
       return;
     }
 

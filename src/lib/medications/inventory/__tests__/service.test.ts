@@ -41,6 +41,8 @@ describe("expireStaleInUseItems", () => {
       where: {
         state: "IN_USE",
         expiresAt: { lt: new Date(NOW.getTime()) },
+        // The cron leaves an account pending deletion as it was.
+        user: { deletionRequestedAt: null },
       },
       data: { state: "EXPIRED" },
     });

@@ -247,6 +247,7 @@ export async function runIntegrationWatchdog(opts: {
     incidentsOpened: 0,
     incidentsClosed: 0,
     notified: 0,
+    // account-deletion: whether any watch row exists yet; it reads no account.
     firstRun: (await prisma.integrationWatch.count()) === 0,
   };
   const userIds = await listWatchedUserIds();

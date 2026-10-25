@@ -285,6 +285,37 @@ describe("account deletion with a grace window", () => {
     const candidates = await findPregenerateCandidates(prisma, new Date(), 50);
     expect(candidates.map((c) => c.id)).toEqual([active.id]);
 
+    // The nightly score jobs: a cross-account `groupBy` the guard used to
+    // read as scoped because its `orderBy` names `userId`.
+    for (const userId of [pending.id, active.id]) {
+      await prisma.measurement.create({
+        data: {
+          userId,
+          type: "HEART_RATE_VARIABILITY",
+          value: 48,
+          unit: "ms",
+          measuredAt: new Date(Date.now() - 3_600_000),
+          source: "MANUAL",
+        },
+      });
+    }
+    const { findStressScoreCandidates } =
+      await import("@/lib/jobs/stress-score");
+    expect(await findStressScoreCandidates(prisma, new Date(), 50)).toEqual([
+      active.id,
+    ]);
+
+    // A job queued for it before the deletion completes without running.
+    const { dropJobsOfPendingAccounts } =
+      await import("@/lib/jobs/pending-deletion-gate");
+    const queued = [
+      { id: "j1", data: { userId: pending.id } },
+      { id: "j2", data: { userId: active.id } },
+    ];
+    expect(
+      (await dropJobsOfPendingAccounts(queued)).live.map((j) => j.id),
+    ).toEqual(["j2"]);
+
     // Nothing is delivered about or to it, whoever enumerated it.
     const { resolveNotificationDeliveryIdentity } =
       await import("@/lib/notifications/delivery-identity");

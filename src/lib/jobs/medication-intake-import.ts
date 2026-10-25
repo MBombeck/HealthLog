@@ -765,6 +765,7 @@ async function recordWorkerFailure(
   const retryLimit = metadata.retryLimit ?? 0;
   const terminal = retryCount >= retryLimit;
   const now = new Date();
+  // account-deletion: the one import this job runs, by id.
   await client.medicationIntakeImportJob.updateMany({
     where: {
       id: job.data.jobId,

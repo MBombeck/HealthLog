@@ -22,6 +22,7 @@
  * tick. With one insert every five minutes that's 2,016 rows steady-state,
  * indexed by `captured_at` so the 2h query stays under 30 rows.
  */
+// account-deletion(file): host metrics belong to no account.
 import { loadavg, totalmem, freemem } from "node:os";
 import { readFile } from "node:fs/promises";
 import type { PrismaClient } from "@/generated/prisma/client";

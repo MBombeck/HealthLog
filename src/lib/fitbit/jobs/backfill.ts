@@ -22,6 +22,7 @@ import {
 import { syncUserFitbit } from "@/lib/fitbit/sync";
 import { isFitbitRetired } from "@/lib/fitbit/retirement";
 import { FITBIT_BACKFILL_QUEUE } from "./queues";
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 
 export interface FitbitBackfillPayload {
   userId: string;
@@ -143,7 +144,7 @@ export async function enqueueBootTimeFitbitBackfill(
 
   try {
     const connections = await prisma.fitbitConnection.findMany({
-      where: { backfillCompletedAt: null },
+      where: { backfillCompletedAt: null, ...OWNED_BY_ACTIVE_ACCOUNT },
       select: { userId: true },
     });
 

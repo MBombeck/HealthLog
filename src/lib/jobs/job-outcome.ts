@@ -45,8 +45,12 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "access_tokens_deleted",
   // The account-deletion purge: accounts whose grace window ended and
   // were erased, ones whose erasure was refused and stays pending, and the
-  // copies taken before a data wipe that aged out with their window.
+  // copies taken before a data wipe that aged out with their window; the
+  // erasures that threw, and the due accounts left for the next run when
+  // its time budget ran out.
+  "account_deletions_deferred",
   "account_deletions_due",
+  "account_deletions_failed",
   "account_deletions_purged",
   "account_deletions_refused",
   "accounts_completed",
@@ -160,6 +164,9 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "inventory_expired_count",
   "inventory_items_migrated",
   "jobs",
+  // A batch whose every job named an account pending deletion
+  // (`pending-deletion-gate.ts`): completed without running.
+  "jobs_skipped_deletion_pending",
   // Heavy jobs that found the lane taken and went back to their queue.
   "lane_deferred",
   "legacy_rows_soft_deleted",

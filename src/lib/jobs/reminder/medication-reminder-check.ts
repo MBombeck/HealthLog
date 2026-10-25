@@ -160,7 +160,7 @@ export async function handleReminderCheck(
 
       // Clean up expired snoozes
       await prisma.medication.updateMany({
-        where: { snoozedUntil: { lt: now } },
+        where: { snoozedUntil: { lt: now }, ...OWNED_BY_ACTIVE_ACCOUNT },
         data: { snoozedUntil: null },
       });
 

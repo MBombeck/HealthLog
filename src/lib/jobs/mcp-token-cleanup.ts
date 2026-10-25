@@ -13,6 +13,7 @@
  * revoked connection anchors are pruned too once no access token references
  * them, keeping the `mcp_oauth_connections` table bounded.
  */
+// account-deletion(file): removes revoked or expired connector tokens; acts for no account.
 import type { PrismaClient } from "@/generated/prisma/client";
 import { SCOPE_HEALTH_READ } from "@/lib/mcp/oauth/config";
 

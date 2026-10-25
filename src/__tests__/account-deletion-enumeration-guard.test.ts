@@ -8,15 +8,20 @@
  * that reads across accounts has to filter them out — and a new query is the
  * one most likely to forget.
  *
- * The rule, for every `findMany(` / `groupBy(` and every raw SQL query that
- * reads accounts' rows in the background work below:
+ * The rule, for every `findMany(` / `groupBy(` / `count(` / `aggregate(`,
+ * every `updateMany(` / `deleteMany(` (a sweep that writes into every
+ * account's rows acts for each of them as much as a read does), and every raw
+ * SQL query or statement that touches accounts' rows in the background work
+ * below:
  *
  *   - it names the shared predicate (`ACTIVE_ACCOUNT`,
  *     `OWNED_BY_ACTIVE_ACCOUNT` or `activeAccountSql`), or its result goes
  *     straight into `dropPendingDeletion` (a scan of `measurements`, too
  *     large to join `users` into per row), or
  *   - it is scoped to named accounts (a `userId` it was handed, an `id` list
- *     it already filtered), or
+ *     it already filtered), read from its filter only: `orderBy`, `by`,
+ *     `distinct`, `select` and `include` name columns without scoping
+ *     anything, or
  *   - a comment directly above it says why it needn't:
  *     `// account-deletion: <reason>` (a ledger read, the purge's own query,
  *     …), or the module says so for all of its queries:
@@ -52,18 +57,34 @@ const EXTRA_FILES = [
   // Read by the hourly readiness evaluation, which judges every account's
   // copies.
   "lib/recovery/readiness.ts",
+  // Boot discovery and cron sweeps that live beside their domain rather
+  // than under `lib/jobs`.
+  "lib/rollups/measurement-rollups.ts",
+  "lib/rollups/mood-rollups.ts",
+  "lib/personal-records/cumulative-pr-rederivation.ts",
+  "lib/medications/intake-slot-dedup.ts",
+  "lib/medications/inventory/service.ts",
+  "lib/workouts/climb-backfill.ts",
 ];
 
+/** Job folders that live beside their domain. */
+const EXTRA_DIRS = [{ dir: "lib/fitbit/jobs", floor: 5 }];
+
 function backgroundFiles(): string[] {
-  const jobs = walkSourceFiles(join(SRC, "lib/jobs"), { floor: 150 })
-    .filter((rel) => !rel.includes("__tests__"))
-    .filter((rel) => !rel.endsWith(".test.ts"))
-    .map((rel) => `lib/jobs/${rel}`);
-  return [...jobs, ...EXTRA_FILES].sort();
+  const walk = (dir: string, floor: number) =>
+    walkSourceFiles(join(SRC, dir), { floor })
+      .filter((rel) => !rel.includes("__tests__"))
+      .filter((rel) => !rel.endsWith(".test.ts"))
+      .map((rel) => `${dir}/${rel}`);
+  return [
+    ...walk("lib/jobs", 150),
+    ...EXTRA_DIRS.flatMap(({ dir, floor }) => walk(dir, floor)),
+    ...EXTRA_FILES,
+  ].sort();
 }
 
 const PREDICATE =
-  /\b(?:ACTIVE_ACCOUNT|OWNED_BY_ACTIVE_ACCOUNT|activeAccountSql|activeAccount|ownedByActiveAccount)\b/;
+  /\b(?:ACTIVE_ACCOUNT|OWNED_BY_ACTIVE_ACCOUNT|activeAccountSql|activeAccount|ownedByActiveAccount|excludePendingOwners)\b/;
 
 /** A query scoped to accounts it was handed, not one that finds them. */
 const SCOPED = [
@@ -71,6 +92,8 @@ const SCOPED = [
   // (`userId: true`) or a negation that reads every other account.
   /\b(?:userId|recordUserId|subjectId|grantorId|profileId)\s*(?:[,}\n]|:(?!\s*(?:true|false)\b|\s*\{\s*(?:not|notIn)\b))/,
   /\bid\s*:\s*(?:userId|input\.userId|\{\s*in\b)/,
+  // `id: user.id`, `id: account.id`: the one account a loop is on.
+  /\bid\s*:\s*[\w$]+\.(?:id|userId)\b/,
   /"?user_id"?\s*=\s*(?:\$\{|ANY\s*\(\s*\$\{)/,
   /\bu\."id"\s*=\s*\$\{/,
   /"id"\s*=\s*(?:\$\{|ANY\s*\(\s*\$\{)/,
@@ -142,14 +165,16 @@ function templateEnd(code: string, start: number): number {
   return i;
 }
 
-/** Every `findMany(` / `groupBy(` call and account SQL in `source`. */
+/** Every query or sweep call and account SQL in `source`. */
 export function queriesIn(file: string, source: string): Query[] {
   const code = stripComments(source);
   const lineOf = (index: number) => code.slice(0, index).split("\n").length;
   const out: Query[] = [];
   const dropped = (index: number) =>
     DROPPED.test(code.slice(Math.max(0, index - 200), index));
-  for (const m of code.matchAll(/\.(?:findMany|groupBy)\s*\(/g)) {
+  for (const m of code.matchAll(
+    /\.(?:findMany|groupBy|updateMany|deleteMany|count|aggregate)\s*\(/g,
+  )) {
     const open = m.index + m[0].length - 1;
     out.push({
       file,
@@ -158,7 +183,9 @@ export function queriesIn(file: string, source: string): Query[] {
       dropped: dropped(m.index),
     });
   }
-  for (const m of code.matchAll(/\.\$(?:queryRaw|queryRawUnsafe)\b/g)) {
+  for (const m of code.matchAll(
+    /\.\$(?:queryRaw|queryRawUnsafe|executeRaw|executeRawUnsafe)\b/g,
+  )) {
     const rest = code.slice(m.index + m[0].length);
     const tick = rest.search(/[`(]/);
     if (tick < 0) continue;
@@ -182,13 +209,34 @@ function markedAt(source: string, line: number): boolean {
   return lines.slice(from, line).some((text) => MARKER.test(text));
 }
 
+/**
+ * The parts of a query's arguments that say which rows it reads, without the
+ * ones that only shape the answer. `orderBy: [{ day: "asc" }, { userId: "asc" }]`
+ * names `userId` and scopes nothing; read as a scope, it let three nightly
+ * score jobs group every account's rows, frozen ones included, past this
+ * guard. The same goes for `by`, `distinct`, `select` and `include`.
+ */
+const SHAPE_KEY = /\b(?:orderBy|by|distinct|select|include)\s*:\s*(?=[[{])/g;
+
+export function filterText(text: string): string {
+  let out = "";
+  let from = 0;
+  for (const m of text.matchAll(SHAPE_KEY)) {
+    if (m.index < from) continue;
+    const open = m.index + m[0].length;
+    out += text.slice(from, m.index);
+    from = open + balanced(text, open).length;
+  }
+  return out + text.slice(from);
+}
+
 export function violations(file: string, source: string): Query[] {
   if (FILE_MARKER.test(source)) return [];
   return queriesIn(file, source).filter(
     (q) =>
       !q.dropped &&
       !PREDICATE.test(q.text) &&
-      !SCOPED.some((re) => re.test(q.text)) &&
+      !SCOPED.some((re) => re.test(filterText(q.text))) &&
       !markedAt(source, q.line),
   );
 }
@@ -250,5 +298,37 @@ describe("background work skips accounts pending deletion", () => {
     );
     // Selecting `userId` is not a scope.
     expect(violations("planted.ts", select)).toHaveLength(2);
+  });
+
+  // `orderBy: { userId: "asc" }` names the column and scopes nothing; read
+  // as a scope it hid three nightly score jobs that grouped every account's
+  // rows, frozen ones included.
+  it("does not read an order, a grouping or a selection as a scope", () => {
+    for (const shape of [
+      'orderBy: { userId: "asc" }',
+      'orderBy: [{ _max: { measuredAt: "desc" } }, { userId: "asc" }]',
+      'by: ["userId"]',
+      'distinct: ["userId"]',
+      "select: { userId: true, user: { select: { id: true } } }",
+    ]) {
+      const planted = `export async function s() { await prisma.measurement.groupBy({ where: { type: "WEIGHT" }, ${shape} }); }`;
+      expect(violations("planted.ts", planted), shape).toHaveLength(1);
+    }
+    const scoped =
+      'export async function s(userId: string) { await prisma.measurement.findMany({ where: { userId }, orderBy: { userId: "asc" } }); }';
+    expect(violations("planted.ts", scoped)).toHaveLength(0);
+  });
+
+  it("catches a sweep that writes into every account's rows", () => {
+    const planted = [
+      "export async function sweep() {",
+      "  await prisma.coachPlan.updateMany({",
+      '    where: { status: "proposed" },',
+      '    data: { status: "abandoned" },',
+      "  });",
+      "  await prisma.$executeRaw`UPDATE measurements SET x = 1 WHERE user_id IS NOT NULL`;",
+      "}",
+    ].join("\n");
+    expect(violations("planted.ts", planted)).toHaveLength(2);
   });
 });

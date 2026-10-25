@@ -43,6 +43,7 @@ export async function cleanupOldCoachMessages(
 ): Promise<number> {
   const days = getCoachMessageRetentionDays();
   const cutoff = new Date(now.getTime() - days * 86_400_000);
+  // account-deletion: retention ages rows out whatever their account's state; a frozen record keeps no more than an active one.
   const { count } = await prisma.coachMessage.deleteMany({
     where: { createdAt: { lt: cutoff } },
   });

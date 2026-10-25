@@ -47,6 +47,7 @@ import {
 import { syncUserSleep } from "@/lib/fitbit/sync-sleep";
 import { isFitbitRetired } from "@/lib/fitbit/retirement";
 import { FITBIT_SLEEP_REPAIR_QUEUE } from "./queues";
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 
 export interface FitbitSleepRepairPayload {
   userId: string;
@@ -164,7 +165,7 @@ export async function enqueueBootTimeFitbitSleepRepair(
 
   try {
     const connections = await prisma.fitbitConnection.findMany({
-      where: { sleepRepairedAt: null },
+      where: { sleepRepairedAt: null, ...OWNED_BY_ACTIVE_ACCOUNT },
       select: { userId: true },
     });
 

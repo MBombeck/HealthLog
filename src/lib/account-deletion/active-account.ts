@@ -64,6 +64,29 @@ export function activeAccountSql(column: string): Prisma.Sql {
 }
 
 /**
+ * `where` on a table too large to join `users` into row by row
+ * (`measurements`, `workouts`): its owner is none of the few accounts pending
+ * deletion, as `userId NOT IN (…)`. Unlike `dropPendingDeletion` it filters
+ * before a `take`, so a pending account does not use a slot of a capped scan.
+ */
+export async function excludePendingOwners(db: {
+  user: {
+    findMany(args: {
+      where: { deletionRequestedAt: { not: null } };
+      select: { id: true };
+    }): Promise<Array<{ id: string }>>;
+  };
+}): Promise<{ userId?: { notIn: string[] } }> {
+  const pending = await db.user.findMany({
+    where: { deletionRequestedAt: { not: null } },
+    select: { id: true },
+  });
+  return pending.length === 0
+    ? {}
+    : { userId: { notIn: pending.map((row) => row.id) } };
+}
+
+/**
  * Drop the accounts pending deletion from the result of a scan over a table
  * too large to join `users` into row by row (`measurements`): the scan keeps
  * its plan, and the few pending accounts are read once and taken out.

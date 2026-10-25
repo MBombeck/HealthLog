@@ -116,6 +116,7 @@ describe("runCoachReminderSweep", () => {
         deletedAt: null,
         status: "proposed",
         createdAt: { lt: cutoff },
+        user: { deletionRequestedAt: null },
       },
       data: { status: "abandoned", reviewDate: null },
     });
@@ -124,6 +125,7 @@ describe("runCoachReminderSweep", () => {
         deletedAt: null,
         source: "proposed",
         createdAt: { lt: cutoff },
+        user: { deletionRequestedAt: null },
       },
       data: { deletedAt: NOW },
     });

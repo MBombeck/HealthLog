@@ -21,6 +21,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { persistStressScore } from "@/lib/insights/stress-score";
 import { runScoreBatch } from "@/lib/insights/score-row";
+import { excludePendingOwners } from "@/lib/account-deletion/active-account";
 
 /** Per-run user cap — same starvation guard the recovery-score pass uses. */
 export const STRESS_SCORE_BATCH_CAP = 500;
@@ -61,6 +62,7 @@ export async function findStressScoreCandidates(
       type: "HEART_RATE_VARIABILITY",
       deletedAt: null,
       measuredAt: { gte: since },
+      ...(await excludePendingOwners(prisma)),
     },
     orderBy: [{ _max: { measuredAt: "desc" } }, { userId: "asc" }],
     take: cap,

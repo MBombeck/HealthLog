@@ -45,6 +45,7 @@
  *     `enqueueBootTimeMoodRollupBackfill` mints the rollups on the
  *     next worker boot so subsequent reads converge on the fast path.
  */
+import { activeAccountSql } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
@@ -564,6 +565,7 @@ export async function enqueueBootTimeMoodRollupBackfill(
         ON  r."user_id"     = mt."user_id"
         AND r."granularity" = 'DAY'
       WHERE r."bucket_start" IS NULL
+        AND ${activeAccountSql('mt."user_id"')}
     `;
 
     if (users.length === 0) {
@@ -685,6 +687,7 @@ async function persistMoodRollupRows(
       (row) =>
         Prisma.sql`(${userId}, ${granularity}::"measurement_rollup_granularity", ${row.bucket_start}, ${Number(row.count)}, ${row.mean ?? 0}, ${row.min_score ?? 0}, ${row.max_score ?? 0}, ${row.sd}, ${computedAt})`,
     );
+    // account-deletion: writes the buckets of the one account this fold was handed.
     await client.$executeRaw`
       INSERT INTO "mood_entry_rollups"
         ("user_id", "granularity", "bucket_start", "count", "mean", "min_score", "max_score", "sd", "computed_at")

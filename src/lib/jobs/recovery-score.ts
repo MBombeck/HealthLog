@@ -23,6 +23,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { persistRecoveryScore } from "@/lib/insights/recovery-score";
 import { runScoreBatch } from "@/lib/insights/score-row";
+import { excludePendingOwners } from "@/lib/account-deletion/active-account";
 
 /**
  * Per-run user cap. A nightly fan-out across every user could starve the
@@ -78,6 +79,7 @@ export async function findRecoveryScoreCandidates(
       },
       deletedAt: null,
       measuredAt: { gte: since },
+      ...(await excludePendingOwners(prisma)),
     },
     orderBy: [{ _max: { measuredAt: "desc" } }, { userId: "asc" }],
     take: cap,

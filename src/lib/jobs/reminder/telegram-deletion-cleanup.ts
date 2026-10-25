@@ -83,6 +83,7 @@ export async function cleanupScheduledTelegramDeletions(): Promise<void> {
     // TelegramPromptContext row; once past `expiresAt` it can never bind a
     // reply, so drop it. The prompt MESSAGE itself self-cleans through the
     // scheduled-deletion rows above.
+    // account-deletion: expires reply contexts that can no longer bind; acts for no account.
     const prunedContexts = await prisma.telegramPromptContext.deleteMany({
       where: { expiresAt: { lte: new Date() } },
     });

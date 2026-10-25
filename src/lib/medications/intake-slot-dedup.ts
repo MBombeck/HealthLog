@@ -64,6 +64,7 @@ import type {
   WorkerScheduleRow,
 } from "@/lib/medications/scheduling/worker-helpers";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
+import { activeAccountSql } from "@/lib/account-deletion/active-account";
 
 export const INTAKE_SLOT_DEDUP_QUEUE = "intake-slot-dedup";
 
@@ -614,6 +615,7 @@ async function convergeAdhocRowsOntoPendingSlots(input: {
       if (pending.takenAt !== null || pending.skipped) continue; // already served.
 
       // Tombstone the pending row; the take is the dose of record.
+      // account-deletion: one row of the account this pass was handed, by id.
       await prisma.medicationIntakeEvent.updateMany({
         where: { id: pending.id, deletedAt: null },
         data: { deletedAt: new Date(), syncVersion: { increment: 1 } },
@@ -737,6 +739,7 @@ export async function enqueueBootTimeIntakeSlotDedup(): Promise<{
            AND abs(extract(epoch FROM (a."scheduled_for" - b."scheduled_for"))) <= 475200
          )
        )
+      WHERE ${activeAccountSql('a."user_id"')}
     `;
 
     if (users.length === 0) {

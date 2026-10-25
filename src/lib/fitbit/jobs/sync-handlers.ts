@@ -14,6 +14,7 @@ import { enqueueReminderSatisfy } from "@/lib/jobs/reminder-satisfy";
 import { cleanupExpiredFitbitOAuthStates } from "./oauth-state-cleanup";
 import { getWorkerPrisma } from "@/lib/jobs/reminder/shared";
 import { isFitbitRetired } from "@/lib/fitbit/retirement";
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 
 /**
  * v1.12.0 — Fitbit poll-sync payload. Poll-only (no webhook at launch): the
@@ -51,6 +52,7 @@ export async function handleFitbitSync(
       }
       if (targets.length === 0) {
         const connections = await prisma.fitbitConnection.findMany({
+          where: OWNED_BY_ACTIVE_ACCOUNT,
           select: { userId: true },
         });
         targets.push(...connections);

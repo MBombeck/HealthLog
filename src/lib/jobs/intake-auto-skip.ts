@@ -318,6 +318,7 @@ export async function runIntakeAutoSkipPass(
   const invalidatedUserIds = new Set<string>();
   for (const [delayMs, group] of medsByDelay) {
     const medicationIds = group.map((m) => m.id);
+    // account-deletion: the medications of active accounts read above (`medicationIds`).
     const { count } = await prisma.medicationIntakeEvent.updateMany({
       where: {
         ...pendingWhere,

@@ -152,6 +152,7 @@ async function deleteExpiredPreWipeCopies(now: Date): Promise<number> {
     where: { status: { in: ["queued", "running"] } },
     select: { backupId: true },
   });
+  // account-deletion: the purge's own sweep; a copy's window ends whatever its account's state.
   const { count } = await prisma.dataBackup.deleteMany({
     where: {
       type: { startsWith: PRE_WIPE_BACKUP_TYPE_PREFIX },

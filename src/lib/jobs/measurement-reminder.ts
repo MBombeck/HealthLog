@@ -165,12 +165,12 @@ async function cleanupExpiredCoachReminders(
   now: Date,
 ): Promise<number> {
   const result = await prisma.measurementReminder.updateMany({
-    where: {
+    where: ownedByActiveAccount({
       deletedAt: null,
-      origin: "COACH",
+      origin: "COACH" as const,
       endsOn: { not: null, lt: now },
       nextDueAt: null,
-    },
+    }),
     data: { deletedAt: now },
   });
   return result.count;

@@ -933,6 +933,7 @@ export async function runOffhostBackup(
       // The account was deleted or wiped while its copy was being written.
       // The purge that request started may already have run, so the copy
       // this run just put there is removed here rather than left behind.
+      // account-deletion: the one account this upload is for.
       const purgedMeanwhile =
         (await prisma.offhostPurgeRequest.count({
           where: {

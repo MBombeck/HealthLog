@@ -527,6 +527,7 @@ async function applyDecision(
   if (decision.kind === "convert") {
     // Conditional: still pending at the moment of the write. A take or skip
     // the person records concurrently makes this match nothing.
+    // account-deletion: the one row this decision is about, by id.
     const { count } = await prisma.medicationIntakeEvent.updateMany({
       where: {
         id: decision.rowId,

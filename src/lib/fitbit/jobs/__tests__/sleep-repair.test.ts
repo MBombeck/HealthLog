@@ -95,7 +95,12 @@ describe("enqueueBootTimeFitbitSleepRepair — discovery", () => {
     const result = await enqueueBootTimeFitbitSleepRepair();
 
     expect(prismaMock.fitbitConnection.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { sleepRepairedAt: null } }),
+      expect.objectContaining({
+        where: {
+          sleepRepairedAt: null,
+          user: { deletionRequestedAt: null },
+        },
+      }),
     );
     expect(result.enqueued).toBe(2);
     expect(bossSend).toHaveBeenCalledWith(

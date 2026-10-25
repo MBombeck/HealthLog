@@ -151,6 +151,7 @@ async function renderThumbnail(
     },
   });
 
+  // account-deletion: the one document this job was handed.
   await prisma.documentThumbnailFailure.deleteMany({
     where: { documentId: document.id },
   });

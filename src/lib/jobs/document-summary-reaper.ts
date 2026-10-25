@@ -45,6 +45,7 @@ export async function reapStalePendingSummaries(
   now: Date = new Date(),
 ): Promise<number> {
   const cutoff = new Date(now.getTime() - SUMMARY_PENDING_TTL_MS);
+  // account-deletion: releases summaries stuck in PENDING by a run that died; it starts no work.
   const { count } = await prisma.inboundDocument.updateMany({
     where: { summaryState: "PENDING", updatedAt: { lt: cutoff } },
     data: { summaryState: "UNAVAILABLE" },

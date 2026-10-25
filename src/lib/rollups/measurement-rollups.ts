@@ -34,6 +34,7 @@
  * took. Nothing here reads both tiers; the rollup replaces the legacy read and
  * falls back to live SQL only on a coverage miss.
  */
+import { activeAccountSql } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
@@ -1000,6 +1001,7 @@ async function persistRollupRows(
     // window is authoritatively empty, so every bucket in it must go. No
     // transaction needed — there is no insert leg that could leave a gap.
     if (!pruneWhere) return 0;
+    // account-deletion: scoped to the one account this fold was handed (`pruneWhere` carries its userId).
     await prisma.measurementRollup.deleteMany({ where: pruneWhere });
     return 0;
   }
@@ -1065,6 +1067,7 @@ async function persistRollupRows(
     async (tx) => {
       if (statementTimeoutMs)
         await applyStatementBudget(tx, statementTimeoutMs);
+      // account-deletion: scoped to the one account this fold was handed (`deleteWhere` carries its userId).
       await tx.measurementRollup.deleteMany({ where: deleteWhere });
       for (let i = 0; i < ordered.length; i += CHUNK) {
         const slice = ordered.slice(i, i + CHUNK);
@@ -1436,6 +1439,7 @@ export async function enqueueBootTimeRollupBackfill(
           AND r."bucket_start" >= ${foldWindowStart}
           AND (r."sum_xy" IS NULL OR r."reading_min_value" IS NULL)
       ) discovered
+      WHERE ${activeAccountSql('discovered."id"')}
     `;
 
     if (users.length === 0) {

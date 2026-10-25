@@ -8,6 +8,7 @@
  * This pass rides the daily Withings OAuth-state cleanup (03:20 Europe/Berlin)
  * so the table empties on its own regardless. Idempotent.
  */
+// account-deletion(file): expires single-use callback claims; acts for no account.
 import type { PrismaClient } from "@/generated/prisma/client";
 
 export async function cleanupExpiredOAuthCallbackClaims(

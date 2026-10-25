@@ -63,7 +63,10 @@ describe("enqueueBootTimeFitbitBackfill — discovery", () => {
 
     expect(prismaMock.fitbitConnection.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { backfillCompletedAt: null },
+        where: {
+          backfillCompletedAt: null,
+          user: { deletionRequestedAt: null },
+        },
       }),
     );
     expect(result.enqueued).toBe(2);

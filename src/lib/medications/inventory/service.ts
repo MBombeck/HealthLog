@@ -20,6 +20,7 @@ import {
   type SupplyItemState,
   type SupplySummary,
 } from "./summary";
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 
 /**
  * Daily cron pass — flip any IN_USE row whose persisted `expiresAt` has
@@ -55,7 +56,9 @@ export async function expireStaleInUseItems(input: {
     where: {
       state: "IN_USE",
       expiresAt: { lt: now },
-      ...(userId ? { userId } : {}),
+      // The cron sweeps every account but one pending deletion, whose record
+      // stays as it was; the per-user trigger names its account.
+      ...(userId ? { userId } : OWNED_BY_ACTIVE_ACCOUNT),
     },
     data: { state: "EXPIRED" },
   });

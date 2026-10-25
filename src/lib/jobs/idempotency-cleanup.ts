@@ -6,6 +6,7 @@
  * — most rows never see another retry, so without a sweeper the table
  * grows unbounded with stale 24h-expired entries.
  */
+// account-deletion(file): expires cached request replays; acts for no account.
 import type { PrismaClient } from "@/generated/prisma/client";
 
 export async function cleanupExpiredIdempotencyKeys(

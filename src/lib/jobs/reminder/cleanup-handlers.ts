@@ -108,6 +108,7 @@ export async function handleMoodReminderCleanup(
       cutoff.setUTCDate(cutoff.getUTCDate() - MOOD_REMINDER_RETENTION_DAYS);
       // eslint-disable-next-line healthlog/no-utc-day-key -- UTC by design: retention cutoff; a day either way does not matter
       const cutoffIso = cutoff.toISOString().slice(0, 10);
+      // account-deletion: retention ages dispatch rows out whatever their account's state.
       const deleted = await p.moodReminderDispatch.deleteMany({
         where: { date: { lt: cutoffIso } },
       });
@@ -156,15 +157,18 @@ export async function handlePushAttemptCleanup(
     try {
       const cutoff = new Date();
       cutoff.setUTCDate(cutoff.getUTCDate() - PUSH_ATTEMPT_RETENTION_DAYS);
+      // account-deletion: retention ages delivery ledger rows out whatever their account's state.
       const deletedAttempts = await p.pushAttempt.deleteMany({
         where: { createdAt: { lt: cutoff } },
       });
+      // account-deletion: retention, as above.
       const deletedEvents = await p.notificationEvent.deleteMany({
         where: {
           createdAt: { lt: cutoff },
           eventType: { not: CONFIG_NOTICE_EVENT_TYPE },
         },
       });
+      // account-deletion: retention, as above.
       const deletedAuthorizations =
         await p.notificationEgressAuthorization.deleteMany({
           where: { authorizedAt: { lt: cutoff } },
@@ -211,6 +215,7 @@ export async function handleArrivalReactionCleanup(
     try {
       const cutoff = new Date();
       cutoff.setUTCDate(cutoff.getUTCDate() - ARRIVAL_REACTION_RETENTION_DAYS);
+      // account-deletion: retention ages rows out whatever their account's state.
       const deleted = await p.arrivalReaction.deleteMany({
         where: { createdAt: { lt: cutoff } },
       });
@@ -343,6 +348,7 @@ export async function handleStepUpElevationCleanup(
   return withBackgroundEvent("job.step_up_elevation_cleanup", async (evt) => {
     const p = getWorkerPrisma();
     try {
+      // account-deletion: expires single-use step-up proofs; acts for no account.
       const { count } = await p.stepUpElevation.deleteMany({
         where: { expiresAt: { lt: new Date() } },
       });
