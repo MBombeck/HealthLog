@@ -6,6 +6,10 @@
 #   1. Build the app image from this checkout and start the bundled compose
 #      stack with fixed throwaway keys, and an S3-compatible bucket outside
 #      it (Versity S3 Gateway, pinned) as the off-host target.
+#      First without the `backups` volume: the run must keep nothing in the
+#      container's layer, say so in its ledger row and the start log, and
+#      still upload the dump. Then the stack is thrown away and started again
+#      as shipped.
 #   2. Seed real data: the demo seed (documents, encrypted notes, years of
 #      readings) and a Guardian with a managed profile, written by the app's
 #      own code; then, through the API, a reading with an encrypted note.
@@ -183,6 +187,33 @@ docker run -d --name "$BUCKET" --network "$BUCKET" -p "127.0.0.1:$BUCKET_PORT:70
   -v "$BUCKET-data:/data" --entrypoint sh "$BUCKET_IMAGE" -c \
   "mkdir -p /data/$BACKUP_S3_BUCKET && exec versitygw --access $BACKUP_S3_ACCESS_KEY --secret $BACKUP_S3_SECRET_KEY posix /data" \
   >/dev/null || fail "the bucket did not start"
+
+step "a server without the backups volume keeps no dump on itself"
+# The image creates the dump directory, so without the volume it is writable,
+# and it sits in the container's layer that the next update throws away. No
+# dump may be kept, or counted as kept, there; the bucket still gets one.
+cat >"$WORK/no-volume.yml" <<YAML
+services:
+  app:
+    volumes: !reset []
+YAML
+stack -f "$WORK/no-volume.yml" up -d app >"$WORK/up.log" 2>&1 ||
+  { tail -20 "$WORK/up.log" >&2; fail "the stack without the volume did not start"; }
+wait_healthy
+i=0
+until RUN=$(sql "SELECT status || ' ' || local_result || ' ' || offhost_result FROM database_backup_runs WHERE status <> 'running' ORDER BY started_at DESC LIMIT 1") && [ -n "$RUN" ]; do
+  i=$((i + 1))
+  [ "$i" -lt 120 ] || fail "no database-backup run within four minutes without the volume"
+  sleep 2
+done
+[ "$RUN" = "succeeded not_persistent uploaded" ] ||
+  fail "without the volume the run read '$RUN', not 'succeeded not_persistent uploaded'"
+LEFT=$(docker exec "$PROJECT-app" sh -c 'ls -A /var/lib/healthlog/backups')
+[ -z "$LEFT" ] || fail "a dump was left in the container's layer: $LEFT"
+docker logs "$PROJECT-app" 2>&1 | grep -q "is inside the container, not on a mounted volume" ||
+  fail "the start log does not say the dump directory is inside the container"
+echo "   $RUN, nothing in the container's layer"
+stack down -v --remove-orphans >/dev/null 2>&1
 
 step "a running server with real data"
 stack up -d app >"$WORK/up.log" 2>&1 || { tail -20 "$WORK/up.log" >&2; fail "the stack did not start"; }

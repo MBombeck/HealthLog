@@ -90,8 +90,10 @@ echo "HealthLog: Database is reachable."
 node scripts/pending-migrations.mjs || true
 # When migrations are pending, dump the database into DB_BACKUP_DIR first, so
 # the state before them can be restored (docs/ops/disaster-recovery.md). No
-# writable directory: a warning, and the boot goes on. A writable directory
-# and a failed dump: the boot stops here, before anything is migrated.
+# directory that survives the container (none writable, or the image's own
+# without the backups volume): a warning, and the boot goes on. A kept
+# directory and a failed dump: the boot stops here, before anything is
+# migrated.
 if ! node scripts/db-dump.mjs pre-migration; then
   echo "HealthLog: ERROR — not migrating without the dump. Free disk space or fix the error above and start again." >&2
   echo "HealthLog: to migrate without a dump this once, set DB_BACKUP_BEFORE_MIGRATE=false." >&2

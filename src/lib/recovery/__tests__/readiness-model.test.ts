@@ -45,11 +45,15 @@ function dump(
     lastFailureReason,
     ...rest
   } = over;
+  // A directory that cannot be written keeps nothing either.
+  const writable = rest.localDirWritable ?? true;
   return {
     enabled: true,
     directory: "/data/db-backups",
     keepNightly: 7,
     localDirWritable: true,
+    localPersistent: writable,
+    localReason: writable ? "volume" : "not_writable",
     offhostConfigured: false,
     lastGood: lastGoodAt
       ? {
@@ -170,6 +174,37 @@ describe("database dump", () => {
       evalDump(dump({ localDirWritable: false, offhostConfigured: true }))
         .state,
     ).toBe("ok");
+  });
+
+  it("does not count a writable directory inside the container as a place to keep dumps", () => {
+    const layer = {
+      localDirWritable: true,
+      localPersistent: false,
+      localReason: "container_layer" as const,
+    };
+    // No bucket: the dumps written there are lost at the next update.
+    expect(evalDump(dump(layer))).toMatchObject({
+      state: "failing",
+      reason: "not_persistent",
+      params: { directory: "/data/db-backups" },
+    });
+    // A bucket: fine, and the tile says the bucket holds the only copy.
+    expect(evalDump(dump({ ...layer, offhostConfigured: true }))).toMatchObject(
+      {
+        state: "ok",
+        reason: "fresh_offhost_only",
+        params: { directory: "/data/db-backups" },
+      },
+    );
+    // The same directory on a volume reads as before.
+    expect(evalDump(dump({ offhostConfigured: true }))).toMatchObject({
+      state: "ok",
+      reason: "fresh",
+    });
+    // Switched off with nowhere lasting to write: not news.
+    expect(
+      evalDump(dump({ ...layer, enabled: false, lastGoodAt: null })),
+    ).toMatchObject({ state: "inactive", reason: "disabled" });
   });
 
   it("gives a newly switched-on dump 36 hours before calling it failing", () => {

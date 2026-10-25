@@ -185,19 +185,24 @@ export function evaluateDatabaseDump(
     // directory, no bucket) switched off what it could not do, which is not
     // news.
     const neverUsed = dump.lastGood === null && dump.lastFailure === null;
-    const cannotWrite = !dump.localDirWritable && !dump.offhostConfigured;
+    const cannotWrite = !dump.localPersistent && !dump.offhostConfigured;
     return neverUsed && cannotWrite
       ? signal(id, "inactive", "disabled", null)
       : signal(id, "attention", "disabled", lastGoodAt);
   }
   const lastFailureAt = dump.lastFailure ? new Date(dump.lastFailure.at) : null;
   const failureReason = dump.lastFailure?.error ?? null;
-  // A directory this process cannot write is a valid setup when the dumps go
-  // to the bucket; with no bucket either, no dump can be kept anywhere.
-  if (!dump.localDirWritable && !dump.offhostConfigured) {
-    return signal(id, "failing", "nowhere_to_write", lastGoodAt, {
-      directory: dump.directory,
-    });
+  // A directory that keeps nothing (not writable, or writable inside the
+  // container and lost at the next update) is a valid setup when the dumps
+  // go to the bucket; with no bucket either, no dump is kept anywhere.
+  if (!dump.localPersistent && !dump.offhostConfigured) {
+    return signal(
+      id,
+      "failing",
+      dump.localDirWritable ? "not_persistent" : "nowhere_to_write",
+      lastGoodAt,
+      { directory: dump.directory },
+    );
   }
   const limitMs = DUMP_FAILING_AFTER_HOURS * HOUR_MS;
   const failedSinceGood =
@@ -242,7 +247,13 @@ export function evaluateDatabaseDump(
       failureReason,
     );
   }
-  return signal(id, "ok", "fresh", lastGoodAt);
+  // Fine, and worth saying: the bucket holds the only copy, and no dump is
+  // taken before a migration.
+  return dump.localPersistent
+    ? signal(id, "ok", "fresh", lastGoodAt)
+    : signal(id, "ok", "fresh_offhost_only", lastGoodAt, {
+        directory: dump.directory,
+      });
 }
 
 /**

@@ -8346,7 +8346,9 @@
           "noDirectory": "Ce serveur ne peut pas écrire dans {dir} et aucun stockage hors site n'est configuré : aucun dump ne peut être fait. Montez le volume de sauvegarde.",
           "retentionLocal": "Les comptes supprimés restent dans les dumps jusqu'à leur expiration : ce serveur conserve les {nights} plus récents.",
           "retentionOffhost": "La règle de cycle de vie du bucket supprime les copies hors site après {days} jours.",
-          "retentionOffhostMissing": "Aucune règle de cycle de vie du bucket ne couvre database/ : les dumps qui s'y trouvent, et les comptes supprimés qu'ils contiennent, ne sont jamais effacés. Ajoutez une règle pour ce préfixe."
+          "retentionOffhostMissing": "Aucune règle de cycle de vie du bucket ne couvre database/ : les dumps qui s'y trouvent, et les comptes supprimés qu'ils contiennent, ne sont jamais effacés. Ajoutez une règle pour ce préfixe.",
+          "notPersistentOffhost": "{dir} n'est pas sur un stockage persistant (il se trouve dans le conteneur et non sur un volume monté, ou en mémoire) : un dump écrit là serait perdu à la prochaine mise à jour. Les dumps partent uniquement hors site : aucun n'est conservé ici et aucun n'est pris avant une migration. Montez le volume de sauvegarde.",
+          "notPersistent": "{dir} n'est pas sur un stockage persistant (il se trouve dans le conteneur et non sur un volume monté, ou en mémoire) et aucun bucket hors site n'est configuré : aucun dump de la base n'est conservé nulle part. Montez le volume de sauvegarde."
         }
       },
       "danger-zone": {
@@ -8689,7 +8691,9 @@
           "stale": "Le dump de la base de données le plus récent date de {hours} heures.",
           "last_failed": "Le dernier dump de la base de données a échoué. Le précédent est encore récent.",
           "fresh": "Le dernier dump de la base de données est récent.",
-          "nowhere_to_write": "Le dossier des dumps {directory} n'est pas accessible en écriture et aucun bucket externe n'est configuré, donc aucun dump ne peut être conservé."
+          "nowhere_to_write": "Le dossier des dumps {directory} n'est pas accessible en écriture et aucun bucket externe n'est configuré, donc aucun dump ne peut être conservé.",
+          "not_persistent": "Le répertoire des dumps {directory} n'est pas sur un stockage persistant et aucun bucket hors site n'est configuré : chaque dump serait perdu à la prochaine mise à jour. Montez le volume de sauvegarde.",
+          "fresh_offhost_only": "Le dump de base le plus récent est à jour et se trouve dans le bucket hors site. Aucun n'est conservé sur ce serveur, car {directory} n'est pas sur un stockage persistant, et aucun n'est pris avant une migration."
         },
         "weekly_copy": {
           "no_accounts": "Il n'y a pas encore de compte à copier.",

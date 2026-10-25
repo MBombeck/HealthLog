@@ -17,6 +17,8 @@ const HEALTHY: DatabaseBackupHealth = {
   directory: "/var/lib/healthlog/backups",
   keepNightly: 7,
   localDirWritable: true,
+  localPersistent: true,
+  localReason: "volume",
   offhostConfigured: true,
   lastGood: {
     at: "2026-10-24T23:31:00.000Z",
@@ -77,17 +79,36 @@ describe("<DatabaseDumpRow>", () => {
   });
 
   it("says when dumps go off-host only, or cannot be taken at all", () => {
-    expect(render({ ...HEALTHY, localDirWritable: false }, null)).toContain(
-      "dumps go off-host only",
+    const unwritable = {
+      ...HEALTHY,
+      localDirWritable: false,
+      localPersistent: false,
+      localReason: "not_writable" as const,
+    };
+    expect(render(unwritable, null)).toContain("dumps go off-host only");
+    expect(render({ ...unwritable, offhostConfigured: false }, null)).toContain(
+      "no database dump can be taken",
     );
-    expect(
-      render(
-        { ...HEALTHY, localDirWritable: false, offhostConfigured: false },
-        null,
-      ),
-    ).toContain("no database dump can be taken");
     expect(render({ ...HEALTHY, lastGood: null }, null)).toContain(
       "No database dump yet",
     );
+  });
+
+  it("does not promise dumps on this server from a directory inside the container", () => {
+    const layer = {
+      ...HEALTHY,
+      localPersistent: false,
+      localReason: "container_layer" as const,
+      lastGood: { ...HEALTHY.lastGood!, local: false },
+    };
+    const html = render(layer);
+    expect(html).toContain('data-slot="database-dump-setup"');
+    expect(html).toContain("lost at the next update");
+    expect(html).toContain("Dumps go off-host only");
+    expect(html).not.toContain("kept on this server");
+    expect(html).toContain("removed after 30 days");
+    const nowhere = render({ ...layer, offhostConfigured: false }, null);
+    expect(nowhere).toContain("no database dump is kept anywhere");
+    expect(nowhere).not.toContain('data-slot="database-dump-retention"');
   });
 });

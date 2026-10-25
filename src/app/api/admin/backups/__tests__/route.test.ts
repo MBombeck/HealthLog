@@ -63,6 +63,8 @@ const databaseHealth = {
   directory: "/var/lib/healthlog/backups",
   keepNightly: 7,
   localDirWritable: true,
+  localPersistent: true,
+  localReason: "volume",
   offhostConfigured: true,
   lastGood: {
     at: "2026-09-21T23:31:40.000Z",

@@ -6,7 +6,10 @@
  * The account copies below it restore one account on this server; the dump is
  * the copy that rebuilds the server. So the row leads the card and says three
  * things: when the newest good dump was taken and where it is, whether the
- * newest run failed, and whether this server can keep a dump at all.
+ * newest run failed, and whether this server can keep a dump at all. A
+ * directory inside the container (the image's own, without the volume) is
+ * writable and still keeps nothing past the next update, so "kept on this
+ * server" is only said of a directory that survives it.
  */
 import { AlertTriangle, HardDrive } from "lucide-react";
 
@@ -45,7 +48,15 @@ export function DatabaseDumpRow({
   let setupProblem: string | null = null;
   if (!health.enabled) {
     setupProblem = t("admin.section.backups.database.disabled");
-  } else if (!health.localDirWritable) {
+  } else if (health.localDirWritable && !health.localPersistent) {
+    setupProblem = health.offhostConfigured
+      ? t("admin.section.backups.database.notPersistentOffhost", {
+          dir: health.directory,
+        })
+      : t("admin.section.backups.database.notPersistent", {
+          dir: health.directory,
+        });
+  } else if (!health.localPersistent) {
     setupProblem = health.offhostConfigured
       ? t("admin.section.backups.database.noDirectoryOffhost", {
           dir: health.directory,
@@ -54,6 +65,19 @@ export function DatabaseDumpRow({
           dir: health.directory,
         });
   }
+
+  const retention = [
+    health.localPersistent
+      ? t("admin.section.backups.database.retentionLocal", {
+          nights: health.keepNightly,
+        })
+      : null,
+    bucketLifecycle?.state === "configured"
+      ? t("admin.section.backups.database.retentionOffhost", {
+          days: bucketLifecycle.expirationDays ?? 0,
+        })
+      : null,
+  ].filter((line): line is string => line !== null);
 
   return (
     <div className="space-y-2" data-slot="database-dump">
@@ -80,19 +104,14 @@ export function DatabaseDumpRow({
           </p>
           {/* How long a deleted account stays in the dumps: the operator's
               side of the deletion promise (GDPR retention of backups). */}
-          <p
-            className="text-muted-foreground text-xs"
-            data-slot="database-dump-retention"
-          >
-            {t("admin.section.backups.database.retentionLocal", {
-              nights: health.keepNightly,
-            })}
-            {bucketLifecycle?.state === "configured"
-              ? ` ${t("admin.section.backups.database.retentionOffhost", {
-                  days: bucketLifecycle.expirationDays ?? 0,
-                })}`
-              : null}
-          </p>
+          {retention.length > 0 ? (
+            <p
+              className="text-muted-foreground text-xs"
+              data-slot="database-dump-retention"
+            >
+              {retention.join(" ")}
+            </p>
+          ) : null}
         </div>
       </div>
 

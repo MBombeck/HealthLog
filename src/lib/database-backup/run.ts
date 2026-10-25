@@ -9,11 +9,14 @@
  * under `database/` in the same envelope the per-account copies use, sealed
  * with `BACKUP_ENCRYPTION_KEY`.
  *
- * Without a writable directory (an install that runs the image without the
- * volume) the dump is written to a temporary directory, uploaded and removed:
- * the off-host copy still happens, nothing is kept on the server, and the
- * ledger and the boot summary say so. With neither, the run is skipped and
- * recorded as such.
+ * Without a directory that survives the container (an install that runs the
+ * image without the volume: the image's own directory is writable but sits in
+ * the container's layer, which the next update throws away) the dump is
+ * written to a temporary directory, uploaded and removed: the off-host copy
+ * still happens, nothing is kept on the server, and the ledger and the boot
+ * summary say so. A dump left in the container's layer would be counted as
+ * kept and lost with the container, so none is. With neither, the run is
+ * skipped and recorded as such.
  *
  * Every run leaves one `DatabaseBackupRun` row: started, then finished with
  * what happened on each leg. `getDatabaseBackupHealth` reads them.
@@ -35,19 +38,20 @@ import packageJson from "../../../package.json";
 
 import {
   applyRetention,
+  backupDirectoryStatus,
   createDatabaseDump,
   databaseBackupEnabled,
-  isWritableDirectory,
   offhostObjectKey,
   resolveBackupDir,
   resolveDailyKeep,
+  type BackupDirectoryStatus,
 } from "./dump-core.mjs";
 
 /** How long ledger rows are kept. A run a day; a year and a bit of history. */
 const LEDGER_RETENTION_DAYS = 400;
 
 export type DatabaseBackupLocalResult =
-  "written" | "no_directory" | "failed" | "skipped";
+  "written" | "no_directory" | "not_persistent" | "failed" | "skipped";
 export type DatabaseBackupOffhostResult =
   "uploaded" | "not_configured" | "failed" | "skipped";
 
@@ -69,6 +73,8 @@ export interface RunDatabaseBackupOptions {
   env?: NodeJS.ProcessEnv;
   /** A bucket double for tests; the configured bucket otherwise. */
   s3?: S3Like;
+  /** Where `DB_BACKUP_DIR` stands; the file system's answer otherwise. */
+  directoryStatus?: (dir: string) => BackupDirectoryStatus;
 }
 
 /** The running build's version, as `/api/version` answers it. */
@@ -111,7 +117,9 @@ export async function runDatabaseBackup(
   const env = options.env ?? process.env;
   const now = options.now ?? new Date();
   const dir = resolveBackupDir(env);
-  const localWritable = isWritableDirectory(dir);
+  const directory = (options.directoryStatus ?? backupDirectoryStatus)(dir);
+  // Kept here only where it survives the container being replaced.
+  const keepLocal = directory.persistent;
   const offhostConfig = (() => {
     try {
       return loadOffhostConfig();
@@ -128,7 +136,11 @@ export async function runDatabaseBackup(
     status: "failed",
     fileName: null,
     dumpBytes: null,
-    local: localWritable ? "failed" : "no_directory",
+    local: keepLocal
+      ? "failed"
+      : directory.writable
+        ? "not_persistent"
+        : "no_directory",
     offhost: offhostConfig ? "failed" : "not_configured",
     removed: 0,
     error: null,
@@ -150,11 +162,13 @@ export async function runDatabaseBackup(
       report.local = "skipped";
       report.offhost = "skipped";
       report.error = "DB_BACKUP_ENABLED is false";
-    } else if (!localWritable && !offhostConfig) {
+    } else if (!keepLocal && !offhostConfig) {
       report.status = "skipped";
-      report.error = `no writable backup directory (${dir}) and no off-host bucket configured`;
+      report.error = directory.writable
+        ? `the backup directory (${dir}) is not on persistent storage, so a dump there would be lost with the container, and no off-host bucket is configured`
+        : `no writable backup directory (${dir}) and no off-host bucket configured`;
     } else {
-      const target = localWritable
+      const target = keepLocal
         ? dir
         : (scratch = await mkdtemp(join(tmpdir(), "healthlog-dump-")));
       const dump = await createDatabaseDump({
@@ -167,7 +181,7 @@ export async function runDatabaseBackup(
         buildSha: env.NEXT_PUBLIC_APP_BUILD_SHA?.trim() || null,
         deadline: options.deadline,
       });
-      if (localWritable) report.local = "written";
+      if (keepLocal) report.local = "written";
       report.fileName = basename(dump.dumpPath);
       report.dumpBytes = dump.manifest.dump.bytes;
 
@@ -188,7 +202,7 @@ export async function runDatabaseBackup(
         }
       }
 
-      if (localWritable) {
+      if (keepLocal) {
         const removed = await applyRetention(dir, {
           dailyKeep: resolveDailyKeep(env),
           now: now.getTime(),

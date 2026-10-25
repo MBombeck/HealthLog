@@ -8346,7 +8346,9 @@
           "noDirectory": "Deze server kan niet schrijven naar {dir} en er is geen externe opslag ingesteld, dus er kan geen databasedump worden gemaakt. Koppel het back-upvolume.",
           "retentionLocal": "Verwijderde accounts blijven in de dumps tot die verlopen: op deze server blijven de nieuwste {nights} bewaard.",
           "retentionOffhost": "De levenscyclusregel van de bucket verwijdert externe kopieën na {days} dagen.",
-          "retentionOffhostMissing": "Geen levenscyclusregel in de bucket geldt voor database/, dus dumps daar, en de verwijderde accounts erin, worden nooit verwijderd. Voeg een regel voor dat voorvoegsel toe."
+          "retentionOffhostMissing": "Geen levenscyclusregel in de bucket geldt voor database/, dus dumps daar, en de verwijderde accounts erin, worden nooit verwijderd. Voeg een regel voor dat voorvoegsel toe.",
+          "notPersistentOffhost": "{dir} staat niet op blijvende opslag (in de container in plaats van op een gekoppeld volume, of in het geheugen), dus een dump die daar wordt geschreven gaat bij de volgende update verloren. Dumps gaan alleen extern: hier wordt er geen bewaard en vóór een migratie wordt er geen gemaakt. Koppel het back-upvolume.",
+          "notPersistent": "{dir} staat niet op blijvende opslag (in de container in plaats van op een gekoppeld volume, of in het geheugen) en er is geen externe bucket ingesteld, dus nergens wordt een databasedump bewaard. Koppel het back-upvolume."
         }
       },
       "danger-zone": {
@@ -8689,7 +8691,9 @@
           "stale": "De nieuwste databasedump is {hours} uur oud.",
           "last_failed": "De laatste databasedump is mislukt. De dump daarvoor is nog recent.",
           "fresh": "De nieuwste databasedump is recent.",
-          "nowhere_to_write": "De dumpmap {directory} is niet beschrijfbaar en er is geen externe bucket ingesteld, dus er kan geen dump worden bewaard."
+          "nowhere_to_write": "De dumpmap {directory} is niet beschrijfbaar en er is geen externe bucket ingesteld, dus er kan geen dump worden bewaard.",
+          "not_persistent": "De dumpmap {directory} staat niet op blijvende opslag en er is geen externe bucket ingesteld, dus elke dump gaat bij de volgende update verloren. Koppel het back-upvolume.",
+          "fresh_offhost_only": "De nieuwste databasedump is recent en staat in de externe bucket. Op deze server wordt er geen bewaard, omdat {directory} niet op blijvende opslag staat, en vóór een migratie wordt er geen gemaakt."
         },
         "weekly_copy": {
           "no_accounts": "Er zijn nog geen accounts om te kopiëren.",

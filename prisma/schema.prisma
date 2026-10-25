@@ -6022,7 +6022,9 @@ model DatabaseBackupRun {
   /// Size of the dump in bytes.
   dumpBytes     BigInt?   @map("dump_bytes")
   /// `written` (kept in DB_BACKUP_DIR), `no_directory` (no writable
-  /// directory, the dump went off-host only), or `failed`.
+  /// directory, the dump went off-host only), `not_persistent` (writable but
+  /// in the container's layer or in memory, so nothing was kept there),
+  /// `skipped`, or `failed`.
   localResult   String    @map("local_result")
   /// `uploaded`, `not_configured` or `failed`.
   offhostResult String    @map("offhost_result")

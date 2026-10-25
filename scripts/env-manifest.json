@@ -372,7 +372,7 @@
         },
         {
           "name": "DB_BACKUP_DIR",
-          "purpose": "Directory the dumps are written to and restored from. Default /var/lib/healthlog/backups, the `backups` volume. Without a writable directory the nightly dump only goes off-host and no dump is taken before migrations.",
+          "purpose": "Directory the dumps are written to and restored from. Default /var/lib/healthlog/backups, the `backups` volume. In a container it must be a mount of its own: a directory in the container's layer is lost at the next update and counts as none. Without one the nightly dump only goes off-host and no dump is taken before migrations.",
           "example": "/var/lib/healthlog/backups"
         },
         {

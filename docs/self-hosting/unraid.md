@@ -6,10 +6,13 @@ self-contained install (app + database as one unit) and is recommended. The
 Unraid UI, but because CA templates describe a single container you install
 PostgreSQL separately and wire the two together.
 
-HealthLog stores all persistent state in PostgreSQL — the app container itself is
-stateless (the offline geo-IP databases are either baked in at build time or
-mounted read-only; replaceable either way, not state). A backup of
-the database is a backup of everything.
+HealthLog stores all persistent state in PostgreSQL. The app container keeps one
+more thing, its database dumps: every night, and before each update that brings
+migrations, it writes a whole-database dump to `/var/lib/healthlog/backups`
+(the offline geo-IP databases are either baked in at build time or mounted
+read-only; replaceable either way, not state). A backup of the database is a
+backup of everything, and those dumps are that backup, so that path needs a
+share of its own.
 
 ## What you need
 
@@ -103,12 +106,20 @@ Fill in the fields:
 | `SESSION_COOKIE_SECURE` | `false` for plain-HTTP LAN access                                                |
 | `NEXT_PUBLIC_APP_URL`   | `http://tower:3000` (or your domain)                                             |
 | `APP_URL`               | same as `NEXT_PUBLIC_APP_URL`                                                    |
+| Database dumps          | `/mnt/user/appdata/healthlog/backups` (the default)                              |
 
-Replace `<password>` and `<postgres-host>` with the values from Step 1. Apply,
-then open `http://tower:3000` — the first registered user becomes the admin.
+Replace `<password>` and `<postgres-host>` with the values from Step 1. The
+dumps folder must be writable by the app's user, uid `1001`; create it once
+from the terminal with
+`mkdir -p /mnt/user/appdata/healthlog/backups && chown 1001:1001 /mnt/user/appdata/healthlog/backups`.
+Apply, then open `http://tower:3000` — the first registered user becomes the
+admin.
 
-The HealthLog container has no persistent volume of its own; all state is in the
-PostgreSQL container you installed in Step 1. Back that one up.
+All account data is in the PostgreSQL container you installed in Step 1, and
+the nightly dumps of it land in the dumps folder. Without that path the dumps
+would sit inside the HealthLog container, which every update replaces, so
+HealthLog keeps none: the start log, the admin backups page and the recovery
+readiness card say so. Back up both.
 
 ---
 

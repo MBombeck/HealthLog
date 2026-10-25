@@ -20,11 +20,12 @@ import {
   legacyAnyHostConfigured,
 } from "@/lib/ai/local-host-allowlist";
 import {
+  backupDirectoryStatus,
   databaseBackupEnabled,
-  isWritableDirectory,
   resolveBackupDir,
   resolveBackupSchedule,
   resolveDailyKeep,
+  type BackupDirectoryStatus,
 } from "@/lib/database-backup/dump-core.mjs";
 
 export interface ReadinessLine {
@@ -74,7 +75,7 @@ function anySet(env: Env, keys: string[]): boolean {
  */
 export function databaseBackupReadiness(
   env: Env,
-  writable: (dir: string) => boolean,
+  directoryStatus: (dir: string) => BackupDirectoryStatus,
 ): ReadinessLine[] {
   const label = "Database dump";
   if (!databaseBackupEnabled(env)) {
@@ -104,35 +105,44 @@ export function databaseBackupReadiness(
     "BACKUP_S3_SECRET_KEY",
     "BACKUP_ENCRYPTION_KEY",
   ]);
-  if (writable(dir)) {
+  const status = directoryStatus(dir);
+  if (status.persistent) {
     lines.push({
       label,
       status: "ok",
       detail: `nightly (${schedule.cron}) into ${dir}, keeping ${resolveDailyKeep(env)}${offhost ? ", copied off-host" : ""}`,
     });
-  } else if (offhost) {
-    lines.push({
-      label,
-      status: "warn",
-      detail: `${dir} is not writable: the nightly dump goes off-host only and none is kept on this server. Mount the backups volume (see docker-compose.yml) or set DB_BACKUP_DIR`,
-    });
-  } else {
-    lines.push({
-      label,
-      status: "warn",
-      detail: `${dir} is not writable and no off-host bucket is configured: no database dump can be taken. Mount the backups volume (see docker-compose.yml) or set DB_BACKUP_DIR`,
-    });
+    return lines;
   }
+  // Writable but thrown away with the container (the image's own directory
+  // without the volume) or at a restart (a tmpfs): no dump is kept there,
+  // because one that is would be counted as kept and then lost.
+  const where = !status.writable
+    ? `${dir} is not writable`
+    : status.reason === "memory"
+      ? `${dir} is in memory (tmpfs), so a dump there is lost at the next restart`
+      : `${dir} is inside the container, not on a mounted volume, so a dump there is lost at the next update`;
+  const fix =
+    "Mount the backups volume (see docker-compose.yml) or set DB_BACKUP_DIR to a mounted directory";
+  lines.push({
+    label,
+    status: "warn",
+    detail: offhost
+      ? `${where}: the nightly dump goes off-host only, none is kept on this server and none is taken before a migration. ${fix}`
+      : `${where} and no off-host bucket is configured: no database dump is kept anywhere. ${fix}`,
+  });
   return lines;
 }
 
 /**
  * Inspect the environment and build the readiness report. Pure apart from
- * `writable`, the probe of the dump directory, which tests replace.
+ * `directoryStatus`, the probe of the dump directory, which tests replace.
  */
 export function collectReadiness(
   env: Env = process.env,
-  writable: (dir: string) => boolean = isWritableDirectory,
+  directoryStatus: (
+    dir: string,
+  ) => BackupDirectoryStatus = backupDirectoryStatus,
 ): ReadinessReport {
   const lines: ReadinessLine[] = [];
 
@@ -211,7 +221,7 @@ export function collectReadiness(
     });
   }
 
-  lines.push(...databaseBackupReadiness(env, writable));
+  lines.push(...databaseBackupReadiness(env, directoryStatus));
 
   // --- Optional subsystems (informational) --------------------------------
   const optional: Array<[string, boolean]> = [

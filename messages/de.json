@@ -8346,7 +8346,9 @@
           "noDirectory": "Dieser Server kann nicht nach {dir} schreiben und es ist kein externer Speicher eingerichtet. Deshalb entsteht kein Datenbank-Dump. Binde das Backup-Volume ein.",
           "retentionLocal": "Gelöschte Konten bleiben in den Dumps, bis diese aussortiert werden: Auf diesem Server bleiben die neuesten {nights}.",
           "retentionOffhost": "Externe Kopien entfernt die Lebenszyklus-Regel des Buckets nach {days} Tagen.",
-          "retentionOffhostMissing": "Keine Lebenszyklus-Regel im Bucket gilt für database/. Dumps dort und die gelöschten Konten darin werden deshalb nie entfernt. Lege eine Regel für dieses Präfix an."
+          "retentionOffhostMissing": "Keine Lebenszyklus-Regel im Bucket gilt für database/. Dumps dort und die gelöschten Konten darin werden deshalb nie entfernt. Lege eine Regel für dieses Präfix an.",
+          "notPersistentOffhost": "{dir} liegt nicht auf dauerhaftem Speicher (im Container statt auf einem eingebundenen Volume, oder im Arbeitsspeicher). Ein Dump dort wäre beim nächsten Update verloren. Dumps gehen deshalb nur extern: Hier wird keiner aufbewahrt, und vor einer Migration wird keiner erstellt. Binde das Backup-Volume ein.",
+          "notPersistent": "{dir} liegt nicht auf dauerhaftem Speicher (im Container statt auf einem eingebundenen Volume, oder im Arbeitsspeicher), und es ist kein externer Bucket eingerichtet. Damit wird nirgends ein Datenbank-Dump aufbewahrt. Binde das Backup-Volume ein."
         }
       },
       "danger-zone": {
@@ -8689,7 +8691,9 @@
           "stale": "Der neueste Datenbank-Dump ist {hours} Stunden alt.",
           "last_failed": "Der letzte Datenbank-Dump ist fehlgeschlagen. Der davor ist noch aktuell.",
           "fresh": "Der neueste Datenbank-Dump ist aktuell.",
-          "nowhere_to_write": "Das Dump-Verzeichnis {directory} ist nicht beschreibbar und es ist kein externer Bucket eingerichtet, daher kann kein Dump aufbewahrt werden."
+          "nowhere_to_write": "Das Dump-Verzeichnis {directory} ist nicht beschreibbar und es ist kein externer Bucket eingerichtet, daher kann kein Dump aufbewahrt werden.",
+          "not_persistent": "Das Dump-Verzeichnis {directory} liegt nicht auf dauerhaftem Speicher, und es ist kein externer Bucket eingerichtet. Jeder Dump wäre beim nächsten Update verloren. Binde das Backup-Volume ein.",
+          "fresh_offhost_only": "Der neueste Datenbank-Dump ist aktuell und liegt im externen Bucket. Auf diesem Server wird keiner aufbewahrt, weil {directory} nicht auf dauerhaftem Speicher liegt, und vor einer Migration wird keiner erstellt."
         },
         "weekly_copy": {
           "no_accounts": "Es gibt noch keine Konten zum Kopieren.",

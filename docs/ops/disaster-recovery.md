@@ -44,10 +44,17 @@ backups page reads the bucket's rules and says when none does. This is the
 retention period to state where you tell people that deleting their account
 deletes their data.
 
-Without a writable `DB_BACKUP_DIR` (an install that runs the image without the
-`backups` volume), the nightly dump is uploaded off-host and nothing is kept
-on the server, and no dump is taken before migrations; with no bucket either,
-no dump is taken at all. The start log and the admin page say so.
+A dump is kept on the server only when `DB_BACKUP_DIR` survives the container
+being replaced: a mounted volume or bind mount, or any writable directory when
+HealthLog does not run in a container. The image creates the default
+directory, so an install that runs it without the `backups` volume can write
+there, but the directory sits in the container's own layer and the next update
+throws it away. HealthLog reads the container's mount table to tell the two
+apart and treats such a directory, or one on a tmpfs, like one it cannot
+write: the nightly dump is uploaded off-host and nothing is kept on the
+server, and no dump is taken before migrations; with no bucket either, no
+dump is taken at all. The start log, the admin backups page and the recovery
+readiness card say so.
 
 The per-account copies (the weekly in-database copy, the nightly per-account
 objects) roll one account back on the same server. They cannot rebuild a

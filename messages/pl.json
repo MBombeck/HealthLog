@@ -8346,7 +8346,9 @@
           "noDirectory": "Ten serwer nie może zapisywać w {dir} i nie ustawiono magazynu zewnętrznego, więc nie da się wykonać zrzutu bazy. Podłącz wolumin kopii.",
           "retentionLocal": "Usunięte konta pozostają w zrzutach, dopóki te nie wygasną: na tym serwerze zostaje {nights} najnowszych.",
           "retentionOffhost": "Reguła cyklu życia bucketu usuwa kopie zewnętrzne po {days} dniach.",
-          "retentionOffhostMissing": "Żadna reguła cyklu życia bucketu nie obejmuje database/, więc zrzuty tam, wraz z usuniętymi kontami w nich, nigdy nie są usuwane. Dodaj regułę dla tego prefiksu."
+          "retentionOffhostMissing": "Żadna reguła cyklu życia bucketu nie obejmuje database/, więc zrzuty tam, wraz z usuniętymi kontami w nich, nigdy nie są usuwane. Dodaj regułę dla tego prefiksu.",
+          "notPersistentOffhost": "{dir} nie leży na trwałym nośniku (jest wewnątrz kontenera zamiast na podłączonym woluminie albo w pamięci), więc zapisany tam zrzut przepadnie przy następnej aktualizacji. Zrzuty trafiają tylko poza serwer: żaden nie zostaje tutaj i żaden nie powstaje przed migracją. Podłącz wolumin kopii.",
+          "notPersistent": "{dir} nie leży na trwałym nośniku (jest wewnątrz kontenera zamiast na podłączonym woluminie albo w pamięci), a zewnętrzny bucket nie jest ustawiony, więc żaden zrzut bazy nie jest nigdzie przechowywany. Podłącz wolumin kopii."
         }
       },
       "danger-zone": {
@@ -8689,7 +8691,9 @@
           "stale": "Najnowszy zrzut bazy danych ma {hours} h.",
           "last_failed": "Ostatni zrzut bazy danych nie powiódł się. Poprzedni jest jeszcze aktualny.",
           "fresh": "Najnowszy zrzut bazy danych jest aktualny.",
-          "nowhere_to_write": "Katalog zrzutów {directory} nie jest zapisywalny i nie skonfigurowano zewnętrznego bucketu, więc żaden zrzut nie może zostać zachowany."
+          "nowhere_to_write": "Katalog zrzutów {directory} nie jest zapisywalny i nie skonfigurowano zewnętrznego bucketu, więc żaden zrzut nie może zostać zachowany.",
+          "not_persistent": "Katalog zrzutów {directory} nie leży na trwałym nośniku, a zewnętrzny bucket nie jest ustawiony, więc każdy zrzut przepadnie przy następnej aktualizacji. Podłącz wolumin kopii.",
+          "fresh_offhost_only": "Najnowszy zrzut bazy jest aktualny i leży w zewnętrznym buckecie. Na tym serwerze żaden nie zostaje, bo {directory} nie leży na trwałym nośniku, i żaden nie powstaje przed migracją."
         },
         "weekly_copy": {
           "no_accounts": "Nie ma jeszcze kont do skopiowania.",

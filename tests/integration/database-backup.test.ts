@@ -303,6 +303,94 @@ describe("the nightly database dump", () => {
     });
   });
 
+  it("keeps nothing in a directory inside the container, and stops counting what was written there", async () => {
+    const { mkdirSync } = await import("node:fs");
+    const layerDir = join(work, "container-layer");
+    mkdirSync(layerDir);
+    // The image's own directory without the volume: writable, and thrown
+    // away with the container at the next update.
+    const layer = () =>
+      ({
+        writable: true,
+        persistent: false,
+        reason: "container_layer",
+      }) as const;
+    const env = backupEnv({ DB_BACKUP_DIR: layerDir });
+
+    const skipped = await runDatabaseBackup(prisma, {
+      now: new Date("2026-10-24T05:00:00Z"),
+      env,
+      directoryStatus: layer,
+    });
+    expect(skipped).toMatchObject({
+      status: "skipped",
+      local: "not_persistent",
+      offhost: "not_configured",
+    });
+    expect(skipped.error).toMatch(/not on persistent storage/);
+    expect(readdirSync(layerDir)).toEqual([]);
+
+    // Read as keeping nothing, the newest dump that still exists is the one
+    // that reached the bucket on the 20th, not the local-only one of the
+    // 23rd; read as a volume, it is the 23rd's.
+    const asLayer = await getDatabaseBackupHealth(
+      new Date("2026-10-24T05:30:00Z"),
+      env,
+      layer,
+    );
+    expect(asLayer).toMatchObject({
+      localDirWritable: true,
+      localPersistent: false,
+      localReason: "container_layer",
+      lastGood: {
+        fileName: "healthlog-20261020T013000Z-daily.dump",
+        local: false,
+        offhost: true,
+      },
+    });
+    const asVolume = await getDatabaseBackupHealth(
+      new Date("2026-10-24T05:30:00Z"),
+      backupEnv(),
+    );
+    expect(asVolume.localPersistent).toBe(true);
+    expect(asVolume.lastGood).toMatchObject({
+      fileName: "healthlog-20261023T013000Z-daily.dump",
+      local: true,
+    });
+
+    vi.stubEnv("BACKUP_S3_ENDPOINT", "https://bucket.invalid");
+    vi.stubEnv("BACKUP_S3_BUCKET", "b");
+    vi.stubEnv("BACKUP_S3_ACCESS_KEY", "a");
+    vi.stubEnv("BACKUP_S3_SECRET_KEY", "s");
+    vi.stubEnv("BACKUP_ENCRYPTION_KEY", OFFHOST_KEY);
+    const bucket = memoryBucket();
+    const uploaded = await runDatabaseBackup(prisma, {
+      now: new Date("2026-10-24T06:00:00Z"),
+      env: backupEnv({ DB_BACKUP_DIR: layerDir }),
+      s3: bucket as never,
+      directoryStatus: layer,
+    });
+    vi.unstubAllEnvs();
+    expect(uploaded).toMatchObject({
+      status: "succeeded",
+      local: "not_persistent",
+      offhost: "uploaded",
+      removed: 0,
+    });
+    expect(readdirSync(layerDir)).toEqual([]);
+    expect([...bucket.objects.keys()].sort()).toEqual([
+      "database/healthlog-20261024T060000Z-daily.dump.enc",
+      "database/healthlog-20261024T060000Z-daily.manifest.json.enc",
+    ]);
+    const row = await prisma.databaseBackupRun.findFirst({
+      where: { startedAt: new Date("2026-10-24T06:00:00Z") },
+    });
+    expect(row).toMatchObject({
+      localResult: "not_persistent",
+      offhostResult: "uploaded",
+    });
+  });
+
   describe("restoring it", () => {
     const target = `restore_${process.pid}_${Date.now()}`;
     let targetUrl = "";
@@ -466,6 +554,36 @@ describe("the dump before migrating", () => {
     expect(errors).toMatch(
       /is not writable, so no dump is taken before the 1 pending migration/,
     );
+  });
+
+  it("takes no dump into a directory inside the container, says why, and lets the boot go on", async () => {
+    const { preMigrationDump } = await import("../../scripts/db-dump.mjs");
+    const before = readdirSync(preDir).sort();
+    const errors: string[] = [];
+    const spyErr = vi
+      .spyOn(console, "error")
+      .mockImplementation((l: string) => void errors.push(String(l)));
+    const spyLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      const code = await preMigrationDump(
+        { ...process.env, DB_BACKUP_DIR: preDir },
+        {
+          directoryStatus: () => ({
+            writable: true,
+            persistent: false,
+            reason: "container_layer",
+          }),
+        },
+      );
+      expect(code).toBe(0);
+    } finally {
+      spyErr.mockRestore();
+      spyLog.mockRestore();
+    }
+    expect(errors.join("\n")).toMatch(
+      /is inside the container, not on a mounted volume, and would not keep a dump past this update, so no dump is taken before the 1 pending migration/,
+    );
+    expect(readdirSync(preDir).sort()).toEqual(before);
   });
 
   it("stops the boot when the dump fails on a writable directory, and leaves no dump behind", async () => {

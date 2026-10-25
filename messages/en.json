@@ -8346,7 +8346,9 @@
           "noDirectory": "This server cannot write to {dir} and no off-host bucket is set, so no database dump can be taken. Mount the backups volume.",
           "retentionLocal": "Deleted accounts stay in the dumps until those age out: the newest {nights} are kept on this server.",
           "retentionOffhost": "Off-host copies are removed after {days} days by the bucket's lifecycle rule.",
-          "retentionOffhostMissing": "No lifecycle rule in the bucket covers database/, so dumps there, and the deleted accounts inside them, are never removed. Add a rule for that prefix."
+          "retentionOffhostMissing": "No lifecycle rule in the bucket covers database/, so dumps there, and the deleted accounts inside them, are never removed. Add a rule for that prefix.",
+          "notPersistentOffhost": "{dir} is not on persistent storage (it sits inside the container rather than on a mounted volume, or in memory), so a dump written there would be lost at the next update. Dumps go off-host only: none is kept here and none is taken before a migration. Mount the backups volume.",
+          "notPersistent": "{dir} is not on persistent storage (it sits inside the container rather than on a mounted volume, or in memory) and no off-host bucket is set, so no database dump is kept anywhere. Mount the backups volume."
         }
       },
       "danger-zone": {
@@ -8689,7 +8691,9 @@
           "stale": "The newest database dump is {hours} hours old.",
           "last_failed": "The last database dump failed. The one before it is still recent.",
           "fresh": "The newest database dump is recent.",
-          "nowhere_to_write": "The dump directory {directory} cannot be written to and no off-host bucket is set up, so no dump can be kept."
+          "nowhere_to_write": "The dump directory {directory} cannot be written to and no off-host bucket is set up, so no dump can be kept.",
+          "not_persistent": "The dump directory {directory} is not on persistent storage and no off-host bucket is set up, so every dump would be lost at the next update. Mount the backups volume.",
+          "fresh_offhost_only": "The newest database dump is recent and in the off-host bucket. None is kept on this server, because {directory} is not on persistent storage, and none is taken before a migration."
         },
         "weekly_copy": {
           "no_accounts": "There are no accounts to copy yet.",

@@ -54,6 +54,15 @@ example `UPDATE_CHECK_DISABLED=1`. The full list is in
 To use your own GeoLite2 databases, add the directory under Additional Storage
 and point `GEOLITE2_DIR` at its mount path ([geolite2.md](geolite2.md)).
 
+HealthLog writes a whole-database dump every night, and one before each update
+that brings migrations, into `/var/lib/healthlog/backups` inside the app
+container. Give that path a dataset of its own (a host path or an ixVolume,
+writable by uid `1001`), under Additional Storage if the form has no field for
+it. Without one the directory sits inside the container, which an update
+replaces, so HealthLog keeps no dump there: the start log, the admin backups
+page and the recovery readiness card say so, and with an off-host bucket the
+nightly dump goes to the bucket only.
+
 ## Plain HTTP on the LAN
 
 Most NAS installs are reached over `http://`. Leave **Secure Cookies** off for
@@ -113,6 +122,10 @@ back.
   The file lands in the Postgres Data Storage dataset, next to the database
   files, so copy it off the NAS as well.
 
+- **The nightly dump.** With a dataset on `/var/lib/healthlog/backups` (see
+  above), the newest seven nightly dumps and the last two taken before a
+  migration stay there; [disaster-recovery.md](../ops/disaster-recovery.md)
+  restores one onto a new server.
 - **Off-host.** HealthLog can push encrypted nightly backups to any
   S3-compatible bucket; see [backup-restore.md](../ops/backup-restore.md).
 
@@ -216,7 +229,7 @@ the menu next to Custom App, Install via YAML, using these values:
 | Health check | `GET /api/health`, `200` when ready                                                    |
 | Start period | 10 min, like the image: migrations run at every boot and wait out a held lock          |
 | Database     | PostgreSQL 18 (16 works too), no extensions, in its own container with its own dataset |
-| Volumes      | none for the app; the database gets its own dataset                                    |
+| Volumes      | `/var/lib/healthlog/backups` for the database dumps (uid `1001`); the database its own |
 
 | Variable                | Required | Notes                                                                                    |
 | ----------------------- | -------- | ---------------------------------------------------------------------------------------- |

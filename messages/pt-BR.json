@@ -8346,7 +8346,9 @@
           "noDirectory": "Este servidor não consegue gravar em {dir} e não há armazenamento externo configurado, então nenhum dump pode ser feito. Monte o volume de backups.",
           "retentionLocal": "Contas excluídas continuam nos dumps até que eles expirem: este servidor guarda os {nights} mais recentes.",
           "retentionOffhost": "A regra de ciclo de vida do bucket remove as cópias externas após {days} dias.",
-          "retentionOffhostMissing": "Nenhuma regra de ciclo de vida do bucket cobre database/, então os dumps ali, e as contas excluídas dentro deles, nunca são removidos. Adicione uma regra para esse prefixo."
+          "retentionOffhostMissing": "Nenhuma regra de ciclo de vida do bucket cobre database/, então os dumps ali, e as contas excluídas dentro deles, nunca são removidos. Adicione uma regra para esse prefixo.",
+          "notPersistentOffhost": "{dir} não está em armazenamento persistente (fica dentro do contêiner e não num volume montado, ou na memória), então um dump gravado ali se perde na próxima atualização. Os dumps vão só para fora: nenhum fica aqui e nenhum é feito antes de uma migração. Monte o volume de backups.",
+          "notPersistent": "{dir} não está em armazenamento persistente (fica dentro do contêiner e não num volume montado, ou na memória) e nenhum bucket externo está configurado, então nenhum dump do banco é guardado em lugar nenhum. Monte o volume de backups."
         }
       },
       "danger-zone": {
@@ -8689,7 +8691,9 @@
           "stale": "O dump do banco de dados mais recente tem {hours} horas.",
           "last_failed": "O último dump do banco de dados falhou. O anterior ainda é recente.",
           "fresh": "O dump do banco de dados mais recente está em dia.",
-          "nowhere_to_write": "Não é possível gravar no diretório de dumps {directory} e nenhum bucket externo está configurado, então nenhum dump pode ser guardado."
+          "nowhere_to_write": "Não é possível gravar no diretório de dumps {directory} e nenhum bucket externo está configurado, então nenhum dump pode ser guardado.",
+          "not_persistent": "A pasta de dumps {directory} não está em armazenamento persistente e nenhum bucket externo está configurado, então cada dump se perde na próxima atualização. Monte o volume de backups.",
+          "fresh_offhost_only": "O dump mais recente do banco é atual e está no bucket externo. Nenhum fica neste servidor, porque {directory} não está em armazenamento persistente, e nenhum é feito antes de uma migração."
         },
         "weekly_copy": {
           "no_accounts": "Ainda não há contas para copiar.",
