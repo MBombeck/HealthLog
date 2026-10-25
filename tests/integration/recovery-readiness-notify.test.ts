@@ -48,6 +48,13 @@ vi.mock("@parse/node-apn", () => {
   return { default: { Provider, Notification }, Provider, Notification };
 });
 
+// This file follows the weekly-copy signal alone. The database dump has its
+// own signal, judged in the readiness unit tests; here no dump is scheduled,
+// so an empty test database does not add a dump alarm of its own.
+vi.mock("@/lib/recovery/database-dump-health", () => ({
+  readDatabaseBackupHealth: async () => null,
+}));
+
 vi.mock("@/lib/db-compat", () => ({
   ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
 }));
