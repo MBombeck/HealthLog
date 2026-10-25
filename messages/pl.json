@@ -778,13 +778,13 @@
         "bmi": "kg/m²"
       }
     },
-    "keyBackupBanner": {
-      "title": "Zrób kopię klucza szyfrowania",
-      "body": "Bez kopii klucza Twoich danych nie da się odzyskać po ponownej instalacji. To zajmie minutę.",
-      "action": "Otwórz krok"
-    },
     "quickAddSymptom": "Zapisz objaw",
-    "todayCardVisible": "Pokaż górną kartę"
+    "todayCardVisible": "Pokaż górną kartę",
+    "recoveryKitBanner": {
+      "title": "Zapisz zestaw odzyskiwania",
+      "body": "Bez kopii kluczy, których używa ten serwer, jego danych nie da się odzyskać po ponownej instalacji. To zajmie kilka minut.",
+      "action": "Otwórz zestaw"
+    }
   },
   "measurements": {
     "title": "Pomiary",
@@ -8506,47 +8506,6 @@
       "title": "Nie udało się wyświetlić tej części strony",
       "description": "Reszta strony działa; spróbuj ponownie lub odśwież, jeśli błąd się powtarza."
     },
-    "keyBackup": {
-      "title": "Zrób kopię klucza szyfrowania",
-      "description": "Bez kopii tego klucza Twoich zaszyfrowanych danych i kopii zapasowych z tego serwera nie da się już odczytać.",
-      "loading": "Wczytywanie stanu kopii klucza…",
-      "loadError": "Nie udało się wczytać stanu kopii klucza.",
-      "badgeDue": "Do zrobienia",
-      "badgeDone": "Zapisany",
-      "keyId": "ID aktywnego klucza",
-      "fingerprint": "Odcisk",
-      "whatIsLost": "Przechowuj kopię klucza poza tym serwerem, na przykład w menedżerze haseł. Jeśli serwer zostanie przeinstalowany z innym kluczem, HealthLog nie wznowi działania, dopóki oryginalny klucz nie wróci.",
-      "fingerprintHint": "Odcisk to pierwsze 12 znaków skrótu SHA-256 klucza. Rozpoznaje klucz, nie ujawniając go, więc możesz porównać go ze swoją kopią.",
-      "checkLabel": "Sprawdź moją kopię",
-      "checkButton": "Sprawdź",
-      "checkNote": "Wklejony klucz jest porównywany z aktywnym kluczem, a potem odrzucany. Nigdy nie jest zapisywany ani logowany.",
-      "checkInsecureNote": "Ta strona nie jest serwowana przez https://, więc wklejony klucz przechodzi przez sieć bez szyfrowania, tak jak Twoje hasło. Jest porównywany i odrzucany, nigdy nie jest zapisywany ani logowany.",
-      "checkMatches": "Twoja kopia pasuje do aktywnego klucza.",
-      "checkNoMatch": "Twoja kopia nie pasuje do aktywnego klucza. Sprawdź, czy skopiowano całą wartość.",
-      "checkFailed": "Sprawdzenie nie powiodło się.",
-      "confirmButton": "Mam kopię tego klucza",
-      "confirmed": "Kopia klucza potwierdzona.",
-      "confirmFailed": "Nie udało się zapisać potwierdzenia.",
-      "stale": "Klucz serwera zmienił się od wczytania tej strony. Sprawdź nowe ID i odcisk, a potem potwierdź ponownie.",
-      "confirmedAt": "Potwierdzono {date}.",
-      "confirmedAtBy": "Potwierdzono {date}, potwierdził(a): {who}.",
-      "dueAgain": "Potwierdzono kopię klucza {keyId}, ale serwer używa teraz innego klucza. Zrób kopię obecnego.",
-      "tileLabel": "Kopia klucza szyfrowania",
-      "tileDue": "Niepotwierdzona",
-      "tileDone": "Potwierdzona",
-      "platform": {
-        "composeLabel": "Compose",
-        "composeWhere": "Klucz to ENCRYPTION_KEY (lub ENCRYPTION_KEYS) w pliku .env obok docker-compose.yml.",
-        "truenasLabel": "TrueNAS",
-        "truenasWhere": "Otwórz Apps, wybierz HealthLog i kliknij Edytuj. Klucz znajduje się w polu Encryption Key w sekcji HealthLog Configuration; w aplikacji zainstalowanej przez YAML to ENCRYPTION_KEY w zmiennych środowiskowych.",
-        "coolifyLabel": "Coolify",
-        "coolifyWhere": "Otwórz aplikację w Coolify i skopiuj ENCRYPTION_KEY z jej Environment Variables.",
-        "unraidLabel": "Unraid",
-        "unraidWhere": "Na karcie Docker edytuj kontener HealthLog i skopiuj ENCRYPTION_KEY z szablonu albo z pliku .env stosu Compose Manager.",
-        "portainerLabel": "Portainer",
-        "portainerWhere": "Otwórz stos HealthLog w Portainerze i skopiuj ENCRYPTION_KEY z jego zmiennych środowiskowych."
-      }
-    },
     "keyMismatch": {
       "title": "HealthLog nie może otworzyć swoich danych",
       "body": "Klucz szyfrowania, z którym uruchomiono ten serwer, nie jest kluczem, którym zapisano jego bazę danych. Aby chronić Twoje dane, HealthLog niczego nie udostępnia, dopóki to nie zostanie naprawione.",
@@ -8577,6 +8536,76 @@
       "defaultAboveCeiling": "Poziom domyślny nie może być wyższy niż najwyższy poziom.",
       "gapLabel": "Godziny między odświeżeniami kart po synchronizacji (Standardowy)",
       "gapHint": "Pełne godziny od 1 do 48. Zostaw puste, aby użyć AI_SYNC_REGEN_GAP_HOURS, w przeciwnym razie 6. Obecnie obowiązuje: {hours} h."
+    },
+    "recoveryKit": {
+      "title": "Zestaw odzyskiwania",
+      "description": "Każdy klucz potrzebny do przywrócenia tego serwera, z ID i odciskiem.",
+      "intro": "Przechowuj kopię każdego z poniższych kluczy poza tym serwerem, na przykład w menedżerze haseł. Bez nich nie da się ponownie odczytać ani zrzutu bazy danych, ani kopii zapasowej, a HealthLog nie uruchomi się, jeśli brakuje potrzebnego mu klucza.",
+      "loading": "Wczytywanie zestawu odzyskiwania…",
+      "loadError": "Nie udało się wczytać zestawu odzyskiwania.",
+      "badgeDue": "Do zrobienia",
+      "badgeDone": "Zapisany",
+      "keyId": "ID",
+      "fingerprint": "Odcisk",
+      "noFingerprint": "Brak na tym serwerze",
+      "kind": {
+        "application": "Klucz aplikacji {id}",
+        "backup": "Klucz kopii poza hostem",
+        "backupPrevious": "Poprzedni klucz kopii poza hostem",
+        "token": "Klucz tokenów"
+      },
+      "need": {
+        "active": "Szyfruje nowe dane.",
+        "configured": "Znajduje się na tym serwerze.",
+        "storedCopies": "Potrzebny zapisanym kopiom: {count}.",
+        "offhostUntil": "Potrzebny kopiom poza hostem do {date}.",
+        "offhostUnknown": "Potrzebny kopiom poza hostem, dopóki bucket je przechowuje.",
+        "backupActive": "Pieczętuje każdą nową kopię poza hostem.",
+        "backupPrevious": "Otwiera kopie poza hostem zapisane przed ostatnią zmianą klucza.",
+        "token": "Podpisuje sesje, tokeny i linki udostępniania. Bez niego wszyscy zostaną wylogowani, ale żadne dane nie przepadną."
+      },
+      "source": "Ustawiony w {variable}.",
+      "status": {
+        "confirmed": "Zapisany",
+        "new": "Jeszcze niezapisany",
+        "notConfigured": "Brak na tym serwerze",
+        "unreadable": "Nieprawidłowy klucz"
+      },
+      "notConfiguredHint": "Kopia zapasowa nadal potrzebuje tego klucza, a ten serwer go nie ma. Te kopie zapasowe może odczytać tylko kopia klucza, którą przechowujesz gdzie indziej. Potwierdź zestaw, gdy będziesz mieć tę kopię.",
+      "unreadableHint": "Zmienna jest ustawiona, ale nie zawiera prawidłowego klucza. Popraw ją, zanim zaczniesz polegać na kopiach poza hostem.",
+      "fingerprintHint": "Odcisk to pierwsze 12 znaków skrótu SHA-256 klucza. Rozpoznaje klucz, nie ujawniając go, więc możesz porównać go ze swoją kopią.",
+      "whereTitle": "Gdzie ustawione są klucze",
+      "platform": {
+        "composeLabel": "Compose",
+        "composeWhere": "Klucze znajdują się w pliku .env obok docker-compose.yml: ENCRYPTION_KEY lub ENCRYPTION_KEYS, API_TOKEN_HMAC_KEY oraz, przy kopiach poza hostem, BACKUP_ENCRYPTION_KEY.",
+        "truenasLabel": "TrueNAS",
+        "truenasWhere": "Otwórz Apps, wybierz HealthLog i kliknij Edit. Klucze są w sekcji HealthLog Configuration; w aplikacji zainstalowanej przez YAML to ENCRYPTION_KEY, API_TOKEN_HMAC_KEY i BACKUP_ENCRYPTION_KEY w ustawieniach środowiska.",
+        "coolifyLabel": "Coolify",
+        "coolifyWhere": "Otwórz aplikację w Coolify i skopiuj ENCRYPTION_KEY, API_TOKEN_HMAC_KEY i BACKUP_ENCRYPTION_KEY z jej Environment Variables.",
+        "unraidLabel": "Unraid",
+        "unraidWhere": "Na karcie Docker edytuj kontener HealthLog i skopiuj ENCRYPTION_KEY, API_TOKEN_HMAC_KEY i BACKUP_ENCRYPTION_KEY z szablonu albo z pliku .env stosu Compose Manager.",
+        "portainerLabel": "Portainer",
+        "portainerWhere": "Otwórz stos HealthLog w Portainerze i skopiuj ENCRYPTION_KEY, API_TOKEN_HMAC_KEY i BACKUP_ENCRYPTION_KEY z jego zmiennych środowiskowych."
+      },
+      "restoreTitle": "Przywracanie tego serwera",
+      "restoreBody": "Zainstaluj HealthLog z tymi samymi kluczami, przywróć najnowszy zrzut bazy danych do pustej bazy, a potem uruchom aplikację. Przewodnik prowadzi przez każdy krok.",
+      "restoreLink": "Przewodnik odzyskiwania po awarii",
+      "checkLabel": "Sprawdź moją kopię",
+      "checkKeyLabel": "Klucz do sprawdzenia",
+      "checkValueLabel": "Twoja kopia klucza",
+      "checkButton": "Sprawdź",
+      "checkNote": "Wklejony klucz jest porównywany z kluczem na tym serwerze, a potem odrzucany. Nigdy nie jest zapisywany ani logowany.",
+      "checkInsecureNote": "Ta strona nie jest serwowana przez https://, więc wklejony klucz przechodzi przez sieć bez szyfrowania, tak jak Twoje hasło. Jest porównywany i odrzucany, nigdy nie jest zapisywany ani logowany.",
+      "checkMatches": "Twoja kopia pasuje do tego klucza.",
+      "checkNoMatch": "Twoja kopia nie pasuje do tego klucza. Sprawdź, czy skopiowano całą wartość.",
+      "checkFailed": "Sprawdzenie nie powiodło się.",
+      "confirmButton": "Mam kopię każdego klucza",
+      "confirmed": "Zestaw odzyskiwania potwierdzony.",
+      "confirmFailed": "Nie udało się zapisać potwierdzenia.",
+      "stale": "Zestaw zmienił się od wczytania tej strony. Sprawdź klucze, które teraz wymienia, a potem potwierdź ponownie.",
+      "confirmedAt": "Potwierdzono {date}.",
+      "confirmedAtBy": "Potwierdzono {date}, potwierdził(a): {who}.",
+      "dueAgain": "Zestaw potwierdzono {date}, ale teraz wymienia klucze, których to potwierdzenie nie obejmuje: {keys}."
     }
   },
   "achievements": {

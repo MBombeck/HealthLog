@@ -49,8 +49,8 @@
  *   tomorrow morning
  * - An AI-configured Coach with five sample conversations spread from
  *   today back over a few weeks
- * - App settings (registration disabled, English locale, the key-backup
- *   step confirmed for the key the demo runs with)
+ * - App settings (registration disabled, English locale) and the recovery
+ *   kit confirmed for the keys the demo runs with
  * - A multi-year history before the 90-day window (about four and a half
  *   years) for the timeline and the day view: blood pressure in bursts with
  *   real gaps, weekly weight, phone steps, watch resting heart rate / HRV /
@@ -90,8 +90,14 @@ import {
   encrypt,
   encryptBytes,
   getActiveKeyId,
+  getConfiguredKeyIds,
   getKeyFingerprint,
 } from "../src/lib/crypto";
+import {
+  applicationKitKeys,
+  backupKitKeys,
+  tokenKitKeys,
+} from "../src/lib/recovery/kit-rules";
 import { ENVIRONMENT_LOCATION_AAD } from "../src/lib/crypto/encrypted-columns";
 import { withBriefingGeneratedAt } from "../src/lib/insights/briefing-generated-at";
 import { dailyStatsExternalId } from "../src/lib/measurements/apple-health-mapping";
@@ -3949,24 +3955,44 @@ export async function seed() {
 
     // ── App Settings ─────────────────────────
     console.log("Creating app settings...");
-    // The key-backup step is confirmed for the key the demo runs with, the
-    // same fields `POST /api/admin/encryption/key-backup/confirm` writes (key
-    // id + its public fingerprint, never the key). The demo account is an
-    // admin, so an unconfirmed step put a "Back up your encryption key"
-    // banner above the dashboard for every visitor, about a key no visitor
-    // can reach.
-    const activeKeyId = getActiveKeyId();
     await client.query(
-      `INSERT INTO app_settings (id, registration_enabled, default_locale,
-         encryption_key_backup_confirmed_at, encryption_key_backup_confirmed_key_id,
-         encryption_key_backup_confirmed_fingerprint, encryption_key_backup_confirmed_by_user_id)
-       VALUES ('singleton', false, 'en', NOW(), $1, $2, $3)
-       ON CONFLICT (id) DO UPDATE SET registration_enabled = false, default_locale = 'en',
-         encryption_key_backup_confirmed_at = EXCLUDED.encryption_key_backup_confirmed_at,
-         encryption_key_backup_confirmed_key_id = EXCLUDED.encryption_key_backup_confirmed_key_id,
-         encryption_key_backup_confirmed_fingerprint = EXCLUDED.encryption_key_backup_confirmed_fingerprint,
-         encryption_key_backup_confirmed_by_user_id = EXCLUDED.encryption_key_backup_confirmed_by_user_id`,
-      [activeKeyId, getKeyFingerprint(activeKeyId), userId],
+      `INSERT INTO app_settings (id, registration_enabled, default_locale)
+       VALUES ('singleton', false, 'en')
+       ON CONFLICT (id) DO UPDATE SET registration_enabled = false, default_locale = 'en'`,
+    );
+    // The recovery kit is confirmed for the keys the demo runs with, the same
+    // entries `POST /api/admin/recovery-kit/confirm` writes (key ids and
+    // public fingerprints, never a key). The demo account is an admin, so an
+    // unconfirmed kit put a "Save your recovery kit" banner above the
+    // dashboard for every visitor, about keys no visitor can reach. The seed
+    // writes no backup copies, so no retired key is needed.
+    const kitEntries = [
+      ...applicationKitKeys({
+        activeKeyId: getActiveKeyId(),
+        configuredKeyIds: getConfiguredKeyIds(),
+        fingerprintOf: getKeyFingerprint,
+        needs: {
+          stored: [],
+          unrecorded: { copies: 0, oldestAt: null },
+          offhost: [],
+          offhostExpirationDays: null,
+          retiredKeysStillNeeded: [],
+        },
+        now: new Date(),
+      }),
+      ...backupKitKeys(
+        process.env.BACKUP_ENCRYPTION_KEY,
+        process.env.BACKUP_ENCRYPTION_PREVIOUS_KEYS,
+      ),
+      ...tokenKitKeys(process.env.API_TOKEN_HMAC_KEY),
+    ].map(({ kind, id, fingerprint }) => ({ kind, id, fingerprint }));
+    await client.query(
+      `INSERT INTO recovery_kit_confirmations (id, confirmed_at, confirmed_by_user_id, entries)
+       VALUES ('singleton', NOW(), $1, $2::jsonb)
+       ON CONFLICT (id) DO UPDATE SET confirmed_at = EXCLUDED.confirmed_at,
+         confirmed_by_user_id = EXCLUDED.confirmed_by_user_id,
+         entries = EXCLUDED.entries`,
+      [userId, JSON.stringify(kitEntries)],
     );
 
     // ── Audit Log (some login entries) ──────

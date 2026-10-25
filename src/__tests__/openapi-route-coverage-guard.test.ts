@@ -242,18 +242,6 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
     kind: "adminConsole",
     methods: ["POST"],
   },
-  "/api/admin/encryption/key-backup": {
-    kind: "adminConsole",
-    methods: ["GET"],
-  },
-  "/api/admin/encryption/key-backup/confirm": {
-    kind: "adminConsole",
-    methods: ["POST"],
-  },
-  "/api/admin/encryption/key-backup/verify": {
-    kind: "adminConsole",
-    methods: ["POST"],
-  },
   "/api/admin/encryption/rotate": { kind: "adminConsole", methods: ["POST"] },
   "/api/admin/encryption/status": { kind: "adminConsole", methods: ["GET"] },
   "/api/admin/host-metrics": { kind: "adminConsole", methods: ["GET"] },
@@ -276,6 +264,19 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
   "/api/admin/provider-health": { kind: "adminConsole", methods: ["GET"] },
   "/api/admin/notifications/health": { kind: "adminConsole", methods: ["GET"] },
   "/api/admin/notifications/test": { kind: "adminConsole", methods: ["POST"] },
+  "/api/admin/recovery-kit": { kind: "adminConsole", methods: ["GET"] },
+  "/api/admin/recovery-kit/confirm": {
+    kind: "adminConsole",
+    methods: ["POST"],
+  },
+  "/api/admin/recovery-kit/verify": {
+    kind: "adminConsole",
+    methods: ["POST"],
+  },
+  "/api/admin/recovery-readiness": {
+    kind: "adminConsole",
+    methods: ["GET"],
+  },
   "/api/admin/rollups/recompute": { kind: "adminConsole", methods: ["POST"] },
   "/api/admin/settings": { kind: "adminConsole", methods: ["GET", "PUT"] },
   "/api/admin/settings/assistant-flags": {

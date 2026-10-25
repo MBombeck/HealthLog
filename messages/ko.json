@@ -778,13 +778,13 @@
         "bmi": "kg/m²"
       }
     },
-    "keyBackupBanner": {
-      "title": "암호화 키를 백업하세요",
-      "body": "키 사본이 없으면 다시 설치한 뒤 데이터를 복구할 수 없습니다. 1분이면 됩니다.",
-      "action": "단계 열기"
-    },
     "quickAddSymptom": "증상 기록",
-    "todayCardVisible": "상단 카드 표시"
+    "todayCardVisible": "상단 카드 표시",
+    "recoveryKitBanner": {
+      "title": "복구 키트를 보관하세요",
+      "body": "이 서버가 사용하는 키의 사본이 없으면 다시 설치한 뒤 데이터를 복구할 수 없습니다. 몇 분이면 됩니다.",
+      "action": "키트 열기"
+    }
   },
   "measurements": {
     "title": "측정",
@@ -8506,47 +8506,6 @@
       "title": "페이지의 이 부분을 표시할 수 없습니다",
       "description": "페이지의 나머지 부분은 계속 작동합니다. 다시 시도하거나 계속 실패하면 새로고침하세요."
     },
-    "keyBackup": {
-      "title": "암호화 키를 백업하세요",
-      "description": "이 키의 사본이 없으면 암호화된 데이터와 이 서버의 백업을 다시는 읽을 수 없습니다.",
-      "loading": "키 백업 상태를 불러오는 중…",
-      "loadError": "키 백업 상태를 불러오지 못했습니다.",
-      "badgeDue": "해야 함",
-      "badgeDone": "백업됨",
-      "keyId": "활성 키 ID",
-      "fingerprint": "지문",
-      "whatIsLost": "키의 사본을 이 서버 밖, 예를 들어 비밀번호 관리자에 보관하세요. 서버가 다른 키로 다시 설치되면 HealthLog는 원래 키가 돌아올 때까지 서비스를 시작하지 않습니다.",
-      "fingerprintHint": "지문은 키의 SHA-256 해시 앞 12자입니다. 키를 드러내지 않고 식별하므로 사본과 비교할 수 있습니다.",
-      "checkLabel": "내 사본 확인",
-      "checkButton": "확인",
-      "checkNote": "붙여넣은 키는 활성 키와 비교한 뒤 버립니다. 저장하거나 기록하지 않습니다.",
-      "checkInsecureNote": "이 페이지는 https://로 제공되지 않으므로 붙여넣은 키가 비밀번호와 마찬가지로 암호화되지 않은 채 네트워크를 지나갑니다. 비교한 뒤 버리며 저장하거나 기록하지 않습니다.",
-      "checkMatches": "사본이 활성 키와 일치합니다.",
-      "checkNoMatch": "사본이 활성 키와 일치하지 않습니다. 전체 값을 복사했는지 확인하세요.",
-      "checkFailed": "확인하지 못했습니다.",
-      "confirmButton": "이 키를 백업했습니다",
-      "confirmed": "키 백업이 확인되었습니다.",
-      "confirmFailed": "확인을 저장하지 못했습니다.",
-      "stale": "이 페이지를 연 뒤 서버의 키가 바뀌었습니다. 새 키 ID와 지문을 확인한 뒤 다시 확인하세요.",
-      "confirmedAt": "{date}에 확인됨.",
-      "confirmedAtBy": "{date}에 {who}님이 확인함.",
-      "dueAgain": "키 {keyId}의 백업이 확인되었지만 서버는 이제 다른 키를 사용합니다. 현재 키를 백업하세요.",
-      "tileLabel": "암호화 키 백업",
-      "tileDue": "확인 안 됨",
-      "tileDone": "확인됨",
-      "platform": {
-        "composeLabel": "Compose",
-        "composeWhere": "키는 docker-compose.yml 옆 .env 파일의 ENCRYPTION_KEY(또는 ENCRYPTION_KEYS)입니다.",
-        "truenasLabel": "TrueNAS",
-        "truenasWhere": "Apps에서 HealthLog를 선택하고 Edit을 누르세요. 키는 HealthLog Configuration 아래의 Encryption Key 필드에 있습니다. YAML로 설치한 앱이라면 환경 설정의 ENCRYPTION_KEY입니다.",
-        "coolifyLabel": "Coolify",
-        "coolifyWhere": "Coolify에서 애플리케이션을 열고 Environment Variables에서 ENCRYPTION_KEY를 복사하세요.",
-        "unraidLabel": "Unraid",
-        "unraidWhere": "Docker 탭에서 HealthLog 컨테이너를 편집하고 템플릿에서, 또는 Compose Manager 스택의 .env에서 ENCRYPTION_KEY를 복사하세요.",
-        "portainerLabel": "Portainer",
-        "portainerWhere": "Portainer에서 HealthLog 스택을 열고 환경 변수에서 ENCRYPTION_KEY를 복사하세요."
-      }
-    },
     "keyMismatch": {
       "title": "HealthLog가 데이터를 열 수 없습니다",
       "body": "이 서버를 시작한 암호화 키가 데이터베이스를 기록할 때 쓴 키와 다릅니다. 데이터를 보호하기 위해 이 문제가 해결될 때까지 HealthLog는 아무것도 제공하지 않습니다.",
@@ -8577,6 +8536,76 @@
       "defaultAboveCeiling": "기본 단계는 최고 단계보다 높을 수 없어요.",
       "gapLabel": "동기화 후 카드 새로 고침 간격(시간, 표준 단계)",
       "gapHint": "1에서 48 사이의 정수 시간이에요. 비워 두면 AI_SYNC_REGEN_GAP_HOURS를, 없으면 6을 사용해요. 현재 적용 값: {hours}시간."
+    },
+    "recoveryKit": {
+      "title": "복구 키트",
+      "description": "이 서버를 복원하는 데 필요한 모든 키를 ID와 지문으로 보여 줍니다.",
+      "intro": "아래 각 키의 사본을 이 서버 밖, 예를 들어 비밀번호 관리자에 보관하세요. 키가 없으면 데이터베이스 덤프도 백업 사본도 다시 읽을 수 없으며, 필요한 키가 없으면 HealthLog는 시작하지 않습니다.",
+      "loading": "복구 키트를 불러오는 중…",
+      "loadError": "복구 키트를 불러오지 못했습니다.",
+      "badgeDue": "해야 함",
+      "badgeDone": "보관됨",
+      "keyId": "ID",
+      "fingerprint": "지문",
+      "noFingerprint": "이 서버에 없음",
+      "kind": {
+        "application": "애플리케이션 키 {id}",
+        "backup": "외부 보관 백업 키",
+        "backupPrevious": "이전 외부 보관 백업 키",
+        "token": "토큰 키"
+      },
+      "need": {
+        "active": "새 데이터를 암호화합니다.",
+        "configured": "이 서버에 있습니다.",
+        "storedCopies": "저장된 사본 {count}개에 필요합니다.",
+        "offhostUntil": "{date}까지 외부 보관 사본에 필요합니다.",
+        "offhostUnknown": "버킷이 외부 보관 사본을 보관하는 동안 필요합니다.",
+        "backupActive": "새 외부 보관 사본을 모두 봉인합니다.",
+        "backupPrevious": "마지막 키 변경 전에 기록된 외부 보관 사본을 엽니다.",
+        "token": "세션, 토큰, 공유 링크에 서명합니다. 이 키가 없으면 모두 로그아웃되지만 데이터는 잃지 않습니다."
+      },
+      "source": "{variable}에 설정됨.",
+      "status": {
+        "confirmed": "보관됨",
+        "new": "아직 보관 안 됨",
+        "notConfigured": "이 서버에 없음",
+        "unreadable": "유효한 키가 아님"
+      },
+      "notConfiguredHint": "아직 이 키가 필요한 백업이 있지만 이 서버에는 키가 없습니다. 다른 곳에 보관한 사본만 그 백업을 읽을 수 있습니다. 그 사본을 확보한 뒤 키트를 확인하세요.",
+      "unreadableHint": "변수는 설정되어 있지만 유효한 키가 들어 있지 않습니다. 외부 보관 사본에 의존하기 전에 고치세요.",
+      "fingerprintHint": "지문은 키의 SHA-256 해시 앞 12자입니다. 키를 드러내지 않고 식별하므로 사본과 비교할 수 있습니다.",
+      "whereTitle": "키가 설정된 위치",
+      "platform": {
+        "composeLabel": "Compose",
+        "composeWhere": "키는 docker-compose.yml 옆 .env 파일에 있습니다: ENCRYPTION_KEY 또는 ENCRYPTION_KEYS, API_TOKEN_HMAC_KEY, 그리고 외부 보관 사본을 쓰는 경우 BACKUP_ENCRYPTION_KEY.",
+        "truenasLabel": "TrueNAS",
+        "truenasWhere": "Apps에서 HealthLog를 선택하고 Edit을 누르세요. 키는 HealthLog Configuration 아래에 있습니다. YAML로 설치한 앱이라면 환경 설정의 ENCRYPTION_KEY, API_TOKEN_HMAC_KEY, BACKUP_ENCRYPTION_KEY입니다.",
+        "coolifyLabel": "Coolify",
+        "coolifyWhere": "Coolify에서 애플리케이션을 열고 Environment Variables에서 ENCRYPTION_KEY, API_TOKEN_HMAC_KEY, BACKUP_ENCRYPTION_KEY를 복사하세요.",
+        "unraidLabel": "Unraid",
+        "unraidWhere": "Docker 탭에서 HealthLog 컨테이너를 편집하고 템플릿에서, 또는 Compose Manager 스택의 .env에서 ENCRYPTION_KEY, API_TOKEN_HMAC_KEY, BACKUP_ENCRYPTION_KEY를 복사하세요.",
+        "portainerLabel": "Portainer",
+        "portainerWhere": "Portainer에서 HealthLog 스택을 열고 환경 변수에서 ENCRYPTION_KEY, API_TOKEN_HMAC_KEY, BACKUP_ENCRYPTION_KEY를 복사하세요."
+      },
+      "restoreTitle": "이 서버 복원하기",
+      "restoreBody": "같은 키로 HealthLog를 설치하고, 가장 최근의 데이터베이스 덤프를 빈 데이터베이스에 복원한 다음 앱을 시작하세요. 가이드에서 단계별로 안내합니다.",
+      "restoreLink": "재해 복구 가이드",
+      "checkLabel": "내 사본 확인",
+      "checkKeyLabel": "확인할 키",
+      "checkValueLabel": "내가 보관한 키 사본",
+      "checkButton": "확인",
+      "checkNote": "붙여넣은 키는 이 서버의 키와 비교한 뒤 버립니다. 저장하거나 기록하지 않습니다.",
+      "checkInsecureNote": "이 페이지는 https://로 제공되지 않으므로 붙여넣은 키가 비밀번호와 마찬가지로 암호화되지 않은 채 네트워크를 지나갑니다. 비교한 뒤 버리며 저장하거나 기록하지 않습니다.",
+      "checkMatches": "사본이 이 키와 일치합니다.",
+      "checkNoMatch": "사본이 이 키와 일치하지 않습니다. 전체 값을 복사했는지 확인하세요.",
+      "checkFailed": "확인하지 못했습니다.",
+      "confirmButton": "모든 키의 사본을 보관했습니다",
+      "confirmed": "복구 키트가 확인되었습니다.",
+      "confirmFailed": "확인을 저장하지 못했습니다.",
+      "stale": "이 페이지를 연 뒤 키트가 바뀌었습니다. 지금 표시된 키를 확인한 뒤 다시 확인하세요.",
+      "confirmedAt": "{date}에 확인됨.",
+      "confirmedAtBy": "{date}에 {who}님이 확인함.",
+      "dueAgain": "키트는 {date}에 확인되었지만 지금은 그 확인에 포함되지 않은 키가 있습니다: {keys}."
     }
   },
   "achievements": {

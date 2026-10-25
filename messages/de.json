@@ -778,13 +778,13 @@
         "bmi": "kg/m²"
       }
     },
-    "keyBackupBanner": {
-      "title": "Sichere deinen Verschlüsselungsschlüssel",
-      "body": "Ohne eine Kopie des Schlüssels lassen sich deine Daten nach einer Neuinstallation nicht wiederherstellen. Es dauert eine Minute.",
-      "action": "Zum Schritt"
-    },
     "quickAddSymptom": "Symptom erfassen",
-    "todayCardVisible": "Obere Karte anzeigen"
+    "todayCardVisible": "Obere Karte anzeigen",
+    "recoveryKitBanner": {
+      "title": "Wiederherstellungs-Kit sichern",
+      "body": "Ohne Kopien der Schlüssel, die dieser Server nutzt, lassen sich seine Daten nach einer Neuinstallation nicht wiederherstellen. Das dauert nur ein paar Minuten.",
+      "action": "Kit öffnen"
+    }
   },
   "measurements": {
     "title": "Messungen",
@@ -8506,47 +8506,6 @@
       "title": "Dieser Teil der Seite konnte nicht angezeigt werden",
       "description": "Der Rest der Seite funktioniert weiter; versuche es erneut oder lade neu, wenn es bleibt."
     },
-    "keyBackup": {
-      "title": "Sichere deinen Verschlüsselungsschlüssel",
-      "description": "Ohne eine Kopie dieses Schlüssels lassen sich deine verschlüsselten Daten und Sicherungen nie wieder lesen.",
-      "loading": "Status der Schlüsselsicherung wird geladen…",
-      "loadError": "Der Status der Schlüsselsicherung konnte nicht geladen werden.",
-      "badgeDue": "Offen",
-      "badgeDone": "Gesichert",
-      "keyId": "Aktive Schlüssel-ID",
-      "fingerprint": "Fingerabdruck",
-      "whatIsLost": "Bewahre eine Kopie des Schlüssels außerhalb dieses Servers auf, zum Beispiel in einem Passwortmanager. Wird der Server mit einem anderen Schlüssel neu installiert, nimmt HealthLog den Betrieb erst wieder auf, wenn der ursprüngliche Schlüssel zurück ist.",
-      "fingerprintHint": "Der Fingerabdruck sind die ersten 12 Zeichen des SHA-256-Hashes des Schlüssels. Er erkennt den Schlüssel, ohne ihn preiszugeben, damit du ihn mit deiner Kopie vergleichen kannst.",
-      "checkLabel": "Meine Kopie prüfen",
-      "checkButton": "Prüfen",
-      "checkNote": "Der eingefügte Schlüssel wird mit dem aktiven Schlüssel verglichen und danach verworfen. Er wird nie gespeichert oder protokolliert.",
-      "checkInsecureNote": "Diese Seite läuft nicht über https://, also geht der eingefügte Schlüssel unverschlüsselt über das Netz, genau wie dein Passwort. Er wird verglichen und verworfen, nie gespeichert oder protokolliert.",
-      "checkMatches": "Deine Kopie passt zum aktiven Schlüssel.",
-      "checkNoMatch": "Deine Kopie passt nicht zum aktiven Schlüssel. Prüfe, ob du den ganzen Wert kopiert hast.",
-      "checkFailed": "Die Prüfung ist fehlgeschlagen.",
-      "confirmButton": "Ich habe diesen Schlüssel gesichert",
-      "confirmed": "Schlüsselsicherung bestätigt.",
-      "confirmFailed": "Die Bestätigung konnte nicht gespeichert werden.",
-      "stale": "Der Schlüssel des Servers hat sich geändert, seit diese Seite geladen wurde. Prüfe die neue Schlüssel-ID und den Fingerabdruck und bestätige dann erneut.",
-      "confirmedAt": "Bestätigt am {date}.",
-      "confirmedAtBy": "Bestätigt am {date} von {who}.",
-      "dueAgain": "Für Schlüssel {keyId} wurde eine Sicherung bestätigt, aber der Server nutzt jetzt einen anderen Schlüssel. Sichere den aktuellen.",
-      "tileLabel": "Sicherung des Verschlüsselungsschlüssels",
-      "tileDue": "Nicht bestätigt",
-      "tileDone": "Bestätigt",
-      "platform": {
-        "composeLabel": "Compose",
-        "composeWhere": "Der Schlüssel ist ENCRYPTION_KEY (oder ENCRYPTION_KEYS) in der .env-Datei neben docker-compose.yml.",
-        "truenasLabel": "TrueNAS",
-        "truenasWhere": "Öffne Apps, wähle HealthLog, dann Bearbeiten. Der Schlüssel steht im Feld Encryption Key unter HealthLog Configuration; bei einer per YAML installierten App ist es ENCRYPTION_KEY in den Umgebungsvariablen.",
-        "coolifyLabel": "Coolify",
-        "coolifyWhere": "Öffne die Anwendung in Coolify und kopiere ENCRYPTION_KEY aus den Environment Variables.",
-        "unraidLabel": "Unraid",
-        "unraidWhere": "Bearbeite im Docker-Tab den HealthLog-Container und kopiere ENCRYPTION_KEY aus der Vorlage oder aus der .env deines Compose-Manager-Stacks.",
-        "portainerLabel": "Portainer",
-        "portainerWhere": "Öffne den HealthLog-Stack in Portainer und kopiere ENCRYPTION_KEY aus seinen Umgebungsvariablen."
-      }
-    },
     "keyMismatch": {
       "title": "HealthLog kann seine Daten nicht öffnen",
       "body": "Der Verschlüsselungsschlüssel, mit dem dieser Server gestartet wurde, ist nicht der, mit dem seine Datenbank geschrieben wurde. Zum Schutz deiner Daten liefert HealthLog nichts aus, bis das behoben ist.",
@@ -8577,6 +8536,76 @@
       "defaultAboveCeiling": "Die Standardstufe darf nicht über der höchsten Stufe liegen.",
       "gapLabel": "Stunden zwischen Karten-Erneuerungen nach einem Sync (Standard)",
       "gapHint": "Ganze Stunden von 1 bis 48. Leer lassen für AI_SYNC_REGEN_GAP_HOURS, sonst 6. Gerade wirksam: {hours} h."
+    },
+    "recoveryKit": {
+      "title": "Wiederherstellungs-Kit",
+      "description": "Jeder Schlüssel, den eine Wiederherstellung dieses Servers braucht, mit Kennung und Fingerabdruck.",
+      "intro": "Bewahre von jedem Schlüssel unten eine Kopie außerhalb dieses Servers auf, zum Beispiel in einem Passwortmanager. Ohne sie lassen sich weder ein Datenbank-Dump noch eine Sicherungskopie wieder lesen, und HealthLog startet nicht, wenn ein benötigter Schlüssel fehlt.",
+      "loading": "Wiederherstellungs-Kit wird geladen…",
+      "loadError": "Das Wiederherstellungs-Kit konnte nicht geladen werden.",
+      "badgeDue": "Offen",
+      "badgeDone": "Gesichert",
+      "keyId": "Kennung",
+      "fingerprint": "Fingerabdruck",
+      "noFingerprint": "Nicht auf diesem Server",
+      "kind": {
+        "application": "Anwendungsschlüssel {id}",
+        "backup": "Schlüssel für externe Sicherungen",
+        "backupPrevious": "Früherer Schlüssel für externe Sicherungen",
+        "token": "Token-Schlüssel"
+      },
+      "need": {
+        "active": "Verschlüsselt neue Daten.",
+        "configured": "Liegt auf diesem Server.",
+        "storedCopies": "Wird von {count} gespeicherten Kopien gebraucht.",
+        "offhostUntil": "Wird von externen Kopien bis {date} gebraucht.",
+        "offhostUnknown": "Wird von externen Kopien gebraucht, solange der Bucket sie aufbewahrt.",
+        "backupActive": "Versiegelt jede neue externe Kopie.",
+        "backupPrevious": "Öffnet externe Kopien, die vor dem letzten Schlüsselwechsel geschrieben wurden.",
+        "token": "Signiert Sitzungen, Tokens und Freigabelinks. Ohne ihn werden alle abgemeldet, Daten gehen aber nicht verloren."
+      },
+      "source": "Gesetzt in {variable}.",
+      "status": {
+        "confirmed": "Gesichert",
+        "new": "Noch nicht gesichert",
+        "notConfigured": "Nicht auf diesem Server",
+        "unreadable": "Kein gültiger Schlüssel"
+      },
+      "notConfiguredHint": "Eine Sicherung braucht diesen Schlüssel noch, aber dieser Server hat ihn nicht. Nur eine Kopie, die du anderswo aufbewahrst, kann diese Sicherungen lesen. Bestätige das Kit, sobald du diese Kopie hast.",
+      "unreadableHint": "Die Variable ist gesetzt, enthält aber keinen gültigen Schlüssel. Behebe das, bevor du dich auf die externen Kopien verlässt.",
+      "fingerprintHint": "Der Fingerabdruck besteht aus den ersten 12 Zeichen des SHA-256-Hashs eines Schlüssels. Er erkennt den Schlüssel, ohne ihn preiszugeben, sodass du ihn mit deiner Kopie vergleichen kannst.",
+      "whereTitle": "Wo die Schlüssel gesetzt sind",
+      "platform": {
+        "composeLabel": "Compose",
+        "composeWhere": "Die Schlüssel stehen in der .env-Datei neben docker-compose.yml: ENCRYPTION_KEY oder ENCRYPTION_KEYS, API_TOKEN_HMAC_KEY und, mit externen Kopien, BACKUP_ENCRYPTION_KEY.",
+        "truenasLabel": "TrueNAS",
+        "truenasWhere": "Öffne Apps, wähle HealthLog und dann Edit. Die Schlüssel stehen unter HealthLog Configuration; bei einer per YAML installierten App sind es ENCRYPTION_KEY, API_TOKEN_HMAC_KEY und BACKUP_ENCRYPTION_KEY in den Umgebungsvariablen.",
+        "coolifyLabel": "Coolify",
+        "coolifyWhere": "Öffne die Anwendung in Coolify und kopiere ENCRYPTION_KEY, API_TOKEN_HMAC_KEY und BACKUP_ENCRYPTION_KEY aus den Environment Variables.",
+        "unraidLabel": "Unraid",
+        "unraidWhere": "Bearbeite auf dem Docker-Tab den HealthLog-Container und kopiere ENCRYPTION_KEY, API_TOKEN_HMAC_KEY und BACKUP_ENCRYPTION_KEY aus der Vorlage oder aus der .env deines Compose-Manager-Stacks.",
+        "portainerLabel": "Portainer",
+        "portainerWhere": "Öffne den HealthLog-Stack in Portainer und kopiere ENCRYPTION_KEY, API_TOKEN_HMAC_KEY und BACKUP_ENCRYPTION_KEY aus den Umgebungsvariablen."
+      },
+      "restoreTitle": "Diesen Server wiederherstellen",
+      "restoreBody": "Installiere HealthLog mit denselben Schlüsseln, spiele den neuesten Datenbank-Dump in eine leere Datenbank ein und starte dann die App. Die Anleitung führt durch jeden Schritt.",
+      "restoreLink": "Anleitung zur Notfallwiederherstellung",
+      "checkLabel": "Meine Kopie prüfen",
+      "checkKeyLabel": "Zu prüfender Schlüssel",
+      "checkValueLabel": "Deine Kopie des Schlüssels",
+      "checkButton": "Prüfen",
+      "checkNote": "Der eingefügte Schlüssel wird mit dem auf diesem Server verglichen und danach verworfen. Er wird nie gespeichert oder protokolliert.",
+      "checkInsecureNote": "Diese Seite wird nicht über https:// ausgeliefert. Der eingefügte Schlüssel geht deshalb unverschlüsselt über das Netzwerk, genau wie dein Passwort. Er wird verglichen und verworfen, nie gespeichert oder protokolliert.",
+      "checkMatches": "Deine Kopie passt zu diesem Schlüssel.",
+      "checkNoMatch": "Deine Kopie passt nicht zu diesem Schlüssel. Prüfe, ob du den ganzen Wert kopiert hast.",
+      "checkFailed": "Die Prüfung ist fehlgeschlagen.",
+      "confirmButton": "Ich habe von jedem Schlüssel eine Kopie",
+      "confirmed": "Wiederherstellungs-Kit bestätigt.",
+      "confirmFailed": "Die Bestätigung konnte nicht gespeichert werden.",
+      "stale": "Das Kit hat sich geändert, seit die Seite geladen wurde. Prüfe die Schlüssel, die es jetzt aufführt, und bestätige erneut.",
+      "confirmedAt": "Bestätigt am {date}.",
+      "confirmedAtBy": "Bestätigt am {date} von {who}.",
+      "dueAgain": "Das Kit wurde am {date} bestätigt, führt jetzt aber Schlüssel auf, die diese Bestätigung nicht abdeckt: {keys}."
     }
   },
   "achievements": {

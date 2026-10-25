@@ -778,13 +778,13 @@
         "bmi": "kg/m²"
       }
     },
-    "keyBackupBanner": {
-      "title": "Fai un backup della tua chiave di cifratura",
-      "body": "Senza una copia della chiave, i tuoi dati non si possono recuperare dopo una reinstallazione. Ci vuole un minuto.",
-      "action": "Apri il passaggio"
-    },
     "quickAddSymptom": "Registra sintomo",
-    "todayCardVisible": "Mostra la scheda in alto"
+    "todayCardVisible": "Mostra la scheda in alto",
+    "recoveryKitBanner": {
+      "title": "Salva il tuo kit di recupero",
+      "body": "Senza copie delle chiavi usate da questo server, i suoi dati non si possono recuperare dopo una reinstallazione. Ci vogliono pochi minuti.",
+      "action": "Apri il kit"
+    }
   },
   "measurements": {
     "title": "Misurazioni",
@@ -8506,47 +8506,6 @@
       "title": "Questa parte della pagina non è stata mostrata",
       "description": "Il resto della pagina funziona; riprova o ricarica se il problema continua."
     },
-    "keyBackup": {
-      "title": "Fai un backup della tua chiave di cifratura",
-      "description": "Senza una copia di questa chiave, i tuoi dati cifrati e i backup di questo server non saranno più leggibili.",
-      "loading": "Caricamento dello stato del backup della chiave…",
-      "loadError": "Impossibile caricare lo stato del backup della chiave.",
-      "badgeDue": "Da fare",
-      "badgeDone": "Salvata",
-      "keyId": "ID della chiave attiva",
-      "fingerprint": "Impronta",
-      "whatIsLost": "Conserva una copia della chiave fuori da questo server, per esempio in un gestore di password. Se il server viene reinstallato con un'altra chiave, HealthLog non torna in servizio finché la chiave originale non è di nuovo al suo posto.",
-      "fingerprintHint": "L'impronta sono i primi 12 caratteri dell'hash SHA-256 della chiave. Identifica la chiave senza rivelarla, così puoi confrontarla con la tua copia.",
-      "checkLabel": "Verifica la mia copia",
-      "checkButton": "Verifica",
-      "checkNote": "La chiave incollata viene confrontata con quella attiva e poi scartata. Non viene mai salvata né registrata.",
-      "checkInsecureNote": "Questa pagina non è servita tramite https://, quindi la chiave incollata attraversa la rete in chiaro, come la tua password. Viene confrontata e scartata, mai salvata né registrata.",
-      "checkMatches": "La tua copia corrisponde alla chiave attiva.",
-      "checkNoMatch": "La tua copia non corrisponde alla chiave attiva. Controlla di aver copiato l'intero valore.",
-      "checkFailed": "La verifica non è riuscita.",
-      "confirmButton": "Ho salvato questa chiave",
-      "confirmed": "Backup della chiave confermato.",
-      "confirmFailed": "Impossibile salvare la conferma.",
-      "stale": "La chiave del server è cambiata da quando questa pagina è stata caricata. Controlla il nuovo ID e l'impronta, poi conferma di nuovo.",
-      "confirmedAt": "Confermato il {date}.",
-      "confirmedAtBy": "Confermato il {date} da {who}.",
-      "dueAgain": "È stato confermato un backup per la chiave {keyId}, ma ora il server usa un'altra chiave. Salva quella attuale.",
-      "tileLabel": "Backup della chiave di cifratura",
-      "tileDue": "Non confermato",
-      "tileDone": "Confermato",
-      "platform": {
-        "composeLabel": "Compose",
-        "composeWhere": "La chiave è ENCRYPTION_KEY (o ENCRYPTION_KEYS) nel file .env accanto a docker-compose.yml.",
-        "truenasLabel": "TrueNAS",
-        "truenasWhere": "Apri Apps, seleziona HealthLog e scegli Modifica. La chiave è nel campo Encryption Key sotto HealthLog Configuration; in un'app installata tramite YAML è ENCRYPTION_KEY nelle variabili d'ambiente.",
-        "coolifyLabel": "Coolify",
-        "coolifyWhere": "Apri l'applicazione in Coolify e copia ENCRYPTION_KEY dalle sue Environment Variables.",
-        "unraidLabel": "Unraid",
-        "unraidWhere": "Nella scheda Docker, modifica il container di HealthLog e copia ENCRYPTION_KEY dal modello, oppure dal .env del tuo stack di Compose Manager.",
-        "portainerLabel": "Portainer",
-        "portainerWhere": "Apri lo stack di HealthLog in Portainer e copia ENCRYPTION_KEY dalle sue variabili d'ambiente."
-      }
-    },
     "keyMismatch": {
       "title": "HealthLog non riesce ad aprire i suoi dati",
       "body": "La chiave di cifratura con cui è stato avviato questo server non è quella con cui è stato scritto il suo database. Per proteggere i tuoi dati, HealthLog non serve nulla finché il problema non è risolto.",
@@ -8577,6 +8536,76 @@
       "defaultAboveCeiling": "Il livello predefinito non può superare il livello più alto.",
       "gapLabel": "Ore tra due aggiornamenti delle schede dopo una sincronizzazione (Standard)",
       "gapHint": "Ore intere da 1 a 48. Lascia vuoto per usare AI_SYNC_REGEN_GAP_HOURS, altrimenti 6. In vigore ora: {hours} h."
+    },
+    "recoveryKit": {
+      "title": "Kit di recupero",
+      "description": "Ogni chiave necessaria per ripristinare questo server, con ID e impronta.",
+      "intro": "Conserva una copia di ciascuna chiave qui sotto fuori da questo server, per esempio in un gestore di password. Senza di esse non si possono più leggere né un dump del database né una copia di backup, e HealthLog si rifiuta di avviarsi se manca una chiave di cui ha bisogno.",
+      "loading": "Caricamento del kit di recupero…",
+      "loadError": "Impossibile caricare il kit di recupero.",
+      "badgeDue": "Da fare",
+      "badgeDone": "Salvato",
+      "keyId": "ID",
+      "fingerprint": "Impronta",
+      "noFingerprint": "Non presente su questo server",
+      "kind": {
+        "application": "Chiave dell'applicazione {id}",
+        "backup": "Chiave dei backup fuori host",
+        "backupPrevious": "Chiave precedente dei backup fuori host",
+        "token": "Chiave dei token"
+      },
+      "need": {
+        "active": "Cifra i nuovi dati.",
+        "configured": "Presente su questo server.",
+        "storedCopies": "Serve a {count} copie archiviate.",
+        "offhostUntil": "Serve alle copie fuori host fino al {date}.",
+        "offhostUnknown": "Serve alle copie fuori host finché il bucket le conserva.",
+        "backupActive": "Sigilla ogni nuova copia fuori host.",
+        "backupPrevious": "Apre le copie fuori host scritte prima dell'ultimo cambio di chiave.",
+        "token": "Firma sessioni, token e link di condivisione. Senza di essa tutti vengono disconnessi, ma nessun dato va perso."
+      },
+      "source": "Impostata in {variable}.",
+      "status": {
+        "confirmed": "Salvata",
+        "new": "Non ancora salvata",
+        "notConfigured": "Non presente su questo server",
+        "unreadable": "Chiave non valida"
+      },
+      "notConfiguredHint": "Un backup ha ancora bisogno di questa chiave e questo server non ce l'ha. Solo una copia che conservi altrove può leggere quei backup. Conferma il kit quando hai quella copia.",
+      "unreadableHint": "La variabile è impostata ma non contiene una chiave valida. Correggila prima di fare affidamento sulle copie fuori host.",
+      "fingerprintHint": "L'impronta sono i primi 12 caratteri dell'hash SHA-256 di una chiave. Identifica la chiave senza rivelarla, così puoi confrontarla con la tua copia.",
+      "whereTitle": "Dove sono impostate le chiavi",
+      "platform": {
+        "composeLabel": "Compose",
+        "composeWhere": "Le chiavi sono nel file .env accanto a docker-compose.yml: ENCRYPTION_KEY o ENCRYPTION_KEYS, API_TOKEN_HMAC_KEY e, con le copie fuori host, BACKUP_ENCRYPTION_KEY.",
+        "truenasLabel": "TrueNAS",
+        "truenasWhere": "Apri Apps, seleziona HealthLog e scegli Edit. Le chiavi sono sotto HealthLog Configuration; in un'app installata tramite YAML sono ENCRYPTION_KEY, API_TOKEN_HMAC_KEY e BACKUP_ENCRYPTION_KEY nelle impostazioni dell'ambiente.",
+        "coolifyLabel": "Coolify",
+        "coolifyWhere": "Apri l'applicazione in Coolify e copia ENCRYPTION_KEY, API_TOKEN_HMAC_KEY e BACKUP_ENCRYPTION_KEY dalle sue Environment Variables.",
+        "unraidLabel": "Unraid",
+        "unraidWhere": "Nella scheda Docker, modifica il container di HealthLog e copia ENCRYPTION_KEY, API_TOKEN_HMAC_KEY e BACKUP_ENCRYPTION_KEY dal modello, oppure dal .env del tuo stack di Compose Manager.",
+        "portainerLabel": "Portainer",
+        "portainerWhere": "Apri lo stack di HealthLog in Portainer e copia ENCRYPTION_KEY, API_TOKEN_HMAC_KEY e BACKUP_ENCRYPTION_KEY dalle sue variabili d'ambiente."
+      },
+      "restoreTitle": "Ripristinare questo server",
+      "restoreBody": "Installa HealthLog con le stesse chiavi, ripristina il dump del database più recente in un database vuoto, poi avvia l'app. La guida ti accompagna passo per passo.",
+      "restoreLink": "Guida al ripristino dopo un disastro",
+      "checkLabel": "Verifica la mia copia",
+      "checkKeyLabel": "Chiave da verificare",
+      "checkValueLabel": "La tua copia della chiave",
+      "checkButton": "Verifica",
+      "checkNote": "La chiave incollata viene confrontata con quella presente su questo server e poi scartata. Non viene mai salvata né registrata.",
+      "checkInsecureNote": "Questa pagina non è servita tramite https://, quindi la chiave incollata attraversa la rete in chiaro, come la tua password. Viene confrontata e scartata, mai salvata né registrata.",
+      "checkMatches": "La tua copia corrisponde a questa chiave.",
+      "checkNoMatch": "La tua copia non corrisponde a questa chiave. Controlla di aver copiato l'intero valore.",
+      "checkFailed": "La verifica non è riuscita.",
+      "confirmButton": "Ho una copia di ogni chiave",
+      "confirmed": "Kit di recupero confermato.",
+      "confirmFailed": "Impossibile salvare la conferma.",
+      "stale": "Il kit è cambiato da quando questa pagina è stata caricata. Controlla le chiavi che elenca ora, poi conferma di nuovo.",
+      "confirmedAt": "Confermato il {date}.",
+      "confirmedAtBy": "Confermato il {date} da {who}.",
+      "dueAgain": "Il kit è stato confermato il {date}, ma ora elenca chiavi che quella conferma non copre: {keys}."
     }
   },
   "achievements": {

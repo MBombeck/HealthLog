@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useDashboardChartReveal } from "@/components/dashboard/chart-reveal";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { EnvironmentChip } from "@/components/dashboard/environment-chip";
-import { KeyBackupBanner } from "@/components/dashboard/key-backup-banner";
+import { RecoveryKitBanner } from "@/components/dashboard/recovery-kit-banner";
 import {
   QuickEntrySheets,
   type QuickEntryDialog,
@@ -117,7 +117,7 @@ export default function DashboardPageClient({
     >
       <PullToRefreshIndicator {...pull} />
       <DashboardHeader onQuickEntry={setQuickEntryDialog} />
-      <KeyBackupBanner isAdmin={user?.role === "ADMIN"} />
+      <RecoveryKitBanner isAdmin={user?.role === "ADMIN"} />
 
       {/* Records other people share with you are reached from the account
           switcher in the top bar and the sidebar, not from a card here. The

@@ -23,12 +23,7 @@
  */
 import { envOr } from "@/lib/env";
 import { Buffer } from "node:buffer";
-import {
-  createCipheriv,
-  createDecipheriv,
-  createHash,
-  randomBytes,
-} from "node:crypto";
+import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { Readable, Transform } from "node:stream";
 import { createGunzip, createGzip, gunzipSync, gzipSync } from "node:zlib";
 import type { PrismaClient } from "@/generated/prisma/client";
@@ -44,6 +39,7 @@ import {
 import { annotate, getEvent } from "@/lib/logging/context";
 import { envValue } from "@/lib/env";
 import { OFFHOST_BACKUP_QUEUE } from "./offhost-backup-queue";
+import { decodeBackupKey, offhostKeyId } from "./offhost-key";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
@@ -72,17 +68,6 @@ export class OffhostBackupNotConfiguredError extends Error {
     super(message);
     this.name = "OffhostBackupNotConfiguredError";
   }
-}
-
-function decodeBackupKey(raw: string): Buffer {
-  if (/^[0-9a-fA-F]{64}$/.test(raw)) return Buffer.from(raw, "hex");
-  if (/^[A-Za-z0-9+/=]+$/.test(raw)) {
-    const buf = Buffer.from(raw, "base64");
-    if (buf.length === 32) return buf;
-  }
-  throw new Error(
-    "BACKUP_ENCRYPTION_KEY must be 64 hex chars or 32-byte base64",
-  );
 }
 
 /**
@@ -198,11 +183,6 @@ export function offhostKeyRing(cfg: OffhostBackupConfig): OffhostKeyRing {
 
 function asKeyRing(key: Buffer | OffhostKeyRing): OffhostKeyRing {
   return Buffer.isBuffer(key) ? { active: key, previous: [] } : key;
-}
-
-/** The id a version-4 object records for the key it was written under. */
-export function offhostKeyId(key: Buffer): string {
-  return createHash("sha256").update(key).digest("hex").slice(0, 12);
 }
 
 function offhostAad(objectKey: string): Buffer {

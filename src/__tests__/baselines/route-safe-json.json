@@ -5,8 +5,8 @@
   "entries": {
     "app/api/admin/ai-settings/route.ts": 1,
     "app/api/admin/drain-per-sample-cumulative/route.ts": 1,
-    "app/api/admin/encryption/key-backup/verify/route.ts": 1,
     "app/api/admin/notifications/reminder-check/route.ts": 1,
+    "app/api/admin/recovery-kit/verify/route.ts": 1,
     "app/api/admin/rollups/recompute/route.ts": 1,
     "app/api/admin/users/[id]/reset-password/route.ts": 1,
     "app/api/ai/test/route.ts": 1,

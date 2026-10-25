@@ -778,13 +778,13 @@
         "bmi": "kg/m²"
       }
     },
-    "keyBackupBanner": {
-      "title": "Maak een back-up van je versleutelingssleutel",
-      "body": "Zonder een kopie van de sleutel kunnen je gegevens na een herinstallatie niet worden hersteld. Het kost een minuutje.",
-      "action": "Stap openen"
-    },
     "quickAddSymptom": "Symptoom vastleggen",
-    "todayCardVisible": "Bovenste kaart tonen"
+    "todayCardVisible": "Bovenste kaart tonen",
+    "recoveryKitBanner": {
+      "title": "Bewaar je herstelkit",
+      "body": "Zonder kopieën van de sleutels die deze server gebruikt, kunnen de gegevens na een herinstallatie niet worden hersteld. Het kost een paar minuten.",
+      "action": "Kit openen"
+    }
   },
   "measurements": {
     "title": "Metingen",
@@ -8506,47 +8506,6 @@
       "title": "Dit deel van de pagina kon niet worden weergegeven",
       "description": "De rest van de pagina werkt nog; probeer het opnieuw of herlaad de pagina als het blijft mislukken."
     },
-    "keyBackup": {
-      "title": "Maak een back-up van je versleutelingssleutel",
-      "description": "Zonder een kopie van deze sleutel kunnen je versleutelde gegevens en de back-ups van deze server niet meer worden gelezen.",
-      "loading": "Status van de sleutelback-up laden…",
-      "loadError": "De status van de sleutelback-up kon niet worden geladen.",
-      "badgeDue": "Te doen",
-      "badgeDone": "Back-up gemaakt",
-      "keyId": "Actieve sleutel-ID",
-      "fingerprint": "Vingerafdruk",
-      "whatIsLost": "Bewaar een kopie van de sleutel ergens buiten deze server, bijvoorbeeld in een wachtwoordmanager. Als de server opnieuw wordt geïnstalleerd met een andere sleutel, weigert HealthLog te starten tot de oorspronkelijke sleutel terug is.",
-      "fingerprintHint": "De vingerafdruk bestaat uit de eerste 12 tekens van de SHA-256-hash van de sleutel. Hij identificeert de sleutel zonder deze prijs te geven, zodat je hem met je kopie kunt vergelijken.",
-      "checkLabel": "Mijn kopie controleren",
-      "checkButton": "Controleren",
-      "checkNote": "De sleutel die je plakt, wordt vergeleken met de actieve sleutel en daarna weggegooid. Hij wordt nooit opgeslagen of gelogd.",
-      "checkInsecureNote": "Deze pagina wordt niet via https:// geserveerd, dus de sleutel die je plakt gaat onversleuteld over het netwerk, net als je wachtwoord. Hij wordt vergeleken en weggegooid, nooit opgeslagen of gelogd.",
-      "checkMatches": "Je kopie komt overeen met de actieve sleutel.",
-      "checkNoMatch": "Je kopie komt niet overeen met de actieve sleutel. Controleer of je de hele waarde hebt gekopieerd.",
-      "checkFailed": "De controle is mislukt.",
-      "confirmButton": "Ik heb een back-up van deze sleutel gemaakt",
-      "confirmed": "Sleutelback-up bevestigd.",
-      "confirmFailed": "De bevestiging kon niet worden opgeslagen.",
-      "stale": "De sleutel van de server is gewijzigd sinds deze pagina is geladen. Controleer de nieuwe sleutel-ID en vingerafdruk en bevestig daarna opnieuw.",
-      "confirmedAt": "Bevestigd op {date}.",
-      "confirmedAtBy": "Bevestigd op {date} door {who}.",
-      "dueAgain": "Er is een back-up bevestigd voor sleutel {keyId}, maar de server gebruikt nu een andere sleutel. Maak een back-up van de huidige sleutel.",
-      "tileLabel": "Back-up van versleutelingssleutel",
-      "tileDue": "Niet bevestigd",
-      "tileDone": "Bevestigd",
-      "platform": {
-        "composeLabel": "Compose",
-        "composeWhere": "De sleutel is ENCRYPTION_KEY (of ENCRYPTION_KEYS) in het .env-bestand naast docker-compose.yml.",
-        "truenasLabel": "TrueNAS",
-        "truenasWhere": "Open Apps, selecteer HealthLog en kies Edit. De sleutel staat in het veld Encryption Key onder HealthLog Configuration; bij een app die via YAML is geïnstalleerd, is het ENCRYPTION_KEY in de omgevingsinstellingen.",
-        "coolifyLabel": "Coolify",
-        "coolifyWhere": "Open de applicatie in Coolify en kopieer ENCRYPTION_KEY uit de Environment Variables.",
-        "unraidLabel": "Unraid",
-        "unraidWhere": "Bewerk op het tabblad Docker de HealthLog-container en kopieer ENCRYPTION_KEY uit de template, of uit het .env-bestand van je Compose Manager-stack.",
-        "portainerLabel": "Portainer",
-        "portainerWhere": "Open de HealthLog-stack in Portainer en kopieer ENCRYPTION_KEY uit de omgevingsvariabelen."
-      }
-    },
     "keyMismatch": {
       "title": "HealthLog kan zijn gegevens niet openen",
       "body": "De versleutelingssleutel waarmee deze server is gestart, is niet de sleutel waarmee de database is geschreven. Om je gegevens te beschermen, levert HealthLog niets uit totdat dit is opgelost.",
@@ -8577,6 +8536,76 @@
       "defaultAboveCeiling": "Het standaardniveau kan niet hoger zijn dan het hoogste niveau.",
       "gapLabel": "Uren tussen het vernieuwen van kaarten na een synchronisatie (Standaard)",
       "gapHint": "Hele uren van 1 tot 48. Laat leeg om AI_SYNC_REGEN_GAP_HOURS te gebruiken, anders 6. Nu van kracht: {hours} u."
+    },
+    "recoveryKit": {
+      "title": "Herstelkit",
+      "description": "Elke sleutel die nodig is om deze server terug te zetten, met ID en vingerafdruk.",
+      "intro": "Bewaar van elke sleutel hieronder een kopie buiten deze server, bijvoorbeeld in een wachtwoordmanager. Zonder die kopieën kunnen een databasedump en een back-upkopie niet meer worden gelezen, en HealthLog weigert te starten als een benodigde sleutel ontbreekt.",
+      "loading": "Herstelkit laden…",
+      "loadError": "De herstelkit kon niet worden geladen.",
+      "badgeDue": "Te doen",
+      "badgeDone": "Bewaard",
+      "keyId": "ID",
+      "fingerprint": "Vingerafdruk",
+      "noFingerprint": "Niet op deze server",
+      "kind": {
+        "application": "Applicatiesleutel {id}",
+        "backup": "Sleutel voor externe back-ups",
+        "backupPrevious": "Vorige sleutel voor externe back-ups",
+        "token": "Tokensleutel"
+      },
+      "need": {
+        "active": "Versleutelt nieuwe gegevens.",
+        "configured": "Staat op deze server.",
+        "storedCopies": "Nodig voor {count} opgeslagen kopieën.",
+        "offhostUntil": "Nodig voor externe kopieën tot {date}.",
+        "offhostUnknown": "Nodig voor externe kopieën zolang de bucket ze bewaart.",
+        "backupActive": "Verzegelt elke nieuwe externe kopie.",
+        "backupPrevious": "Opent externe kopieën die vóór de laatste sleutelwissel zijn geschreven.",
+        "token": "Ondertekent sessies, tokens en deellinks. Zonder deze sleutel wordt iedereen afgemeld, maar gaan er geen gegevens verloren."
+      },
+      "source": "Ingesteld in {variable}.",
+      "status": {
+        "confirmed": "Bewaard",
+        "new": "Nog niet bewaard",
+        "notConfigured": "Niet op deze server",
+        "unreadable": "Geen geldige sleutel"
+      },
+      "notConfiguredHint": "Een back-up heeft deze sleutel nog nodig, maar deze server heeft hem niet. Alleen een kopie die je elders bewaart, kan die back-ups lezen. Bevestig de kit zodra je die kopie hebt.",
+      "unreadableHint": "De variabele is ingesteld, maar bevat geen geldige sleutel. Los dat op voordat je op de externe kopieën vertrouwt.",
+      "fingerprintHint": "De vingerafdruk bestaat uit de eerste 12 tekens van de SHA-256-hash van een sleutel. Hij identificeert de sleutel zonder deze prijs te geven, zodat je hem met je kopie kunt vergelijken.",
+      "whereTitle": "Waar de sleutels zijn ingesteld",
+      "platform": {
+        "composeLabel": "Compose",
+        "composeWhere": "De sleutels staan in het .env-bestand naast docker-compose.yml: ENCRYPTION_KEY of ENCRYPTION_KEYS, API_TOKEN_HMAC_KEY en, bij externe kopieën, BACKUP_ENCRYPTION_KEY.",
+        "truenasLabel": "TrueNAS",
+        "truenasWhere": "Open Apps, selecteer HealthLog en kies Edit. De sleutels staan onder HealthLog Configuration; bij een app die via YAML is geïnstalleerd, zijn het ENCRYPTION_KEY, API_TOKEN_HMAC_KEY en BACKUP_ENCRYPTION_KEY in de omgevingsinstellingen.",
+        "coolifyLabel": "Coolify",
+        "coolifyWhere": "Open de applicatie in Coolify en kopieer ENCRYPTION_KEY, API_TOKEN_HMAC_KEY en BACKUP_ENCRYPTION_KEY uit de Environment Variables.",
+        "unraidLabel": "Unraid",
+        "unraidWhere": "Bewerk op het tabblad Docker de HealthLog-container en kopieer ENCRYPTION_KEY, API_TOKEN_HMAC_KEY en BACKUP_ENCRYPTION_KEY uit de template, of uit het .env-bestand van je Compose Manager-stack.",
+        "portainerLabel": "Portainer",
+        "portainerWhere": "Open de HealthLog-stack in Portainer en kopieer ENCRYPTION_KEY, API_TOKEN_HMAC_KEY en BACKUP_ENCRYPTION_KEY uit de omgevingsvariabelen."
+      },
+      "restoreTitle": "Deze server terugzetten",
+      "restoreBody": "Installeer HealthLog met dezelfde sleutels, zet de nieuwste databasedump terug in een lege database en start dan de app. De handleiding loopt elke stap door.",
+      "restoreLink": "Handleiding voor noodherstel",
+      "checkLabel": "Mijn kopie controleren",
+      "checkKeyLabel": "Te controleren sleutel",
+      "checkValueLabel": "Jouw kopie van de sleutel",
+      "checkButton": "Controleren",
+      "checkNote": "De sleutel die je plakt, wordt vergeleken met die op deze server en daarna weggegooid. Hij wordt nooit opgeslagen of gelogd.",
+      "checkInsecureNote": "Deze pagina wordt niet via https:// geserveerd, dus de sleutel die je plakt gaat onversleuteld over het netwerk, net als je wachtwoord. Hij wordt vergeleken en weggegooid, nooit opgeslagen of gelogd.",
+      "checkMatches": "Je kopie komt overeen met deze sleutel.",
+      "checkNoMatch": "Je kopie komt niet overeen met deze sleutel. Controleer of je de hele waarde hebt gekopieerd.",
+      "checkFailed": "De controle is mislukt.",
+      "confirmButton": "Ik heb een kopie van elke sleutel",
+      "confirmed": "Herstelkit bevestigd.",
+      "confirmFailed": "De bevestiging kon niet worden opgeslagen.",
+      "stale": "De kit is gewijzigd sinds deze pagina is geladen. Controleer de sleutels die er nu in staan en bevestig daarna opnieuw.",
+      "confirmedAt": "Bevestigd op {date}.",
+      "confirmedAtBy": "Bevestigd op {date} door {who}.",
+      "dueAgain": "De kit is bevestigd op {date}, maar bevat nu sleutels die niet onder die bevestiging vallen: {keys}."
     }
   },
   "achievements": {

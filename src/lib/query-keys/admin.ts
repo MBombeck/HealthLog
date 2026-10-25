@@ -55,9 +55,10 @@ export const adminKeys = {
     ["admin", "maintenance", "measurements"] as const,
   /** v1.43 — the pulse day-mean method, its dry run and apply step. */
   adminPulseDayMean: () => ["admin", "maintenance", "pulse-day-mean"] as const,
-  /** v1.40.0 — the "Back up your encryption key" step (admin + dashboard banner). */
-  adminEncryptionKeyBackup: () =>
-    ["admin", "encryption", "key-backup"] as const,
+  /** The recovery kit (admin Encryption section + dashboard banner). */
+  adminRecoveryKit: () => ["admin", "recovery-kit"] as const,
+  /** Every backup signal's verdict (admin overview + Backups). */
+  adminRecoveryReadiness: () => ["admin", "recovery-readiness"] as const,
   adminCoachFeedback: () => ["admin", "coach-feedback"] as const,
   adminFeedback: (status: string) => ["admin", "feedback", status] as const,
   adminFeedbackRoot: () => ["admin", "feedback"] as const,

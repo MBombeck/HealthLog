@@ -778,13 +778,13 @@
         "bmi": "kg/m²"
       }
     },
-    "keyBackupBanner": {
-      "title": "Back up your encryption key",
-      "body": "Without a copy of the key, your data cannot be recovered after a reinstall. It takes a minute.",
-      "action": "Open the step"
-    },
     "quickAddSymptom": "Log symptom",
-    "todayCardVisible": "Show the top card"
+    "todayCardVisible": "Show the top card",
+    "recoveryKitBanner": {
+      "title": "Save your recovery kit",
+      "body": "Without copies of the keys this server uses, its data cannot be recovered after a reinstall. It takes a few minutes.",
+      "action": "Open the kit"
+    }
   },
   "measurements": {
     "title": "Measurements",
@@ -8506,47 +8506,6 @@
       "title": "This part of the page could not be shown",
       "description": "The rest of the page still works; try again or reload if it keeps failing."
     },
-    "keyBackup": {
-      "title": "Back up your encryption key",
-      "description": "Without a copy of this key, your encrypted data and this server's backups cannot be read again.",
-      "loading": "Loading the key backup status…",
-      "loadError": "Could not load the key backup status.",
-      "badgeDue": "To do",
-      "badgeDone": "Backed up",
-      "keyId": "Active key id",
-      "fingerprint": "Fingerprint",
-      "whatIsLost": "Keep a copy of the key somewhere outside this server, for example in a password manager. If the server is reinstalled with a different key, HealthLog refuses to start serving until the original key is back.",
-      "fingerprintHint": "The fingerprint is the first 12 characters of the SHA-256 hash of the key. It identifies the key without revealing it, so you can compare it with your copy.",
-      "checkLabel": "Check my copy",
-      "checkButton": "Check",
-      "checkNote": "The key you paste is compared with the active key and then discarded. It is never stored or logged.",
-      "checkInsecureNote": "This page is not served over https://, so the key you paste crosses the network unencrypted, just like your password does. It is compared and discarded, never stored or logged.",
-      "checkMatches": "Your copy matches the active key.",
-      "checkNoMatch": "Your copy does not match the active key. Check that you copied the whole value.",
-      "checkFailed": "The check failed.",
-      "confirmButton": "I have backed up this key",
-      "confirmed": "Key backup confirmed.",
-      "confirmFailed": "Could not save the confirmation.",
-      "stale": "The server's key changed since this page loaded. Check the new key id and fingerprint, then confirm again.",
-      "confirmedAt": "Confirmed on {date}.",
-      "confirmedAtBy": "Confirmed on {date} by {who}.",
-      "dueAgain": "A backup was confirmed for key {keyId}, but the server now uses another key. Back up the current one.",
-      "tileLabel": "Encryption key backup",
-      "tileDue": "Not confirmed",
-      "tileDone": "Confirmed",
-      "platform": {
-        "composeLabel": "Compose",
-        "composeWhere": "The key is ENCRYPTION_KEY (or ENCRYPTION_KEYS) in the .env file next to docker-compose.yml.",
-        "truenasLabel": "TrueNAS",
-        "truenasWhere": "Open Apps, select HealthLog and choose Edit. The key is the Encryption Key field under HealthLog Configuration; in an app installed via YAML, it is ENCRYPTION_KEY in the environment settings.",
-        "coolifyLabel": "Coolify",
-        "coolifyWhere": "Open the application in Coolify and copy ENCRYPTION_KEY from its Environment Variables.",
-        "unraidLabel": "Unraid",
-        "unraidWhere": "On the Docker tab, edit the HealthLog container and copy ENCRYPTION_KEY from the template, or from the .env of your Compose Manager stack.",
-        "portainerLabel": "Portainer",
-        "portainerWhere": "Open the HealthLog stack in Portainer and copy ENCRYPTION_KEY from its environment variables."
-      }
-    },
     "keyMismatch": {
       "title": "HealthLog cannot open its data",
       "body": "The encryption key this server was started with is not the key its database was written with. To protect your data, HealthLog does not serve anything until this is fixed.",
@@ -8577,6 +8536,76 @@
       "defaultAboveCeiling": "The default level cannot be above the highest level.",
       "gapLabel": "Hours between card refreshes after a sync (Standard)",
       "gapHint": "Whole hours from 1 to 48. Leave empty to use AI_SYNC_REGEN_GAP_HOURS, else 6. In effect now: {hours} h."
+    },
+    "recoveryKit": {
+      "title": "Recovery kit",
+      "description": "Every key a restore of this server needs, by id and fingerprint.",
+      "intro": "Keep a copy of each key below outside this server, for example in a password manager. Without them, neither a database dump nor a backup copy can be read again, and HealthLog refuses to start if a key it needs is missing.",
+      "loading": "Loading the recovery kit…",
+      "loadError": "Could not load the recovery kit.",
+      "badgeDue": "To do",
+      "badgeDone": "Saved",
+      "keyId": "Id",
+      "fingerprint": "Fingerprint",
+      "noFingerprint": "Not on this server",
+      "kind": {
+        "application": "Application key {id}",
+        "backup": "Off-host backup key",
+        "backupPrevious": "Previous off-host backup key",
+        "token": "Token key"
+      },
+      "need": {
+        "active": "Encrypts new data.",
+        "configured": "Held by this server.",
+        "storedCopies": "Needed by {count} stored copies.",
+        "offhostUntil": "Needed by off-host copies until {date}.",
+        "offhostUnknown": "Needed by off-host copies for as long as the bucket keeps them.",
+        "backupActive": "Seals every new off-host copy.",
+        "backupPrevious": "Opens off-host copies written before the last key change.",
+        "token": "Signs sessions, tokens and share links. Without it everyone is signed out, but no data is lost."
+      },
+      "source": "Set in {variable}.",
+      "status": {
+        "confirmed": "Saved",
+        "new": "Not saved yet",
+        "notConfigured": "Not on this server",
+        "unreadable": "Not a valid key"
+      },
+      "notConfiguredHint": "A backup still needs this key and this server does not hold it. Only a copy you keep elsewhere can read those backups. Confirm the kit once you have that copy.",
+      "unreadableHint": "The variable is set but does not hold a valid key. Fix it before you rely on the off-host copies.",
+      "fingerprintHint": "A fingerprint is the first 12 characters of the SHA-256 hash of a key. It identifies the key without revealing it, so you can compare it with your copy.",
+      "whereTitle": "Where the keys are set",
+      "platform": {
+        "composeLabel": "Compose",
+        "composeWhere": "The keys are in the .env file next to docker-compose.yml: ENCRYPTION_KEY or ENCRYPTION_KEYS, API_TOKEN_HMAC_KEY and, with off-host copies, BACKUP_ENCRYPTION_KEY.",
+        "truenasLabel": "TrueNAS",
+        "truenasWhere": "Open Apps, select HealthLog and choose Edit. The keys are under HealthLog Configuration; in an app installed via YAML, they are ENCRYPTION_KEY, API_TOKEN_HMAC_KEY and BACKUP_ENCRYPTION_KEY in the environment settings.",
+        "coolifyLabel": "Coolify",
+        "coolifyWhere": "Open the application in Coolify and copy ENCRYPTION_KEY, API_TOKEN_HMAC_KEY and BACKUP_ENCRYPTION_KEY from its Environment Variables.",
+        "unraidLabel": "Unraid",
+        "unraidWhere": "On the Docker tab, edit the HealthLog container and copy ENCRYPTION_KEY, API_TOKEN_HMAC_KEY and BACKUP_ENCRYPTION_KEY from the template, or from the .env of your Compose Manager stack.",
+        "portainerLabel": "Portainer",
+        "portainerWhere": "Open the HealthLog stack in Portainer and copy ENCRYPTION_KEY, API_TOKEN_HMAC_KEY and BACKUP_ENCRYPTION_KEY from its environment variables."
+      },
+      "restoreTitle": "Restoring this server",
+      "restoreBody": "Install HealthLog with the same keys, restore the newest database dump into an empty database, then start the app. The guide walks through each step.",
+      "restoreLink": "Disaster recovery guide",
+      "checkLabel": "Check my copy",
+      "checkKeyLabel": "Key to check",
+      "checkValueLabel": "Your copy of the key",
+      "checkButton": "Check",
+      "checkNote": "The key you paste is compared with the one this server holds and then discarded. It is never stored or logged.",
+      "checkInsecureNote": "This page is not served over https://, so the key you paste crosses the network unencrypted, just like your password does. It is compared and discarded, never stored or logged.",
+      "checkMatches": "Your copy matches this key.",
+      "checkNoMatch": "Your copy does not match this key. Check that you copied the whole value.",
+      "checkFailed": "The check failed.",
+      "confirmButton": "I have a copy of every key",
+      "confirmed": "Recovery kit confirmed.",
+      "confirmFailed": "Could not save the confirmation.",
+      "stale": "The kit changed since this page loaded. Check the keys it lists now, then confirm again.",
+      "confirmedAt": "Confirmed on {date}.",
+      "confirmedAtBy": "Confirmed on {date} by {who}.",
+      "dueAgain": "The kit was confirmed on {date}, but it now lists keys that confirmation does not cover: {keys}."
     }
   },
   "achievements": {
