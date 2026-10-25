@@ -46,7 +46,10 @@ export const SOURCE_KEY_SELECT = {
   sourceInstance: true,
   sourceAliases: {
     // The backup reads through this select, and its export is totally ordered.
-    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    orderBy: [
+      { createdAt: "asc" },
+      { id: "asc" },
+    ] as Prisma.DocumentSourceAliasOrderByWithRelationInput[],
     select: { sourceSystem: true, sourceId: true, sourceInstance: true },
   },
 } as const;
