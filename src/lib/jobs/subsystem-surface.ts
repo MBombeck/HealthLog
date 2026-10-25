@@ -99,6 +99,7 @@ const subsystemSurface = {
   "audit-log-cleanup": { audience: "system" },
   "step-up-elevation-cleanup": { audience: "system" },
   "data-backup-offhost": { audience: "system" },
+  "database-backup": { audience: "system" },
   "data-restore-drill": { audience: "system" },
   "offhost-backup-purge": { audience: "system" },
   "backup-restore": { audience: "system" },

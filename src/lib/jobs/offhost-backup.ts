@@ -494,9 +494,9 @@ function createEnvelopeStream(
   return { stream, bytes: () => written };
 }
 
-/** Produces the backup JSON in pieces. Every piece is written in order. */
+/** Produces the plaintext (JSON text, or a dump's bytes) in ordered pieces. */
 export type BackupJsonProducer = (
-  write: (chunk: string) => Promise<void>,
+  write: (chunk: string | Buffer) => Promise<void>,
 ) => Promise<unknown>;
 
 export interface UploadBackupOptions {
@@ -572,9 +572,9 @@ export async function uploadEncryptedBackup(
     },
   );
 
-  const write = async (chunk: string): Promise<void> => {
+  const write = async (chunk: string | Buffer): Promise<void> => {
     if (failure) throw failure;
-    if (gzip.write(chunk, "utf8")) return;
+    if (gzip.write(chunk, "utf8")) return; // a Buffer ignores the encoding
     await new Promise<void>((resolve, reject) => {
       const onDrain = (): void => {
         gzip.off("error", onError);

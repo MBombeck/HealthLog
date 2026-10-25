@@ -5929,6 +5929,35 @@ model OffhostPurgeRequest {
   @@map("offhost_purge_requests")
 }
 
+/// One run of the nightly whole-database dump (the `database-backup` job):
+/// whether a dump was written on this server and copied off-host, and why not
+/// when it was not. Instance metadata, not an account's data. Written by
+/// `runDatabaseBackup`; read by `getDatabaseBackupHealth`, which feeds the
+/// database row of the admin backups card and the backup alerts. A row left
+/// `running` by a process that died is read as a failed run once the job's
+/// expiry has passed.
+model DatabaseBackupRun {
+  id            String    @id @default(cuid())
+  startedAt     DateTime  @map("started_at")
+  finishedAt    DateTime? @map("finished_at")
+  /// `running`, `succeeded`, `failed` or `skipped`.
+  status        String
+  /// The dump's file name, once one was written and checked.
+  fileName      String?   @map("file_name")
+  /// Size of the dump in bytes.
+  dumpBytes     BigInt?   @map("dump_bytes")
+  /// `written` (kept in DB_BACKUP_DIR), `no_directory` (no writable
+  /// directory, the dump went off-host only), or `failed`.
+  localResult   String    @map("local_result")
+  /// `uploaded`, `not_configured` or `failed`.
+  offhostResult String    @map("offhost_result")
+  /// Why the run failed or was skipped, trimmed. Never key material.
+  error         String?
+
+  @@index([startedAt])
+  @@map("database_backup_runs")
+}
+
 // ─── Apple Health export.zip import (v1.4.34) ───────────────
 //
 // Mirrors a `pg-boss` `apple-health-import` job's lifecycle so the
