@@ -25,17 +25,28 @@
  *   - A request with neither header is not from a browser page (the phone
  *     app, a script, a webhook sender) and passes; it carries no cookie a
  *     page could have lent it.
- *   - A request carrying `Authorization` passes: a page cannot attach that
- *     header to another origin without a CORS preflight, which this server
- *     never answers.
+ *   - A request carrying `Authorization: Bearer` and no session cookie
+ *     passes: a page cannot attach that header to another origin without a
+ *     CORS preflight, which this server never answers, and without a session
+ *     cookie the token is what the request is authenticated by. Any other
+ *     scheme does not count: a browser attaches `Basic` or `Negotiate`
+ *     credentials on its own when a proxy or the host asked for them, and
+ *     the caller is resolved from the session cookie before any header
+ *     (`src/lib/auth/guards/caller.ts`), so a request with both is a cookie
+ *     request and is checked as one.
  *
  * Exempt by path: the surfaces that authenticate with a secret in a header
  * or the URL rather than the session cookie, and that a third party's client
- * may legitimately call from a browser (a push client's action button). The
- * MCP OAuth endpoints, which must accept cross-origin requests by their
- * specification, do not run through `apiHandler` at all.
+ * may legitimately call from a browser (a push client's action button), and
+ * the share-link passphrase check under `/api/c/`, whose credential is the
+ * token in the path plus the passphrase in the body. A shared-record page is
+ * served with `Referrer-Policy: no-referrer`, and a browser without
+ * `Sec-Fetch-Site` then sends `Origin: null` on its POST, which no host
+ * check can admit. The MCP OAuth endpoints, which must accept cross-origin
+ * requests by their specification, do not run through `apiHandler` at all.
  */
 import { apiError } from "@/lib/api-response";
+import { cookieHeaderCarriesSession } from "@/lib/auth/session-cookie";
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
@@ -51,6 +62,7 @@ export const CROSS_SITE_EXEMPT_PREFIXES = [
   "/api/internal/deploy-webhook",
   "/api/notifications/action/",
   "/api/monitoring/csp-report",
+  "/api/c/",
 ] as const;
 
 function hostOf(value: string | null | undefined): string | null {
@@ -92,7 +104,12 @@ export function crossSiteWriteReason(
   if (CROSS_SITE_EXEMPT_PREFIXES.some((p) => pathname.startsWith(p))) {
     return null;
   }
-  if (request.headers.has("authorization")) return null;
+  if (
+    request.headers.get("authorization")?.startsWith("Bearer ") &&
+    !cookieHeaderCarriesSession(request.headers.get("cookie"))
+  ) {
+    return null;
+  }
 
   const site = request.headers.get("sec-fetch-site")?.trim().toLowerCase();
   if (site) {

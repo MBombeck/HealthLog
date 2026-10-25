@@ -114,6 +114,65 @@ describe("apiHandler and a state change from another site", () => {
     );
   });
 
+  it("refuses a browser-attached Basic or Negotiate header riding a session cookie", async () => {
+    // The browser adds these on its own once a proxy or the host asked for
+    // them, and the caller is resolved from the cookie first: the header is
+    // not what the request is authenticated by.
+    for (const authorization of ["Basic dXNlcjpwYXNz", "Negotiate YIIGhg"]) {
+      const response = await post({
+        "content-type": "application/json",
+        authorization,
+        "sec-fetch-site": "same-site",
+        origin: "https://evil.example.com",
+        cookie: "healthlog_session=s",
+      });
+      expect(response.status).toBe(403);
+    }
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it("checks a Bearer request that also carries a session cookie as the cookie request it resolves to", async () => {
+    for (const cookie of [
+      "healthlog_session=s",
+      "theme=dark; __Host-healthlog_session=s",
+    ]) {
+      const response = await post({
+        "content-type": "application/json",
+        authorization: "Bearer hlk_x",
+        "sec-fetch-site": "cross-site",
+        cookie,
+      });
+      expect(response.status).toBe(403);
+    }
+    expect(handler).not.toHaveBeenCalled();
+    // From the app's own page the same pair passes.
+    const own = await post({
+      "content-type": "application/json",
+      authorization: "Bearer hlk_x",
+      "sec-fetch-site": "same-origin",
+      cookie: "healthlog_session=s",
+    });
+    expect(own.status).toBe(200);
+  });
+
+  it("lets the share-link passphrase POST through from a no-referrer page", async () => {
+    // The shared view is served with `Referrer-Policy: no-referrer`; a
+    // browser without Sec-Fetch-Site then sends `Origin: null`. The token in
+    // the path and the passphrase in the body are the credential.
+    const response = await route(
+      new NextRequest(`${ORIGIN}/api/c/hls_token/unlock`, {
+        method: "POST",
+        headers: {
+          host: "health.example.com",
+          "content-type": "application/json",
+          origin: "null",
+        },
+        body: '{"value":1}',
+      }),
+    );
+    expect(response.status).toBe(200);
+  });
+
   it("leaves reads alone", async () => {
     const response = await route(
       new NextRequest(`${ORIGIN}/api/measurements`, {
