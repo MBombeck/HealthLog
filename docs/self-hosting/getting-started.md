@@ -295,7 +295,8 @@ key, a re-keyed install. The kit also links the
 The **Recovery readiness** card on the admin overview and the Backups page
 judges every backup signal in one place: the database dump, the weekly account
 copies, the off-host copies, the last restore drill, whether off-host copies
-are set up, and the recovery kit. An hourly check sends each admin a
+are set up, whether the bucket ever removes old database dumps, and the
+recovery kit. An hourly check sends each admin a
 **Backup health** notification when a signal turns to "needs attention" or "at
 risk", once a day while it stays at risk, and once when it recovers. Route or
 switch it off per channel under Notifications.

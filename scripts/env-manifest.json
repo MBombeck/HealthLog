@@ -260,11 +260,16 @@
       "variables": [
         {
           "name": "DEPLOY_WEBHOOK_SECRET",
-          "purpose": "Shared secret for the X-Deploy-Webhook-Secret header on POST /api/internal/deploy-webhook. 64 hex chars."
+          "purpose": "Shared secret of POST /api/internal/deploy-webhook. 64 hex chars. A request authenticates by sending it in the X-Deploy-Webhook-Secret header (Coolify's stock sender; no replay protection), or by signing: X-Deploy-Webhook-Signature: sha256=<HMAC-SHA256 under this secret of the X-Deploy-Webhook-Timestamp value, a dot and the raw body>, the timestamp within 5 minutes."
         },
         {
           "name": "DEPLOY_LOGS_URL",
           "purpose": "URL of the deployment dashboard (e.g. the Coolify UI) linked in deploy-failure notifications. Optional; when unset the notification omits the link."
+        },
+        {
+          "name": "DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP",
+          "purpose": "\"true\" (or \"1\") accepts only signed deploy-webhook requests (X-Deploy-Webhook-Signature with a fresh X-Deploy-Webhook-Timestamp); the secret header alone is refused with 401. Leave unset for Coolify's stock sender, which can only send the secret header.",
+          "example": "true"
         }
       ]
     },
@@ -372,7 +377,7 @@
         },
         {
           "name": "DB_BACKUP_DIR",
-          "purpose": "Directory the dumps are written to and restored from. Default /var/lib/healthlog/backups, the `backups` volume. Without a writable directory the nightly dump only goes off-host and no dump is taken before migrations.",
+          "purpose": "Directory the dumps are written to and restored from. Default /var/lib/healthlog/backups, the `backups` volume. In a container it must be a mount of its own: a directory in the container's layer is lost at the next update and counts as none. Without one the nightly dump only goes off-host and no dump is taken before migrations.",
           "example": "/var/lib/healthlog/backups"
         },
         {
@@ -424,7 +429,12 @@
         },
         {
           "name": "TRUST_PROXY_HOPS",
-          "purpose": "Trusted reverse-proxy hop count; the client IP is read that many entries from the right of X-Forwarded-For.",
+          "purpose": "Trusted reverse-proxy hop count; the client IP is read that many entries from the right of X-Forwarded-For. Forwarding headers are read only from a peer whose own address is not public (loopback, private, CGNAT, unique-local, link-local, reserved, multicast).",
+          "example": "1"
+        },
+        {
+          "name": "TRUST_CF_CONNECTING_IP",
+          "purpose": "\"1\" takes the client IP from Cloudflare's CF-Connecting-IP header, from every connection and before the peer check. Safe only when the origin accepts connections from Cloudflare alone (a Tunnel, or a firewall admitting only Cloudflare's ranges); otherwise any caller forges the address rate limits and the audit log record. Off by default.",
           "example": "1"
         },
         {

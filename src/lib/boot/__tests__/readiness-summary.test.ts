@@ -158,43 +158,67 @@ describe("collectReadiness — the database dump", () => {
     BACKUP_S3_SECRET_KEY: "s",
     BACKUP_ENCRYPTION_KEY: HEX32,
   };
+  const STATUS = {
+    volume: { writable: true, persistent: true, reason: "volume" },
+    layer: { writable: true, persistent: false, reason: "container_layer" },
+    memory: { writable: true, persistent: false, reason: "memory" },
+    none: { writable: false, persistent: false, reason: "not_writable" },
+  } as const;
   const dumpLine = (
     env: Record<string, string | undefined>,
-    writable: boolean,
+    status: keyof typeof STATUS,
   ) =>
-    collectReadiness(env, () => writable).lines.find(
+    collectReadiness(env, () => STATUS[status]).lines.find(
       (l) => l.label === "Database dump",
     );
 
   it("names the schedule, the directory and the copies kept", () => {
-    const line = dumpLine(baseEnv(), true);
+    const line = dumpLine(baseEnv(), "volume");
     expect(line?.status).toBe("ok");
     expect(line?.detail).toBe(
       "nightly (30 1 * * *) into /var/lib/healthlog/backups, keeping 7",
     );
-    expect(dumpLine({ ...baseEnv(), ...offhost }, true)?.detail).toContain(
+    expect(dumpLine({ ...baseEnv(), ...offhost }, "volume")?.detail).toContain(
       "copied off-host",
     );
   });
 
   it("warns when nothing can be kept on the server", () => {
-    expect(dumpLine({ ...baseEnv(), ...offhost }, false)).toMatchObject({
+    expect(dumpLine({ ...baseEnv(), ...offhost }, "none")).toMatchObject({
       status: "warn",
       detail: expect.stringContaining("goes off-host only"),
     });
-    expect(dumpLine(baseEnv(), false)).toMatchObject({
+    expect(dumpLine(baseEnv(), "none")).toMatchObject({
       status: "warn",
-      detail: expect.stringContaining("no database dump can be taken"),
+      detail: expect.stringContaining("no database dump is kept anywhere"),
     });
+  });
+
+  it("does not call a directory inside the container kept: it is writable and lost at the next update", () => {
+    const offhostOnly = dumpLine({ ...baseEnv(), ...offhost }, "layer");
+    expect(offhostOnly?.status).toBe("warn");
+    expect(offhostOnly?.detail).toContain(
+      "/var/lib/healthlog/backups is inside the container, not on a mounted volume",
+    );
+    expect(offhostOnly?.detail).toContain("none is kept on this server");
+    expect(offhostOnly?.detail).toContain("none is taken before a migration");
+    expect(offhostOnly?.detail).not.toContain("keeping 7");
+    expect(dumpLine(baseEnv(), "layer")).toMatchObject({
+      status: "warn",
+      detail: expect.stringContaining("no database dump is kept anywhere"),
+    });
+    expect(dumpLine(baseEnv(), "memory")?.detail).toContain(
+      "lost at the next restart",
+    );
   });
 
   it("warns when it is switched off, and names a schedule it ignored", () => {
     expect(
-      dumpLine({ ...baseEnv(), DB_BACKUP_ENABLED: "false" }, true),
+      dumpLine({ ...baseEnv(), DB_BACKUP_ENABLED: "false" }, "volume"),
     ).toMatchObject({ status: "warn" });
     const report = collectReadiness(
       { ...baseEnv(), DB_BACKUP_SCHEDULE: "nightly" },
-      () => true,
+      () => STATUS.volume,
     );
     expect(
       report.lines.find((l) => l.label === "DB_BACKUP_SCHEDULE")?.detail,

@@ -25,6 +25,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   applyRetention,
+  backupDirectoryStatus,
   bucketConfigFromEnv,
   pickBucketDump,
   buildManifest,
@@ -37,13 +38,17 @@ import {
   formatDumpTimestamp,
   keyFingerprints,
   listDumpSets,
+  mountContaining,
   offhostObjectKey,
+  parseMountInfo,
   parseDumpFileName,
   parseManifest,
   resolveBackupSchedule,
   resolveDailyKeep,
   selectForDeletion,
+  type DirectoryProbe,
   type DumpSet,
+  type Env,
 } from "../dump-core.mjs";
 import type { S3Like } from "@/lib/jobs/offhost-backup";
 
@@ -685,5 +690,170 @@ describe("finding a dump in the bucket", () => {
     expect(
       bucketConfigFromEnv({ ...env, BACKUP_S3_SECRET_KEY: "" }),
     ).toBeNull();
+  });
+});
+
+describe("whether the dump directory survives the container", () => {
+  // /proc/self/mountinfo of the app container under the bundled compose
+  // file, trimmed to the lines that matter, with and without the volume.
+  const ROOT =
+    "1470 1351 0:330 / / rw,relatime master:396 - overlay overlay rw,lowerdir=/var/lib/docker/overlay2/l/A:/var/lib/docker/overlay2/l/B,upperdir=/var/lib/docker/overlay2/x/diff,workdir=/var/lib/docker/overlay2/x/work";
+  const COMMON = [
+    "1471 1470 0:333 / /proc rw,nosuid,nodev,noexec,relatime - proc proc rw",
+    "1472 1470 0:334 / /dev rw,nosuid - tmpfs tmpfs rw,size=65536k,mode=755",
+    "1481 1470 8:1 /var/lib/docker/containers/c/resolv.conf /etc/resolv.conf rw,relatime - ext4 /dev/sda1 rw",
+    "1483 1470 8:1 /var/lib/docker/containers/c/hosts /etc/hosts rw,relatime - ext4 /dev/sda1 rw",
+  ];
+  const VOLUME =
+    "1480 1470 8:1 /var/lib/docker/volumes/healthlog_backups/_data /var/lib/healthlog/backups rw,relatime master:1 - ext4 /dev/sda1 rw,discard";
+  const DIR = "/var/lib/healthlog/backups";
+
+  function probe(
+    over: Partial<DirectoryProbe> & { files?: Record<string, string> } = {},
+  ): DirectoryProbe {
+    const { files = {}, ...rest } = over;
+    return {
+      writable: () => true,
+      realpath: (p) => p,
+      readText: (p) => files[p] ?? null,
+      exists: (p) => p in files,
+      device: () => null,
+      env: {},
+      ...rest,
+    };
+  }
+  const inDocker = (...lines: string[]) =>
+    probe({
+      files: {
+        "/.dockerenv": "",
+        "/proc/self/mountinfo": [ROOT, ...COMMON, ...lines].join("\n"),
+      },
+    });
+
+  it("reads mount points and types, escapes undone, odd lines skipped", () => {
+    const mounts = parseMountInfo(
+      [
+        ROOT,
+        "90 1470 8:1 / /mnt/my\\040disk rw - ext4 /dev/sdb1 rw",
+        "not a mount line",
+        "",
+      ].join("\n"),
+    );
+    expect(mounts).toEqual([
+      { mountPoint: "/", fsType: "overlay" },
+      { mountPoint: "/mnt/my disk", fsType: "ext4" },
+    ]);
+  });
+
+  it("finds the longest mount that holds a path, by whole segments", () => {
+    const mounts = [
+      { mountPoint: "/", fsType: "overlay" },
+      { mountPoint: "/var/lib/healthlog/back", fsType: "ext4" },
+      { mountPoint: "/var/lib/healthlog", fsType: "xfs" },
+    ];
+    expect(mountContaining(DIR, mounts)?.mountPoint).toBe("/var/lib/healthlog");
+    expect(mountContaining("/var/lib/other", mounts)?.mountPoint).toBe("/");
+    expect(mountContaining("/var/lib/healthlog", mounts)?.fsType).toBe("xfs");
+  });
+
+  it("counts the backups volume as kept", () => {
+    expect(backupDirectoryStatus(DIR, inDocker(VOLUME))).toEqual({
+      writable: true,
+      persistent: true,
+      reason: "volume",
+    });
+  });
+
+  it("does not count the image's own directory without the volume, though it is writable", () => {
+    expect(backupDirectoryStatus(DIR, inDocker())).toEqual({
+      writable: true,
+      persistent: false,
+      reason: "container_layer",
+    });
+  });
+
+  it("counts a volume on a parent directory, and follows a symlink to where the files land", () => {
+    const parent =
+      "1480 1470 8:1 /srv/healthlog /var/lib/healthlog rw - ext4 /dev/sda1 rw";
+    expect(backupDirectoryStatus(DIR, inDocker(parent)).persistent).toBe(true);
+    const linked = {
+      ...inDocker(VOLUME),
+      realpath: (p: string) => (p === "/backups" ? DIR : p),
+    };
+    expect(backupDirectoryStatus("/backups", linked).reason).toBe("volume");
+    expect(backupDirectoryStatus("/elsewhere", inDocker(VOLUME)).reason).toBe(
+      "container_layer",
+    );
+  });
+
+  it("does not count a tmpfs as kept", () => {
+    const tmpfs =
+      "1480 1470 0:400 / /var/lib/healthlog/backups rw - tmpfs tmpfs rw,size=1g";
+    expect(backupDirectoryStatus(DIR, inDocker(tmpfs))).toEqual({
+      writable: true,
+      persistent: false,
+      reason: "memory",
+    });
+  });
+
+  it("recognises a container by Podman's marker, Kubernetes, the cgroup or an overlay root", () => {
+    const table = [ROOT, ...COMMON].join("\n");
+    const cases: Array<{ files?: Record<string, string>; env?: Env }> = [
+      { files: { "/run/.containerenv": "" } },
+      { env: { KUBERNETES_SERVICE_HOST: "10.0.0.1" } },
+      { files: { "/proc/self/cgroup": "12:pids:/docker/0123abcd\n" } },
+      {},
+    ];
+    for (const extra of cases) {
+      const p = probe({
+        env: extra.env ?? {},
+        files: { ...extra.files, "/proc/self/mountinfo": table },
+      });
+      expect(backupDirectoryStatus(DIR, p).reason).toBe("container_layer");
+    }
+  });
+
+  it("treats a writable directory outside a container as kept: a host, a VM", () => {
+    const host = probe({
+      files: {
+        "/proc/self/cgroup": "0::/user.slice/user-1000.slice\n",
+        "/proc/self/mountinfo":
+          "22 1 259:2 / / rw,relatime shared:1 - ext4 /dev/nvme0n1p2 rw",
+      },
+    });
+    expect(backupDirectoryStatus(DIR, host)).toEqual({
+      writable: true,
+      persistent: true,
+      reason: "host",
+    });
+    // No /proc at all (macOS, a BSD): a host too.
+    expect(backupDirectoryStatus(DIR, probe()).reason).toBe("host");
+  });
+
+  it("falls back to the device numbers in a container without a mount table", () => {
+    const same = probe({ files: { "/.dockerenv": "" }, device: () => 42 });
+    expect(backupDirectoryStatus(DIR, same).reason).toBe("container_layer");
+    const apart = probe({
+      files: { "/.dockerenv": "" },
+      device: (p) => (p === "/" ? 42 : 7),
+    });
+    expect(backupDirectoryStatus(DIR, apart).reason).toBe("volume");
+  });
+
+  it("says when nothing can be written at all, before anything else", () => {
+    expect(
+      backupDirectoryStatus(DIR, {
+        ...inDocker(VOLUME),
+        writable: () => false,
+      }),
+    ).toEqual({ writable: false, persistent: false, reason: "not_writable" });
+  });
+
+  it("answers for a real directory on this machine without throwing", () => {
+    const status = backupDirectoryStatus(tempDir());
+    expect(status.writable).toBe(true);
+    expect(["host", "volume", "container_layer", "memory"]).toContain(
+      status.reason,
+    );
   });
 });

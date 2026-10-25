@@ -8346,7 +8346,9 @@
           "noDirectory": "Ten serwer nie może zapisywać w {dir} i nie ustawiono magazynu zewnętrznego, więc nie da się wykonać zrzutu bazy. Podłącz wolumin kopii.",
           "retentionLocal": "Usunięte konta pozostają w zrzutach, dopóki te nie wygasną: na tym serwerze zostaje {nights} najnowszych.",
           "retentionOffhost": "Reguła cyklu życia bucketu usuwa kopie zewnętrzne po {days} dniach.",
-          "retentionOffhostMissing": "Żadna reguła cyklu życia bucketu nie obejmuje database/, więc zrzuty tam, wraz z usuniętymi kontami w nich, nigdy nie są usuwane. Dodaj regułę dla tego prefiksu."
+          "retentionOffhostMissing": "Żadna reguła cyklu życia bucketu nie obejmuje database/, więc zrzuty tam, wraz z usuniętymi kontami w nich, nigdy nie są usuwane. Dodaj regułę dla tego prefiksu.",
+          "notPersistentOffhost": "{dir} nie leży na trwałym nośniku (jest wewnątrz kontenera zamiast na podłączonym woluminie albo w pamięci), więc zapisany tam zrzut przepadnie przy następnej aktualizacji. Zrzuty trafiają tylko poza serwer: żaden nie zostaje tutaj i żaden nie powstaje przed migracją. Podłącz wolumin kopii.",
+          "notPersistent": "{dir} nie leży na trwałym nośniku (jest wewnątrz kontenera zamiast na podłączonym woluminie albo w pamięci), a zewnętrzny bucket nie jest ustawiony, więc żaden zrzut bazy nie jest nigdzie przechowywany. Podłącz wolumin kopii."
         }
       },
       "danger-zone": {
@@ -8660,7 +8662,8 @@
         "offhost_copies": "Kopie poza hostem",
         "restore_drill": "Próba przywracania",
         "offhost_setup": "Kopia poza hostem",
-        "recovery_kit": "Zestaw odzyskiwania"
+        "recovery_kit": "Zestaw odzyskiwania",
+        "dump_retention": "Zrzuty w buckecie"
       },
       "at": {
         "database_dump": "Najnowszy zrzut: {date}",
@@ -8676,7 +8679,8 @@
         "offhost_copies": "Otwórz kopie zapasowe",
         "restore_drill": "Otwórz kopie zapasowe",
         "offhost_setup": "Otwórz kopie zapasowe",
-        "recovery_kit": "Otwórz zestaw"
+        "recovery_kit": "Otwórz zestaw",
+        "dump_retention": "Otwórz kopie zapasowe"
       },
       "reason": {
         "database_dump": {
@@ -8689,7 +8693,9 @@
           "stale": "Najnowszy zrzut bazy danych ma {hours} h.",
           "last_failed": "Ostatni zrzut bazy danych nie powiódł się. Poprzedni jest jeszcze aktualny.",
           "fresh": "Najnowszy zrzut bazy danych jest aktualny.",
-          "nowhere_to_write": "Katalog zrzutów {directory} nie jest zapisywalny i nie skonfigurowano zewnętrznego bucketu, więc żaden zrzut nie może zostać zachowany."
+          "nowhere_to_write": "Katalog zrzutów {directory} nie jest zapisywalny i nie skonfigurowano zewnętrznego bucketu, więc żaden zrzut nie może zostać zachowany.",
+          "not_persistent": "Katalog zrzutów {directory} nie leży na trwałym nośniku, a zewnętrzny bucket nie jest ustawiony, więc każdy zrzut przepadnie przy następnej aktualizacji. Podłącz wolumin kopii.",
+          "fresh_offhost_only": "Najnowszy zrzut bazy jest aktualny i leży w zewnętrznym buckecie. Na tym serwerze żaden nie zostaje, bo {directory} nie leży na trwałym nośniku, i żaden nie powstaje przed migracją."
         },
         "weekly_copy": {
           "no_accounts": "Nie ma jeszcze kont do skopiowania.",
@@ -8723,6 +8729,13 @@
           "no_admin": "Nie ma jeszcze konta administratora.",
           "not_confirmed": "Nikt nie potwierdził kopii kluczy potrzebnych do przywrócenia: {keys}.",
           "not_confirmed_grace": "Zapisz kopię kluczy potrzebnych do przywrócenia: {keys}."
+        },
+        "dump_retention": {
+          "not_configured": "Zewnętrzny bucket nie jest ustawiony.",
+          "no_offhost_dumps": "Żaden zrzut bazy nie trafia do bucketu.",
+          "missing": "Żadna reguła cyklu życia bucketu nie obejmuje database/, więc zrzuty tam, wraz z usuniętymi kontami w nich, nigdy nie są usuwane. Dodaj regułę dla tego prefiksu.",
+          "configured": "Bucket usuwa zrzuty po {days} dniach.",
+          "unknown": "Bucket nie podaje, czy jakaś reguła usuwa stare zrzuty. Sprawdź, czy reguła cyklu życia obejmuje database/."
         }
       },
       "recovered": {
@@ -8731,7 +8744,8 @@
         "offhost_copies": "Każde konto znów ma aktualną kopię poza hostem.",
         "restore_drill": "Próba przywracania znów się powiodła.",
         "offhost_setup": "Kopie poza hostem są już skonfigurowane.",
-        "recovery_kit": "Zestaw odzyskiwania jest znów potwierdzony."
+        "recovery_kit": "Zestaw odzyskiwania jest znów potwierdzony.",
+        "dump_retention": "Reguła cyklu życia w buckecie obejmuje teraz zrzuty bazy."
       }
     }
   },
@@ -11863,7 +11877,8 @@
           "raster-failed": "Nie udało się przetworzyć stron PDF do odczytu. Znaną przyczyną są skany w faksowych formatach kompresji.",
           "provider-error": "Dostawca AI nie zdołał odczytać tego dokumentu przy ostatniej próbie.",
           "pdf-needs-anthropic": "Skonfigurowany dostawca AI nie odczytuje plików PDF. Poradzi sobie z tym dostawca Claude lub lokalny OCR.",
-          "empty-transcription": "Dostawca AI nie zwrócił tekstu dla tego dokumentu."
+          "empty-transcription": "Dostawca AI nie zwrócił tekstu dla tego dokumentu.",
+          "resource-limit": "Ten PDF jest zbyt duży lub zbyt złożony, żeby odczytać go tutaj. Sam plik jest w porządku i nadal się otwiera."
         }
       },
       "loadError": "Nie udało się wczytać tego dokumentu.",

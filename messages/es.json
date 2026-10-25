@@ -8346,7 +8346,9 @@
           "noDirectory": "Este servidor no puede escribir en {dir} y no hay almacenamiento externo configurado, así que no se puede hacer ningún volcado. Monta el volumen de copias.",
           "retentionLocal": "Las cuentas eliminadas siguen en los volcados hasta que estos caducan: en este servidor se guardan los {nights} más recientes.",
           "retentionOffhost": "La regla de ciclo de vida del bucket elimina las copias externas tras {days} días.",
-          "retentionOffhostMissing": "Ninguna regla de ciclo de vida del bucket cubre database/, así que los volcados de ahí, y las cuentas eliminadas que contienen, nunca se borran. Añade una regla para ese prefijo."
+          "retentionOffhostMissing": "Ninguna regla de ciclo de vida del bucket cubre database/, así que los volcados de ahí, y las cuentas eliminadas que contienen, nunca se borran. Añade una regla para ese prefijo.",
+          "notPersistentOffhost": "{dir} no está en almacenamiento persistente (está dentro del contenedor y no en un volumen montado, o en memoria), así que un volcado guardado ahí se perdería en la próxima actualización. Los volcados solo se guardan fuera: aquí no queda ninguno y no se hace ninguno antes de una migración. Monta el volumen de copias.",
+          "notPersistent": "{dir} no está en almacenamiento persistente (está dentro del contenedor y no en un volumen montado, o en memoria) y no hay un bucket externo configurado, así que no se conserva ningún volcado de la base de datos en ningún sitio. Monta el volumen de copias."
         }
       },
       "danger-zone": {
@@ -8660,7 +8662,8 @@
         "offhost_copies": "Copias fuera del host",
         "restore_drill": "Simulacro de restauración",
         "offhost_setup": "Copia fuera del host",
-        "recovery_kit": "Kit de recuperación"
+        "recovery_kit": "Kit de recuperación",
+        "dump_retention": "Volcados en el bucket"
       },
       "at": {
         "database_dump": "Volcado más reciente: {date}",
@@ -8676,7 +8679,8 @@
         "offhost_copies": "Abrir copias de seguridad",
         "restore_drill": "Abrir copias de seguridad",
         "offhost_setup": "Abrir copias de seguridad",
-        "recovery_kit": "Abrir el kit"
+        "recovery_kit": "Abrir el kit",
+        "dump_retention": "Abrir copias de seguridad"
       },
       "reason": {
         "database_dump": {
@@ -8689,7 +8693,9 @@
           "stale": "El volcado de la base de datos más reciente tiene {hours} horas.",
           "last_failed": "El último volcado de la base de datos falló. El anterior sigue siendo reciente.",
           "fresh": "El último volcado de la base de datos es reciente.",
-          "nowhere_to_write": "No se puede escribir en el directorio de volcados {directory} y no hay ningún bucket externo configurado, así que no se puede guardar ningún volcado."
+          "nowhere_to_write": "No se puede escribir en el directorio de volcados {directory} y no hay ningún bucket externo configurado, así que no se puede guardar ningún volcado.",
+          "not_persistent": "El directorio de volcados {directory} no está en almacenamiento persistente y no hay un bucket externo configurado, así que cada volcado se perdería en la próxima actualización. Monta el volumen de copias.",
+          "fresh_offhost_only": "El volcado más reciente de la base de datos es actual y está en el bucket externo. En este servidor no se conserva ninguno, porque {directory} no está en almacenamiento persistente, y no se hace ninguno antes de una migración."
         },
         "weekly_copy": {
           "no_accounts": "Todavía no hay cuentas que copiar.",
@@ -8723,6 +8729,13 @@
           "no_admin": "Todavía no hay ninguna cuenta de administrador.",
           "not_confirmed": "Nadie ha confirmado una copia de las claves que necesita una restauración: {keys}.",
           "not_confirmed_grace": "Guarda una copia de las claves que necesita una restauración: {keys}."
+        },
+        "dump_retention": {
+          "not_configured": "No hay ningún bucket externo configurado.",
+          "no_offhost_dumps": "Ningún volcado de la base de datos va al bucket.",
+          "missing": "Ninguna regla de ciclo de vida del bucket cubre database/, así que los volcados de ahí, y las cuentas eliminadas que contienen, nunca se borran. Añade una regla para ese prefijo.",
+          "configured": "El bucket borra los volcados a los {days} días.",
+          "unknown": "El bucket no indica si alguna regla borra los volcados antiguos. Comprueba que una regla de ciclo de vida cubra database/."
         }
       },
       "recovered": {
@@ -8731,7 +8744,8 @@
         "offhost_copies": "Cada cuenta vuelve a tener una copia fuera del host reciente.",
         "restore_drill": "El simulacro de restauración vuelve a superarse.",
         "offhost_setup": "Las copias fuera del host ya están configuradas.",
-        "recovery_kit": "El kit de recuperación vuelve a estar confirmado."
+        "recovery_kit": "El kit de recuperación vuelve a estar confirmado.",
+        "dump_retention": "Ahora una regla de ciclo de vida del bucket cubre los volcados de la base de datos."
       }
     }
   },
@@ -11863,7 +11877,8 @@
           "raster-failed": "Las páginas del PDF no se pudieron procesar para su lectura. Los formatos de compresión de fax escaneados son una causa conocida.",
           "provider-error": "El proveedor de IA no pudo leer este documento en el último intento.",
           "pdf-needs-anthropic": "El proveedor de IA configurado no puede leer archivos PDF. Un proveedor Claude o el OCR local sí pueden.",
-          "empty-transcription": "El proveedor de IA no devolvió texto para este documento."
+          "empty-transcription": "El proveedor de IA no devolvió texto para este documento.",
+          "resource-limit": "Este PDF es demasiado grande o complejo para leerlo aquí. El archivo en sí está bien y se sigue pudiendo abrir."
         }
       },
       "loadError": "No se pudo cargar este documento.",

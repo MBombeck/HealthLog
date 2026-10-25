@@ -33,10 +33,13 @@ import {
   constants as fsConstants,
   createReadStream,
   createWriteStream,
+  existsSync,
   mkdirSync,
   openSync,
+  readFileSync,
   readSync,
   readdirSync,
+  realpathSync,
   statSync,
 } from "node:fs";
 import { readFile, rename, rm, stat, writeFile } from "node:fs/promises";
@@ -220,6 +223,193 @@ export function isWritableDirectory(dir) {
   } catch {
     return false;
   }
+}
+
+// ── Whether a dump kept there survives ─────────────────────────────────────
+
+/**
+ * File systems that live in memory: a dump on one is gone at the next restart.
+ */
+const EPHEMERAL_FS_TYPES = new Set(["tmpfs", "ramfs"]);
+
+/**
+ * cgroup paths that name a container runtime (cgroup v1; under v2 a container
+ * sees `0::/`, and the marker files or the root mount answer instead).
+ */
+const CONTAINER_CGROUP = /\/(docker|kubepods|containerd|libpod|podman)[/-]/;
+
+/**
+ * @typedef {{ mountPoint: string; fsType: string }} MountEntry
+ */
+
+/** Undo the octal escapes the kernel writes for space, tab, newline, `\`. */
+function unescapeMountPath(raw) {
+  return raw.replace(/\\([0-7]{3})/g, (_, oct) =>
+    String.fromCharCode(Number.parseInt(oct, 8)),
+  );
+}
+
+/**
+ * The mount points and file system types in `/proc/self/mountinfo` text.
+ * Lines that do not have the documented shape are skipped.
+ *
+ * @param {string} text
+ * @returns {MountEntry[]}
+ */
+export function parseMountInfo(text) {
+  /** @type {MountEntry[]} */
+  const mounts = [];
+  for (const line of text.split("\n")) {
+    const sep = line.indexOf(" - ");
+    if (sep < 0) continue;
+    const left = line.slice(0, sep).split(" ");
+    const right = line.slice(sep + 3).split(" ");
+    if (left.length < 6 || !right[0]) continue;
+    mounts.push({ mountPoint: unescapeMountPath(left[4]), fsType: right[0] });
+  }
+  return mounts;
+}
+
+/**
+ * The mount `path` lives on: the longest mount point that is `path` or one of
+ * its parents. A later entry for the same point wins, as it covers the earlier
+ * one. Null when nothing matches (no `/` in the list).
+ *
+ * @param {string} path an absolute path, symlinks resolved
+ * @param {MountEntry[]} mounts
+ * @returns {MountEntry | null}
+ */
+export function mountContaining(path, mounts) {
+  /** @type {MountEntry | null} */
+  let best = null;
+  for (const mount of mounts) {
+    const point = mount.mountPoint;
+    const covers =
+      point === "/" ||
+      path === point ||
+      path.startsWith(point.endsWith("/") ? point : `${point}/`);
+    if (covers && (best === null || point.length >= best.mountPoint.length)) {
+      best = mount;
+    }
+  }
+  return best;
+}
+
+/**
+ * @typedef {{
+ *   writable: (dir: string) => boolean;
+ *   realpath: (path: string) => string;
+ *   readText: (path: string) => string | null;
+ *   exists: (path: string) => boolean;
+ *   device: (path: string) => number | null;
+ *   env: Env;
+ * }} DirectoryProbe
+ */
+
+/** @type {DirectoryProbe} */
+const SYSTEM_PROBE = {
+  writable: isWritableDirectory,
+  realpath: (path) => {
+    try {
+      return realpathSync(path);
+    } catch {
+      return path;
+    }
+  },
+  readText: (path) => {
+    try {
+      return readFileSync(path, "utf8");
+    } catch {
+      return null;
+    }
+  },
+  exists: (path) => existsSync(path),
+  device: (path) => {
+    try {
+      return statSync(path).dev;
+    } catch {
+      return null;
+    }
+  },
+  env: process.env,
+};
+
+/**
+ * Whether this process runs in a container whose root file system is thrown
+ * away when the container is replaced: Docker (`/.dockerenv`), Podman
+ * (`/run/.containerenv`), Kubernetes, a container cgroup, or a root file
+ * system that is an overlay. A host, a VM or a system container with a disk
+ * of its own answers false.
+ *
+ * @param {DirectoryProbe} probe
+ * @param {MountEntry[] | null} mounts
+ */
+export function runsInContainer(probe, mounts) {
+  if (probe.exists("/.dockerenv") || probe.exists("/run/.containerenv")) {
+    return true;
+  }
+  if ((probe.env.KUBERNETES_SERVICE_HOST ?? "").trim()) return true;
+  if (CONTAINER_CGROUP.test(probe.readText("/proc/self/cgroup") ?? "")) {
+    return true;
+  }
+  const root = mounts ? mountContaining("/", mounts) : null;
+  return root?.mountPoint === "/" && root.fsType === "overlay";
+}
+
+/**
+ * @typedef {{
+ *   writable: boolean;
+ *   persistent: boolean;
+ *   reason: "volume" | "host" | "container_layer" | "memory" | "not_writable";
+ * }} BackupDirectoryStatus
+ */
+
+/**
+ * Whether a dump written to `dir` is still there after the container is
+ * replaced, which is what "kept on this server" promises.
+ *
+ *   volume          — in a container, on a mount of its own (the `backups`
+ *                     volume, a bind mount): it survives.
+ *   host            — not in a container: a writable directory is a disk.
+ *   container_layer — in a container, on its root file system: an update
+ *                     replaces the container and the dump with it. The image
+ *                     creates the default directory, so without the volume it
+ *                     is writable and looks fine; this is the case to catch.
+ *   memory          — on a tmpfs: gone at the next restart.
+ *   not_writable    — nothing can be written there at all.
+ *
+ * Never throws. `probe` is the file system; tests hand in their own.
+ *
+ * @param {string} dir
+ * @param {DirectoryProbe} [probe]
+ * @returns {BackupDirectoryStatus}
+ */
+export function backupDirectoryStatus(dir, probe = SYSTEM_PROBE) {
+  if (!probe.writable(dir)) {
+    return { writable: false, persistent: false, reason: "not_writable" };
+  }
+  const text = probe.readText("/proc/self/mountinfo");
+  const mounts = text === null ? null : parseMountInfo(text);
+  if (!runsInContainer(probe, mounts)) {
+    return { writable: true, persistent: true, reason: "host" };
+  }
+  const real = probe.realpath(dir);
+  const mount = mounts ? mountContaining(real, mounts) : null;
+  if (mount) {
+    if (EPHEMERAL_FS_TYPES.has(mount.fsType)) {
+      return { writable: true, persistent: false, reason: "memory" };
+    }
+    return mount.mountPoint === "/"
+      ? { writable: true, persistent: false, reason: "container_layer" }
+      : { writable: true, persistent: true, reason: "volume" };
+  }
+  // No mount table to read: a directory on the root's own device is in the
+  // container's layer.
+  const own = probe.device(real);
+  const root = probe.device("/");
+  return own !== null && own === root
+    ? { writable: true, persistent: false, reason: "container_layer" }
+    : { writable: true, persistent: true, reason: "volume" };
 }
 
 // ── Keys ───────────────────────────────────────────────────────────────────

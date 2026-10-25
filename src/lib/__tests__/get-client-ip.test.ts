@@ -407,6 +407,48 @@ describe("getClientIp against the connection's own peer", () => {
     ).toBe("203.0.113.6");
   });
 
+  // The ranges docs/self-hosting/reverse-proxy.md lists, one address each.
+  // Reserved and multicast stay in: no host on the internet can complete a
+  // TCP handshake from them, so a peer there is on a network the operator
+  // runs, like a private one.
+  it("reads forwarding headers from every range the reverse-proxy page lists", () => {
+    for (const proxy of [
+      "127.0.0.2", // loopback
+      "0.0.0.1", // 0.0.0.0/8
+      "10.1.2.3", // private
+      "172.31.0.9",
+      "192.168.1.20",
+      "100.64.0.1", // CGNAT (Tailscale)
+      "169.254.10.10", // link-local
+      "192.0.0.8", // IETF protocol assignments
+      "198.18.0.4", // benchmarking
+      "240.0.0.1", // reserved
+      "fd7a:115c:a1e0::1", // unique-local (Tailscale)
+      "fe80::1", // link-local
+      "fec0::1", // site-local
+      "::ffff:10.0.0.3", // IPv4-mapped private
+    ]) {
+      expect(
+        getClientIp(stamped(proxy, { "x-forwarded-for": "203.0.113.7" })),
+        proxy,
+      ).toBe("203.0.113.7");
+    }
+    for (const outside of ["8.8.8.8", "2001:4860:4860::8888"]) {
+      expect(
+        getClientIp(stamped(outside, { "x-forwarded-for": "203.0.113.7" })),
+      ).toBe(outside);
+    }
+  });
+
+  it("believes cf-connecting-ip from any peer once the flag is on, which is why the origin must take Cloudflare only", () => {
+    process.env.TRUST_CF_CONNECTING_IP = "1";
+    expect(
+      getClientIp(
+        stamped("198.51.100.7", { "cf-connecting-ip": "203.0.113.9" }),
+      ),
+    ).toBe("203.0.113.9");
+  });
+
   it("reads an IPv4 peer that the socket reports in IPv6 form", () => {
     expect(
       getClientIp(

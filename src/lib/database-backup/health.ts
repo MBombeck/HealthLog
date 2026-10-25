@@ -3,8 +3,8 @@
  * alert can act on.
  *
  * Read from the ledger the job writes (`DatabaseBackupRun`), plus two facts of
- * this process: whether `DB_BACKUP_DIR` is writable here, and whether the
- * off-host bucket is configured. A ledger row that says a copy went off-host
+ * this process: whether `DB_BACKUP_DIR` is writable here and survives the
+ * container being replaced, and whether the off-host bucket is configured. A ledger row that says a copy went off-host
  * outranks this process's environment, for the reason the off-host card gives
  * (a split install can hand the bucket variables to the worker only).
  */
@@ -13,10 +13,11 @@ import { DATABASE_BACKUP_EXPIRE_SECONDS } from "@/lib/jobs/database-backup-queue
 import { offhostBackupConfigured } from "@/lib/jobs/offhost-backup";
 
 import {
+  backupDirectoryStatus,
   databaseBackupEnabled,
-  isWritableDirectory,
   resolveBackupDir,
   resolveDailyKeep,
+  type BackupDirectoryStatus,
 } from "./dump-core.mjs";
 
 export interface DatabaseBackupHealth {
@@ -30,8 +31,20 @@ export interface DatabaseBackupHealth {
    * page says.
    */
   keepNightly: number;
-  /** This process can write there. False means dumps only go off-host. */
+  /** This process can write there. */
   localDirWritable: boolean;
+  /**
+   * A dump written there survives an update: the directory is on a volume or
+   * a bind mount, or the app does not run in a container. False means no dump
+   * is kept on this server, whatever an older ledger row says, and dumps only
+   * go off-host. `localReason` says why.
+   */
+  localPersistent: boolean;
+  /**
+   * `volume`, `host`, `container_layer` (the image's own directory, without
+   * the volume mounted), `memory` (a tmpfs) or `not_writable`.
+   */
+  localReason: BackupDirectoryStatus["reason"];
   /** The off-host bucket is configured, or a dump has been uploaded to it. */
   offhostConfigured: boolean;
   /** The newest dump that was kept on the server or reached the bucket. */
@@ -55,15 +68,22 @@ const ABANDONED_AFTER_MS = DATABASE_BACKUP_EXPIRE_SECONDS * 1000;
 export async function getDatabaseBackupHealth(
   now: Date = new Date(),
   env: NodeJS.ProcessEnv = process.env,
+  directoryStatus: (
+    dir: string,
+  ) => BackupDirectoryStatus = backupDirectoryStatus,
 ): Promise<DatabaseBackupHealth> {
   const directory = resolveBackupDir(env);
+  const local = directoryStatus(directory);
+  // A dump recorded as written into a directory that does not survive the
+  // container was lost with the container that wrote it: only a copy in the
+  // bucket still counts.
+  const keptWhere = local.persistent
+    ? [{ localResult: "written" }, { offhostResult: "uploaded" }]
+    : [{ offhostResult: "uploaded" }];
   const [lastGood, lastFailed, lastAbandoned, everUploaded] = await Promise.all(
     [
       prisma.databaseBackupRun.findFirst({
-        where: {
-          fileName: { not: null },
-          OR: [{ localResult: "written" }, { offhostResult: "uploaded" }],
-        },
+        where: { fileName: { not: null }, OR: keptWhere },
         orderBy: { startedAt: "desc" },
         select: {
           startedAt: true,
@@ -108,7 +128,9 @@ export async function getDatabaseBackupHealth(
     enabled: databaseBackupEnabled(env),
     directory,
     keepNightly: resolveDailyKeep(env),
-    localDirWritable: isWritableDirectory(directory),
+    localDirWritable: local.writable,
+    localPersistent: local.persistent,
+    localReason: local.reason,
     offhostConfigured: offhostBackupConfigured() || everUploaded > 0,
     lastGood: lastGood
       ? {
@@ -116,7 +138,7 @@ export async function getDatabaseBackupHealth(
           fileName: lastGood.fileName ?? "",
           sizeBytes:
             lastGood.dumpBytes === null ? null : Number(lastGood.dumpBytes),
-          local: lastGood.localResult === "written",
+          local: local.persistent && lastGood.localResult === "written",
           offhost: lastGood.offhostResult === "uploaded",
         }
       : null,

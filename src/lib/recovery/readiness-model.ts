@@ -7,8 +7,11 @@
  * ordinary row. A failed monthly drill was on the failing-jobs card three days
  * in thirty. An off-host bucket that was never configured showed only on the
  * backups page, and the key step confirmed one key of the several a restore
- * needs. This module turns them into six signals with one verdict each, which
- * the readiness tile shows and the hourly evaluation pushes to every admin.
+ * needs. A bucket whose lifecycle rule left `database/` out kept every dump,
+ * and every deleted account inside it, forever, and only the backups page
+ * said so. This module turns them into seven signals with one verdict each,
+ * which the readiness tile shows and the hourly evaluation pushes to every
+ * admin.
  *
  * Pure: the inputs are read elsewhere (`readiness.ts`), so each threshold is a
  * unit test away and the tile and the push cannot disagree about a verdict.
@@ -26,6 +29,7 @@ import {
   classifyOffhostBackup,
   type OffhostBackupFreshness,
 } from "@/lib/jobs/offhost-backup-freshness";
+import type { LifecycleVerdict } from "@/lib/jobs/offhost-lifecycle";
 import type { DatabaseBackupHealth } from "@/lib/recovery/database-dump-health";
 import type { KitEntry } from "@/lib/recovery/kit-rules";
 
@@ -50,6 +54,7 @@ export const READINESS_SIGNALS = [
   "offhost_copies",
   "restore_drill",
   "offhost_setup",
+  "dump_retention",
   "recovery_kit",
 ] as const;
 export type ReadinessSignalId = (typeof READINESS_SIGNALS)[number];
@@ -69,6 +74,7 @@ export const READINESS_FIX_PATHS: Record<ReadinessSignalId, string> = {
   offhost_copies: "/admin/backups",
   restore_drill: "/admin/backups",
   offhost_setup: "/admin/backups",
+  dump_retention: "/admin/backups",
   recovery_kit: "/admin/encryption",
 };
 
@@ -121,6 +127,12 @@ export interface ReadinessInputs {
   };
   offhost: {
     configured: boolean;
+    /**
+     * The bucket's lifecycle rules for keys under `database/`, as the backups
+     * page reads them (`probeOffhostLifecycle`). Null when no bucket is
+     * configured.
+     */
+    databaseLifecycle: LifecycleVerdict | null;
     accounts: ReadonlyArray<{
       lastAttemptAt: Date | null;
       lastSuccessAt: Date | null;
@@ -185,19 +197,24 @@ export function evaluateDatabaseDump(
     // directory, no bucket) switched off what it could not do, which is not
     // news.
     const neverUsed = dump.lastGood === null && dump.lastFailure === null;
-    const cannotWrite = !dump.localDirWritable && !dump.offhostConfigured;
+    const cannotWrite = !dump.localPersistent && !dump.offhostConfigured;
     return neverUsed && cannotWrite
       ? signal(id, "inactive", "disabled", null)
       : signal(id, "attention", "disabled", lastGoodAt);
   }
   const lastFailureAt = dump.lastFailure ? new Date(dump.lastFailure.at) : null;
   const failureReason = dump.lastFailure?.error ?? null;
-  // A directory this process cannot write is a valid setup when the dumps go
-  // to the bucket; with no bucket either, no dump can be kept anywhere.
-  if (!dump.localDirWritable && !dump.offhostConfigured) {
-    return signal(id, "failing", "nowhere_to_write", lastGoodAt, {
-      directory: dump.directory,
-    });
+  // A directory that keeps nothing (not writable, or writable inside the
+  // container and lost at the next update) is a valid setup when the dumps
+  // go to the bucket; with no bucket either, no dump is kept anywhere.
+  if (!dump.localPersistent && !dump.offhostConfigured) {
+    return signal(
+      id,
+      "failing",
+      dump.localDirWritable ? "not_persistent" : "nowhere_to_write",
+      lastGoodAt,
+      { directory: dump.directory },
+    );
   }
   const limitMs = DUMP_FAILING_AFTER_HOURS * HOUR_MS;
   const failedSinceGood =
@@ -242,7 +259,13 @@ export function evaluateDatabaseDump(
       failureReason,
     );
   }
-  return signal(id, "ok", "fresh", lastGoodAt);
+  // Fine, and worth saying: the bucket holds the only copy, and no dump is
+  // taken before a migration.
+  return dump.localPersistent
+    ? signal(id, "ok", "fresh", lastGoodAt)
+    : signal(id, "ok", "fresh_offhost_only", lastGoodAt, {
+        directory: dump.directory,
+      });
 }
 
 /**
@@ -374,6 +397,42 @@ export function evaluateOffhostSetup(
     : signal(id, "ok", "not_configured_grace", graceEnds);
 }
 
+/**
+ * Whether the bucket ever removes the database dumps. Each one holds every
+ * account that existed when it was taken, so a bucket with no rule for
+ * `database/` keeps a deleted account's data for as long as the bucket
+ * exists. Attention, not failing: every restore still works. A bucket that
+ * will not say (a credential without the permission, a target without the
+ * call) is not news either way.
+ */
+export function evaluateDumpRetention(
+  input: Pick<ReadinessInputs, "dump" | "offhost">,
+): ReadinessSignal {
+  const id = "dump_retention";
+  if (!input.offhost.configured) {
+    return signal(id, "inactive", "not_configured", null);
+  }
+  const { dump } = input;
+  const dumpsGoOffhost =
+    dump !== null &&
+    dump !== "unreadable" &&
+    dump.enabled &&
+    dump.offhostConfigured;
+  if (!dumpsGoOffhost) {
+    return signal(id, "inactive", "no_offhost_dumps", null);
+  }
+  const rule = input.offhost.databaseLifecycle;
+  if (rule?.state === "missing") {
+    return signal(id, "attention", "missing", null);
+  }
+  if (rule?.state === "configured" && rule.expirationDays !== null) {
+    return signal(id, "ok", "configured", null, {
+      days: rule.expirationDays,
+    });
+  }
+  return signal(id, "ok", "unknown", null);
+}
+
 export function evaluateRecoveryKit(
   input: Pick<ReadinessInputs, "now" | "firstAdminAt" | "kit">,
 ): ReadinessSignal {
@@ -420,6 +479,7 @@ export function evaluateRecoveryReadiness(
     evaluateOffhostCopies(inputs),
     evaluateRestoreDrill(inputs),
     evaluateOffhostSetup(inputs),
+    evaluateDumpRetention(inputs),
     evaluateRecoveryKit(inputs),
   ];
   const state = signals.reduce<Exclude<ReadinessState, "inactive">>(

@@ -8346,7 +8346,9 @@
           "noDirectory": "Deze server kan niet schrijven naar {dir} en er is geen externe opslag ingesteld, dus er kan geen databasedump worden gemaakt. Koppel het back-upvolume.",
           "retentionLocal": "Verwijderde accounts blijven in de dumps tot die verlopen: op deze server blijven de nieuwste {nights} bewaard.",
           "retentionOffhost": "De levenscyclusregel van de bucket verwijdert externe kopieën na {days} dagen.",
-          "retentionOffhostMissing": "Geen levenscyclusregel in de bucket geldt voor database/, dus dumps daar, en de verwijderde accounts erin, worden nooit verwijderd. Voeg een regel voor dat voorvoegsel toe."
+          "retentionOffhostMissing": "Geen levenscyclusregel in de bucket geldt voor database/, dus dumps daar, en de verwijderde accounts erin, worden nooit verwijderd. Voeg een regel voor dat voorvoegsel toe.",
+          "notPersistentOffhost": "{dir} staat niet op blijvende opslag (in de container in plaats van op een gekoppeld volume, of in het geheugen), dus een dump die daar wordt geschreven gaat bij de volgende update verloren. Dumps gaan alleen extern: hier wordt er geen bewaard en vóór een migratie wordt er geen gemaakt. Koppel het back-upvolume.",
+          "notPersistent": "{dir} staat niet op blijvende opslag (in de container in plaats van op een gekoppeld volume, of in het geheugen) en er is geen externe bucket ingesteld, dus nergens wordt een databasedump bewaard. Koppel het back-upvolume."
         }
       },
       "danger-zone": {
@@ -8660,7 +8662,8 @@
         "offhost_copies": "Externe kopieën",
         "restore_drill": "Hersteltest",
         "offhost_setup": "Externe back-up",
-        "recovery_kit": "Herstelkit"
+        "recovery_kit": "Herstelkit",
+        "dump_retention": "Dumps in de bucket"
       },
       "at": {
         "database_dump": "Nieuwste dump: {date}",
@@ -8676,7 +8679,8 @@
         "offhost_copies": "Back-ups openen",
         "restore_drill": "Back-ups openen",
         "offhost_setup": "Back-ups openen",
-        "recovery_kit": "Kit openen"
+        "recovery_kit": "Kit openen",
+        "dump_retention": "Back-ups openen"
       },
       "reason": {
         "database_dump": {
@@ -8689,7 +8693,9 @@
           "stale": "De nieuwste databasedump is {hours} uur oud.",
           "last_failed": "De laatste databasedump is mislukt. De dump daarvoor is nog recent.",
           "fresh": "De nieuwste databasedump is recent.",
-          "nowhere_to_write": "De dumpmap {directory} is niet beschrijfbaar en er is geen externe bucket ingesteld, dus er kan geen dump worden bewaard."
+          "nowhere_to_write": "De dumpmap {directory} is niet beschrijfbaar en er is geen externe bucket ingesteld, dus er kan geen dump worden bewaard.",
+          "not_persistent": "De dumpmap {directory} staat niet op blijvende opslag en er is geen externe bucket ingesteld, dus elke dump gaat bij de volgende update verloren. Koppel het back-upvolume.",
+          "fresh_offhost_only": "De nieuwste databasedump is recent en staat in de externe bucket. Op deze server wordt er geen bewaard, omdat {directory} niet op blijvende opslag staat, en vóór een migratie wordt er geen gemaakt."
         },
         "weekly_copy": {
           "no_accounts": "Er zijn nog geen accounts om te kopiëren.",
@@ -8723,6 +8729,13 @@
           "no_admin": "Er is nog geen beheerdersaccount.",
           "not_confirmed": "Niemand heeft een kopie bevestigd van de sleutels die een herstel nodig heeft: {keys}.",
           "not_confirmed_grace": "Bewaar een kopie van de sleutels die een herstel nodig heeft: {keys}."
+        },
+        "dump_retention": {
+          "not_configured": "Er is geen externe bucket ingesteld.",
+          "no_offhost_dumps": "Er gaat geen databasedump naar de bucket.",
+          "missing": "Geen levenscyclusregel in de bucket geldt voor database/, dus dumps daar, en de verwijderde accounts erin, worden nooit verwijderd. Voeg een regel voor dat voorvoegsel toe.",
+          "configured": "De bucket verwijdert dumps na {days} dagen.",
+          "unknown": "De bucket zegt niet of een regel oude dumps verwijdert. Controleer of een levenscyclusregel database/ dekt."
         }
       },
       "recovered": {
@@ -8731,7 +8744,8 @@
         "offhost_copies": "Elk account heeft weer een recente externe kopie.",
         "restore_drill": "De hersteltest is weer geslaagd.",
         "offhost_setup": "Externe kopieën zijn nu ingesteld.",
-        "recovery_kit": "De herstelkit is weer bevestigd."
+        "recovery_kit": "De herstelkit is weer bevestigd.",
+        "dump_retention": "Een levenscyclusregel in de bucket dekt nu de databasedumps."
       }
     }
   },
@@ -11863,7 +11877,8 @@
           "raster-failed": "De PDF-pagina's konden niet worden weergegeven om te lezen. Compressieformaten van gescande faxen zijn een bekende oorzaak.",
           "provider-error": "De AI-provider kon dit document bij de laatste poging niet lezen.",
           "pdf-needs-anthropic": "De ingestelde AI-provider kan geen PDF-bestanden lezen. Een Claude-provider of lokale OCR kan dat wel.",
-          "empty-transcription": "De AI-provider gaf geen tekst terug voor dit document."
+          "empty-transcription": "De AI-provider gaf geen tekst terug voor dit document.",
+          "resource-limit": "Deze pdf is te groot of te complex om hier te lezen. Het bestand zelf is in orde en opent nog steeds."
         }
       },
       "loadError": "Dit document kon niet worden geladen.",

@@ -13,9 +13,11 @@
  *
  * Exit 0: the dump was written, or there was nothing to do (no pending
  * migration, a new database, `DB_BACKUP_BEFORE_MIGRATE=false`), or there is no
- * writable directory to put it in, which is said as a warning and is not a
- * reason to keep the app down. Exit 1: the directory is writable and the dump
- * failed. The entrypoint then stops the boot and names the switch that skips
+ * directory to put it in that survives the container (none writable, or only
+ * the image's own directory without the volume, which the update that brings
+ * these migrations is about to throw away), which is said as a warning and is
+ * not a reason to keep the app down. Exit 1: the directory is kept and the
+ * dump failed. The entrypoint then stops the boot and names the switch that skips
  * the dump, because migrating without the way back the operator was promised
  * is the one thing this step exists to prevent.
  *
@@ -28,9 +30,9 @@ import { pathToFileURL } from "node:url";
 
 import {
   applyRetention,
+  backupDirectoryStatus,
   connect,
   createDatabaseDump,
-  isWritableDirectory,
   latestMigration,
   listUserTables,
   connectionFromUrl,
@@ -60,7 +62,11 @@ function mb(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export async function preMigrationDump(env = process.env) {
+/**
+ * @param {Record<string, string | undefined>} [env]
+ * @param {{ directoryStatus?: typeof backupDirectoryStatus }} [options]
+ */
+export async function preMigrationDump(env = process.env, options = {}) {
   if (!preMigrationDumpEnabled(env)) {
     log("DB_BACKUP_BEFORE_MIGRATE=false, no dump before migrating.");
     return 0;
@@ -101,9 +107,15 @@ export async function preMigrationDump(env = process.env) {
   }
 
   const dir = resolveBackupDir(env);
-  if (!isWritableDirectory(dir)) {
+  const status = (options.directoryStatus ?? backupDirectoryStatus)(dir);
+  if (!status.persistent) {
+    const why = !status.writable
+      ? "is not writable"
+      : status.reason === "memory"
+        ? "is in memory (tmpfs) and would not keep a dump past a restart"
+        : "is inside the container, not on a mounted volume, and would not keep a dump past this update";
     warn(
-      `${dir} is not writable, so no dump is taken before the ${pending.length} pending migration(s). ` +
+      `${dir} ${why}, so no dump is taken before the ${pending.length} pending migration(s). ` +
         "Mount the backups volume (docker-compose.yml) to keep a way back; continuing.",
     );
     return 0;

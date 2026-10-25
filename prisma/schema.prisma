@@ -6022,7 +6022,9 @@ model DatabaseBackupRun {
   /// Size of the dump in bytes.
   dumpBytes     BigInt?   @map("dump_bytes")
   /// `written` (kept in DB_BACKUP_DIR), `no_directory` (no writable
-  /// directory, the dump went off-host only), or `failed`.
+  /// directory, the dump went off-host only), `not_persistent` (writable but
+  /// in the container's layer or in memory, so nothing was kept there),
+  /// `skipped`, or `failed`.
   localResult   String    @map("local_result")
   /// `uploaded`, `not_configured` or `failed`.
   offhostResult String    @map("offhost_result")
@@ -9075,10 +9077,10 @@ model InboundDocument {
   /// Why the most recent index attempt produced NO index — a closed string
   /// enum (`DocumentIndexOutcomeValue` in
   /// `src/lib/validations/inbound-documents.ts`): local-empty |
-  /// local-unsupported | decrypt-error | raster-failed | provider-error |
-  /// pdf-needs-anthropic | empty-transcription. Null after a successful
-  /// attempt (the `DocumentContentIndex` row itself is the success signal)
-  /// and before the first attempt. Lets the detail view tell "never tried"
+  /// local-unsupported | decrypt-error | resource-limit | raster-failed |
+  /// provider-error | pdf-needs-anthropic | empty-transcription. Null after a
+  /// successful attempt (the `DocumentContentIndex` row itself is the success
+  /// signal) and before the first attempt. Lets the detail view tell "never tried"
   /// from "tried and here is why it failed" instead of showing a bare
   /// not-indexed state for both.
   lastIndexOutcome     String?               @map("last_index_outcome")

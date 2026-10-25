@@ -21,8 +21,8 @@ The weekly, pre-wipe and off-host copies carry the whole record, document
 files and ECG traces included, with the database's ciphertext inside them as
 stored. An uploaded copy holds whatever its file held. The personal
 export is portable: readable values, and documents as metadata only. It is
-meant for the person to keep and read. A restore refuses it when the account
-holds any document, because the file has no document content to put back.
+meant for the person to keep and read. A restore refuses it when the file
+lists any document, because it carries no document content to put back.
 
 Two kinds of data are not in any account copy: workout GPS routes and sample
 series. Credentials, devices, share links and account grants are left out on

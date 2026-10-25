@@ -8321,7 +8321,9 @@
           "noDirectory": "이 서버는 {dir}에 쓸 수 없고 외부 저장소도 설정되지 않아 데이터베이스 덤프를 만들 수 없습니다. 백업 볼륨을 마운트하세요.",
           "retentionLocal": "삭제된 계정은 덤프가 만료될 때까지 덤프에 남습니다. 이 서버에는 최신 덤프 {nights}개가 보관됩니다.",
           "retentionOffhost": "버킷의 수명 주기 규칙이 외부 사본을 {days}일 후에 삭제합니다.",
-          "retentionOffhostMissing": "버킷의 어떤 수명 주기 규칙도 database/를 다루지 않아 그곳의 덤프와 그 안의 삭제된 계정이 절대 삭제되지 않습니다. 이 접두사에 대한 규칙을 추가하세요."
+          "retentionOffhostMissing": "버킷의 어떤 수명 주기 규칙도 database/를 다루지 않아 그곳의 덤프와 그 안의 삭제된 계정이 절대 삭제되지 않습니다. 이 접두사에 대한 규칙을 추가하세요.",
+          "notPersistentOffhost": "{dir}은(는) 영구 저장소에 있지 않습니다(마운트된 볼륨이 아니라 컨테이너 안이나 메모리에 있음). 그래서 여기에 쓴 덤프는 다음 업데이트 때 사라집니다. 덤프는 외부 저장소로만 가며, 여기에는 보관되지 않고 마이그레이션 전에도 만들어지지 않습니다. 백업 볼륨을 마운트하세요.",
+          "notPersistent": "{dir}은(는) 영구 저장소에 있지 않고(마운트된 볼륨이 아니라 컨테이너 안이나 메모리에 있음) 외부 버킷도 설정되지 않아, 데이터베이스 덤프가 어디에도 보관되지 않습니다. 백업 볼륨을 마운트하세요."
         }
       },
       "danger-zone": {
@@ -8660,7 +8662,8 @@
         "offhost_copies": "외부 보관 사본",
         "restore_drill": "복원 훈련",
         "offhost_setup": "외부 보관 백업",
-        "recovery_kit": "복구 키트"
+        "recovery_kit": "복구 키트",
+        "dump_retention": "버킷의 덤프"
       },
       "at": {
         "database_dump": "최신 덤프: {date}",
@@ -8676,7 +8679,8 @@
         "offhost_copies": "백업 열기",
         "restore_drill": "백업 열기",
         "offhost_setup": "백업 열기",
-        "recovery_kit": "키트 열기"
+        "recovery_kit": "키트 열기",
+        "dump_retention": "백업 열기"
       },
       "reason": {
         "database_dump": {
@@ -8689,7 +8693,9 @@
           "stale": "최신 데이터베이스 덤프가 {hours}시간 전 것입니다.",
           "last_failed": "마지막 데이터베이스 덤프가 실패했습니다. 그 전 덤프는 아직 최근 것입니다.",
           "fresh": "최신 데이터베이스 덤프가 최근 것입니다.",
-          "nowhere_to_write": "덤프 디렉터리 {directory}에 쓸 수 없고 외부 버킷도 설정되어 있지 않아 덤프를 보관할 수 없습니다."
+          "nowhere_to_write": "덤프 디렉터리 {directory}에 쓸 수 없고 외부 버킷도 설정되어 있지 않아 덤프를 보관할 수 없습니다.",
+          "not_persistent": "덤프 디렉터리 {directory}이(가) 영구 저장소에 있지 않고 외부 버킷도 설정되지 않아, 모든 덤프가 다음 업데이트 때 사라집니다. 백업 볼륨을 마운트하세요.",
+          "fresh_offhost_only": "최신 데이터베이스 덤프는 최근 것이며 외부 버킷에 있습니다. {directory}이(가) 영구 저장소에 있지 않아 이 서버에는 보관되지 않으며, 마이그레이션 전에도 만들어지지 않습니다."
         },
         "weekly_copy": {
           "no_accounts": "아직 복사할 계정이 없습니다.",
@@ -8723,6 +8729,13 @@
           "no_admin": "아직 관리자 계정이 없습니다.",
           "not_confirmed": "복원에 필요한 키의 사본을 아무도 확인하지 않았습니다: {keys}.",
           "not_confirmed_grace": "복원에 필요한 키의 사본을 보관하세요: {keys}."
+        },
+        "dump_retention": {
+          "not_configured": "외부 버킷이 설정되지 않았습니다.",
+          "no_offhost_dumps": "버킷으로 가는 데이터베이스 덤프가 없습니다.",
+          "missing": "버킷의 어떤 수명 주기 규칙도 database/를 다루지 않아 그곳의 덤프와 그 안의 삭제된 계정이 절대 삭제되지 않습니다. 이 접두사에 대한 규칙을 추가하세요.",
+          "configured": "버킷은 {days}일 후에 덤프를 삭제합니다.",
+          "unknown": "버킷이 오래된 덤프를 삭제하는 규칙이 있는지 알려 주지 않습니다. 수명 주기 규칙이 database/를 포함하는지 확인하세요."
         }
       },
       "recovered": {
@@ -8731,7 +8744,8 @@
         "offhost_copies": "모든 계정에 다시 최근 외부 보관 사본이 있습니다.",
         "restore_drill": "복원 훈련을 다시 통과했습니다.",
         "offhost_setup": "이제 외부 보관 사본이 설정되었습니다.",
-        "recovery_kit": "복구 키트가 다시 확인되었습니다."
+        "recovery_kit": "복구 키트가 다시 확인되었습니다.",
+        "dump_retention": "이제 버킷의 수명 주기 규칙이 데이터베이스 덤프를 포함합니다."
       }
     }
   },
@@ -11863,7 +11877,8 @@
           "raster-failed": "PDF 페이지를 읽기용으로 렌더링하지 못했어요. 스캔 팩스 압축 형식이 흔한 원인이에요.",
           "provider-error": "지난번에 AI 제공자가 이 문서를 읽지 못했어요.",
           "pdf-needs-anthropic": "설정된 AI 제공자는 PDF 파일을 읽을 수 없어요. Claude 제공자나 로컬 OCR로는 읽을 수 있어요.",
-          "empty-transcription": "AI 제공자가 이 문서에서 텍스트를 찾지 못했어요."
+          "empty-transcription": "AI 제공자가 이 문서에서 텍스트를 찾지 못했어요.",
+          "resource-limit": "이 PDF는 너무 크거나 복잡해서 여기서 읽을 수 없습니다. 파일 자체는 정상이며 계속 열 수 있습니다."
         }
       },
       "loadError": "이 문서를 불러오지 못했어요.",

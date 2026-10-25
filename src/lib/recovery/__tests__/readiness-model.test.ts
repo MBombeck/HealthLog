@@ -12,6 +12,7 @@ import type { DatabaseBackupHealth } from "@/lib/recovery/database-dump-health";
 import {
   DUMP_FAILING_AFTER_HOURS,
   evaluateDatabaseDump,
+  evaluateDumpRetention,
   evaluateOffhostCopies,
   evaluateOffhostSetup,
   evaluateRecoveryKit,
@@ -45,11 +46,15 @@ function dump(
     lastFailureReason,
     ...rest
   } = over;
+  // A directory that cannot be written keeps nothing either.
+  const writable = rest.localDirWritable ?? true;
   return {
     enabled: true,
     directory: "/data/db-backups",
     keepNightly: 7,
     localDirWritable: true,
+    localPersistent: writable,
+    localReason: writable ? "volume" : "not_writable",
     offhostConfigured: false,
     lastGood: lastGoodAt
       ? {
@@ -79,6 +84,7 @@ function inputs(over: Partial<ReadinessInputs> = {}): ReadinessInputs {
     weekly: { accounts: [{ createdAt: ago(60 * DAY), lastCopyAt: ago(DAY) }] },
     offhost: {
       configured: true,
+      databaseLifecycle: { state: "configured", expirationDays: 30 },
       accounts: [
         { lastAttemptAt: ago(10 * HOUR), lastSuccessAt: ago(10 * HOUR) },
       ],
@@ -172,6 +178,37 @@ describe("database dump", () => {
     ).toBe("ok");
   });
 
+  it("does not count a writable directory inside the container as a place to keep dumps", () => {
+    const layer = {
+      localDirWritable: true,
+      localPersistent: false,
+      localReason: "container_layer" as const,
+    };
+    // No bucket: the dumps written there are lost at the next update.
+    expect(evalDump(dump(layer))).toMatchObject({
+      state: "failing",
+      reason: "not_persistent",
+      params: { directory: "/data/db-backups" },
+    });
+    // A bucket: fine, and the tile says the bucket holds the only copy.
+    expect(evalDump(dump({ ...layer, offhostConfigured: true }))).toMatchObject(
+      {
+        state: "ok",
+        reason: "fresh_offhost_only",
+        params: { directory: "/data/db-backups" },
+      },
+    );
+    // The same directory on a volume reads as before.
+    expect(evalDump(dump({ offhostConfigured: true }))).toMatchObject({
+      state: "ok",
+      reason: "fresh",
+    });
+    // Switched off with nowhere lasting to write: not news.
+    expect(
+      evalDump(dump({ ...layer, enabled: false, lastGoodAt: null })),
+    ).toMatchObject({ state: "inactive", reason: "disabled" });
+  });
+
   it("gives a newly switched-on dump 36 hours before calling it failing", () => {
     const fresh = dump({ lastGoodAt: null });
     expect(evalDump(fresh, ago(HOUR))).toMatchObject({
@@ -189,6 +226,76 @@ describe("database dump", () => {
     expect(
       evalDump(dump({ lastGoodAt: null, lastFailureAt: ago(HOUR) }), ago(HOUR)),
     ).toMatchObject({ state: "failing", reason: "never_succeeded" });
+  });
+});
+
+describe("dump retention in the bucket", () => {
+  const goingOffhost = dump({ offhostConfigured: true });
+  const evalRule = (
+    databaseLifecycle: ReadinessInputs["offhost"]["databaseLifecycle"],
+    d: ReadinessInputs["dump"] = goingOffhost,
+    configured = true,
+  ) =>
+    evaluateDumpRetention({
+      dump: d,
+      offhost: { configured, databaseLifecycle, accounts: [] },
+    });
+
+  it("asks for a rule when dumps go to a bucket that never removes them", () => {
+    expect(evalRule({ state: "missing", expirationDays: null })).toMatchObject({
+      state: "attention",
+      reason: "missing",
+      fixPath: "/admin/backups",
+    });
+  });
+
+  it("names the expiry when a rule covers database/, and stays quiet when the bucket will not say", () => {
+    expect(evalRule({ state: "configured", expirationDays: 30 })).toMatchObject(
+      { state: "ok", reason: "configured", params: { days: 30 } },
+    );
+    expect(evalRule({ state: "unknown", expirationDays: null })).toMatchObject({
+      state: "ok",
+      reason: "unknown",
+    });
+    expect(evalRule(null)).toMatchObject({ state: "ok", reason: "unknown" });
+  });
+
+  it("does not apply without a bucket, or while no dump goes to it", () => {
+    const missing = { state: "missing", expirationDays: null } as const;
+    expect(evalRule(missing, goingOffhost, false)).toMatchObject({
+      state: "inactive",
+      reason: "not_configured",
+    });
+    for (const d of [
+      null,
+      "unreadable" as const,
+      dump({ offhostConfigured: false }),
+      dump({ offhostConfigured: true, enabled: false }),
+    ]) {
+      expect(evalRule(missing, d)).toMatchObject({
+        state: "inactive",
+        reason: "no_offhost_dumps",
+      });
+    }
+  });
+
+  it("moves the overall verdict to attention on its own", () => {
+    const r = evaluateRecoveryReadiness(
+      inputs({
+        dump: goingOffhost,
+        offhost: {
+          configured: true,
+          databaseLifecycle: { state: "missing", expirationDays: null },
+          accounts: [
+            { lastAttemptAt: ago(10 * HOUR), lastSuccessAt: ago(10 * HOUR) },
+          ],
+        },
+      }),
+    );
+    expect(
+      r.signals.filter((x) => x.state !== "ok" && x.state !== "inactive"),
+    ).toEqual([expect.objectContaining({ id: "dump_retention" })]);
+    expect(r.state).toBe("attention");
   });
 });
 
@@ -254,7 +361,11 @@ describe("off-host copies", () => {
       lastAttemptAt: Date | null;
       lastSuccessAt: Date | null;
     }>
-  ) => evaluateOffhostCopies({ now: NOW, offhost: { configured, accounts } });
+  ) =>
+    evaluateOffhostCopies({
+      now: NOW,
+      offhost: { configured, databaseLifecycle: null, accounts },
+    });
 
   it("does not apply while no bucket is configured", () => {
     expect(offhost(false).state).toBe("inactive");
@@ -302,7 +413,10 @@ describe("off-host copies", () => {
 
 describe("restore drill", () => {
   const drill = (d: ReadinessInputs["drill"], configured = true) =>
-    evaluateRestoreDrill({ offhost: { configured, accounts: [] }, drill: d });
+    evaluateRestoreDrill({
+      offhost: { configured, databaseLifecycle: null, accounts: [] },
+      drill: d,
+    });
   const run = {
     lastRunAt: ago(5 * DAY),
     lastSuccessAt: null as Date | null,
@@ -351,7 +465,7 @@ describe("off-host setup", () => {
     evaluateOffhostSetup({
       now: NOW,
       firstAdminAt,
-      offhost: { configured, accounts: [] },
+      offhost: { configured, databaseLifecycle: null, accounts: [] },
     });
 
   it("asks for a bucket 7 days after the first admin exists", () => {

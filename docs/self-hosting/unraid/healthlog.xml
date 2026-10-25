@@ -63,4 +63,6 @@
   <Config Name="ENCRYPTION_KEYS" Target="ENCRYPTION_KEYS" Default="" Mode="" Description="Optional. Key-rotation map, e.g. {&quot;v1&quot;:&quot;&lt;hex&gt;&quot;,&quot;v2&quot;:&quot;&lt;hex&gt;&quot;}. Leave empty unless rotating; use ENCRYPTION_KEY instead." Type="Variable" Display="advanced" Required="false" Mask="true"/>
 
   <Config Name="ENCRYPTION_ACTIVE_KEY_ID" Target="ENCRYPTION_ACTIVE_KEY_ID" Default="" Mode="" Description="Optional. Active key id for the ENCRYPTION_KEYS map (e.g. v2). Leave empty when using ENCRYPTION_KEY." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+
+  <Config Name="Database dumps" Target="/var/lib/healthlog/backups" Default="/mnt/user/appdata/healthlog/backups" Mode="rw" Description="Where HealthLog keeps its nightly database dump and the one it takes before each update that brings migrations. Without this path the dumps would sit inside the container, which an update replaces, so none is kept. Must be writable by uid 1001 (chown 1001:1001 the folder once)." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/healthlog/backups</Config>
 </Container>

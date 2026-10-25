@@ -36,12 +36,13 @@ docker compose up -d app
 ```
 
 Step 2 takes the pre-migration dump too, in the one-off container, before it
-migrates. When the backups directory is writable and that dump fails (a full
-disk, most often), the entrypoint stops before migrating and says so; free
-the space and run the step again, or set `DB_BACKUP_BEFORE_MIGRATE=false` for
-one start without the dump. Without a writable directory (an install that
-runs the image without the `backups` volume) the log carries a warning, no
-dump is taken, and the migrations run.
+migrates. When the backups directory is on its volume and that dump fails (a
+full disk, most often), the entrypoint stops before migrating and says so;
+free the space and run the step again, or set `DB_BACKUP_BEFORE_MIGRATE=false`
+for one start without the dump. Without the `backups` volume the directory
+is not writable, or it is the image's own and sits inside the container that
+the update replaces; either way the log carries a warning, no dump is taken,
+and the migrations run.
 
 Use `docker compose run` rather than a plain `docker run` for step 2. A
 plain `docker run` starts outside the stack's network, where `db` does not
@@ -236,19 +237,20 @@ roll back:
    app version reads forward-compatible-ish shapes for nearly every
    release pair shipped on the v1.4.x line.
 3. If a column-drop migration ships in the rollback target, hand-roll
-   the column back via a fresh forward migration (`pnpm prisma migrate
-dev --create-only --name vX_Y_Z_rollback_<col>`), edit the SQL,
-   commit, and re-deploy. Never `migrate resolve --rolled-back` against
+   the column back via a fresh forward migration
+   (`pnpm prisma migrate dev --create-only --name vX_Y_Z_rollback_<col>`),
+   edit the SQL, commit, and re-deploy. Never `migrate resolve --rolled-back` against
    production unless you've taken a fresh `pg_dump` first.
+4. Rolling back from v1.40.2 or later to v1.40.1 or earlier: an account
+   that saved the Coach lookback "Last year" reads its whole Coach
+   preference blob as defaults on the older version, metric exclusions
+   included, until the setting is saved again. Ask affected accounts to
+   pick another lookback before the rollback, or re-save their exclusions
+   after it.
 
 When the data itself has to go back to before the update, restore the
 pre-migration dump with the previous image; the steps are in
-[`disaster-recovery.md`](disaster-recovery.md#going-back-to-before-a-migration). 4. Rolling back from v1.40.2 or later to v1.40.1 or earlier: an account
-that saved the Coach lookback "Last year" reads its whole Coach
-preference blob as defaults on the older version, metric exclusions
-included, until the setting is saved again. Ask affected accounts to
-pick another lookback before the rollback, or re-save their exclusions
-after it.
+[`disaster-recovery.md`](disaster-recovery.md#going-back-to-before-a-migration).
 
 ## Catalog templates
 

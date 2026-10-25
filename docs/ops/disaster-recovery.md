@@ -40,14 +40,22 @@ A dump holds every account that existed when it was taken, including one
 deleted since. Deleted accounts leave the dumps as they age out: after
 `DB_BACKUP_KEEP` nights on the server, and after your lifecycle rule in the
 bucket. Give that rule a prefix that covers `database/` too; the admin
-backups page reads the bucket's rules and says when none does. This is the
+backups page reads the bucket's rules and says when none does, and the
+recovery readiness card calls it attention and tells the admins once. This is the
 retention period to state where you tell people that deleting their account
 deletes their data.
 
-Without a writable `DB_BACKUP_DIR` (an install that runs the image without the
-`backups` volume), the nightly dump is uploaded off-host and nothing is kept
-on the server, and no dump is taken before migrations; with no bucket either,
-no dump is taken at all. The start log and the admin page say so.
+A dump is kept on the server only when `DB_BACKUP_DIR` survives the container
+being replaced: a mounted volume or bind mount, or any writable directory when
+HealthLog does not run in a container. The image creates the default
+directory, so an install that runs it without the `backups` volume can write
+there, but the directory sits in the container's own layer and the next update
+throws it away. HealthLog reads the container's mount table to tell the two
+apart and treats such a directory, or one on a tmpfs, like one it cannot
+write: the nightly dump is uploaded off-host and nothing is kept on the
+server, and no dump is taken before migrations; with no bucket either, no
+dump is taken at all. The start log, the admin backups page and the recovery
+readiness card say so.
 
 The per-account copies (the weekly in-database copy, the nightly per-account
 objects) roll one account back on the same server. They cannot rebuild a
@@ -149,9 +157,31 @@ docker compose up -d
 ```
 
 The dump before a migration is taken while the new image starts. If it fails
-on a writable directory (a full disk, most often), the start stops before
+on a directory that keeps it (a full disk, most often), the start stops before
 anything is migrated and the log names the switch: `DB_BACKUP_BEFORE_MIGRATE=false`
 starts without it, once.
+
+## Knowing the copies are there
+
+Nobody opens the backups page until the day it matters, so the server tells
+the admins instead:
+
+- The **Recovery readiness** card, on the admin overview and on Admin,
+  Backups, judges every copy in one verdict each: the database dump (fresh,
+  failed, or kept nowhere that survives the container), the weekly account
+  copies, the off-host copies, the last restore drill, whether the bucket is
+  set up, whether its lifecycle rule ever removes the dumps under
+  `database/`, and the recovery kit.
+- The **recovery kit** under Admin, Encryption lists every key a restore
+  needs (the table above), by id and fingerprint, and lets an admin check a
+  saved copy and confirm it. It is due again after any key change.
+- An hourly check sends each admin a **Backup health** notification
+  (`BACKUP_HEALTH`) when a signal on the card turns to needs attention or at
+  risk, a reminder once a day while one stays at risk, and one more when it
+  recovers. Each admin chooses the channels for it under Notifications.
+
+[Getting started](../self-hosting/getting-started.md#save-the-recovery-kit)
+walks through saving the kit.
 
 ## How this is tested
 

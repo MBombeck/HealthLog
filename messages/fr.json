@@ -8346,7 +8346,9 @@
           "noDirectory": "Ce serveur ne peut pas écrire dans {dir} et aucun stockage hors site n'est configuré : aucun dump ne peut être fait. Montez le volume de sauvegarde.",
           "retentionLocal": "Les comptes supprimés restent dans les dumps jusqu'à leur expiration : ce serveur conserve les {nights} plus récents.",
           "retentionOffhost": "La règle de cycle de vie du bucket supprime les copies hors site après {days} jours.",
-          "retentionOffhostMissing": "Aucune règle de cycle de vie du bucket ne couvre database/ : les dumps qui s'y trouvent, et les comptes supprimés qu'ils contiennent, ne sont jamais effacés. Ajoutez une règle pour ce préfixe."
+          "retentionOffhostMissing": "Aucune règle de cycle de vie du bucket ne couvre database/ : les dumps qui s'y trouvent, et les comptes supprimés qu'ils contiennent, ne sont jamais effacés. Ajoutez une règle pour ce préfixe.",
+          "notPersistentOffhost": "{dir} n'est pas sur un stockage persistant (il se trouve dans le conteneur et non sur un volume monté, ou en mémoire) : un dump écrit là serait perdu à la prochaine mise à jour. Les dumps partent uniquement hors site : aucun n'est conservé ici et aucun n'est pris avant une migration. Montez le volume de sauvegarde.",
+          "notPersistent": "{dir} n'est pas sur un stockage persistant (il se trouve dans le conteneur et non sur un volume monté, ou en mémoire) et aucun bucket hors site n'est configuré : aucun dump de la base n'est conservé nulle part. Montez le volume de sauvegarde."
         }
       },
       "danger-zone": {
@@ -8660,7 +8662,8 @@
         "offhost_copies": "Copies hors hôte",
         "restore_drill": "Test de restauration",
         "offhost_setup": "Sauvegarde hors hôte",
-        "recovery_kit": "Kit de récupération"
+        "recovery_kit": "Kit de récupération",
+        "dump_retention": "Dumps dans le bucket"
       },
       "at": {
         "database_dump": "Dump le plus récent : {date}",
@@ -8676,7 +8679,8 @@
         "offhost_copies": "Ouvrir les sauvegardes",
         "restore_drill": "Ouvrir les sauvegardes",
         "offhost_setup": "Ouvrir les sauvegardes",
-        "recovery_kit": "Ouvrir le kit"
+        "recovery_kit": "Ouvrir le kit",
+        "dump_retention": "Ouvrir les sauvegardes"
       },
       "reason": {
         "database_dump": {
@@ -8689,7 +8693,9 @@
           "stale": "Le dump de la base de données le plus récent date de {hours} heures.",
           "last_failed": "Le dernier dump de la base de données a échoué. Le précédent est encore récent.",
           "fresh": "Le dernier dump de la base de données est récent.",
-          "nowhere_to_write": "Le dossier des dumps {directory} n'est pas accessible en écriture et aucun bucket externe n'est configuré, donc aucun dump ne peut être conservé."
+          "nowhere_to_write": "Le dossier des dumps {directory} n'est pas accessible en écriture et aucun bucket externe n'est configuré, donc aucun dump ne peut être conservé.",
+          "not_persistent": "Le répertoire des dumps {directory} n'est pas sur un stockage persistant et aucun bucket hors site n'est configuré : chaque dump serait perdu à la prochaine mise à jour. Montez le volume de sauvegarde.",
+          "fresh_offhost_only": "Le dump de base le plus récent est à jour et se trouve dans le bucket hors site. Aucun n'est conservé sur ce serveur, car {directory} n'est pas sur un stockage persistant, et aucun n'est pris avant une migration."
         },
         "weekly_copy": {
           "no_accounts": "Il n'y a pas encore de compte à copier.",
@@ -8723,6 +8729,13 @@
           "no_admin": "Il n'y a pas encore de compte administrateur.",
           "not_confirmed": "Personne n'a confirmé de copie des clés nécessaires à une restauration : {keys}.",
           "not_confirmed_grace": "Sauvegardez une copie des clés nécessaires à une restauration : {keys}."
+        },
+        "dump_retention": {
+          "not_configured": "Aucun bucket hors site n'est configuré.",
+          "no_offhost_dumps": "Aucun dump de la base ne part dans le bucket.",
+          "missing": "Aucune règle de cycle de vie du bucket ne couvre database/ : les dumps qui s'y trouvent, et les comptes supprimés qu'ils contiennent, ne sont jamais effacés. Ajoutez une règle pour ce préfixe.",
+          "configured": "Le bucket efface les dumps au bout de {days} jours.",
+          "unknown": "Le bucket n'indique pas si une règle efface les anciens dumps. Vérifiez qu'une règle de cycle de vie couvre database/."
         }
       },
       "recovered": {
@@ -8731,7 +8744,8 @@
         "offhost_copies": "Chaque compte a de nouveau une copie hors hôte récente.",
         "restore_drill": "Le test de restauration réussit de nouveau.",
         "offhost_setup": "Les copies hors hôte sont maintenant configurées.",
-        "recovery_kit": "Le kit de récupération est de nouveau confirmé."
+        "recovery_kit": "Le kit de récupération est de nouveau confirmé.",
+        "dump_retention": "Une règle de cycle de vie du bucket couvre désormais les dumps de la base."
       }
     }
   },
@@ -11863,7 +11877,8 @@
           "raster-failed": "Les pages du PDF n’ont pas pu être rendues pour la lecture. Les formats de compression de fax numérisés en sont une cause connue.",
           "provider-error": "Le fournisseur d’IA n’a pas pu lire ce document lors de la dernière tentative.",
           "pdf-needs-anthropic": "Le fournisseur d’IA configuré ne peut pas lire les fichiers PDF. Un fournisseur Claude ou l’OCR local le peut.",
-          "empty-transcription": "Le fournisseur d’IA n’a renvoyé aucun texte pour ce document."
+          "empty-transcription": "Le fournisseur d’IA n’a renvoyé aucun texte pour ce document.",
+          "resource-limit": "Ce PDF est trop volumineux ou trop complexe pour être lu ici. Le fichier lui-même est intact et s'ouvre toujours."
         }
       },
       "loadError": "Impossible de charger ce document.",

@@ -107,14 +107,14 @@ export type DocumentSummaryStateValue =
 /**
  * Refs #776 — why a document's most recent content-index attempt produced no
  * index. Mirrors the free-String `lastIndexOutcome` column (closed here, not
- * in the schema, so a new reason needs no migration); the detail view renders
- * a plain-words line per value instead of a bare "not indexed" that cannot
- * tell "never tried" from "tried and failed".
+ * in the schema, so a new reason needs no migration); the detail view says
+ * each in plain words, so "never tried" and "tried and failed" differ.
  */
 export const DOCUMENT_INDEX_OUTCOMES = [
   "local-empty",
   "local-unsupported",
   "decrypt-error",
+  "resource-limit",
   "raster-failed",
   "provider-error",
   "pdf-needs-anthropic",
