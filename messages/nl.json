@@ -629,7 +629,9 @@
       "title": "Ongeldige uitnodiging",
       "description": "Deze uitnodigingslink is onvolledig of verkeerd gekopieerd. Vraag de persoon die je heeft uitgenodigd om een nieuwe link.",
       "toLogin": "Naar inloggen"
-    }
+    },
+    "deletionPending": "Dit account wordt op {date} verwijderd en is tot dan vergrendeld. Een beheerder van deze server kan de verwijdering vóór die datum ongedaan maken.",
+    "deletionPendingNoDate": "Dit account staat gepland voor verwijdering en is vergrendeld. Een beheerder van deze server kan de verwijdering ongedaan maken tot die voltooid is."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -6922,7 +6924,7 @@
     "deleteAccountCardDescription": "Verwijdert je account samen met passkeys, auditlogboek en sessies.",
     "deleteAccountCta": "Account verwijderen",
     "deleteAccountConfirmTitle": "Account definitief verwijderen?",
-    "deleteAccountConfirmDescription": "Je account, alle gezondheidsgegevens, passkeys, sessies en auditregistraties worden definitief verwijderd. Je wordt daarna direct uitgelogd.",
+    "deleteAccountConfirmDescription": "Je account, alle gezondheidsgegevens, passkeys, sessies en auditregistraties worden definitief verwijderd. Je wordt daarna direct uitgelogd. Kopieën in de back-ups van deze server verlopen na hun bewaartermijn.",
     "deleteAccountSuccess": "Account verwijderd. Je wordt uitgelogd.",
     "deleteAccountFailed": "Account kon niet worden verwijderd",
     "deleteAccountFinal": "Definitief verwijderen",
@@ -7332,13 +7334,16 @@
         "coach": "Coach-gesprekken: {days} dagen bewaard",
         "audit": "Logboek van beveiligingsactiviteit: {days} dagen bewaard",
         "delivery": "Logboek van bezorgde meldingen: {days} dagen bewaard",
-        "unavailable": "Details over de bewaartermijn zijn op dit moment niet beschikbaar."
+        "unavailable": "Details over de bewaartermijn zijn op dit moment niet beschikbaar.",
+        "accountDeletion": "Je account, een beheerd profiel of alle gegevens verwijderen: voltooid na {days} dagen",
+        "accountDeletionImmediate": "Je account, een beheerd profiel of alle gegevens verwijderen: meteen voltooid"
       },
       "delete": {
         "title": "Verwijderen of wissen",
         "description": "Verwijder je account volledig, of wis je gezondheidsgegevens en behoud je account.",
-        "backupLag": "Bij verwijderen worden je gegevens direct gewist. Als deze server versleutelde back-ups buiten de host bewaart, worden de kopieën van je gegevens direct daarna uit die opslag verwijderd, of bij de volgende nachtelijke run als de opslag niet bereikbaar is.",
-        "openAdvanced": "Verwijderen of wissen"
+        "openAdvanced": "Verwijderen of wissen",
+        "immediateNotice": "Bij verwijderen worden je gegevens direct gewist. Als deze server versleutelde back-ups buiten de host bewaart, worden de kopieën van je gegevens direct daarna uit die opslag verwijderd, of bij de volgende nachtelijke run als de opslag niet bereikbaar is. Kopieën in de back-ups van deze server verlopen na hun bewaartermijn.",
+        "graceNotice": "Als je je account verwijdert, wordt het meteen vergrendeld en na {days} dagen gewist, samen met elke kopie die deze server ervan bewaart, ook versleutelde kopieën buiten de server. Tot dan kan een beheerder van deze server de verwijdering ongedaan maken. Alle gegevens verwijderen werkt net zo: een kopie van het dossier wordt {days} dagen bewaard, zodat een beheerder die kan terugzetten. Kopieën in de back-ups van deze server verlopen na hun bewaartermijn."
       },
       "posture": {
         "title": "Privacyniveau",
@@ -7644,7 +7649,12 @@
       "off": "Uit",
       "change": "Wijzigen in Modules"
     },
-    "timezoneUseDevice": "Tijdzone van dit apparaat gebruiken ({zone})"
+    "timezoneUseDevice": "Tijdzone van dit apparaat gebruiken ({zone})",
+    "dangerZoneConfirmDescriptionGrace": "Hiermee wordt alles in je dossier verwijderd: metingen, medicatie, stemmingsregistraties, labuitslagen, cyclusregistraties, documenten, AI-gesprekken en alle koppelingen, samen met alles wat daarvan is afgeleid en alles wat je eerder hebt verwijderd. Deellinks die je aan een arts hebt gegeven, werken direct niet meer. Je account blijft bestaan, net als de inloggegevens waarmee je inlogt en weergave-instellingen zoals taal, tijdzone en eenheden. Een kopie van je dossier wordt {days} dagen bewaard, zodat een beheerder van deze server die tot dan kan terugzetten. Daarna is de verwijdering definitief.",
+    "deleteAccountCardDetailGrace": "Je account wordt meteen vergrendeld en na {days} dagen gewist. Tot dan kan een beheerder van deze server de verwijdering ongedaan maken.",
+    "deleteAccountConfirmDescriptionGrace": "Je wordt uitgelogd en je account wordt meteen vergrendeld. Na {days} dagen wordt het definitief gewist, met alle gezondheidsgegevens, passkeys, sessies en auditregels. Tot dan kan een beheerder van deze server de verwijdering ongedaan maken. Kopieën in de back-ups van deze server verlopen na hun bewaartermijn.",
+    "deleteAccountScheduled": "Je account is vergrendeld en wordt op {date} gewist. Je wordt uitgelogd.",
+    "dangerZoneSuccessGrace": "Je gezondheidsdossier is verwijderd. Een beheerder van deze server kan het tot {date} terugzetten."
   },
   "admin": {
     "title": "Beheer",
@@ -8080,7 +8090,15 @@
         "cannotLogoutSelf": "Je kunt jezelf niet geforceerd uitloggen",
         "emptyTitle": "Geen gebruikers in deze weergave",
         "emptyDescription": "Er zijn geen gebruikers die aan het huidige filter voldoen.",
-        "emptyResetFilter": "Alle gebruikers tonen"
+        "emptyResetFilter": "Alle gebruikers tonen",
+        "deletionPending": "Verwijdering op {date}",
+        "deletionPendingNoDate": "Verwijdering gepland",
+        "undoDeletion": "Verwijdering ongedaan maken",
+        "undoDeletionTitle": "Verwijdering van {name} ongedaan maken?",
+        "undoDeletionBody": "{name} heeft gevraagd dit account te verwijderen; het wordt gewist als de bedenktijd afloopt. Ongedaan maken houdt het account en alles erin zoals het was. Sessies en tokens blijven ingetrokken, dus opnieuw inloggen is nodig.",
+        "undoDeletionBodyGuardian": "Een verzorger heeft het beheerde profiel {name} verwijderd; het wordt gewist als de bedenktijd afloopt. Ongedaan maken houdt het profiel en alles erin zoals het was, en de verzorgers kunnen het weer bereiken.",
+        "undoDeletionDone": "Verwijdering van {name} ongedaan gemaakt",
+        "undoDeletionFailed": "Verwijdering kon niet ongedaan worden gemaakt"
       },
       "invites": {
         "title": "Uitnodigingen",
@@ -8310,7 +8328,8 @@
         "restoreSkippedMoodLabelCiphertext": "Stemmingslabel of groepsnaam versleuteld met een sleutel die deze server niet heeft (behouden zonder naam)",
         "restoreSkippedVisitCiphertext": "Tekst van bezoek of zorgverlener versleuteld met een sleutel die deze server niet heeft (behouden zonder)",
         "restoreSkippedVaccinationCiphertext": "Vaccinatienotitie versleuteld met een sleutel die deze server niet heeft (dosis behouden zonder)",
-        "restoreSkippedEnvironmentLocationCiphertext": "Locatie van een omgevingsperiode of -dag versleuteld met een sleutel die deze server niet heeft (versleuteld behouden, die dagen worden niet bijgewerkt)"
+        "restoreSkippedEnvironmentLocationCiphertext": "Locatie van een omgevingsperiode of -dag versleuteld met een sleutel die deze server niet heeft (versleuteld behouden, die dagen worden niet bijgewerkt)",
+        "typePreWipe": "Voor het verwijderen van alle gegevens"
       },
       "danger-zone": {
         "title": "Gevarenzone",
@@ -12660,7 +12679,8 @@
         "entryHint": "Wanneer {name} er klaar voor is om zelf voor dit dossier te zorgen.",
         "methodSso": "{name} logt via single sign-on in bij het gebruiken van de link.",
         "methodBoth": "{name} kan een wachtwoord instellen of inloggen via single sign-on."
-      }
+      },
+      "deleteBodyGrace": "Alles wat voor {name} is vastgelegd, verdwijnt samen met het profiel: metingen, medicatie, documenten en notities. Het profiel wordt meteen vergrendeld en na {days} dagen gewist. Tot dan kan een beheerder van deze server de verwijdering ongedaan maken."
     },
     "toast": {
       "savedTo": "Opgeslagen in het dossier van {name}"

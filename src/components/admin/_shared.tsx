@@ -34,6 +34,16 @@ export interface AdminUser {
   // the instance-wide default applies.
   documentQuotaBytes: number | null;
   passkeyCount: number;
+  /**
+   * Set while the account is pending deletion: when the purge job
+   * erases it, and whether the account asked itself or a Guardian deleted
+   * the managed profile. The row offers "Undo deletion" until then.
+   */
+  deletion: {
+    requestedAt: string;
+    purgeAt: string | null;
+    requestedBy: "self" | "guardian";
+  } | null;
 }
 
 export interface WorkerStatus {

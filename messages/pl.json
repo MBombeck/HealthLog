@@ -629,7 +629,9 @@
       "title": "Nieprawidłowe zaproszenie",
       "description": "Ten link z zaproszeniem jest niekompletny lub został źle skopiowany. Poproś osobę, która cię zaprosiła, o nowy link.",
       "toLogin": "Przejdź do logowania"
-    }
+    },
+    "deletionPending": "To konto zostanie usunięte {date} i do tego czasu jest zablokowane. Administrator tego serwera może cofnąć usunięcie przed tą datą.",
+    "deletionPendingNoDate": "To konto czeka na usunięcie i jest zablokowane. Administrator tego serwera może cofnąć usunięcie, dopóki się nie zakończy."
   },
   "dashboard": {
     "title": "Pulpit",
@@ -6922,7 +6924,7 @@
     "deleteAccountCardDescription": "Usuwa Twoje konto wraz z kluczami dostępu, dziennikiem audytu i sesjami.",
     "deleteAccountCta": "Usuń konto",
     "deleteAccountConfirmTitle": "Trwale usunąć konto?",
-    "deleteAccountConfirmDescription": "Twoje konto, wszystkie dane zdrowotne, klucze dostępu, sesje i wpisy audytu zostaną trwale usunięte. Zostaniesz wylogowany natychmiast po tym.",
+    "deleteAccountConfirmDescription": "Twoje konto, wszystkie dane zdrowotne, klucze dostępu, sesje i wpisy audytu zostaną trwale usunięte. Zostaniesz wylogowany natychmiast po tym. Kopie w kopiach zapasowych tego serwera wygasają po upływie okresu przechowywania.",
     "deleteAccountSuccess": "Konto usunięte, trwa wylogowywanie.",
     "deleteAccountFailed": "Nie udało się usunąć konta",
     "deleteAccountFinal": "Usuń trwale",
@@ -7332,13 +7334,16 @@
         "coach": "Rozmowy z asystentem: {days} dni",
         "audit": "Dziennik zabezpieczeń: {days} dni",
         "delivery": "Dziennik wysyłki powiadomień: {days} dni",
-        "unavailable": "Szczegóły przechowywania są obecnie niedostępne."
+        "unavailable": "Szczegóły przechowywania są obecnie niedostępne.",
+        "accountDeletion": "Usunięcie konta, profilu zarządzanego lub wszystkich danych: kończy się po {days} dniach",
+        "accountDeletionImmediate": "Usunięcie konta, profilu zarządzanego lub wszystkich danych: kończy się od razu"
       },
       "delete": {
         "title": "Usuń lub zresetuj",
         "description": "Usuń całe konto albo wyczyść dane zdrowotne, zachowując konto.",
-        "backupLag": "Usunięcie natychmiast usuwa Twoje dane. Jeśli ten serwer przechowuje zaszyfrowane kopie zapasowe poza serwerem, kopie Twoich danych są usuwane z tego magazynu zaraz potem, a jeśli jest niedostępny, przy następnym nocnym przebiegu.",
-        "openAdvanced": "Usuń lub zresetuj"
+        "openAdvanced": "Usuń lub zresetuj",
+        "immediateNotice": "Usunięcie natychmiast usuwa Twoje dane. Jeśli ten serwer przechowuje zaszyfrowane kopie zapasowe poza serwerem, kopie Twoich danych są usuwane z tego magazynu zaraz potem, a jeśli jest niedostępny, przy następnym nocnym przebiegu. Kopie w kopiach zapasowych tego serwera wygasają po upływie okresu przechowywania.",
+        "graceNotice": "Gdy usuwasz konto, zostaje ono od razu zablokowane i usunięte po {days} dniach, razem z każdą kopią, którą przechowuje ten serwer, także zaszyfrowanymi kopiami poza serwerem. Do tego czasu administrator tego serwera może cofnąć usunięcie. Usunięcie wszystkich danych działa tak samo: kopia dokumentacji jest przechowywana przez {days} dni, więc administrator może ją przywrócić. Kopie w kopiach zapasowych tego serwera wygasają po upływie okresu przechowywania."
       },
       "posture": {
         "title": "Ustawienia prywatności",
@@ -7644,7 +7649,12 @@
       "off": "Wyłączone",
       "change": "Zmień w Modułach"
     },
-    "timezoneUseDevice": "Użyj strefy czasowej tego urządzenia ({zone})"
+    "timezoneUseDevice": "Użyj strefy czasowej tego urządzenia ({zone})",
+    "dangerZoneConfirmDescriptionGrace": "Ta czynność usuwa wszystko z Twojej dokumentacji: pomiary, leki, wpisy nastroju, wyniki badań, wpisy cyklu, dokumenty, rozmowy z SI oraz wszystkie połączenia integracji, a wraz z nimi wszystko, co z nich wyliczono, i wszystko, co usunięto wcześniej. Linki udostępnione poradni natychmiast przestają działać. Konto zostaje, razem z danymi logowania i ustawieniami wyświetlania, takimi jak język, strefa czasowa i jednostki. Kopia twojej dokumentacji jest przechowywana przez {days} dni, więc do tego czasu administrator tego serwera może ją przywrócić. Potem usunięcie jest ostateczne.",
+    "deleteAccountCardDetailGrace": "Twoje konto zostaje od razu zablokowane i usunięte po {days} dniach. Do tego czasu administrator tego serwera może cofnąć usunięcie.",
+    "deleteAccountConfirmDescriptionGrace": "Zostaniesz wylogowany, a twoje konto od razu zablokowane. Po {days} dniach zostanie trwale usunięte, razem ze wszystkimi danymi zdrowotnymi, kluczami dostępu, sesjami i wpisami audytu. Do tego czasu administrator tego serwera może cofnąć usunięcie. Kopie w kopiach zapasowych tego serwera wygasają po upływie okresu przechowywania.",
+    "deleteAccountScheduled": "Twoje konto jest zablokowane i zostanie usunięte {date}. Trwa wylogowywanie.",
+    "dangerZoneSuccessGrace": "Twoja dokumentacja zdrowotna została usunięta. Administrator tego serwera może ją przywrócić do {date}."
   },
   "admin": {
     "title": "Administracja",
@@ -8080,7 +8090,15 @@
         "cannotLogoutSelf": "Nie można wymusić wylogowania samego siebie",
         "emptyTitle": "Brak użytkowników w tym widoku",
         "emptyDescription": "Brak użytkowników pasujących do bieżącego filtra.",
-        "emptyResetFilter": "Pokaż wszystkich użytkowników"
+        "emptyResetFilter": "Pokaż wszystkich użytkowników",
+        "deletionPending": "Usunięcie {date}",
+        "deletionPendingNoDate": "Usunięcie zaplanowane",
+        "undoDeletion": "Cofnij usunięcie",
+        "undoDeletionTitle": "Cofnąć usunięcie {name}?",
+        "undoDeletionBody": "{name} poprosił o usunięcie tego konta; zostanie ono usunięte po upływie okresu karencji. Cofnięcie zachowuje konto i całą jego zawartość bez zmian. Sesje i tokeny pozostają unieważnione, więc trzeba będzie zalogować się ponownie.",
+        "undoDeletionBodyGuardian": "Osoba opiekująca się profilem usunęła profil zarządzany {name}; zostanie on usunięty po upływie okresu karencji. Cofnięcie zachowuje profil i całą jego zawartość bez zmian, a osoby opiekujące się nim znów mają do niego dostęp.",
+        "undoDeletionDone": "Cofnięto usunięcie {name}",
+        "undoDeletionFailed": "Nie udało się cofnąć usunięcia"
       },
       "invites": {
         "title": "Zaproszenia",
@@ -8310,7 +8328,8 @@
         "restoreSkippedMoodLabelCiphertext": "Nazwa tagu lub grupy nastroju zaszyfrowana kluczem, którego ten serwer nie ma (zachowana bez nazwy)",
         "restoreSkippedVisitCiphertext": "Tekst wizyty lub lekarza zaszyfrowany kluczem, którego ten serwer nie ma (zachowany bez niego)",
         "restoreSkippedVaccinationCiphertext": "Notatka szczepienia zaszyfrowana kluczem, którego ten serwer nie ma (dawka zachowana bez niej)",
-        "restoreSkippedEnvironmentLocationCiphertext": "Lokalizacja okresu lub dnia środowiskowego zaszyfrowana kluczem, którego ten serwer nie ma (zachowana w postaci zaszyfrowanej, te dni nie są odświeżane)"
+        "restoreSkippedEnvironmentLocationCiphertext": "Lokalizacja okresu lub dnia środowiskowego zaszyfrowana kluczem, którego ten serwer nie ma (zachowana w postaci zaszyfrowanej, te dni nie są odświeżane)",
+        "typePreWipe": "Przed usunięciem wszystkich danych"
       },
       "danger-zone": {
         "title": "Strefa zagrożenia",
@@ -12660,7 +12679,8 @@
         "entryHint": "Gdy {name} chce samodzielnie prowadzić tę kartę.",
         "methodSso": "{name} loguje się przez logowanie jednokrotne (SSO), gdy użyje linku.",
         "methodBoth": "{name} może ustawić hasło albo zalogować się przez logowanie jednokrotne (SSO)."
-      }
+      },
+      "deleteBodyGrace": "Wszystko, co zapisano dla {name}, znika razem z profilem: pomiary, leki, dokumenty i notatki. Profil zostaje od razu zablokowany i usunięty po {days} dniach. Do tego czasu administrator tego serwera może cofnąć usunięcie."
     },
     "toast": {
       "savedTo": "Zapisano w karcie użytkownika {name}"

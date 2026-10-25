@@ -14,7 +14,6 @@
  * left: Export & import and the Health record sit next to this page in the
  * Data group. The old anchors forward (`settings-anchor-forward.tsx`).
  */
-import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import {
   Database,
@@ -33,25 +32,10 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { SettingsInfoTile } from "@/components/settings/_info-tile";
 import { WorkoutRoutesCard } from "@/components/settings/workout-routes-card";
-import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { MODULE_KEYS, MODULE_REGISTRY } from "@/lib/modules/registry";
-import { queryKeys } from "@/lib/query-keys";
-import { apiGet } from "@/lib/api/api-fetch";
+import { usePrivacySummary } from "@/lib/queries/use-privacy-summary";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
-
-interface PrivacySummary {
-  retention: {
-    coachMessagesDays: number;
-    auditLogDays: number;
-    deliveryLogDays: number;
-  };
-  encryption: {
-    algorithm: string;
-    columnCount: number;
-    modelCount: number;
-  };
-}
 
 /**
  * The modules that keep records of their own, read off the module registry
@@ -69,7 +53,6 @@ export function storedModuleLabelKeys(): string[] {
 
 export function PrivacySection() {
   const { t, locale } = useTranslations();
-  const { isAuthenticated } = useAuth();
 
   const {
     data: summary,
@@ -77,11 +60,7 @@ export function PrivacySection() {
     isError: summaryError,
     error: summaryFailure,
     refetch: refetchSummary,
-  } = useQuery({
-    queryKey: queryKeys.privacySummary(),
-    queryFn: () => apiGet<PrivacySummary>("/api/settings/privacy-summary"),
-    enabled: isAuthenticated,
-  });
+  } = usePrivacySummary();
 
   return (
     <div className="space-y-6">
@@ -177,6 +156,13 @@ export function PrivacySection() {
                 days: summary.retention.deliveryLogDays,
               })}
             </li>
+            <li>
+              {summary.retention.accountDeletionGraceDays > 0
+                ? t("settings.privacy.retention.accountDeletion", {
+                    days: summary.retention.accountDeletionGraceDays,
+                  })
+                : t("settings.privacy.retention.accountDeletionImmediate")}
+            </li>
           </ul>
         )}
       </SettingsCard>
@@ -208,9 +194,15 @@ export function PrivacySection() {
           title={t("settings.privacy.delete.title")}
           description={t("settings.privacy.delete.description")}
         />
-        <SettingsInfoTile icon={Info} tone="warning">
-          {t("settings.privacy.delete.backupLag")}
-        </SettingsInfoTile>
+        {summary && (
+          <SettingsInfoTile icon={Info} tone="warning">
+            {summary.retention.accountDeletionGraceDays > 0
+              ? t("settings.privacy.delete.graceNotice", {
+                  days: summary.retention.accountDeletionGraceDays,
+                })
+              : t("settings.privacy.delete.immediateNotice")}
+          </SettingsInfoTile>
+        )}
         <SettingsCardActions align="start">
           <Button asChild variant="outline" size="sm">
             <Link href="/settings/advanced">

@@ -629,7 +629,9 @@
       "title": "Invito non valido",
       "description": "Questo link di invito è incompleto o è stato copiato male. Chiedi un nuovo link alla persona che ti ha invitato.",
       "toLogin": "Vai all’accesso"
-    }
+    },
+    "deletionPending": "Questo account verrà eliminato il {date} ed è bloccato fino ad allora. Un amministratore di questo server può annullare l’eliminazione prima di quella data.",
+    "deletionPendingNoDate": "Questo account è in attesa di eliminazione ed è bloccato. Un amministratore di questo server può annullare l’eliminazione finché non è completata."
   },
   "dashboard": {
     "title": "Cruscotto",
@@ -6922,7 +6924,7 @@
     "deleteAccountCardDescription": "Elimina il tuo account insieme a passkey, registro di controllo e sessioni.",
     "deleteAccountCta": "Elimina account",
     "deleteAccountConfirmTitle": "Eliminare definitivamente l’account?",
-    "deleteAccountConfirmDescription": "Il tuo account, tutti i dati sanitari, le passkey, le sessioni e le voci di audit verranno eliminati definitivamente. Verrai disconnesso subito dopo.",
+    "deleteAccountConfirmDescription": "Il tuo account, tutti i dati sanitari, le passkey, le sessioni e le voci di audit verranno eliminati definitivamente. Verrai disconnesso subito dopo. Le copie nei backup di questo server scadono al termine del loro periodo di conservazione.",
     "deleteAccountSuccess": "Account eliminato, disconnessione in corso.",
     "deleteAccountFailed": "Impossibile eliminare l’account",
     "deleteAccountFinal": "Elimina definitivamente",
@@ -7332,13 +7334,16 @@
         "coach": "Conversazioni con il coach: {days} giorni",
         "audit": "Registro di sicurezza: {days} giorni",
         "delivery": "Registro di invio delle notifiche: {days} giorni",
-        "unavailable": "I dettagli di conservazione non sono disponibili al momento."
+        "unavailable": "I dettagli di conservazione non sono disponibili al momento.",
+        "accountDeletion": "Eliminazione del tuo account, di un profilo gestito o di tutti i dati: completata dopo {days} giorni",
+        "accountDeletionImmediate": "Eliminazione del tuo account, di un profilo gestito o di tutti i dati: completata subito"
       },
       "delete": {
         "title": "Elimina o reimposta",
         "description": "Elimina completamente il tuo account oppure cancella i tuoi dati sanitari mantenendo l'account.",
-        "backupLag": "L'eliminazione rimuove subito i tuoi dati. Se questo server conserva backup esterni cifrati, le copie dei tuoi dati vengono eliminate da quello spazio subito dopo, o alla successiva esecuzione notturna se non è raggiungibile.",
-        "openAdvanced": "Elimina o reimposta"
+        "openAdvanced": "Elimina o reimposta",
+        "immediateNotice": "L'eliminazione rimuove subito i tuoi dati. Se questo server conserva backup esterni cifrati, le copie dei tuoi dati vengono eliminate da quello spazio subito dopo, o alla successiva esecuzione notturna se non è raggiungibile. Le copie nei backup di questo server scadono al termine del loro periodo di conservazione.",
+        "graceNotice": "Quando elimini il tuo account, viene bloccato subito e cancellato dopo {days} giorni, insieme a ogni copia che questo server ne conserva, incluse le copie cifrate fuori dal server. Fino ad allora un amministratore di questo server può annullare l’eliminazione. Eliminare tutti i dati funziona allo stesso modo: una copia della cartella viene conservata per {days} giorni, così un amministratore può ripristinarla. Le copie nei backup di questo server scadono al termine del loro periodo di conservazione."
       },
       "posture": {
         "title": "Impostazione privacy",
@@ -7644,7 +7649,12 @@
       "off": "Disattivo",
       "change": "Cambia in Moduli"
     },
-    "timezoneUseDevice": "Usa il fuso orario di questo dispositivo ({zone})"
+    "timezoneUseDevice": "Usa il fuso orario di questo dispositivo ({zone})",
+    "dangerZoneConfirmDescriptionGrace": "Questa azione elimina tutto ciò che contiene la tua cartella: misurazioni, farmaci, voci dell’umore, risultati di laboratorio, voci del ciclo, documenti, conversazioni con l’IA e ogni connessione di integrazione, insieme a tutto ciò che ne deriva e a tutto quello che avevi eliminato prima. I link di condivisione consegnati a uno studio medico smettono subito di funzionare. Il tuo account resta, insieme alle credenziali con cui accedi e alle impostazioni di visualizzazione come lingua, fuso orario e unità. Una copia della tua cartella viene conservata per {days} giorni, così un amministratore di questo server può ripristinarla fino ad allora. Dopo, l’eliminazione è definitiva.",
+    "deleteAccountCardDetailGrace": "Il tuo account viene bloccato subito e cancellato dopo {days} giorni. Fino ad allora un amministratore di questo server può annullare l’eliminazione.",
+    "deleteAccountConfirmDescriptionGrace": "Vieni disconnesso e il tuo account viene bloccato subito. Dopo {days} giorni viene cancellato definitivamente, con tutti i dati sanitari, le passkey, le sessioni e le voci di audit. Fino ad allora un amministratore di questo server può annullare l’eliminazione. Le copie nei backup di questo server scadono al termine del loro periodo di conservazione.",
+    "deleteAccountScheduled": "Il tuo account è bloccato e verrà cancellato il {date}. Disconnessione in corso.",
+    "dangerZoneSuccessGrace": "La tua cartella sanitaria è stata eliminata. Un amministratore di questo server può ripristinarla fino al {date}."
   },
   "admin": {
     "title": "Administration",
@@ -8080,7 +8090,15 @@
         "cannotLogoutSelf": "Non puoi forzare la tua disconnessione",
         "emptyTitle": "Nessun utente in questa vista",
         "emptyDescription": "Nessun utente corrisponde al filtro attuale.",
-        "emptyResetFilter": "Mostra tutti gli utenti"
+        "emptyResetFilter": "Mostra tutti gli utenti",
+        "deletionPending": "Eliminazione il {date}",
+        "deletionPendingNoDate": "Eliminazione in attesa",
+        "undoDeletion": "Annulla eliminazione",
+        "undoDeletionTitle": "Annullare l’eliminazione di {name}?",
+        "undoDeletionBody": "{name} ha chiesto di eliminare questo account, che viene cancellato alla fine del periodo di tolleranza. Annullare mantiene l’account e tutto il suo contenuto com’era. Sessioni e token restano revocati, quindi servirà un nuovo accesso.",
+        "undoDeletionBodyGuardian": "Una persona responsabile ha eliminato il profilo gestito {name}, che viene cancellato alla fine del periodo di tolleranza. Annullare mantiene il profilo e tutto il suo contenuto com’era, e le persone responsabili possono di nuovo accedervi.",
+        "undoDeletionDone": "Eliminazione di {name} annullata",
+        "undoDeletionFailed": "Impossibile annullare l’eliminazione"
       },
       "invites": {
         "title": "Inviti",
@@ -8310,7 +8328,8 @@
         "restoreSkippedMoodLabelCiphertext": "Nome di tag o gruppo dell’umore cifrato con una chiave che questo server non possiede (mantenuto senza nome)",
         "restoreSkippedVisitCiphertext": "Testo di visita o professionista cifrato con una chiave che questo server non possiede (mantenuto senza)",
         "restoreSkippedVaccinationCiphertext": "Nota di vaccinazione cifrata con una chiave che questo server non possiede (dose mantenuta senza)",
-        "restoreSkippedEnvironmentLocationCiphertext": "Luogo di un periodo o giorno ambientale cifrato con una chiave che questo server non possiede (mantenuto cifrato, quei giorni non vengono aggiornati)"
+        "restoreSkippedEnvironmentLocationCiphertext": "Luogo di un periodo o giorno ambientale cifrato con una chiave che questo server non possiede (mantenuto cifrato, quei giorni non vengono aggiornati)",
+        "typePreWipe": "Prima dell’eliminazione di tutti i dati"
       },
       "danger-zone": {
         "title": "Zona pericolosa",
@@ -12660,7 +12679,8 @@
         "entryHint": "Quando {name} vuole tenere questa cartella in autonomia.",
         "methodSso": "{name} accede con il single sign-on quando usa il link.",
         "methodBoth": "{name} può impostare una password oppure accedere con il single sign-on."
-      }
+      },
+      "deleteBodyGrace": "Tutto ciò che è stato registrato per {name} sparisce insieme al profilo: misurazioni, farmaci, documenti e note. Il profilo viene bloccato subito e cancellato dopo {days} giorni. Fino ad allora un amministratore di questo server può annullare l’eliminazione."
     },
     "toast": {
       "savedTo": "Salvato nella cartella di {name}"

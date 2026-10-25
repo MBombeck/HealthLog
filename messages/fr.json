@@ -629,7 +629,9 @@
       "title": "Invitation invalide",
       "description": "Ce lien d’invitation est incomplet ou a été mal copié. Demandez un nouveau lien à la personne qui vous a invité.",
       "toLogin": "Aller à la connexion"
-    }
+    },
+    "deletionPending": "Ce compte sera supprimé le {date} et reste verrouillé d’ici là. Un administrateur de ce serveur peut annuler la suppression avant cette date.",
+    "deletionPendingNoDate": "Ce compte est programmé pour suppression et il est verrouillé. Un administrateur de ce serveur peut annuler la suppression tant qu’elle n’est pas terminée."
   },
   "dashboard": {
     "title": "Tableau de bord",
@@ -6922,7 +6924,7 @@
     "deleteAccountCardDescription": "Supprime votre compte ainsi que les clés d’accès, le journal d’audit et les sessions.",
     "deleteAccountCta": "Supprimer le compte",
     "deleteAccountConfirmTitle": "Supprimer définitivement le compte ?",
-    "deleteAccountConfirmDescription": "Votre compte, toutes vos données de santé, vos clés d’accès, vos sessions et vos entrées d’audit seront définitivement supprimés. Vous serez déconnecté immédiatement après.",
+    "deleteAccountConfirmDescription": "Votre compte, toutes vos données de santé, vos clés d’accès, vos sessions et vos entrées d’audit seront définitivement supprimés. Vous serez déconnecté immédiatement après. Les copies dans les sauvegardes de ce serveur expirent à la fin de leur durée de conservation.",
     "deleteAccountSuccess": "Compte supprimé, déconnexion en cours.",
     "deleteAccountFailed": "Le compte n’a pas pu être supprimé",
     "deleteAccountFinal": "Supprimer définitivement",
@@ -7332,13 +7334,16 @@
         "coach": "Conversations avec le coach : {days} jours",
         "audit": "Journal de sécurité : {days} jours",
         "delivery": "Journal d'envoi des notifications : {days} jours",
-        "unavailable": "Les détails de conservation sont indisponibles pour le moment."
+        "unavailable": "Les détails de conservation sont indisponibles pour le moment.",
+        "accountDeletion": "Suppression de votre compte, d’un profil géré ou de toutes les données : effective au bout de {days} jours",
+        "accountDeletionImmediate": "Suppression de votre compte, d’un profil géré ou de toutes les données : effective immédiatement"
       },
       "delete": {
         "title": "Supprimer ou réinitialiser",
         "description": "Supprimez complètement votre compte, ou effacez vos données de santé tout en conservant le compte.",
-        "backupLag": "La suppression efface vos données immédiatement. Si ce serveur conserve des sauvegardes externes chiffrées, les copies de vos données sont supprimées de ce stockage juste après, ou lors du prochain passage nocturne s'il est injoignable.",
-        "openAdvanced": "Supprimer ou réinitialiser"
+        "openAdvanced": "Supprimer ou réinitialiser",
+        "immediateNotice": "La suppression efface vos données immédiatement. Si ce serveur conserve des sauvegardes externes chiffrées, les copies de vos données sont supprimées de ce stockage juste après, ou lors du prochain passage nocturne s'il est injoignable. Les copies dans les sauvegardes de ce serveur expirent à la fin de leur durée de conservation.",
+        "graceNotice": "Lorsque vous supprimez votre compte, il est verrouillé immédiatement et effacé au bout de {days} jours, avec chaque copie que ce serveur en conserve, y compris les copies chiffrées hors du serveur. D’ici là, un administrateur de ce serveur peut annuler la suppression. La suppression de toutes les données fonctionne de la même façon : une copie du dossier est conservée pendant {days} jours, afin qu’un administrateur puisse la restaurer. Les copies dans les sauvegardes de ce serveur expirent à la fin de leur durée de conservation."
       },
       "posture": {
         "title": "Posture de confidentialité",
@@ -7644,7 +7649,12 @@
       "off": "Désactivé",
       "change": "Modifier dans Modules"
     },
-    "timezoneUseDevice": "Utiliser le fuseau horaire de cet appareil ({zone})"
+    "timezoneUseDevice": "Utiliser le fuseau horaire de cet appareil ({zone})",
+    "dangerZoneConfirmDescriptionGrace": "Cette action supprime tout ce que contient votre dossier : mesures, médicaments, entrées d’humeur, résultats de laboratoire, entrées de cycle, documents, conversations avec l’IA et toutes les connexions d’intégration, ainsi que tout ce qui en découle et tout ce que vous aviez supprimé auparavant. Les liens de partage remis à un cabinet cessent aussitôt de fonctionner. Votre compte reste en place, de même que vos identifiants de connexion et vos réglages d’affichage comme la langue, le fuseau horaire et les unités. Une copie de votre dossier est conservée pendant {days} jours, afin qu’un administrateur de ce serveur puisse la restaurer d’ici là. Ensuite, la suppression est définitive.",
+    "deleteAccountCardDetailGrace": "Votre compte est verrouillé immédiatement et effacé au bout de {days} jours. D’ici là, un administrateur de ce serveur peut annuler la suppression.",
+    "deleteAccountConfirmDescriptionGrace": "Vous êtes déconnecté et votre compte est verrouillé immédiatement. Au bout de {days} jours, il est effacé définitivement, avec toutes vos données de santé, vos clés d’accès, vos sessions et vos entrées d’audit. D’ici là, un administrateur de ce serveur peut annuler la suppression. Les copies dans les sauvegardes de ce serveur expirent à la fin de leur durée de conservation.",
+    "deleteAccountScheduled": "Votre compte est verrouillé et sera effacé le {date}. Déconnexion en cours.",
+    "dangerZoneSuccessGrace": "Votre dossier de santé a été supprimé. Un administrateur de ce serveur peut le restaurer jusqu’au {date}."
   },
   "admin": {
     "title": "Administration",
@@ -8080,7 +8090,15 @@
         "cannotLogoutSelf": "Impossible de forcer votre propre déconnexion",
         "emptyTitle": "Aucun utilisateur dans cette vue",
         "emptyDescription": "Aucun utilisateur ne correspond au filtre actuel.",
-        "emptyResetFilter": "Afficher tous les utilisateurs"
+        "emptyResetFilter": "Afficher tous les utilisateurs",
+        "deletionPending": "Suppression le {date}",
+        "deletionPendingNoDate": "Suppression programmée",
+        "undoDeletion": "Annuler la suppression",
+        "undoDeletionTitle": "Annuler la suppression de {name} ?",
+        "undoDeletionBody": "{name} a demandé la suppression de ce compte, qui sera effacé à la fin du délai de grâce. Annuler conserve le compte et tout son contenu tels quels. Ses sessions et jetons restent révoqués : il faudra se reconnecter.",
+        "undoDeletionBodyGuardian": "Une personne responsable a supprimé le profil géré {name}, qui sera effacé à la fin du délai de grâce. Annuler conserve le profil et tout son contenu tels quels, et les personnes responsables y ont de nouveau accès.",
+        "undoDeletionDone": "Suppression de {name} annulée",
+        "undoDeletionFailed": "Impossible d’annuler la suppression"
       },
       "invites": {
         "title": "Invitations",
@@ -8310,7 +8328,8 @@
         "restoreSkippedMoodLabelCiphertext": "Nom d’étiquette ou de groupe d’humeur chiffré avec une clé que ce serveur ne possède pas (conservé sans son nom)",
         "restoreSkippedVisitCiphertext": "Texte de consultation ou de praticien chiffré avec une clé que ce serveur ne possède pas (conservé sans)",
         "restoreSkippedVaccinationCiphertext": "Note de vaccination chiffrée avec une clé que ce serveur ne possède pas (dose conservée sans)",
-        "restoreSkippedEnvironmentLocationCiphertext": "Lieu d'une période ou d'un jour environnemental chiffré avec une clé que ce serveur ne possède pas (conservé chiffré, ces jours ne sont pas actualisés)"
+        "restoreSkippedEnvironmentLocationCiphertext": "Lieu d'une période ou d'un jour environnemental chiffré avec une clé que ce serveur ne possède pas (conservé chiffré, ces jours ne sont pas actualisés)",
+        "typePreWipe": "Avant la suppression de toutes les données"
       },
       "danger-zone": {
         "title": "Zone de danger",
@@ -12660,7 +12679,8 @@
         "entryHint": "Quand {name} souhaite tenir ce dossier de façon autonome.",
         "methodSso": "{name} se connecte par authentification unique en utilisant le lien.",
         "methodBoth": "{name} peut définir un mot de passe ou se connecter par authentification unique."
-      }
+      },
+      "deleteBodyGrace": "Tout ce qui a été enregistré pour {name} disparaît avec le profil : mesures, médicaments, documents et notes. Le profil est verrouillé immédiatement et effacé au bout de {days} jours. D’ici là, un administrateur de ce serveur peut annuler la suppression."
     },
     "toast": {
       "savedTo": "Enregistré dans le dossier de {name}"

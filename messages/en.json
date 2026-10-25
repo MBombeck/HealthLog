@@ -629,7 +629,9 @@
       "title": "Invitation invalid",
       "description": "This invitation link is incomplete or was copied wrongly. Ask the person who invited you for a new link.",
       "toLogin": "Go to sign in"
-    }
+    },
+    "deletionPending": "This account is scheduled for deletion on {date} and is locked until then. An admin of this server can undo the deletion before that date.",
+    "deletionPendingNoDate": "This account is scheduled for deletion and is locked. An admin of this server can undo the deletion until it completes."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -6922,7 +6924,7 @@
     "deleteAccountCardDescription": "Deletes your account along with passkeys, audit log, and sessions.",
     "deleteAccountCta": "Delete account",
     "deleteAccountConfirmTitle": "Delete account permanently?",
-    "deleteAccountConfirmDescription": "Your account, all health data, passkeys, sessions, and audit entries will be permanently deleted. You will be signed out immediately after.",
+    "deleteAccountConfirmDescription": "Your account, all health data, passkeys, sessions, and audit entries will be permanently deleted. You will be signed out immediately after. Copies in this server's backups age out after their retention period.",
     "deleteAccountSuccess": "Account deleted. Signing you out.",
     "deleteAccountFailed": "Account could not be deleted",
     "deleteAccountFinal": "Delete permanently",
@@ -7332,13 +7334,16 @@
         "coach": "Coach conversations: kept {days} days",
         "audit": "Security activity log: kept {days} days",
         "delivery": "Notification delivery log: kept {days} days",
-        "unavailable": "Retention details are unavailable right now."
+        "unavailable": "Retention details are unavailable right now.",
+        "accountDeletion": "Deleting your account, a managed profile or all data: completed after {days} days",
+        "accountDeletionImmediate": "Deleting your account, a managed profile or all data: completed immediately"
       },
       "delete": {
         "title": "Delete or reset",
         "description": "Remove your account entirely, or wipe your health records while keeping the account.",
-        "backupLag": "Deletion removes your data immediately. If this server keeps encrypted off-host backups, the copies of your data are deleted from that storage right after, or on the next nightly run if the storage is unreachable.",
-        "openAdvanced": "Delete or reset"
+        "openAdvanced": "Delete or reset",
+        "immediateNotice": "Deletion removes your data immediately. If this server keeps encrypted off-host backups, the copies of your data are deleted from that storage right after, or on the next nightly run if the storage is unreachable. Copies in this server's backups age out after their retention period.",
+        "graceNotice": "When you delete your account, it is locked immediately and erased after {days} days, together with every copy this server keeps of it, including encrypted off-host copies. Until then, an admin of this server can undo the deletion. Deleting all data works the same way: a copy of the record is kept for {days} days, so an admin can restore it. Copies in this server's backups age out after their retention period."
       },
       "posture": {
         "title": "Privacy posture",
@@ -7644,7 +7649,12 @@
       "off": "Off",
       "change": "Change in Modules"
     },
-    "timezoneUseDevice": "Use this device's timezone ({zone})"
+    "timezoneUseDevice": "Use this device's timezone ({zone})",
+    "dangerZoneConfirmDescriptionGrace": "This deletes everything in your record: measurements, medications, mood entries, lab results, cycle entries, documents, AI conversations and every integration connection, together with everything derived from them and anything you deleted earlier. Share links you gave to a doctor stop working immediately. Your account stays, along with the credentials you sign in with and display settings such as language, timezone and units. A copy of your record is kept for {days} days, so an admin of this server can restore it until then. After that the deletion is final.",
+    "deleteAccountCardDetailGrace": "Your account is locked right away and erased after {days} days. Until then, an admin of this server can undo the deletion.",
+    "deleteAccountConfirmDescriptionGrace": "You are signed out and your account is locked right away. After {days} days it is erased for good, with all health data, passkeys, sessions and audit entries. Until then, an admin of this server can undo the deletion. Copies in this server's backups age out after their retention period.",
+    "deleteAccountScheduled": "Your account is locked and will be erased on {date}. Signing you out.",
+    "dangerZoneSuccessGrace": "Your health record has been deleted. An admin of this server can restore it until {date}."
   },
   "admin": {
     "title": "Administration",
@@ -8080,7 +8090,15 @@
         "cannotLogoutSelf": "Cannot force-logout yourself",
         "emptyTitle": "No users in this view",
         "emptyDescription": "There are no users matching the current filter.",
-        "emptyResetFilter": "Show all users"
+        "emptyResetFilter": "Show all users",
+        "deletionPending": "Deletion on {date}",
+        "deletionPendingNoDate": "Deletion pending",
+        "undoDeletion": "Undo deletion",
+        "undoDeletionTitle": "Undo the deletion of {name}?",
+        "undoDeletionBody": "{name} asked to delete this account, and it is erased when the grace window ends. Undoing keeps the account and everything in it as it was. Its sessions and tokens stay revoked, so {name} signs in again.",
+        "undoDeletionBodyGuardian": "A guardian deleted the managed profile {name}, and it is erased when the grace window ends. Undoing keeps the profile and everything in it as it was, and its guardians can reach it again.",
+        "undoDeletionDone": "Deletion undone for {name}",
+        "undoDeletionFailed": "Could not undo the deletion"
       },
       "invites": {
         "title": "Invites",
@@ -8310,7 +8328,8 @@
         "restoreSkippedMoodLabelCiphertext": "Mood tag or group name sealed with a key this server does not hold (kept without its name)",
         "restoreSkippedVisitCiphertext": "Visit or practitioner text sealed with a key this server does not hold (kept without it)",
         "restoreSkippedVaccinationCiphertext": "Vaccination note sealed with a key this server does not hold (dose kept without it)",
-        "restoreSkippedEnvironmentLocationCiphertext": "Location of an environment period or day sealed with a key this server does not hold (kept sealed, those days are not refreshed)"
+        "restoreSkippedEnvironmentLocationCiphertext": "Location of an environment period or day sealed with a key this server does not hold (kept sealed, those days are not refreshed)",
+        "typePreWipe": "Before all data was deleted"
       },
       "danger-zone": {
         "title": "Danger zone",
@@ -12660,7 +12679,8 @@
         "entryHint": "When {name} is ready to look after this record themselves.",
         "methodSso": "{name} signs in through single sign-on when they use the link.",
         "methodBoth": "{name} can set a password or sign in through single sign-on."
-      }
+      },
+      "deleteBodyGrace": "Everything recorded for {name} goes with the profile: readings, medications, documents and notes. The profile is locked right away and erased after {days} days. Until then, an admin of this server can undo the deletion."
     },
     "toast": {
       "savedTo": "Saved to {name}'s record"

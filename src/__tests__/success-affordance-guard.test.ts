@@ -149,6 +149,9 @@ const PINNED_AFFORDANCES: Record<
     "text-success": 2,
     "toast.success": 2,
   },
+  // An undone account deletion: an account action with no row counts to
+  // misreport.
+  "src/components/admin/pending-deletion-controls.tsx": { "toast.success": 1 },
   "src/components/admin/version-tile-section.tsx": {
     CheckCircle2: 2,
     "text-success": 1,

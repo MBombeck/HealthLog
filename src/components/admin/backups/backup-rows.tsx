@@ -8,6 +8,7 @@ import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { BackupRow } from "@/types/backups";
 
 import { RestoreRowDialog } from "./restore-dialog";
+import { isPreWipeBackupType } from "@/lib/account-deletion/pre-wipe-type";
 
 /** What a row's Download and Restore controls act through. */
 export type BackupRowActionProps = {
@@ -31,6 +32,9 @@ function formatBackupType(
 ) {
   if (type === "WEEKLY_AUTO") return t("admin.section.backups.typeWeeklyAuto");
   if (type === "MANUAL") return t("admin.section.backups.typeManual");
+  // The copy "Delete all entries" takes first; restorable until the deletion
+  // grace window ends, when the purge job deletes it.
+  if (isPreWipeBackupType(type)) return t("admin.section.backups.typePreWipe");
   return type;
 }
 

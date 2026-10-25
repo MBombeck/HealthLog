@@ -25,6 +25,7 @@ import { isDashboardSnapshotEnabled } from "@/lib/dashboard/snapshot-flag";
 import { prefetchDashboardSnapshot } from "@/lib/queries/use-dashboard-snapshot";
 import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
 import { sanitizeSameOriginPath } from "@/lib/url-safety";
+import { formatDate } from "@/lib/format";
 import {
   InsecureTransportBanner,
   useClientTransport,
@@ -33,7 +34,43 @@ import { transportVerdict } from "@/lib/auth/client-transport";
 
 /** The server's refusal for a page whose sign-in cookie cannot stick. */
 const INSECURE_TRANSPORT_CODE = "auth.session.insecure_transport";
+/** The server's refusal for an account pending deletion. */
+const DELETION_PENDING = "auth.account.deletion_pending";
 import { loadDocument } from "@/lib/navigation/load-document";
+
+type Translate = (key: string, params?: Record<string, string>) => string;
+
+/**
+ * An account pending deletion: the date it is erased, when the server named
+ * one, and who can still stop it.
+ */
+function deletionPendingMessage(t: Translate, purgeAt: unknown): string {
+  return typeof purgeAt === "string" && !Number.isNaN(Date.parse(purgeAt))
+    ? t("auth.deletionPending", { date: formatDate(purgeAt) })
+    : t("auth.deletionPendingNoDate");
+}
+
+/** The message for the `?error=` a sign-in redirect (the SSO callback) set. */
+function signInRedirectError(
+  searchParams: URLSearchParams,
+  t: Translate,
+): string | null {
+  const oidcError = searchParams.get("error");
+  // The SSO start refused a page on plain http://; the banner says why.
+  if (!oidcError || oidcError === "insecure_transport") return null;
+  if (oidcError === "account_deletion_pending") {
+    return deletionPendingMessage(t, searchParams.get("purgeAt"));
+  }
+  const key: Record<string, string> = {
+    oidc_denied: "auth.oidc.errorDenied",
+    oidc_no_email: "auth.oidc.errorNoEmail",
+    oidc_email_unverified: "auth.oidc.errorEmailUnverified",
+    oidc_identity_conflict: "auth.oidc.errorIdentityConflict",
+    oidc_link_required: "auth.oidc.errorLinkRequired",
+    oidc_registration_disabled: "auth.oidc.errorRegistrationDisabled",
+  };
+  return t(key[oidcError] ?? "auth.oidc.errorFailed");
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -50,20 +87,9 @@ export default function LoginPage() {
   );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(() => {
-    const oidcError = searchParams.get("error");
-    // The SSO start refused a page on plain http://; the banner says why.
-    if (!oidcError || oidcError === "insecure_transport") return null;
-    const key: Record<string, string> = {
-      oidc_denied: "auth.oidc.errorDenied",
-      oidc_no_email: "auth.oidc.errorNoEmail",
-      oidc_email_unverified: "auth.oidc.errorEmailUnverified",
-      oidc_identity_conflict: "auth.oidc.errorIdentityConflict",
-      oidc_link_required: "auth.oidc.errorLinkRequired",
-      oidc_registration_disabled: "auth.oidc.errorRegistrationDisabled",
-    };
-    return t(key[oidcError] ?? "auth.oidc.errorFailed");
-  });
+  const [error, setError] = useState<string | null>(() =>
+    signInRedirectError(searchParams, t),
+  );
   const [loading, setLoading] = useState(false);
   // v1.23 — second step of login when the password response carries
   // `meta.mfaRequired`. Holds the opaque ticket + the factors the account can
@@ -125,6 +151,10 @@ export default function LoginPage() {
       err.meta?.errorCode === INSECURE_TRANSPORT_CODE
     ) {
       setTransportRefused(true);
+      return true;
+    }
+    if (err instanceof ApiError && err.meta?.errorCode === DELETION_PENDING) {
+      setError(deletionPendingMessage(t, err.meta?.purgeAt));
       return true;
     }
     return false;

@@ -153,6 +153,13 @@ vi.mock("@/hooks/use-account-switch", () => ({
   useAccountSwitch: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
+// The deletion grace window the delete dialog states. 0 here, the immediate
+// erasure these tests were written against; the grace wording is pinned on
+// `deleteProfileBody` below.
+vi.mock("@/lib/queries/use-privacy-summary", () => ({
+  useAccountDeletionGrace: () => ({ days: 0, pending: false }),
+}));
+
 interface FakeMutation {
   mutate: ReturnType<typeof vi.fn>;
   isPending: boolean;
@@ -660,6 +667,20 @@ describe("what the confirmation says before it deletes", () => {
     // way out of the floor. The copy says so rather than duplicating a refusal
     // this route never sends.
     expect(body).toContain("recordSharing.managed.deleteFloorNote");
+  });
+
+  it("says the profile is locked, erased after the window, and undoable", () => {
+    const body = deleteProfileBody({
+      t,
+      tCount,
+      name: "Managed record",
+      activeGuardians: 1,
+      graceDays: 14,
+    });
+    expect(body).toContain(
+      'recordSharing.managed.deleteBodyGrace({"name":"Managed record","days":14})',
+    );
+    expect(body).not.toContain("recordSharing.managed.deleteBody(");
   });
 
   it("counts the guardians who actually hold the record", () => {

@@ -629,7 +629,9 @@
       "title": "Invitación no válida",
       "description": "Este enlace de invitación está incompleto o se copió mal. Pide un enlace nuevo a la persona que te invitó.",
       "toLogin": "Ir a iniciar sesión"
-    }
+    },
+    "deletionPending": "Esta cuenta se eliminará el {date} y está bloqueada hasta entonces. Un administrador de este servidor puede deshacer la eliminación antes de esa fecha.",
+    "deletionPendingNoDate": "Esta cuenta está programada para eliminarse y está bloqueada. Un administrador de este servidor puede deshacer la eliminación hasta que se complete."
   },
   "dashboard": {
     "title": "Panel",
@@ -6922,7 +6924,7 @@
     "deleteAccountCardDescription": "Elimina tu cuenta junto con las claves de acceso, el registro de auditoría y las sesiones.",
     "deleteAccountCta": "Eliminar cuenta",
     "deleteAccountConfirmTitle": "¿Eliminar la cuenta de forma permanente?",
-    "deleteAccountConfirmDescription": "Tu cuenta, todos los datos de salud, las claves de acceso, las sesiones y las entradas de auditoría se eliminarán de forma permanente. Se cerrará tu sesión inmediatamente después.",
+    "deleteAccountConfirmDescription": "Tu cuenta, todos los datos de salud, las claves de acceso, las sesiones y las entradas de auditoría se eliminarán de forma permanente. Se cerrará tu sesión inmediatamente después. Las copias en las copias de seguridad de este servidor caducan al terminar su periodo de conservación.",
     "deleteAccountSuccess": "Cuenta eliminada. Cerrando tu sesión.",
     "deleteAccountFailed": "No se pudo eliminar la cuenta",
     "deleteAccountFinal": "Eliminar permanentemente",
@@ -7332,13 +7334,16 @@
         "coach": "Conversaciones con el asistente: {days} días",
         "audit": "Registro de seguridad: {days} días",
         "delivery": "Registro de envío de notificaciones: {days} días",
-        "unavailable": "Los detalles de retención no están disponibles en este momento."
+        "unavailable": "Los detalles de retención no están disponibles en este momento.",
+        "accountDeletion": "Eliminar tu cuenta, un perfil gestionado o todos los datos: se completa al cabo de {days} días",
+        "accountDeletionImmediate": "Eliminar tu cuenta, un perfil gestionado o todos los datos: se completa de inmediato"
       },
       "delete": {
         "title": "Eliminar o restablecer",
         "description": "Elimina tu cuenta por completo o borra tus registros de salud conservando la cuenta.",
-        "backupLag": "La eliminación borra tus datos de inmediato. Si este servidor guarda copias de seguridad cifradas externas, las copias de tus datos se borran de ese almacenamiento justo después, o en la siguiente ejecución nocturna si no está disponible.",
-        "openAdvanced": "Eliminar o restablecer"
+        "openAdvanced": "Eliminar o restablecer",
+        "immediateNotice": "La eliminación borra tus datos de inmediato. Si este servidor guarda copias de seguridad cifradas externas, las copias de tus datos se borran de ese almacenamiento justo después, o en la siguiente ejecución nocturna si no está disponible. Las copias en las copias de seguridad de este servidor caducan al terminar su periodo de conservación.",
+        "graceNotice": "Cuando eliminas tu cuenta, se bloquea de inmediato y se borra al cabo de {days} días, junto con todas las copias que este servidor guarda de ella, incluidas las copias cifradas fuera del servidor. Hasta entonces, un administrador de este servidor puede deshacer la eliminación. Eliminar todos los datos funciona igual: se guarda una copia del historial durante {days} días, para que un administrador pueda restaurarla. Las copias en las copias de seguridad de este servidor caducan al terminar su periodo de conservación."
       },
       "posture": {
         "title": "Configuración de privacidad",
@@ -7644,7 +7649,12 @@
       "off": "Desactivado",
       "change": "Cambiar en Módulos"
     },
-    "timezoneUseDevice": "Usar la zona horaria de este dispositivo ({zone})"
+    "timezoneUseDevice": "Usar la zona horaria de este dispositivo ({zone})",
+    "dangerZoneConfirmDescriptionGrace": "Esto elimina todo lo que hay en tu historial: mediciones, medicamentos, entradas de ánimo, resultados de laboratorio, entradas de ciclo, documentos, conversaciones con la IA y todas las conexiones de integración, junto con todo lo derivado de ello y todo lo que eliminaste antes. Los enlaces compartidos que diste a una consulta dejan de funcionar de inmediato. Tu cuenta se mantiene, junto con las credenciales con las que inicias sesión y los ajustes de presentación como el idioma, la zona horaria y las unidades. Se guarda una copia de tu historial durante {days} días, para que un administrador de este servidor pueda restaurarla hasta entonces. Después, la eliminación es definitiva.",
+    "deleteAccountCardDetailGrace": "Tu cuenta se bloquea de inmediato y se borra al cabo de {days} días. Hasta entonces, un administrador de este servidor puede deshacer la eliminación.",
+    "deleteAccountConfirmDescriptionGrace": "Se cierra tu sesión y tu cuenta se bloquea de inmediato. Al cabo de {days} días se borra para siempre, con todos tus datos de salud, llaves de acceso, sesiones y entradas de auditoría. Hasta entonces, un administrador de este servidor puede deshacer la eliminación. Las copias en las copias de seguridad de este servidor caducan al terminar su periodo de conservación.",
+    "deleteAccountScheduled": "Tu cuenta está bloqueada y se borrará el {date}. Cerrando tu sesión.",
+    "dangerZoneSuccessGrace": "Tu historial de salud se ha eliminado. Un administrador de este servidor puede restaurarlo hasta el {date}."
   },
   "admin": {
     "title": "Administration",
@@ -8080,7 +8090,15 @@
         "cannotLogoutSelf": "No puedes forzar tu propio cierre de sesión",
         "emptyTitle": "No hay usuarios en esta vista",
         "emptyDescription": "No hay usuarios que coincidan con el filtro actual.",
-        "emptyResetFilter": "Mostrar todos los usuarios"
+        "emptyResetFilter": "Mostrar todos los usuarios",
+        "deletionPending": "Eliminación el {date}",
+        "deletionPendingNoDate": "Eliminación pendiente",
+        "undoDeletion": "Deshacer eliminación",
+        "undoDeletionTitle": "¿Deshacer la eliminación de {name}?",
+        "undoDeletionBody": "{name} pidió eliminar esta cuenta, y se borra cuando termina el plazo de gracia. Deshacerlo conserva la cuenta y todo su contenido tal como estaba. Sus sesiones y tokens siguen revocados, así que habrá que volver a iniciar sesión.",
+        "undoDeletionBodyGuardian": "Una persona responsable eliminó el perfil gestionado {name}, y se borra cuando termina el plazo de gracia. Deshacerlo conserva el perfil y todo su contenido tal como estaba, y las personas responsables vuelven a tener acceso.",
+        "undoDeletionDone": "Eliminación de {name} deshecha",
+        "undoDeletionFailed": "No se pudo deshacer la eliminación"
       },
       "invites": {
         "title": "Invitaciones",
@@ -8310,7 +8328,8 @@
         "restoreSkippedMoodLabelCiphertext": "Nombre de etiqueta o grupo de ánimo cifrado con una clave que este servidor no tiene (se conserva sin el nombre)",
         "restoreSkippedVisitCiphertext": "Texto de visita o profesional cifrado con una clave que este servidor no tiene (se conserva sin él)",
         "restoreSkippedVaccinationCiphertext": "Nota de vacunación cifrada con una clave que este servidor no tiene (la dosis se conserva sin ella)",
-        "restoreSkippedEnvironmentLocationCiphertext": "Ubicación de un periodo o día ambiental cifrada con una clave que este servidor no tiene (se conserva cifrada, esos días no se actualizan)"
+        "restoreSkippedEnvironmentLocationCiphertext": "Ubicación de un periodo o día ambiental cifrada con una clave que este servidor no tiene (se conserva cifrada, esos días no se actualizan)",
+        "typePreWipe": "Antes de eliminar todos los datos"
       },
       "danger-zone": {
         "title": "Zona de peligro",
@@ -12660,7 +12679,8 @@
         "entryHint": "Cuando {name} quiera llevar este historial por su cuenta.",
         "methodSso": "{name} inicia sesión con el inicio de sesión único cuando usa el enlace.",
         "methodBoth": "{name} puede elegir una contraseña o iniciar sesión con el inicio de sesión único."
-      }
+      },
+      "deleteBodyGrace": "Todo lo registrado para {name} desaparece con el perfil: mediciones, medicamentos, documentos y notas. El perfil se bloquea de inmediato y se borra al cabo de {days} días. Hasta entonces, un administrador de este servidor puede deshacer la eliminación."
     },
     "toast": {
       "savedTo": "Guardado en el historial de {name}"

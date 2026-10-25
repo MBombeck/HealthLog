@@ -629,7 +629,9 @@
       "title": "Convite inválido",
       "description": "Este link de convite está incompleto ou foi copiado errado. Peça um novo à pessoa que convidou você.",
       "toLogin": "Ir para o login"
-    }
+    },
+    "deletionPending": "Esta conta será excluída em {date} e está bloqueada até lá. Um administrador deste servidor pode desfazer a exclusão antes dessa data.",
+    "deletionPendingNoDate": "Esta conta está programada para exclusão e está bloqueada. Um administrador deste servidor pode desfazer a exclusão até que ela seja concluída."
   },
   "dashboard": {
     "title": "Painel",
@@ -6922,7 +6924,7 @@
     "deleteAccountCardDescription": "Exclui sua conta junto com chaves de acesso, log de auditoria e sessões.",
     "deleteAccountCta": "Excluir conta",
     "deleteAccountConfirmTitle": "Excluir conta permanentemente?",
-    "deleteAccountConfirmDescription": "Sua conta, todos os dados de saúde, chaves de acesso, sessões e registros de auditoria serão excluídos permanentemente. Você será desconectado imediatamente depois.",
+    "deleteAccountConfirmDescription": "Sua conta, todos os dados de saúde, chaves de acesso, sessões e registros de auditoria serão excluídos permanentemente. Você será desconectado imediatamente depois. As cópias nos backups deste servidor expiram depois do período de retenção.",
     "deleteAccountSuccess": "Conta excluída. Desconectando você.",
     "deleteAccountFailed": "Não foi possível excluir a conta",
     "deleteAccountFinal": "Excluir permanentemente",
@@ -7332,13 +7334,16 @@
         "coach": "Conversas do Coach: mantidas por {days} dias",
         "audit": "Log de atividade de segurança: mantido por {days} dias",
         "delivery": "Log de entrega de notificações: mantido por {days} dias",
-        "unavailable": "Os detalhes de retenção estão indisponíveis agora."
+        "unavailable": "Os detalhes de retenção estão indisponíveis agora.",
+        "accountDeletion": "Excluir sua conta, um perfil gerenciado ou todos os dados: concluído depois de {days} dias",
+        "accountDeletionImmediate": "Excluir sua conta, um perfil gerenciado ou todos os dados: concluído na hora"
       },
       "delete": {
         "title": "Excluir ou redefinir",
         "description": "Remova sua conta por completo ou apague seus registros de saúde mantendo a conta.",
-        "backupLag": "A exclusão remove seus dados imediatamente. Se este servidor mantiver backups criptografados fora do host, as cópias dos seus dados são excluídas desse armazenamento logo depois, ou na próxima execução noturna se o armazenamento estiver inacessível.",
-        "openAdvanced": "Excluir ou redefinir"
+        "openAdvanced": "Excluir ou redefinir",
+        "immediateNotice": "A exclusão remove seus dados imediatamente. Se este servidor mantiver backups criptografados fora do host, as cópias dos seus dados são excluídas desse armazenamento logo depois, ou na próxima execução noturna se o armazenamento estiver inacessível. As cópias nos backups deste servidor expiram depois do período de retenção.",
+        "graceNotice": "Quando você exclui sua conta, ela é bloqueada na hora e apagada depois de {days} dias, junto com todas as cópias que este servidor guarda dela, inclusive as cópias criptografadas fora do servidor. Até lá, um administrador deste servidor pode desfazer a exclusão. Excluir todos os dados funciona do mesmo jeito: uma cópia do registro é mantida por {days} dias, para que um administrador possa restaurá-la. As cópias nos backups deste servidor expiram depois do período de retenção."
       },
       "posture": {
         "title": "Postura de privacidade",
@@ -7644,7 +7649,12 @@
       "off": "Desligado",
       "change": "Alterar em Módulos"
     },
-    "timezoneUseDevice": "Usar o fuso horário deste dispositivo ({zone})"
+    "timezoneUseDevice": "Usar o fuso horário deste dispositivo ({zone})",
+    "dangerZoneConfirmDescriptionGrace": "Isso exclui tudo no seu registro: medições, medicamentos, registros de humor, resultados de exames, registros de ciclo, documentos, conversas de IA e todas as conexões de integração, junto com tudo derivado deles e qualquer coisa que você tenha excluído antes. Os links de compartilhamento que você deu a um médico param de funcionar imediatamente. Sua conta permanece, junto com as credenciais que você usa para entrar e as configurações de exibição, como idioma, fuso horário e unidades. Uma cópia do seu registro é mantida por {days} dias, para que um administrador deste servidor possa restaurá-la até lá. Depois disso, a exclusão é definitiva.",
+    "deleteAccountCardDetailGrace": "Sua conta é bloqueada na hora e apagada depois de {days} dias. Até lá, um administrador deste servidor pode desfazer a exclusão.",
+    "deleteAccountConfirmDescriptionGrace": "Você sai da sessão e sua conta é bloqueada na hora. Depois de {days} dias, ela é apagada de vez, com todos os dados de saúde, chaves de acesso, sessões e registros de auditoria. Até lá, um administrador deste servidor pode desfazer a exclusão. As cópias nos backups deste servidor expiram depois do período de retenção.",
+    "deleteAccountScheduled": "Sua conta está bloqueada e será apagada em {date}. Saindo da sessão.",
+    "dangerZoneSuccessGrace": "Seu registro de saúde foi excluído. Um administrador deste servidor pode restaurá-lo até {date}."
   },
   "admin": {
     "title": "Administração",
@@ -8080,7 +8090,15 @@
         "cannotLogoutSelf": "Não é possível forçar o próprio logout",
         "emptyTitle": "Nenhum usuário nesta visão",
         "emptyDescription": "Não há usuários correspondentes ao filtro atual.",
-        "emptyResetFilter": "Mostrar todos os usuários"
+        "emptyResetFilter": "Mostrar todos os usuários",
+        "deletionPending": "Exclusão em {date}",
+        "deletionPendingNoDate": "Exclusão pendente",
+        "undoDeletion": "Desfazer exclusão",
+        "undoDeletionTitle": "Desfazer a exclusão de {name}?",
+        "undoDeletionBody": "{name} pediu para excluir esta conta, e ela é apagada quando o prazo de carência termina. Desfazer mantém a conta e tudo o que há nela como estava. As sessões e tokens continuam revogados, então será preciso entrar de novo.",
+        "undoDeletionBodyGuardian": "Um guardião excluiu o perfil gerenciado {name}, e ele é apagado quando o prazo de carência termina. Desfazer mantém o perfil e tudo o que há nele como estava, e os guardiões voltam a ter acesso.",
+        "undoDeletionDone": "Exclusão de {name} desfeita",
+        "undoDeletionFailed": "Não foi possível desfazer a exclusão"
       },
       "invites": {
         "title": "Convites",
@@ -8310,7 +8328,8 @@
         "restoreSkippedMoodLabelCiphertext": "Etiqueta ou nome de grupo de humor selado com uma chave que este servidor não possui (mantido sem o nome)",
         "restoreSkippedVisitCiphertext": "Texto de consulta ou profissional selado com uma chave que este servidor não possui (mantido sem ele)",
         "restoreSkippedVaccinationCiphertext": "Nota de vacinação selada com uma chave que este servidor não possui (dose mantida sem ela)",
-        "restoreSkippedEnvironmentLocationCiphertext": "Local de um período ou dia de ambiente selado com uma chave que este servidor não possui (mantido selado, esses dias não são atualizados)"
+        "restoreSkippedEnvironmentLocationCiphertext": "Local de um período ou dia de ambiente selado com uma chave que este servidor não possui (mantido selado, esses dias não são atualizados)",
+        "typePreWipe": "Antes da exclusão de todos os dados"
       },
       "danger-zone": {
         "title": "Zona de perigo",
@@ -12660,7 +12679,8 @@
         "entryHint": "Quando {name} estiver pronto para cuidar deste registro por conta própria.",
         "methodSso": "{name} entra por login único ao usar o link.",
         "methodBoth": "{name} pode definir uma senha ou entrar por login único."
-      }
+      },
+      "deleteBodyGrace": "Tudo registrado para {name} vai com o perfil: leituras, medicamentos, documentos e notas. O perfil é bloqueado na hora e apagado depois de {days} dias. Até lá, um administrador deste servidor pode desfazer a exclusão."
     },
     "toast": {
       "savedTo": "Salvo no registro de {name}"

@@ -629,7 +629,9 @@
       "title": "Einladung ungültig",
       "description": "Dieser Einladungslink ist unvollständig oder falsch kopiert. Bitte die Person, die dich eingeladen hat, um einen neuen Link.",
       "toLogin": "Zur Anmeldung"
-    }
+    },
+    "deletionPending": "Dieses Konto wird am {date} gelöscht und ist bis dahin gesperrt. Ein Admin dieses Servers kann die Löschung vor diesem Datum rückgängig machen.",
+    "deletionPendingNoDate": "Dieses Konto ist zur Löschung vorgemerkt und gesperrt. Ein Admin dieses Servers kann die Löschung rückgängig machen, bis sie abgeschlossen ist."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -6922,7 +6924,7 @@
     "deleteAccountCardDescription": "Löscht dein Konto inklusive Passkeys, Audit-Log und Sessions.",
     "deleteAccountCta": "Konto löschen",
     "deleteAccountConfirmTitle": "Konto endgültig löschen?",
-    "deleteAccountConfirmDescription": "Dein Konto, alle Gesundheitsdaten, Passkeys, Sessions und Audit-Einträge werden unwiderruflich gelöscht. Du wirst danach automatisch abgemeldet.",
+    "deleteAccountConfirmDescription": "Dein Konto, alle Gesundheitsdaten, Passkeys, Sessions und Audit-Einträge werden unwiderruflich gelöscht. Du wirst danach automatisch abgemeldet. Kopien in den Sicherungen dieses Servers verfallen nach ihrer Aufbewahrungsfrist.",
     "deleteAccountSuccess": "Konto wurde gelöscht. Du wirst abgemeldet.",
     "deleteAccountFailed": "Konto konnte nicht gelöscht werden",
     "deleteAccountFinal": "Endgültig löschen",
@@ -7332,13 +7334,16 @@
         "coach": "Coach-Unterhaltungen: {days} Tage",
         "audit": "Sicherheitsprotokoll: {days} Tage",
         "delivery": "Benachrichtigungsprotokoll: {days} Tage",
-        "unavailable": "Aufbewahrungsdetails sind derzeit nicht verfügbar."
+        "unavailable": "Aufbewahrungsdetails sind derzeit nicht verfügbar.",
+        "accountDeletion": "Löschen deines Kontos, eines verwalteten Profils oder aller Daten: abgeschlossen nach {days} Tagen",
+        "accountDeletionImmediate": "Löschen deines Kontos, eines verwalteten Profils oder aller Daten: sofort abgeschlossen"
       },
       "delete": {
         "title": "Löschen oder zurücksetzen",
         "description": "Lösche dein Konto vollständig oder lösche deine Gesundheitsdaten und behalte das Konto.",
-        "backupLag": "Die Löschung entfernt deine Daten sofort. Wenn dieser Server verschlüsselte externe Sicherungen anlegt, werden die Kopien deiner Daten gleich danach aus diesem Speicher gelöscht, oder in der nächsten Nacht, falls der Speicher nicht erreichbar ist.",
-        "openAdvanced": "Löschen oder zurücksetzen"
+        "openAdvanced": "Löschen oder zurücksetzen",
+        "immediateNotice": "Die Löschung entfernt deine Daten sofort. Wenn dieser Server verschlüsselte externe Sicherungen anlegt, werden die Kopien deiner Daten gleich danach aus diesem Speicher gelöscht, oder in der nächsten Nacht, falls der Speicher nicht erreichbar ist. Kopien in den Sicherungen dieses Servers verfallen nach ihrer Aufbewahrungsfrist.",
+        "graceNotice": "Wenn du dein Konto löschst, wird es sofort gesperrt und nach {days} Tagen endgültig gelöscht, zusammen mit jeder Kopie, die dieser Server davon aufbewahrt, auch verschlüsselten Kopien außerhalb des Servers. Bis dahin kann ein Admin dieses Servers die Löschung rückgängig machen. Beim Löschen aller Daten gilt dasselbe: Eine Kopie der Akte bleibt {days} Tage erhalten, sodass ein Admin sie wiederherstellen kann. Kopien in den Sicherungen dieses Servers verfallen nach ihrer Aufbewahrungsfrist."
       },
       "posture": {
         "title": "Datenschutz-Einstellung",
@@ -7644,7 +7649,12 @@
       "off": "Aus",
       "change": "Unter Module ändern"
     },
-    "timezoneUseDevice": "Zeitzone dieses Geräts übernehmen ({zone})"
+    "timezoneUseDevice": "Zeitzone dieses Geräts übernehmen ({zone})",
+    "dangerZoneConfirmDescriptionGrace": "Dieser Vorgang löscht alles in deiner Akte: Messwerte, Medikamente, Stimmungseinträge, Laborwerte, Zykluseinträge, Dokumente, KI-Gespräche und jede Integrationsverbindung, dazu alles daraus Abgeleitete und alles, was du früher gelöscht hast. Freigabe-Links, die du an eine Praxis gegeben hast, funktionieren sofort nicht mehr. Dein Konto bleibt bestehen, ebenso deine Anmeldedaten und Anzeigeeinstellungen wie Sprache, Zeitzone und Einheiten. Eine Kopie deiner Akte wird {days} Tage aufbewahrt, sodass ein Admin dieses Servers sie bis dahin wiederherstellen kann. Danach ist die Löschung endgültig.",
+    "deleteAccountCardDetailGrace": "Dein Konto wird sofort gesperrt und nach {days} Tagen endgültig gelöscht. Bis dahin kann ein Admin dieses Servers die Löschung rückgängig machen.",
+    "deleteAccountConfirmDescriptionGrace": "Du wirst abgemeldet und dein Konto wird sofort gesperrt. Nach {days} Tagen wird es endgültig gelöscht, mit allen Gesundheitsdaten, Passkeys, Sessions und Audit-Einträgen. Bis dahin kann ein Admin dieses Servers die Löschung rückgängig machen. Kopien in den Sicherungen dieses Servers verfallen nach ihrer Aufbewahrungsfrist.",
+    "deleteAccountScheduled": "Dein Konto ist gesperrt und wird am {date} endgültig gelöscht. Du wirst abgemeldet.",
+    "dangerZoneSuccessGrace": "Deine Gesundheitsakte wurde gelöscht. Ein Admin dieses Servers kann sie bis zum {date} wiederherstellen."
   },
   "admin": {
     "title": "Administration",
@@ -8080,7 +8090,15 @@
         "cannotLogoutSelf": "Eigene Sitzungen können nicht beendet werden",
         "emptyTitle": "Keine Nutzer in dieser Ansicht",
         "emptyDescription": "Es gibt keine Nutzer, die zum aktuellen Filter passen.",
-        "emptyResetFilter": "Alle Nutzer anzeigen"
+        "emptyResetFilter": "Alle Nutzer anzeigen",
+        "deletionPending": "Löschung am {date}",
+        "deletionPendingNoDate": "Löschung vorgemerkt",
+        "undoDeletion": "Löschung rückgängig machen",
+        "undoDeletionTitle": "Löschung von {name} rückgängig machen?",
+        "undoDeletionBody": "{name} hat die Löschung dieses Kontos verlangt; es wird gelöscht, wenn die Frist endet. Rückgängig machen behält das Konto und alles darin so, wie es war. Seine Sessions und Tokens bleiben widerrufen, die Anmeldung ist also neu nötig.",
+        "undoDeletionBodyGuardian": "Eine betreuende Person hat das verwaltete Profil {name} gelöscht; es wird gelöscht, wenn die Frist endet. Rückgängig machen behält das Profil und alles darin so, wie es war, und die betreuenden Personen erreichen es wieder.",
+        "undoDeletionDone": "Löschung von {name} rückgängig gemacht",
+        "undoDeletionFailed": "Löschung konnte nicht rückgängig gemacht werden"
       },
       "invites": {
         "title": "Einladungen",
@@ -8310,7 +8328,8 @@
         "restoreSkippedMoodLabelCiphertext": "Name eines Stimmungs-Tags oder einer Gruppe mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (ohne Namen behalten)",
         "restoreSkippedVisitCiphertext": "Text zu Arztbesuch oder Praxis mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (ohne ihn behalten)",
         "restoreSkippedVaccinationCiphertext": "Impf-Notiz mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (Impfung ohne sie behalten)",
-        "restoreSkippedEnvironmentLocationCiphertext": "Ort eines Umweltzeitraums oder -tags mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (verschlüsselt behalten, diese Tage werden nicht neu abgerufen)"
+        "restoreSkippedEnvironmentLocationCiphertext": "Ort eines Umweltzeitraums oder -tags mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (verschlüsselt behalten, diese Tage werden nicht neu abgerufen)",
+        "typePreWipe": "Vor dem Löschen aller Daten"
       },
       "danger-zone": {
         "title": "Gefahrenzone",
@@ -12660,7 +12679,8 @@
         "entryHint": "Wenn {name} die Akte selbst führen möchte.",
         "methodSso": "{name} meldet sich beim Einlösen des Links über Single Sign-on an.",
         "methodBoth": "{name} kann ein Passwort festlegen oder sich über Single Sign-on anmelden."
-      }
+      },
+      "deleteBodyGrace": "Alles, was für {name} erfasst wurde, verschwindet mit dem Profil: Messwerte, Medikamente, Dokumente und Notizen. Das Profil wird sofort gesperrt und nach {days} Tagen endgültig gelöscht. Bis dahin kann ein Admin dieses Servers die Löschung rückgängig machen."
     },
     "toast": {
       "savedTo": "In der Akte von {name} gespeichert"
