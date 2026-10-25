@@ -15,6 +15,18 @@ async function registerOfflineGeoNoticeAtBoot(): Promise<void> {
   }
 }
 
+/**
+ * Which connections may report a client address (TRUSTED_PROXY_CIDRS,
+ * TRUST_PROXY_HOPS), said once, with a bad value named.
+ */
+async function logProxyTrustAtBootSafely(): Promise<void> {
+  try {
+    (await import("@/lib/http/proxy-trust")).logProxyTrustAtBoot();
+  } catch {
+    // A log line must never break boot.
+  }
+}
+
 export async function register() {
   // Only start the worker on the Node.js server runtime (not Edge, not build)
   if (process.env.NEXT_RUNTIME === "nodejs") {
@@ -54,6 +66,7 @@ export async function register() {
     }
 
     await registerOfflineGeoNoticeAtBoot();
+    await logProxyTrustAtBootSafely();
 
     // Does the configured encryption key open this database? A process whose
     // key does not refuses every API request with one clear 503 and starts

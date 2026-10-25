@@ -108,7 +108,14 @@ x-healthlog-env: &healthlog_env
   # collapses every anonymous caller into one rate-limit bucket. Listed here
   # so an operator value in .env reaches the container (the `environment:`
   # block is a whitelist).
+  # TRUSTED_PROXY_CIDRS names the addresses the reverse proxy connects from
+  # (comma-separated CIDRs). Set, only those connections may report a client
+  # address; unset, any private address may, which behind Docker Desktop,
+  # OrbStack or docker-proxy includes every caller of the published port.
+  # Same host: 127.0.0.1/32,::1/128. Docker network: the proxy's subnet.
+  # See docs/self-hosting/reverse-proxy.md.
   TRUST_PROXY_HOPS: "${TRUST_PROXY_HOPS:-}"
+  TRUSTED_PROXY_CIDRS: "${TRUSTED_PROXY_CIDRS:-}"
   TRUST_CF_CONNECTING_IP: "${TRUST_CF_CONNECTING_IP:-}"
   IP_GEO_LOOKUP_URL: "${IP_GEO_LOOKUP_URL:-}"
   IP_GEO_LOOKUP_DISABLED: "${IP_GEO_LOOKUP_DISABLED:-}"

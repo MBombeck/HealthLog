@@ -433,6 +433,11 @@
           "example": "1"
         },
         {
+          "name": "TRUSTED_PROXY_CIDRS",
+          "purpose": "Comma-separated CIDRs (IPv4 or IPv6; a bare address is one host) the reverse proxy connects from. Set, only a connection from inside them may report the client address in X-Forwarded-For or X-Real-IP; every other connection is its own client. Unset, any non-public address may, which behind Docker Desktop, OrbStack or docker-proxy includes every caller of a published port. Same host: 127.0.0.1/32,::1/128; Docker network: the proxy's subnet. An entry that is not a CIDR lets no connection report an address and is named at boot.",
+          "example": "127.0.0.1/32,::1/128"
+        },
+        {
           "name": "TRUST_CF_CONNECTING_IP",
           "purpose": "\"1\" takes the client IP from Cloudflare's CF-Connecting-IP header, from every connection and before the peer check. Safe only when the origin accepts connections from Cloudflare alone (a Tunnel, or a firewall admitting only Cloudflare's ranges); otherwise any caller forges the address rate limits and the audit log record. Off by default.",
           "example": "1"

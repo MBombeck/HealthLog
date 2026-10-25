@@ -21,13 +21,14 @@ tailnet with no extra container. See
 | `NEXT_PUBLIC_APP_URL`    | Every public-facing absolute URL the UI emits  | Must match the hostname the proxy serves |
 | `APP_URL`                | Server-side absolute URLs from background jobs | Mirror of the above; both must match     |
 | `TRUST_PROXY_HOPS`       | `X-Forwarded-For` chain trust                  | Defaults to `1` — one trusted hop        |
+| `TRUSTED_PROXY_CIDRS`    | Which connections may report a client address  | Unset: any private address; see below    |
 | `TRUST_CF_CONNECTING_IP` | Reading the visitor address Cloudflare sends   | Off unless `1`; see the warning below    |
 
 Set the URL pair to the public origin (`https://your-instance.example.com`)
 and restart the `app` container. The image reads both at startup; no
 rebuild needed.
 
-All four variables are on the shipped `docker-compose.yml`
+All five variables are on the shipped `docker-compose.yml`
 `environment:` whitelist, so a value in `.env` reaches the container
 without editing the compose file. (Before v1.37.33 the whitelist was
 missing `TRUST_PROXY_HOPS`; on those versions add
@@ -68,12 +69,55 @@ The reserved and multicast blocks are in the list because no host on the
 internet can open a connection from them, so a peer there sits on a network
 you run. A request that reaches HealthLog straight from a public
 address carries headers its sender wrote, so HealthLog ignores them and
-uses the connection's own address, and says so once in the log. A proxy on
-the same host or Docker network connects from a private address, so the
-usual setups above need nothing. If your proxy reaches HealthLog over a
-public address, put it on a private network with HealthLog instead. The log
+uses the connection's own address, and says so once in the log. The log
 line also shows up when the published port is open to the internet beside
 the proxy; bind it to the proxy's network or to `127.0.0.1` then.
+
+That list is the default when `TRUSTED_PROXY_CIDRS` is unset, and it is
+only as good as the network in front of the port. Read the next section
+before relying on it.
+
+### `TRUSTED_PROXY_CIDRS` — name the proxy
+
+Set `TRUSTED_PROXY_CIDRS` to the addresses your reverse proxy connects
+from, as comma-separated CIDRs (IPv4 or IPv6; a bare address counts as a
+single host). Once it is set, only a connection from inside those ranges
+may report the client's address. Every other connection is its own client,
+whatever its address, private ones included, and the log says so once.
+
+Why it matters: some setups make every caller look like a private address.
+Docker Desktop, OrbStack, and Docker's `docker-proxy` (the userland proxy
+behind a published port such as `3000:3000`) forward each connection from
+the gateway address of the Docker network, which is private. On those
+hosts, someone who can reach the published port directly, from the LAN or
+from the internet if the port is open, passes the private-address check
+and can again choose the address that every per-IP rate limit, the audit
+log and the sign-in notices see, a new one per request if they like.
+Naming your proxy closes that. The default port binding in
+`docker-compose.yml` stays as it is (LAN installs rely on it); this
+variable is the fix.
+
+What to set:
+
+| Where the proxy runs                                                      | `TRUSTED_PROXY_CIDRS`                                                                                  |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| On the same host, proxying to `127.0.0.1:3000` (bare Nginx, Caddy)        | `127.0.0.1/32,::1/128`                                                                                 |
+| In a container on a Docker network with HealthLog (Traefik, NPM, Coolify) | that network's subnet, e.g. `172.18.0.0/16` (`docker network inspect <network>` shows it under `IPAM`) |
+| On another machine that connects from a public address                    | that machine's address, e.g. `198.51.100.7/32`                                                         |
+| No proxy, or `tailscale serve` only                                       | leave it unset                                                                                         |
+
+At boot the app logs one `[proxy-trust]` line naming the rule in force:
+which connections it reads forwarding headers from and how many hops deep.
+A value that is not a CIDR is logged as an error, and until it is fixed no
+connection may report a client address.
+
+**A proxy that connects from a public address.** Without
+`TRUSTED_PROXY_CIDRS`, such a proxy is not believed: every request through
+it resolves to the proxy's own address, so all your users share one
+rate-limit bucket and one person mistyping a password can hold sign-in back
+for everyone. Releases before v1.46 believed any peer, so this shows up after
+the upgrade. Set `TRUSTED_PROXY_CIDRS` to the proxy's address (or put the proxy
+on a private network with HealthLog) and restart.
 
 ### `TRUST_CF_CONNECTING_IP` — only when the origin takes Cloudflare only
 
@@ -282,6 +326,15 @@ than the actual proxy hop count, or the proxy is dropping the
 The one-shot stderr warning `[getClientIp] TRUST_PROXY_HOPS=N but
 X-Forwarded-For carried M entries` confirms a mismatch. Adjust the
 env var down to the actual chain length and restart.
+
+If every request logs the same client address, the proxy's own, the proxy
+is not one HealthLog believes: the `[getClientIp]` warning about a
+connection "from a public address" or "from outside TRUSTED_PROXY_CIDRS"
+names the case. Add the proxy's address to `TRUSTED_PROXY_CIDRS`.
+
+A `TRUST_PROXY_HOPS` value that is not a whole number resolves no client
+address at all (requests keep working) and is named in the `[proxy-trust]`
+boot line.
 
 ## Running over plain HTTP on a LAN (no reverse proxy)
 
