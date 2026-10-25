@@ -32,7 +32,11 @@ import { Buffer } from "node:buffer";
 import { annotate } from "@/lib/logging/context";
 import { logCaught } from "@/lib/logging/signal";
 
-import { PdfResourceLimitError, readPdfText } from "./pdfjs";
+import {
+  PdfReaderUnavailableError,
+  PdfResourceLimitError,
+  readPdfText,
+} from "./pdfjs";
 
 /**
  * Minimum joined text length for a PDF to count as a real text-layer document.
@@ -70,9 +74,11 @@ export type LocalExtractResult =
 /**
  * Extract a text-layer PDF's embedded text server-side. Returns `empty` for a
  * scanned/no-text-layer PDF, `resource-limit` for one past the reader's memory
- * or time bound, and `error` for a malformed/encrypted one — never
- * throws, so a bad document can never abort the caller (the upload/backfill job
- * just leaves it un-indexed). An `error` leaves a `warn` line naming what
+ * or time bound, and `error` for a malformed/encrypted one, so a bad document
+ * can never abort the caller (the upload/backfill job just leaves it
+ * un-indexed). The one throw is `PdfReaderUnavailableError`: the reader was
+ * busy or its process ended for no measured reason, which says nothing about
+ * the document, so the job runs again instead of recording an outcome. An `error` leaves a `warn` line naming what
  * pdf.js threw, because the outcome alone does not say why a document stayed
  * out of the index.
  */
@@ -84,6 +90,7 @@ export async function extractPdfText(
     // Bound the page walk so a pathological many-page PDF costs no more.
     text = (await readPdfText(buffer, LOCAL_MAX_PAGES)).trim();
   } catch (err) {
+    if (err instanceof PdfReaderUnavailableError) throw err;
     if (err instanceof PdfResourceLimitError) {
       // Not a fault of the file's bytes being unreadable: they are readable,
       // only not within the bounds this server gives one document.

@@ -51,9 +51,15 @@ const THUMBNAILABLE_MIMES = [
 /**
  * Render refusals that the same bytes will always get again: the first page
  * renders blank, the render comes out empty, the image is past the pixel cap
- * or its size cannot be read, the PDF crossed the renderer's memory or time bound. One attempt settles
- * them; queueing a document that exhausts the renderer again at every boot
- * would only repeat the exhaustion.
+ * or its size cannot be read, the document crossed a bound the renderer
+ * measured (its memory ceiling, its time limit, its heap cap). One attempt
+ * settles them; queueing a document that exhausts the renderer again at
+ * every boot would only repeat the exhaustion.
+ *
+ * `interrupted` is deliberately not here: a renderer that ended without a
+ * measured cause may have been taken by the kernel because the whole
+ * container ran short, which says nothing about the document. It gets the
+ * ordinary bounded attempts.
  */
 const FINAL_THUMBNAIL_FAILURES = [
   "raster-failed",

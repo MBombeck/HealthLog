@@ -19,11 +19,11 @@ vi.mock("../pdfjs", async (importOriginal) => ({
   readPdfText,
 }));
 
-import { PdfResourceLimitError } from "../pdfjs";
+import { PdfReaderUnavailableError, PdfResourceLimitError } from "../pdfjs";
 import { extractPdfText, localExtractText } from "../local-extract";
 
 describe("a PDF past the reader's limits", () => {
-  it.each(["memory", "time", "exit"] as const)(
+  it.each(["memory", "time"] as const)(
     "answers resource-limit for the %s bound, without the error log a broken file gets",
     async (limit) => {
       readPdfText.mockRejectedValueOnce(new PdfResourceLimitError(limit));
@@ -39,6 +39,18 @@ describe("a PDF past the reader's limits", () => {
         action: { name: "documents.localIndex.resourceLimit" },
         meta: { limit, bytes: bytes.length },
       });
+    },
+  );
+
+  it.each(["busy", "interrupted"] as const)(
+    "passes a reader that was %s up to the job instead of recording an outcome",
+    async (kind) => {
+      readPdfText.mockRejectedValueOnce(new PdfReaderUnavailableError(kind));
+      logCaught.mockClear();
+      await expect(
+        extractPdfText(Buffer.from("%PDF-1.7 large")),
+      ).rejects.toBeInstanceOf(PdfReaderUnavailableError);
+      expect(logCaught).not.toHaveBeenCalled();
     },
   );
 

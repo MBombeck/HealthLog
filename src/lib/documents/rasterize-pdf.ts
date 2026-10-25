@@ -107,7 +107,20 @@ export type RasterResult =
        */
       texts?: string[];
     }
-  | { ok: false; reason: "unsupported" | "render-failed" | "resource-limit" };
+  | {
+      ok: false;
+      reason:
+        | "unsupported"
+        | "render-failed"
+        | "resource-limit"
+        /**
+         * Not an answer about this document: the reader was busy past the
+         * wait this work may spend, or its process ended for no reason it
+         * measured. The caller tries again later.
+         */
+        | "busy"
+        | "interrupted";
+    };
 
 export {
   pageText,
@@ -166,6 +179,13 @@ export async function rasterizePdf(
   );
 
   if (!result.ok) {
+    if (result.reason === "busy" || result.reason === "interrupted") {
+      annotate({
+        action: { name: "documents.rasterize.deferred" },
+        meta: { reason: result.reason },
+      });
+      return { ok: false, reason: result.reason };
+    }
     if (result.reason === "limit") {
       annotate({
         action: { name: "documents.rasterize.failed" },

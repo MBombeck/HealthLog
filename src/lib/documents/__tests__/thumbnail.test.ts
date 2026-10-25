@@ -5,10 +5,9 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
 
-// Partial mock of the native canvas module: `loadImage` delegates to the real
-// decoder by default (so every real-fixture test below is unaffected) and can
-// be overridden per-test via `loadImageMock` to simulate a decoded image whose
-// dimensions the header sniff could not have known.
+// Partial mock of the native canvas module in this process: `loadImage`
+// delegates to the real decoder and records every call, so a test can tell
+// whether an upload was decoded here rather than in the reader's child.
 const { loadImageMock } = vi.hoisted(() => ({ loadImageMock: vi.fn() }));
 vi.mock("@napi-rs/canvas", async (importActual) => {
   const actual = await importActual<typeof import("@napi-rs/canvas")>();
@@ -166,14 +165,16 @@ describe("generateThumbnail", () => {
     });
   });
 
-  it("refuses an oversize image the header sniff missed (post-decode cap)", async () => {
-    // A readable header declaring a small image whose decoder is forced to
-    // return 30000×30000 = 900 MP: only the post-decode backstop can catch
-    // it.
-    loadImageMock.mockResolvedValueOnce({ width: 30_000, height: 30_000 });
-    await expect(
-      generateThumbnail(sourceImage(16, 16, "image/jpeg"), "image/jpeg"),
-    ).resolves.toEqual({ ok: false, reason: "pixel-cap" });
+  it("decodes an uploaded image in the reader's child process, not in this one", async () => {
+    // The decoder allocates what the file makes it allocate; in the child
+    // that ends the child. Nothing of an image upload is decoded here.
+    loadImageMock.mockClear();
+    const result = await generateThumbnail(
+      sourceImage(640, 480, "image/png"),
+      "image/png",
+    );
+    expect(result.ok).toBe(true);
+    expect(loadImageMock).not.toHaveBeenCalled();
   });
 
   /**

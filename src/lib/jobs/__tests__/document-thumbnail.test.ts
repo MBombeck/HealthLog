@@ -177,4 +177,47 @@ describe("thumbnailRetryDue", () => {
       thumbnailRetryDue({ reason: "error", attempts: 3, failedAt: at }, before),
     ).toBe(false);
   });
+
+  it("gives a renderer that ended for no measured reason the ordinary attempts, not a final verdict", async () => {
+    const { thumbnailRetryDue } =
+      await import("../document-thumbnail-backfill");
+    expect(
+      thumbnailRetryDue(
+        { reason: "interrupted", attempts: 1, failedAt: at },
+        before,
+      ),
+    ).toBe(true);
+    expect(
+      thumbnailRetryDue(
+        { reason: "interrupted", attempts: 3, failedAt: at },
+        before,
+      ),
+    ).toBe(false);
+    expect(
+      thumbnailRetryDue(
+        { reason: "resource-limit", attempts: 1, failedAt: at },
+        before,
+      ),
+    ).toBe(false);
+  });
+});
+
+describe("runDocumentThumbnail when the reader cannot take the document now", () => {
+  it("throws for a busy reader so the job runs again, and records nothing", async () => {
+    generateThumbnail.mockResolvedValue({ ok: false, reason: "reader-busy" });
+    await expect(
+      runDocumentThumbnail({ userId: "user-1", documentId: "doc-1" }),
+    ).rejects.toMatchObject({ name: "PdfReaderUnavailableError" });
+    expect(failureUpsert).not.toHaveBeenCalled();
+  });
+
+  it("records an interrupted render as a failure the backfill tries again", async () => {
+    generateThumbnail.mockResolvedValue({ ok: false, reason: "interrupted" });
+    await runDocumentThumbnail({ userId: "user-1", documentId: "doc-1" });
+    expect(failureUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ reason: "interrupted" }),
+      }),
+    );
+  });
 });
