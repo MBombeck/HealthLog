@@ -19,7 +19,12 @@ import { redactSecrets } from "@/lib/logging/redact";
 const MAX_REASON_CHARS = 300;
 
 export interface RestoreDrillResult {
-  ok: boolean;
+  /**
+   * The verdict; null for a run that checked nothing (it stopped on its time
+   * budget before the first object), which is no verdict at all: the run and
+   * its counts are kept, the last pass or failure stands.
+   */
+  ok: boolean | null;
   accountsChecked: number;
   accountsFailed: number;
   /** Why it failed; ignored when `ok`. */
@@ -30,17 +35,21 @@ export async function recordRestoreDrillOutcome(
   result: RestoreDrillResult,
   at: Date = new Date(),
 ): Promise<void> {
-  const reason = result.ok
-    ? null
-    : (() => {
+  const reason =
+    result.ok !== false
+      ? null
+      : (() => {
         const text = redactSecrets((result.reason ?? "").trim());
         return text.length > MAX_REASON_CHARS
           ? `${text.slice(0, MAX_REASON_CHARS)}…`
           : text || null;
       })();
-  const verdict = result.ok
-    ? { lastSuccessAt: at }
-    : { lastFailureAt: at, lastFailureReason: reason };
+  const verdict =
+    result.ok === null
+      ? {}
+      : result.ok
+        ? { lastSuccessAt: at }
+        : { lastFailureAt: at, lastFailureReason: reason };
   const counts = {
     lastRunAt: at,
     accountsChecked: result.accountsChecked,

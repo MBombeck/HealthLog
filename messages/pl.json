@@ -8727,7 +8727,8 @@
           "not_run_yet": "Comiesięczna próba przywracania jeszcze się nie odbyła.",
           "failed": "Ostatnia próba przywracania nie powiodła się: nie udało się odczytać {failed} z {checked} kopii.",
           "failed_run": "Ostatnia próba przywracania nie dobiegła końca.",
-          "passed": "Ostatnia próba przywracania odczytała kopie: {checked}."
+          "passed": "Ostatnia próba przywracania odczytała kopie: {checked}.",
+          "nothing_checked": "Ostatnia próba przywracania zatrzymała się na limicie czasu, zanim odczytała choć jedną kopię, więc niczego nie potwierdziła."
         },
         "offhost_setup": {
           "configured": "Kopie opuszczają ten serwer każdej nocy.",

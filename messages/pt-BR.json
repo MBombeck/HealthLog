@@ -8727,7 +8727,8 @@
           "not_run_yet": "O teste mensal de restauração ainda não foi executado.",
           "failed": "O último teste de restauração falhou: {failed} de {checked} cópias não puderam ser lidas de volta.",
           "failed_run": "O último teste de restauração não pôde ser concluído.",
-          "passed": "O último teste de restauração leu de volta {checked} cópias."
+          "passed": "O último teste de restauração leu de volta {checked} cópias.",
+          "nothing_checked": "O último teste de restauração parou no limite de tempo antes de ler de volta uma única cópia, então não comprovou nada."
         },
         "offhost_setup": {
           "configured": "As cópias saem deste servidor todas as noites.",

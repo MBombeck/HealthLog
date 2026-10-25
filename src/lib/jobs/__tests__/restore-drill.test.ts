@@ -284,7 +284,24 @@ describe("handleRestoreDrill", () => {
     );
   });
 
-  it("keeps a failed drill's verdict even when keeping it fails", async () => {
+  it("records no pass for a run that stopped before its first object", async () => {
+    stubConfigEnv();
+    const s3 = makeS3Mock({
+      "2026-06-01/user-aaa.json.enc": backupObject({ userId: "user-aaa" }),
+    });
+    const offhost = await import("../offhost-backup");
+    vi.spyOn(offhost, "getS3Client").mockResolvedValue(s3 as never);
+    // The job's budget is already spent: pg-boss aborted it.
+    await handleRestoreDrill([
+      { signal: { aborted: true }, expireInSeconds: 900 } as never,
+    ]);
+    expect(recordRestoreDrillOutcome).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(recordRestoreDrillOutcome).mock.calls[0][0]).toMatchObject(
+      { ok: null, accountsChecked: 0 },
+    );
+  });
+
+  it("still reports the drill's own failure when its verdict cannot be kept", async () => {
     stubConfigEnv();
     vi.stubEnv("BACKUP_ENCRYPTION_KEY", "not-a-key");
     vi.mocked(recordRestoreDrillOutcome).mockRejectedValueOnce(

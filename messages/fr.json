@@ -8727,7 +8727,8 @@
           "not_run_yet": "Le test de restauration mensuel n'a pas encore été lancé.",
           "failed": "Le dernier test de restauration a échoué : {failed} copies sur {checked} n'ont pas pu être relues.",
           "failed_run": "Le dernier test de restauration n'a pas pu aller jusqu'au bout.",
-          "passed": "Le dernier test de restauration a relu {checked} copies."
+          "passed": "Le dernier test de restauration a relu {checked} copies.",
+          "nothing_checked": "Le dernier test de restauration s'est arrêté sur sa limite de temps avant de relire une seule copie : il n'a rien prouvé."
         },
         "offhost_setup": {
           "configured": "Les copies quittent ce serveur chaque nuit.",

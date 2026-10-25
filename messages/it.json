@@ -8727,7 +8727,8 @@
           "not_run_yet": "La prova di ripristino mensile non è ancora stata eseguita.",
           "failed": "L'ultima prova di ripristino non è riuscita: {failed} copie su {checked} non si sono potute rileggere.",
           "failed_run": "L'ultima prova di ripristino non è riuscita ad arrivare in fondo.",
-          "passed": "L'ultima prova di ripristino ha riletto {checked} copie."
+          "passed": "L'ultima prova di ripristino ha riletto {checked} copie.",
+          "nothing_checked": "L'ultima prova di ripristino si è fermata al suo limite di tempo prima di rileggere una sola copia, quindi non ha dimostrato nulla."
         },
         "offhost_setup": {
           "configured": "Le copie lasciano questo server ogni notte.",

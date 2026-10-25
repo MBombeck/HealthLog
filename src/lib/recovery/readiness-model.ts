@@ -420,6 +420,11 @@ export function evaluateRestoreDrill(
       drill.lastFailureReason,
     );
   }
+  // The latest run read nothing back (it stopped on its budget before the
+  // first object): no proof that a copy restores, whatever passed before.
+  if (drill.accountsChecked === 0) {
+    return signal(id, "attention", "nothing_checked", drill.lastRunAt);
+  }
   return signal(id, "ok", "passed", drill.lastSuccessAt ?? drill.lastRunAt, {
     checked: drill.accountsChecked,
   });

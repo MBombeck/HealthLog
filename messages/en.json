@@ -8727,7 +8727,8 @@
           "not_run_yet": "The monthly restore drill has not run yet.",
           "failed": "The last restore drill failed: {failed} of {checked} copies could not be read back.",
           "failed_run": "The last restore drill could not finish.",
-          "passed": "The last restore drill read back {checked} copies."
+          "passed": "The last restore drill read back {checked} copies.",
+          "nothing_checked": "The last restore drill stopped on its time limit before it read back a single copy, so it proved nothing."
         },
         "offhost_setup": {
           "configured": "Copies leave this server every night.",

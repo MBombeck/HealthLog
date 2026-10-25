@@ -8727,7 +8727,8 @@
           "not_run_yet": "Die monatliche Wiederherstellungsprobe ist noch nicht gelaufen.",
           "failed": "Die letzte Wiederherstellungsprobe ist fehlgeschlagen: {failed} von {checked} Kopien ließen sich nicht zurücklesen.",
           "failed_run": "Die letzte Wiederherstellungsprobe konnte nicht zu Ende laufen.",
-          "passed": "Die letzte Wiederherstellungsprobe hat {checked} Kopien zurückgelesen."
+          "passed": "Die letzte Wiederherstellungsprobe hat {checked} Kopien zurückgelesen.",
+          "nothing_checked": "Die letzte Wiederherstellungsprobe hat ihr Zeitlimit erreicht, bevor sie eine einzige Kopie zurückgelesen hat, und hat damit nichts belegt."
         },
         "offhost_setup": {
           "configured": "Kopien verlassen diesen Server jede Nacht.",

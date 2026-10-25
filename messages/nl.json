@@ -8727,7 +8727,8 @@
           "not_run_yet": "De maandelijkse hersteltest is nog niet uitgevoerd.",
           "failed": "De laatste hersteltest is mislukt: {failed} van {checked} kopieën konden niet worden teruggelezen.",
           "failed_run": "De laatste hersteltest kon niet worden afgerond.",
-          "passed": "De laatste hersteltest heeft {checked} kopieën teruggelezen."
+          "passed": "De laatste hersteltest heeft {checked} kopieën teruggelezen.",
+          "nothing_checked": "De laatste hersteltest stopte op zijn tijdslimiet voordat hij ook maar één kopie had teruggelezen, en heeft dus niets aangetoond."
         },
         "offhost_setup": {
           "configured": "Kopieën verlaten deze server elke nacht.",

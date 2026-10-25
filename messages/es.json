@@ -8727,7 +8727,8 @@
           "not_run_yet": "El simulacro de restauración mensual aún no se ha ejecutado.",
           "failed": "El último simulacro de restauración falló: no se pudieron volver a leer {failed} de {checked} copias.",
           "failed_run": "El último simulacro de restauración no pudo terminar.",
-          "passed": "El último simulacro de restauración volvió a leer {checked} copias."
+          "passed": "El último simulacro de restauración volvió a leer {checked} copias.",
+          "nothing_checked": "El último simulacro de restauración se detuvo por su límite de tiempo antes de leer una sola copia, así que no demostró nada."
         },
         "offhost_setup": {
           "configured": "Las copias salen de este servidor cada noche.",

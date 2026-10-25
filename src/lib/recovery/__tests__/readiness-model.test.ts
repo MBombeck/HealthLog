@@ -538,6 +538,19 @@ describe("restore drill", () => {
     ).toBe("failed_run");
   });
 
+  // A run that stopped on its budget before the first object read nothing
+  // back. It used to be recorded as a pass and the tile said "passed".
+  it("does not call a run that read nothing back passed, whatever passed before", () => {
+    expect(
+      drill({
+        ...run,
+        lastRunAt: ago(DAY),
+        lastSuccessAt: ago(40 * DAY),
+        accountsChecked: 0,
+      }),
+    ).toMatchObject({ state: "attention", reason: "nothing_checked" });
+  });
+
   it("does not apply without a bucket, and is ok before its first run", () => {
     expect(drill(null, false).state).toBe("inactive");
     expect(drill(null)).toMatchObject({ state: "ok", reason: "not_run_yet" });

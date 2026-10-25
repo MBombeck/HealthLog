@@ -346,7 +346,9 @@ export async function handleRestoreDrill(
         );
       }
       await keepOutcome(evt, {
-        ok: report.failed.length === 0,
+        // A run that stopped before its first object read nothing back: it
+        // is no pass, and it records none.
+        ok: report.accounts.length === 0 ? null : report.failed.length === 0,
         accountsChecked: report.accounts.length,
         accountsFailed: report.failed.length,
         reason:
