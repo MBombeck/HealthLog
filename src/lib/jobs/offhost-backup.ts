@@ -759,6 +759,18 @@ const LIFECYCLE_CACHE_MS = 10 * 60 * 1000;
 let lifecycleCache: { at: number; value: OffhostLifecycle } | null = null;
 
 /**
+ * The last answer the bucket actually gave (`configured` or `missing`), and
+ * how long it stands in for a read that failed. A probe that timed out once
+ * read as "unknown", which keeps every key an off-host object ever needed
+ * in the recovery kit: the kit turned due, the admins were pushed, and the
+ * next good read pushed "recovered". A rule does not change between two
+ * reads an hour apart; a credential that has lost the right to read it for a
+ * whole day does say something, and then "unknown" is the honest answer.
+ */
+const LAST_KNOWN_LIFECYCLE_MS = 24 * 60 * 60 * 1000;
+let lastKnownLifecycle: { at: number; value: OffhostLifecycle } | null = null;
+
+/**
  * The bucket's lifecycle rule for the admin card, cached for ten minutes so a
  * page render does not become a bucket call. Never throws.
  */
@@ -781,6 +793,14 @@ export async function probeOffhostLifecycle(
     value = s3.getLifecycle ? await s3.getLifecycle() : LIFECYCLE_UNKNOWN;
   } catch {
     value = LIFECYCLE_UNKNOWN;
+  }
+  if (value.state !== "unknown") {
+    lastKnownLifecycle = { at: now, value };
+  } else if (
+    lastKnownLifecycle &&
+    now - lastKnownLifecycle.at < LAST_KNOWN_LIFECYCLE_MS
+  ) {
+    value = lastKnownLifecycle.value;
   }
   if (!s3Override) lifecycleCache = { at: now, value };
   return value;
