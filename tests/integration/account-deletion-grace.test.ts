@@ -46,6 +46,15 @@ vi.mock("@/lib/db-compat", () => ({
   ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
 }));
 
+const adminNotices = vi.hoisted(() => [] as Array<Record<string, unknown>>);
+vi.mock("@/lib/notifications/dispatch-localised", () => ({
+  dispatchLocalisedNotification: vi.fn(
+    async (opts: Record<string, unknown>) => {
+      adminNotices.push(opts);
+    },
+  ),
+}));
+
 const { hashPassword } = await import("@/lib/auth/password");
 
 const PASSWORD = "Correct horse battery staple!42";
@@ -53,6 +62,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 beforeEach(async () => {
   const prisma = getPrismaClient();
+  adminNotices.length = 0;
   await truncateAllTables(prisma);
   await prisma.rateLimit.deleteMany();
   cookieJar.clear();
@@ -369,6 +379,65 @@ describe("account deletion with a grace window", () => {
       where: { id: second.id },
     });
     expect(row.deletionRequestedAt).toBeNull();
+  });
+});
+
+describe("an erasure the Guardian invariant refuses", () => {
+  it("stays locked and tells every admin once", async () => {
+    const prisma = getPrismaClient();
+    const admin = await seedAccount("admin", "ADMIN");
+    const leaving = await seedAccount("guardian-leaving");
+    const staying = await seedAccount("guardian-staying");
+    const profile = await prisma.user.create({
+      data: {
+        username: "managed-kid",
+        managedProfileAt: new Date(),
+        timezone: "Europe/Berlin",
+      },
+    });
+    for (const guardian of [leaving, staying]) {
+      await prisma.accountGrant.create({
+        data: {
+          grantorId: profile.id,
+          granteeId: guardian.id,
+          access: "MANAGE",
+          acceptedAt: new Date(),
+        },
+      });
+    }
+
+    // Allowed while another guardian holds the profile.
+    await signIn(leaving.id);
+    expect((await deleteOwnAccount()).status).toBe(200);
+    // The other guardian leaves during the window.
+    await prisma.accountGrant.updateMany({
+      where: { granteeId: staying.id },
+      data: { revokedAt: new Date(), revokedBy: "GRANTEE" },
+    });
+    await prisma.user.update({
+      where: { id: leaving.id },
+      data: { deletionPurgeAt: new Date(Date.now() - 60_000) },
+    });
+
+    const { processDueAccountDeletions } =
+      await import("@/lib/jobs/account-deletion-purge");
+    expect(await processDueAccountDeletions(new Date())).toMatchObject({
+      purged: 0,
+      refused: 1,
+    });
+    // The next hourly run is refused again, and says nothing new.
+    expect(await processDueAccountDeletions(new Date())).toMatchObject({
+      refused: 1,
+    });
+
+    const row = await prisma.user.findUnique({ where: { id: leaving.id } });
+    expect(row?.deletionRequestedAt).not.toBeNull();
+    expect(adminNotices).toHaveLength(1);
+    expect(adminNotices[0]).toMatchObject({
+      userId: admin.id,
+      titleKey: "notifications.admin.accountErasureRefusedTitle",
+      params: { username: "guardian-leaving" },
+    });
   });
 });
 

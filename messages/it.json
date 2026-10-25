@@ -8096,8 +8096,8 @@
         "deletionPendingNoDate": "Eliminazione in attesa",
         "undoDeletion": "Annulla eliminazione",
         "undoDeletionTitle": "Annullare l’eliminazione di {name}?",
-        "undoDeletionBody": "{name} ha chiesto di eliminare questo account, che viene cancellato alla fine del periodo di tolleranza. Annullare mantiene l’account e tutto il suo contenuto com’era. Sessioni e token restano revocati, quindi servirà un nuovo accesso.",
-        "undoDeletionBodyGuardian": "Una persona responsabile ha eliminato il profilo gestito {name}, che viene cancellato alla fine del periodo di tolleranza. Annullare mantiene il profilo e tutto il suo contenuto com’era, e le persone responsabili possono di nuovo accedervi.",
+        "undoDeletionBody": "{name} ha chiesto di eliminare questo account, che viene cancellato alla fine del periodo di tolleranza. Annullare mantiene l’account e tutto il suo contenuto com’era. {name} può accedere di nuovo, ma i token API, i link di condivisione e i dispositivi attendibili restano revocati e vanno configurati di nuovo.",
+        "undoDeletionBodyGuardian": "Una persona responsabile ha eliminato il profilo gestito {name}, che viene cancellato alla fine del periodo di tolleranza. Annullare mantiene il profilo e tutto il suo contenuto com’era, e le persone responsabili possono di nuovo accedervi. I suoi link di condivisione e token restano revocati e vanno configurati di nuovo.",
         "undoDeletionDone": "Eliminazione di {name} annullata",
         "undoDeletionFailed": "Impossibile annullare l’eliminazione"
       },
@@ -8911,7 +8911,9 @@
       "offlineGeoUnavailableTitle": "Database di geolocalizzazione offline non caricati",
       "offlineGeoUnavailableBody": "HealthLog risolve le posizioni di accesso tramite la ricerca online su {host}, quindi ogni IP di accesso lascia questo server. Per risolverle localmente, scarica i database GeoLite2-City e GeoLite2-ASN con un account MaxMind gratuito, monta la directory nel container e fai puntare GEOLITE2_DIR ad essa. Passaggi: {docsUrl}",
       "tlsPinChangedTitle": "Certificato foglia TLS modificato: {host}",
-      "tlsPinChangedBody": "La foglia TLS servita da {host} ora ha il pin SPKI {servedPin}, che non è nell'insieme dei pin noti. I client con pin fisso (l'app nativa) non potranno più connettersi una volta scomparso il vecchio pin. Riestrai il nuovo pin della foglia, aggiungilo a TLS_LEAF_SPKI_PINS e all'insieme dei pin del client nativo, e pubblica una build prima che questo certificato scada il {validTo}. Vedi docs/ops/tls-cert-pin.md."
+      "tlsPinChangedBody": "La foglia TLS servita da {host} ora ha il pin SPKI {servedPin}, che non è nell'insieme dei pin noti. I client con pin fisso (l'app nativa) non potranno più connettersi una volta scomparso il vecchio pin. Riestrai il nuovo pin della foglia, aggiungilo a TLS_LEAF_SPKI_PINS e all'insieme dei pin del client nativo, e pubblica una build prima che questo certificato scada il {validTo}. Vedi docs/ops/tls-cert-pin.md.",
+      "accountErasureRefusedTitle": "Impossibile cancellare l’account: {username}",
+      "accountErasureRefusedBody": "Il periodo di eliminazione di {username} è terminato, ma l’account è l’ultima persona responsabile attiva di un profilo gestito, quindi non è stato cancellato. Resta bloccato. Aggiungi un’altra persona responsabile al profilo, elimina il profilo o annulla l’eliminazione in Administration, Utenti."
     },
     "user": {
       "telegramTestBody": "HealthLog: connessione riuscita. Le notifiche Telegram sono attive."

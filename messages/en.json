@@ -8096,8 +8096,8 @@
         "deletionPendingNoDate": "Deletion pending",
         "undoDeletion": "Undo deletion",
         "undoDeletionTitle": "Undo the deletion of {name}?",
-        "undoDeletionBody": "{name} asked to delete this account, and it is erased when the grace window ends. Undoing keeps the account and everything in it as it was. Its sessions and tokens stay revoked, so {name} signs in again.",
-        "undoDeletionBodyGuardian": "A guardian deleted the managed profile {name}, and it is erased when the grace window ends. Undoing keeps the profile and everything in it as it was, and its guardians can reach it again.",
+        "undoDeletionBody": "{name} asked to delete this account, and it is erased when the grace window ends. Undoing keeps the account and everything in it as it was. {name} can sign in again, but API tokens, share links and trusted devices stay revoked and have to be set up again.",
+        "undoDeletionBodyGuardian": "A guardian deleted the managed profile {name}, and it is erased when the grace window ends. Undoing keeps the profile and everything in it as it was, and its guardians can reach it again. Its share links and tokens stay revoked and have to be set up again.",
         "undoDeletionDone": "Deletion undone for {name}",
         "undoDeletionFailed": "Could not undo the deletion"
       },
@@ -8911,7 +8911,9 @@
       "offlineGeoUnavailableTitle": "Offline geolocation databases not loaded",
       "offlineGeoUnavailableBody": "HealthLog is resolving login locations through the online lookup at {host}, so every login IP address leaves this server. To resolve them locally instead, download the GeoLite2-City and GeoLite2-ASN databases with a free MaxMind account, mount the directory into the container, and point GEOLITE2_DIR at it. Steps: {docsUrl}",
       "tlsPinChangedTitle": "TLS leaf certificate changed: {host}",
-      "tlsPinChangedBody": "The TLS leaf served by {host} now has SPKI pin {servedPin}, which is not in the known pin set. Pinned clients (the native app) will fail to connect once the old pin is gone. Re-extract the new leaf pin, add it to TLS_LEAF_SPKI_PINS and the native client's pin set, and ship a build before this certificate expires on {validTo}. See docs/ops/tls-cert-pin.md."
+      "tlsPinChangedBody": "The TLS leaf served by {host} now has SPKI pin {servedPin}, which is not in the known pin set. Pinned clients (the native app) will fail to connect once the old pin is gone. Re-extract the new leaf pin, add it to TLS_LEAF_SPKI_PINS and the native client's pin set, and ship a build before this certificate expires on {validTo}. See docs/ops/tls-cert-pin.md.",
+      "accountErasureRefusedTitle": "Account could not be erased: {username}",
+      "accountErasureRefusedBody": "The deletion window of {username} has ended, but the account is the last active guardian of a managed profile, so it was not erased. It stays locked. Add another guardian to the profile, delete the profile, or undo the deletion in Administration, Users."
     },
     "user": {
       "telegramTestBody": "HealthLog: connection successful. Telegram notifications are active."

@@ -8096,8 +8096,8 @@
         "deletionPendingNoDate": "Usunięcie zaplanowane",
         "undoDeletion": "Cofnij usunięcie",
         "undoDeletionTitle": "Cofnąć usunięcie {name}?",
-        "undoDeletionBody": "{name} poprosił o usunięcie tego konta; zostanie ono usunięte po upływie okresu karencji. Cofnięcie zachowuje konto i całą jego zawartość bez zmian. Sesje i tokeny pozostają unieważnione, więc trzeba będzie zalogować się ponownie.",
-        "undoDeletionBodyGuardian": "Osoba opiekująca się profilem usunęła profil zarządzany {name}; zostanie on usunięty po upływie okresu karencji. Cofnięcie zachowuje profil i całą jego zawartość bez zmian, a osoby opiekujące się nim znów mają do niego dostęp.",
+        "undoDeletionBody": "{name} poprosił o usunięcie tego konta; zostanie ono usunięte po upływie okresu karencji. Cofnięcie zachowuje konto i całą jego zawartość bez zmian. {name} może znów się zalogować, ale tokeny API, linki udostępniania i zaufane urządzenia pozostają unieważnione i trzeba je skonfigurować od nowa.",
+        "undoDeletionBodyGuardian": "Osoba opiekująca się profilem usunęła profil zarządzany {name}; zostanie on usunięty po upływie okresu karencji. Cofnięcie zachowuje profil i całą jego zawartość bez zmian, a osoby opiekujące się nim znów mają do niego dostęp. Jego linki udostępniania i tokeny pozostają unieważnione i trzeba je skonfigurować od nowa.",
         "undoDeletionDone": "Cofnięto usunięcie {name}",
         "undoDeletionFailed": "Nie udało się cofnąć usunięcia"
       },
@@ -8911,7 +8911,9 @@
       "offlineGeoUnavailableTitle": "Bazy geolokalizacji offline nie zostały załadowane",
       "offlineGeoUnavailableBody": "HealthLog rozwiązuje lokalizacje logowania przez zapytanie online do {host}, więc każdy adres IP logowania opuszcza ten serwer. Aby rozwiązywać je lokalnie, pobierz bazy GeoLite2-City i GeoLite2-ASN na bezpłatnym koncie MaxMind, podłącz katalog do kontenera i ustaw na niego GEOLITE2_DIR. Kroki: {docsUrl}",
       "tlsPinChangedTitle": "Zmieniono certyfikat liścia TLS: {host}",
-      "tlsPinChangedBody": "Liść TLS serwowany przez {host} ma teraz pin SPKI {servedPin}, którego nie ma w znanym zestawie pinów. Klienci z przypiętym pinem (aplikacja natywna) nie połączą się po usunięciu starego pinu. Ponownie wyodrębnij nowy pin liścia, dodaj go do TLS_LEAF_SPKI_PINS oraz do zestawu pinów klienta natywnego i opublikuj kompilację, zanim ten certyfikat wygaśnie {validTo}. Zobacz docs/ops/tls-cert-pin.md."
+      "tlsPinChangedBody": "Liść TLS serwowany przez {host} ma teraz pin SPKI {servedPin}, którego nie ma w znanym zestawie pinów. Klienci z przypiętym pinem (aplikacja natywna) nie połączą się po usunięciu starego pinu. Ponownie wyodrębnij nowy pin liścia, dodaj go do TLS_LEAF_SPKI_PINS oraz do zestawu pinów klienta natywnego i opublikuj kompilację, zanim ten certyfikat wygaśnie {validTo}. Zobacz docs/ops/tls-cert-pin.md.",
+      "accountErasureRefusedTitle": "Nie udało się usunąć konta: {username}",
+      "accountErasureRefusedBody": "Okres usuwania konta {username} minął, ale to konto jest ostatnią aktywną osobą opiekującą się profilem zarządzanym, więc nie zostało usunięte. Pozostaje zablokowane. Dodaj do profilu kolejną osobę opiekującą się, usuń profil albo cofnij usunięcie w Administracja, Użytkownicy."
     },
     "user": {
       "telegramTestBody": "HealthLog: połączenie udane. Powiadomienia Telegram są aktywne."

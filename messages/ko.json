@@ -8071,8 +8071,8 @@
         "deletionPendingNoDate": "삭제 예정",
         "undoDeletion": "삭제 취소",
         "undoDeletionTitle": "{name} 삭제를 취소할까요?",
-        "undoDeletionBody": "{name} 님이 이 계정의 삭제를 요청했고, 유예 기간이 끝나면 지워져요. 취소하면 계정과 그 안의 모든 내용이 그대로 남아요. 세션과 토큰은 계속 취소된 상태라 다시 로그인해야 해요.",
-        "undoDeletionBodyGuardian": "보호자가 관리 프로필 {name}을(를) 삭제했고, 유예 기간이 끝나면 지워져요. 취소하면 프로필과 그 안의 모든 내용이 그대로 남고, 보호자들이 다시 접근할 수 있어요.",
+        "undoDeletionBody": "{name} 님이 이 계정의 삭제를 요청했고, 유예 기간이 끝나면 지워져요. 취소하면 계정과 그 안의 모든 내용이 그대로 남아요. {name} 님은 다시 로그인할 수 있지만, API 토큰, 공유 링크, 신뢰하는 기기는 계속 취소된 상태라 다시 설정해야 해요.",
+        "undoDeletionBodyGuardian": "보호자가 관리 프로필 {name}을(를) 삭제했고, 유예 기간이 끝나면 지워져요. 취소하면 프로필과 그 안의 모든 내용이 그대로 남고, 보호자들이 다시 접근할 수 있어요. 공유 링크와 토큰은 계속 취소된 상태라 다시 설정해야 해요.",
         "undoDeletionDone": "{name} 삭제를 취소했어요",
         "undoDeletionFailed": "삭제를 취소하지 못했어요"
       },
@@ -8911,7 +8911,9 @@
       "offlineGeoUnavailableTitle": "오프라인 위치 데이터베이스가 로드되지 않았어요",
       "offlineGeoUnavailableBody": "HealthLog가 {host}의 온라인 조회로 로그인 위치를 확인하고 있어서, 모든 로그인 IP 주소가 이 서버를 벗어나요. 로컬에서 확인하려면 무료 MaxMind 계정으로 GeoLite2-City와 GeoLite2-ASN 데이터베이스를 내려받아 그 디렉터리를 컨테이너에 마운트하고 GEOLITE2_DIR가 이를 가리키게 하세요. 절차: {docsUrl}",
       "tlsPinChangedTitle": "TLS 리프 인증서 변경: {host}",
-      "tlsPinChangedBody": "{host}가 제공하는 TLS 리프의 SPKI 핀이 이제 {servedPin}인데, 알려진 핀 목록에 없어요. 기존 핀이 사라지면 핀을 검증하는 클라이언트(네이티브 앱)는 연결에 실패해요. 새 리프 핀을 다시 추출해 TLS_LEAF_SPKI_PINS와 네이티브 클라이언트 핀 목록에 추가하고, 이 인증서가 만료되는 {validTo} 전에 빌드를 배포하세요. docs/ops/tls-cert-pin.md를 참고하세요."
+      "tlsPinChangedBody": "{host}가 제공하는 TLS 리프의 SPKI 핀이 이제 {servedPin}인데, 알려진 핀 목록에 없어요. 기존 핀이 사라지면 핀을 검증하는 클라이언트(네이티브 앱)는 연결에 실패해요. 새 리프 핀을 다시 추출해 TLS_LEAF_SPKI_PINS와 네이티브 클라이언트 핀 목록에 추가하고, 이 인증서가 만료되는 {validTo} 전에 빌드를 배포하세요. docs/ops/tls-cert-pin.md를 참고하세요.",
+      "accountErasureRefusedTitle": "계정을 지우지 못했어요: {username}",
+      "accountErasureRefusedBody": "{username} 계정의 삭제 유예 기간이 끝났지만, 이 계정이 관리 프로필의 마지막 활성 보호자라서 지우지 않았어요. 계정은 계속 잠겨 있어요. 프로필에 다른 보호자를 추가하거나, 프로필을 삭제하거나, 관리자의 사용자 화면에서 삭제를 취소해 주세요."
     },
     "user": {
       "telegramTestBody": "HealthLog: 연결에 성공했어요. Telegram 알림이 켜져 있어요."

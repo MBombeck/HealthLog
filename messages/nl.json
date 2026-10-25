@@ -8096,8 +8096,8 @@
         "deletionPendingNoDate": "Verwijdering gepland",
         "undoDeletion": "Verwijdering ongedaan maken",
         "undoDeletionTitle": "Verwijdering van {name} ongedaan maken?",
-        "undoDeletionBody": "{name} heeft gevraagd dit account te verwijderen; het wordt gewist als de bedenktijd afloopt. Ongedaan maken houdt het account en alles erin zoals het was. Sessies en tokens blijven ingetrokken, dus opnieuw inloggen is nodig.",
-        "undoDeletionBodyGuardian": "Een verzorger heeft het beheerde profiel {name} verwijderd; het wordt gewist als de bedenktijd afloopt. Ongedaan maken houdt het profiel en alles erin zoals het was, en de verzorgers kunnen het weer bereiken.",
+        "undoDeletionBody": "{name} heeft gevraagd dit account te verwijderen; het wordt gewist als de bedenktijd afloopt. Ongedaan maken houdt het account en alles erin zoals het was. {name} kan weer inloggen, maar API-tokens, deellinks en vertrouwde apparaten blijven ingetrokken en moeten opnieuw worden ingesteld.",
+        "undoDeletionBodyGuardian": "Een verzorger heeft het beheerde profiel {name} verwijderd; het wordt gewist als de bedenktijd afloopt. Ongedaan maken houdt het profiel en alles erin zoals het was, en de verzorgers kunnen het weer bereiken. De deellinks en tokens blijven ingetrokken en moeten opnieuw worden ingesteld.",
         "undoDeletionDone": "Verwijdering van {name} ongedaan gemaakt",
         "undoDeletionFailed": "Verwijdering kon niet ongedaan worden gemaakt"
       },
@@ -8911,7 +8911,9 @@
       "offlineGeoUnavailableTitle": "Offline geolocatiedatabases niet geladen",
       "offlineGeoUnavailableBody": "HealthLog bepaalt inloglocaties via de online opzoekdienst op {host}, dus elk IP-adres waarmee wordt ingelogd, verlaat deze server. Wil je ze lokaal bepalen, download dan de databases GeoLite2-City en GeoLite2-ASN met een gratis MaxMind-account, koppel de map aan de container en laat GEOLITE2_DIR ernaar verwijzen. Stappen: {docsUrl}",
       "tlsPinChangedTitle": "TLS-leafcertificaat gewijzigd: {host}",
-      "tlsPinChangedBody": "Het TLS-leafcertificaat dat {host} aanbiedt, heeft nu SPKI-pin {servedPin}, die niet in de set bekende pins staat. Clients met pinning (de native app) kunnen geen verbinding meer maken zodra de oude pin verdwenen is. Haal de nieuwe leaf-pin opnieuw op, voeg hem toe aan TLS_LEAF_SPKI_PINS en aan de pinset van de native client, en breng een build uit voordat dit certificaat op {validTo} verloopt. Zie docs/ops/tls-cert-pin.md."
+      "tlsPinChangedBody": "Het TLS-leafcertificaat dat {host} aanbiedt, heeft nu SPKI-pin {servedPin}, die niet in de set bekende pins staat. Clients met pinning (de native app) kunnen geen verbinding meer maken zodra de oude pin verdwenen is. Haal de nieuwe leaf-pin opnieuw op, voeg hem toe aan TLS_LEAF_SPKI_PINS en aan de pinset van de native client, en breng een build uit voordat dit certificaat op {validTo} verloopt. Zie docs/ops/tls-cert-pin.md.",
+      "accountErasureRefusedTitle": "Account kon niet worden gewist: {username}",
+      "accountErasureRefusedBody": "De verwijdertermijn van {username} is afgelopen, maar het account is de laatste actieve verzorger van een beheerd profiel en is daarom niet gewist. Het blijft vergrendeld. Voeg een andere verzorger toe aan het profiel, verwijder het profiel of maak de verwijdering ongedaan in Beheer, Gebruikers."
     },
     "user": {
       "telegramTestBody": "HealthLog: verbinding geslaagd. Telegram-meldingen zijn actief."

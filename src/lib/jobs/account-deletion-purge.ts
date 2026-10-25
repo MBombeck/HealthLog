@@ -16,8 +16,8 @@
  * account is already gone and the undo answers 404). The Guardian invariant
  * is decided again too: a Guardian whose last co-Guardian left during the
  * window would leave a managed profile nobody can reach, so that erasure is
- * refused, the account stays locked and pending, and the run reports it for
- * the operator to settle.
+ * refused, the account stays locked and pending, the run reports it, and
+ * every admin is told once through the localized admin notification.
  */
 import type { Job } from "pg-boss";
 
@@ -37,6 +37,9 @@ import {
   lockPendingAccount,
 } from "@/lib/account-deletion/lifecycle";
 import { preWipeCopyCutoff } from "@/lib/account-deletion/grace";
+import { activeAccount } from "@/lib/account-deletion/active-account";
+import { auditLog } from "@/lib/auth/audit";
+import { dispatchLocalisedNotification } from "@/lib/notifications/dispatch-localised";
 import { PRE_WIPE_BACKUP_TYPE_PREFIX } from "@/lib/account-deletion/pre-wipe-type";
 import { ACCOUNT_DELETION_PURGE_QUEUE } from "./account-deletion-purge-queue";
 
@@ -129,6 +132,51 @@ async function deleteExpiredPreWipeCopies(now: Date): Promise<number> {
   return count;
 }
 
+/** The audit action that marks a refused erasure as already reported. */
+const REFUSED_ERASURE_ACTION = "user.account.deletion_refused";
+
+/**
+ * Tell every admin, once, that an account whose window ended could not be
+ * erased, and why. The run retries the account every hour; the audit row on
+ * the account (`user.account.deletion_refused`, newer than the deletion
+ * request) is what keeps the second hour from repeating the message. A
+ * deletion undone and asked for again is a new request and is reported
+ * afresh.
+ */
+async function notifyAdminsOfRefusedErasure(accountId: string): Promise<void> {
+  const account = await prisma.user.findUnique({
+    where: { id: accountId },
+    select: { username: true, deletionRequestedAt: true },
+  });
+  if (!account?.deletionRequestedAt) return;
+  const reported = await prisma.auditLog.count({
+    where: {
+      userId: accountId,
+      action: REFUSED_ERASURE_ACTION,
+      createdAt: { gte: account.deletionRequestedAt },
+    },
+  });
+  if (reported > 0) return;
+  await auditLog(REFUSED_ERASURE_ACTION, {
+    userId: accountId,
+    actorUserId: null,
+    details: { reason: "last_managed_guardian" },
+  });
+  const admins = await prisma.user.findMany({
+    where: activeAccount({ role: "ADMIN" }),
+    select: { id: true },
+  });
+  for (const admin of admins) {
+    await dispatchLocalisedNotification({
+      userId: admin.id,
+      titleKey: "notifications.admin.accountErasureRefusedTitle",
+      messageKey: "notifications.admin.accountErasureRefusedBody",
+      params: { username: account.username },
+      metadata: { source: "account-deletion-purge", url: "/admin/users" },
+    });
+  }
+}
+
 export async function processDueAccountDeletions(
   now: Date = new Date(),
 ): Promise<AccountDeletionPurgeReport> {
@@ -159,6 +207,7 @@ export async function processDueAccountDeletions(
     } catch (error) {
       if (!(error instanceof LastManagedGuardianError)) throw error;
       report.refused++;
+      await notifyAdminsOfRefusedErasure(account.id);
     }
   }
   report.preWipeCopiesDeleted = await deleteExpiredPreWipeCopies(now);

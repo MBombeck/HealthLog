@@ -8096,8 +8096,8 @@
         "deletionPendingNoDate": "Suppression programmée",
         "undoDeletion": "Annuler la suppression",
         "undoDeletionTitle": "Annuler la suppression de {name} ?",
-        "undoDeletionBody": "{name} a demandé la suppression de ce compte, qui sera effacé à la fin du délai de grâce. Annuler conserve le compte et tout son contenu tels quels. Ses sessions et jetons restent révoqués : il faudra se reconnecter.",
-        "undoDeletionBodyGuardian": "Une personne responsable a supprimé le profil géré {name}, qui sera effacé à la fin du délai de grâce. Annuler conserve le profil et tout son contenu tels quels, et les personnes responsables y ont de nouveau accès.",
+        "undoDeletionBody": "{name} a demandé la suppression de ce compte, qui sera effacé à la fin du délai de grâce. Annuler conserve le compte et tout son contenu tels quels. {name} peut se reconnecter, mais les jetons d’API, les liens de partage et les appareils de confiance restent révoqués et doivent être configurés à nouveau.",
+        "undoDeletionBodyGuardian": "Une personne responsable a supprimé le profil géré {name}, qui sera effacé à la fin du délai de grâce. Annuler conserve le profil et tout son contenu tels quels, et les personnes responsables y ont de nouveau accès. Ses liens de partage et jetons restent révoqués et doivent être configurés à nouveau.",
         "undoDeletionDone": "Suppression de {name} annulée",
         "undoDeletionFailed": "Impossible d’annuler la suppression"
       },
@@ -8911,7 +8911,9 @@
       "offlineGeoUnavailableTitle": "Bases de géolocalisation hors ligne non chargées",
       "offlineGeoUnavailableBody": "HealthLog résout les localisations de connexion via la requête en ligne vers {host}, donc chaque adresse IP de connexion quitte ce serveur. Pour les résoudre localement, téléchargez les bases GeoLite2-City et GeoLite2-ASN avec un compte MaxMind gratuit, montez le répertoire dans le conteneur et faites-y pointer GEOLITE2_DIR. Étapes : {docsUrl}",
       "tlsPinChangedTitle": "Certificat feuille TLS modifié : {host}",
-      "tlsPinChangedBody": "La feuille TLS servie par {host} a maintenant le pin SPKI {servedPin}, qui ne figure pas dans l'ensemble de pins connus. Les clients épinglés (l'app native) ne pourront plus se connecter une fois l'ancien pin disparu. Réextrayez le nouveau pin de la feuille, ajoutez-le à TLS_LEAF_SPKI_PINS et à l'ensemble de pins du client natif, et publiez une version avant l'expiration de ce certificat le {validTo}. Voir docs/ops/tls-cert-pin.md."
+      "tlsPinChangedBody": "La feuille TLS servie par {host} a maintenant le pin SPKI {servedPin}, qui ne figure pas dans l'ensemble de pins connus. Les clients épinglés (l'app native) ne pourront plus se connecter une fois l'ancien pin disparu. Réextrayez le nouveau pin de la feuille, ajoutez-le à TLS_LEAF_SPKI_PINS et à l'ensemble de pins du client natif, et publiez une version avant l'expiration de ce certificat le {validTo}. Voir docs/ops/tls-cert-pin.md.",
+      "accountErasureRefusedTitle": "Le compte n’a pas pu être effacé : {username}",
+      "accountErasureRefusedBody": "Le délai de suppression de {username} est écoulé, mais ce compte est la dernière personne responsable active d’un profil géré : il n’a donc pas été effacé. Il reste verrouillé. Ajoutez une autre personne responsable au profil, supprimez le profil ou annulez la suppression dans Administration, Utilisateurs."
     },
     "user": {
       "telegramTestBody": "HealthLog: connexion réussie. Les notifications Telegram sont actives."

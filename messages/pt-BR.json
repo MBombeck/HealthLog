@@ -8096,8 +8096,8 @@
         "deletionPendingNoDate": "Exclusão pendente",
         "undoDeletion": "Desfazer exclusão",
         "undoDeletionTitle": "Desfazer a exclusão de {name}?",
-        "undoDeletionBody": "{name} pediu para excluir esta conta, e ela é apagada quando o prazo de carência termina. Desfazer mantém a conta e tudo o que há nela como estava. As sessões e tokens continuam revogados, então será preciso entrar de novo.",
-        "undoDeletionBodyGuardian": "Um guardião excluiu o perfil gerenciado {name}, e ele é apagado quando o prazo de carência termina. Desfazer mantém o perfil e tudo o que há nele como estava, e os guardiões voltam a ter acesso.",
+        "undoDeletionBody": "{name} pediu para excluir esta conta, e ela é apagada quando o prazo de carência termina. Desfazer mantém a conta e tudo o que há nela como estava. {name} pode entrar de novo, mas os tokens de API, os links de compartilhamento e os dispositivos confiáveis continuam revogados e precisam ser configurados de novo.",
+        "undoDeletionBodyGuardian": "Um guardião excluiu o perfil gerenciado {name}, e ele é apagado quando o prazo de carência termina. Desfazer mantém o perfil e tudo o que há nele como estava, e os guardiões voltam a ter acesso. Os links de compartilhamento e tokens continuam revogados e precisam ser configurados de novo.",
         "undoDeletionDone": "Exclusão de {name} desfeita",
         "undoDeletionFailed": "Não foi possível desfazer a exclusão"
       },
@@ -8911,7 +8911,9 @@
       "offlineGeoUnavailableTitle": "Bancos de dados de geolocalização offline não carregados",
       "offlineGeoUnavailableBody": "O HealthLog está resolvendo locais de login pela consulta online em {host}, então cada endereço IP de login sai deste servidor. Para resolvê-los localmente, baixe os bancos de dados GeoLite2-City e GeoLite2-ASN com uma conta gratuita da MaxMind, monte o diretório no contêiner e aponte GEOLITE2_DIR para ele. Passos: {docsUrl}",
       "tlsPinChangedTitle": "Certificado folha TLS alterado: {host}",
-      "tlsPinChangedBody": "O certificado folha TLS servido por {host} agora tem o pin SPKI {servedPin}, que não está no conjunto de pins conhecidos. Clientes com pin (o aplicativo nativo) falharão ao conectar quando o pin antigo sumir. Extraia novamente o pin da nova folha, adicione-o a TLS_LEAF_SPKI_PINS e ao conjunto de pins do cliente nativo, e publique uma build antes que este certificado expire em {validTo}. Veja docs/ops/tls-cert-pin.md."
+      "tlsPinChangedBody": "O certificado folha TLS servido por {host} agora tem o pin SPKI {servedPin}, que não está no conjunto de pins conhecidos. Clientes com pin (o aplicativo nativo) falharão ao conectar quando o pin antigo sumir. Extraia novamente o pin da nova folha, adicione-o a TLS_LEAF_SPKI_PINS e ao conjunto de pins do cliente nativo, e publique uma build antes que este certificado expire em {validTo}. Veja docs/ops/tls-cert-pin.md.",
+      "accountErasureRefusedTitle": "Não foi possível apagar a conta: {username}",
+      "accountErasureRefusedBody": "O prazo de exclusão de {username} terminou, mas a conta é o último guardião ativo de um perfil gerenciado, então não foi apagada. Ela continua bloqueada. Adicione outro guardião ao perfil, exclua o perfil ou desfaça a exclusão em Administração, Usuários."
     },
     "user": {
       "telegramTestBody": "HealthLog: conexão bem-sucedida. As notificações do Telegram estão ativas."

@@ -8096,8 +8096,8 @@
         "deletionPendingNoDate": "Eliminación pendiente",
         "undoDeletion": "Deshacer eliminación",
         "undoDeletionTitle": "¿Deshacer la eliminación de {name}?",
-        "undoDeletionBody": "{name} pidió eliminar esta cuenta, y se borra cuando termina el plazo de gracia. Deshacerlo conserva la cuenta y todo su contenido tal como estaba. Sus sesiones y tokens siguen revocados, así que habrá que volver a iniciar sesión.",
-        "undoDeletionBodyGuardian": "Una persona responsable eliminó el perfil gestionado {name}, y se borra cuando termina el plazo de gracia. Deshacerlo conserva el perfil y todo su contenido tal como estaba, y las personas responsables vuelven a tener acceso.",
+        "undoDeletionBody": "{name} pidió eliminar esta cuenta, y se borra cuando termina el plazo de gracia. Deshacerlo conserva la cuenta y todo su contenido tal como estaba. {name} puede volver a iniciar sesión, pero los tokens de API, los enlaces compartidos y los dispositivos de confianza siguen revocados y hay que configurarlos de nuevo.",
+        "undoDeletionBodyGuardian": "Una persona responsable eliminó el perfil gestionado {name}, y se borra cuando termina el plazo de gracia. Deshacerlo conserva el perfil y todo su contenido tal como estaba, y las personas responsables vuelven a tener acceso. Sus enlaces compartidos y tokens siguen revocados y hay que configurarlos de nuevo.",
         "undoDeletionDone": "Eliminación de {name} deshecha",
         "undoDeletionFailed": "No se pudo deshacer la eliminación"
       },
@@ -8911,7 +8911,9 @@
       "offlineGeoUnavailableTitle": "Bases de datos de geolocalización sin conexión no cargadas",
       "offlineGeoUnavailableBody": "HealthLog resuelve las ubicaciones de inicio de sesión mediante la consulta en línea a {host}, por lo que cada IP de inicio de sesión sale de este servidor. Para resolverlas localmente, descarga las bases GeoLite2-City y GeoLite2-ASN con una cuenta gratuita de MaxMind, monta el directorio en el contenedor y apunta GEOLITE2_DIR a él. Pasos: {docsUrl}",
       "tlsPinChangedTitle": "Certificado de hoja TLS cambiado: {host}",
-      "tlsPinChangedBody": "La hoja TLS servida por {host} ahora tiene el pin SPKI {servedPin}, que no está en el conjunto de pines conocidos. Los clientes con pin fijo (la app nativa) no podrán conectarse una vez que desaparezca el pin antiguo. Vuelve a extraer el nuevo pin de la hoja, añádelo a TLS_LEAF_SPKI_PINS y al conjunto de pines del cliente nativo, y publica una versión antes de que este certificado caduque el {validTo}. Consulta docs/ops/tls-cert-pin.md."
+      "tlsPinChangedBody": "La hoja TLS servida por {host} ahora tiene el pin SPKI {servedPin}, que no está en el conjunto de pines conocidos. Los clientes con pin fijo (la app nativa) no podrán conectarse una vez que desaparezca el pin antiguo. Vuelve a extraer el nuevo pin de la hoja, añádelo a TLS_LEAF_SPKI_PINS y al conjunto de pines del cliente nativo, y publica una versión antes de que este certificado caduque el {validTo}. Consulta docs/ops/tls-cert-pin.md.",
+      "accountErasureRefusedTitle": "No se pudo borrar la cuenta: {username}",
+      "accountErasureRefusedBody": "El plazo de eliminación de {username} ha terminado, pero la cuenta es la última persona responsable activa de un perfil gestionado, así que no se ha borrado. Sigue bloqueada. Añade otra persona responsable al perfil, elimina el perfil o deshaz la eliminación en Administration, Usuarios."
     },
     "user": {
       "telegramTestBody": "HealthLog: conexión correcta. Las notificaciones de Telegram están activas."
