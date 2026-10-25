@@ -234,3 +234,69 @@ describe("migration lock waits", () => {
     ).toEqual([]);
   });
 });
+
+/**
+ * From 0475 on, a statement that takes a table lock runs inside a `DO` block
+ * that bounds its wait. A bare `ALTER TABLE` waits behind every open
+ * transaction on the table, and every write to it queues behind the waiting
+ * `ALTER`, for as long as the longest of them runs: under a backfill or a
+ * pg_dump that is the boot's start period gone, and the half-applied file is
+ * left on record. Older files are history; they ran and are not run again.
+ */
+const LOCK_BOUND_FROM = 475;
+
+/** Top-level statements that take a table lock and wait for it. */
+const TABLE_LOCK =
+  /^(ALTER TABLE|CREATE (UNIQUE )?INDEX (?!CONCURRENTLY)|DROP (TABLE|INDEX) (?!CONCURRENTLY)|LOCK )/i;
+
+function unboundedLockViolations(name: string, sql: string): string[] {
+  const number = Number.parseInt(name.slice(0, 4), 10);
+  if (!(number >= LOCK_BOUND_FROM)) return [];
+  return topLevelStatements(sql)
+    .filter((statement) => TABLE_LOCK.test(statement))
+    .map(
+      (statement) =>
+        `${name}: "${statement.slice(0, 60)}" waits for its table lock without bound; run it in a DO block with set_config('lock_timeout', …, true)`,
+    );
+}
+
+describe("table locks since 0475", () => {
+  it("are taken inside a block that bounds the wait", () => {
+    const checked = migrations().filter(
+      ({ name }) => Number.parseInt(name.slice(0, 4), 10) >= LOCK_BOUND_FROM,
+    );
+    expect(checked.length).toBeGreaterThan(5);
+    const found = checked.flatMap(({ name, sql }) =>
+      unboundedLockViolations(name, sql),
+    );
+    expect(found, found.join("\n")).toEqual([]);
+  });
+
+  it("catches each shape it exists to refuse", () => {
+    expect(
+      unboundedLockViolations(
+        "0999_a",
+        'ALTER TABLE "t" ADD COLUMN IF NOT EXISTS "c" INTEGER;',
+      ),
+    ).toHaveLength(1);
+    expect(
+      unboundedLockViolations("0999_b", 'CREATE INDEX "i" ON "t" ("c");'),
+    ).toHaveLength(1);
+    expect(
+      unboundedLockViolations(
+        "0999_c",
+        "DO $m$ BEGIN PERFORM set_config('lock_timeout', '5s', true); ALTER TABLE \"t\" ADD COLUMN \"c\" INTEGER; END $m$;",
+      ),
+    ).toEqual([]);
+    expect(
+      unboundedLockViolations(
+        "0999_d",
+        'CREATE INDEX CONCURRENTLY IF NOT EXISTS "i" ON "t" ("c");',
+      ),
+    ).toEqual([]);
+    // History is not re-run.
+    expect(
+      unboundedLockViolations("0100_e", 'ALTER TABLE "t" ADD COLUMN "c" INT;'),
+    ).toEqual([]);
+  });
+});

@@ -7,5 +7,16 @@
 -- up to two hours. A written or re-dated note resets it to zero.
 --
 -- Existing rows start at zero, which is the five-minute window they had.
-ALTER TABLE "insight_status_caches"
-  ADD COLUMN IF NOT EXISTS "failure_streak" INTEGER NOT NULL DEFAULT 0;
+--
+-- The lock wait is bounded inside a DO block and the file is safe to run
+-- again, so the boot retries it on a lock timeout.
+--
+-- @retry-on-lock-timeout
+
+DO $migration$
+BEGIN
+    PERFORM set_config('lock_timeout', '5s', true);
+    ALTER TABLE "insight_status_caches"
+        ADD COLUMN IF NOT EXISTS "failure_streak" INTEGER NOT NULL DEFAULT 0;
+END
+$migration$;

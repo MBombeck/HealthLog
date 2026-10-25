@@ -10,5 +10,16 @@
 --
 -- Reversibility: dropping the column loses only that marker; the scores and
 -- the encrypted answers do not depend on it.
+--
+-- The lock wait is bounded inside a DO block and the file is safe to run
+-- again, so the boot retries it on a lock timeout.
+--
+-- @retry-on-lock-timeout
 
-ALTER TABLE "mental_health_assessments" ADD COLUMN IF NOT EXISTS "wording" TEXT;
+DO $migration$
+BEGIN
+    PERFORM set_config('lock_timeout', '5s', true);
+    ALTER TABLE "mental_health_assessments"
+        ADD COLUMN IF NOT EXISTS "wording" TEXT;
+END
+$migration$;
