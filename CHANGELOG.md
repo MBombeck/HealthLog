@@ -283,6 +283,12 @@
   an hour early, so a late evening dose was missing from it; on the day
   they go forward it reached an hour into tomorrow. It now spans the real
   local day, as the dashboard already did.
+- **A dose logged for a two-day plan lands on its slot in the week the
+  clocks go back.** A plan with doses on two neighbouring weekdays, started
+  shortly before the change, could file a later dose as unscheduled, and
+  logging it again gave back the previous one. Whether a plan counts as
+  daily or weekly no longer depends on the stretch of days it is read
+  through.
 
 ### Security
 
