@@ -19,6 +19,7 @@ vi.mock("@napi-rs/canvas", async (importActual) => {
   };
 });
 
+import { gif } from "../../__tests__/gif-fixture";
 import { generateThumbnail, THUMB_LONG_EDGE } from "../thumbnail";
 
 /**
@@ -212,6 +213,32 @@ describe("generateThumbnail", () => {
       "image/jpeg",
     );
     expect(result.ok).toBe(true);
+  });
+
+  it("refuses a GIF whose frame is far larger than its logical screen, before decoding", async () => {
+    loadImageMock.mockClear();
+    // A 10 x 10 screen around a 20000 x 20000 frame: the decoder sizes its
+    // buffer from the frame.
+    const bomb = gif({ width: 10, height: 10 }, [
+      { width: 20_000, height: 20_000 },
+    ]);
+    expect(bomb.length).toBeLessThan(64);
+    await expect(generateThumbnail(bomb, "image/gif")).resolves.toEqual({
+      ok: false,
+      reason: "pixel-cap",
+    });
+    expect(loadImageMock).not.toHaveBeenCalled();
+  });
+
+  it("still previews an ordinary GIF", async () => {
+    const result = await generateThumbnail(
+      gif({ width: 1, height: 1 }, [{ width: 1, height: 1 }]),
+      "image/gif",
+    );
+    expect(result).toMatchObject({
+      ok: true,
+      thumbnail: { width: 1, height: 1 },
+    });
   });
 
   it("refuses an image whose size cannot be read instead of decoding it", async () => {

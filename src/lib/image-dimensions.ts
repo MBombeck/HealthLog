@@ -64,12 +64,74 @@ function readPng(bytes: Buffer): ImageDimensions | null {
   return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
 }
 
+/**
+ * The area a GIF decoder has to allocate: the logical screen, grown to cover
+ * every frame's image descriptor.
+ *
+ * The logical screen alone is not that size. A decoder sizes its buffer from
+ * the frame it decodes, so a file declaring a 10 x 10 screen and a
+ * 20000 x 20000 frame passed a screen-only check and allocated 1.6 GB. Every
+ * block is walked (GIF89a, section 17 onwards): extensions and image data are
+ * skipped sub-block by sub-block, each image descriptor is read, and anything
+ * that is not a block a decoder accepts makes the file unreadable. The walk
+ * is linear in the file's length.
+ *
+ * A file that ends inside a frame's image data is still read up to there,
+ * since decoders draw what they got; one that ends inside a header or a
+ * descriptor, or has no frame at all, has no size.
+ */
 function readGif(bytes: Buffer): ImageDimensions | null {
-  // "GIF87a" / "GIF89a", then the logical screen: width, height (LE).
-  if (bytes.length < 10 || bytes.toString("ascii", 0, 4) !== "GIF8") {
-    return null;
+  // "GIF87a" / "GIF89a", then the logical screen descriptor (7 bytes).
+  if (bytes.length < 13) return null;
+  const signature = bytes.toString("ascii", 0, 6);
+  if (signature !== "GIF87a" && signature !== "GIF89a") return null;
+  let width = bytes.readUInt16LE(6);
+  let height = bytes.readUInt16LE(8);
+  const screenFlags = bytes[10]!;
+  let offset = 13;
+  if (screenFlags & 0x80) offset += 3 << ((screenFlags & 0x07) + 1);
+
+  /** Past a run of data sub-blocks; `bytes.length` when the file ends in it. */
+  const skipSubBlocks = (from: number): number => {
+    let at = from;
+    while (at < bytes.length) {
+      const size = bytes[at]!;
+      at += 1;
+      if (size === 0) return at;
+      at += size;
+    }
+    return bytes.length;
+  };
+
+  let frames = 0;
+  while (offset < bytes.length) {
+    const introducer = bytes[offset]!;
+    if (introducer === 0x3b) break; // trailer
+    if (introducer === 0x21) {
+      // Extension: introducer, label, then data sub-blocks.
+      if (offset + 2 > bytes.length) return null;
+      offset = skipSubBlocks(offset + 2);
+      continue;
+    }
+    if (introducer !== 0x2c) return null;
+    // Image descriptor: left, top, width, height (LE), flags.
+    if (offset + 10 > bytes.length) return null;
+    const left = bytes.readUInt16LE(offset + 1);
+    const top = bytes.readUInt16LE(offset + 3);
+    const frameWidth = bytes.readUInt16LE(offset + 5);
+    const frameHeight = bytes.readUInt16LE(offset + 7);
+    const frameFlags = bytes[offset + 9]!;
+    if (frameWidth === 0 || frameHeight === 0) return null;
+    width = Math.max(width, left + frameWidth);
+    height = Math.max(height, top + frameHeight);
+    frames += 1;
+    offset += 10;
+    if (frameFlags & 0x80) offset += 3 << ((frameFlags & 0x07) + 1);
+    // The LZW minimum code size, then the image data sub-blocks.
+    if (offset >= bytes.length) break;
+    offset = skipSubBlocks(offset + 1);
   }
-  return { width: bytes.readUInt16LE(6), height: bytes.readUInt16LE(8) };
+  return frames > 0 ? { width, height } : null;
 }
 
 /**

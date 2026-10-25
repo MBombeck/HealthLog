@@ -4,6 +4,7 @@ import { createCanvas } from "@napi-rs/canvas";
 import { describe, expect, it } from "vitest";
 
 import { readImageDimensions } from "../image-dimensions";
+import { gif } from "./gif-fixture";
 
 /**
  * The header walk both the avatar upload and the document thumbnail trust to
@@ -36,9 +37,58 @@ describe("readImageDimensions", () => {
     );
   });
 
-  it("reads a GIF's logical screen", () => {
-    const gif = Buffer.from("GIF89a\x25\x00\x17\x00\x00\x00\x00", "latin1");
-    expect(readImageDimensions(gif, "image/gif")).toEqual(SIZE);
+  it("reads a GIF's logical screen when its frames fit inside it", () => {
+    expect(
+      readImageDimensions(
+        gif({ width: 37, height: 23 }, [{ width: 37, height: 23 }]),
+        "image/gif",
+      ),
+    ).toEqual(SIZE);
+  });
+
+  it("sizes a GIF by its largest frame, not only its logical screen", () => {
+    // The decoder allocates for the frame: 10 x 10 on the screen, 20000 x
+    // 20000 in the descriptor was a 1.6 GB decode behind a 100-pixel check.
+    expect(
+      readImageDimensions(
+        gif({ width: 10, height: 10 }, [{ width: 20_000, height: 20_000 }]),
+        "image/gif",
+      ),
+    ).toEqual({ width: 20_000, height: 20_000 });
+    // A later frame, an offset, a global colour table and an extension in
+    // between are all walked.
+    expect(
+      readImageDimensions(
+        gif({ width: 10, height: 10, colourTable: true }, [
+          { width: 4, height: 4 },
+          { left: 60_000, top: 5, width: 5_000, height: 3, extension: true },
+        ]),
+        "image/gif",
+      ),
+    ).toEqual({ width: 65_000, height: 10 });
+  });
+
+  it("refuses a GIF it cannot walk to the end of a frame descriptor", () => {
+    const whole = gif({ width: 10, height: 10 }, [{ width: 10, height: 10 }]);
+    // Logical screen only: no frame, no size.
+    expect(readImageDimensions(whole.subarray(0, 13), "image/gif")).toBeNull();
+    // Cut inside the image descriptor.
+    expect(readImageDimensions(whole.subarray(0, 18), "image/gif")).toBeNull();
+    // A block no decoder knows.
+    const unknown = Buffer.from(whole);
+    unknown[13] = 0x99;
+    expect(readImageDimensions(unknown, "image/gif")).toBeNull();
+    // A zero-sized frame.
+    expect(
+      readImageDimensions(
+        gif({ width: 10, height: 10 }, [{ width: 0, height: 10 }]),
+        "image/gif",
+      ),
+    ).toBeNull();
+    // Not a GIF signature a decoder accepts.
+    const signature = Buffer.from(whole);
+    signature.write("GIF80a", 0, "latin1");
+    expect(readImageDimensions(signature, "image/gif")).toBeNull();
   });
 
   it("skips fill bytes, RSTn and TEM before the frame header", () => {
