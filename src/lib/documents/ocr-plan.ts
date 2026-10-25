@@ -66,8 +66,7 @@ export const SYNCHRONOUS_READ_SCHEDULE: OcrSchedule = {
 };
 
 /** How many reads the deadline leaves room for. */
-export function maxReadsFor(schedule: OcrSchedule | undefined): number {
-  if (!schedule) return Number.POSITIVE_INFINITY;
+export function maxReadsFor(schedule: OcrSchedule): number {
   return Math.max(
     1,
     Math.floor(schedule.maxModelCalls() / OCR_EXTRACT_MODEL_CALLS),
@@ -130,7 +129,7 @@ export function splitOcrText(
  */
 export function planTextReads(
   text: string,
-  schedule: OcrSchedule | undefined,
+  schedule: OcrSchedule,
   target: number,
 ): { chunks: OcrChunk[]; unreadParts: number } {
   const maxReads = Math.min(maxReadsFor(schedule), OCR_MAX_PAGES);
@@ -186,7 +185,7 @@ export async function planVisionReads(
   bytes: Buffer,
   mime: OcrVisionMime,
   pdfSupported: boolean,
-  schedule: OcrSchedule | undefined,
+  schedule: OcrSchedule,
 ): Promise<OcrVisionPlan> {
   if (mime !== "application/pdf") {
     return {

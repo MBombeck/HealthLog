@@ -462,7 +462,7 @@ export interface InboundReads {
 /** A document's text in parts at line boundaries, as many as the run's deadline allows. */
 export function planInboundTextReads(
   text: string,
-  schedule: OcrSchedule | undefined,
+  schedule: OcrSchedule,
 ): InboundReads {
   const { chunks, unreadParts } = planTextReads(
     text,
@@ -483,7 +483,7 @@ export function planInboundTextReads(
  */
 export async function planInboundReads(
   source: InboundReadSource,
-  schedule: OcrSchedule | undefined,
+  schedule: OcrSchedule,
 ): Promise<({ ok: true } & InboundReads) | { ok: false }> {
   if (source.mode === "text") {
     return { ok: true, ...planInboundTextReads(source.text, schedule) };

@@ -137,8 +137,11 @@ export async function executeOcrExtraction(args: {
   userId: string;
   input: OcrRunInput;
   budget: AiRunBudget | undefined;
-  /** The run's deadline; absent, the read is planned without one. */
-  schedule?: OcrSchedule;
+  /**
+   * The run's deadline. Required: the scan only runs in the background
+   * worker, and a read planned without a bound could make forty model calls.
+   */
+  schedule: OcrSchedule;
 }): Promise<AiRunOutcome<OcrExtractResponseDto>> {
   const { userId, input, budget, schedule } = args;
   const servedBy = input.pick.entry.providerType as ProviderChainType;
@@ -205,7 +208,7 @@ export async function executeOcrExtraction(args: {
         errorCode: "labs.ocr.tooLarge",
       });
     }
-    await schedule?.arm(parts.length * OCR_EXTRACT_MODEL_CALLS);
+    await schedule.arm(parts.length * OCR_EXTRACT_MODEL_CALLS);
     return read({
       mode: "text",
       chunks: parts.map((text) => ({ text, pages: [] })),
@@ -238,7 +241,7 @@ export async function executeOcrExtraction(args: {
     });
   }
 
-  await schedule?.arm(chunks.length * OCR_EXTRACT_MODEL_CALLS);
+  await schedule.arm(chunks.length * OCR_EXTRACT_MODEL_CALLS);
   const outcome = await read({ mode: "vision", chunks, totalPages });
   return outcome.ok && pageCoverage
     ? { ok: true, data: { ...outcome.data, pageCoverage } }
