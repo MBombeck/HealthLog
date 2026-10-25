@@ -577,7 +577,8 @@ services:
     # change (at pin time `16-alpine` resolved to this same digest, so
     # existing deployments see no image change). Minor releases share
     # the on-disk format — bumping this pin is safe without a dump /
-    # restore; a major-version bump (17+) is not.
+    # restore; a major-version bump (17+) is not, see
+    # docs/ops/postgres-major-upgrade.md.
     #
     # The pin only works as long as something watches it: PostgreSQL
     # publishes minor releases with security and data-corruption fixes and

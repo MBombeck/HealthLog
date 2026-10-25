@@ -393,6 +393,10 @@ curl -s http://localhost:3000/api/version
 Keep the dump until the new version has run for a few days, and keep your
 encryption key with it: a dump without the key cannot be read.
 
+The database image is a separate matter: a new Postgres minor is a change of
+the `image:` line, a new major (16 to 18) is a dump and restore, described in
+[`docs/ops/postgres-major-upgrade.md`](../ops/postgres-major-upgrade.md).
+
 The start log says what is about to happen before the migrations run:
 
 ```text
