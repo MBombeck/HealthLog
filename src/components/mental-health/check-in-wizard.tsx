@@ -67,6 +67,18 @@ interface StepWording {
   lang: string;
 }
 
+/**
+ * Each step focuses its question. The first step's question exists only once
+ * the wording's chunk has loaded, so the focus also follows that.
+ */
+function useStepFocus(step: number, hasWording: boolean) {
+  const headingRef = useRef<HTMLHeadingElement | null>(null);
+  useEffect(() => {
+    headingRef.current?.focus({ preventScroll: false });
+  }, [step, hasWording]);
+  return headingRef;
+}
+
 export function CheckInWizard({
   instrument,
   onSubmit,
@@ -99,10 +111,7 @@ export function CheckInWizard({
   const onFunctional = step === steps.functionalStep;
   const questionIndex = step - 1;
 
-  const headingRef = useRef<HTMLHeadingElement | null>(null);
-  useEffect(() => {
-    headingRef.current?.focus({ preventScroll: false });
-  }, [step]);
+  const headingRef = useStepFocus(step, Boolean(wording));
 
   function advance() {
     if (fromReview && isComplete(items)) {
