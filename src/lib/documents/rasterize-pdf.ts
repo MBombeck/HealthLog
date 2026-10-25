@@ -11,10 +11,11 @@
  * higher-fidelity native PDF block; a text-layer PDF is still read locally for
  * free before we ever rasterize).
  *
- * pdf.js is opened through `./pdfjs`, the one loader the local text read uses
- * too (two copies in one process break each other, #1277). It loads pdf.js
- * and `@napi-rs/canvas` (its Node canvas backend) lazily, keeping both out of
- * the eager server chunk. Rendering is pure local compute — no network,
+ * The rendering itself runs in a child process under a memory ceiling and a
+ * time limit (`./pdf-isolation.ts`), through the one pdf.js loader
+ * (`./pdf-engine.mjs`) the local text read uses too. A document built to
+ * exhaust memory or time ends that child and answers `resource-limit`; the
+ * server keeps running. Rendering is pure local compute — no network,
  * nothing written to disk.
  *
  * Bounds (denial-of-service + vision token cost): render at most the first
@@ -33,7 +34,7 @@ import { Buffer } from "node:buffer";
 import { annotate } from "@/lib/logging/context";
 
 import { nativeCanvasSupported } from "./native-canvas-support";
-import { openPdfDocument, resolvePdfjsAssets, type PdfjsAssets } from "./pdfjs";
+import { runPdfChild } from "./pdf-isolation";
 
 /**
  * Whether the PDF rasterizer is available in this build. The native
@@ -85,7 +86,9 @@ export interface RasterImage {
  * failure names its class so the caller can tell "this build cannot raster
  * at all" (`unsupported` — the native canvas binary is unusable, a capability
  * gap Anthropic's native PDF path would cover) from "this particular PDF
- * would not render" (`render-failed` — malformed / encrypted / zero pages).
+ * would not render" (`render-failed` — malformed / encrypted / zero pages),
+ * and both from "this PDF crossed the renderer's memory or time bound"
+ * (`resource-limit`), which the same bytes will cross again.
  */
 export type RasterResult =
   | {
@@ -104,158 +107,22 @@ export type RasterResult =
        */
       texts?: string[];
     }
-  | { ok: false; reason: "unsupported" | "render-failed" };
+  | { ok: false; reason: "unsupported" | "render-failed" | "resource-limit" };
+
+export {
+  pageText,
+  RASTER_PAGE_TEXT_MAX,
+  TEXT_LAYER_CUT_MARK,
+} from "./pdf-engine.mjs";
 
 /**
- * The canvas pdf.js draws into under Node is `@napi-rs/canvas`. pdf.js' own
- * declarations are written for the DOM and type the document's canvas factory
- * as a bare `object`, so the slice used here is named: a DOM-shaped canvas
- * and 2D context, plus the JPEG encoder the native canvas adds.
+ * How long a render may take: a base for opening the document plus a share
+ * per page. A page that takes longer than this is not a page a reader waits
+ * on, and the time limit is what ends a document built to keep the renderer
+ * busy.
  */
-interface RenderTarget {
-  canvas: HTMLCanvasElement & {
-    toBuffer(mime: "image/jpeg", quality?: number): Buffer;
-  };
-  context: CanvasRenderingContext2D;
-}
-interface RenderTargetFactory {
-  create(width: number, height: number): RenderTarget;
-  destroy?(target: RenderTarget): void;
-}
-
-/**
- * A page's text layer, as far as `pageText` reads it: text runs, and
- * marked-content markers that carry only a `type` and no text.
- */
-interface TextLayerPage {
-  getTextContent(): Promise<{
-    items: Array<{ str?: string; hasEOL?: boolean; type?: string }>;
-  }>;
-}
-
-interface GlobalFontsLike {
-  registerFromPath(path: string, nameAlias?: string): unknown;
-}
-
-let fallbackFamiliesRegistered = false;
-
-/**
- * Give the canvas a face for the generic families pdfjs falls back to.
- *
- * When pdfjs cannot use a font program (a damaged or unsupported embedded
- * font, or a non-embedded face outside the standard 14) it draws the text
- * with the canvas' own `fillText` under the PDF's font name and a generic
- * family. With no system fonts in the image that text vanished. Registering
- * Liberation Sans, which pdfjs ships, under `sans-serif`, `serif` and
- * `monospace` makes it legible instead. Once per process.
- */
-async function registerFallbackFamilies(assets: PdfjsAssets): Promise<void> {
-  if (fallbackFamiliesRegistered) return;
-  fallbackFamiliesRegistered = true;
-  const { GlobalFonts } = (await import("@napi-rs/canvas")) as unknown as {
-    GlobalFonts: GlobalFontsLike;
-  };
-  for (const family of ["sans-serif", "serif", "monospace"]) {
-    for (const file of assets.fallbackFonts) {
-      GlobalFonts.registerFromPath(file, family);
-    }
-  }
-}
-
-/** Share of dark pixels on a rendered page (luminance below half). */
-function inkRatio(
-  context: Pick<CanvasRenderingContext2D, "getImageData">,
-  width: number,
-  height: number,
-) {
-  const { data } = context.getImageData(0, 0, width, height);
-  let dark = 0;
-  for (let i = 0; i < data.length; i += 4) {
-    if (data[i]! + data[i + 1]! + data[i + 2]! < 384) dark++;
-  }
-  const pixels = data.length / 4;
-  return pixels > 0 ? dark / pixels : 0;
-}
-
-/** Test hook: the font registration is per process. */
-export function __resetFallbackFamiliesForTests(): void {
-  fallbackFamiliesRegistered = false;
-}
-
-/**
- * The most text kept from one page's text layer. Collection stops here while
- * the items are read, so a PDF whose content streams inflate to megabytes of
- * text cannot hold them in memory for the length of a run. A dense lab page
- * is well below it.
- */
-export const RASTER_PAGE_TEXT_MAX = 12_000;
-
-/** Marks where a text layer was cut. */
-export const TEXT_LAYER_CUT_MARK = "[text layer cut here]";
-
-/**
- * The head of `text` that fits `room` characters: cut at the last space before
- * the limit so no number is cut in half, or hard at the limit when the text
- * has no space to cut at.
- */
-function headThatFits(text: string, room: number): string {
-  if (text.length <= room) return text;
-  const head = text.slice(0, room);
-  const space = head.lastIndexOf(" ");
-  return space > 0 ? head.slice(0, space) : head;
-}
-
-/**
- * A page's text layer, line by line: what the PDF states as characters.
- * Empty for a page without one or on any failure. Past
- * `RASTER_PAGE_TEXT_MAX` it is cut (at a line, else a space, else hard) and
- * marked.
- */
-export async function pageText(page: TextLayerPage): Promise<string> {
-  const max = RASTER_PAGE_TEXT_MAX;
-  try {
-    const { items } = await page.getTextContent();
-    const lines: string[] = [];
-    let length = 0;
-    let line = "";
-    // Cut at the last whole line; only a page whose first line alone runs
-    // past the cap keeps part of that line, cut at a space or hard.
-    const cut = (): string => {
-      if (lines.length === 0) {
-        const room = max - TEXT_LAYER_CUT_MARK.length - 1;
-        const head = headThatFits(line.replace(/\s+/g, " ").trim(), room);
-        if (head.trim()) lines.push(head.trim());
-      }
-      lines.push(TEXT_LAYER_CUT_MARK);
-      return lines.join("\n");
-    };
-    /** Adds the line in hand; false when it does not fit. */
-    const flush = (): boolean => {
-      const clean = line.replace(/\s+/g, " ").trim();
-      if (!clean) {
-        line = "";
-        return true;
-      }
-      if (length + clean.length + 1 > max - TEXT_LAYER_CUT_MARK.length - 1) {
-        return false;
-      }
-      lines.push(clean);
-      length += clean.length + 1;
-      line = "";
-      return true;
-    };
-    for (const item of items) {
-      line += `${item.str ?? ""} `;
-      // A line that runs on without a break is judged at the cap, so one
-      // endless line cannot grow past it either.
-      if ((item.hasEOL || line.length > max) && !flush()) return cut();
-    }
-    if (!flush()) return cut();
-    return lines.join("\n");
-  } catch {
-    return "";
-  }
-}
+export const RASTER_TIMEOUT_BASE_MS = 15_000;
+export const RASTER_TIMEOUT_PER_PAGE_MS = 5_000;
 
 /**
  * Render the first `RASTER_MAX_PAGES` pages of a PDF to bounded JPEG images
@@ -269,11 +136,10 @@ export async function rasterizePdf(
   maxPages: number = RASTER_MAX_PAGES,
   opts: { withText?: boolean } = {},
 ): Promise<RasterResult> {
-  let task: Awaited<ReturnType<typeof openPdfDocument>> | null = null;
   // CPU-feature gate: pdfjs renders through @napi-rs/canvas (Skia), whose x64
-  // build uses AVX2 — an unsupported CPU dies with an uncatchable SIGILL on
-  // the first render. Degrade to the existing no-raster path instead (scanned
-  // PDFs stay unreadable for image-only providers; everything else works).
+  // build uses AVX2 — an unsupported CPU dies with SIGILL on the first
+  // render. Degrade to the existing no-raster path instead (scanned PDFs stay
+  // unreadable for image-only providers; everything else works).
   if (!nativeCanvasSupported()) {
     annotate({
       action: { name: "documents.rasterize.failed" },
@@ -281,114 +147,87 @@ export async function rasterizePdf(
     });
     return { ok: false, reason: "unsupported" };
   }
-  try {
-    const assets = resolvePdfjsAssets();
-    if (assets) {
-      await registerFallbackFamilies(assets);
-    } else {
-      annotate({
-        action: { name: "documents.rasterize.assetsMissing" },
-        meta: { reason: "pdfjs_assets_unresolved" },
-      });
-    }
 
-    task = await openPdfDocument(buffer);
-    const doc = await task.promise;
+  // Never exceed the standing DoS ceiling, even if a caller asks for more.
+  const cap = Math.min(Math.max(1, maxPages), RASTER_HARD_MAX_PAGES);
+  const result = await runPdfChild(
+    {
+      op: "render",
+      data: buffer,
+      options: {
+        maxPages: cap,
+        targetLongEdge: RASTER_TARGET_LONG_EDGE,
+        jpegQuality: RASTER_JPEG_QUALITY,
+        minInkRatio: RASTER_MIN_INK_RATIO,
+        withText: opts.withText === true,
+      },
+    },
+    { timeoutMs: RASTER_TIMEOUT_BASE_MS + cap * RASTER_TIMEOUT_PER_PAGE_MS },
+  );
 
-    // Never exceed the standing DoS ceiling, even if a caller asks for more.
-    const cap = Math.min(Math.max(1, maxPages), RASTER_HARD_MAX_PAGES);
-    const pageCount = Math.min(doc.numPages, cap);
-    const images: RasterImage[] = [];
-    const texts: string[] = [];
-    let blankPages = 0;
-
-    for (let pageNumber = 1; pageNumber <= pageCount; pageNumber++) {
-      const page = await doc.getPage(pageNumber);
-      try {
-        const base = page.getViewport({ scale: 1 });
-        const longEdge = Math.max(base.width, base.height);
-        // Cap the long edge, never upscale (scale ≤ 1).
-        const scale =
-          longEdge > 0 ? Math.min(1, RASTER_TARGET_LONG_EDGE / longEdge) : 1;
-        const viewport = page.getViewport({ scale });
-
-        const factory = doc.canvasFactory as RenderTargetFactory;
-        const cc = factory.create(
-          Math.ceil(viewport.width),
-          Math.ceil(viewport.height),
-        );
-        await page.render({
-          canvasContext: cc.context,
-          viewport,
-          canvas: cc.canvas,
-        }).promise;
-        if (
-          inkRatio(cc.context, cc.canvas.width, cc.canvas.height) <
-          RASTER_MIN_INK_RATIO
-        ) {
-          blankPages++;
-        }
-        const jpeg = cc.canvas.toBuffer("image/jpeg", RASTER_JPEG_QUALITY);
-        images.push({
-          mediaType: "image/jpeg",
-          dataBase64: jpeg.toString("base64"),
-        });
-        factory.destroy?.(cc);
-        if (opts.withText) texts.push(await pageText(page));
-      } finally {
-        page.cleanup();
-      }
-    }
-
-    if (images.length === 0) {
-      // Refs #776 — the zero-pages shape must be as loud as a throw: a
-      // document that "rendered" nothing is a failed rasterization, and the
-      // wide event is what lets an operator see WHY a scan stayed unread.
+  if (!result.ok) {
+    if (result.reason === "limit") {
       annotate({
         action: { name: "documents.rasterize.failed" },
-        meta: { reason: "zero_pages", pageCount: doc.numPages },
+        meta: { reason: "resource_limit", limit: result.limit },
       });
-      return { ok: false, reason: "render-failed" };
+      return { ok: false, reason: "resource-limit" };
     }
-    if (blankPages === images.length) {
-      // Every rendered page came out empty. Sending those to a vision model
-      // buys a transcript of nothing that would be indexed as a success; say
-      // the render failed instead, so the read reports `raster-failed`.
-      annotate({
-        action: { name: "documents.rasterize.failed" },
-        meta: { reason: "blank_pages", pages: images.length },
-      });
-      return { ok: false, reason: "render-failed" };
-    }
-    annotate({
-      action: { name: "documents.rasterize.ok" },
-      meta: { pages: images.length, cappedFrom: doc.numPages, blankPages },
-    });
-    return {
-      ok: true,
-      images,
-      pageCount: doc.numPages,
-      ...(opts.withText ? { texts } : {}),
-    };
-  } catch (err) {
     annotate({
       action: { name: "documents.rasterize.failed" },
       meta: {
-        reason: err instanceof Error ? err.name : "unknown",
-        // The message pins WHY a render failed (bundled-module mismatch, an
-        // encrypted/odd PDF, a font issue) — the name alone is opaque. Bounded
-        // so a pathological message can't bloat the wide event.
-        message: err instanceof Error ? err.message.slice(0, 300) : String(err),
+        reason: result.name,
+        // The message pins WHY a render failed (an encrypted or odd PDF, a
+        // font issue) — the name alone is opaque. Bounded so a pathological
+        // message can't bloat the wide event.
+        message: result.message.slice(0, 300),
       },
     });
     return { ok: false, reason: "render-failed" };
-  } finally {
-    if (task) {
-      try {
-        await task.destroy();
-      } catch {
-        // Best-effort teardown; a destroy failure must not mask the result.
-      }
-    }
   }
+
+  const doc = result.value;
+  if (doc.assetsMissing) {
+    annotate({
+      action: { name: "documents.rasterize.assetsMissing" },
+      meta: { reason: "pdfjs_assets_unresolved" },
+    });
+  }
+  if (doc.pages.length === 0) {
+    // Refs #776 — the zero-pages shape must be as loud as a throw: a
+    // document that "rendered" nothing is a failed rasterization, and the
+    // wide event is what lets an operator see WHY a scan stayed unread.
+    annotate({
+      action: { name: "documents.rasterize.failed" },
+      meta: { reason: "zero_pages", pageCount: doc.pageCount },
+    });
+    return { ok: false, reason: "render-failed" };
+  }
+  const blankPages = doc.pages.filter((page) => page.blank).length;
+  if (blankPages === doc.pages.length) {
+    // Every rendered page came out empty. Sending those to a vision model
+    // buys a transcript of nothing that would be indexed as a success; say
+    // the render failed instead, so the read reports `raster-failed`.
+    annotate({
+      action: { name: "documents.rasterize.failed" },
+      meta: { reason: "blank_pages", pages: doc.pages.length },
+    });
+    return { ok: false, reason: "render-failed" };
+  }
+  annotate({
+    action: { name: "documents.rasterize.ok" },
+    meta: { pages: doc.pages.length, cappedFrom: doc.pageCount, blankPages },
+  });
+  const images: RasterImage[] = doc.pages.map((page) => ({
+    mediaType: "image/jpeg",
+    dataBase64: page.jpeg.toString("base64"),
+  }));
+  return {
+    ok: true,
+    images,
+    pageCount: doc.pageCount,
+    ...(opts.withText
+      ? { texts: doc.pages.map((page) => page.text ?? "") }
+      : {}),
+  };
 }

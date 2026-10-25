@@ -167,6 +167,7 @@ export type ThumbnailSkipReason =
   | "native-canvas-unsupported"
   | "pixel-cap"
   | "raster-failed"
+  | "resource-limit"
   | "empty-render"
   | "error";
 
@@ -288,6 +289,11 @@ export async function generateThumbnail(
     if (mimeType === "application/pdf") {
       // Page 1 only — a preview never renders the whole document.
       const raster = await rasterizePdf(bytes, 1);
+      if (!raster.ok && raster.reason === "resource-limit") {
+        // The page exhausted the renderer's memory or time bound; the same
+        // bytes will again, so the job records it as final.
+        return { ok: false, reason: "resource-limit" };
+      }
       if (!raster.ok || raster.images.length === 0) {
         return { ok: false, reason: "raster-failed" };
       }
