@@ -77,6 +77,8 @@ describe("the Postgres 16 -> 18 move in docker-compose.yml", () => {
     // The checks run before the restore, in this order.
     const order = [
       "PG_VERSION",
+      // Never touch the old volume while the database service runs on it.
+      'if [ "$$NEWVER" -lt 180000 ]',
       "$$MARK",
       "$$MOVING",
       'elif [ "$$TABLES" != 0 ]',

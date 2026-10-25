@@ -17,7 +17,9 @@ Postgres 18 database is up and before the app, and it exits in a second when
 there is nothing to move. When the old `pgdata` volume holds a Postgres 16
 database and the new one is empty, it:
 
-1. checks there is room on the disk for a second copy;
+1. checks that the database service runs Postgres 18, and that there is room
+   on the disk for a second copy and for the dump the app takes before its
+   first migration;
 2. starts Postgres 16 inside its own container on the old volume, reachable
    only from inside that container;
 3. streams a dump into Postgres 18 in a single transaction;
@@ -55,6 +57,29 @@ HEALTHLOG_IMAGE_REF=:v1.45.0 docker compose up -d
 ```
 
 Anything written after the move lives only in the Postgres 18 volume.
+`db-upgrade` can stay in the file: it sees that the database service runs
+Postgres 16 and leaves that volume alone. This also holds after a move that
+stopped half-way.
+
+## Updating again after going back
+
+If you used Postgres 16 again after going back, the Postgres 18 volume holds
+the state of the day of the move, not what you wrote since. `db-upgrade`
+notices that the old database changed after the move and refuses to start on
+the old copy. To move the current 16 database, remove the old copy and the
+marker, then start again:
+
+```bash
+docker compose down
+docker volume rm <project>_postgres-data
+docker compose run --rm --entrypoint rm db-upgrade \
+  /var/lib/postgresql/data/HEALTHLOG_MOVED_TO_POSTGRES_18
+docker compose up -d
+```
+
+`docker volume ls` shows the volume's full name. Removing it deletes what was
+written on Postgres 18 before you went back; take a dump of it first if any
+of that matters.
 
 ## Afterwards
 
