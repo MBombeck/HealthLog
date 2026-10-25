@@ -21,7 +21,9 @@ ROOT=$(git rev-parse --show-toplevel)
 # The last release whose compose file ran Postgres 16.
 OLD_REF=${OLD_REF:-v1.45.0}
 PROJECT=hl-db-upgrade-check
-PORT=${CHECK_DB_PORT:-55416}
+# A free port unless CHECK_DB_PORT names one, so the check never collides with
+# another stack on the same machine.
+PORT=${CHECK_DB_PORT:-$(node -e "const s=require('node:net').createServer().listen(0,'127.0.0.1',()=>{console.log(s.address().port);s.close()})")}
 WORK=$(mktemp -d)
 
 export PRISMA_HIDE_UPDATE_MESSAGE=1
@@ -63,11 +65,40 @@ run_upgrade() {
 }
 upgrade_log() { docker logs healthlog-db-upgrade 2>&1 | grep '^db-upgrade:' || true; }
 
+# The container can report healthy before its published port forwards (Docker
+# Desktop and OrbStack set the forward up a moment later), and a migrate
+# started in that gap failed with "Can't reach database server". So wait
+# until the port answers, for at most thirty seconds, and retry the migrate
+# within the same bound.
+wait_for_port() {
+  local i=0
+  until node -e "
+    const s = require('node:net').connect(Number(process.argv[1]), '127.0.0.1');
+    s.on('connect', () => { s.end(); process.exit(0); });
+    s.on('error', () => process.exit(1));
+  " "$PORT" 2>/dev/null; do
+    i=$((i + 1))
+    [ "$i" -lt 30 ] || return 1
+    sleep 1
+  done
+}
+migrate_old() {
+  local started=$SECONDS
+  until DATABASE_URL="postgresql://healthlog:$POSTGRES_PASSWORD@127.0.0.1:$PORT/healthlog?schema=public" \
+    node "$ROOT/node_modules/prisma/build/index.js" migrate deploy --schema "$ROOT/prisma/schema.prisma" >"$WORK/migrate.log" 2>&1; do
+    if [ $((SECONDS - started)) -ge 30 ] || ! grep -q "P1001" "$WORK/migrate.log"; then
+      cat "$WORK/migrate.log" >&2
+      return 1
+    fi
+    sleep 1
+  done
+}
+
 down_all
 step "a v1.45 database on Postgres 16"
-old up -d --wait db >/dev/null 2>&1
-DATABASE_URL="postgresql://healthlog:$POSTGRES_PASSWORD@127.0.0.1:$PORT/healthlog?schema=public" \
-  node "$ROOT/node_modules/prisma/build/index.js" migrate deploy --schema "$ROOT/prisma/schema.prisma" >/dev/null
+old up -d --wait db >"$WORK/up.log" 2>&1 || { cat "$WORK/up.log" >&2; fail "the v1.45 database did not start"; }
+wait_for_port || fail "port $PORT did not answer within thirty seconds"
+migrate_old || fail "the migrations did not apply to the v1.45 database"
 old exec -T db psql -U healthlog -d healthlog -v ON_ERROR_STOP=1 -q <<'SQL'
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 CREATE SCHEMA check_probe;
