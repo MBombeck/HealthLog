@@ -82,6 +82,10 @@ export interface KitKeyNeed {
    * retention cannot be read, so they may need it indefinitely.
    */
   offhostUntil: string | null;
+  /** Database dumps on this server written under it. */
+  localDumps: number;
+  /** Off-host database dumps need it until this instant, or `"unknown"`. */
+  offhostDumpsUntil: string | null;
 }
 
 /** One key the kit lists, with its verdict. */
@@ -204,9 +208,18 @@ export function sameKit(
  */
 export function neededKeyIds(needs: BackupKeyNeeds, now: Date): Set<string> {
   const needed = new Set<string>();
+  const stillThere = (until: string | null) =>
+    until === null || Date.parse(until) > +now;
   for (const row of needs.stored) needed.add(row.keyId);
   for (const row of needs.offhost) {
-    if (row.neededUntil === null || Date.parse(row.neededUntil) > +now) {
+    if (stillThere(row.neededUntil)) needed.add(row.keyId);
+  }
+  // A database dump needs the key its rows were written under while it
+  // exists: on this server until retention removes it, in the bucket until
+  // the rule for `database/` expires it.
+  for (const row of needs.dumps) {
+    if (row.local > 0) needed.add(row.keyId);
+    else if (row.offhost && stillThere(row.offhost.neededUntil)) {
       needed.add(row.keyId);
     }
   }
@@ -229,6 +242,7 @@ export function applicationKitKeys(args: {
   return [...ids].sort().map((id) => {
     const fingerprint = args.fingerprintOf(id);
     const offhost = args.needs.offhost.find((row) => row.keyId === id);
+    const dump = args.needs.dumps.find((row) => row.keyId === id);
     return {
       kind: "application" as const,
       id,
@@ -241,6 +255,13 @@ export function applicationKitKeys(args: {
           args.needs.stored.find((row) => row.keyId === id)?.copies ?? 0,
         offhostUntil:
           offhost && needed.has(id) ? (offhost.neededUntil ?? "unknown") : null,
+        localDumps: dump?.local ?? 0,
+        offhostDumpsUntil:
+          dump?.offhost &&
+          (dump.offhost.neededUntil === null ||
+            Date.parse(dump.offhost.neededUntil) > +args.now)
+            ? (dump.offhost.neededUntil ?? "unknown")
+            : null,
       },
       problem: fingerprint === null ? ("not_configured" as const) : null,
     };
@@ -248,7 +269,14 @@ export function applicationKitKeys(args: {
 }
 
 function noNeed(active: boolean): KitKeyNeed {
-  return { active, configured: true, storedCopies: 0, offhostUntil: null };
+  return {
+    active,
+    configured: true,
+    storedCopies: 0,
+    offhostUntil: null,
+    localDumps: 0,
+    offhostDumpsUntil: null,
+  };
 }
 
 /** Pure: the off-host keys, from the two variables as the operator set them. */

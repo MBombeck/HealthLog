@@ -156,6 +156,7 @@ export async function runDatabaseBackup(
   });
 
   let scratch: string | null = null;
+  let activeKeyId: string | null = null;
   try {
     if (!databaseBackupEnabled(env)) {
       report.status = "skipped";
@@ -182,6 +183,7 @@ export async function runDatabaseBackup(
         deadline: options.deadline,
       });
       if (keepLocal) report.local = "written";
+      activeKeyId = dump.manifest.keys.encryption.activeKeyId;
       report.fileName = basename(dump.dumpPath);
       report.dumpBytes = dump.manifest.dump.bytes;
 
@@ -233,6 +235,7 @@ export async function runDatabaseBackup(
       localResult: report.local,
       offhostResult: report.offhost,
       error: report.error,
+      activeKeyId,
     },
   });
   await prisma.databaseBackupRun.deleteMany({

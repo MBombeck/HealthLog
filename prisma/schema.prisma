@@ -6032,6 +6032,11 @@ model DatabaseBackupRun {
   offhostResult String    @map("offhost_result")
   /// Why the run failed or was skipped, trimmed. Never key material.
   error         String?
+  /// The application key id the dump's rows were written under (its
+  /// manifest's active key). A restore refuses without it. Reader:
+  /// `readBackupKeyNeeds`, which keeps the key in the recovery kit while the
+  /// off-host copy of this dump may still be in the bucket.
+  activeKeyId   String?   @map("active_key_id")
 
   @@index([startedAt])
   @@map("database_backup_runs")

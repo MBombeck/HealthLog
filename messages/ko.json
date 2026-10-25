@@ -8393,7 +8393,10 @@
         "columnsHide": "표 숨기기",
         "columnsShowAll": "열 {count}개 모두 보기",
         "columnsShowWithRows": "행이 있는 열만",
-        "columnsNoneWithRows": "아직 행이 있는 암호화 열이 없어요."
+        "columnsNoneWithRows": "아직 행이 있는 암호화 열이 없어요.",
+        "backupsDumpLocalLine": "키 {key}: 이 서버의 데이터베이스 덤프 {count}개가 이 키로 작성되었습니다. 보존 정책이 덤프를 지울 때까지 필요합니다.",
+        "backupsDumpOffhostLine": "키 {key}: 이 키로 작성된 최신 데이터베이스 덤프가 {when}에 버킷에 저장되었습니다. {until}까지 필요합니다",
+        "backupsDumpOffhostLineUnknown": "키 {key}: 이 키로 작성된 최신 데이터베이스 덤프가 {when}에 버킷에 저장되었습니다. 버킷이 database/를 얼마나 보관하는지 알 수 없으므로 그 덤프가 사라진 것을 확인할 때까지 키를 유지하세요."
       },
       "maintenance": {
         "title": "측정값 테이블 유지 관리",
@@ -8604,7 +8607,10 @@
         "offhostUnknown": "버킷이 외부 보관 사본을 보관하는 동안 필요합니다.",
         "backupActive": "새 외부 보관 사본을 모두 봉인합니다.",
         "backupPrevious": "마지막 키 변경 전에 기록된 외부 보관 사본을 엽니다.",
-        "token": "세션, 토큰, 공유 링크에 서명합니다. 이 키가 없으면 모두 로그아웃되지만 데이터는 잃지 않습니다."
+        "token": "세션, 토큰, 공유 링크에 서명합니다. 이 키가 없으면 모두 로그아웃되지만 데이터는 잃지 않습니다.",
+        "localDumps": "이 서버의 데이터베이스 덤프 {count}개에 필요합니다.",
+        "offhostDumpsUntil": "{date}까지 외부 보관 데이터베이스 덤프에 필요합니다.",
+        "offhostDumpsUnknown": "버킷이 외부 보관 데이터베이스 덤프를 보관하는 동안 필요합니다."
       },
       "source": "{variable}에 설정됨.",
       "status": {

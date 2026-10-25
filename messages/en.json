@@ -8418,7 +8418,10 @@
         "columnsHide": "Hide the table",
         "columnsShowAll": "Show all {count} columns",
         "columnsShowWithRows": "Only columns with rows",
-        "columnsNoneWithRows": "No encrypted column holds rows yet."
+        "columnsNoneWithRows": "No encrypted column holds rows yet.",
+        "backupsDumpLocalLine": "Key {key}: {count} database dumps on this server were written under it; it is needed until retention removes them.",
+        "backupsDumpOffhostLine": "Key {key}: the newest database dump written under it went into the bucket on {when}; needed there until {until}",
+        "backupsDumpOffhostLineUnknown": "Key {key}: the newest database dump written under it went into the bucket on {when}. How long the bucket keeps database/ is unknown, so keep the key until you know that dump is gone."
       },
       "maintenance": {
         "title": "Measurement table maintenance",
@@ -8604,7 +8607,10 @@
         "offhostUnknown": "Needed by off-host copies for as long as the bucket keeps them.",
         "backupActive": "Seals every new off-host copy.",
         "backupPrevious": "Opens off-host copies written before the last key change.",
-        "token": "Signs sessions, tokens and share links. Without it everyone is signed out, but no data is lost."
+        "token": "Signs sessions, tokens and share links. Without it everyone is signed out, but no data is lost.",
+        "localDumps": "Needed by {count} database dumps on this server.",
+        "offhostDumpsUntil": "Needed by off-host database dumps until {date}.",
+        "offhostDumpsUnknown": "Needed by off-host database dumps for as long as the bucket keeps them."
       },
       "source": "Set in {variable}.",
       "status": {

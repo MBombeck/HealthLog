@@ -8418,7 +8418,10 @@
         "columnsHide": "Ocultar la tabla",
         "columnsShowAll": "Mostrar las {count} columnas",
         "columnsShowWithRows": "Solo columnas con filas",
-        "columnsNoneWithRows": "Ninguna columna cifrada contiene filas todavía."
+        "columnsNoneWithRows": "Ninguna columna cifrada contiene filas todavía.",
+        "backupsDumpLocalLine": "Clave {key}: {count} volcados de la base de datos en este servidor se escribieron con ella; se necesita hasta que la retención los elimine.",
+        "backupsDumpOffhostLine": "Clave {key}: el volcado de la base de datos más reciente escrito con ella entró en el bucket el {when}; se necesita allí hasta el {until}",
+        "backupsDumpOffhostLineUnknown": "Clave {key}: el volcado de la base de datos más reciente escrito con ella entró en el bucket el {when}. No se sabe cuánto tiempo conserva el bucket database/, así que conserva la clave hasta saber que ese volcado ya no está."
       },
       "maintenance": {
         "title": "Mantenimiento de la tabla de mediciones",
@@ -8604,7 +8607,10 @@
         "offhostUnknown": "La necesitan las copias fuera del host mientras el bucket las conserve.",
         "backupActive": "Sella cada nueva copia fuera del host.",
         "backupPrevious": "Abre las copias fuera del host escritas antes del último cambio de clave.",
-        "token": "Firma sesiones, tokens y enlaces para compartir. Sin ella se cierra la sesión de todo el mundo, pero no se pierden datos."
+        "token": "Firma sesiones, tokens y enlaces para compartir. Sin ella se cierra la sesión de todo el mundo, pero no se pierden datos.",
+        "localDumps": "La necesitan {count} volcados de la base de datos en este servidor.",
+        "offhostDumpsUntil": "La necesitan los volcados de la base de datos fuera del host hasta el {date}.",
+        "offhostDumpsUnknown": "La necesitan los volcados de la base de datos fuera del host mientras el bucket los conserve."
       },
       "source": "Definida en {variable}.",
       "status": {

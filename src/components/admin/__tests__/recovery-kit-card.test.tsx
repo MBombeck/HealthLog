@@ -40,6 +40,8 @@ const need = (over: Partial<KitKey["need"]> = {}): KitKey["need"] => ({
   configured: true,
   storedCopies: 0,
   offhostUntil: null,
+  localDumps: 0,
+  offhostDumpsUntil: null,
   ...over,
 });
 

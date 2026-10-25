@@ -8418,7 +8418,10 @@
         "columnsHide": "Nascondi la tabella",
         "columnsShowAll": "Mostra tutte le {count} colonne",
         "columnsShowWithRows": "Solo colonne con righe",
-        "columnsNoneWithRows": "Nessuna colonna cifrata contiene ancora righe."
+        "columnsNoneWithRows": "Nessuna colonna cifrata contiene ancora righe.",
+        "backupsDumpLocalLine": "Chiave {key}: {count} dump del database su questo server sono stati scritti con essa; serve finché la conservazione non li rimuove.",
+        "backupsDumpOffhostLine": "Chiave {key}: il dump del database più recente scritto con essa è entrato nel bucket il {when}; serve lì fino al {until}",
+        "backupsDumpOffhostLineUnknown": "Chiave {key}: il dump del database più recente scritto con essa è entrato nel bucket il {when}. Non si sa per quanto il bucket conservi database/, quindi conserva la chiave finché non sai che quel dump non c'è più."
       },
       "maintenance": {
         "title": "Manutenzione della tabella delle misurazioni",
@@ -8604,7 +8607,10 @@
         "offhostUnknown": "Serve alle copie fuori host finché il bucket le conserva.",
         "backupActive": "Sigilla ogni nuova copia fuori host.",
         "backupPrevious": "Apre le copie fuori host scritte prima dell'ultimo cambio di chiave.",
-        "token": "Firma sessioni, token e link di condivisione. Senza di essa tutti vengono disconnessi, ma nessun dato va perso."
+        "token": "Firma sessioni, token e link di condivisione. Senza di essa tutti vengono disconnessi, ma nessun dato va perso.",
+        "localDumps": "Serve a {count} dump del database su questo server.",
+        "offhostDumpsUntil": "Serve ai dump del database fuori host fino al {date}.",
+        "offhostDumpsUnknown": "Serve ai dump del database fuori host finché il bucket li conserva."
       },
       "source": "Impostata in {variable}.",
       "status": {

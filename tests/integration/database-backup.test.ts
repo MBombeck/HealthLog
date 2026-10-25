@@ -196,6 +196,9 @@ describe("the nightly database dump", () => {
       error: null,
     });
     expect(Number(runs[0].dumpBytes)).toBe(manifest.dump.bytes);
+    // The key a restore of this dump needs, for the recovery kit.
+    expect(runs[0].activeKeyId).toBe(manifest.keys.encryption.activeKeyId);
+    expect(runs[0].activeKeyId).not.toBeNull();
     const health = await getDatabaseBackupHealth(
       new Date("2026-10-20T02:00:00Z"),
       backupEnv(),

@@ -88,6 +88,11 @@ interface EncryptionStatus {
       lastWrittenAt: string;
       neededUntil: string | null;
     }>;
+    dumps: Array<{
+      keyId: string;
+      local: number;
+      offhost: { lastWrittenAt: string; neededUntil: string | null } | null;
+    }>;
     offhostExpirationDays: number | null;
     retiredKeysStillNeeded: string[];
   };
@@ -306,9 +311,39 @@ export function EncryptionSection() {
                   })}
             </li>
           ))}
+          {s.backups.dumps.map((row) => (
+            <li key={`dump-${row.keyId}`}>
+              {[
+                row.local > 0
+                  ? t("admin.section.encryption.backupsDumpLocalLine", {
+                      key: row.keyId,
+                      count: row.local,
+                    })
+                  : null,
+                row.offhost
+                  ? row.offhost.neededUntil
+                    ? t("admin.section.encryption.backupsDumpOffhostLine", {
+                        key: row.keyId,
+                        when: fmt.dateTime(row.offhost.lastWrittenAt),
+                        until: fmt.dateTime(row.offhost.neededUntil),
+                      })
+                    : t(
+                        "admin.section.encryption.backupsDumpOffhostLineUnknown",
+                        {
+                          key: row.keyId,
+                          when: fmt.dateTime(row.offhost.lastWrittenAt),
+                        },
+                      )
+                  : null,
+              ]
+                .filter((line): line is string => line !== null)
+                .join(" ")}
+            </li>
+          ))}
           {s.backups.stored.length === 0 &&
           s.backups.unrecorded.copies === 0 &&
-          s.backups.offhost.length === 0 ? (
+          s.backups.offhost.length === 0 &&
+          s.backups.dumps.length === 0 ? (
             <li className="text-muted-foreground">
               {t("admin.section.encryption.backupsNone")}
             </li>

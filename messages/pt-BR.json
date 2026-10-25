@@ -8418,7 +8418,10 @@
         "columnsHide": "Ocultar a tabela",
         "columnsShowAll": "Mostrar todas as {count} colunas",
         "columnsShowWithRows": "Somente colunas com linhas",
-        "columnsNoneWithRows": "Nenhuma coluna criptografada contém linhas ainda."
+        "columnsNoneWithRows": "Nenhuma coluna criptografada contém linhas ainda.",
+        "backupsDumpLocalLine": "Chave {key}: {count} dumps do banco de dados neste servidor foram gravados com ela; ela é necessária até que a retenção os remova.",
+        "backupsDumpOffhostLine": "Chave {key}: o dump do banco de dados mais recente gravado com ela foi para o bucket em {when}; necessária lá até {until}",
+        "backupsDumpOffhostLineUnknown": "Chave {key}: o dump do banco de dados mais recente gravado com ela foi para o bucket em {when}. Não se sabe por quanto tempo o bucket mantém database/, então mantenha a chave até saber que aquele dump se foi."
       },
       "maintenance": {
         "title": "Manutenção da tabela de medições",
@@ -8604,7 +8607,10 @@
         "offhostUnknown": "Necessária para as cópias fora do host enquanto o bucket as mantiver.",
         "backupActive": "Sela cada nova cópia fora do host.",
         "backupPrevious": "Abre as cópias fora do host gravadas antes da última troca de chave.",
-        "token": "Assina sessões, tokens e links de compartilhamento. Sem ela, todos são desconectados, mas nenhum dado é perdido."
+        "token": "Assina sessões, tokens e links de compartilhamento. Sem ela, todos são desconectados, mas nenhum dado é perdido.",
+        "localDumps": "Necessária para {count} dumps do banco de dados neste servidor.",
+        "offhostDumpsUntil": "Necessária para os dumps do banco de dados fora do host até {date}.",
+        "offhostDumpsUnknown": "Necessária para os dumps do banco de dados fora do host enquanto o bucket os mantiver."
       },
       "source": "Definida em {variable}.",
       "status": {

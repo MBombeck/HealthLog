@@ -146,8 +146,10 @@ once the lifecycle rule has expired every object written under it.
 A copy carries the database's ciphertext as stored, so it needs the
 application keys it was written under, also after a rotation. Keep a retired
 `ENCRYPTION_KEYS` entry until no copy you may still restore needs it. **Admin →
-Encryption → Keys the backups still need** lists them. Off-host objects also
-need `BACKUP_ENCRYPTION_KEY` (or the previous key that wrote them).
+Encryption → Keys the backups still need** lists them, the database dumps
+included: a dump needs the key that was active when it was taken, for as long
+as it is kept on this server or in the bucket. Off-host objects also need
+`BACKUP_ENCRYPTION_KEY` (or the previous key that wrote them).
 
 ## Size and memory
 

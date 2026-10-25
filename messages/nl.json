@@ -8418,7 +8418,10 @@
         "columnsHide": "Tabel verbergen",
         "columnsShowAll": "Alle {count} kolommen tonen",
         "columnsShowWithRows": "Alleen kolommen met rijen",
-        "columnsNoneWithRows": "Nog geen enkele versleutelde kolom bevat rijen."
+        "columnsNoneWithRows": "Nog geen enkele versleutelde kolom bevat rijen.",
+        "backupsDumpLocalLine": "Sleutel {key}: {count} databasedumps op deze server zijn onder deze sleutel geschreven; hij is nodig tot de bewaartermijn ze verwijdert.",
+        "backupsDumpOffhostLine": "Sleutel {key}: de nieuwste databasedump onder deze sleutel is op {when} in de bucket gezet; daar nodig tot {until}",
+        "backupsDumpOffhostLineUnknown": "Sleutel {key}: de nieuwste databasedump onder deze sleutel is op {when} in de bucket gezet. Hoe lang de bucket database/ bewaart, is onbekend, dus bewaar de sleutel tot je zeker weet dat die dump weg is."
       },
       "maintenance": {
         "title": "Onderhoud van de metingentabel",
@@ -8604,7 +8607,10 @@
         "offhostUnknown": "Nodig voor externe kopieën zolang de bucket ze bewaart.",
         "backupActive": "Verzegelt elke nieuwe externe kopie.",
         "backupPrevious": "Opent externe kopieën die vóór de laatste sleutelwissel zijn geschreven.",
-        "token": "Ondertekent sessies, tokens en deellinks. Zonder deze sleutel wordt iedereen afgemeld, maar gaan er geen gegevens verloren."
+        "token": "Ondertekent sessies, tokens en deellinks. Zonder deze sleutel wordt iedereen afgemeld, maar gaan er geen gegevens verloren.",
+        "localDumps": "Nodig voor {count} databasedumps op deze server.",
+        "offhostDumpsUntil": "Nodig voor externe databasedumps tot {date}.",
+        "offhostDumpsUnknown": "Nodig voor externe databasedumps zolang de bucket ze bewaart."
       },
       "source": "Ingesteld in {variable}.",
       "status": {

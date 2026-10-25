@@ -8418,7 +8418,10 @@
         "columnsHide": "Tabelle ausblenden",
         "columnsShowAll": "Alle {count} Spalten anzeigen",
         "columnsShowWithRows": "Nur Spalten mit Zeilen",
-        "columnsNoneWithRows": "Noch keine verschlüsselte Spalte enthält Zeilen."
+        "columnsNoneWithRows": "Noch keine verschlüsselte Spalte enthält Zeilen.",
+        "backupsDumpLocalLine": "Schlüssel {key}: {count} Datenbank-Dumps auf diesem Server wurden unter ihm geschrieben; er wird gebraucht, bis die Aufbewahrung sie entfernt.",
+        "backupsDumpOffhostLine": "Schlüssel {key}: Der neueste Datenbank-Dump, der unter ihm geschrieben wurde, kam am {when} in den Bucket; dort gebraucht bis {until}",
+        "backupsDumpOffhostLineUnknown": "Schlüssel {key}: Der neueste Datenbank-Dump, der unter ihm geschrieben wurde, kam am {when} in den Bucket. Wie lange der Bucket database/ behält, ist unbekannt; behalte den Schlüssel, bis dieser Dump sicher weg ist."
       },
       "maintenance": {
         "title": "Pflege der Messwert-Tabelle",
@@ -8604,7 +8607,10 @@
         "offhostUnknown": "Wird von externen Kopien gebraucht, solange der Bucket sie aufbewahrt.",
         "backupActive": "Versiegelt jede neue externe Kopie.",
         "backupPrevious": "Öffnet externe Kopien, die vor dem letzten Schlüsselwechsel geschrieben wurden.",
-        "token": "Signiert Sitzungen, Tokens und Freigabelinks. Ohne ihn werden alle abgemeldet, Daten gehen aber nicht verloren."
+        "token": "Signiert Sitzungen, Tokens und Freigabelinks. Ohne ihn werden alle abgemeldet, Daten gehen aber nicht verloren.",
+        "localDumps": "Wird von {count} Datenbank-Dumps auf diesem Server gebraucht.",
+        "offhostDumpsUntil": "Wird von externen Datenbank-Dumps bis {date} gebraucht.",
+        "offhostDumpsUnknown": "Wird von externen Datenbank-Dumps gebraucht, solange der Bucket sie aufbewahrt."
       },
       "source": "Gesetzt in {variable}.",
       "status": {

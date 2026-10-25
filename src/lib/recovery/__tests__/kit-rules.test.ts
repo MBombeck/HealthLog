@@ -31,6 +31,7 @@ const NO_NEEDS: BackupKeyNeeds = {
   stored: [],
   unrecorded: { copies: 0, oldestAt: null },
   offhost: [],
+  dumps: [],
   offhostExpirationDays: null,
   retiredKeysStillNeeded: [],
 };
@@ -74,6 +75,43 @@ describe("which keys the kit lists", () => {
       problem: "not_configured",
       need: { configured: false, storedCopies: 3 },
     });
+  });
+
+  // A dump is restored only with the key its rows were written under; with
+  // it out of the kit, a rotation read as finished while every dump from
+  // before it, the pre-migration ones among them, still needed the old key.
+  it("keeps a retired key while a database dump written under it exists", () => {
+    const local: BackupKeyNeeds = {
+      ...NO_NEEDS,
+      dumps: [{ keyId: "v1", local: 2, offhost: null }],
+    };
+    expect(neededKeyIds(local, NOW)).toEqual(new Set(["v1"]));
+    const [v1] = appKeys(["v2"], "v2", local);
+    expect(v1).toMatchObject({
+      id: "v1",
+      problem: "not_configured",
+      need: { localDumps: 2, offhostDumpsUntil: null },
+    });
+
+    const offhost = (neededUntil: string | null): BackupKeyNeeds => ({
+      ...NO_NEEDS,
+      dumps: [
+        {
+          keyId: "v1",
+          local: 0,
+          offhost: { lastWrittenAt: NOW.toISOString(), neededUntil },
+        },
+      ],
+    });
+    const later = new Date(NOW.getTime() + 3 * DAY).toISOString();
+    expect(neededKeyIds(offhost(later), NOW).has("v1")).toBe(true);
+    expect(appKeys(["v1", "v2"], "v2", offhost(later))[0].need).toMatchObject({
+      offhostDumpsUntil: later,
+    });
+    // Unknown retention keeps it; an expiry that has passed lets it go.
+    expect(neededKeyIds(offhost(null), NOW).has("v1")).toBe(true);
+    const earlier = new Date(NOW.getTime() - DAY).toISOString();
+    expect(neededKeyIds(offhost(earlier), NOW).has("v1")).toBe(false);
   });
 
   it("keeps an off-host key while objects inside the retention need it", () => {

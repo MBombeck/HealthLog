@@ -8418,7 +8418,10 @@
         "columnsHide": "Masquer le tableau",
         "columnsShowAll": "Afficher les {count} colonnes",
         "columnsShowWithRows": "Seulement les colonnes avec des lignes",
-        "columnsNoneWithRows": "Aucune colonne chiffrée ne contient encore de lignes."
+        "columnsNoneWithRows": "Aucune colonne chiffrée ne contient encore de lignes.",
+        "backupsDumpLocalLine": "Clé {key} : {count} dumps de la base de données sur ce serveur ont été écrits avec elle ; elle est nécessaire jusqu'à ce que la rétention les supprime.",
+        "backupsDumpOffhostLine": "Clé {key} : le dump de la base de données le plus récent écrit avec elle est arrivé dans le bucket le {when} ; nécessaire jusqu'au {until}",
+        "backupsDumpOffhostLineUnknown": "Clé {key} : le dump de la base de données le plus récent écrit avec elle est arrivé dans le bucket le {when}. La durée de conservation de database/ dans le bucket est inconnue : gardez la clé jusqu'à être sûr que ce dump a disparu."
       },
       "maintenance": {
         "title": "Maintenance de la table des mesures",
@@ -8604,7 +8607,10 @@
         "offhostUnknown": "Nécessaire aux copies hors hôte tant que le bucket les conserve.",
         "backupActive": "Scelle chaque nouvelle copie hors hôte.",
         "backupPrevious": "Ouvre les copies hors hôte écrites avant le dernier changement de clé.",
-        "token": "Signe les sessions, les jetons et les liens de partage. Sans elle, tout le monde est déconnecté, mais aucune donnée n'est perdue."
+        "token": "Signe les sessions, les jetons et les liens de partage. Sans elle, tout le monde est déconnecté, mais aucune donnée n'est perdue.",
+        "localDumps": "Nécessaire à {count} dumps de la base de données sur ce serveur.",
+        "offhostDumpsUntil": "Nécessaire aux dumps de la base de données hors hôte jusqu'au {date}.",
+        "offhostDumpsUnknown": "Nécessaire aux dumps de la base de données hors hôte tant que le bucket les conserve."
       },
       "source": "Définie dans {variable}.",
       "status": {

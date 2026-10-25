@@ -8418,7 +8418,10 @@
         "columnsHide": "Ukryj tabelę",
         "columnsShowAll": "Pokaż wszystkie kolumny ({count})",
         "columnsShowWithRows": "Tylko kolumny z wierszami",
-        "columnsNoneWithRows": "Żadna zaszyfrowana kolumna nie zawiera jeszcze wierszy."
+        "columnsNoneWithRows": "Żadna zaszyfrowana kolumna nie zawiera jeszcze wierszy.",
+        "backupsDumpLocalLine": "Klucz {key}: {count} zrzutów bazy danych na tym serwerze zapisano pod nim; jest potrzebny, dopóki retencja ich nie usunie.",
+        "backupsDumpOffhostLine": "Klucz {key}: najnowszy zrzut bazy danych zapisany pod nim trafił do bucketu {when}; potrzebny tam do {until}",
+        "backupsDumpOffhostLineUnknown": "Klucz {key}: najnowszy zrzut bazy danych zapisany pod nim trafił do bucketu {when}. Nie wiadomo, jak długo bucket przechowuje database/, więc zachowaj klucz, dopóki nie masz pewności, że tego zrzutu już nie ma."
       },
       "maintenance": {
         "title": "Konserwacja tabeli pomiarów",
@@ -8604,7 +8607,10 @@
         "offhostUnknown": "Potrzebny kopiom poza hostem, dopóki bucket je przechowuje.",
         "backupActive": "Pieczętuje każdą nową kopię poza hostem.",
         "backupPrevious": "Otwiera kopie poza hostem zapisane przed ostatnią zmianą klucza.",
-        "token": "Podpisuje sesje, tokeny i linki udostępniania. Bez niego wszyscy zostaną wylogowani, ale żadne dane nie przepadną."
+        "token": "Podpisuje sesje, tokeny i linki udostępniania. Bez niego wszyscy zostaną wylogowani, ale żadne dane nie przepadną.",
+        "localDumps": "Potrzebny zrzutom bazy danych na tym serwerze: {count}.",
+        "offhostDumpsUntil": "Potrzebny zrzutom bazy danych poza hostem do {date}.",
+        "offhostDumpsUnknown": "Potrzebny zrzutom bazy danych poza hostem, dopóki bucket je przechowuje."
       },
       "source": "Ustawiony w {variable}.",
       "status": {

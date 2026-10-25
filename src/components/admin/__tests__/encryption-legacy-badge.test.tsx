@@ -44,6 +44,7 @@ function statusWith(configuredKeyCount: number) {
       stored: [],
       unrecorded: { copies: 0, oldestAt: null },
       offhost: [],
+      dumps: [],
       offhostExpirationDays: null,
       retiredKeysStillNeeded: [],
     },

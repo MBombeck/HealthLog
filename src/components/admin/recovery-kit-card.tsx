@@ -138,6 +138,20 @@ function KeyNeeds({ k }: { k: KitKey }) {
         }),
       );
     }
+    if (k.need.localDumps > 0) {
+      lines.push(
+        t("admin.recoveryKit.need.localDumps", { count: k.need.localDumps }),
+      );
+    }
+    if (k.need.offhostDumpsUntil === "unknown") {
+      lines.push(t("admin.recoveryKit.need.offhostDumpsUnknown"));
+    } else if (k.need.offhostDumpsUntil) {
+      lines.push(
+        t("admin.recoveryKit.need.offhostDumpsUntil", {
+          date: fmt.date(new Date(k.need.offhostDumpsUntil)),
+        }),
+      );
+    }
   }
   lines.push(t("admin.recoveryKit.source", { variable: k.source }));
   return <p className="text-muted-foreground text-xs">{lines.join(" ")}</p>;

@@ -137,10 +137,15 @@ under `v1` (the synthetic id assigned to the existing `ENCRYPTION_KEY`).
 > So before step 4, also check **Admin → Encryption → Keys the backups still
 > need**. It lists, per key id, the stored copies that need it with the oldest
 > date, and when the last off-host copy needing it expires under the bucket's
-> lifecycle rule. Keep the old key in `ENCRYPTION_KEYS` until it is no longer
-> listed there (the weekly copy replaces itself within a week; delete old
-> uploaded copies you no longer want, and wait out the off-host retention), or
-> accept that those copies cannot be restored. Copies written before v1.39.3
+> lifecycle rule. The database dumps are listed too: a dump is restored only
+> with the key that was active when it was taken (`db-restore` refuses
+> without it), so the old key stays listed while a nightly or pre-migration
+> dump taken under it is on this server, and until the bucket's rule for
+> `database/` has expired the off-host copies. Keep the old key in
+> `ENCRYPTION_KEYS` until it is no longer listed there (the weekly copy
+> replaces itself within a week; delete old uploaded copies you no longer
+> want, and wait out the dump and off-host retention), or accept that those
+> copies cannot be restored. Copies written before v1.39.3
 > did not record their keys and are listed as such: treat them as needing
 > every key that existed when they were written.
 >
