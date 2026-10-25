@@ -24863,9 +24863,9 @@ paths:
         **Auth is Bearer only.** A cookie session does not authenticate here: the route reads the `Authorization` header
         itself, hashes it and looks the token up, so a browser with a valid login and no token gets 401. The token must
         carry either the `*` wildcard or the `medication:ingest` scope — AND, once the named medication resolves, either
-        `*` or that medication's own `medication:{id}:ingest` scope. The second check runs after the lookup, which is
-        why a token scoped to one medication gets 404 for a name it may not touch only when the name does not exist, and
-        403 when it does.
+        `*` or that medication's own `medication:{id}:ingest` scope. The second check runs after the lookup. A token
+        scoped to one medication gets the same 403 for a name that does not exist as for one outside its scope, so it
+        cannot be used to learn which medications exist; only a `*` token gets 404 for an unknown name.
 
 
         **The operator can switch this off.** With the global API kill switch disabled every request is refused with 403
@@ -24873,8 +24873,9 @@ paths:
 
 
         **Replay is by `idempotencyKey`, and the status says which happened.** A key already stored for this token's
-        owner returns the existing row with **200**; a fresh dose returns **201**. Nothing else distinguishes them —
-        same body shape, same fields — so branch on the status code.
+        owner and the same medication returns the existing row with **200**; a fresh dose returns **201**; a key already
+        used for another medication returns **409** without its row. Replay is answered only after both scope checks.
+        Nothing else distinguishes them — same body shape, same fields — so branch on the status code.
 
 
         **A dose is attributed to its scheduled slot, not stamped ad-hoc.** When the take falls inside a schedule's
@@ -24918,14 +24919,22 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "403":
           description: Refused. Either the operator has the global API switch off (the message says so), or the token lacks
-            `medication:ingest` / `*`, or it lacks the resolved medication's own `medication:{id}:ingest` / `*` scope.
+            `medication:ingest` / `*`, or it lacks the resolved medication's own `medication:{id}:ingest` / `*` scope. A
+            token without `*` also gets this answer for a name that matches no active medication.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "404":
-          description: No ACTIVE medication of the token owner's matches `medicationName`. An inactive medication of the right
-            name is also a 404 — the name is only searched among active ones.
+          description: "Only for a `*` token: no ACTIVE medication of the token owner's matches `medicationName`. An inactive
+            medication of the right name is also a 404 — the name is only searched among active ones."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: The `idempotencyKey` is already stored for a dose of another medication. Nothing was written and that dose
+            is not returned.
           content:
             application/json:
               schema:
