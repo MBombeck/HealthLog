@@ -278,6 +278,11 @@
   way of creating a folder with its parents loops forever there on Linux,
   so a `DB_BACKUP_DIR` or `GEOLITE2_DIR` pointing below it stopped the
   process. Such a directory now reads as not writable.
+- **The last hour of a long DST day keeps its doses.** On the day the
+  clocks go back, the list of today's doses that the apps offer from ended
+  an hour early, so a late evening dose was missing from it; on the day
+  they go forward it reached an hour into tomorrow. It now spans the real
+  local day, as the dashboard already did.
 
 ### Security
 

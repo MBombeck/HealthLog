@@ -7,7 +7,7 @@
  */
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
-import { startOfLocalDayInTz } from "@/lib/tz/local-day";
+import { getUserTodayBounds } from "@/lib/tz/local-day";
 import { projectTodayIntakesAndRecompute } from "@/lib/medications/scheduling/project-today-intakes";
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 
@@ -16,8 +16,11 @@ export async function readTodayIntakes(input: {
   userTz: string;
 }) {
   const { userId, userTz } = input;
-  const todayStart = startOfLocalDayInTz(new Date(), userTz);
-  const todayEnd = new Date(todayStart.getTime() + 86_400_000);
+  // The real local day, 23 or 25 hours on a DST day: a fixed 24 h left the
+  // last hour of the 25-hour day off the list, so a dose at 23:30 that night
+  // could not be offered. Same window as the dashboard's meds tile.
+  const { start: todayStart, end } = getUserTodayBounds(new Date(), userTz);
+  const todayEnd = new Date(end.getTime() + 1);
 
   // Project pending intake rows for every active schedule whose window opens
   // today, then idempotently backfill any missing rows. Without it the

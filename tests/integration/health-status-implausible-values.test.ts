@@ -12,6 +12,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { NextRequest } from "next/server";
 
+import { startOfLocalDayInTz } from "@/lib/tz/local-day";
+
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
@@ -73,6 +75,10 @@ async function seedDaily(
   type: "PULSE" | "WEIGHT",
   valueFor: (dayIndex: number) => number,
 ) {
+  // Noon of each earlier local day: `now - d days` is still today on the
+  // 25-hour day of an autumn DST change, and the card then reads yesterday's
+  // value as one of today's.
+  const todayStart = startOfLocalDayInTz(new Date(), "Europe/Berlin").getTime();
   const rows = [];
   for (let d = 14; d >= 1; d -= 1) {
     rows.push({
@@ -80,7 +86,7 @@ async function seedDaily(
       type,
       value: valueFor(d),
       unit: type === "PULSE" ? "bpm" : "kg",
-      measuredAt: new Date(Date.now() - d * DAY_MS),
+      measuredAt: new Date(todayStart - d * DAY_MS + DAY_MS / 2),
       source: "MANUAL" as const,
     });
   }
