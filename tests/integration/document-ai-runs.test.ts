@@ -540,6 +540,68 @@ describe("the reaper", () => {
   });
 });
 
+/**
+ * A run's deadline is model time. The document reader moves it by the time
+ * a read waited for the reader and took, so a person's lab scan is not
+ * timed out because other work held the reader; never past the job's own
+ * expiry, and only while the run is running.
+ */
+describe("the deadline while the document reader works", () => {
+  async function runningRun(expiresAt: Date) {
+    const user = await makeUser();
+    await grantConsent(user.id);
+    await signIn(user.id);
+    const queued = await postLabScanText("Glucose 95 mg/dL");
+    const { runId } = queued.body.data as { runId: string };
+    await getPrismaClient().documentAiRun.update({
+      where: { id: runId },
+      data: { status: "RUNNING", expiresAt },
+    });
+    return runId;
+  }
+  const expiry = async (runId: string) =>
+    (
+      await getPrismaClient().documentAiRun.findUniqueOrThrow({
+        where: { id: runId },
+      })
+    ).expiresAt.getTime();
+
+  it("moves a running run's deadline by the reader's time, so the reaper leaves it alone", async () => {
+    const { moveRunDeadline } = await import("@/lib/jobs/document-ai-run");
+    const { reapAiRuns } = await import("@/lib/documents/ai-runs/store");
+    const armed = new Date(Date.now() + 5_000);
+    const runId = await runningRun(armed);
+
+    // The slot is granted after a 60 s wait, with 70 s allowed for the read.
+    await moveRunDeadline(runId, 130_000, undefined);
+    expect(await expiry(runId)).toBe(armed.getTime() + 130_000);
+    // Without the move the reaper would have taken it a minute later.
+    expect(
+      (await reapAiRuns(new Date(armed.getTime() + 60_000))).timedOut,
+    ).toBe(0);
+
+    // The read took 10 s of its 70: the unused 60 s go back.
+    await moveRunDeadline(runId, -60_000, undefined);
+    expect(await expiry(runId)).toBe(armed.getTime() + 70_000);
+  });
+
+  it("never moves it past the job's own expiry, and leaves a run that is not running alone", async () => {
+    const { moveRunDeadline } = await import("@/lib/jobs/document-ai-run");
+    const armed = new Date(Date.now() + 5_000);
+    const runId = await runningRun(armed);
+    const jobEnds = armed.getTime() + 20_000;
+    await moveRunDeadline(runId, 130_000, jobEnds);
+    expect(await expiry(runId)).toBe(jobEnds);
+
+    await getPrismaClient().documentAiRun.update({
+      where: { id: runId },
+      data: { status: "FAILED" },
+    });
+    await moveRunDeadline(runId, 130_000, undefined);
+    expect(await expiry(runId)).toBe(jobEnds);
+  });
+});
+
 describe("a summary in the background", () => {
   it("marks a stored summary PENDING while queued and READY when it lands", async () => {
     const user = await makeUser();

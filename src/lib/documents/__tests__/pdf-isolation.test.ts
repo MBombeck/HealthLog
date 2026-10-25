@@ -12,6 +12,7 @@ vi.mock("@/lib/logging/context", () => ({ annotate }));
 import { gif } from "../../__tests__/gif-fixture";
 import {
   MAX_QUEUED_PER_OWNER,
+  READER_WAIT_MS,
   runOnce,
   runPdfChild,
   withPdfWork,
@@ -299,5 +300,78 @@ describe("the reader's queue", () => {
     for (const item of waiting) {
       await expect(item).resolves.toMatchObject({ ok: true });
     }
+  });
+});
+
+describe("the caller's clock while it waits for the reader", () => {
+  const request = { op: "text", data: Buffer.from("x"), maxPages: 1 } as const;
+
+  it("moves by the wait plus the read's allowance when the slot is granted, then gives back what the read did not use", async () => {
+    let open: () => void = () => {};
+    const gate = new Promise<void>((resolve) => (open = resolve));
+    const holder = vi.fn(async (): Promise<PdfChildResult<PdfChildRequest>> => {
+      await gate;
+      return { ok: true, value: "first" };
+    });
+    const quick = vi.fn(async (): Promise<PdfChildResult<PdfChildRequest>> => ({
+      ok: true,
+      value: "second",
+    }));
+    const moves: number[] = [];
+    const first = withPdfWork({ owner: "a", lane: "interactive" }, () =>
+      runPdfChild(request, { timeoutMs: 1_000, run: holder }),
+    );
+    const second = withPdfWork(
+      {
+        owner: "b",
+        lane: "interactive",
+        extendDeadline: async (ms) => {
+          moves.push(ms);
+        },
+      },
+      () => runPdfChild(request, { timeoutMs: 1_000, run: quick }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    open();
+    await expect(first).resolves.toMatchObject({ ok: true });
+    await expect(second).resolves.toMatchObject({ ok: true, value: "second" });
+
+    // Granted after about 150 ms of waiting, with two attempts' allowance.
+    expect(moves).toHaveLength(2);
+    expect(moves[0]!).toBeGreaterThanOrEqual(2_000 + 140);
+    expect(moves[0]!).toBeLessThan(2_000 + 1_000);
+    // The quick read gives back nearly all of its allowance.
+    expect(moves[1]!).toBeLessThan(0);
+    expect(moves[1]!).toBeGreaterThan(-2_000 - 1);
+    // Net: the wait and the read's own time, nothing more.
+    expect(moves[0]! + moves[1]!).toBeGreaterThanOrEqual(140);
+    expect(moves[0]! + moves[1]!).toBeLessThan(1_000);
+  });
+
+  it("reads on when moving the clock fails", async () => {
+    const run = vi.fn(async (): Promise<PdfChildResult<PdfChildRequest>> => ({
+      ok: true,
+      value: "text",
+    }));
+    await expect(
+      withPdfWork(
+        {
+          owner: "c",
+          lane: "interactive",
+          extendDeadline: async () => {
+            throw new Error("database gone");
+          },
+        },
+        () => runPdfChild(request, { timeoutMs: 1_000, run }),
+      ),
+    ).resolves.toEqual({ ok: true, value: "text" });
+  });
+
+  it("waits no longer for the reader than a run's margin can absorb before the slot moves its deadline", async () => {
+    // The deadline moves when the slot is granted; until then the run's
+    // armed margin is all that stands between a waiting read and the
+    // reaper.
+    const { AI_RUN_MARGIN_MS } = await import("../ai-runs/types");
+    expect(READER_WAIT_MS.interactive).toBeLessThanOrEqual(AI_RUN_MARGIN_MS);
   });
 });

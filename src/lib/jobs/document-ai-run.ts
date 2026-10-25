@@ -187,6 +187,34 @@ async function armDeadline(
   });
 }
 
+/**
+ * Move a running run's deadline by `ms`, never past the job's own expiry.
+ * The document reader calls it (`PdfWork.extendDeadline`): the deadline is
+ * model time, and a wait in the reader's queue or the read itself is not, so
+ * a person's read is not timed out because other work held the reader.
+ */
+export async function moveRunDeadline(
+  runId: string,
+  ms: number,
+  deadlineAt: number | undefined,
+): Promise<void> {
+  const delta = Math.round(ms);
+  if (deadlineAt === undefined) {
+    await prisma.$executeRaw`
+      UPDATE document_ai_runs
+      SET expires_at = expires_at + (${delta}::double precision * interval '1 millisecond')
+      WHERE id = ${runId} AND status = 'RUNNING'`;
+    return;
+  }
+  await prisma.$executeRaw`
+    UPDATE document_ai_runs
+    SET expires_at = LEAST(
+      expires_at + (${delta}::double precision * interval '1 millisecond'),
+      ${new Date(deadlineAt)}
+    )
+    WHERE id = ${runId} AND status = 'RUNNING'`;
+}
+
 async function runDocumentIndex(
   run: ClaimedAiRun,
   deadlineAt: number | undefined,
@@ -619,7 +647,11 @@ export async function runDocumentAiRun(
     // A person asked for this read and is waiting on it: the document
     // reader serves it ahead of background work, in turn with other people.
     outcome = await withPdfWork(
-      { owner: run.userId, lane: "interactive" },
+      {
+        owner: run.userId,
+        lane: "interactive",
+        extendDeadline: (ms) => moveRunDeadline(run.id, ms, deadlineAt),
+      },
       () => RUN_DISPATCH[run.kind](run, deadlineAt, now),
     );
   } catch (err) {

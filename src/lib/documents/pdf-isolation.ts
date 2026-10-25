@@ -143,6 +143,16 @@ export interface PdfWork {
   /** The account the work is done for; the queue takes accounts in turn. */
   owner: string;
   lane: ReaderLane;
+  /**
+   * Moves the caller's own clock by `ms`. A background AI run has a deadline
+   * measured in model calls, and time spent waiting for the reader or
+   * reading is not model time: when the slot is granted the clock moves by
+   * the wait plus the most the read may take, and when the read ends it moves
+   * back by the part of that allowance the read did not use. So the run's
+   * model-time budget starts once the reader is done with it, however long
+   * the queue was. Failures are the caller's to swallow; the read goes on.
+   */
+  extendDeadline?: (ms: number) => Promise<void>;
 }
 
 const workContext = new AsyncLocalStorage<PdfWork>();
@@ -265,10 +275,15 @@ export async function runPdfChild<R extends PdfChildRequest>(
   }
 
   const work = currentPdfWork();
+  const queuedAt = Date.now();
   const ticket = await queue.acquire(work.owner, work.lane);
   if (!ticket.ok) {
     return { ok: false, reason: "busy", retryAfterMs: ticket.retryAfterMs };
   }
+  const grantedAt = Date.now();
+  // The most this read may take: every attempt to its time limit.
+  const allowance = limits.timeoutMs * MAX_ATTEMPTS;
+  await moveCallerClock(work, grantedAt - queuedAt + allowance);
   try {
     for (let attempt = 1; ; attempt++) {
       const result = limits.run
@@ -279,6 +294,19 @@ export async function runPdfChild<R extends PdfChildRequest>(
     }
   } finally {
     ticket.release();
+    await moveCallerClock(
+      work,
+      -Math.max(0, allowance - (Date.now() - grantedAt)),
+    );
+  }
+}
+
+async function moveCallerClock(work: PdfWork, ms: number): Promise<void> {
+  if (!work.extendDeadline || ms === 0) return;
+  try {
+    await work.extendDeadline(ms);
+  } catch {
+    // The caller's clock is the caller's; the read is not failed for it.
   }
 }
 

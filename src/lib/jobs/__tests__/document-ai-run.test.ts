@@ -293,7 +293,7 @@ describe("runDocumentAiRun", () => {
       return { ok: true, data: {} };
     });
     await runDocumentAiRun("run1", NOW + 2_700_000, now);
-    expect(seen).toEqual({ owner: "u1", lane: "interactive" });
+    expect(seen).toMatchObject({ owner: "u1", lane: "interactive" });
   });
 
   it("answers a busy document reader with a retryable code and hands the reservation back", async () => {
