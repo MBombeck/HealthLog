@@ -11,7 +11,7 @@ import { ExternalLink, Watch } from "lucide-react";
 
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
-import { INTEGRATION_DOCS_BASE } from "@/components/settings/integrations/setup-guide-link";
+import { GARMIN_DOCS_HREF } from "@/components/settings/integrations/setup-guide-link";
 import { useTranslations } from "@/lib/i18n/context";
 
 export function GarminInfoNote() {
@@ -25,7 +25,7 @@ export function GarminInfoNote() {
           <p className="text-muted-foreground">
             {t("settings.garminInfo.body")}{" "}
             <a
-              href={`${INTEGRATION_DOCS_BASE}/garmin`}
+              href={GARMIN_DOCS_HREF}
               target="_blank"
               rel="noopener noreferrer"
               data-testid="garmin-docs-link"

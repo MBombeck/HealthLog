@@ -34,7 +34,8 @@ import {
 } from "@/lib/ai/coach/tools/definitions";
 import type { CoachToolResult } from "@/lib/ai/coach/tools/run/types";
 
-import { MAX_TURN_STEPS, snapshotStep, toStep } from "../steps";
+import { MAX_TURN_STEPS } from "@/lib/ai/coach/activity/contract";
+import { snapshotStep, toStep } from "../steps";
 
 const SOURCES = coachScopeSourceSchema.options;
 const WINDOWS = coachScopeWindowSchema.options;

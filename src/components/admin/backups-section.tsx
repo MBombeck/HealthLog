@@ -99,7 +99,7 @@ export function BackupsSection() {
             {/* External docs link — `noopener noreferrer` because this
                 leaves the admin shell. */}
             <a
-              href="https://docs.healthlog.dev/admin/backups"
+              href="https://docs.healthlog.dev/guides/backups/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary inline-flex items-center gap-1 underline-offset-2 hover:underline"

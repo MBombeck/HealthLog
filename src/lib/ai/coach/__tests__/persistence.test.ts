@@ -27,7 +27,8 @@ import {
   summariseTitle,
 } from "../persistence";
 import { encryptToBytes } from "../bytes-codec";
-import type { CoachProvenance } from "../types";
+import { MAX_TURN_STEPS } from "../activity/contract";
+import type { CoachProvenance, CoachStep } from "../types";
 
 describe("summariseTitle", () => {
   it("returns the input unchanged when below 80 chars", () => {
@@ -210,6 +211,46 @@ describe("appendMessage — provenance round-trip", () => {
       metricSource: envelope,
     });
     expect(out.metricSource).toEqual(envelope);
+  });
+
+  it("restores every step the turn may record, and none past the cap", async () => {
+    const step = (n: number): CoachStep => ({
+      id: `s${n}`,
+      tool: "get_metric_series",
+      labelKey: "coach.step.readWindow",
+      label: "Read the series",
+      domain: "bp",
+      window: "last30days",
+      status: "done",
+      count: n,
+    });
+    const recorded = Array.from({ length: MAX_TURN_STEPS }, (_, i) =>
+      step(i + 1),
+    );
+    stubEchoCreate();
+    const full = await appendMessage({
+      conversationId: "conv_1",
+      role: "assistant",
+      content: "A long answer.",
+      metricSource: { windows: [], metrics: [], steps: recorded },
+    });
+    expect(full.metricSource?.steps).toEqual(recorded);
+
+    // A stored blob longer than the cap is cut at the cap, not before it.
+    stubEchoCreate(
+      JSON.stringify({
+        windows: [],
+        metrics: [],
+        steps: [...recorded, step(MAX_TURN_STEPS + 1)],
+      }),
+    );
+    const over = await appendMessage({
+      conversationId: "conv_1",
+      role: "assistant",
+      content: "An over-long blob.",
+      metricSource: { windows: [], metrics: [] },
+    });
+    expect(over.metricSource?.steps).toEqual(recorded);
   });
 
   it("tolerates a legacy blob without the new fields (no throw, fields absent)", async () => {
