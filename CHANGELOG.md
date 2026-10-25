@@ -274,6 +274,10 @@
 - **The hint for reading scans on the device points to the right switch**,
   Settings, Modules, Labs, in every language.
 - **Help links open the right page** instead of going through redirects.
+- **A directory setting below `/proc` no longer freezes the server.** Node's
+  way of creating a folder with its parents loops forever there on Linux,
+  so a `DB_BACKUP_DIR` or `GEOLITE2_DIR` pointing below it stopped the
+  process. Such a directory now reads as not writable.
 
 ### Security
 

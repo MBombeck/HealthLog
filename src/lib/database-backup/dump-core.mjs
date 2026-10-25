@@ -43,7 +43,7 @@ import {
   statSync,
 } from "node:fs";
 import { readFile, rename, rm, stat, writeFile } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { createGunzip } from "node:zlib";
 
@@ -209,6 +209,41 @@ export function resolveBackupSchedule(env = process.env) {
 }
 
 /**
+ * Create `dir` and its missing parents, one level at a time from the nearest
+ * one that exists. Throws what `mkdir` throws.
+ *
+ * Not `mkdirSync(dir, { recursive: true })`: on Linux, below a pseudo file
+ * system such as `/proc`, the child answers ENOENT while its parent answers
+ * EEXIST, and Node's recursive walk retries that pair forever inside one
+ * native call, so no timer, signal handler or test timeout ever runs again.
+ * A `DB_BACKUP_DIR` set to such a path froze the worker. Here every level is
+ * one plain `mkdir`, and the walk is as long as the path.
+ *
+ * @param {string} dir
+ */
+export function makeDirectory(dir) {
+  /** @type {string[]} */
+  const missing = [];
+  let current = resolve(dir);
+  while (!existsSync(current)) {
+    missing.push(current);
+    const parent = dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  for (const path of missing.reverse()) {
+    try {
+      mkdirSync(path);
+    } catch (err) {
+      // Created in between by someone else: that is what was wanted.
+      if (/** @type {NodeJS.ErrnoException} */ (err).code !== "EEXIST") {
+        throw err;
+      }
+    }
+  }
+}
+
+/**
  * Whether `dir` exists (or can be created) and this process may write in it.
  * Never throws.
  *
@@ -216,7 +251,7 @@ export function resolveBackupSchedule(env = process.env) {
  */
 export function isWritableDirectory(dir) {
   try {
-    mkdirSync(dir, { recursive: true });
+    makeDirectory(dir);
     if (!statSync(dir).isDirectory()) return false;
     accessSync(dir, fsConstants.W_OK | fsConstants.X_OK);
     return true;

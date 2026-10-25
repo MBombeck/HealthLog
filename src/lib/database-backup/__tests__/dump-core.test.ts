@@ -9,6 +9,7 @@
  * of the rule: the restore script cannot import TypeScript, so these are the
  * tests that keep its plain-JS reading of both from drifting.
  */
+import { execFileSync } from "node:child_process";
 import {
   chmodSync,
   createReadStream,
@@ -24,6 +25,7 @@ import {
 import { readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { Readable } from "node:stream";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -53,7 +55,9 @@ import {
   selectForDeletion,
   verifyArchive,
   instanceIdFromEnv,
+  isWritableDirectory,
   listBucketDumps,
+  makeDirectory,
   type DirectoryProbe,
   type DumpSet,
   type Env,
@@ -1024,4 +1028,47 @@ describe("whether the dump directory survives the container", () => {
       status.reason,
     );
   });
+});
+
+describe("making the backup directory", () => {
+  const root = mkdtempSync(join(tmpdir(), "hl-mkdir-"));
+  afterEach(() => {
+    for (const name of readdirSync(root)) {
+      rmSync(join(root, name), { recursive: true, force: true });
+    }
+  });
+
+  it("creates every missing level and leaves an existing one alone", () => {
+    const dir = join(root, "a", "b", "c");
+    makeDirectory(dir);
+    expect(statSync(dir).isDirectory()).toBe(true);
+    makeDirectory(dir);
+    expect(isWritableDirectory(dir)).toBe(true);
+  });
+
+  it("answers false below a file", () => {
+    writeFileSync(join(root, "file"), "");
+    expect(isWritableDirectory(join(root, "file", "below"))).toBe(false);
+  });
+
+  // Node's recursive mkdir loops forever below /proc, inside one native call,
+  // so this runs in a child with a deadline: a regression fails here instead
+  // of freezing the test worker.
+  it.runIf(process.platform === "linux")(
+    "answers false below /proc instead of hanging",
+    () => {
+      const core = fileURLToPath(new URL("../dump-core.mjs", import.meta.url));
+      const out = execFileSync(
+        process.execPath,
+        [
+          "--input-type=module",
+          "-e",
+          `const { isWritableDirectory } = await import(${JSON.stringify(core)});
+console.log(isWritableDirectory("/proc/healthlog-cannot-write-here/nested"));`,
+        ],
+        { encoding: "utf8", timeout: 10_000 },
+      );
+      expect(out.trim()).toBe("false");
+    },
+  );
 });
