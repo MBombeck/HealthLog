@@ -289,4 +289,41 @@ describe("0479: PDFs whose local text read failed", () => {
       }),
     ).toEqual({ lastIndexAttemptAt: null });
   });
+
+  it("does not let an account with the module off hold every place of a boot", async () => {
+    // An account whose documents module is off, with more marked documents
+    // than one boot enqueues, all ordered before the next account's.
+    const OFF = "pdfjs-clash-module-off";
+    await prisma.user.create({
+      data: {
+        id: OFF,
+        username: OFF,
+        modulePreferencesJson: { inboundDocuments: false },
+      },
+    });
+    const { content, codec } = encryptDocumentContent(textPdf());
+    const marked = 1000;
+    await prisma.inboundDocument.createMany({
+      data: Array.from({ length: marked }, (_, i) => ({
+        id: `a-off-${String(i).padStart(4, "0")}`,
+        userId: OFF,
+        mimeType: "application/pdf",
+        byteSize: 1,
+        contentEncrypted: content,
+        contentCodec: codec,
+        lastIndexOutcome: "decrypt-error",
+      })),
+    });
+    await seedPdf("b-on", textPdf(), { lastIndexOutcome: "decrypt-error" });
+
+    expect((await enqueueBootTimeIndexRetry()).enqueued).toBe(1);
+    const jobs = takeSends("document-index") as DocumentIndexPayload[];
+    expect(jobs.map((j) => j.documentId)).toEqual(["b-on"]);
+    // The module-off account keeps its marks for the boot after it is on.
+    expect(
+      await prisma.inboundDocument.count({
+        where: { userId: OFF, lastIndexAttemptAt: null },
+      }),
+    ).toBe(marked);
+  });
 });
