@@ -57,9 +57,15 @@ async function wizard(
 /**
  * Answer the current step by its position, as a keyboard user does: each new
  * step focuses its question, so Tab first reaches the answers, then the
- * number key chooses.
+ * number key chooses. The step moves the focus in an effect after it renders,
+ * so the keys wait for the question to hold it, as a person reading it would;
+ * pressed earlier, Tab started from the previous step's answer and the number
+ * chose nothing.
  */
 async function pressAnswer(position: number) {
+  await expect
+    .poll(() => document.activeElement?.getAttribute("data-slot"))
+    .toBe("check-in-question");
   await userEvent.tab();
   await userEvent.keyboard(String(position));
 }
