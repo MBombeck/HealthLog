@@ -8605,7 +8605,7 @@
       "stale": "The kit changed since this page loaded. Check the keys it lists now, then confirm again.",
       "confirmedAt": "Confirmed on {date}.",
       "confirmedAtBy": "Confirmed on {date} by {who}.",
-      "dueAgain": "The kit was confirmed on {date}, but it now lists keys that confirmation does not cover: {keys}."
+      "dueAgain": "The kit was confirmed on {date}. It now also lists {keys}, which that confirmation did not cover. Save a copy of each and confirm again."
     },
     "recoveryReadiness": {
       "title": "Recovery readiness",
@@ -8644,7 +8644,7 @@
       "reason": {
         "database_dump": {
           "not_available": "This version does not schedule a database dump.",
-          "disabled": "The scheduled database dump is switched off.",
+          "disabled": "The scheduled database dump is switched off, so no copy can rebuild this server. To turn it back on, remove DB_BACKUP_ENABLED or set it to true, then restart HealthLog.",
           "unreadable": "The status of the database dump could not be read.",
           "never_succeeded": "No database dump has succeeded yet, and the last attempt failed.",
           "never_ran": "No database dump has been written in the {hours} hours since dumps were switched on.",
@@ -8682,7 +8682,7 @@
         },
         "recovery_kit": {
           "confirmed": "A copy of every key a restore needs is kept.",
-          "out_of_date": "The recovery kit lists keys nobody has confirmed a copy of: {keys}.",
+          "out_of_date": "The recovery kit now also lists {keys}, which the last confirmation did not cover. Nothing is broken: save a copy and confirm the kit again.",
           "no_admin": "There is no admin account yet.",
           "not_confirmed": "Nobody has confirmed a copy of the keys a restore needs: {keys}.",
           "not_confirmed_grace": "Save a copy of the keys a restore needs: {keys}."

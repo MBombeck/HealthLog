@@ -177,8 +177,19 @@ export function evaluateDatabaseDump(
   const id = "database_dump";
   if (dump === null) return signal(id, "inactive", "not_available", null);
   if (dump === "unreadable") return signal(id, "failing", "unreadable", null);
-  if (!dump.enabled) return signal(id, "inactive", "disabled", null);
   const lastGoodAt = dump.lastGood ? new Date(dump.lastGood.at) : null;
+  if (!dump.enabled) {
+    // Dumps are on by default, so off is a choice someone made, and it
+    // leaves no copy that rebuilds the host: worth one notice. An install
+    // that never wrote a dump and has nowhere to write one (no writable
+    // directory, no bucket) switched off what it could not do, which is not
+    // news.
+    const neverUsed = dump.lastGood === null && dump.lastFailure === null;
+    const cannotWrite = !dump.localDirWritable && !dump.offhostConfigured;
+    return neverUsed && cannotWrite
+      ? signal(id, "inactive", "disabled", null)
+      : signal(id, "attention", "disabled", lastGoodAt);
+  }
   const lastFailureAt = dump.lastFailure ? new Date(dump.lastFailure.at) : null;
   const failureReason = dump.lastFailure?.error ?? null;
   // A directory this process cannot write is a valid setup when the dumps go

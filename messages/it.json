@@ -8605,7 +8605,7 @@
       "stale": "Il kit è cambiato da quando questa pagina è stata caricata. Controlla le chiavi che elenca ora, poi conferma di nuovo.",
       "confirmedAt": "Confermato il {date}.",
       "confirmedAtBy": "Confermato il {date} da {who}.",
-      "dueAgain": "Il kit è stato confermato il {date}, ma ora elenca chiavi che quella conferma non copre: {keys}."
+      "dueAgain": "Il kit è stato confermato il {date}. Ora elenca anche {keys}, che quella conferma non copriva. Salva una copia di ciascuna e conferma di nuovo."
     },
     "recoveryReadiness": {
       "title": "Preparazione al ripristino",
@@ -8644,7 +8644,7 @@
       "reason": {
         "database_dump": {
           "not_available": "Questa versione non pianifica un dump del database.",
-          "disabled": "Il dump pianificato del database è disattivato.",
+          "disabled": "Il dump pianificato del database è disattivato, quindi nessuna copia può ricostruire questo server. Per riattivarlo, rimuovi DB_BACKUP_ENABLED o impostalo su true, poi riavvia HealthLog.",
           "unreadable": "Non è stato possibile leggere lo stato del dump del database.",
           "never_succeeded": "Nessun dump del database è ancora riuscito, e l'ultimo tentativo non è andato a buon fine.",
           "never_ran": "Nelle {hours} ore trascorse da quando i dump sono stati attivati non è stato scritto alcun dump del database.",
@@ -8682,7 +8682,7 @@
         },
         "recovery_kit": {
           "confirmed": "Esiste una copia di ogni chiave necessaria per un ripristino.",
-          "out_of_date": "Il kit di recupero elenca chiavi di cui nessuno ha confermato una copia: {keys}.",
+          "out_of_date": "Il kit di ripristino ora elenca anche {keys}, che l'ultima conferma non copriva. Non c'è nulla di rotto: salva una copia e conferma di nuovo il kit.",
           "no_admin": "Non esiste ancora un account amministratore.",
           "not_confirmed": "Nessuno ha confermato una copia delle chiavi necessarie per un ripristino: {keys}.",
           "not_confirmed_grace": "Salva una copia delle chiavi necessarie per un ripristino: {keys}."

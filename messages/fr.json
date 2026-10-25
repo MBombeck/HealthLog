@@ -781,7 +781,7 @@
     "quickAddSymptom": "Noter un symptôme",
     "todayCardVisible": "Afficher la carte du haut",
     "recoveryKitBanner": {
-      "title": "Sauvegarde ton kit de récupération",
+      "title": "Sauvegardez votre kit de récupération",
       "body": "Sans copies des clés utilisées par ce serveur, ses données ne peuvent pas être récupérées après une réinstallation. Ça prend quelques minutes.",
       "action": "Ouvrir le kit"
     }
@@ -8540,7 +8540,7 @@
     "recoveryKit": {
       "title": "Kit de récupération",
       "description": "Chaque clé nécessaire à la restauration de ce serveur, avec son ID et son empreinte.",
-      "intro": "Garde une copie de chaque clé ci-dessous en dehors de ce serveur, par exemple dans un gestionnaire de mots de passe. Sans elles, ni un dump de la base de données ni une copie de sauvegarde ne peuvent être relus, et HealthLog refuse de démarrer s'il manque une clé dont il a besoin.",
+      "intro": "Gardez une copie de chaque clé ci-dessous en dehors de ce serveur, par exemple dans un gestionnaire de mots de passe. Sans elles, ni un dump de la base de données ni une copie de sauvegarde ne peuvent être relus, et HealthLog refuse de démarrer s'il manque une clé dont il a besoin.",
       "loading": "Chargement du kit de récupération…",
       "loadError": "Impossible de charger le kit de récupération.",
       "badgeDue": "À faire",
@@ -8571,41 +8571,41 @@
         "notConfigured": "Absente de ce serveur",
         "unreadable": "Clé non valide"
       },
-      "notConfiguredHint": "Une sauvegarde a encore besoin de cette clé et ce serveur ne l'a pas. Seule une copie que tu conserves ailleurs peut lire ces sauvegardes. Confirme le kit une fois que tu as cette copie.",
-      "unreadableHint": "La variable est définie mais ne contient pas de clé valide. Corrige-la avant de te fier aux copies hors hôte.",
-      "fingerprintHint": "L'empreinte correspond aux 12 premiers caractères du hachage SHA-256 d'une clé. Elle identifie la clé sans la révéler, pour que tu puisses la comparer à ta copie.",
+      "notConfiguredHint": "Une sauvegarde a encore besoin de cette clé et ce serveur ne l'a pas. Seule une copie que vous conservez ailleurs peut lire ces sauvegardes. Confirmez le kit une fois que vous avez cette copie.",
+      "unreadableHint": "La variable est définie mais ne contient pas de clé valide. Corrigez-la avant de vous fier aux copies hors hôte.",
+      "fingerprintHint": "L'empreinte correspond aux 12 premiers caractères du hachage SHA-256 d'une clé. Elle identifie la clé sans la révéler, pour que vous puissiez la comparer à votre copie.",
       "whereTitle": "Où les clés sont définies",
       "platform": {
         "composeLabel": "Compose",
         "composeWhere": "Les clés se trouvent dans le fichier .env à côté de docker-compose.yml : ENCRYPTION_KEY ou ENCRYPTION_KEYS, API_TOKEN_HMAC_KEY et, avec les copies hors hôte, BACKUP_ENCRYPTION_KEY.",
         "truenasLabel": "TrueNAS",
-        "truenasWhere": "Ouvre Apps, sélectionne HealthLog et choisis Edit. Les clés se trouvent sous HealthLog Configuration ; pour une app installée via YAML, ce sont ENCRYPTION_KEY, API_TOKEN_HMAC_KEY et BACKUP_ENCRYPTION_KEY dans les paramètres d'environnement.",
+        "truenasWhere": "Ouvrez Apps, sélectionnez HealthLog et choisissez Edit. Les clés se trouvent sous HealthLog Configuration ; pour une app installée via YAML, ce sont ENCRYPTION_KEY, API_TOKEN_HMAC_KEY et BACKUP_ENCRYPTION_KEY dans les paramètres d'environnement.",
         "coolifyLabel": "Coolify",
-        "coolifyWhere": "Ouvre l'application dans Coolify et copie ENCRYPTION_KEY, API_TOKEN_HMAC_KEY et BACKUP_ENCRYPTION_KEY depuis ses Environment Variables.",
+        "coolifyWhere": "Ouvrez l'application dans Coolify et copiez ENCRYPTION_KEY, API_TOKEN_HMAC_KEY et BACKUP_ENCRYPTION_KEY depuis ses Environment Variables.",
         "unraidLabel": "Unraid",
-        "unraidWhere": "Dans l'onglet Docker, modifie le conteneur HealthLog et copie ENCRYPTION_KEY, API_TOKEN_HMAC_KEY et BACKUP_ENCRYPTION_KEY depuis le modèle, ou depuis le .env de ta pile Compose Manager.",
+        "unraidWhere": "Dans l'onglet Docker, modifiez le conteneur HealthLog et copiez ENCRYPTION_KEY, API_TOKEN_HMAC_KEY et BACKUP_ENCRYPTION_KEY depuis le modèle, ou depuis le .env de votre pile Compose Manager.",
         "portainerLabel": "Portainer",
-        "portainerWhere": "Ouvre la pile HealthLog dans Portainer et copie ENCRYPTION_KEY, API_TOKEN_HMAC_KEY et BACKUP_ENCRYPTION_KEY depuis ses variables d'environnement."
+        "portainerWhere": "Ouvrez la pile HealthLog dans Portainer et copiez ENCRYPTION_KEY, API_TOKEN_HMAC_KEY et BACKUP_ENCRYPTION_KEY depuis ses variables d'environnement."
       },
       "restoreTitle": "Restaurer ce serveur",
-      "restoreBody": "Installe HealthLog avec les mêmes clés, restaure le dump de la base de données le plus récent dans une base vide, puis démarre l'app. Le guide détaille chaque étape.",
+      "restoreBody": "Installez HealthLog avec les mêmes clés, restaurez le dump de la base de données le plus récent dans une base vide, puis démarrez l'app. Le guide détaille chaque étape.",
       "restoreLink": "Guide de reprise après sinistre",
       "checkLabel": "Vérifier ma copie",
       "checkKeyLabel": "Clé à vérifier",
-      "checkValueLabel": "Ta copie de la clé",
+      "checkValueLabel": "Votre copie de la clé",
       "checkButton": "Vérifier",
       "checkNote": "La clé collée est comparée à celle que détient ce serveur puis oubliée. Elle n'est jamais stockée ni journalisée.",
-      "checkInsecureNote": "Cette page n'est pas servie en https://, donc la clé collée traverse le réseau en clair, comme ton mot de passe. Elle est comparée puis oubliée, jamais stockée ni journalisée.",
-      "checkMatches": "Ta copie correspond à cette clé.",
-      "checkNoMatch": "Ta copie ne correspond pas à cette clé. Vérifie que tu as copié toute la valeur.",
+      "checkInsecureNote": "Cette page n'est pas servie en https://, donc la clé collée traverse le réseau en clair, comme votre mot de passe. Elle est comparée puis oubliée, jamais stockée ni journalisée.",
+      "checkMatches": "Votre copie correspond à cette clé.",
+      "checkNoMatch": "Votre copie ne correspond pas à cette clé. Vérifiez que vous avez copié toute la valeur.",
       "checkFailed": "La vérification a échoué.",
       "confirmButton": "J'ai une copie de chaque clé",
       "confirmed": "Kit de récupération confirmé.",
       "confirmFailed": "Impossible d'enregistrer la confirmation.",
-      "stale": "Le kit a changé depuis le chargement de cette page. Vérifie les clés qu'il liste maintenant, puis confirme à nouveau.",
+      "stale": "Le kit a changé depuis le chargement de cette page. Vérifiez les clés qu'il liste maintenant, puis confirmez à nouveau.",
       "confirmedAt": "Confirmé le {date}.",
       "confirmedAtBy": "Confirmé le {date} par {who}.",
-      "dueAgain": "Le kit a été confirmé le {date}, mais il liste maintenant des clés que cette confirmation ne couvre pas : {keys}."
+      "dueAgain": "Le kit a été confirmé le {date}. Il liste désormais aussi {keys}, que cette confirmation ne couvrait pas. Sauvegardez une copie de chacune et confirmez à nouveau."
     },
     "recoveryReadiness": {
       "title": "Capacité de restauration",
@@ -8644,7 +8644,7 @@
       "reason": {
         "database_dump": {
           "not_available": "Cette version ne planifie pas de dump de la base de données.",
-          "disabled": "Le dump planifié de la base de données est désactivé.",
+          "disabled": "Le dump planifié de la base de données est désactivé, donc aucune copie ne peut reconstruire ce serveur. Pour le réactiver, supprimez DB_BACKUP_ENABLED ou mettez-le à true, puis redémarrez HealthLog.",
           "unreadable": "L'état du dump de la base de données n'a pas pu être lu.",
           "never_succeeded": "Aucun dump de la base de données n'a encore réussi, et la dernière tentative a échoué.",
           "never_ran": "Aucun dump de la base de données n'a été écrit dans les {hours} heures écoulées depuis l'activation des dumps.",
@@ -8682,10 +8682,10 @@
         },
         "recovery_kit": {
           "confirmed": "Une copie de chaque clé nécessaire à une restauration est conservée.",
-          "out_of_date": "Le kit de récupération liste des clés dont personne n'a confirmé de copie : {keys}.",
+          "out_of_date": "Le kit de récupération liste désormais aussi {keys}, que la dernière confirmation ne couvrait pas. Rien n'est cassé : sauvegardez une copie et confirmez à nouveau le kit.",
           "no_admin": "Il n'y a pas encore de compte administrateur.",
           "not_confirmed": "Personne n'a confirmé de copie des clés nécessaires à une restauration : {keys}.",
-          "not_confirmed_grace": "Sauvegarde une copie des clés nécessaires à une restauration : {keys}."
+          "not_confirmed_grace": "Sauvegardez une copie des clés nécessaires à une restauration : {keys}."
         }
       },
       "recovered": {

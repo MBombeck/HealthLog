@@ -8605,7 +8605,7 @@
       "stale": "El kit cambió desde que se cargó esta página. Revisa las claves que muestra ahora y vuelve a confirmar.",
       "confirmedAt": "Confirmado el {date}.",
       "confirmedAtBy": "Confirmado el {date} por {who}.",
-      "dueAgain": "El kit se confirmó el {date}, pero ahora muestra claves que esa confirmación no cubre: {keys}."
+      "dueAgain": "El kit se confirmó el {date}. Ahora también incluye {keys}, que esa confirmación no cubría. Guarda una copia de cada una y vuelve a confirmar."
     },
     "recoveryReadiness": {
       "title": "Preparación para la recuperación",
@@ -8644,7 +8644,7 @@
       "reason": {
         "database_dump": {
           "not_available": "Esta versión no programa un volcado de la base de datos.",
-          "disabled": "El volcado programado de la base de datos está desactivado.",
+          "disabled": "El volcado programado de la base de datos está desactivado, así que ninguna copia puede reconstruir este servidor. Para volver a activarlo, quita DB_BACKUP_ENABLED o ponlo en true y reinicia HealthLog.",
           "unreadable": "No se pudo leer el estado del volcado de la base de datos.",
           "never_succeeded": "Ningún volcado de la base de datos ha salido bien todavía, y el último intento falló.",
           "never_ran": "No se ha escrito ningún volcado de la base de datos en las {hours} horas transcurridas desde que se activaron los volcados.",
@@ -8682,7 +8682,7 @@
         },
         "recovery_kit": {
           "confirmed": "Se guarda una copia de cada clave que necesita una restauración.",
-          "out_of_date": "El kit de recuperación muestra claves de las que nadie ha confirmado una copia: {keys}.",
+          "out_of_date": "El kit de recuperación ahora también incluye {keys}, que la última confirmación no cubría. No hay nada roto: guarda una copia y vuelve a confirmar el kit.",
           "no_admin": "Todavía no hay ninguna cuenta de administrador.",
           "not_confirmed": "Nadie ha confirmado una copia de las claves que necesita una restauración: {keys}.",
           "not_confirmed_grace": "Guarda una copia de las claves que necesita una restauración: {keys}."

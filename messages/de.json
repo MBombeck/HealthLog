@@ -8605,7 +8605,7 @@
       "stale": "Das Kit hat sich geändert, seit die Seite geladen wurde. Prüfe die Schlüssel, die es jetzt aufführt, und bestätige erneut.",
       "confirmedAt": "Bestätigt am {date}.",
       "confirmedAtBy": "Bestätigt am {date} von {who}.",
-      "dueAgain": "Das Kit wurde am {date} bestätigt, führt jetzt aber Schlüssel auf, die diese Bestätigung nicht abdeckt: {keys}."
+      "dueAgain": "Das Kit wurde am {date} bestätigt. Es führt jetzt auch {keys} auf, was diese Bestätigung nicht abgedeckt hat. Sichere von jedem eine Kopie und bestätige erneut."
     },
     "recoveryReadiness": {
       "title": "Wiederherstellbarkeit",
@@ -8644,7 +8644,7 @@
       "reason": {
         "database_dump": {
           "not_available": "Diese Version legt keinen geplanten Datenbank-Dump an.",
-          "disabled": "Der geplante Datenbank-Dump ist ausgeschaltet.",
+          "disabled": "Der geplante Datenbank-Dump ist ausgeschaltet, daher kann keine Kopie diesen Server wieder aufbauen. Zum Wiedereinschalten DB_BACKUP_ENABLED entfernen oder auf true setzen und HealthLog neu starten.",
           "unreadable": "Der Zustand des Datenbank-Dumps konnte nicht gelesen werden.",
           "never_succeeded": "Noch kein Datenbank-Dump ist gelungen, und der letzte Versuch ist fehlgeschlagen.",
           "never_ran": "In den {hours} Stunden, seit Dumps eingeschaltet sind, wurde kein Datenbank-Dump geschrieben.",
@@ -8682,7 +8682,7 @@
         },
         "recovery_kit": {
           "confirmed": "Von jedem Schlüssel, den eine Wiederherstellung braucht, gibt es eine Kopie.",
-          "out_of_date": "Das Wiederherstellungs-Kit führt Schlüssel auf, für die niemand eine Kopie bestätigt hat: {keys}.",
+          "out_of_date": "Das Wiederherstellungs-Kit führt jetzt auch {keys} auf, was die letzte Bestätigung nicht abgedeckt hat. Nichts ist kaputt: Sichere eine Kopie und bestätige das Kit erneut.",
           "no_admin": "Es gibt noch kein Admin-Konto.",
           "not_confirmed": "Niemand hat eine Kopie der Schlüssel bestätigt, die eine Wiederherstellung braucht: {keys}.",
           "not_confirmed_grace": "Sichere eine Kopie der Schlüssel, die eine Wiederherstellung braucht: {keys}."

@@ -8605,7 +8605,7 @@
       "stale": "De kit is gewijzigd sinds deze pagina is geladen. Controleer de sleutels die er nu in staan en bevestig daarna opnieuw.",
       "confirmedAt": "Bevestigd op {date}.",
       "confirmedAtBy": "Bevestigd op {date} door {who}.",
-      "dueAgain": "De kit is bevestigd op {date}, maar bevat nu sleutels die niet onder die bevestiging vallen: {keys}."
+      "dueAgain": "De kit is bevestigd op {date}. Hij vermeldt nu ook {keys}, die die bevestiging niet dekte. Bewaar van elk een kopie en bevestig opnieuw."
     },
     "recoveryReadiness": {
       "title": "Herstelbaarheid",
@@ -8644,7 +8644,7 @@
       "reason": {
         "database_dump": {
           "not_available": "Deze versie plant geen databasedump in.",
-          "disabled": "De geplande databasedump is uitgeschakeld.",
+          "disabled": "De geplande databasedump staat uit, dus geen enkele kopie kan deze server opnieuw opbouwen. Verwijder DB_BACKUP_ENABLED of zet het op true en herstart HealthLog om hem weer aan te zetten.",
           "unreadable": "De status van de databasedump kon niet worden gelezen.",
           "never_succeeded": "Er is nog geen databasedump gelukt, en de laatste poging is mislukt.",
           "never_ran": "In de {hours} uur sinds dumps zijn ingeschakeld, is er geen databasedump geschreven.",
@@ -8682,7 +8682,7 @@
         },
         "recovery_kit": {
           "confirmed": "Van elke sleutel die een herstel nodig heeft, wordt een kopie bewaard.",
-          "out_of_date": "De herstelkit bevat sleutels waarvan niemand een kopie heeft bevestigd: {keys}.",
+          "out_of_date": "De herstelkit vermeldt nu ook {keys}, die de laatste bevestiging niet dekte. Er is niets kapot: bewaar een kopie en bevestig de kit opnieuw.",
           "no_admin": "Er is nog geen beheerdersaccount.",
           "not_confirmed": "Niemand heeft een kopie bevestigd van de sleutels die een herstel nodig heeft: {keys}.",
           "not_confirmed_grace": "Bewaar een kopie van de sleutels die een herstel nodig heeft: {keys}."

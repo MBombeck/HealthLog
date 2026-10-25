@@ -8605,7 +8605,7 @@
       "stale": "O kit mudou desde que esta página carregou. Verifique as chaves que ele lista agora e confirme novamente.",
       "confirmedAt": "Confirmado em {date}.",
       "confirmedAtBy": "Confirmado em {date} por {who}.",
-      "dueAgain": "O kit foi confirmado em {date}, mas agora lista chaves que essa confirmação não cobre: {keys}."
+      "dueAgain": "O kit foi confirmado em {date}. Agora ele também lista {keys}, que essa confirmação não cobria. Guarde uma cópia de cada uma e confirme de novo."
     },
     "recoveryReadiness": {
       "title": "Prontidão para recuperação",
@@ -8644,7 +8644,7 @@
       "reason": {
         "database_dump": {
           "not_available": "Esta versão não agenda um dump do banco de dados.",
-          "disabled": "O dump agendado do banco de dados está desativado.",
+          "disabled": "O dump agendado do banco de dados está desligado, então nenhuma cópia consegue reconstruir este servidor. Para religá-lo, remova DB_BACKUP_ENABLED ou defina-o como true e reinicie o HealthLog.",
           "unreadable": "Não foi possível ler o status do dump do banco de dados.",
           "never_succeeded": "Nenhum dump do banco de dados foi concluído com sucesso ainda, e a última tentativa falhou.",
           "never_ran": "Nenhum dump do banco de dados foi gravado nas {hours} horas desde que os dumps foram ativados.",
@@ -8682,7 +8682,7 @@
         },
         "recovery_kit": {
           "confirmed": "Há uma cópia guardada de cada chave de que uma restauração precisa.",
-          "out_of_date": "O kit de recuperação lista chaves das quais ninguém confirmou uma cópia: {keys}.",
+          "out_of_date": "O kit de recuperação agora também lista {keys}, que a última confirmação não cobria. Nada quebrou: guarde uma cópia e confirme o kit de novo.",
           "no_admin": "Ainda não há uma conta de administrador.",
           "not_confirmed": "Ninguém confirmou uma cópia das chaves de que uma restauração precisa: {keys}.",
           "not_confirmed_grace": "Guarde uma cópia das chaves de que uma restauração precisa: {keys}."

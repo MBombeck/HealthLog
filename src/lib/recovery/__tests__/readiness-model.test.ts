@@ -92,15 +92,35 @@ describe("database dump", () => {
   const evalDump = (d: ReadinessInputs["dump"], watched: Date | null = null) =>
     evaluateDatabaseDump({ now: NOW, dump: d, dumpWatchedSince: watched });
 
-  it("does not apply while no dump is scheduled, or while it is switched off", () => {
+  it("does not apply while no dump is scheduled", () => {
     expect(evalDump(null)).toMatchObject({
       state: "inactive",
       reason: "not_available",
     });
+  });
+
+  it("calls a switched-off dump attention, once, unless it could never write one", () => {
     expect(evalDump(dump({ enabled: false }))).toMatchObject({
-      state: "inactive",
+      state: "attention",
       reason: "disabled",
     });
+    // Never ran, but a bucket could take it: still a choice worth naming.
+    expect(
+      evalDump(
+        dump({
+          enabled: false,
+          lastGoodAt: null,
+          localDirWritable: false,
+          offhostConfigured: true,
+        }),
+      ).state,
+    ).toBe("attention");
+    // Never ran and nowhere to write: switched off what it could not do.
+    expect(
+      evalDump(
+        dump({ enabled: false, lastGoodAt: null, localDirWritable: false }),
+      ),
+    ).toMatchObject({ state: "inactive", reason: "disabled" });
   });
 
   it("fails when its status cannot be read", () => {

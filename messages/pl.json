@@ -8605,7 +8605,7 @@
       "stale": "Zestaw zmienił się od wczytania tej strony. Sprawdź klucze, które teraz wymienia, a potem potwierdź ponownie.",
       "confirmedAt": "Potwierdzono {date}.",
       "confirmedAtBy": "Potwierdzono {date}, potwierdził(a): {who}.",
-      "dueAgain": "Zestaw potwierdzono {date}, ale teraz wymienia klucze, których to potwierdzenie nie obejmuje: {keys}."
+      "dueAgain": "Zestaw potwierdzono {date}. Zawiera teraz także {keys}, czego to potwierdzenie nie obejmowało. Zapisz kopię każdego i potwierdź ponownie."
     },
     "recoveryReadiness": {
       "title": "Gotowość do odzyskiwania",
@@ -8644,7 +8644,7 @@
       "reason": {
         "database_dump": {
           "not_available": "Ta wersja nie planuje zrzutu bazy danych.",
-          "disabled": "Zaplanowany zrzut bazy danych jest wyłączony.",
+          "disabled": "Zaplanowany zrzut bazy danych jest wyłączony, więc żadna kopia nie odtworzy tego serwera. Aby go włączyć, usuń DB_BACKUP_ENABLED lub ustaw na true i uruchom HealthLog ponownie.",
           "unreadable": "Nie udało się odczytać stanu zrzutu bazy danych.",
           "never_succeeded": "Żaden zrzut bazy danych jeszcze się nie udał, a ostatnia próba zakończyła się błędem.",
           "never_ran": "Od włączenia zrzutów minęło {hours} h, a nie zapisano żadnego zrzutu bazy danych.",
@@ -8682,7 +8682,7 @@
         },
         "recovery_kit": {
           "confirmed": "Istnieje kopia każdego klucza potrzebnego do przywrócenia.",
-          "out_of_date": "Zestaw odzyskiwania wymienia klucze, których kopii nikt nie potwierdził: {keys}.",
+          "out_of_date": "Zestaw odzyskiwania zawiera teraz także {keys}, czego ostatnie potwierdzenie nie obejmowało. Nic się nie zepsuło: zapisz kopię i potwierdź zestaw ponownie.",
           "no_admin": "Nie ma jeszcze konta administratora.",
           "not_confirmed": "Nikt nie potwierdził kopii kluczy potrzebnych do przywrócenia: {keys}.",
           "not_confirmed_grace": "Zapisz kopię kluczy potrzebnych do przywrócenia: {keys}."
