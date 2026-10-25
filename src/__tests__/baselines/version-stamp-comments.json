@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2897,
-  "total": 9246,
+  "total": 9243,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1381,7 +1381,7 @@
     "components/settings/integrations/connections-panel.tsx": 5,
     "components/settings/integrations/garmin-info-note.tsx": 1,
     "components/settings/integrations/notification-channels-panel.tsx": 1,
-    "components/settings/integrations/setup-guide-link.tsx": 5,
+    "components/settings/integrations/setup-guide-link.tsx": 2,
     "components/settings/integrations/shared.tsx": 3,
     "components/settings/labs-section.tsx": 1,
     "components/settings/layout-groups.ts": 2,

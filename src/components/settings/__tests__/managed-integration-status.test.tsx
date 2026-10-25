@@ -139,7 +139,7 @@ describe("<ManagedIntegrationStatus>", () => {
       "Services you connect here send their data to Managed record&#x27;s record, not to yours.",
     );
     expect(html).toContain(
-      'href="https://docs.healthlog.dev/self-hosting/account-sharing#records-with-no-login"',
+      'href="https://docs.healthlog.dev/guides/managed-profiles/#connected-services"',
     );
   });
 

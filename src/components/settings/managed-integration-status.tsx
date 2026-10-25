@@ -54,7 +54,7 @@ const INTEGRATION_DISPLAY_NAMES = {
 
 /** Where the guardian boundary is explained, connected services included. */
 const SHARING_DOCS_HREF =
-  "https://docs.healthlog.dev/self-hosting/account-sharing#records-with-no-login";
+  "https://docs.healthlog.dev/guides/managed-profiles/#connected-services";
 
 function iconFor(key: ManagedIntegrationKey) {
   if (key === "nightscout") return Droplet;
