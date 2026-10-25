@@ -6,6 +6,7 @@ vi.mock("@/lib/db", () => ({ prisma: {} }));
 vi.mock("@/lib/api-handler", () => ({
   apiHandler: <T extends (...args: unknown[]) => Promise<Response>>(h: T): T =>
     h,
+  requireAuth: vi.fn(),
 }));
 
 vi.mock("@/lib/rate-limit", () => ({
@@ -29,6 +30,7 @@ import { POST } from "../route";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getGlitchtipSettings } from "@/lib/monitoring-settings";
 import { sendGlitchtipEvent } from "@/lib/monitoring/glitchtip";
+import { requireAuth } from "@/lib/api-handler";
 
 function jsonReq(body: unknown, contentType = "application/json"): NextRequest {
   return new NextRequest("http://localhost/api/monitoring/glitchtip", {
@@ -40,6 +42,9 @@ function jsonReq(body: unknown, contentType = "application/json"): NextRequest {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(requireAuth).mockResolvedValue({
+    user: { id: "user-1" },
+  } as Awaited<ReturnType<typeof requireAuth>>);
   vi.mocked(checkRateLimit).mockResolvedValue({
     allowed: true,
     remaining: 19,
@@ -58,6 +63,20 @@ beforeEach(() => {
 });
 
 describe("POST /api/monitoring/glitchtip", () => {
+  it("relays nothing for a caller without a session", async () => {
+    vi.mocked(requireAuth).mockRejectedValue(new Error("Unauthorized"));
+    await expect(POST(jsonReq({ message: "injected" }))).rejects.toThrow();
+    expect(sendGlitchtipEvent).not.toHaveBeenCalled();
+    expect(checkRateLimit).not.toHaveBeenCalled();
+  });
+
+  it("limits the relay per account", async () => {
+    await POST(jsonReq({ message: "boom" }));
+    expect(vi.mocked(checkRateLimit).mock.calls[0]![0]).toBe(
+      "glitchtip:user:user-1",
+    );
+  });
+
   it("returns 429 when rate limit is exceeded", async () => {
     vi.mocked(checkRateLimit).mockResolvedValue({
       allowed: false,
@@ -169,20 +188,9 @@ describe("POST /api/monitoring/glitchtip", () => {
     expect(res.status).toBe(502);
   });
 
-  it("rate-limits per IP — uses x-forwarded-for as the bucket key", async () => {
-    const r = new NextRequest("http://localhost/api/monitoring/glitchtip", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-forwarded-for": "10.0.0.42",
-      },
-      body: JSON.stringify({ message: "boom" }),
-    });
-    await POST(r);
+  it("keeps the documented 20 per minute window", async () => {
+    await POST(jsonReq({ message: "boom" }));
     const callArgs = vi.mocked(checkRateLimit).mock.calls[0];
-    // First arg is the bucket key — must include the resolved client IP.
-    expect(callArgs?.[0]).toContain("10.0.0.42");
-    // 20 requests / 60 000 ms — guard the documented sliding window.
     expect(callArgs?.[1]).toBe(20);
     expect(callArgs?.[2]).toBe(60_000);
   });

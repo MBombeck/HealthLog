@@ -4,13 +4,12 @@ import {
   apiError,
   apiSuccess,
   apiValidationError,
-  getClientIp,
   sanitiseZodIssues,
 } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getGlitchtipSettings } from "@/lib/monitoring-settings";
 import { sendGlitchtipEvent } from "@/lib/monitoring/glitchtip";
-import { apiHandler } from "@/lib/api-handler";
+import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
 
 const clientErrorSchema = z
@@ -24,11 +23,17 @@ const clientErrorSchema = z
   })
   .strict();
 
+/**
+ * The browser's error reporter relays here into the operator's GlitchTip.
+ * It needs a signed-in session: the relay used to be anonymous, so anyone
+ * could write events into the incident list, limited only per address. A
+ * page that fails before sign-in goes unreported, which is the price.
+ */
 export const POST = apiHandler(async (request: NextRequest) => {
   annotate({ action: { name: "monitoring.glitchtip.report" } });
 
-  const ip = getClientIp(request);
-  const rl = await checkRateLimit(`glitchtip:${ip}`, 20, 60 * 1000);
+  const { user } = await requireAuth();
+  const rl = await checkRateLimit(`glitchtip:user:${user.id}`, 20, 60 * 1000);
   if (!rl.allowed) return apiError("Rate limit exceeded", 429);
 
   const settings = await getGlitchtipSettings();
