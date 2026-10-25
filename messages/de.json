@@ -7655,7 +7655,8 @@
     "deleteAccountCardDetailGrace": "Dein Konto wird sofort gesperrt und nach {days} Tagen endgültig gelöscht. Bis dahin kann ein Admin dieses Servers die Löschung rückgängig machen.",
     "deleteAccountConfirmDescriptionGrace": "Du wirst abgemeldet und dein Konto wird sofort gesperrt. Nach {days} Tagen wird es endgültig gelöscht, mit allen Gesundheitsdaten, Passkeys, Sessions und Audit-Einträgen. Bis dahin kann ein Admin dieses Servers die Löschung rückgängig machen. Kopien in den Sicherungen dieses Servers verfallen nach ihrer Aufbewahrungsfrist.",
     "deleteAccountScheduled": "Dein Konto ist gesperrt und wird am {date} endgültig gelöscht. Du wirst abgemeldet.",
-    "dangerZoneSuccessGrace": "Deine Gesundheitsakte wurde gelöscht. Ein Admin dieses Servers kann sie bis zum {date} wiederherstellen."
+    "dangerZoneSuccessGrace": "Deine Gesundheitsakte wurde gelöscht. Ein Admin dieses Servers kann sie bis zum {date} wiederherstellen.",
+    "dangerZoneRestoreLimits": "Auch Zugriffe enden: was du mit anderen teilst, was andere mit dir teilen, und jede Rolle als betreuende Person. Eine Wiederherstellung bringt die Akte so zurück, wie sie jetzt ist. Was nach dem Löschen hinzukommt, wird dabei ersetzt, und Integrationsverbindungen, Freigaben, Betreuungsrollen und Freigabe-Links kommen nicht zurück; sie müssen neu eingerichtet werden."
   },
   "admin": {
     "title": "Administration",
@@ -8352,7 +8353,8 @@
           "offhostFailedTitle": "Der neueste Datenbank-Dump ist nicht im externen Bucket angekommen",
           "offhostLastUpload": "Der neueste Dump im Bucket stammt vom {when}.",
           "offhostNeverUploaded": "Bisher ist kein Datenbank-Dump im Bucket angekommen."
-        }
+        },
+        "restorePreWipeLimits": "Diese Kopie wurde vor dem Löschen der Daten des Kontos angelegt, und ihre Wiederherstellung macht das Löschen rückgängig, soweit eine Kopie das kann: Was das Konto seitdem hinzugefügt hat, wird ersetzt, und Integrationsverbindungen, Freigaben, Betreuungszugriffe und Freigabe-Links kommen nicht zurück."
       },
       "danger-zone": {
         "title": "Gefahrenzone",

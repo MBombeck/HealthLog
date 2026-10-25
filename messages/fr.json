@@ -7655,7 +7655,8 @@
     "deleteAccountCardDetailGrace": "Votre compte est verrouillé immédiatement et effacé au bout de {days} jours. D’ici là, un administrateur de ce serveur peut annuler la suppression.",
     "deleteAccountConfirmDescriptionGrace": "Vous êtes déconnecté et votre compte est verrouillé immédiatement. Au bout de {days} jours, il est effacé définitivement, avec toutes vos données de santé, vos clés d’accès, vos sessions et vos entrées d’audit. D’ici là, un administrateur de ce serveur peut annuler la suppression. Les copies dans les sauvegardes de ce serveur expirent à la fin de leur durée de conservation.",
     "deleteAccountScheduled": "Votre compte est verrouillé et sera effacé le {date}. Déconnexion en cours.",
-    "dangerZoneSuccessGrace": "Votre dossier de santé a été supprimé. Un administrateur de ce serveur peut le restaurer jusqu’au {date}."
+    "dangerZoneSuccessGrace": "Votre dossier de santé a été supprimé. Un administrateur de ce serveur peut le restaurer jusqu’au {date}.",
+    "dangerZoneRestoreLimits": "Les accès prennent fin aussi : ce que vous partagez avec d’autres, ce qu’ils partagent avec vous, et tout rôle de personne responsable. Une restauration remet le dossier tel qu’il est maintenant. Ce qui est ajouté après la suppression est remplacé, et les connexions d’intégration, les partages, les rôles de personne responsable et les liens de partage ne reviennent pas ; il faut les configurer à nouveau."
   },
   "admin": {
     "title": "Administration",
@@ -8352,7 +8353,8 @@
           "offhostFailedTitle": "Le dump le plus récent de la base de données n'est pas arrivé dans le bucket externe",
           "offhostLastUpload": "Le dump le plus récent du bucket date du {when}.",
           "offhostNeverUploaded": "Aucun dump de la base de données n'est encore arrivé dans le bucket."
-        }
+        },
+        "restorePreWipeLimits": "Cette copie a été prise avant la suppression des données du compte, et la restaurer annule cette suppression autant qu’une copie le peut : ce que le compte a ajouté depuis est remplacé, et les connexions d’intégration, les partages, l’accès des personnes responsables et les liens de partage ne reviennent pas."
       },
       "danger-zone": {
         "title": "Zone de danger",

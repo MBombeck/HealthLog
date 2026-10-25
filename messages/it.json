@@ -7655,7 +7655,8 @@
     "deleteAccountCardDetailGrace": "Il tuo account viene bloccato subito e cancellato dopo {days} giorni. Fino ad allora un amministratore di questo server può annullare l’eliminazione.",
     "deleteAccountConfirmDescriptionGrace": "Vieni disconnesso e il tuo account viene bloccato subito. Dopo {days} giorni viene cancellato definitivamente, con tutti i dati sanitari, le passkey, le sessioni e le voci di audit. Fino ad allora un amministratore di questo server può annullare l’eliminazione. Le copie nei backup di questo server scadono al termine del loro periodo di conservazione.",
     "deleteAccountScheduled": "Il tuo account è bloccato e verrà cancellato il {date}. Disconnessione in corso.",
-    "dangerZoneSuccessGrace": "La tua cartella sanitaria è stata eliminata. Un amministratore di questo server può ripristinarla fino al {date}."
+    "dangerZoneSuccessGrace": "La tua cartella sanitaria è stata eliminata. Un amministratore di questo server può ripristinarla fino al {date}.",
+    "dangerZoneRestoreLimits": "Finisce anche l’accesso: ciò che condividi con altri, ciò che altri condividono con te e ogni ruolo di persona responsabile. Un ripristino riporta la cartella com’è adesso. Ciò che si aggiunge dopo l’eliminazione viene sostituito, e le connessioni di integrazione, le condivisioni, i ruoli di persona responsabile e i link di condivisione non tornano; vanno configurati di nuovo."
   },
   "admin": {
     "title": "Administration",
@@ -8352,7 +8353,8 @@
           "offhostFailedTitle": "Il dump più recente del database non è arrivato nel bucket esterno",
           "offhostLastUpload": "Il dump più recente nel bucket è del {when}.",
           "offhostNeverUploaded": "Nessun dump del database è ancora arrivato nel bucket."
-        }
+        },
+        "restorePreWipeLimits": "Questa copia è stata fatta prima che i dati dell’account venissero eliminati, e ripristinarla annulla l’eliminazione per quanto una copia può: ciò che l’account ha aggiunto nel frattempo viene sostituito, e le connessioni di integrazione, le condivisioni, l’accesso delle persone responsabili e i link di condivisione non tornano."
       },
       "danger-zone": {
         "title": "Zona pericolosa",

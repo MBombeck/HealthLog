@@ -7655,7 +7655,8 @@
     "deleteAccountCardDetailGrace": "Twoje konto zostaje od razu zablokowane i usunięte po {days} dniach. Do tego czasu administrator tego serwera może cofnąć usunięcie.",
     "deleteAccountConfirmDescriptionGrace": "Zostaniesz wylogowany, a twoje konto od razu zablokowane. Po {days} dniach zostanie trwale usunięte, razem ze wszystkimi danymi zdrowotnymi, kluczami dostępu, sesjami i wpisami audytu. Do tego czasu administrator tego serwera może cofnąć usunięcie. Kopie w kopiach zapasowych tego serwera wygasają po upływie okresu przechowywania.",
     "deleteAccountScheduled": "Twoje konto jest zablokowane i zostanie usunięte {date}. Trwa wylogowywanie.",
-    "dangerZoneSuccessGrace": "Twoja dokumentacja zdrowotna została usunięta. Administrator tego serwera może ją przywrócić do {date}."
+    "dangerZoneSuccessGrace": "Twoja dokumentacja zdrowotna została usunięta. Administrator tego serwera może ją przywrócić do {date}.",
+    "dangerZoneRestoreLimits": "Kończy się też dostęp: to, co udostępniasz innym, to, co inni udostępniają tobie, i każda rola osoby opiekującej się. Przywrócenie odtwarza dokumentację taką, jaka jest teraz. To, co dojdzie po usunięciu, zostaje zastąpione, a połączenia integracji, udostępnienia, role opiekunów i linki udostępniania nie wracają; trzeba je skonfigurować od nowa."
   },
   "admin": {
     "title": "Administracja",
@@ -8352,7 +8353,8 @@
           "offhostFailedTitle": "Najnowszy zrzut bazy danych nie trafił do zewnętrznego bucketu",
           "offhostLastUpload": "Najnowszy zrzut w buckecie pochodzi z {when}.",
           "offhostNeverUploaded": "Do bucketu nie trafił jeszcze żaden zrzut bazy danych."
-        }
+        },
+        "restorePreWipeLimits": "Tę kopię wykonano przed usunięciem danych konta, a jej przywrócenie cofa to usunięcie na tyle, na ile pozwala kopia: to, co konto dodało od tego czasu, zostaje zastąpione, a połączenia integracji, udostępnienia, dostęp opiekunów i linki udostępniania nie wracają."
       },
       "danger-zone": {
         "title": "Strefa zagrożenia",

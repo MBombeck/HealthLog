@@ -7655,7 +7655,8 @@
     "deleteAccountCardDetailGrace": "계정은 바로 잠기고 {days}일 뒤에 완전히 지워져요. 그때까지는 이 서버의 관리자가 삭제를 취소할 수 있어요.",
     "deleteAccountConfirmDescriptionGrace": "바로 로그아웃되고 계정이 잠겨요. {days}일 뒤에는 모든 건강 데이터, 패스키, 세션, 감사 기록과 함께 완전히 지워져요. 그때까지는 이 서버의 관리자가 삭제를 취소할 수 있어요. 이 서버 백업에 남은 사본은 보관 기간이 지나면 사라져요.",
     "deleteAccountScheduled": "계정이 잠겼고 {date}에 완전히 지워져요. 로그아웃하는 중이에요.",
-    "dangerZoneSuccessGrace": "건강 기록이 삭제됐어요. {date}까지는 이 서버의 관리자가 복원할 수 있어요."
+    "dangerZoneSuccessGrace": "건강 기록이 삭제됐어요. {date}까지는 이 서버의 관리자가 복원할 수 있어요.",
+    "dangerZoneRestoreLimits": "접근 권한도 끝나요: 다른 사람과 공유한 것, 다른 사람이 나와 공유한 것, 보호자 역할 모두요. 복원하면 기록이 지금 상태로 돌아와요. 삭제 후에 추가된 것은 대체되고, 연동 연결, 공유, 보호자 역할, 공유 링크는 돌아오지 않아서 다시 설정해야 해요."
   },
   "admin": {
     "title": "관리자",
@@ -8327,7 +8328,8 @@
           "offhostFailedTitle": "최신 데이터베이스 덤프가 외부 버킷에 도달하지 못했습니다",
           "offhostLastUpload": "버킷에 있는 최신 덤프는 {when}의 것입니다.",
           "offhostNeverUploaded": "아직 버킷에 도달한 데이터베이스 덤프가 없습니다."
-        }
+        },
+        "restorePreWipeLimits": "이 사본은 계정의 데이터를 삭제하기 전에 만들어졌고, 복원하면 사본이 할 수 있는 만큼 그 삭제를 되돌려요: 그 후에 계정에 추가된 것은 대체되고, 연동 연결, 공유, 보호자 접근, 공유 링크는 돌아오지 않아요."
       },
       "danger-zone": {
         "title": "위험 구역",

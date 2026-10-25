@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { ApiError, apiGet } from "@/lib/api/api-fetch";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
+import { isPreWipeBackupType } from "@/lib/account-deletion/pre-wipe-type";
 import type { BackupRow } from "@/types/backups";
 
 /**
@@ -221,6 +222,24 @@ export function RestorePreview({
  * Mirrors the wipe dialog's pattern but adds the typed gate because the
  * blast radius is bigger (re-creates rows, not just deletes).
  */
+/**
+ * What the restore does, and for a copy a data wipe took, what undoing the
+ * wipe with it does not bring back.
+ */
+export function restoreDescription(
+  row: Pick<BackupRow, "username" | "type">,
+  t: ReturnType<typeof useTranslations>["t"],
+  when: string,
+): string {
+  const replaces = t("admin.section.backups.restoreDescription", {
+    username: row.username,
+    when,
+  });
+  return isPreWipeBackupType(row.type)
+    ? `${replaces} ${t("admin.section.backups.restorePreWipeLimits")}`
+    : replaces;
+}
+
 export function RestoreRowDialog({
   row,
   pending,
@@ -277,10 +296,7 @@ export function RestoreRowDialog({
             {t("admin.section.backups.restoreTitle")}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            {t("admin.section.backups.restoreDescription", {
-              username: row.username,
-              when: fmt.dateTime(row.createdAt),
-            })}
+            {restoreDescription(row, t, fmt.dateTime(row.createdAt))}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {/* What the file contains, before the typed gate. */}

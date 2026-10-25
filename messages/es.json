@@ -7655,7 +7655,8 @@
     "deleteAccountCardDetailGrace": "Tu cuenta se bloquea de inmediato y se borra al cabo de {days} días. Hasta entonces, un administrador de este servidor puede deshacer la eliminación.",
     "deleteAccountConfirmDescriptionGrace": "Se cierra tu sesión y tu cuenta se bloquea de inmediato. Al cabo de {days} días se borra para siempre, con todos tus datos de salud, llaves de acceso, sesiones y entradas de auditoría. Hasta entonces, un administrador de este servidor puede deshacer la eliminación. Las copias en las copias de seguridad de este servidor caducan al terminar su periodo de conservación.",
     "deleteAccountScheduled": "Tu cuenta está bloqueada y se borrará el {date}. Cerrando tu sesión.",
-    "dangerZoneSuccessGrace": "Tu historial de salud se ha eliminado. Un administrador de este servidor puede restaurarlo hasta el {date}."
+    "dangerZoneSuccessGrace": "Tu historial de salud se ha eliminado. Un administrador de este servidor puede restaurarlo hasta el {date}.",
+    "dangerZoneRestoreLimits": "También termina el acceso: lo que compartes con otras personas, lo que ellas comparten contigo y cualquier papel de persona responsable. Una restauración devuelve el historial tal como está ahora. Lo que se añada después de la eliminación se sustituye, y las conexiones de integración, lo compartido, los papeles de persona responsable y los enlaces compartidos no vuelven; hay que configurarlos de nuevo."
   },
   "admin": {
     "title": "Administration",
@@ -8352,7 +8353,8 @@
           "offhostFailedTitle": "El volcado más reciente de la base de datos no llegó al bucket externo",
           "offhostLastUpload": "El volcado más reciente del bucket es del {when}.",
           "offhostNeverUploaded": "Todavía no ha llegado ningún volcado de la base de datos al bucket."
-        }
+        },
+        "restorePreWipeLimits": "Esta copia se tomó antes de que se eliminaran los datos de la cuenta, y restaurarla deshace esa eliminación hasta donde una copia puede: lo que la cuenta añadió desde entonces se sustituye, y las conexiones de integración, lo compartido, el acceso de personas responsables y los enlaces compartidos no vuelven."
       },
       "danger-zone": {
         "title": "Zona de peligro",

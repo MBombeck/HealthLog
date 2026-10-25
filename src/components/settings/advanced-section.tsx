@@ -38,6 +38,21 @@ import { formatDate } from "@/lib/format";
  * acknowledgment dialog, the endpoint behind it and the three user columns
  * it stamped are gone. This page is the destructive controls.
  */
+/**
+ * What deleting all data does. With a grace window it also says what a
+ * restore of the copy does not bring back: what arrives after the wipe is
+ * replaced, and connections, sharing, Guardian roles and share links are
+ * gone for good.
+ */
+export function wipeConfirmBody(
+  graceDays: number,
+  t: ReturnType<typeof useTranslations>["t"],
+): string {
+  return graceDays > 0
+    ? `${t("settings.dangerZoneConfirmDescriptionGrace", { days: graceDays })} ${t("settings.dangerZoneRestoreLimits")}`
+    : t("settings.dangerZoneConfirmDescription");
+}
+
 export function AdvancedSection() {
   // v1.18.6 — the visible heading + subtitle now come from the shared
   // `<SettingsSectionFrame>` in the route; this body is the advanced cards.
@@ -165,13 +180,7 @@ function DataResetCard() {
             setConfirmOpen(open);
           }}
           title={t("settings.dangerZoneConfirm")}
-          body={
-            graceDays > 0
-              ? t("settings.dangerZoneConfirmDescriptionGrace", {
-                  days: graceDays,
-                })
-              : t("settings.dangerZoneConfirmDescription")
-          }
+          body={wipeConfirmBody(graceDays, t)}
           confirmLabel={t("settings.finalDelete")}
           onConfirm={() => void handleDeleteAllData()}
           pending={deleting}

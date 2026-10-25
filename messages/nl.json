@@ -7655,7 +7655,8 @@
     "deleteAccountCardDetailGrace": "Je account wordt meteen vergrendeld en na {days} dagen gewist. Tot dan kan een beheerder van deze server de verwijdering ongedaan maken.",
     "deleteAccountConfirmDescriptionGrace": "Je wordt uitgelogd en je account wordt meteen vergrendeld. Na {days} dagen wordt het definitief gewist, met alle gezondheidsgegevens, passkeys, sessies en auditregels. Tot dan kan een beheerder van deze server de verwijdering ongedaan maken. Kopieën in de back-ups van deze server verlopen na hun bewaartermijn.",
     "deleteAccountScheduled": "Je account is vergrendeld en wordt op {date} gewist. Je wordt uitgelogd.",
-    "dangerZoneSuccessGrace": "Je gezondheidsdossier is verwijderd. Een beheerder van deze server kan het tot {date} terugzetten."
+    "dangerZoneSuccessGrace": "Je gezondheidsdossier is verwijderd. Een beheerder van deze server kan het tot {date} terugzetten.",
+    "dangerZoneRestoreLimits": "Ook toegang eindigt: wat je met anderen deelt, wat anderen met jou delen en elke rol als verzorger. Terugzetten brengt het dossier terug zoals het nu is. Wat na het verwijderen is toegevoegd, wordt vervangen, en koppelingen, delen, verzorgersrollen en deellinks komen niet terug; die moeten opnieuw worden ingesteld."
   },
   "admin": {
     "title": "Beheer",
@@ -8352,7 +8353,8 @@
           "offhostFailedTitle": "De nieuwste databasedump is niet in de externe bucket aangekomen",
           "offhostLastUpload": "De nieuwste dump in de bucket is van {when}.",
           "offhostNeverUploaded": "Er is nog geen databasedump in de bucket aangekomen."
-        }
+        },
+        "restorePreWipeLimits": "Deze kopie is gemaakt voordat de gegevens van het account werden verwijderd, en terugzetten maakt dat verwijderen ongedaan voor zover een kopie dat kan: wat het account sindsdien heeft toegevoegd, wordt vervangen, en koppelingen, delen, verzorgerstoegang en deellinks komen niet terug."
       },
       "danger-zone": {
         "title": "Gevarenzone",

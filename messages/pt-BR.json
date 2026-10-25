@@ -7655,7 +7655,8 @@
     "deleteAccountCardDetailGrace": "Sua conta é bloqueada na hora e apagada depois de {days} dias. Até lá, um administrador deste servidor pode desfazer a exclusão.",
     "deleteAccountConfirmDescriptionGrace": "Você sai da sessão e sua conta é bloqueada na hora. Depois de {days} dias, ela é apagada de vez, com todos os dados de saúde, chaves de acesso, sessões e registros de auditoria. Até lá, um administrador deste servidor pode desfazer a exclusão. As cópias nos backups deste servidor expiram depois do período de retenção.",
     "deleteAccountScheduled": "Sua conta está bloqueada e será apagada em {date}. Saindo da sessão.",
-    "dangerZoneSuccessGrace": "Seu registro de saúde foi excluído. Um administrador deste servidor pode restaurá-lo até {date}."
+    "dangerZoneSuccessGrace": "Seu registro de saúde foi excluído. Um administrador deste servidor pode restaurá-lo até {date}.",
+    "dangerZoneRestoreLimits": "O acesso também termina: o que você compartilha com outras pessoas, o que elas compartilham com você e qualquer papel de guardião. Uma restauração traz o registro de volta como está agora. O que for adicionado depois da exclusão é substituído, e conexões de integração, compartilhamentos, papéis de guardião e links de compartilhamento não voltam; precisam ser configurados de novo."
   },
   "admin": {
     "title": "Administração",
@@ -8352,7 +8353,8 @@
           "offhostFailedTitle": "O dump mais recente do banco de dados não chegou ao bucket externo",
           "offhostLastUpload": "O dump mais recente no bucket é de {when}.",
           "offhostNeverUploaded": "Nenhum dump do banco de dados chegou ao bucket ainda."
-        }
+        },
+        "restorePreWipeLimits": "Esta cópia foi feita antes de os dados da conta serem excluídos, e restaurá-la desfaz essa exclusão até onde uma cópia consegue: o que a conta adicionou desde então é substituído, e conexões de integração, compartilhamentos, acesso de guardiões e links de compartilhamento não voltam."
       },
       "danger-zone": {
         "title": "Zona de perigo",
