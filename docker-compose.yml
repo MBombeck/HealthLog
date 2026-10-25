@@ -14,9 +14,11 @@
 # and login silently fails. This is the single most common self-host snag.
 # Leave it unset (or true) only when a TLS reverse proxy serves HTTPS.
 #
-# Persistent state lives in exactly one named volume (`postgres-data`,
-# Postgres' data). The app container is stateless, so a backup of the database
-# is a backup of everything. `pgdata` is where Postgres 16 kept the data up to
+# Persistent state lives in the named volume `postgres-data` (Postgres' data).
+# The app container is stateless, so a backup of the database is a backup of
+# everything. `backups` holds the database dumps the app takes every night and
+# before every migration (docs/ops/disaster-recovery.md); keep a copy of them
+# off this host, or set the off-host bucket below. `pgdata` is where Postgres 16 kept the data up to
 # v1.45; on an install that has it, `db-upgrade` moves it into Postgres 18 once
 # and then leaves it alone as the way back (docs/ops/postgres-major-upgrade.md). The optional GeoLite2 databases are either baked
 # into the image at build time or mounted read-only from the host and
@@ -147,6 +149,20 @@ x-healthlog-env: &healthlog_env
   # serves anyway. A last resort for a refusal you are certain is false: it
   # disables a safety check. See docs/self-hosting/getting-started.md.
   ENCRYPTION_KEY_CHECK: "${ENCRYPTION_KEY_CHECK:-}"
+  # The whole-database dump (docs/ops/disaster-recovery.md). Nightly at
+  # DB_BACKUP_SCHEDULE (five-field cron in Europe/Berlin time, default
+  # "30 1 * * *") into DB_BACKUP_DIR (default /var/lib/healthlog/backups, the
+  # `backups` volume below), keeping DB_BACKUP_KEEP daily dumps (default 7)
+  # and the last two taken before a migration. With the off-host bucket set,
+  # each nightly dump is also uploaded under `database/`, sealed with
+  # BACKUP_ENCRYPTION_KEY. DB_BACKUP_ENABLED=false stops the nightly dump;
+  # DB_BACKUP_BEFORE_MIGRATE=false skips the dump before migrations. Change
+  # DB_BACKUP_DIR only together with the volume mount.
+  DB_BACKUP_ENABLED: "${DB_BACKUP_ENABLED:-}"
+  DB_BACKUP_DIR: "${DB_BACKUP_DIR:-}"
+  DB_BACKUP_SCHEDULE: "${DB_BACKUP_SCHEDULE:-}"
+  DB_BACKUP_KEEP: "${DB_BACKUP_KEEP:-}"
+  DB_BACKUP_BEFORE_MIGRATE: "${DB_BACKUP_BEFORE_MIGRATE:-}"
   BACKUP_ENCRYPTION_KEY: "${BACKUP_ENCRYPTION_KEY:-}"
   BACKUP_ENCRYPTION_PREVIOUS_KEYS: "${BACKUP_ENCRYPTION_PREVIOUS_KEYS:-}"
   BACKUP_S3_ENDPOINT: "${BACKUP_S3_ENDPOINT:-}"
@@ -475,6 +491,11 @@ services:
       - "3000:3000"
     environment:
       <<: *healthlog_env
+    # The database dumps (DB_BACKUP_DIR). Without this mount the app still
+    # copies its nightly dump off-host when the bucket is set, but keeps none
+    # here and takes none before a migration; the boot log says so.
+    volumes:
+      - backups:/var/lib/healthlog/backups
     # Bring your own GeoLite2 databases. The published image only carries
     # MMDBs if the build had a MaxMind licence key, so on `:latest` the
     # offline tier is usually absent and every login IP goes to the online
@@ -484,9 +505,9 @@ services:
     # matches GEOLITE2_DIR's default (/opt/geolite2), so this works as-is
     # once uncommented. Mounting at a different container path also works,
     # just also set GEOLITE2_DIR in .env to match it.
-    # Steps: docs/self-hosting/geolite2.md.
+    # Steps: docs/self-hosting/geolite2.md. The line goes under `volumes:`
+    # above, beside the backups line:
     #
-    # volumes:
     #   - ./geolite2:/opt/geolite2:ro
     depends_on:
       db:
@@ -563,6 +584,9 @@ services:
   #   environment:
   #     <<: *healthlog_env
   #     HEALTHLOG_PROCESS_TYPE: "worker"
+  #   # The worker takes the nightly database dump, so it needs the volume.
+  #   volumes:
+  #     - backups:/var/lib/healthlog/backups
   #   depends_on:
   #     db:
   #       condition: service_healthy
@@ -776,6 +800,39 @@ services:
         mv "$$MOVING" "$$MARK"
         log "done. The old volume stays as it was, as a way back; see docs/ops/postgres-major-upgrade.md"
 
+  # Restores a database dump into an EMPTY database (docs/ops/disaster-recovery.md).
+  # Never started by `docker compose up`; run it by name:
+  #
+  #   docker compose run --rm db-restore list
+  #   docker compose run --rm db-restore latest
+  #   docker compose run --rm db-restore healthlog-<time>-daily.dump
+  #
+  # It checks the dump against its manifest and the keys in .env against the
+  # keys the dump was written with, refuses a database that already holds
+  # tables, restores in one transaction and compares every table's row count
+  # with the manifest. Start the app only after it says "Restored".
+  # An off-host copy (`database/…dump.enc` and its `.manifest.json.enc`)
+  # restores the same way once both files are in the backups volume, or from a
+  # directory you mount: `docker compose run --rm -v ./from-bucket:/restore:ro
+  # db-restore /restore/healthlog-<time>-daily.dump.enc`.
+  db-restore:
+    image: ghcr.io/mbombeck/healthlog${HEALTHLOG_IMAGE_REF:-:latest}
+    profiles: ["restore"]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      <<: *healthlog_env
+    volumes:
+      - backups:/var/lib/healthlog/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["node", "scripts/db-restore.mjs"]
+    command: ["list"]
+
 volumes:
   postgres-data:
   pgdata:
+  backups:
