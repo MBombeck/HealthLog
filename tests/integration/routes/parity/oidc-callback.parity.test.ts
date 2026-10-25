@@ -22,7 +22,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { GET } from "@/app/api/auth/oidc/callback/route";
 import { encrypt } from "@/lib/crypto";
 import { OIDC_STATE_COOKIE } from "@/lib/auth/oidc-cookie";
-import { SESSION_COOKIE_NAME } from "@/lib/auth/session";
+import { sessionCookieName } from "@/lib/auth/session-cookie";
 
 import { anonymous, callRoute } from "../../../kit/call-route";
 import { makeSession, makeUser } from "../../../kit/factories";
@@ -312,7 +312,7 @@ describe("GET /api/auth/oidc/callback parity", () => {
     const session = await makeSession(first);
     await step("12-duplicate-with-session", {
       state: null,
-      cookies: { [SESSION_COOKIE_NAME]: session.cookie },
+      cookies: { [sessionCookieName()]: session.cookie },
     });
   });
 
@@ -382,7 +382,7 @@ describe("GET /api/auth/oidc/callback parity", () => {
     identity("sub-claimer", "claimer@example.test", true);
     await step("23-claim-signed-in", {
       state: { intent: "claim", claimBinding: "binding-1" },
-      cookies: { [SESSION_COOKIE_NAME]: session.cookie },
+      cookies: { [sessionCookieName()]: session.cookie },
     });
     await step("24-claim-no-cookie", {
       state: { intent: "claim", claimBinding: "binding-1" },

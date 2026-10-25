@@ -94543,4 +94543,6 @@ components:
       type: apiKey
       in: cookie
       name: healthlog_session
-      description: Browser session cookie — set by /api/auth/login.
+      description: Browser session cookie — set by /api/auth/login. Named `__Host-healthlog_session` wherever the cookie is
+        `Secure` (every HTTPS install); a plain-HTTP install, which cannot hold a `__Host-` cookie, keeps
+        `healthlog_session`.

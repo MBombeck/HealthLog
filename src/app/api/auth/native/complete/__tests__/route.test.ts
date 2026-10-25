@@ -20,7 +20,6 @@ vi.mock("@/lib/rate-limit", () => ({
 const validateSessionWithCreatedAt = vi.fn();
 vi.mock("@/lib/auth/session", () => ({
   validateSessionWithCreatedAt: (v: unknown) => validateSessionWithCreatedAt(v),
-  SESSION_COOKIE_NAME: "healthlog_session",
 }));
 
 // Keep the real shared core (buildHandoffCallbackUrl is used by

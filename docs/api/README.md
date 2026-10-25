@@ -82,9 +82,12 @@ before treating a warning as a regression.
     v1.30.17. The path still lists (`GET`) and revokes (`DELETE /api/tokens/{id}`)
     every token above, whichever surface issued it.
 
-  - `sessionCookie` — HttpOnly `healthlog_session` cookie set by the
-    password and passkey login flows. Used by the web app and any iOS
-    client running inside a web view.
+  - `sessionCookie` — HttpOnly session cookie set by the password and
+    passkey login flows. Used by the web app and any iOS client running
+    inside a web view. It is named `__Host-healthlog_session` wherever it is
+    `Secure` (every HTTPS install), so no other host under the same domain
+    can set it; a plain-HTTP install keeps `healthlog_session`. A cookie
+    under the old name is still read and is re-issued under the new one.
 - **`components.schemas`** — DTOs for the documented routes plus the
   underlying Prisma models (e.g. `Measurement`, `Medication`,
   `MedicationIntakeEvent`, `MoodEntry`, `User`, `DashboardLayout`,

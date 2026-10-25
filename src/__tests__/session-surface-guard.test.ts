@@ -190,10 +190,13 @@ describe("S1 — the direct session-resolution set is frozen", () => {
     /\b(getSession|getUnswitchedSession|getSessionUserLocale|validateSessionFromCookieValue|validateSessionWithCreatedAt|loadOnboardingFlowState)\s*\(/;
 
   /**
-   * Reaching for the cookie by name is the way around the helpers. Both the
-   * exported constant and the raw literal count.
+   * Reaching for the cookie by name is the way around the helpers. The
+   * reader (`readSessionCookie`, which tries both names), the exported names
+   * and either raw literal all count; the `__Host-` name joined the old one
+   * when a `Secure` session cookie started being issued under it.
    */
-  const RAW_SESSION_COOKIE = /\bSESSION_COOKIE_NAME\b|"healthlog_session"/;
+  const RAW_SESSION_COOKIE =
+    /\b(readSessionCookie|SESSION_COOKIE_NAMES?|HOST_SESSION_COOKIE|LEGACY_SESSION_COOKIE)\b|"(__Host-)?healthlog_session"/;
 
   it("no file under src/app derives a session outside requireAuth unlisted", () => {
     const resolvers = appFilesMatching(SESSION_DERIVING_HELPERS);

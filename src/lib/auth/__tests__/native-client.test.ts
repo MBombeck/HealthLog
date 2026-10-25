@@ -124,6 +124,17 @@ describe("isCookielessNativeCaller (M-3 refresh-token issuance gate)", () => {
     ).toBe(false);
   });
 
+  it("false when the session cookie arrives under its __Host- name", () => {
+    expect(
+      isCookielessNativeCaller(
+        h({
+          "x-client-type": "native",
+          cookie: "foo=bar; __Host-healthlog_session=abc123",
+        }),
+      ),
+    ).toBe(false);
+  });
+
   it("true for a native caller whose cookie header lacks the session cookie", () => {
     expect(
       isCookielessNativeCaller(

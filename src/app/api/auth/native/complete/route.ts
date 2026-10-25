@@ -29,11 +29,11 @@ import { annotate } from "@/lib/logging/context";
 import { checkAuthSurfaceRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
-import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
+import { validateSessionWithCreatedAt } from "@/lib/auth/session";
 import {
-  validateSessionWithCreatedAt,
-  SESSION_COOKIE_NAME,
-} from "@/lib/auth/session";
+  expireSessionCookies,
+  readSessionCookie,
+} from "@/lib/auth/session-cookie";
 import { mintNativeHandoff } from "@/lib/auth/native-handoff";
 import {
   NATIVE_HANDOFF_STATE_COOKIE,
@@ -95,7 +95,7 @@ export const GET = apiHandler(async (req: NextRequest) => {
   // (row + expiry), never "a cookie is present". Projects `createdAt` so the
   // freshness comparison below is structurally always available.
   const authed = await validateSessionWithCreatedAt(
-    req.cookies.get(SESSION_COOKIE_NAME)?.value,
+    readSessionCookie(req.cookies)?.value,
   );
   if (!authed) {
     annotate({ meta: { reason: "no_session" } });
@@ -140,13 +140,7 @@ export const GET = apiHandler(async (req: NextRequest) => {
   await prisma.session
     .delete({ where: { id: authed.session.id } })
     .catch(() => {});
-  response.cookies.set(SESSION_COOKIE_NAME, "", {
-    httpOnly: true,
-    secure: shouldEmitSecureCookie(),
-    sameSite: "lax",
-    maxAge: 0,
-    path: "/",
-  });
+  expireSessionCookies(response.cookies);
 
   return response;
 });

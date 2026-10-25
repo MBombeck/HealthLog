@@ -25,7 +25,7 @@ import { NextRequest } from "next/server";
 import type { z } from "zod";
 
 import { openApiComponents, openApiPaths } from "@/lib/openapi/routes";
-import { SESSION_COOKIE_NAME } from "@/lib/auth/session";
+import { sessionCookieName } from "@/lib/auth/session-cookie";
 
 import { cookieJar, headerJar } from "../integration/mock-next-headers";
 import type { BearerFixture, SessionFixture } from "./factories";
@@ -122,7 +122,7 @@ export async function callRoute<T = unknown>(
     headers.set("authorization", `Bearer ${options.auth.token}`);
   }
   if (options.auth.kind === "session") {
-    headers.set("cookie", `${SESSION_COOKIE_NAME}=${options.auth.cookie}`);
+    headers.set("cookie", `${sessionCookieName()}=${options.auth.cookie}`);
   }
 
   // `next/headers` is served from the shared jars; fill them for this call
@@ -133,7 +133,7 @@ export async function callRoute<T = unknown>(
   const savedHeaders = new Map(headerJar);
   cookieJar.clear();
   if (options.auth.kind === "session") {
-    cookieJar.set(SESSION_COOKIE_NAME, options.auth.cookie);
+    cookieJar.set(sessionCookieName(), options.auth.cookie);
   }
   headerJar.delete("authorization");
   headers.forEach((value, name) => headerJar.set(name.toLowerCase(), value));
