@@ -258,3 +258,55 @@ describe("webPushSubscriptionSchema SSRF guard (V3 audit)", () => {
     expect(r.success).toBe(false);
   });
 });
+
+/**
+ * Ranges the floor used to call public: benchmarking, IETF protocol
+ * assignments, multicast, reserved and broadcast IPv4; site-local and
+ * multicast IPv6; the IPv4-translated spelling of a private address; and a
+ * denylisted name written fully qualified with a trailing dot.
+ */
+describe("isPublicIp / isPublicUrl — reserved ranges and spellings", () => {
+  it("refuses the reserved IPv4 ranges", () => {
+    for (const ip of [
+      "198.18.0.1",
+      "198.19.255.254",
+      "192.0.0.1",
+      "224.0.0.1",
+      "239.255.255.250",
+      "240.0.0.1",
+      "255.255.255.255",
+    ]) {
+      expect(isPublicIp(ip), ip).toBe(false);
+    }
+    for (const ip of ["198.17.0.1", "198.20.0.1", "192.0.1.1", "223.255.0.1"]) {
+      expect(isPublicIp(ip), ip).toBe(true);
+    }
+  });
+
+  it("refuses site-local, multicast and IPv4-translated IPv6", () => {
+    for (const ip of [
+      "fec0::1",
+      "feff::1",
+      "ff02::1",
+      "::ffff:0:7f00:1",
+      "::ffff:0:a9fe:a9fe",
+    ]) {
+      expect(isPublicIp(ip), ip).toBe(false);
+    }
+    expect(isPublicIp("::ffff:0:808:808")).toBe(true);
+  });
+
+  it("refuses a denylisted name written with a trailing dot", () => {
+    for (const url of [
+      "http://localhost./",
+      "http://localhost../x",
+      "http://metadata.google.internal./",
+      "http://printer.local./",
+      "http://127.0.0.1./",
+      "http://[::ffff:0:7f00:1]/",
+    ]) {
+      expect(isPublicUrl(url), url).toBe(false);
+    }
+    expect(isPublicUrl("https://example.com./")).toBe(true);
+  });
+});
