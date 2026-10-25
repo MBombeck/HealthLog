@@ -14,7 +14,7 @@ Never point the seed or the benchmark at a database that holds real data. They w
 ```sh
 docker run -d --name hl-bench-db --shm-size=256m \
   -e POSTGRES_USER=bench -e POSTGRES_PASSWORD=bench -e POSTGRES_DB=healthlog_bench \
-  -p 55432:5432 postgres:16.15-alpine \
+  -p 55432:5432 postgres:18.6-alpine \
   postgres -c shared_preload_libraries=pg_stat_statements -c pg_stat_statements.track=top
 ```
 

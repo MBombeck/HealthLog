@@ -84,7 +84,7 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4]
-    name: integration shard ${{ matrix.shard }}/4 (shuffled)
+    name: integration shard ${{ matrix.shard }}/4 (shuffled, Postgres 16)
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -110,6 +110,10 @@ jobs:
         shell: bash
         env:
           HEALTHLOG_INTEGRATION_WORKERS: "3"
+          # Pull requests run the suite on Postgres 18, the compose default.
+          # Installs that bring their own database may still be on 16, so the
+          # nightly run keeps that major covered without doubling every PR.
+          INTEGRATION_PG_IMAGE: "postgres:16-alpine"
           # Four times each property's own case count; a property's timeout
           # grows by the same factor (`propertyTimeout`).
           FC_RUNS_FACTOR: "4"

@@ -1,4 +1,4 @@
-# HealthLog — two-container stack (app + Postgres 16).
+# HealthLog — two-container stack (app + Postgres 18).
 #
 # First run (clean host):
 #   cp .env.example .env
@@ -14,9 +14,11 @@
 # and login silently fails. This is the single most common self-host snag.
 # Leave it unset (or true) only when a TLS reverse proxy serves HTTPS.
 #
-# Persistent state lives in exactly one named volume (`pgdata`, Postgres'
-# data dir). The app container is stateless, so a backup of the database is
-# a backup of everything. The optional GeoLite2 databases are either baked
+# Persistent state lives in exactly one named volume (`postgres-data`,
+# Postgres' data). The app container is stateless, so a backup of the database
+# is a backup of everything. `pgdata` is where Postgres 16 kept the data up to
+# v1.45; on an install that has it, `db-upgrade` moves it into Postgres 18 once
+# and then leaves it alone as the way back (docs/ops/postgres-major-upgrade.md). The optional GeoLite2 databases are either baked
 # into the image at build time or mounted read-only from the host and
 # pointed at with GEOLITE2_DIR — either way they are replaceable, not state.
 
@@ -489,6 +491,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      db-upgrade:
+        condition: service_completed_successfully
     restart: unless-stopped
     # Bounded log rotation: the default json-file driver keeps every line
     # forever, which is exactly what fills the disk on the small NAS /
@@ -562,6 +566,8 @@ services:
   #   depends_on:
   #     db:
   #       condition: service_healthy
+  #     db-upgrade:
+  #       condition: service_completed_successfully
   #   restart: unless-stopped
   #   logging:
   #     driver: json-file
@@ -572,13 +578,11 @@ services:
   #   stop_grace_period: 45s
 
   db:
-    # Pinned to the concrete minor instead of the floating `16-alpine`
+    # Pinned to the concrete minor instead of the floating `18-alpine`
     # alias so a database update is always a deliberate, reviewable
-    # change (at pin time `16-alpine` resolved to this same digest, so
-    # existing deployments see no image change). Minor releases share
-    # the on-disk format — bumping this pin is safe without a dump /
-    # restore; a major-version bump (17+) is not, see
-    # docs/ops/postgres-major-upgrade.md.
+    # change. Minor releases share the on-disk format, so bumping this pin
+    # is safe without a dump / restore; a major version is not, which is
+    # what `db-upgrade` below and docs/ops/postgres-major-upgrade.md are for.
     #
     # The pin only works as long as something watches it: PostgreSQL
     # publishes minor releases with security and data-corruption fixes and
@@ -588,7 +592,7 @@ services:
     # `.github/dependabot.yml` now raises a PR for each new minor;
     # `src/__tests__/database-pin-is-watched.test.ts` keeps both halves
     # (concrete pin, active watch) from being dropped.
-    image: postgres:16.15-alpine
+    image: postgres:18.6-alpine
     container_name: healthlog-db
     # Loads pg_stat_statements so slow queries can be found from measurements
     # instead of guesses. Loading the library only collects statistics; the
@@ -618,8 +622,12 @@ services:
       POSTGRES_USER: healthlog
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
       POSTGRES_DB: healthlog
+    # From 18 on, the image keeps its data under /var/lib/postgresql/18/docker
+    # and expects the volume one level up, so the next major can sit beside
+    # this one in the same volume. Mounting it at .../data, as 16 had it,
+    # makes the container refuse to start.
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U healthlog"]
       interval: 5s
@@ -640,5 +648,134 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # Moves a Postgres 16 database from v1.45 or earlier into Postgres 18, once,
+  # on the first start after the update. A major version cannot read the data
+  # directory of an older one, so changing the image line alone would leave
+  # the database refusing to start.
+  #
+  # On every start it decides in a second and exits:
+  # - no `pgdata` data (a new install): nothing to do;
+  # - Postgres 18 already holds the database: nothing to do;
+  # - otherwise it starts Postgres 16 inside this container on the old
+  #   volume, streams a dump into the new database in one transaction,
+  #   compares the row count of every table, gathers planner statistics and
+  #   marks the old volume as moved. `app` starts only after it succeeded.
+  #   A move cut short (a restart, a full disk) leaves a "moving" marker, and
+  #   the next start empties the new database and runs it again from scratch.
+  #
+  # The old volume is read, never changed, apart from that marker file, so
+  # going back is the previous image and volume lines. If anything fails, the
+  # new database stays empty, `app` does not start, and the log says why.
+  # It costs one small image pull; a later release removes the service.
+  db-upgrade:
+    image: postgres:16.15-alpine
+    container_name: healthlog-db-upgrade
+    # Runs once per `compose up` and exits. "no" also keeps hosts such as
+    # Coolify from reporting the exited container as a failed service.
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Read-only, only to check there is room for the copy before starting.
+      - postgres-data:/var/lib/postgresql/next:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # `$$` is how compose spells a literal `$`.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        set -o pipefail
+        log() { echo "db-upgrade: $$*"; }
+        OLD=/var/lib/postgresql/data
+        MARK="$$OLD/HEALTHLOG_MOVED_TO_POSTGRES_18"
+        MOVING="$$OLD/HEALTHLOG_MOVING_TO_POSTGRES_18"
+        export PGPASSWORD="$$POSTGRES_PASSWORD"
+        new() { psql -h db -U healthlog -d healthlog -v ON_ERROR_STOP=1 -Atqc "$$1"; }
+        old() { psql -h /tmp -U healthlog -d healthlog -v ON_ERROR_STOP=1 -Atqc "$$1"; }
+        empty_new() {
+          for S in $$(new "SELECT quote_ident(nspname) FROM pg_namespace WHERE nspname NOT LIKE 'pg\\_%' AND nspname <> 'information_schema'"); do
+            new "DROP SCHEMA $$S CASCADE"
+          done
+          new "CREATE SCHEMA public"
+        }
+        if [ ! -s "$$OLD/PG_VERSION" ]; then
+          log "no Postgres 16 database to move, nothing to do"
+          exit 0
+        fi
+        USER_TABLES="FROM pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema')"
+        TABLES=$$(new "SELECT count(*) $$USER_TABLES")
+        if [ -e "$$MARK" ]; then
+          if [ "$$TABLES" != 0 ]; then
+            log "the Postgres 16 database was moved on $$(cat "$$MARK"), nothing to do"
+            exit 0
+          fi
+          log "the Postgres 16 database was moved on $$(cat "$$MARK"), but the Postgres 18 database is empty now."
+          log "Not importing the old state again by itself. See docs/ops/postgres-major-upgrade.md, \"Starting over\"."
+          exit 1
+        fi
+        if [ -e "$$MOVING" ]; then
+          log "an earlier move did not finish; emptying the Postgres 18 database and starting it again"
+          empty_new
+        elif [ "$$TABLES" != 0 ]; then
+          log "the Postgres 18 database already holds data, leaving both as they are"
+          exit 0
+        fi
+        VERSION=$$(cat "$$OLD/PG_VERSION")
+        if [ "$$VERSION" != 16 ]; then
+          log "the old data directory is Postgres $$VERSION, this step moves Postgres 16 only."
+          log "See docs/ops/postgres-major-upgrade.md to move it by hand."
+          exit 1
+        fi
+        NEED=$$(du -sk "$$OLD" | cut -f1)
+        FREE=$$(df -Pk /var/lib/postgresql/next | awk 'NR == 2 { print $$4 }')
+        if [ "$$FREE" -le "$$NEED" ]; then
+          log "the move needs about $$((NEED / 1024)) MiB free for the new database, the disk has $$((FREE / 1024)) MiB."
+          log "Nothing was changed. Free some space and start the stack again."
+          exit 1
+        fi
+        trap 'CODE=$$?; [ "$$CODE" = 0 ] || log "the move stopped (exit $$CODE). The old volume is untouched; the next start begins it again."' EXIT
+        date -u +%Y-%m-%dT%H:%M:%SZ > "$$MOVING"
+        log "moving the Postgres 16 database ($$((NEED / 1024)) MiB on disk) into Postgres 18"
+        su-exec postgres postgres -D "$$OLD" -c listen_addresses= -c unix_socket_directories=/tmp &
+        PID=$$!
+        i=0
+        until pg_isready -h /tmp -U healthlog -q; do
+          kill -0 "$$PID" 2>/dev/null || { log "the Postgres 16 server did not start, see the lines above"; exit 1; }
+          i=$$((i + 1))
+          [ "$$i" -lt 600 ] || { log "the Postgres 16 server did not get ready in ten minutes"; exit 1; }
+          sleep 1
+        done
+        pg_dump -h /tmp -U healthlog -Fc healthlog |
+          pg_restore -h db -U healthlog -d healthlog --no-owner --single-transaction --exit-on-error
+        COUNTED=0
+        for T in $$(old "SELECT quote_ident(schemaname) || '.' || quote_ident(tablename) $$USER_TABLES ORDER BY 1"); do
+          A=$$(old "SELECT count(*) FROM $$T")
+          B=$$(new "SELECT count(*) FROM $$T")
+          if [ "$$A" != "$$B" ]; then
+            log "table $$T has $$A rows in Postgres 16 but $$B in Postgres 18. Emptying the new database again."
+            log "Please report this with the lines above."
+            empty_new
+            exit 1
+          fi
+          COUNTED=$$((COUNTED + 1))
+        done
+        log "all $$COUNTED tables arrived with the same row counts"
+        vacuumdb -h db -U healthlog -d healthlog --analyze-in-stages --quiet
+        kill -INT "$$PID"
+        wait "$$PID" || true
+        mv "$$MOVING" "$$MARK"
+        log "done. The old volume stays as it was, as a way back; see docs/ops/postgres-major-upgrade.md"
+
 volumes:
+  postgres-data:
   pgdata:
