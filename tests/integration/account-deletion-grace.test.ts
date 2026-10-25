@@ -809,6 +809,76 @@ describe("delete all data with a grace window", () => {
     );
   });
 
+  // The off-host purge a wipe asks for is held to the end of the window. A
+  // restore of the copy taken for that wipe withdraws it (the account has
+  // that record again); a later wipe's purge stays, because the restore does
+  // not bring back what the later wipe removed.
+  it("withdraws the held off-host purge of the wipe a restore undoes, and only that one", async () => {
+    vi.stubEnv("BACKUP_S3_ENDPOINT", "https://bucket.invalid");
+    vi.stubEnv("BACKUP_S3_BUCKET", "b");
+    vi.stubEnv("BACKUP_S3_ACCESS_KEY", "a");
+    vi.stubEnv("BACKUP_S3_SECRET_KEY", "s");
+    vi.stubEnv("BACKUP_ENCRYPTION_KEY", "e".repeat(64));
+    const prisma = getPrismaClient();
+    const user = await seedAccount("wiping-twice");
+    await signIn(user.id);
+    const { DELETE } = await import("@/app/api/settings/data/route");
+    const wipe = () =>
+      DELETE(
+        jsonRequest("/api/settings/data", "DELETE", { confirm: "DELETE" }),
+      );
+
+    expect((await wipe()).status).toBe(200);
+    const [firstCopy] = await prisma.dataBackup.findMany({
+      where: { userId: user.id },
+      select: { id: true },
+    });
+    const firstRequest = await prisma.offhostPurgeRequest.findFirstOrThrow({
+      where: { subjectId: user.id, reason: "data_wiped" },
+    });
+    expect(firstRequest.notBefore).not.toBeNull();
+
+    // Data that arrives between the wipes, and is wiped by the second one.
+    await prisma.measurement.create({
+      data: {
+        userId: user.id,
+        type: "WEIGHT",
+        value: 79,
+        unit: "kg",
+        measuredAt: new Date(),
+        source: "MANUAL",
+      },
+    });
+    expect((await wipe()).status).toBe(200);
+    const requests = await prisma.offhostPurgeRequest.findMany({
+      where: { subjectId: user.id, reason: "data_wiped" },
+      orderBy: { requestedAt: "asc" },
+    });
+    expect(requests).toHaveLength(2);
+
+    const admin = await seedAccount("admin", "ADMIN");
+    await signIn(admin.id);
+    const { POST } = await import("./restore-job-driver");
+    const restored = await POST(
+      new Request(
+        `http://localhost/api/admin/backups/${firstCopy!.id}/restore`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ confirm: "RESTORE" }),
+        },
+      ) as unknown as Parameters<typeof POST>[0],
+      { params: Promise.resolve({ id: firstCopy!.id }) },
+    );
+    expect(restored.status).toBe(200);
+
+    const left = await prisma.offhostPurgeRequest.findMany({
+      where: { subjectId: user.id, reason: "data_wiped" },
+      select: { id: true },
+    });
+    expect(left.map((r) => r.id)).toEqual([requests[1]!.id]);
+  });
+
   it("takes no copy with no window, as before", async () => {
     vi.stubEnv("ACCOUNT_DELETION_GRACE_DAYS", "0");
     const prisma = getPrismaClient();

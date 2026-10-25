@@ -52,7 +52,10 @@
 import { createHash } from "node:crypto";
 
 import type { Job, PgBoss } from "pg-boss";
-import { isPreWipeBackupType } from "@/lib/account-deletion/pre-wipe-type";
+import {
+  isPreWipeBackupType,
+  PRE_WIPE_BACKUP_TYPE_PREFIX,
+} from "@/lib/account-deletion/pre-wipe-type";
 
 import { invalidateUserData } from "@/lib/cache/invalidate";
 import { prisma, toJson } from "@/lib/db";
@@ -139,14 +142,32 @@ async function withdrawHeldWipePurge(
 ): Promise<void> {
   const backup = await prisma.dataBackup.findUnique({
     where: { id: backupId },
-    select: { type: true },
+    select: { type: true, createdAt: true },
   });
   if (!backup || !isPreWipeBackupType(backup.type)) return;
+  // Only the wipe this copy was taken for: its request was written after the
+  // copy and before the copy of any later wipe. A later wipe's request stays,
+  // because the restore does not bring back what that wipe removed (it
+  // replaces the record with this copy), and its off-host copies hold data
+  // the person wiped and did not get back.
+  const nextCopy = await prisma.dataBackup.findFirst({
+    where: {
+      userId,
+      type: { startsWith: PRE_WIPE_BACKUP_TYPE_PREFIX },
+      createdAt: { gt: backup.createdAt },
+    },
+    orderBy: { createdAt: "asc" },
+    select: { createdAt: true },
+  });
   await prisma.offhostPurgeRequest.deleteMany({
     where: {
       subjectId: userId,
       reason: "data_wiped",
       notBefore: { gt: new Date() },
+      requestedAt: {
+        gte: backup.createdAt,
+        ...(nextCopy ? { lt: nextCopy.createdAt } : {}),
+      },
     },
   });
 }
