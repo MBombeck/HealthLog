@@ -14,7 +14,12 @@
  * below the floor, a diastolic below its floor, a diastolic with no
  * systolic, a systolic with no diastolic, tombstones, readings a minute
  * either side of UTC midnight, both DST changes in the user's zone, empty
- * days, and several readings per source per day.
+ * days, several readings per source per day, and two sources at the same
+ * rank with readings at the same instant.
+ *
+ * Run it on each Postgres major the suite targets
+ * (`INTEGRATION_PG_IMAGE=postgres:18-alpine` and the default): the window's
+ * order is total, so the plan a major picks must not change a row.
  */
 import { beforeAll, describe, expect, it } from "vitest";
 
@@ -175,6 +180,33 @@ async function seed(): Promise<number> {
       }
     }
   }
+  // Ties the order has to settle: two sources off every ladder (same rank)
+  // with readings at the very same instant. On the first fifteen days both
+  // pass the floor and the name decides; on the next fifteen the first name's
+  // systolic is below the floor, so the second name takes the day.
+  for (let day = TIE_FIRST_DAY; day < TIE_FIRST_DAY + 30; day++) {
+    const at = new Date(TODAY_UTC - day * DAY_MS + 9 * 3_600_000);
+    const lowFirst = day >= TIE_FIRST_DAY + 15;
+    for (const [source, sys] of [
+      ["OURA", lowFirst ? SYS_MIN - 1 : 121],
+      ["WHOOP", 122],
+    ] as const) {
+      for (const [type, value] of [
+        ["BLOOD_PRESSURE_SYS", sys],
+        ["BLOOD_PRESSURE_DIA", 81],
+      ] as const) {
+        rows.push({
+          userId: USER_ID,
+          type,
+          source,
+          value,
+          unit: "mmHg",
+          measuredAt: at,
+          deletedAt: null,
+        });
+      }
+    }
+  }
   // The natural identity is unique; drop accidental collisions.
   const seen = new Set<string>();
   const unique = rows.filter((row) => {
@@ -186,6 +218,9 @@ async function seed(): Promise<number> {
   await prisma.measurement.createMany({ data: unique });
   return unique.length;
 }
+
+/** The first of the thirty tie days, older than the random ones. */
+const TIE_FIRST_DAY = 400;
 
 const LADDERS: Array<[string, unknown]> = [
   ["default ladder", null],
@@ -232,6 +267,39 @@ describe("blood-pressure series pick parity", () => {
   it("seeds a fixture worth comparing", () => {
     expect(seeded).toBeGreaterThan(2000);
   });
+
+  for (const zone of ["UTC", "Europe/Berlin"]) {
+    it(`settles a tie at the same rank and instant by name: ${zone} session`, async () => {
+      const prisma = getPrismaClient();
+      const rank = buildSourceRankCase(null, '"type"', '"source"');
+      const rows = await prisma.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe(`SET LOCAL TIME ZONE '${zone}'`);
+        return tx.$queryRawUnsafe<
+          Array<{ type: string; source: string; measured_at: Date }>
+        >(
+          bloodPressureSeriesSql(rank),
+          USER_ID,
+          new Date(TODAY_UTC - (TIE_FIRST_DAY + 30) * DAY_MS),
+          SYS_MIN,
+          DIA_MIN,
+        );
+      });
+      const ties = rows.filter(
+        (r) =>
+          r.measured_at.getTime() < TODAY_UTC - (TIE_FIRST_DAY - 1) * DAY_MS,
+      );
+      const byName = ties.filter(
+        (r) =>
+          r.measured_at.getTime() > TODAY_UTC - (TIE_FIRST_DAY + 14) * DAY_MS,
+      );
+      const byFloor = ties.filter((r) => !byName.includes(r));
+      // Both halves of each day's reading, from the one source.
+      expect(byName).toHaveLength(30);
+      expect(byName.every((r) => r.source === "OURA")).toBe(true);
+      expect(byFloor).toHaveLength(30);
+      expect(byFloor.every((r) => r.source === "WHOOP")).toBe(true);
+    });
+  }
 
   for (const [ladderLabel, ladder] of LADDERS) {
     for (const zone of ZONES) {
