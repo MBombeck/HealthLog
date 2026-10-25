@@ -411,6 +411,74 @@
         "grounding": {
           "type": "string"
         },
+        "searchedWindow": {
+          "type": "string"
+        },
+        "available": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "number"
+            },
+            "firstDate": {
+              "type": "string"
+            },
+            "lastDate": {
+              "type": "string"
+            },
+            "series": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "series": {
+                    "type": "string"
+                  },
+                  "unit": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "count": {
+                    "type": "number"
+                  },
+                  "mean": {
+                    "type": "number"
+                  },
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "series",
+                  "unit",
+                  "count",
+                  "mean",
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "reachableWithWindow": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "count",
+            "firstDate",
+            "lastDate",
+            "reachableWithWindow"
+          ],
+          "additionalProperties": false
+        },
         "analyte": {
           "type": "string"
         },
