@@ -1,7 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider } from "@/lib/i18n/context";
+
+const record = vi.hoisted(() => ({ inSharedRecord: false }));
+vi.mock("@/hooks/use-record-capabilities", () => ({
+  useRecordCapabilities: () => ({ inSharedRecord: record.inSharedRecord }),
+}));
 import type { DocumentSuggestionDto } from "@/lib/validations/inbound-documents";
 import {
   AiUnavailableHint,
@@ -57,10 +62,26 @@ describe("<AiUnavailableHint>", () => {
     expect(html).not.toContain('role="alert"');
   });
 
-  it("nudges toward local OCR when a text-only provider needs it", () => {
+  it("points at the on-device scan switch when a text-only provider needs it", () => {
     const html = render(<AiUnavailableHint reason="enable-local-ocr" />);
-    expect(html).toContain("local OCR");
-    expect(html).toContain('href="/settings/ai"');
+    // The switch lives on the Labs module page, under its own label.
+    expect(html).toContain("Read scans on this device");
+    expect(html).toContain("Settings → Modules → Labs");
+    expect(html).toContain('href="/settings/modules/labs#labs-local-ocr"');
+    expect(html).toContain("Open lab settings");
+    expect(html).not.toContain('href="/settings/ai"');
+  });
+
+  it("keeps the sentence but withholds the Settings link inside somebody else's record", () => {
+    record.inSharedRecord = true;
+    try {
+      const html = render(<AiUnavailableHint reason="enable-local-ocr" />);
+      expect(html).toContain("Read scans on this device");
+      expect(html).not.toContain('data-slot="assist-settings-link"');
+      expect(html).not.toContain('href="/settings');
+    } finally {
+      record.inSharedRecord = false;
+    }
   });
 });
 
