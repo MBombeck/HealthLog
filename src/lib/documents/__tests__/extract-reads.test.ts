@@ -201,16 +201,21 @@ describe("planInboundTextReads", () => {
   const line = (i: number) => `Analyt ${i}    ${i},0    mg/dl    1 - 9`;
   const text = (lines: number) =>
     Array.from({ length: lines }, (_, i) => line(i)).join("\n");
+  const schedule = (calls: number) => ({
+    maxModelCalls: () => calls,
+    arm: async () => undefined,
+  });
+  const noDeadline = schedule(Number.POSITIVE_INFINITY);
 
   it("reads a short text as one read", () => {
-    const plan = planInboundTextReads(text(10), undefined);
+    const plan = planInboundTextReads(text(10), noDeadline);
     expect(plan.args.chunks).toHaveLength(1);
     expect(plan.partial).toBe(false);
   });
 
   it("splits a long text at line boundaries into reads no longer than one read carries", () => {
     const whole = text(400);
-    const plan = planInboundTextReads(whole, undefined);
+    const plan = planInboundTextReads(whole, noDeadline);
     expect(plan.args.chunks.length).toBeGreaterThan(1);
     for (const chunk of plan.args.chunks) {
       expect(chunk.text!.length).toBeLessThanOrEqual(INBOUND_TEXT_READ_CHARS);
@@ -221,10 +226,6 @@ describe("planInboundTextReads", () => {
   });
 
   it("grows the parts when the deadline allows few reads, and reads from the start past twice the size", () => {
-    const schedule = (calls: number) => ({
-      maxModelCalls: () => calls,
-      arm: async () => undefined,
-    });
     // Two reads' worth of calls: the parts grow to hold the text.
     const grown = planInboundTextReads(text(200), schedule(4));
     expect(grown.args.chunks).toHaveLength(2);
@@ -239,7 +240,7 @@ describe("planInboundTextReads", () => {
   });
 
   it("caps the reads of a run with no deadline", () => {
-    const plan = planInboundTextReads(text(4000), undefined);
+    const plan = planInboundTextReads(text(4000), noDeadline);
     expect(plan.args.chunks.length).toBe(OCR_MAX_PAGES);
     expect(plan.partial).toBe(true);
   });

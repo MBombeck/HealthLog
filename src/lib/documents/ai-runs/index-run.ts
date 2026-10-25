@@ -59,7 +59,8 @@ export interface IndexOrigin {
   worker: boolean;
   /**
    * A background run's deadline, which the lab staging after the index plans
-   * its reads against. A request has none: it reads as before.
+   * its reads against. A request has none: the staging then makes at most
+   * `SYNC_EXTRACT_MAX_READS` reads and reports what it left out.
    */
   schedule?: OcrSchedule;
 }

@@ -953,8 +953,7 @@ describe("a synchronous extraction stays inside one request", () => {
 
     const res = await postStoredExtract(document.id, false);
     expect(res.status).toBe(200);
-    const { SYNC_EXTRACT_MAX_READS } =
-      await import("@/lib/documents/ai-runs/extract-run");
+    const { SYNC_EXTRACT_MAX_READS } = await import("@/lib/documents/ocr-plan");
     const args = vi.mocked(runInboundExtraction).mock.calls[0][0];
     expect(args.chunks.length).toBeGreaterThan(0);
     expect(args.chunks.length).toBeLessThanOrEqual(SYNC_EXTRACT_MAX_READS);
@@ -970,8 +969,7 @@ describe("a synchronous extraction stays inside one request", () => {
     const queued = await postStoredExtract(document.id, true);
     const { runId } = queued.body.data as { runId: string };
     expect(await work(runId)).toBe("succeeded");
-    const { SYNC_EXTRACT_MAX_READS } =
-      await import("@/lib/documents/ai-runs/extract-run");
+    const { SYNC_EXTRACT_MAX_READS } = await import("@/lib/documents/ocr-plan");
     const args = vi.mocked(runInboundExtraction).mock.calls[0][0];
     expect(args.chunks.length).toBeGreaterThan(SYNC_EXTRACT_MAX_READS);
   });

@@ -24,8 +24,10 @@
  * worker: every refusal that can be answered quickly is still answered here,
  * then the route answers 202 with a run id and `GET /api/ai-runs/{id}` serves
  * the same body this route answers with synchronously. Without the header the
- * route behaves exactly as before; the iPhone app relies on that. Both paths
- * run one body (`executeDocumentIndex`).
+ * route answers the same body as before; the iPhone app relies on that. Both
+ * paths run one body (`executeDocumentIndex`). Inside the request the lab
+ * staging is bounded like the extract route (`SYNC_EXTRACT_MAX_READS`): what
+ * does not fit is reported on the document as `extractionIncomplete`.
  */
 import { Buffer } from "node:buffer";
 

@@ -46,9 +46,27 @@ export interface OcrSchedule {
   arm(modelCalls: number): Promise<void>;
 }
 
+/**
+ * The most reads one HTTP request makes: the extract route, and the lab
+ * staging the index route continues into, both without `Prefer:
+ * respond-async` (the iPhone app sends neither). Each read is up to
+ * `OCR_EXTRACT_MODEL_CALLS` model calls, so this bounds the request at six
+ * calls where an unplanned read of a twenty-page report made forty. A longer
+ * document is read in as many reads by sharing its pages or text out between
+ * them, and what does not fit is reported as `extractionIncomplete` on the
+ * document; a background run, which has a deadline of its own, reads it a
+ * page at a time.
+ */
+export const SYNC_EXTRACT_MAX_READS = 3;
+
+/** The read plan of a request: a fixed number of calls, nothing to arm. */
+export const SYNCHRONOUS_READ_SCHEDULE: OcrSchedule = {
+  maxModelCalls: () => SYNC_EXTRACT_MAX_READS * OCR_EXTRACT_MODEL_CALLS,
+  arm: async () => undefined,
+};
+
 /** How many reads the deadline leaves room for. */
-export function maxReadsFor(schedule: OcrSchedule | undefined): number {
-  if (!schedule) return Number.POSITIVE_INFINITY;
+export function maxReadsFor(schedule: OcrSchedule): number {
   return Math.max(
     1,
     Math.floor(schedule.maxModelCalls() / OCR_EXTRACT_MODEL_CALLS),
@@ -111,7 +129,7 @@ export function splitOcrText(
  */
 export function planTextReads(
   text: string,
-  schedule: OcrSchedule | undefined,
+  schedule: OcrSchedule,
   target: number,
 ): { chunks: OcrChunk[]; unreadParts: number } {
   const maxReads = Math.min(maxReadsFor(schedule), OCR_MAX_PAGES);
@@ -167,7 +185,7 @@ export async function planVisionReads(
   bytes: Buffer,
   mime: OcrVisionMime,
   pdfSupported: boolean,
-  schedule: OcrSchedule | undefined,
+  schedule: OcrSchedule,
 ): Promise<OcrVisionPlan> {
   if (mime !== "application/pdf") {
     return {
