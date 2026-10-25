@@ -516,6 +516,195 @@ describe("managed-profile deletion with a grace window", () => {
   });
 });
 
+/** A managed profile with the given Guardians, each grant accepted. */
+async function profileGuardedBy(username: string, guardianIds: string[]) {
+  const prisma = getPrismaClient();
+  const profile = await prisma.user.create({
+    data: {
+      username,
+      displayName: "Kid",
+      managedProfileAt: new Date(),
+      timezone: "Europe/Berlin",
+    },
+  });
+  for (const granteeId of guardianIds) {
+    await prisma.accountGrant.create({
+      data: {
+        grantorId: profile.id,
+        granteeId,
+        access: "MANAGE",
+        acceptedAt: new Date(),
+      },
+    });
+  }
+  return profile;
+}
+
+describe("a handover link and a profile pending deletion", () => {
+  it("revokes the open link with the deletion and refuses every way to claim the profile", async () => {
+    const prisma = getPrismaClient();
+    const guardian = await seedAccount("guardian");
+    const profile = await profileGuardedBy("managed-teen", [guardian.id]);
+    const { createHandover, previewHandover, claimManagedProfile } =
+      await import("@/lib/managed-profiles/handover");
+    const { deleteManagedProfile } =
+      await import("@/lib/managed-profiles/lifecycle");
+    const { token } = await createHandover({
+      profileId: profile.id,
+      guardianId: guardian.id,
+      expiresInDays: 7,
+      proposals: [],
+    });
+    expect(await previewHandover(token)).not.toBeNull();
+
+    await deleteManagedProfile({
+      profileId: profile.id,
+      guardianId: guardian.id,
+    });
+    const link = await prisma.managedProfileHandover.findFirstOrThrow({
+      where: { profileId: profile.id },
+    });
+    expect(link.revokedAt).not.toBeNull();
+    expect(await previewHandover(token)).toBeNull();
+
+    // A link the deletion did not reach (one that was reopened by hand here)
+    // is still refused: the claim decides on the profile under its lock.
+    await prisma.managedProfileHandover.update({
+      where: { id: link.id },
+      data: { revokedAt: null },
+    });
+    expect(await previewHandover(token)).toBeNull();
+    await expect(
+      claimManagedProfile({
+        link: { rawToken: token },
+        username: "teen-now-adult",
+        email: "teen@example.test",
+        passwordHash: "argon2-hash-placeholder",
+      }),
+    ).rejects.toMatchObject({ name: "HandoverError" });
+    const row = await prisma.user.findUniqueOrThrow({
+      where: { id: profile.id },
+    });
+    expect(row.managedProfileAt).not.toBeNull();
+    expect(row.passwordHash).toBeNull();
+  });
+
+  it("revokes the links a Guardian minted when the Guardian deletes their account", async () => {
+    const prisma = getPrismaClient();
+    const leaving = await seedAccount("guardian-leaving");
+    const staying = await seedAccount("guardian-staying");
+    const profile = await profileGuardedBy("managed-kid", [
+      leaving.id,
+      staying.id,
+    ]);
+    const { createHandover, previewHandover } =
+      await import("@/lib/managed-profiles/handover");
+    const { token } = await createHandover({
+      profileId: profile.id,
+      guardianId: leaving.id,
+      expiresInDays: 7,
+      proposals: [],
+    });
+    await signIn(leaving.id);
+    expect((await deleteOwnAccount()).status).toBe(200);
+    expect(await previewHandover(token)).toBeNull();
+  });
+});
+
+describe("the last-Guardian rule and accounts pending deletion", () => {
+  it("lets a Guardian whose only profile is pending deletion delete their own account", async () => {
+    const guardian = await seedAccount("guardian");
+    const profile = await profileGuardedBy("managed-kid", [guardian.id]);
+    const { deleteManagedProfile } =
+      await import("@/lib/managed-profiles/lifecycle");
+    await deleteManagedProfile({
+      profileId: profile.id,
+      guardianId: guardian.id,
+    });
+    await signIn(guardian.id);
+    expect((await deleteOwnAccount()).status).toBe(200);
+  });
+
+  it("does not let the second of two Guardians leave on the strength of the first, pending deletion", async () => {
+    const prisma = getPrismaClient();
+    const first = await seedAccount("guardian-first");
+    const second = await seedAccount("guardian-second");
+    const profile = await profileGuardedBy("managed-kid", [
+      first.id,
+      second.id,
+    ]);
+    await signIn(first.id);
+    expect((await deleteOwnAccount()).status).toBe(200);
+    await signIn(second.id);
+    const refused = await deleteOwnAccount();
+    expect(refused.status).toBe(409);
+    expect(
+      (await prisma.user.findUniqueOrThrow({ where: { id: second.id } }))
+        .deletionRequestedAt,
+    ).toBeNull();
+
+    // Nor through a data wipe, which ends the second Guardian's grant.
+    const { protectManagedProfilesDuringDataWipe } =
+      await import("@/lib/managed-profiles/lifecycle");
+    await expect(
+      prisma.$transaction((tx) =>
+        protectManagedProfilesDuringDataWipe(tx, second.id),
+      ),
+    ).rejects.toMatchObject({ name: "LastManagedGuardianError" });
+    expect(
+      await prisma.accountGrant.count({ where: { grantorId: profile.id } }),
+    ).toBe(2);
+  });
+
+  it("does not give back a managed profile whose Guardians left during the window", async () => {
+    const guardian = await seedAccount("guardian");
+    const profile = await profileGuardedBy("managed-kid", [guardian.id]);
+    const { deleteManagedProfile } =
+      await import("@/lib/managed-profiles/lifecycle");
+    await deleteManagedProfile({
+      profileId: profile.id,
+      guardianId: guardian.id,
+    });
+    await signIn(guardian.id);
+    expect((await deleteOwnAccount()).status).toBe(200);
+
+    const admin = await seedAccount("admin", "ADMIN");
+    const { cancelAccountDeletion } =
+      await import("@/lib/account-deletion/lifecycle");
+    expect(
+      await cancelAccountDeletion({ userId: profile.id, adminId: admin.id }),
+    ).toBe("no_guardian");
+    // The Guardian's own deletion undone first: the profile can come back.
+    expect(
+      await cancelAccountDeletion({ userId: guardian.id, adminId: admin.id }),
+    ).toBe("cancelled");
+    expect(
+      await cancelAccountDeletion({ userId: profile.id, adminId: admin.id }),
+    ).toBe("cancelled");
+  });
+});
+
+describe("the last admin and admins pending deletion", () => {
+  it("does not let the last usable admin step down while another is pending deletion", async () => {
+    const prisma = getPrismaClient();
+    const first = await seedAccount("admin-one", "ADMIN");
+    const second = await seedAccount("admin-two", "ADMIN");
+    await signIn(first.id);
+    expect((await deleteOwnAccount()).status).toBe(200);
+
+    await signIn(second.id);
+    const { PUT } = await import("@/app/api/admin/users/[id]/route");
+    const res = await PUT(
+      jsonRequest(`/api/admin/users/${second.id}`, "PUT", { role: "USER" }),
+      { params: Promise.resolve({ id: second.id }) },
+    );
+    expect(res.status).toBe(400);
+    expect(
+      (await prisma.user.findUniqueOrThrow({ where: { id: second.id } })).role,
+    ).toBe("ADMIN");
+  });
+});
+
 describe("delete all data with a grace window", () => {
   it("keeps a copy of the record that an admin can restore", async () => {
     const prisma = getPrismaClient();

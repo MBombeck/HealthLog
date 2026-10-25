@@ -248,7 +248,11 @@ export async function createHandover(input: {
   const now = input.now ?? new Date();
   return prisma.$transaction((tx) =>
     withManagedProfileLock(tx, input.profileId, async (profile) => {
-      if (!profile?.managedProfileAt) throw new HandoverError("not_found");
+      // A profile pending deletion has left every roster: there is nothing
+      // to hand over.
+      if (!profile?.managedProfileAt || profile.deletionRequestedAt) {
+        throw new HandoverError("not_found");
+      }
 
       const guardians = await tx.accountGrant.findMany({
         where: { grantorId: profile.id, ...activeGuardianWhere(now) },
@@ -334,9 +338,9 @@ export async function readHandoverStatus(input: {
   const now = input.now ?? new Date();
   const profile = await prisma.user.findUnique({
     where: { id: input.profileId },
-    select: { managedProfileAt: true },
+    select: { managedProfileAt: true, deletionRequestedAt: true },
   });
-  if (!profile?.managedProfileAt) return null;
+  if (!profile?.managedProfileAt || profile.deletionRequestedAt) return null;
   if (
     !(await isActiveGuardian(prisma, input.profileId, input.guardianId, now))
   ) {
@@ -446,7 +450,8 @@ export interface HandoverPreview {
 /**
  * The open link behind a stored row, or null when it can no longer be
  * claimed: used, withdrawn, expired, a state this code cannot read, a profile
- * no longer managed, or a creator who lost access. The one definition of
+ * no longer managed or pending deletion, or a creator who lost access. The
+ * one definition of
  * "usable" the preview, the single-sign-on start and the callback share.
  */
 async function usableHandover(
@@ -463,9 +468,13 @@ async function usableHandover(
 
   const profile = await prisma.user.findUnique({
     where: { id: row.profileId },
-    select: { displayName: true, managedProfileAt: true },
+    select: {
+      displayName: true,
+      managedProfileAt: true,
+      deletionRequestedAt: true,
+    },
   });
-  if (!profile?.managedProfileAt) return null;
+  if (!profile?.managedProfileAt || profile.deletionRequestedAt) return null;
   if (!(await isActiveGuardian(prisma, row.profileId, row.createdById, now))) {
     return null;
   }
@@ -589,7 +598,13 @@ export async function claimManagedProfile(input: {
   try {
     return await prisma.$transaction((tx) =>
       withManagedProfileLock(tx, found.profileId, async (profile) => {
-        if (!profile?.managedProfileAt) throw new HandoverError("invalid");
+        // A profile pending deletion is not claimable: the new owner would be
+        // locked out at once and erased when the window ends. Its deletion
+        // revokes the open link too; this holds for a claim that waited on
+        // the lock while the deletion committed.
+        if (!profile?.managedProfileAt || profile.deletionRequestedAt) {
+          throw new HandoverError("invalid");
+        }
 
         // Re-read under the lock: a new link, a withdrawal or a second claim
         // that committed while this one waited is seen here.

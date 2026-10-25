@@ -19,6 +19,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { credentialRevocations } from "@/lib/auth/credential-revocations";
+import { remainingGuardianWhere } from "@/lib/managed-profiles/guardian-where";
 import {
   requestOffhostPurge,
   type OffhostPurgeReason,
@@ -57,6 +58,18 @@ export async function lockAccountForDeletion(
   for (const revoke of credentialRevocations(tx, input.userId)) {
     await revoke;
   }
+  // A handover link is a credential for the profile it hands over: claimed
+  // during the window, it would give someone an account that is locked at
+  // once and erased when the window ends. The links this account minted for
+  // a profile it guards go too: nothing acts on its behalf from now on.
+  await tx.managedProfileHandover.updateMany({
+    where: {
+      OR: [{ profileId: input.userId }, { createdById: input.userId }],
+      usedAt: null,
+      revokedAt: null,
+    },
+    data: { revokedAt: input.requestedAt },
+  });
 }
 
 /**
@@ -113,11 +126,17 @@ export async function lockPendingAccount(
   };
 }
 
-type CancelDeletionOutcome = "cancelled" | "not_found" | "not_pending";
+type CancelDeletionOutcome =
+  "cancelled" | "not_found" | "not_pending" | "no_guardian";
 
 /**
  * Undo a pending deletion. Audit-logged twice: once for the admin who undid
  * it, once on the account itself so its own activity shows what happened.
+ *
+ * A managed profile comes back only to a Guardian: one whose own account is
+ * not pending deletion. Its Guardians may have left during the window (the
+ * last-Guardian rule no longer counts a profile pending deletion), and a
+ * profile nobody can reach is not something to give back.
  */
 export async function cancelAccountDeletion(input: {
   userId: string;
@@ -125,9 +144,25 @@ export async function cancelAccountDeletion(input: {
   ipAddress?: string | null;
 }): Promise<CancelDeletionOutcome> {
   return prisma.$transaction(async (tx) => {
+    // The record lock first (the key `withManagedProfileLock` takes), then
+    // the row, in the order the purge takes them, so a Guardian leaving and
+    // this undo are ordered too.
+    await tx.$queryRaw`
+      SELECT 1 AS locked
+      FROM pg_advisory_xact_lock(hashtextextended(${`managed-profile:${input.userId}`}, 0))
+    `;
     const state = await lockPendingAccount(tx, input.userId);
     if (!state) return "not_found";
     if (!state.pending) return "not_pending";
+    if (state.managedProfile) {
+      const guardians = await tx.accountGrant.count({
+        where: {
+          grantorId: input.userId,
+          ...remainingGuardianWhere(new Date()),
+        },
+      });
+      if (guardians === 0) return "no_guardian";
+    }
     await tx.user.update({
       where: { id: input.userId },
       data: {

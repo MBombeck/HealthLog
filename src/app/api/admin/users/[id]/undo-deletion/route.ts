@@ -43,6 +43,13 @@ export const POST = apiHandler(
       ipAddress: getClientIp(request),
     });
     if (outcome === "not_found") return apiError("User not found", 404);
+    if (outcome === "no_guardian") {
+      return apiError(
+        "This managed profile has no Guardian left to give it back to. Its Guardians deleted their accounts or left it during the window.",
+        409,
+        { errorCode: "account.deletion.no_guardian" },
+      );
+    }
     if (outcome === "not_pending") {
       return apiError("This account is not pending deletion", 409, {
         errorCode: "account.deletion.not_pending",
