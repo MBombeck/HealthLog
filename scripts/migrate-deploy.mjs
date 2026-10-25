@@ -198,11 +198,31 @@ function concurrentIndexMap(dir) {
 }
 
 /**
+ * Prisma's migration lock: `migrate deploy` holds this advisory lock (in the
+ * schema engine, `pg_advisory_lock(72707369)`) for as long as it migrates.
+ */
+export const PRISMA_MIGRATE_LOCK = 72707369;
+
+/**
  * Drop the INVALID indexes a migration still to run will build, and name the
  * others. Best effort: a database that cannot be read here is left to
  * `migrate deploy`, which reports its own errors.
+ *
+ * A concurrent build that is still running looks exactly like a failed one,
+ * INVALID with its migration not yet finished. With the web and worker roles
+ * in two containers, both run this script, and dropping the index the other
+ * one is building cancels its migration and leaves it failed. So the check
+ * and the drop run in one transaction that first takes Prisma's migration
+ * lock without waiting: when another instance is migrating, nothing here is
+ * touched, and while this transaction holds it, no migration starts. An
+ * index Postgres reports as being built is never dropped either. One
+ * transaction also keeps `lock_timeout` on the statement it bounds behind a
+ * transaction pooler.
  */
-async function clearInvalidConcurrentIndexes(connectionString, migrationsDir) {
+export async function clearInvalidConcurrentIndexes(
+  connectionString,
+  migrationsDir,
+) {
   if (!connectionString) return;
   const builtBy = concurrentIndexMap(migrationsDir);
   let client;
@@ -216,18 +236,36 @@ async function clearInvalidConcurrentIndexes(connectionString, migrationsDir) {
       connectionTimeoutMillis: 5_000,
     });
     await client.connect();
+    const schemaSql = client.escapeIdentifier(schema);
+    await client.query("BEGIN");
+    const locked = await client.query(
+      "SELECT pg_try_advisory_xact_lock($1) AS ok",
+      [PRISMA_MIGRATE_LOCK],
+    );
+    if (!locked.rows[0]?.ok) {
+      await client.query("ROLLBACK");
+      return;
+    }
+    // Dropping an index takes its table's lock for a moment; never wait on
+    // it for long at boot.
+    await client.query("SET LOCAL lock_timeout = '5s'");
     const invalid = await client.query(
       `SELECT c.relname AS name FROM pg_index i
          JOIN pg_class c ON c.oid = i.indexrelid
          JOIN pg_namespace n ON n.oid = c.relnamespace
-        WHERE NOT i.indisvalid AND n.nspname = $1`,
+        WHERE NOT i.indisvalid AND n.nspname = $1
+          AND NOT EXISTS (
+            SELECT 1 FROM pg_stat_progress_create_index p
+             WHERE p.index_relid = i.indexrelid
+          )`,
       [schema],
     );
-    if (invalid.rows.length === 0) return;
-    const table = `${client.escapeIdentifier(schema)}._prisma_migrations`;
-    const exists = await client.query("SELECT to_regclass($1) AS t", [
-      `${schema}._prisma_migrations`,
-    ]);
+    if (invalid.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return;
+    }
+    const table = `${schemaSql}._prisma_migrations`;
+    const exists = await client.query("SELECT to_regclass($1) AS t", [table]);
     const applied = new Set(
       exists.rows[0]?.t
         ? (
@@ -243,13 +281,13 @@ async function clearInvalidConcurrentIndexes(connectionString, migrationsDir) {
       builtBy,
       applied,
     });
-    // Dropping an index takes its table's lock for a moment; never wait on
-    // it for long at boot.
-    await client.query("SET lock_timeout = '5s'");
-    for (const { index, migration } of plan.drop) {
+    for (const { index } of plan.drop) {
       await client.query(
-        `DROP INDEX IF EXISTS ${client.escapeIdentifier(schema)}.${client.escapeIdentifier(index)}`,
+        `DROP INDEX IF EXISTS ${schemaSql}.${client.escapeIdentifier(index)}`,
       );
+    }
+    await client.query("COMMIT");
+    for (const { index, migration } of plan.drop) {
       console.log(
         `HealthLog: dropped the invalid index ${index} a failed concurrent ` +
           `build left behind; ${migration} builds it again.`,
@@ -264,6 +302,7 @@ async function clearInvalidConcurrentIndexes(connectionString, migrationsDir) {
       );
     }
   } catch (error) {
+    await client?.query("ROLLBACK").catch(() => {});
     console.error(
       `HealthLog: could not check for invalid indexes before migrating: ${
         error instanceof Error ? error.message : String(error)

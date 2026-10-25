@@ -119,6 +119,12 @@ boot drops that INVALID index before it migrates, logs
 `dropped the invalid index …`, and the re-run builds it again. Without that
 step the re-run would find the index by name and skip it.
 
+A build that is still running looks the same, INVALID with its migration not
+yet finished. The boot therefore leaves every index alone while another
+instance is migrating (it checks Prisma's migration lock first) and never
+drops an index Postgres reports as being built, so a second container that
+starts during the first one's migration cannot cancel it.
+
 An INVALID index whose migration is already recorded applied is not touched at
 boot. The boot names it on stderr with `WARNING — index … is INVALID`; rebuild
 it with `REINDEX INDEX CONCURRENTLY "<index>";` when the database is quiet.

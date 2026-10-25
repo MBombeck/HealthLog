@@ -16,6 +16,11 @@ import { join } from "node:path";
 import { Client } from "pg";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
+import {
+  clearInvalidConcurrentIndexes,
+  PRISMA_MIGRATE_LOCK,
+} from "../../scripts/migrate-deploy.mjs";
+
 const SCHEMA = "invalid_index_probe";
 const NAME = "0002_probe_value_index";
 const INDEX = "probe_value_key";
@@ -170,4 +175,81 @@ describe("a concurrent index build that failed", () => {
       await db.end();
     }
   });
+});
+
+/**
+ * A build still running is INVALID too, and with the web and worker roles in
+ * two containers the second one's boot runs the cleanup while the first one
+ * migrates. Dropping that index cancels the first one's migration and leaves
+ * it failed, so the cleanup must leave a running build alone.
+ */
+describe("a concurrent index build still running", () => {
+  async function slowBuildFixture(db: Client): Promise<void> {
+    await db.query(`CREATE SCHEMA ${SCHEMA}`);
+    await db.query(
+      `CREATE TABLE ${SCHEMA}.probe (id integer PRIMARY KEY, value integer)`,
+    );
+    await db.query(
+      `INSERT INTO ${SCHEMA}.probe SELECT g, g FROM generate_series(1, 400) g`,
+    );
+    // Slow on purpose, so the build is caught half way.
+    await db.query(
+      `CREATE FUNCTION ${SCHEMA}.probe_slow(v integer) RETURNS integer
+         LANGUAGE plpgsql IMMUTABLE AS $$
+         BEGIN PERFORM pg_sleep(0.005); RETURN v; END $$`,
+    );
+    const dir = mkdtempSync(join(tmpdir(), "hl-running-index-"));
+    dirs.push(dir);
+    currentDir = join(dir, "migrations");
+    write(
+      dir,
+      NAME,
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "${INDEX}" ON "probe" (probe_slow("value"));`,
+    );
+  }
+
+  async function caughtHalfWay(
+    holdMigrateLock: boolean,
+  ): Promise<{ builder: Client; build: Promise<unknown> }> {
+    const builder = await connect();
+    if (holdMigrateLock) {
+      await builder.query("SELECT pg_advisory_lock($1)", [PRISMA_MIGRATE_LOCK]);
+    }
+    const build = builder.query(
+      `CREATE INDEX CONCURRENTLY "${INDEX}" ON ${SCHEMA}.probe (${SCHEMA}.probe_slow(value))`,
+    );
+    const db = await connect();
+    try {
+      const until = Date.now() + 10_000;
+      while ((await indexState(db)) !== false && Date.now() < until) {
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      expect(await indexState(db)).toBe(false);
+    } finally {
+      await db.end();
+    }
+    return { builder, build };
+  }
+
+  for (const [label, holdMigrateLock] of [
+    ["another instance migrating", true],
+    ["a build outside any migration", false],
+  ] as const) {
+    it(`leaves the index of ${label} alone`, async () => {
+      const db = await connect();
+      try {
+        await slowBuildFixture(db);
+        const { builder, build } = await caughtHalfWay(holdMigrateLock);
+        try {
+          await clearInvalidConcurrentIndexes(probeUrl(), currentDir);
+          await expect(build).resolves.toBeDefined();
+          expect(await indexState(db)).toBe(true);
+        } finally {
+          await builder.end();
+        }
+      } finally {
+        await db.end();
+      }
+    }, 60_000);
+  }
 });
