@@ -426,6 +426,18 @@ describe("defaultUserIdResolver (audit C-4)", () => {
     expect(await defaultUserIdResolver()).toBeNull();
   });
 
+  it("rejects the Bearer token of an account pending deletion", async () => {
+    vi.mocked(getSession).mockResolvedValue(null);
+    mockHeader("Bearer hlk_abcdef");
+    vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
+      userId: "u-bearer",
+      revoked: false,
+      expiresAt: null,
+      user: { deletionRequestedAt: new Date() },
+    } as never);
+    expect(await defaultUserIdResolver()).toBeNull();
+  });
+
   it("rejects expired Bearer tokens", async () => {
     vi.mocked(getSession).mockResolvedValue(null);
     mockHeader("Bearer hlk_abcdef");

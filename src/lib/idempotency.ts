@@ -558,11 +558,19 @@ export async function defaultUserIdResolver(): Promise<string | null> {
   const apiToken = await prisma.apiToken
     .findUnique({
       where: { tokenHash: tokenHashValue },
-      select: { userId: true, revoked: true, expiresAt: true },
+      select: {
+        userId: true,
+        revoked: true,
+        expiresAt: true,
+        user: { select: { deletionRequestedAt: true } },
+      },
     })
     .catch(() => null);
 
+  // An account pending deletion replays nothing, as `resolveBearerToken`
+  // refuses it.
   if (!apiToken || apiToken.revoked) return null;
+  if (apiToken.user?.deletionRequestedAt) return null;
   if (apiToken.expiresAt && apiToken.expiresAt <= new Date()) return null;
   return apiToken.userId;
 }

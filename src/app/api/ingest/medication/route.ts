@@ -103,10 +103,18 @@ export const POST = apiHandler(async (request: NextRequest) => {
       revoked: true,
       expiresAt: true,
       lastUsedAt: true,
+      user: { select: { deletionRequestedAt: true } },
     },
   });
 
-  if (!apiToken || apiToken.revoked) {
+  // A deletion revokes the account's tokens in its own transaction; a token
+  // issued in the same instant would slip past that, so the pending account
+  // is refused here too, as `resolveBearerToken` does.
+  if (
+    !apiToken ||
+    apiToken.revoked ||
+    apiToken.user.deletionRequestedAt !== null
+  ) {
     return refuseUnauthenticated(request, "Invalid or revoked token");
   }
 

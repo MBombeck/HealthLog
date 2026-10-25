@@ -98,6 +98,7 @@ beforeEach(() => {
     revoked: false,
     expiresAt: null,
     lastUsedAt: null,
+    user: { deletionRequestedAt: null },
   } as never);
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
 });
@@ -209,6 +210,7 @@ describe("POST /api/ingest/medication — slot attribution + convergence (v1.16.
       revoked: false,
       expiresAt: null,
       lastUsedAt: null,
+      user: { deletionRequestedAt: null },
     } as never);
     vi.mocked(prisma.apiToken.update).mockResolvedValue({} as never);
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
@@ -373,6 +375,7 @@ describe("POST /api/ingest/medication — slot attribution + convergence (v1.16.
       revoked: false,
       expiresAt: null,
       lastUsedAt: null,
+      user: { deletionRequestedAt: null },
     } as Awaited<ReturnType<typeof prisma.apiToken.findUnique>>);
   }
 
@@ -536,6 +539,7 @@ describe("POST /api/ingest/medication — the rate-limit bucket", () => {
         revoked: false,
         expiresAt: null,
         lastUsedAt: null,
+        user: { deletionRequestedAt: null },
       } as never)
       .mockResolvedValueOnce({
         id: "tok-button",
@@ -544,6 +548,7 @@ describe("POST /api/ingest/medication — the rate-limit bucket", () => {
         revoked: false,
         expiresAt: null,
         lastUsedAt: null,
+        user: { deletionRequestedAt: null },
       } as never);
 
     await POST(postReq({ medicationName: "A", idempotencyKey: "k-aaaa-001" }));
@@ -598,6 +603,24 @@ describe("POST /api/ingest/medication — the rate-limit bucket", () => {
     expect(windowMs).toBe(60_000);
     // No token resolved, so no token bucket was charged.
     expect(vi.mocked(checkRateLimit)).not.toHaveBeenCalled();
+  });
+
+  // The deletion revokes every token in its own transaction; one issued in
+  // the same instant would slip past that, and is refused here as well.
+  it("refuses the token of an account pending deletion", async () => {
+    vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
+      id: "tok-1",
+      userId: "user-1",
+      permissions: ["*"],
+      revoked: false,
+      expiresAt: null,
+      lastUsedAt: null,
+      user: { deletionRequestedAt: new Date() },
+    } as never);
+    const res = await POST(
+      postReq({ medicationName: "Metformin", idempotencyKey: "k-pending-001" }),
+    );
+    expect(res.status).toBe(401);
   });
 
   it("falls back to the per-IP bucket when the token does not resolve", async () => {
