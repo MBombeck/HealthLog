@@ -43,6 +43,7 @@ import {
   LIFECYCLE_MISSING,
   LIFECYCLE_UNKNOWN,
   lifecycleFromRules,
+  standOnLastAnswer,
   type OffhostLifecycle,
 } from "./offhost-lifecycle";
 
@@ -758,22 +759,8 @@ export async function getS3Client(cfg: OffhostBackupConfig): Promise<S3Like> {
 const LIFECYCLE_CACHE_MS = 10 * 60 * 1000;
 let lifecycleCache: { at: number; value: OffhostLifecycle } | null = null;
 
-/**
- * The last answer the bucket actually gave (`configured` or `missing`), and
- * how long it stands in for a read that failed. A probe that timed out once
- * read as "unknown", which keeps every key an off-host object ever needed
- * in the recovery kit: the kit turned due, the admins were pushed, and the
- * next good read pushed "recovered". A rule does not change between two
- * reads an hour apart; a credential that has lost the right to read it for a
- * whole day does say something, and then "unknown" is the honest answer.
- */
-const LAST_KNOWN_LIFECYCLE_MS = 24 * 60 * 60 * 1000;
-let lastKnownLifecycle: { at: number; value: OffhostLifecycle } | null = null;
-
-/**
- * The bucket's lifecycle rule for the admin card, cached for ten minutes so a
- * page render does not become a bucket call. Never throws.
- */
+/** The bucket's lifecycle rule for the admin card, cached for ten minutes so
+ * a page render does not become a bucket call. Never throws. */
 export async function probeOffhostLifecycle(
   s3Override?: S3Like,
   now: number = Date.now(),
@@ -787,21 +774,14 @@ export async function probeOffhostLifecycle(
   }
   const cfg = loadOffhostConfigSafe();
   if (!cfg) return LIFECYCLE_UNKNOWN;
-  let value: OffhostLifecycle;
+  let read: OffhostLifecycle = LIFECYCLE_UNKNOWN;
   try {
     const s3 = s3Override ?? (await getS3Client(cfg));
-    value = s3.getLifecycle ? await s3.getLifecycle() : LIFECYCLE_UNKNOWN;
+    if (s3.getLifecycle) read = await s3.getLifecycle();
   } catch {
-    value = LIFECYCLE_UNKNOWN;
+    // A failed read stands on the last answer the bucket gave.
   }
-  if (value.state !== "unknown") {
-    lastKnownLifecycle = { at: now, value };
-  } else if (
-    lastKnownLifecycle &&
-    now - lastKnownLifecycle.at < LAST_KNOWN_LIFECYCLE_MS
-  ) {
-    value = lastKnownLifecycle.value;
-  }
+  const value = standOnLastAnswer(read, now);
   if (!s3Override) lifecycleCache = { at: now, value };
   return value;
 }
@@ -953,7 +933,6 @@ export async function runOffhostBackup(
       // The account was deleted or wiped while its copy was being written.
       // The purge that request started may already have run, so the copy
       // this run just put there is removed here rather than left behind.
-      // account-deletion: the one account this upload is for.
       const purgedMeanwhile =
         (await prisma.offhostPurgeRequest.count({
           where: {

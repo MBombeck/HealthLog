@@ -124,23 +124,11 @@ describe("PUT /api/admin/users/[id]", () => {
     const body = (await res.json()) as { error: string };
     expect(body.error).toMatch(/last admin/i);
     expect(vi.mocked(prisma.user.update)).not.toHaveBeenCalled();
-  });
-
-  // An admin pending deletion cannot sign in and is erased when the window
-  // ends; counted, they let the last usable admin step down.
-  it("counts only the other admins who are not pending deletion, under the roster lock", async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({
-      id: "u1",
-      role: "ADMIN",
-    } as never);
-    vi.mocked(prisma.user.count).mockResolvedValue(0);
-    await PUT(jsonReq({ role: "USER" }), params("u1"));
+    // Only the other admins who are not pending deletion count (one pending
+    // deletion cannot sign in and is erased when the window ends), under the
+    // roster lock an admin's own deletion takes too.
     expect(vi.mocked(prisma.user.count).mock.calls[0]?.[0]).toEqual({
-      where: {
-        role: "ADMIN",
-        id: { not: "u1" },
-        deletionRequestedAt: null,
-      },
+      where: { role: "ADMIN", id: { not: "u1" }, deletionRequestedAt: null },
     });
     expect(prisma.$queryRaw).toHaveBeenCalled();
   });

@@ -30,6 +30,9 @@ vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@/lib/auth/hmac", () => ({ hashToken: (s: string) => `hash(${s})` }));
+vi.mock("@/lib/account-deletion/pending", () => ({
+  pendingDeletionOf: vi.fn(async () => null),
+}));
 vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn(),
   checkAuthSurfaceRateLimit: vi.fn(),
@@ -67,6 +70,7 @@ import { checkAuthSurfaceRateLimit, checkRateLimit } from "@/lib/rate-limit";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { auditLog } from "@/lib/auth/audit";
+import { pendingDeletionOf } from "@/lib/account-deletion/pending";
 
 function postReq(
   body: unknown,
@@ -98,7 +102,6 @@ beforeEach(() => {
     revoked: false,
     expiresAt: null,
     lastUsedAt: null,
-    user: { deletionRequestedAt: null },
   } as never);
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
 });
@@ -210,7 +213,6 @@ describe("POST /api/ingest/medication — slot attribution + convergence (v1.16.
       revoked: false,
       expiresAt: null,
       lastUsedAt: null,
-      user: { deletionRequestedAt: null },
     } as never);
     vi.mocked(prisma.apiToken.update).mockResolvedValue({} as never);
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
@@ -375,8 +377,7 @@ describe("POST /api/ingest/medication — slot attribution + convergence (v1.16.
       revoked: false,
       expiresAt: null,
       lastUsedAt: null,
-      user: { deletionRequestedAt: null },
-    } as never);
+    } as Awaited<ReturnType<typeof prisma.apiToken.findUnique>>);
   }
 
   it("gives a one-medication token the same 403 for an unknown and an out-of-scope name", async () => {
@@ -539,7 +540,6 @@ describe("POST /api/ingest/medication — the rate-limit bucket", () => {
         revoked: false,
         expiresAt: null,
         lastUsedAt: null,
-        user: { deletionRequestedAt: null },
       } as never)
       .mockResolvedValueOnce({
         id: "tok-button",
@@ -548,7 +548,6 @@ describe("POST /api/ingest/medication — the rate-limit bucket", () => {
         revoked: false,
         expiresAt: null,
         lastUsedAt: null,
-        user: { deletionRequestedAt: null },
       } as never);
 
     await POST(postReq({ medicationName: "A", idempotencyKey: "k-aaaa-001" }));
@@ -608,19 +607,15 @@ describe("POST /api/ingest/medication — the rate-limit bucket", () => {
   // The deletion revokes every token in its own transaction; one issued in
   // the same instant would slip past that, and is refused here as well.
   it("refuses the token of an account pending deletion", async () => {
-    vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
-      id: "tok-1",
-      userId: "user-1",
-      permissions: ["*"],
-      revoked: false,
-      expiresAt: null,
-      lastUsedAt: null,
-      user: { deletionRequestedAt: new Date() },
-    } as never);
+    vi.mocked(pendingDeletionOf).mockResolvedValueOnce({
+      requestedAt: new Date(),
+      purgeAt: null,
+    });
     const res = await POST(
       postReq({ medicationName: "Metformin", idempotencyKey: "k-pending-001" }),
     );
     expect(res.status).toBe(401);
+    expect(pendingDeletionOf).toHaveBeenCalledWith("user-1");
   });
 
   it("falls back to the per-IP bucket when the token does not resolve", async () => {

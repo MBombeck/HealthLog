@@ -153,7 +153,6 @@ async function claimReaction(
       `;
     }
 
-    // account-deletion: one row of the account this arrival belongs to, by id.
     const advanced = await tx.arrivalReaction.updateMany({
       where: { id: current.id, occurredAt: { lt: occurredAt } },
       data: {

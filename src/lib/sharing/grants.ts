@@ -62,8 +62,8 @@ import {
   activeGuardianWhere,
   LastManagedGuardianError,
   ManagedProfileLifecycleError,
+  keepsAGuardian,
   reduceManagedProfileGuardian,
-  remainingGuardianWhere,
   withManagedProfileLock,
 } from "@/lib/managed-profiles/lifecycle";
 import {
@@ -410,16 +410,9 @@ export async function revokeManagedProfileGuardian(input: {
       const targetIsActive =
         target.acceptedAt !== null &&
         (target.expiresAt === null || target.expiresAt > now);
-      if (targetIsActive) {
-        // Another Guardian who is not pending deletion must stay.
-        const remaining = await tx.accountGrant.count({
-          where: {
-            grantorId: profile.id,
-            granteeId: { not: target.granteeId },
-            ...remainingGuardianWhere(now),
-          },
-        });
-        if (remaining === 0) throw new LastManagedGuardianError();
+      const leaves = targetIsActive ? target.granteeId : null;
+      if (leaves && !(await keepsAGuardian(tx, profile.id, leaves))) {
+        throw new LastManagedGuardianError();
       }
 
       await tx.accountGrant.update({
@@ -769,12 +762,7 @@ async function endGrant(
       select: { id: true },
     });
     if (!live) return end();
-    return reduceManagedProfileGuardian(
-      db,
-      current.grantorId,
-      current.granteeId,
-      end,
-    );
+    return reduceManagedProfileGuardian(db, current, end);
   });
 }
 

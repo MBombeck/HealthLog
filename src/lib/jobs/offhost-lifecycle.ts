@@ -89,3 +89,30 @@ export function lifecycleFromRules(
     ),
   };
 }
+
+/**
+ * The last answer the bucket actually gave (`configured` or `missing`), and
+ * how long it stands in for a read that failed. A probe that timed out once
+ * read as "unknown", which keeps every key an off-host object ever needed
+ * in the recovery kit: the kit turned due, the admins were pushed, and the
+ * next good read pushed "recovered". A rule does not change between two
+ * reads an hour apart; a credential that has lost the right to read it for a
+ * whole day does say something, and then "unknown" is the honest answer.
+ */
+const LAST_KNOWN_LIFECYCLE_MS = 24 * 60 * 60 * 1000;
+let lastKnownLifecycle: { at: number; value: OffhostLifecycle } | null = null;
+
+/** `value`, or the last answer the bucket gave when `value` is unknown. */
+export function standOnLastAnswer(
+  value: OffhostLifecycle,
+  now: number,
+): OffhostLifecycle {
+  if (value.state !== "unknown") {
+    lastKnownLifecycle = { at: now, value };
+    return value;
+  }
+  return lastKnownLifecycle &&
+    now - lastKnownLifecycle.at < LAST_KNOWN_LIFECYCLE_MS
+    ? lastKnownLifecycle.value
+    : value;
+}

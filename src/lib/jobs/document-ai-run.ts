@@ -179,7 +179,6 @@ async function armDeadline(
         "The AI response time is set longer than a background read may run.",
     });
   }
-  // account-deletion: the one run this job claimed, by id.
   await prisma.documentAiRun.updateMany({
     where: { id: runId, status: "RUNNING" },
     data: { expiresAt: new Date(ends) },

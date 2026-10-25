@@ -39,11 +39,11 @@ export async function recordRestoreDrillOutcome(
     result.ok !== false
       ? null
       : (() => {
-        const text = redactSecrets((result.reason ?? "").trim());
-        return text.length > MAX_REASON_CHARS
-          ? `${text.slice(0, MAX_REASON_CHARS)}…`
-          : text || null;
-      })();
+          const text = redactSecrets((result.reason ?? "").trim());
+          return text.length > MAX_REASON_CHARS
+            ? `${text.slice(0, MAX_REASON_CHARS)}…`
+            : text || null;
+        })();
   const verdict =
     result.ok === null
       ? {}

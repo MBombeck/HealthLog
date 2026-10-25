@@ -10,6 +10,7 @@ import {
 } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { hashToken } from "@/lib/auth/hmac";
+import { pendingDeletionOf } from "@/lib/account-deletion/pending";
 import {
   checkAuthSurfaceRateLimit,
   checkRateLimit,
@@ -103,18 +104,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
       revoked: true,
       expiresAt: true,
       lastUsedAt: true,
-      user: { select: { deletionRequestedAt: true } },
     },
   });
 
-  // A deletion revokes the account's tokens in its own transaction; a token
-  // issued in the same instant would slip past that, so the pending account
-  // is refused here too, as `resolveBearerToken` does.
-  if (
-    !apiToken ||
-    apiToken.revoked ||
-    apiToken.user.deletionRequestedAt !== null
-  ) {
+  // A pending account's token is refused, as `resolveBearerToken` does.
+  const pending = apiToken && (await pendingDeletionOf(apiToken.userId));
+  if (!apiToken || apiToken.revoked || pending) {
     return refuseUnauthenticated(request, "Invalid or revoked token");
   }
 
@@ -122,17 +117,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return refuseUnauthenticated(request, "Token expired");
   }
 
-  // A bridge is identified by its TOKEN, not by the address it dials from.
-  // The bucket used to be `ingest:${ip}`, so every integration behind one
-  // NAT shared a single 60/min cell and one chatty bridge starved the rest —
-  // and a household running a chat bridge, a button and a home-automation
-  // rule is the normal deployment here, not an edge case.
-  //
-  // The identity is only known after the lookup, so the lookup now runs
-  // before the limiter: one indexed single-row read ahead of what was
-  // already an upsert against `rate_limits`. A caller whose token does not
-  // resolve is still capped on the per-IP bucket it was always capped on,
-  // one step earlier than it reaches anything expensive.
+  // A bridge is identified by its TOKEN, not by the address it dials from:
+  // keyed `ingest:${ip}`, every integration behind one NAT (a chat bridge, a
+  // button, a home-automation rule: the normal household) shared one 60/min
+  // cell and one chatty bridge starved the rest. So the lookup runs before
+  // the limiter, one indexed read ahead of the `rate_limits` upsert; a token
+  // that does not resolve is still capped on the per-IP bucket, earlier.
   const rl = await checkRateLimit(
     `ingest:token:${apiToken.id}`,
     RATE_LIMIT,

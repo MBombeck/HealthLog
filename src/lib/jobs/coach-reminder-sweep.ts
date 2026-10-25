@@ -150,22 +150,20 @@ export async function runCoachReminderSweep(
   );
   try {
     const plansLapsed = await prisma.coachPlan.updateMany({
-      where: {
+      where: ownedByActiveAccount({
         deletedAt: null,
         status: "proposed",
         createdAt: { lt: lapseBefore },
-        ...OWNED_BY_ACTIVE_ACCOUNT,
-      },
+      }),
       data: { status: "abandoned", reviewDate: null },
     });
     summary.planProposalsLapsed = plansLapsed.count;
     const factsLapsed = await prisma.coachFact.updateMany({
-      where: {
+      where: ownedByActiveAccount({
         deletedAt: null,
         source: PROPOSED_FACT_SOURCE,
         createdAt: { lt: lapseBefore },
-        ...OWNED_BY_ACTIVE_ACCOUNT,
-      },
+      }),
       data: { deletedAt: now },
     });
     summary.factProposalsLapsed = factsLapsed.count;
@@ -333,23 +331,21 @@ export async function runCoachReminderSweep(
   const notHeld =
     heldOwners.length > 0 ? { userId: { notIn: heldOwners } } : {};
   await prisma.coachReminder.updateMany({
-    where: {
+    where: ownedByActiveAccount({
       deletedAt: null,
       status: "surfaced",
       lastSurfacedAt: { lte: new Date(now.getTime() - NAG_STALE_MS) },
       ...notHeld,
-      ...OWNED_BY_ACTIVE_ACCOUNT,
-    },
+    }),
     data: { surfaceCount: { increment: 1 } },
   });
   const capped = await prisma.coachReminder.updateMany({
-    where: {
+    where: ownedByActiveAccount({
       deletedAt: null,
       status: "surfaced",
       surfaceCount: { gte: REMINDER_NAG_CAP },
       ...notHeld,
-      ...OWNED_BY_ACTIVE_ACCOUNT,
-    },
+    }),
     data: { status: "dismissed" },
   });
   summary.nagDismissed = capped.count;

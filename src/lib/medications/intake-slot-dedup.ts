@@ -615,7 +615,6 @@ async function convergeAdhocRowsOntoPendingSlots(input: {
       if (pending.takenAt !== null || pending.skipped) continue; // already served.
 
       // Tombstone the pending row; the take is the dose of record.
-      // account-deletion: one row of the account this pass was handed, by id.
       await prisma.medicationIntakeEvent.updateMany({
         where: { id: pending.id, deletedAt: null },
         data: { deletedAt: new Date(), syncVersion: { increment: 1 } },

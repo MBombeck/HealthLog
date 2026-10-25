@@ -24,12 +24,16 @@ import {
 type Transaction = Prisma.TransactionClient;
 
 export { activeGuardianWhere, remainingGuardianWhere };
+export {
+  CLAIMABLE_PROFILE_SELECT,
+  isClaimableProfile,
+} from "@/lib/managed-profiles/claimable";
 
 /**
  * Whether `profileId` keeps a Guardian who is not pending deletion once
  * `leavingGuardianId` (if any) is gone. Call it under the record lock.
  */
-async function keepsAGuardian(
+export async function keepsAGuardian(
   tx: Transaction,
   profileId: string,
   leavingGuardianId: string | null,
@@ -96,16 +100,15 @@ export async function withManagedProfileLock<T>(
  */
 export async function reduceManagedProfileGuardian<T>(
   tx: Transaction,
-  profileId: string,
-  leavingGuardianId: string,
+  grant: { grantorId: string; granteeId: string },
   reduction: () => Promise<T>,
 ): Promise<T> {
-  return withManagedProfileLock(tx, profileId, async (profile) => {
+  return withManagedProfileLock(tx, grant.grantorId, async (profile) => {
     // A profile pending deletion has left every roster; nobody is stranded.
     if (!profile?.managedProfileAt || profile.deletionRequestedAt) {
       return reduction();
     }
-    if (!(await keepsAGuardian(tx, profile.id, leavingGuardianId))) {
+    if (!(await keepsAGuardian(tx, profile.id, grant.granteeId))) {
       throw new LastManagedGuardianError();
     }
     return reduction();

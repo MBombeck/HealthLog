@@ -92,8 +92,8 @@ const SCOPED = [
   // (`userId: true`) or a negation that reads every other account.
   /\b(?:userId|recordUserId|subjectId|grantorId|profileId)\s*(?:[,}\n]|:(?!\s*(?:true|false)\b|\s*\{\s*(?:not|notIn)\b))/,
   /\bid\s*:\s*(?:userId|input\.userId|\{\s*in\b)/,
-  // `id: user.id`, `id: account.id`: the one account a loop is on.
-  /\bid\s*:\s*[\w$]+\.(?:id|userId)\b/,
+  // `id: user.id`, `id: runId`, `id: job.data.jobId`: one row it was handed.
+  /\bid\s*:\s*(?:[\w$]+\.)*[\w$]*[iI]d\b(?!\s*:)/,
   /"?user_id"?\s*=\s*(?:\$\{|ANY\s*\(\s*\$\{)/,
   /\bu\."id"\s*=\s*\$\{/,
   /"id"\s*=\s*(?:\$\{|ANY\s*\(\s*\$\{)/,

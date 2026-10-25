@@ -279,76 +279,7 @@ export function EncryptionSection() {
           description={t("admin.section.encryption.backupsDescription")}
         />
         <p className="text-sm">{t("admin.section.encryption.backupsDetail")}</p>
-        <ul className="space-y-1 text-sm" data-slot="encryption-backup-keys">
-          {s.backups.stored.map((row) => (
-            <li key={`stored-${row.keyId}`}>
-              {t("admin.section.encryption.backupsStoredLine", {
-                key: row.keyId,
-                count: row.copies,
-                when: fmt.dateTime(row.oldestAt),
-              })}
-            </li>
-          ))}
-          {s.backups.unrecorded.copies > 0 && s.backups.unrecorded.oldestAt ? (
-            <li>
-              {t("admin.section.encryption.backupsUnrecordedLine", {
-                count: s.backups.unrecorded.copies,
-                when: fmt.dateTime(s.backups.unrecorded.oldestAt),
-              })}
-            </li>
-          ) : null}
-          {s.backups.offhost.map((row) => (
-            <li key={`offhost-${row.keyId}`}>
-              {row.neededUntil
-                ? t("admin.section.encryption.backupsOffhostLine", {
-                    key: row.keyId,
-                    when: fmt.dateTime(row.lastWrittenAt),
-                    until: fmt.dateTime(row.neededUntil),
-                  })
-                : t("admin.section.encryption.backupsOffhostLineUnknown", {
-                    key: row.keyId,
-                    when: fmt.dateTime(row.lastWrittenAt),
-                  })}
-            </li>
-          ))}
-          {s.backups.dumps.map((row) => (
-            <li key={`dump-${row.keyId}`}>
-              {[
-                row.local > 0
-                  ? t("admin.section.encryption.backupsDumpLocalLine", {
-                      key: row.keyId,
-                      count: row.local,
-                    })
-                  : null,
-                row.offhost
-                  ? row.offhost.neededUntil
-                    ? t("admin.section.encryption.backupsDumpOffhostLine", {
-                        key: row.keyId,
-                        when: fmt.dateTime(row.offhost.lastWrittenAt),
-                        until: fmt.dateTime(row.offhost.neededUntil),
-                      })
-                    : t(
-                        "admin.section.encryption.backupsDumpOffhostLineUnknown",
-                        {
-                          key: row.keyId,
-                          when: fmt.dateTime(row.offhost.lastWrittenAt),
-                        },
-                      )
-                  : null,
-              ]
-                .filter((line): line is string => line !== null)
-                .join(" ")}
-            </li>
-          ))}
-          {s.backups.stored.length === 0 &&
-          s.backups.unrecorded.copies === 0 &&
-          s.backups.offhost.length === 0 &&
-          s.backups.dumps.length === 0 ? (
-            <li className="text-muted-foreground">
-              {t("admin.section.encryption.backupsNone")}
-            </li>
-          ) : null}
-        </ul>
+        <BackupKeyNeedsList backups={s.backups} />
       </SettingsCard>
 
       {/* ── Rotation status + trigger ──────────────────────────────── */}
@@ -562,6 +493,85 @@ export function ColumnCoverage({
         ) : null}
       </div>
     </div>
+  );
+}
+
+/** Per key id, the copies and dumps that still need it. */
+function BackupKeyNeedsList({
+  backups,
+}: {
+  backups: EncryptionStatus["backups"];
+}) {
+  const { t } = useTranslations();
+  const fmt = useFormatters();
+  return (
+    <ul className="space-y-1 text-sm" data-slot="encryption-backup-keys">
+      {backups.stored.map((row) => (
+        <li key={`stored-${row.keyId}`}>
+          {t("admin.section.encryption.backupsStoredLine", {
+            key: row.keyId,
+            count: row.copies,
+            when: fmt.dateTime(row.oldestAt),
+          })}
+        </li>
+      ))}
+      {backups.unrecorded.copies > 0 && backups.unrecorded.oldestAt ? (
+        <li>
+          {t("admin.section.encryption.backupsUnrecordedLine", {
+            count: backups.unrecorded.copies,
+            when: fmt.dateTime(backups.unrecorded.oldestAt),
+          })}
+        </li>
+      ) : null}
+      {backups.offhost.map((row) => (
+        <li key={`offhost-${row.keyId}`}>
+          {row.neededUntil
+            ? t("admin.section.encryption.backupsOffhostLine", {
+                key: row.keyId,
+                when: fmt.dateTime(row.lastWrittenAt),
+                until: fmt.dateTime(row.neededUntil),
+              })
+            : t("admin.section.encryption.backupsOffhostLineUnknown", {
+                key: row.keyId,
+                when: fmt.dateTime(row.lastWrittenAt),
+              })}
+        </li>
+      ))}
+      {backups.dumps.map((row) => (
+        <li key={`dump-${row.keyId}`}>
+          {[
+            row.local > 0
+              ? t("admin.section.encryption.backupsDumpLocalLine", {
+                  key: row.keyId,
+                  count: row.local,
+                })
+              : null,
+            row.offhost
+              ? row.offhost.neededUntil
+                ? t("admin.section.encryption.backupsDumpOffhostLine", {
+                    key: row.keyId,
+                    when: fmt.dateTime(row.offhost.lastWrittenAt),
+                    until: fmt.dateTime(row.offhost.neededUntil),
+                  })
+                : t("admin.section.encryption.backupsDumpOffhostLineUnknown", {
+                    key: row.keyId,
+                    when: fmt.dateTime(row.offhost.lastWrittenAt),
+                  })
+              : null,
+          ]
+            .filter((line): line is string => line !== null)
+            .join(" ")}
+        </li>
+      ))}
+      {backups.stored.length === 0 &&
+      backups.unrecorded.copies === 0 &&
+      backups.offhost.length === 0 &&
+      backups.dumps.length === 0 ? (
+        <li className="text-muted-foreground">
+          {t("admin.section.encryption.backupsNone")}
+        </li>
+      ) : null}
+    </ul>
   );
 }
 

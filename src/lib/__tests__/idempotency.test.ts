@@ -8,6 +8,10 @@ vi.stubEnv("ENCRYPTION_ACTIVE_KEY_ID", "");
 vi.stubEnv("ENCRYPTION_KEY", "0".repeat(64));
 import { NextRequest, NextResponse } from "next/server";
 
+const pendingOwner = vi.hoisted(() => ({
+  value: null as null | { deletionRequestedAt: Date; deletionPurgeAt: null },
+}));
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     idempotencyKey: {
@@ -20,6 +24,9 @@ vi.mock("@/lib/db", () => ({
     },
     apiToken: {
       findUnique: vi.fn(),
+    },
+    user: {
+      findUnique: vi.fn(async () => pendingOwner.value),
     },
   },
 }));
@@ -430,12 +437,28 @@ describe("defaultUserIdResolver (audit C-4)", () => {
     vi.mocked(getSession).mockResolvedValue(null);
     mockHeader("Bearer hlk_abcdef");
     vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
+      id: "tok-pending",
+      name: "connector",
       userId: "u-bearer",
-      revoked: false,
+      createdAt: new Date(),
       expiresAt: null,
-      user: { deletionRequestedAt: new Date() },
-    } as never);
-    expect(await defaultUserIdResolver()).toBeNull();
+      tokenHash: "hashed:hlk_abcdef",
+      permissions: ["*"],
+      lastUsedAt: null,
+      revoked: false,
+      mcpConnectionId: null,
+      mirrorToAppleHealth: false,
+      mirrorChangedAt: null,
+    });
+    pendingOwner.value = {
+      deletionRequestedAt: new Date(),
+      deletionPurgeAt: null,
+    };
+    try {
+      expect(await defaultUserIdResolver()).toBeNull();
+    } finally {
+      pendingOwner.value = null;
+    }
   });
 
   it("rejects expired Bearer tokens", async () => {

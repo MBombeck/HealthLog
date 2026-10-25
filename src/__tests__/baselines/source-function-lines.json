@@ -54,7 +54,7 @@
     "components/admin/api-token-overview-section.tsx :: ApiTokenOverviewSection": 212,
     "components/admin/app-log-preview-section.tsx :: AppLogPreviewSection": 341,
     "components/admin/central-codex-section.tsx :: CentralCodexSection": 241,
-    "components/admin/encryption-section.tsx :: EncryptionSection": 303,
+    "components/admin/encryption-section.tsx :: EncryptionSection": 264,
     "components/admin/general-settings-section.tsx :: GeneralSettingsSection": 220,
     "components/admin/glitchtip-section.tsx :: GlitchtipSection": 233,
     "components/admin/host-metrics-chart.tsx :: HostMetricsChart": 232,

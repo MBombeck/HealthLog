@@ -290,10 +290,20 @@ describe("handleRestoreDrill", () => {
       "2026-06-01/user-aaa.json.enc": backupObject({ userId: "user-aaa" }),
     });
     const offhost = await import("../offhost-backup");
-    vi.spyOn(offhost, "getS3Client").mockResolvedValue(s3 as never);
+    vi.spyOn(offhost, "getS3Client").mockResolvedValue(s3);
     // The job's budget is already spent: pg-boss aborted it.
+    const aborted = new AbortController();
+    aborted.abort();
     await handleRestoreDrill([
-      { signal: { aborted: true }, expireInSeconds: 900 } as never,
+      {
+        id: "drill-1",
+        name: RESTORE_DRILL_QUEUE,
+        data: {},
+        expireInSeconds: 900,
+        heartbeatSeconds: null,
+        retryCount: 0,
+        signal: aborted.signal,
+      },
     ]);
     expect(recordRestoreDrillOutcome).toHaveBeenCalledTimes(1);
     expect(vi.mocked(recordRestoreDrillOutcome).mock.calls[0][0]).toMatchObject(

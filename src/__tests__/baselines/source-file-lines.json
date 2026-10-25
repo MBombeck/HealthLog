@@ -80,7 +80,7 @@
     "lib/oura/sync.ts": 900,
     "lib/rollups/measurement-rollups.ts": 1496,
     "lib/search/search-records.ts": 996,
-    "lib/sharing/grants.ts": 807,
+    "lib/sharing/grants.ts": 806,
     "lib/support/report.ts": 903,
     "lib/telegram-webhook-handlers.ts": 1341,
     "lib/validations/inbound-documents.ts": 1018,
