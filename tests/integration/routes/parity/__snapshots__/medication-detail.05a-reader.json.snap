@@ -69,7 +69,7 @@
       "nextDueOverdue": false,
       "courseStatus": "CURRENT",
       "intakeActionable": true,
-      "canEndCourse": true,
+      "canEndCourse": false,
       "stockUnitsRemaining": 3,
       "stockDosesRemaining": 3,
       "runwayDays": 21,

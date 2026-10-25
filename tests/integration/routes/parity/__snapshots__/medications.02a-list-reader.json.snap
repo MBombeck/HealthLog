@@ -74,7 +74,7 @@
         "nextDueScheduleId": "<id:3>",
         "courseStatus": "CURRENT",
         "intakeActionable": true,
-        "canEndCourse": true,
+        "canEndCourse": false,
         "stockUnitsRemaining": null,
         "stockDosesRemaining": null,
         "runwayDays": null
