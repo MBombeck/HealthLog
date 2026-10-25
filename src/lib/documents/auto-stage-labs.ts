@@ -43,6 +43,7 @@ import {
 } from "@/lib/documents/extract";
 import {
   OCR_EXTRACT_MODEL_CALLS,
+  SYNCHRONOUS_READ_SCHEDULE,
   type OcrSchedule,
 } from "@/lib/documents/ocr-plan";
 import { OcrExtractError } from "@/lib/documents/ocr-read";
@@ -261,7 +262,10 @@ async function stageFactsIfStored(
  * `schedule` is the run's deadline when a job reads (the auto-index job, the
  * document run): the report's text is then split into as many reads as fit
  * before it, instead of up to `OCR_MAX_PAGES` reads of two calls each that a
- * slow model could stretch past the job's expiry (#1274).
+ * slow model could stretch past the job's expiry (#1274). Absent, the staging
+ * runs inside a request (the index route without `Prefer: respond-async`)
+ * and is planned as one ({@link SYNCHRONOUS_READ_SCHEDULE}); what does not
+ * fit is reported as `extractionIncomplete` on the document.
  */
 export async function maybeAutoStageLabFacts(
   userId: string,
@@ -333,14 +337,13 @@ export async function maybeAutoStageLabFacts(
     { cap, surface: "job" },
   );
 
-  const plan = planInboundTextReads(chat.text, options.schedule);
+  const schedule = options.schedule ?? SYNCHRONOUS_READ_SCHEDULE;
+  const plan = planInboundTextReads(chat.text, schedule);
   let result: InboundExtractionResult;
   try {
     // A run that cannot fit even one read before its deadline refuses here;
     // the reservation is settled below like any other failed read.
-    await options.schedule?.arm(
-      plan.args.chunks.length * OCR_EXTRACT_MODEL_CALLS,
-    );
+    await schedule.arm(plan.args.chunks.length * OCR_EXTRACT_MODEL_CALLS);
     result = await runInboundExtraction({
       userId,
       provider: provider.pick.entry.instance,

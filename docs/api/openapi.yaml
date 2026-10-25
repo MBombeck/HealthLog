@@ -19980,11 +19980,13 @@ paths:
         — no plaintext body, no plaintext token. Idempotent; re-indexing overwrites in place. A successful index
         continues into the same lab auto-staging the background worker performs (still-STORED lab-looking document with
         no facts, both modules on, provider + consent eligible); `labFactsStaged` reports how many facts were staged
-        PENDING for review — confirmation stays the only write into Labs. With `Prefer: respond-async` (v1.40) the read
-        runs in the background: after the same quick refusals the route answers 202 with a run id, a second request
-        while a read of this document is queued or running answers with that run, and `GET /api/ai-runs/{id}` serves
-        this body as the run's `result`. Text mode honours the preference too, because the lab staging it continues into
-        is model work."
+        PENDING for review — confirmation stays the only write into Labs. Without `Prefer: respond-async` that staging
+        runs inside the request and makes at most three reads (six model calls), like the extract route: what does not
+        fit is left out and reported as `extractionIncomplete: true` on the document. With `Prefer: respond-async`
+        (v1.40) the read runs in the background: after the same quick refusals the route answers 202 with a run id, a
+        second request while a read of this document is queued or running answers with that run, and `GET
+        /api/ai-runs/{id}` serves this body as the run's `result`. Text mode honours the preference too, because the lab
+        staging it continues into is model work."
       parameters:
         - name: id
           in: path

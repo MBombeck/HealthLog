@@ -36,6 +36,7 @@ import {
 } from "@/lib/documents/extract";
 import {
   OCR_EXTRACT_MODEL_CALLS,
+  SYNCHRONOUS_READ_SCHEDULE,
   type OcrSchedule,
 } from "@/lib/documents/ocr-plan";
 import { OcrExtractError } from "@/lib/documents/ocr-read";
@@ -266,24 +267,6 @@ function extractionFailure(err: OcrExtractError): AiRunOutcome<never> {
       return unreadableDocument(true);
   }
 }
-
-/**
- * The most reads an extraction makes inside one HTTP request (the extract
- * route without `Prefer: respond-async`, which the iPhone app sends). Each
- * read is up to `OCR_EXTRACT_MODEL_CALLS` model calls, so this bounds the
- * request at six calls where an unplanned read of a twenty-page report made
- * forty. A longer document is read in as many reads by sharing its pages or
- * text out between them, and what does not fit is reported as
- * `extractionIncomplete` on the document; the background run, which has a
- * deadline of its own, reads it a page at a time.
- */
-export const SYNC_EXTRACT_MAX_READS = 3;
-
-/** The read plan of a request: a fixed number of calls, nothing to arm. */
-export const SYNCHRONOUS_READ_SCHEDULE: OcrSchedule = {
-  maxModelCalls: () => SYNC_EXTRACT_MAX_READS * OCR_EXTRACT_MODEL_CALLS,
-  arm: async () => undefined,
-};
 
 /** Extract and stage facts from one owned document. The caller authorised and charged it. */
 export async function executeDocumentExtract(args: {
