@@ -8165,7 +8165,7 @@
       },
       "backups": {
         "title": "Kopie zapasowe",
-        "subtitle": "Kopie kont przechowywane w bazie danych tego serwera, do przywracania pojedynczego konta na tym serwerze.",
+        "subtitle": "Kopie kont w bazie danych tego serwera, do przywrócenia jednego konta na tym serwerze.",
         "description": "Każde konto ma jedną cotygodniową kopię, zastępowaną w każdą niedzielę, a do tego kopie przesłane tutaj i kopię wykonaną przed „Usuń wszystkie dane”. Kopia przywraca istniejące konto na tym serwerze. Nie odtworzy utraconego serwera: do tego potrzebny jest zrzut bazy danych i klucze szyfrowania. Rozmiary dotyczą zaszyfrowanej kopii. Pobieranie odszyfrowuje ją dla administratora, który o nią prosi; szyfrogram zostaje w bazie danych.",
         "runNow": "Utwórz kopię teraz",
         "runEnqueued": "Zadanie kopii zapasowej dodano do kolejki",

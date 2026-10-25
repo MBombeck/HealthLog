@@ -8165,7 +8165,7 @@
       },
       "backups": {
         "title": "Backups",
-        "subtitle": "Cópias de contas mantidas no banco de dados deste servidor, para reverter uma conta neste servidor.",
+        "subtitle": "Cópias de contas no banco de dados deste servidor, para reverter uma conta aqui.",
         "description": "Cada conta tem uma cópia semanal, substituída todo domingo, além das cópias enviadas aqui e da cópia feita antes de \"Excluir todos os dados\". Uma cópia reverte uma conta existente neste servidor. Ela não reconstrói um servidor perdido: para isso são necessários um dump do banco de dados e as chaves de criptografia. Os tamanhos mostram a cópia criptografada. O download a descriptografa para o administrador que pede; o texto cifrado fica no banco de dados.",
         "runNow": "Fazer backup agora",
         "runEnqueued": "Tarefa de backup enfileirada",

@@ -8165,7 +8165,7 @@
       },
       "backups": {
         "title": "Backup",
-        "subtitle": "Copie degli account conservate nel database di questo server, per riportare indietro un account su questo server.",
+        "subtitle": "Copie degli account nel database di questo server, per ripristinare un account qui.",
         "description": "Ogni account ha una copia settimanale, sostituita ogni domenica, più le copie caricate qui e la copia presa prima di «Elimina tutti i dati». Una copia riporta indietro un account esistente su questo server. Non può ricostruire un server perso: per quello servono un dump del database e le chiavi di cifratura. Le dimensioni indicano la copia cifrata. Il download la decifra per l’amministratore che la chiede; il testo cifrato resta nel database.",
         "runNow": "Esegui backup ora",
         "runEnqueued": "Processo di backup messo in coda",

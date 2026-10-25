@@ -8165,7 +8165,7 @@
       },
       "backups": {
         "title": "Backups",
-        "subtitle": "Kontokopien in der Datenbank dieses Servers, um ein einzelnes Konto auf diesem Server zurückzusetzen.",
+        "subtitle": "Kontokopien in der Datenbank dieses Servers, um ein Konto hier zurückzusetzen.",
         "description": "Jedes Konto hat eine wöchentliche Kopie, die jeden Sonntag ersetzt wird, dazu hier hochgeladene Kopien und die Kopie, die vor „Alle Daten löschen“ angelegt wird. Eine Kopie setzt ein bestehendes Konto auf diesem Server zurück. Einen verlorenen Server kann sie nicht wiederherstellen: Dafür braucht es einen Datenbank-Dump und die Verschlüsselungsschlüssel. Die Größen zeigen die verschlüsselte Kopie. Beim Herunterladen wird sie für den anfragenden Admin entschlüsselt; der Geheimtext bleibt in der Datenbank.",
         "runNow": "Jetzt sichern",
         "runEnqueued": "Backup-Job eingeplant",

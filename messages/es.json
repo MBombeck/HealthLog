@@ -8165,7 +8165,7 @@
       },
       "backups": {
         "title": "Copias de seguridad",
-        "subtitle": "Copias de cuentas guardadas en la base de datos de este servidor, para restaurar una cuenta en este servidor.",
+        "subtitle": "Copias de cuentas en la base de datos de este servidor, para restaurar una cuenta aquí.",
         "description": "Cada cuenta tiene una copia semanal, que se reemplaza cada domingo, además de las copias subidas aquí y la copia que se toma antes de «Eliminar todos los datos». Una copia restaura una cuenta existente en este servidor. No puede reconstruir un servidor perdido: para eso hacen falta un volcado de la base de datos y las claves de cifrado. Los tamaños muestran la copia cifrada. La descarga la descifra para el administrador que la pide; el texto cifrado se queda en la base de datos.",
         "runNow": "Hacer copia ahora",
         "runEnqueued": "Tarea de copia de seguridad en cola",

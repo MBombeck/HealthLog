@@ -8165,7 +8165,7 @@
       },
       "backups": {
         "title": "Sauvegardes",
-        "subtitle": "Copies de comptes conservées dans la base de données de ce serveur, pour restaurer un compte sur ce serveur.",
+        "subtitle": "Copies de comptes dans la base de données de ce serveur, pour restaurer un compte ici.",
         "description": "Chaque compte dispose d’une copie hebdomadaire, remplacée chaque dimanche, ainsi que des copies téléversées ici et de la copie prise avant « Supprimer toutes les données ». Une copie restaure un compte existant sur ce serveur. Elle ne peut pas reconstruire un serveur perdu : il faut pour cela une sauvegarde de la base de données et les clés de chiffrement. Les tailles indiquent la copie chiffrée. Le téléchargement la déchiffre pour l’administrateur qui la demande ; le texte chiffré reste dans la base de données.",
         "runNow": "Sauvegarder maintenant",
         "runEnqueued": "Tâche de sauvegarde mise en file d'attente",
