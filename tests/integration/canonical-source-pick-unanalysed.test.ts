@@ -15,8 +15,14 @@
  * stay within a small multiple of the rows seeded. A plan that revisits the
  * table per row lands thousands of times over that budget, whatever the
  * machine.
+ *
+ * The same holds for the readers that fold per source and day without the
+ * helper (the blood-pressure series, the live buckets, the all-time
+ * extremes, the doctor report's dense buckets): each used to join a second
+ * grouping of the same rows back to its days, which the planner ran the same
+ * way on such a table.
  */
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import type {
   MeasurementSource,
@@ -32,6 +38,10 @@ import {
   canonicalMeasurementsCte,
   type CanonicalWindow,
 } from "@/lib/analytics/source-rank-sql";
+import { prisma as appPrisma } from "@/lib/db";
+import { loadDenseMeasurementBuckets } from "@/lib/doctor-report/dense-buckets";
+import { readAllTimeExtremes } from "@/lib/insights/feature-blocks";
+import { readLiveBuckets } from "@/lib/measurements/daily-series-read";
 import { bloodPressureSeriesSql } from "@/lib/measurements/series/read-blood-pressure";
 import { VALUE_RANGES } from "@/lib/validations/measurement";
 
@@ -48,6 +58,14 @@ const DAY = 86_400_000;
  * one-type read, and ran past a minute on the all-time read.
  */
 const WORK_PER_ROW = 8;
+
+/**
+ * The same for a reader that folds every source's rows per hour or per day
+ * before it picks: a few more passes over the rows (a sort and a grouping
+ * per level), so about 10 per row seeded. The joins these readers used to
+ * make measured 200 to 3,000.
+ */
+const FOLD_WORK_PER_ROW = 16;
 
 /**
  * Long enough for any linear plan on this fixture many times over, short
@@ -167,6 +185,55 @@ const SHAPES: Array<
 let seeded = 0;
 
 /**
+ * Run `read` with every `$queryRaw` it issues also run under `EXPLAIN
+ * ANALYZE` on a transaction with the statement timeout, and hold each plan to
+ * the budget. The reader still gets its real rows.
+ */
+async function expectBoundedReader(
+  read: () => Promise<unknown>,
+  workPerRow: number,
+) {
+  const original = appPrisma.$queryRaw.bind(appPrisma) as (
+    ...args: unknown[]
+  ) => Promise<unknown>;
+  const statements: Array<[TemplateStringsArray, unknown[]]> = [];
+  vi.spyOn(appPrisma, "$queryRaw").mockImplementation(((
+    strings: TemplateStringsArray,
+    ...values: unknown[]
+  ) => {
+    statements.push([strings, values]);
+    return original(strings, ...values);
+  }) as never);
+  try {
+    await read();
+  } finally {
+    vi.restoreAllMocks();
+  }
+  expect(statements.length).toBeGreaterThan(0);
+  for (const [strings, values] of statements) {
+    const head = "EXPLAIN (ANALYZE, FORMAT JSON) ";
+    const explain = Object.assign([head + strings[0], ...strings.slice(1)], {
+      raw: [head + strings.raw[0], ...strings.raw.slice(1)],
+    });
+    const [{ "QUERY PLAN": plan }] = await prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(
+        `SET LOCAL statement_timeout = '${STATEMENT_TIMEOUT}'`,
+      );
+      return tx.$queryRaw<Array<{ "QUERY PLAN": Array<{ Plan: PlanNode }> }>>(
+        explain,
+        ...values,
+      );
+    });
+    const visits = rowVisits(plan[0].Plan);
+    expect(
+      visits,
+      `${visits} row visits for ${seeded} rows seeded:\n` +
+        JSON.stringify(plan[0].Plan, null, 1),
+    ).toBeLessThanOrEqual(workPerRow * seeded);
+  }
+}
+
+/**
  * Run `sql` under `EXPLAIN ANALYZE` and hold its row visits to the budget.
  * The statement timeout fails a quadratic plan here rather than at the test
  * timeout.
@@ -273,5 +340,60 @@ describe("blood-pressure series pick on a table without statistics", () => {
     expect(rows.some((r) => r.type === "BLOOD_PRESSURE_SYS")).toBe(true);
     expect(rows.some((r) => r.type === "BLOOD_PRESSURE_DIA")).toBe(true);
     expect(rows.every((r) => r.source === "WITHINGS")).toBe(true);
+  });
+});
+
+/**
+ * The readers that fold each source's days themselves and then pick: the
+ * live buckets of every type over ten years, the all-time extremes, and the
+ * doctor report's dense buckets over ten years. Each used to join a second
+ * grouping of the same rows (hour means, day weights, latest readings) back
+ * to the per-source days; on this fixture those joins measured about 200
+ * (dense buckets), 1,200 (extremes) and 3,000 (live buckets) row visits per
+ * row seeded.
+ */
+describe("per-source folds on a table without statistics", () => {
+  const from = new Date(NOW.getTime() - 3650 * DAY);
+  it.each<[string, () => Promise<unknown[] | Map<unknown, unknown>>]>([
+    [
+      "live buckets, every type, ten years",
+      () =>
+        readLiveBuckets({
+          userId: USER,
+          type: null,
+          from,
+          to: NOW,
+          cap: 100_000,
+          priorityJson: null,
+          grain: "daily",
+          timeZone: "Europe/Berlin",
+        }),
+    ],
+    [
+      "all-time extremes",
+      () =>
+        readAllTimeExtremes(USER, [
+          "BLOOD_PRESSURE_SYS",
+          "BLOOD_PRESSURE_DIA",
+          "PULSE",
+        ]),
+    ],
+    [
+      "dense buckets, ten years",
+      () =>
+        loadDenseMeasurementBuckets({
+          userId: USER,
+          start: from,
+          end: NOW,
+          reportTz: "Europe/Berlin",
+          denseTypes: ["PULSE"],
+        }),
+    ],
+  ])("reads the window a bounded number of times: %s", async (_label, read) => {
+    let out: unknown[] | Map<unknown, unknown> = [];
+    await expectBoundedReader(async () => {
+      out = await read();
+    }, FOLD_WORK_PER_ROW);
+    expect(out instanceof Map ? out.size : out.length).toBeGreaterThan(0);
   });
 });
