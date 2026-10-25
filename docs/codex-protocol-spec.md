@@ -630,7 +630,7 @@ Confirmed-rejected slugs (despite the source-tree references in the table above)
 
 Retired for ChatGPT sign-in (OpenAI's Codex models page): `gpt-5.2` and `gpt-5.3-codex` on 2026-05-26, `gpt-5.4` and `gpt-5.4-mini` on 2026-08-31, `gpt-5.5` on 2026-10-14 at 19:00 UTC. The backend now answers each of them with 400 `model_not_found`, "The '<slug>' model is not supported when using Codex with a ChatGPT account."
 
-Offered to a ChatGPT sign-in, per the account's live list (`GET /backend-api/codex/models?client_version=…`, checked 2026-10-24): `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`, `gpt-6-luna` and the `gpt-5.6` line, all with `input_modalities: ["text", "image"]`. From a HealthLog container with its stored sign-in, `gpt-6.1-sol` and `gpt-6-luna` answered text and each read a lab-report image correctly.
+Offered to a ChatGPT sign-in, per the account's live list (`GET /backend-api/codex/models?client_version=…`, checked 2026-10-24): `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`, `gpt-6-luna` and the `gpt-5.6` line, all with `input_modalities: ["text", "image"]`. From a HealthLog container with its stored sign-in, `gpt-6.1-sol`, `gpt-6-sol` and `gpt-6-luna` each answered text and read a lab-report image correctly. `gpt-6.1-sol` refuses `reasoning.effort: "none"` and names `low` as its lowest effort; the other two accept it.
 
 The `codex-rs/tui/src/model_migration.rs` references to `gpt-5-codex` etc. are _migration prompts_ shown to existing users — they are NOT the slugs sent on the wire after migration. The wire slugs come from `models.json`. Always cross-check `models.json` (`gh api repos/openai/codex/contents/codex-rs/models-manager/models.json`) before picking a default.
 
