@@ -573,10 +573,10 @@ async function computeFromRollups(
 
   const [narrows, latests, dayBuckets, accumulatorRows, preFoldRemainder] =
     await Promise.all([
-      // The FROM is restricted to the canonical-source rows per (type, day): the
-      // inner DISTINCT ON picks the ladder-winning source for each day, and the
-      // join keeps only that source's readings so the 90-day AVG / median / slope
-      // never blend two devices that both reported the same vital.
+      // The FROM is restricted to the canonical-source rows per (type, day):
+      // the ladder-winning source for each day, and only that source's
+      // readings, so the 90-day AVG / median / slope never blend two devices
+      // that both reported the same vital.
       // The window means weigh each day once for an hourly-mean type
       // (`windowedMean`); the median stays over every reading.
       prisma.$queryRawUnsafe<NarrowAggregateRow[]>(

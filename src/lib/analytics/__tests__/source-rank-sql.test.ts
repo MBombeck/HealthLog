@@ -7,8 +7,10 @@
  * self-join. These tests pin:
  *   1. the alias-wrapped `canonicalMeasurementsFrom` is exactly the CTE body
  *      wrapped in `( … ) m` — so the single-reference call site is unchanged;
- *   2. the canonical body carries exactly ONE DISTINCT-ON pick — so a fold
- *      that references the CTE twice runs the expensive pick once;
+ *   2. the canonical body reads `measurements` once and picks with one window
+ *      function, with no join for the planner to run as a nested loop — so a
+ *      fold that references the CTE twice runs the pick once, and a table
+ *      without statistics cannot turn it quadratic;
  *   3. the interval whitelist still rejects an unsafe splice;
  *   4. the window counts from an instant the caller took, never from the
  *      database clock.
@@ -34,21 +36,22 @@ describe("canonicalMeasurementsCte / canonicalMeasurementsFrom", () => {
     expect(from).toBe(`(${cte}\n      ) m`);
   });
 
-  it("runs exactly one DISTINCT-ON canonical pick in the body", () => {
+  it("picks with one window over one scan, with no join", () => {
     const cte = canonicalMeasurementsCte(RANK, NINETY_DAYS);
-    const matches = cte.match(/DISTINCT ON/g) ?? [];
-    expect(matches).toHaveLength(1);
+    expect(cte.match(/FROM measurements\b/g) ?? []).toHaveLength(1);
+    expect(cte.match(/FIRST_VALUE\(/g) ?? []).toHaveLength(1);
+    expect(cte).not.toMatch(/\bJOIN\b|DISTINCT ON/);
   });
 
-  it("binds the user id as $1 and scopes both the inner and outer windows", () => {
+  it("binds the user id as $1 and scopes the scan to the window", () => {
     const cte = canonicalMeasurementsCte(RANK, NINETY_DAYS);
     // user id is always a bound parameter, never spliced.
     expect(cte).toContain('"user_id" = $1');
-    // The trailing-window bound appears on both the inner pick and the outer
-    // filter so the folded references stay scoped identically.
+    // The trailing-window bound scopes the one scan, so the pick and the rows
+    // it keeps are cut by the same window.
     const intervalMatches =
       cte.match(/>= \$2::timestamp - INTERVAL '90 days'/g) ?? [];
-    expect(intervalMatches).toHaveLength(2);
+    expect(intervalMatches).toHaveLength(1);
   });
 
   it("never cuts its window on the database clock", () => {

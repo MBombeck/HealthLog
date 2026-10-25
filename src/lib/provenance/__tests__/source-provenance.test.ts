@@ -115,10 +115,12 @@ describe("the provenance query orders like the canonical pick", () => {
         `ORDER BY date_trunc('day', "measured_at"), (${rank}), "source"::text`,
       ),
     );
-    // The shared pick groups to (type, day, source) first and orders the
-    // groups by the same keys, the UTC day named `d`.
+    // The shared pick partitions by type and UTC day and orders each day's
+    // rows by the same keys.
     expect(squash(canonicalMeasurementsCte(rank))).toContain(
-      squash(`ORDER BY "type", d, (${rank}), "source"::text`),
+      squash(
+        `PARTITION BY mm."type", date_trunc('day', mm."measured_at") ORDER BY (${rank}), mm."source"::text`,
+      ),
     );
     // Values are bound, never spliced.
     expect(userId).toBe("u1");

@@ -10,9 +10,8 @@ const SINCE = new Date("2026-03-01T06:30:00.000Z");
 describe("seriesRowsFrom", () => {
   it("collapses a type that has a ladder to the ladder's source per day", () => {
     const sql = seriesRowsFrom(null, "PULSE", SINCE);
-    expect(sql).toContain("DISTINCT ON");
-    // Scoped to the one metric, in both halves of the helper.
-    expect(sql).toContain(`"type" = 'PULSE'::"measurement_type"`);
+    expect(sql).toContain("canonical_source");
+    // Scoped to the one metric in the helper's one scan.
     expect(sql).toContain(`mm."type" = 'PULSE'::"measurement_type"`);
     expect(sql.trimEnd().endsWith(") m")).toBe(true);
   });
@@ -21,7 +20,7 @@ describe("seriesRowsFrom", () => {
     const sql = seriesRowsFrom(null, "WEIGHT", SINCE);
     expect(
       sql.match(/>= '2026-03-01 06:30:00.000'::timestamp - INTERVAL '1 day'/g),
-    ).toHaveLength(2);
+    ).toHaveLength(1);
     // Counted from the caller's `since`, never from the database clock.
     expect(sql).not.toMatch(/NOW\(\)/i);
   });
@@ -46,7 +45,7 @@ describe("seriesRowsFrom", () => {
     "keeps every source for %s, which has no ladder",
     (type) => {
       const sql = seriesRowsFrom(null, type, SINCE);
-      expect(sql).not.toContain("DISTINCT ON");
+      expect(sql).not.toContain("canonical_source");
       expect(sql).toContain(`mm."type" = '${type}'::"measurement_type"`);
       expect(sql).toContain(`mm."user_id" = $1`);
       expect(sql).toContain(`mm."deleted_at" IS NULL`);
@@ -69,9 +68,9 @@ describe("canonicalMeasurementsCte, one-metric scope", () => {
     expect(sql).not.toContain("measurement_type");
   });
 
-  it("scopes the pick and the join to the type when one is given", () => {
+  it("scopes the scan to the type when one is given", () => {
     const sql = canonicalMeasurementsCte(rank, NINETY_DAYS, "PULSE");
-    expect(sql.match(/'PULSE'::"measurement_type"/g)).toHaveLength(2);
+    expect(sql.match(/'PULSE'::"measurement_type"/g)).toHaveLength(1);
   });
 
   it("refuses anything that is not a closed-enum literal", () => {

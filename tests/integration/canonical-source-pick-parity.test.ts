@@ -1,8 +1,8 @@
 /**
  * The canonical-source pick, against a real Postgres: the shipped statement
- * (group the window to `(type, day, source)` first, then `DISTINCT ON`)
- * against the statement it replaced (`DISTINCT ON` over every raw row),
- * kept verbatim below as the reference. Only its window anchor changed: it
+ * (one window function over one scan names each day's source) against the
+ * `DISTINCT ON` pick joined back to the rows, kept verbatim below as the
+ * reference. Only its window anchor changed: it
  * counts from the same bound instant the shipped helper takes, where it read
  * `NOW()`, so both cut one window.
  *

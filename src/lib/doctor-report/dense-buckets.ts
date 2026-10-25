@@ -81,6 +81,13 @@ export async function loadDenseMeasurementBuckets(params: {
   const hourlyMeanType = Prisma.raw(isHourlyMeanTypeSql('"type"'));
   // Each hour's weight under the active pulse day-mean method (code-built).
   const hourWeight = Prisma.raw(hourWeightSql("n"));
+  // One grouping over one scan, no join. The latest reading and the hour
+  // means used to be groupings of their own, joined back to the buckets; on
+  // a measurements table without planner statistics (a new install, an
+  // import under the autoanalyze threshold) those joins ran as nested loops
+  // that re-ran a grouping for every bucket, and a long report window ran
+  // into the statement timeout. `tests/integration/per-source-fold-parity.test.ts`
+  // holds the joined statement as the reference.
   return prisma.$queryRaw<DenseMeasurementBucket[]>`
         WITH localized AS (
           SELECT
@@ -106,6 +113,9 @@ export async function loadDenseMeasurementBuckets(params: {
             AND m."deleted_at" IS NULL
             AND m."type" IN (${typeList})
         ),
+        -- Every row carries its bucket's latest reading and its local hour's
+        -- reading count and mean, with one row per hour marked, so the one
+        -- grouping below folds them all.
         scored AS (
           SELECT
             localized.*,
@@ -113,72 +123,18 @@ export async function loadDenseMeasurementBuckets(params: {
               WHEN "value" > 0
               THEN 1.509 * (power(ln("value"), 1.084) - 5.381)
               ELSE NULL
-            END AS risk_transform
+            END AS risk_transform,
+            FIRST_VALUE("value") OVER (
+              PARTITION BY local_day, "type", "source", "device_type", "glucose_context"
+              ORDER BY "measured_at" DESC, "id" DESC
+            ) AS latest_value,
+            COUNT(*) OVER hour AS n,
+            AVG("value") OVER hour AS hour_mean,
+            ROW_NUMBER() OVER hour = 1 AS hour_first
           FROM localized
-        ),
-        latest_rows AS (
-          SELECT DISTINCT ON (
-            local_day,
-            "type",
-            "source",
-            "device_type",
-            "glucose_context"
+          WINDOW hour AS (
+            PARTITION BY local_day, local_hour, "type", "source", "device_type", "glucose_context"
           )
-            local_day,
-            "type",
-            "source",
-            "device_type",
-            "glucose_context",
-            "measured_at" AS latest_at,
-            "value" AS latest_value
-          FROM localized
-          ORDER BY
-            local_day,
-            "type",
-            "source",
-            "device_type",
-            "glucose_context",
-            "measured_at" DESC,
-            "id" DESC
-        ),
-        -- The hourly-mean day (pulse): each local hour's mean and reading
-        -- count, then the weighted sum of the means and the sum of the hour
-        -- weights per bucket. Empty for every other type.
-        hour_means AS (
-          SELECT
-            local_day,
-            "type",
-            "source",
-            "device_type",
-            "glucose_context",
-            AVG("value") AS hour_mean,
-            COUNT(*) AS n
-          FROM localized
-          WHERE ${hourlyMeanType}
-          GROUP BY
-            local_day,
-            local_hour,
-            "type",
-            "source",
-            "device_type",
-            "glucose_context"
-        ),
-        hour_agg AS (
-          SELECT
-            local_day,
-            "type",
-            "source",
-            "device_type",
-            "glucose_context",
-            SUM(hour_mean * ${hourWeight})::double precision AS hour_weighted_sum,
-            SUM(${hourWeight})::double precision AS hour_weight
-          FROM hour_means
-          GROUP BY
-            local_day,
-            "type",
-            "source",
-            "device_type",
-            "glucose_context"
         ),
         grouped AS (
           SELECT
@@ -188,6 +144,14 @@ export async function loadDenseMeasurementBuckets(params: {
             "device_type",
             "glucose_context",
             COUNT(*)::int AS sample_count,
+            MAX("measured_at") AS latest_at,
+            MAX(latest_value)::double precision AS latest_value,
+            SUM(hour_mean * ${hourWeight})
+              FILTER (WHERE hour_first AND ${hourlyMeanType})::double precision
+              AS hour_weighted_sum,
+            SUM(${hourWeight})
+              FILTER (WHERE hour_first AND ${hourlyMeanType})::double precision
+              AS hour_weight,
             SUM("value")::double precision AS sum_value,
             MIN("value")::double precision AS min_value,
             MAX("value")::double precision AS max_value,
@@ -242,8 +206,8 @@ export async function loadDenseMeasurementBuckets(params: {
           grouped.sum_value AS "sumValue",
           grouped.min_value AS "minValue",
           grouped.max_value AS "maxValue",
-          latest_rows.latest_at AS "latestAt",
-          latest_rows.latest_value::double precision AS "latestValue",
+          grouped.latest_at AS "latestAt",
+          grouped.latest_value AS "latestValue",
           grouped.clinical_count AS "clinicalCount",
           grouped.clinical_sum AS "clinicalSum",
           grouped.clinical_sum_squares AS "clinicalSumSquares",
@@ -256,21 +220,9 @@ export async function loadDenseMeasurementBuckets(params: {
           grouped.clinical_tar2_count AS "clinicalTar2Count",
           grouped.clinical_low_risk_sum AS "clinicalLowRiskSum",
           grouped.clinical_high_risk_sum AS "clinicalHighRiskSum",
-          hour_agg.hour_weighted_sum AS "hourWeightedSum",
-          hour_agg.hour_weight AS "hourWeight"
+          grouped.hour_weighted_sum AS "hourWeightedSum",
+          grouped.hour_weight AS "hourWeight"
         FROM grouped
-        INNER JOIN latest_rows
-          ON latest_rows.local_day = grouped.local_day
-          AND latest_rows."type" = grouped."type"
-          AND latest_rows."source" = grouped."source"
-          AND latest_rows."device_type" IS NOT DISTINCT FROM grouped."device_type"
-          AND latest_rows."glucose_context" IS NOT DISTINCT FROM grouped."glucose_context"
-        LEFT JOIN hour_agg
-          ON hour_agg.local_day = grouped.local_day
-          AND hour_agg."type" = grouped."type"
-          AND hour_agg."source" = grouped."source"
-          AND hour_agg."device_type" IS NOT DISTINCT FROM grouped."device_type"
-          AND hour_agg."glucose_context" IS NOT DISTINCT FROM grouped."glucose_context"
         ORDER BY "bucketStart" ASC, grouped."type" ASC
 
 `;
