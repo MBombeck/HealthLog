@@ -40,22 +40,35 @@ chain from the **right**, counting back `TRUST_PROXY_HOPS` entries.
 This guards against a client rotating `X-Forwarded-For` per request
 to defeat IP-based rate limits.
 
-| Topology                                                  | `TRUST_PROXY_HOPS`                    |
-| --------------------------------------------------------- | ------------------------------------- |
-| App is internet-facing with no proxy                      | `0` (no forwarding header is trusted) |
-| Single proxy in front (Caddy / Traefik / Nginx / Coolify) | `1` (default)                         |
-| Cloudflare → your proxy → app                             | `2`                                   |
-| Cloudflare → Coolify-Tunnel → Coolify → app               | `3`                                   |
+| Topology                                                  | `TRUST_PROXY_HOPS`                 |
+| --------------------------------------------------------- | ---------------------------------- |
+| App is internet-facing with no proxy                      | `0` (the connection's own address) |
+| Single proxy in front (Caddy / Traefik / Nginx / Coolify) | `1` (default)                      |
+| Cloudflare → your proxy → app                             | `2`                                |
+| Cloudflare → Coolify-Tunnel → Coolify → app               | `3`                                |
 
 A misconfigured count logs a one-shot warning to stderr and collapses
 every anonymous caller into one shared rate-limit bucket. Match the
 value to the actual hop count.
 
+Forwarding headers are believed only from a connection that could come
+from a proxy: loopback, a private or unique-local network, or CGNAT (a
+Tailscale address). A request that reaches HealthLog straight from a public
+address carries headers its sender wrote, so HealthLog ignores them and
+uses the connection's own address, and says so once in the log. A proxy on
+the same host or Docker network connects from a private address, so the
+usual setups above need nothing. If your proxy reaches HealthLog over a
+public address, put it on a private network with HealthLog instead (or, for
+Cloudflare straight to the origin, use `TRUST_CF_CONNECTING_IP=1`). The log
+line also shows up when the published port is open to the internet beside
+the proxy; bind it to the proxy's network or to `127.0.0.1` then.
+
 `X-Real-IP` gets the same trust as `X-Forwarded-For`. It is read only
 when `TRUST_PROXY_HOPS` is exactly `1` and the request carries no
 `X-Forwarded-For`, which covers a single proxy that sets only
 `X-Real-IP`. With `0` neither header is believed, because without a proxy
-in front both come from the caller. With `2` or more, the hop count
+in front both come from the caller; the address the connection came from
+is used instead. With `2` or more, the hop count
 describes an `X-Forwarded-For` chain, so have your proxies send one.
 
 If requests arrive with a forwarding header the setting does not let

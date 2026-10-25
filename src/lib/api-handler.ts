@@ -23,7 +23,7 @@ import { ConsentRequiredError } from "./ai/consent-guard";
 import { attachRecordContextEcho } from "./sharing/record-session-fence";
 import { refuseOnKeyMismatch } from "./boot/key-mismatch-refusal";
 import { acceptIncomingRequestId } from "./http/request-id";
-import { withErrorEnvelopeDefaults } from "./api-response";
+import { getClientIp, withErrorEnvelopeDefaults } from "./api-response";
 import {
   capturedRateLimit,
   rateLimitResponseHeaders,
@@ -190,14 +190,9 @@ export function apiHandler<T extends (...args: any[]) => Promise<Response>>(
       user_agent:
         safeRequestProp(request, (r) => r.headers.get("user-agent"), null) ??
         undefined,
-      ip:
-        safeRequestProp(
-          request,
-          (r) => r.headers.get("x-forwarded-for")?.split(",")[0]?.trim(),
-          null,
-        ) ||
-        safeRequestProp(request, (r) => r.headers.get("x-real-ip"), null) ||
-        undefined,
+      // The resolved client address, not the raw leftmost forwarding entry
+      // a direct caller could have written itself.
+      ip: safeRequestProp(request, (r) => getClientIp(r), null) ?? undefined,
     });
 
     return runWithRateLimitCapture(() =>

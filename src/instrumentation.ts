@@ -18,6 +18,9 @@ async function registerOfflineGeoNoticeAtBoot(): Promise<void> {
 export async function register() {
   // Only start the worker on the Node.js server runtime (not Edge, not build)
   if (process.env.NEXT_RUNTIME === "nodejs") {
+    // First: every request then carries its socket's address (peer-address).
+    (await import("@/lib/http/peer-address")).installPeerAddressStamp();
+
     // The event-loop monitor comes first, so the loading of the database
     // client and of the worker graph is inside its view, and every stall it
     // reports names the boot step that was running (`boot-steps.ts`).
