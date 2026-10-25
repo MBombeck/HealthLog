@@ -9068,7 +9068,8 @@
       "tlsPinChangedTitle": "Certificat feuille TLS modifié : {host}",
       "tlsPinChangedBody": "La feuille TLS servie par {host} a maintenant le pin SPKI {servedPin}, qui ne figure pas dans l'ensemble de pins connus. Les clients épinglés (l'app native) ne pourront plus se connecter une fois l'ancien pin disparu. Réextrayez le nouveau pin de la feuille, ajoutez-le à TLS_LEAF_SPKI_PINS et à l'ensemble de pins du client natif, et publiez une version avant l'expiration de ce certificat le {validTo}. Voir docs/ops/tls-cert-pin.md.",
       "accountErasureRefusedTitle": "Le compte n’a pas pu être effacé : {username}",
-      "accountErasureRefusedBody": "Le délai de suppression de {username} est écoulé, mais ce compte est la dernière personne responsable active d’un profil géré : il n’a donc pas été effacé. Il reste verrouillé. Ajoutez une autre personne responsable au profil, supprimez le profil ou annulez la suppression dans Administration, Utilisateurs."
+      "accountErasureRefusedBody": "Le délai de suppression de {username} est écoulé, mais ce compte est la dernière personne responsable active d’un profil géré : il n’a donc pas été effacé. Il reste verrouillé. Ajoutez une autre personne responsable au profil, supprimez le profil ou annulez la suppression dans Administration, Utilisateurs.",
+      "accountErasureFailedBody": "Le délai de suppression de {username} est écoulé, mais l’effacement du compte a échoué. Il reste verrouillé et une nouvelle tentative a lieu chaque heure, après les autres comptes en attente. L’erreur figure dans la carte des tâches en échec, dans Administration."
     },
     "user": {
       "telegramTestBody": "HealthLog: connexion réussie. Les notifications Telegram sont actives."

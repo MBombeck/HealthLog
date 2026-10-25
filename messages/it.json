@@ -9068,7 +9068,8 @@
       "tlsPinChangedTitle": "Certificato foglia TLS modificato: {host}",
       "tlsPinChangedBody": "La foglia TLS servita da {host} ora ha il pin SPKI {servedPin}, che non è nell'insieme dei pin noti. I client con pin fisso (l'app nativa) non potranno più connettersi una volta scomparso il vecchio pin. Riestrai il nuovo pin della foglia, aggiungilo a TLS_LEAF_SPKI_PINS e all'insieme dei pin del client nativo, e pubblica una build prima che questo certificato scada il {validTo}. Vedi docs/ops/tls-cert-pin.md.",
       "accountErasureRefusedTitle": "Impossibile cancellare l’account: {username}",
-      "accountErasureRefusedBody": "Il periodo di eliminazione di {username} è terminato, ma l’account è l’ultima persona responsabile attiva di un profilo gestito, quindi non è stato cancellato. Resta bloccato. Aggiungi un’altra persona responsabile al profilo, elimina il profilo o annulla l’eliminazione in Administration, Utenti."
+      "accountErasureRefusedBody": "Il periodo di eliminazione di {username} è terminato, ma l’account è l’ultima persona responsabile attiva di un profilo gestito, quindi non è stato cancellato. Resta bloccato. Aggiungi un’altra persona responsabile al profilo, elimina il profilo o annulla l’eliminazione in Administration, Utenti.",
+      "accountErasureFailedBody": "Il periodo di eliminazione di {username} è terminato, ma la cancellazione dell’account non è riuscita. Resta bloccato e viene ritentata ogni ora, dopo gli altri account in scadenza. L’errore è nella scheda dei job non riusciti in Administration."
     },
     "user": {
       "telegramTestBody": "HealthLog: connessione riuscita. Le notifiche Telegram sono attive."

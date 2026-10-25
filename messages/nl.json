@@ -9068,7 +9068,8 @@
       "tlsPinChangedTitle": "TLS-leafcertificaat gewijzigd: {host}",
       "tlsPinChangedBody": "Het TLS-leafcertificaat dat {host} aanbiedt, heeft nu SPKI-pin {servedPin}, die niet in de set bekende pins staat. Clients met pinning (de native app) kunnen geen verbinding meer maken zodra de oude pin verdwenen is. Haal de nieuwe leaf-pin opnieuw op, voeg hem toe aan TLS_LEAF_SPKI_PINS en aan de pinset van de native client, en breng een build uit voordat dit certificaat op {validTo} verloopt. Zie docs/ops/tls-cert-pin.md.",
       "accountErasureRefusedTitle": "Account kon niet worden gewist: {username}",
-      "accountErasureRefusedBody": "De verwijdertermijn van {username} is afgelopen, maar het account is de laatste actieve verzorger van een beheerd profiel en is daarom niet gewist. Het blijft vergrendeld. Voeg een andere verzorger toe aan het profiel, verwijder het profiel of maak de verwijdering ongedaan in Beheer, Gebruikers."
+      "accountErasureRefusedBody": "De verwijdertermijn van {username} is afgelopen, maar het account is de laatste actieve verzorger van een beheerd profiel en is daarom niet gewist. Het blijft vergrendeld. Voeg een andere verzorger toe aan het profiel, verwijder het profiel of maak de verwijdering ongedaan in Beheer, Gebruikers.",
+      "accountErasureFailedBody": "De verwijdertermijn van {username} is afgelopen, maar het wissen van het account is mislukt. Het blijft vergrendeld en wordt elk uur opnieuw geprobeerd, na de andere accounts die aan de beurt zijn. De fout staat op de kaart met mislukte taken in Beheer."
     },
     "user": {
       "telegramTestBody": "HealthLog: verbinding geslaagd. Telegram-meldingen zijn actief."

@@ -9068,7 +9068,8 @@
       "tlsPinChangedTitle": "Certificado de hoja TLS cambiado: {host}",
       "tlsPinChangedBody": "La hoja TLS servida por {host} ahora tiene el pin SPKI {servedPin}, que no está en el conjunto de pines conocidos. Los clientes con pin fijo (la app nativa) no podrán conectarse una vez que desaparezca el pin antiguo. Vuelve a extraer el nuevo pin de la hoja, añádelo a TLS_LEAF_SPKI_PINS y al conjunto de pines del cliente nativo, y publica una versión antes de que este certificado caduque el {validTo}. Consulta docs/ops/tls-cert-pin.md.",
       "accountErasureRefusedTitle": "No se pudo borrar la cuenta: {username}",
-      "accountErasureRefusedBody": "El plazo de eliminación de {username} ha terminado, pero la cuenta es la última persona responsable activa de un perfil gestionado, así que no se ha borrado. Sigue bloqueada. Añade otra persona responsable al perfil, elimina el perfil o deshaz la eliminación en Administration, Usuarios."
+      "accountErasureRefusedBody": "El plazo de eliminación de {username} ha terminado, pero la cuenta es la última persona responsable activa de un perfil gestionado, así que no se ha borrado. Sigue bloqueada. Añade otra persona responsable al perfil, elimina el perfil o deshaz la eliminación en Administration, Usuarios.",
+      "accountErasureFailedBody": "El plazo de eliminación de {username} ha terminado, pero no se pudo borrar la cuenta. Sigue bloqueada y se vuelve a intentar cada hora, después de las demás cuentas pendientes. El error aparece en la tarjeta de tareas fallidas de Administration."
     },
     "user": {
       "telegramTestBody": "HealthLog: conexión correcta. Las notificaciones de Telegram están activas."

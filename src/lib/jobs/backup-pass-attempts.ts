@@ -31,8 +31,13 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { logCaught } from "@/lib/logging/signal";
 
-/** The pass's queue name, which is also the marker's key. */
-export type BackupPass = "data-backup" | "data-backup-offhost";
+/**
+ * The pass's queue name, which is also the marker's key. The account-deletion
+ * purge walks the due accounts the same way and keeps its marks here too: an
+ * account whose erasure failed or was refused stays open and is taken last.
+ */
+export type BackupPass =
+  "data-backup" | "data-backup-offhost" | "account-deletion-purge";
 
 type Db = Pick<PrismaClient, "backupPassAttempt">;
 

@@ -9068,7 +9068,8 @@
       "tlsPinChangedTitle": "TLS-Leaf-Zertifikat geändert: {host}",
       "tlsPinChangedBody": "Das von {host} ausgelieferte TLS-Leaf hat jetzt den SPKI-Pin {servedPin}, der nicht im bekannten Pin-Satz enthalten ist. Gepinnte Clients (die native App) können sich nicht mehr verbinden, sobald der alte Pin weg ist. Extrahiere den neuen Leaf-Pin erneut, ergänze ihn in TLS_LEAF_SPKI_PINS sowie im Pin-Satz des nativen Clients und veröffentliche einen Build, bevor dieses Zertifikat am {validTo} abläuft. Siehe docs/ops/tls-cert-pin.md.",
       "accountErasureRefusedTitle": "Konto konnte nicht gelöscht werden: {username}",
-      "accountErasureRefusedBody": "Die Löschfrist von {username} ist abgelaufen, aber das Konto ist die letzte aktive betreuende Person eines verwalteten Profils und wurde deshalb nicht gelöscht. Es bleibt gesperrt. Füge dem Profil eine weitere betreuende Person hinzu, lösche das Profil oder mache die Löschung unter Administration, Nutzer rückgängig."
+      "accountErasureRefusedBody": "Die Löschfrist von {username} ist abgelaufen, aber das Konto ist die letzte aktive betreuende Person eines verwalteten Profils und wurde deshalb nicht gelöscht. Es bleibt gesperrt. Füge dem Profil eine weitere betreuende Person hinzu, lösche das Profil oder mache die Löschung unter Administration, Nutzer rückgängig.",
+      "accountErasureFailedBody": "Die Löschfrist von {username} ist abgelaufen, aber das Löschen des Kontos ist fehlgeschlagen. Es bleibt gesperrt und wird jede Stunde erneut versucht, nach den anderen fälligen Konten. Den Fehler zeigt die Karte der fehlgeschlagenen Jobs unter Administration."
     },
     "user": {
       "telegramTestBody": "HealthLog: Verbindung hergestellt. Telegram-Benachrichtigungen sind aktiv."

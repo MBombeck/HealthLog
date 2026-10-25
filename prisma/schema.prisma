@@ -5884,7 +5884,9 @@ model OffhostBackupState {
 /// `readBackupPassActivity()` behind `GET /api/admin/backups`.
 model BackupPassAttempt {
   userId     String    @map("user_id")
-  /// The pass's queue name: `data-backup` or `data-backup-offhost`.
+  /// The pass's queue name: `data-backup`, `data-backup-offhost`, or
+  /// `account-deletion-purge` (the hourly erasure of accounts whose deletion
+  /// window ended, which takes an account whose erasure failed last).
   pass       String
   /// When the pass last started on this account.
   startedAt  DateTime  @map("started_at")

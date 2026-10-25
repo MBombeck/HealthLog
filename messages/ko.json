@@ -9068,7 +9068,8 @@
       "tlsPinChangedTitle": "TLS 리프 인증서 변경: {host}",
       "tlsPinChangedBody": "{host}가 제공하는 TLS 리프의 SPKI 핀이 이제 {servedPin}인데, 알려진 핀 목록에 없어요. 기존 핀이 사라지면 핀을 검증하는 클라이언트(네이티브 앱)는 연결에 실패해요. 새 리프 핀을 다시 추출해 TLS_LEAF_SPKI_PINS와 네이티브 클라이언트 핀 목록에 추가하고, 이 인증서가 만료되는 {validTo} 전에 빌드를 배포하세요. docs/ops/tls-cert-pin.md를 참고하세요.",
       "accountErasureRefusedTitle": "계정을 지우지 못했어요: {username}",
-      "accountErasureRefusedBody": "{username} 계정의 삭제 유예 기간이 끝났지만, 이 계정이 관리 프로필의 마지막 활성 보호자라서 지우지 않았어요. 계정은 계속 잠겨 있어요. 프로필에 다른 보호자를 추가하거나, 프로필을 삭제하거나, 관리자의 사용자 화면에서 삭제를 취소해 주세요."
+      "accountErasureRefusedBody": "{username} 계정의 삭제 유예 기간이 끝났지만, 이 계정이 관리 프로필의 마지막 활성 보호자라서 지우지 않았어요. 계정은 계속 잠겨 있어요. 프로필에 다른 보호자를 추가하거나, 프로필을 삭제하거나, 관리자의 사용자 화면에서 삭제를 취소해 주세요.",
+      "accountErasureFailedBody": "{username} 계정의 삭제 유예 기간이 끝났지만 계정을 지우지 못했어요. 계정은 계속 잠겨 있고, 삭제할 다른 계정들 다음으로 매시간 다시 시도해요. 오류는 관리자 화면의 실패한 작업 카드에서 볼 수 있어요."
     },
     "user": {
       "telegramTestBody": "HealthLog: 연결에 성공했어요. Telegram 알림이 켜져 있어요."

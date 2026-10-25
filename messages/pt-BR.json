@@ -9068,7 +9068,8 @@
       "tlsPinChangedTitle": "Certificado folha TLS alterado: {host}",
       "tlsPinChangedBody": "O certificado folha TLS servido por {host} agora tem o pin SPKI {servedPin}, que não está no conjunto de pins conhecidos. Clientes com pin (o aplicativo nativo) falharão ao conectar quando o pin antigo sumir. Extraia novamente o pin da nova folha, adicione-o a TLS_LEAF_SPKI_PINS e ao conjunto de pins do cliente nativo, e publique uma build antes que este certificado expire em {validTo}. Veja docs/ops/tls-cert-pin.md.",
       "accountErasureRefusedTitle": "Não foi possível apagar a conta: {username}",
-      "accountErasureRefusedBody": "O prazo de exclusão de {username} terminou, mas a conta é o último guardião ativo de um perfil gerenciado, então não foi apagada. Ela continua bloqueada. Adicione outro guardião ao perfil, exclua o perfil ou desfaça a exclusão em Administração, Usuários."
+      "accountErasureRefusedBody": "O prazo de exclusão de {username} terminou, mas a conta é o último guardião ativo de um perfil gerenciado, então não foi apagada. Ela continua bloqueada. Adicione outro guardião ao perfil, exclua o perfil ou desfaça a exclusão em Administração, Usuários.",
+      "accountErasureFailedBody": "O prazo de exclusão de {username} terminou, mas apagar a conta falhou. Ela continua bloqueada e uma nova tentativa é feita a cada hora, depois das outras contas pendentes. O erro aparece no cartão de tarefas com falha em Administração."
     },
     "user": {
       "telegramTestBody": "HealthLog: conexão bem-sucedida. As notificações do Telegram estão ativas."

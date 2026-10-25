@@ -18,10 +18,28 @@
  * window would leave a managed profile nobody can reach, so that erasure is
  * refused, the account stays locked and pending, the run reports it, and
  * every admin is told once through the localized admin notification.
+ *
+ * One account never holds up the others. An erasure that throws (a record
+ * too large for the transaction's time limit, a lock a restore holds) is
+ * caught, counted, reported through the worker error path and to the admins
+ * once, and the run goes on with the next account. Every account the run
+ * starts is marked (`backup_pass_attempts`, pass `account-deletion-purge`)
+ * and the mark is closed only when the account is erased or no longer due,
+ * so an account that failed or was refused is taken after every other due
+ * account in the following runs, the longest-waiting first. The run stops
+ * starting accounts once its time budget is spent; the sweep of expired
+ * pre-wipe copies and the off-host kick run whatever happened before them.
  */
 import type { Job } from "pg-boss";
 
 import { prisma } from "@/lib/db";
+import {
+  markBackupAttemptFinished,
+  markBackupAttemptStarted,
+  orderInterruptedLast,
+  readInterruptedBackupAttempts,
+} from "@/lib/jobs/backup-pass-attempts";
+import { jobBudget } from "@/lib/jobs/job-budget";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { kickOffhostPurge } from "@/lib/jobs/offhost-purge";
 import { reportWorkerError } from "@/lib/jobs/report-worker-error";
@@ -43,14 +61,26 @@ import { dispatchLocalisedNotification } from "@/lib/notifications/dispatch-loca
 import { PRE_WIPE_BACKUP_TYPE_PREFIX } from "@/lib/account-deletion/pre-wipe-type";
 import { ACCOUNT_DELETION_PURGE_QUEUE } from "./account-deletion-purge-queue";
 
-/** Accounts one run erases; the next run takes the rest. */
-const ACCOUNTS_PER_RUN = 50;
+/**
+ * Due accounts one run reads. The run erases as many as its time budget
+ * allows; the next run takes the rest.
+ */
+const ACCOUNTS_PER_RUN = 200;
+
+/** The attempt ledger's key for this job. */
+const PASS = ACCOUNT_DELETION_PURGE_QUEUE;
 
 interface AccountDeletionPurgeReport {
   due: number;
   purged: number;
   /** Erasures refused by the Guardian invariant; the accounts stay pending. */
   refused: number;
+  /** Erasures that threw; the accounts stay pending and are tried again. */
+  failed: number;
+  /** The first error of the failed erasures, for the worker error report. */
+  firstFailure: unknown;
+  /** Due accounts the run left for the next one when its budget ran out. */
+  deferred: number;
   preWipeCopiesDeleted: number;
 }
 
@@ -132,18 +162,33 @@ async function deleteExpiredPreWipeCopies(now: Date): Promise<number> {
   return count;
 }
 
-/** The audit action that marks a refused erasure as already reported. */
-const REFUSED_ERASURE_ACTION = "user.account.deletion_refused";
+/**
+ * Why an erasure did not happen, the audit action that marks it as already
+ * reported, and the notice the admins get.
+ */
+const NOT_ERASED = {
+  last_managed_guardian: {
+    action: "user.account.deletion_refused",
+    messageKey: "notifications.admin.accountErasureRefusedBody",
+  },
+  erasure_failed: {
+    action: "user.account.erasure_failed",
+    messageKey: "notifications.admin.accountErasureFailedBody",
+  },
+} as const;
 
 /**
  * Tell every admin, once, that an account whose window ended could not be
  * erased, and why. The run retries the account every hour; the audit row on
- * the account (`user.account.deletion_refused`, newer than the deletion
- * request) is what keeps the second hour from repeating the message. A
- * deletion undone and asked for again is a new request and is reported
- * afresh.
+ * the account (one action per reason, newer than the deletion request) is
+ * what keeps the second hour from repeating the message. A deletion undone
+ * and asked for again is a new request and is reported afresh.
  */
-async function notifyAdminsOfRefusedErasure(accountId: string): Promise<void> {
+async function notifyAdminsOfUnerasedAccount(
+  accountId: string,
+  reason: keyof typeof NOT_ERASED,
+): Promise<void> {
+  const { action, messageKey } = NOT_ERASED[reason];
   const account = await prisma.user.findUnique({
     where: { id: accountId },
     select: { username: true, deletionRequestedAt: true },
@@ -152,15 +197,15 @@ async function notifyAdminsOfRefusedErasure(accountId: string): Promise<void> {
   const reported = await prisma.auditLog.count({
     where: {
       userId: accountId,
-      action: REFUSED_ERASURE_ACTION,
+      action,
       createdAt: { gte: account.deletionRequestedAt },
     },
   });
   if (reported > 0) return;
-  await auditLog(REFUSED_ERASURE_ACTION, {
+  await auditLog(action, {
     userId: accountId,
     actorUserId: null,
-    details: { reason: "last_managed_guardian" },
+    details: { reason },
   });
   const admins = await prisma.user.findMany({
     where: activeAccount({ role: "ADMIN" }),
@@ -170,65 +215,118 @@ async function notifyAdminsOfRefusedErasure(accountId: string): Promise<void> {
     await dispatchLocalisedNotification({
       userId: admin.id,
       titleKey: "notifications.admin.accountErasureRefusedTitle",
-      messageKey: "notifications.admin.accountErasureRefusedBody",
+      messageKey,
       params: { username: account.username },
       metadata: { source: "account-deletion-purge", url: "/admin/users" },
     });
   }
 }
 
+/** A notice that could not be sent must not stop the run. */
+async function notifyQuietly(
+  accountId: string,
+  reason: keyof typeof NOT_ERASED,
+): Promise<void> {
+  try {
+    await notifyAdminsOfUnerasedAccount(accountId, reason);
+  } catch (err) {
+    await reportWorkerError(ACCOUNT_DELETION_PURGE_QUEUE, err);
+  }
+}
+
 export async function processDueAccountDeletions(
   now: Date = new Date(),
+  options: { shouldStop?: () => boolean } = {},
 ): Promise<AccountDeletionPurgeReport> {
-  // account-deletion: the purge's own query: exactly the accounts pending deletion.
-  const due = await prisma.user.findMany({
-    where: {
-      deletionRequestedAt: { not: null },
-      OR: [{ deletionPurgeAt: null }, { deletionPurgeAt: { lte: now } }],
-    },
-    select: { id: true, managedProfileAt: true },
-    orderBy: { deletionPurgeAt: "asc" },
-    take: ACCOUNTS_PER_RUN,
-  });
-
+  const shouldStop = options.shouldStop ?? (() => false);
   const report: AccountDeletionPurgeReport = {
-    due: due.length,
+    due: 0,
     purged: 0,
     refused: 0,
+    failed: 0,
+    firstFailure: null,
+    deferred: 0,
     preWipeCopiesDeleted: 0,
   };
-  for (const account of due) {
-    try {
-      if (
-        await purgeAccount(account.id, account.managedProfileAt !== null, now)
-      ) {
-        report.purged++;
+  try {
+    // account-deletion: the purge's own query: exactly the accounts pending deletion.
+    const due = await prisma.user.findMany({
+      where: {
+        deletionRequestedAt: { not: null },
+        OR: [{ deletionPurgeAt: null }, { deletionPurgeAt: { lte: now } }],
+      },
+      select: { id: true, managedProfileAt: true },
+      orderBy: [{ deletionPurgeAt: "asc" }, { id: "asc" }],
+      take: ACCOUNTS_PER_RUN,
+    });
+    report.due = due.length;
+    // An account whose last erasure failed, was refused or was cut off goes
+    // behind every other due account.
+    const ordered = orderInterruptedLast(
+      due,
+      await readInterruptedBackupAttempts(prisma, PASS),
+    );
+    for (const [index, account] of ordered.entries()) {
+      if (shouldStop()) {
+        report.deferred = ordered.length - index;
+        break;
       }
-    } catch (error) {
-      if (!(error instanceof LastManagedGuardianError)) throw error;
-      report.refused++;
-      await notifyAdminsOfRefusedErasure(account.id);
+      await markBackupAttemptStarted(prisma, PASS, account.id);
+      try {
+        if (
+          await purgeAccount(account.id, account.managedProfileAt !== null, now)
+        ) {
+          report.purged++;
+        }
+        // Erased (the mark went with the account) or no longer due.
+        await markBackupAttemptFinished(prisma, PASS, account.id);
+      } catch (error) {
+        if (error instanceof LastManagedGuardianError) {
+          report.refused++;
+          await notifyQuietly(account.id, "last_managed_guardian");
+        } else {
+          report.failed++;
+          report.firstFailure ??= error;
+          await notifyQuietly(account.id, "erasure_failed");
+        }
+      }
     }
+  } finally {
+    // The window of a pre-wipe copy ends whatever happened to the accounts.
+    report.preWipeCopiesDeleted = await deleteExpiredPreWipeCopies(now);
+    // The off-host copies of every erased account, now rather than at the
+    // nightly slot. The requests committed with the erasures.
+    if (report.purged > 0) await kickOffhostPurge();
   }
-  report.preWipeCopiesDeleted = await deleteExpiredPreWipeCopies(now);
-
-  // The off-host copies of every erased account, now rather than at the
-  // nightly slot. The requests committed with the erasures.
-  if (report.purged > 0) await kickOffhostPurge();
   return report;
 }
 
 export async function handleAccountDeletionPurge(
   jobs: Job<object>[],
 ): Promise<JobOutcome> {
-  void jobs;
   return withBackgroundEvent("job.account_deletion_purge", async (evt) => {
     try {
-      const report = await processDueAccountDeletions();
+      const report = await processDueAccountDeletions(new Date(), {
+        shouldStop: jobBudget(jobs),
+      });
       evt.addMeta("account_deletions_due", report.due);
       evt.addMeta("account_deletions_purged", report.purged);
       evt.addMeta("account_deletions_refused", report.refused);
+      evt.addMeta("account_deletions_failed", report.failed);
+      evt.addMeta("account_deletions_deferred", report.deferred);
       evt.addMeta("pre_wipe_copies_deleted", report.preWipeCopiesDeleted);
+      if (report.failed > 0) {
+        const cause =
+          report.firstFailure instanceof Error
+            ? report.firstFailure.message
+            : String(report.firstFailure);
+        await reportWorkerError(
+          ACCOUNT_DELETION_PURGE_QUEUE,
+          new Error(
+            `${report.failed} account erasure(s) failed and will be tried again next hour, after the other due accounts. The accounts stay locked and pending. First error: ${cause}`,
+          ),
+        );
+      }
       if (report.refused > 0) {
         await reportWorkerError(
           ACCOUNT_DELETION_PURGE_QUEUE,
@@ -241,6 +339,8 @@ export async function handleAccountDeletionPurge(
         account_deletions_due: report.due,
         account_deletions_purged: report.purged,
         account_deletions_refused: report.refused,
+        account_deletions_failed: report.failed,
+        account_deletions_deferred: report.deferred,
         pre_wipe_copies_deleted: report.preWipeCopiesDeleted,
       });
     } catch (err) {

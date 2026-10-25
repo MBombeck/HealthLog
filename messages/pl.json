@@ -9068,7 +9068,8 @@
       "tlsPinChangedTitle": "Zmieniono certyfikat liścia TLS: {host}",
       "tlsPinChangedBody": "Liść TLS serwowany przez {host} ma teraz pin SPKI {servedPin}, którego nie ma w znanym zestawie pinów. Klienci z przypiętym pinem (aplikacja natywna) nie połączą się po usunięciu starego pinu. Ponownie wyodrębnij nowy pin liścia, dodaj go do TLS_LEAF_SPKI_PINS oraz do zestawu pinów klienta natywnego i opublikuj kompilację, zanim ten certyfikat wygaśnie {validTo}. Zobacz docs/ops/tls-cert-pin.md.",
       "accountErasureRefusedTitle": "Nie udało się usunąć konta: {username}",
-      "accountErasureRefusedBody": "Okres usuwania konta {username} minął, ale to konto jest ostatnią aktywną osobą opiekującą się profilem zarządzanym, więc nie zostało usunięte. Pozostaje zablokowane. Dodaj do profilu kolejną osobę opiekującą się, usuń profil albo cofnij usunięcie w Administracja, Użytkownicy."
+      "accountErasureRefusedBody": "Okres usuwania konta {username} minął, ale to konto jest ostatnią aktywną osobą opiekującą się profilem zarządzanym, więc nie zostało usunięte. Pozostaje zablokowane. Dodaj do profilu kolejną osobę opiekującą się, usuń profil albo cofnij usunięcie w Administracja, Użytkownicy.",
+      "accountErasureFailedBody": "Okres usuwania konta {username} minął, ale usunięcie konta się nie powiodło. Konto pozostaje zablokowane, a próba jest ponawiana co godzinę, po innych kontach do usunięcia. Błąd widać na karcie nieudanych zadań w Administracja."
     },
     "user": {
       "telegramTestBody": "HealthLog: połączenie udane. Powiadomienia Telegram są aktywne."

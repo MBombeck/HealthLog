@@ -9068,7 +9068,8 @@
       "tlsPinChangedTitle": "TLS leaf certificate changed: {host}",
       "tlsPinChangedBody": "The TLS leaf served by {host} now has SPKI pin {servedPin}, which is not in the known pin set. Pinned clients (the native app) will fail to connect once the old pin is gone. Re-extract the new leaf pin, add it to TLS_LEAF_SPKI_PINS and the native client's pin set, and ship a build before this certificate expires on {validTo}. See docs/ops/tls-cert-pin.md.",
       "accountErasureRefusedTitle": "Account could not be erased: {username}",
-      "accountErasureRefusedBody": "The deletion window of {username} has ended, but the account is the last active guardian of a managed profile, so it was not erased. It stays locked. Add another guardian to the profile, delete the profile, or undo the deletion in Administration, Users."
+      "accountErasureRefusedBody": "The deletion window of {username} has ended, but the account is the last active guardian of a managed profile, so it was not erased. It stays locked. Add another guardian to the profile, delete the profile, or undo the deletion in Administration, Users.",
+      "accountErasureFailedBody": "The deletion window of {username} has ended, but erasing the account failed. It stays locked and is tried again every hour, after the other accounts due. The failing jobs card in Administration has the error."
     },
     "user": {
       "telegramTestBody": "HealthLog: connection successful. Telegram notifications are active."
