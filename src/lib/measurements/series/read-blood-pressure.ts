@@ -32,7 +32,8 @@ export async function readBloodPressureSeries(
   // the whole edge day, not only the slice after `since`.
   //
   // `rank` is the closed-enum whitelist splice from `buildSourceRankCase`;
-  // every request value is a positional parameter.
+  // every request value is a positional parameter. The statement and why it
+  // is a window rather than a join are under `bloodPressureSeriesSql`.
   const rank = buildSourceRankCase(
     await loadUserSourcePriority(userId),
     '"type"',
@@ -47,33 +48,7 @@ export async function readBloodPressureSeries(
       measured_at: Date;
     }>
   >(
-    `
-    SELECT m."id", m."type"::text AS type, m."source"::text AS source,
-           m."value", m."measured_at"
-    FROM measurements m
-    JOIN (
-      SELECT DISTINCT ON (date_trunc('day', "measured_at"))
-        date_trunc('day', "measured_at") AS d,
-        "source"                         AS canon
-      FROM measurements
-      WHERE "user_id" = $1
-        AND "type" = 'BLOOD_PRESSURE_SYS'::"measurement_type"
-        AND "deleted_at" IS NULL
-        AND "value" >= $3
-        AND "measured_at" >= date_trunc('day', $2::timestamptz AT TIME ZONE 'UTC')
-      ORDER BY date_trunc('day', "measured_at"), (${rank}), "source"::text
-    ) c
-      ON c.d = date_trunc('day', m."measured_at")
-      AND c.canon = m."source"
-    WHERE m."user_id" = $1
-      AND m."deleted_at" IS NULL
-      AND m."measured_at" >= $2
-      AND (
-        (m."type" = 'BLOOD_PRESSURE_SYS'::"measurement_type" AND m."value" >= $3)
-        OR (m."type" = 'BLOOD_PRESSURE_DIA'::"measurement_type" AND m."value" >= $4)
-      )
-    ORDER BY m."measured_at" ASC, m."id" ASC
-  `,
+    bloodPressureSeriesSql(rank),
     userId,
     since,
     VALUE_RANGES.BLOOD_PRESSURE_SYS.min,
@@ -124,4 +99,58 @@ export async function readBloodPressureSeries(
     };
   });
   return { points };
+}
+
+/**
+ * The series statement: every floor-passing systolic and diastolic row from
+ * `$2` on, of the source the ladder picks for its UTC day. `$1` is the user,
+ * `$2` the window start, `$3` and `$4` the systolic and diastolic floors;
+ * `rank` is a `buildSourceRankCase` CASE over unqualified `"type"` and
+ * `"source"`.
+ *
+ * One scan reads the window from the start of its first UTC day, so the pick
+ * sees the whole edge day. A window function names each day's source on
+ * every row: the day's rows are ordered systolic first, then by ladder rank,
+ * then by source name, and the first row's source is taken only when that
+ * row is a systolic one, so a day with no floor-passing systolic picks no
+ * source and shows nothing, as before. Rows of any other source, and rows
+ * of the edge day before `$2`, are dropped after the pick.
+ *
+ * Why no join: the pick used to be a `DISTINCT ON` over the day's systolic
+ * rows joined back to the readings. On a table without planner statistics
+ * (a new install, an import still under the autoanalyze threshold) the
+ * planner estimated one row on each side and ran that join as a nested loop
+ * that rescanned the pick for every reading: ten years of readings cost
+ * about 5,000 row visits per row. The window has no such choice to get
+ * wrong; `tests/integration/canonical-source-pick-unanalysed.test.ts` holds
+ * that, and `tests/integration/bp-series-pick-parity.test.ts` holds the old
+ * statement as the reference for the rows it returns.
+ */
+export function bloodPressureSeriesSql(rank: string): string {
+  return `
+    SELECT w."id", w."type"::text AS type, w."source"::text AS source,
+           w."value", w."measured_at"
+    FROM (
+      SELECT mm."id", mm."type", mm."source", mm."value", mm."measured_at",
+        FIRST_VALUE(
+          CASE WHEN mm."type" = 'BLOOD_PRESSURE_SYS'::"measurement_type"
+            THEN mm."source" END
+        ) OVER (
+          PARTITION BY date_trunc('day', mm."measured_at")
+          ORDER BY mm."type" <> 'BLOOD_PRESSURE_SYS'::"measurement_type",
+            (${rank}), mm."source"::text
+        ) AS canonical_source
+      FROM measurements mm
+      WHERE mm."user_id" = $1
+        AND mm."deleted_at" IS NULL
+        AND mm."measured_at" >= date_trunc('day', $2::timestamptz AT TIME ZONE 'UTC')
+        AND (
+          (mm."type" = 'BLOOD_PRESSURE_SYS'::"measurement_type" AND mm."value" >= $3)
+          OR (mm."type" = 'BLOOD_PRESSURE_DIA'::"measurement_type" AND mm."value" >= $4)
+        )
+    ) w
+    WHERE w."source" = w.canonical_source
+      AND w."measured_at" >= $2
+    ORDER BY w."measured_at" ASC, w."id" ASC
+  `;
 }

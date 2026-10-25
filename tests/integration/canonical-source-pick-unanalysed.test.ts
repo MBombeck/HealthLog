@@ -32,6 +32,8 @@ import {
   canonicalMeasurementsCte,
   type CanonicalWindow,
 } from "@/lib/analytics/source-rank-sql";
+import { bloodPressureSeriesSql } from "@/lib/measurements/series/read-blood-pressure";
+import { VALUE_RANGES } from "@/lib/validations/measurement";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
@@ -164,6 +166,28 @@ const SHAPES: Array<
 
 let seeded = 0;
 
+/**
+ * Run `sql` under `EXPLAIN ANALYZE` and hold its row visits to the budget.
+ * The statement timeout fails a quadratic plan here rather than at the test
+ * timeout.
+ */
+async function expectBoundedPlan(sql: string, params: unknown[]) {
+  const [{ "QUERY PLAN": plan }] = await prisma.$transaction(async (tx) => {
+    await tx.$executeRawUnsafe(
+      `SET LOCAL statement_timeout = '${STATEMENT_TIMEOUT}'`,
+    );
+    return tx.$queryRawUnsafe<
+      Array<{ "QUERY PLAN": Array<{ Plan: PlanNode }> }>
+    >(`EXPLAIN (ANALYZE, FORMAT JSON) ${sql}`, ...params);
+  });
+  const visits = rowVisits(plan[0].Plan);
+  expect(
+    visits,
+    `${visits} row visits for ${seeded} rows seeded:\n` +
+      JSON.stringify(plan[0].Plan, null, 1),
+  ).toBeLessThanOrEqual(WORK_PER_ROW * seeded);
+}
+
 beforeAll(async () => {
   await truncateAllTables(prisma);
   await prisma.$executeRawUnsafe(
@@ -207,20 +231,7 @@ describe("canonical-source pick on a table without statistics", () => {
         )
         SELECT COUNT(*)::int AS n, SUM(cm."value")::float8 AS total FROM cm`;
       const params: unknown[] = from ? [USER, from] : [USER];
-      const [{ "QUERY PLAN": plan }] = await prisma.$transaction(async (tx) => {
-        await tx.$executeRawUnsafe(
-          `SET LOCAL statement_timeout = '${STATEMENT_TIMEOUT}'`,
-        );
-        return tx.$queryRawUnsafe<
-          Array<{ "QUERY PLAN": Array<{ Plan: PlanNode }> }>
-        >(`EXPLAIN (ANALYZE, FORMAT JSON) ${sql}`, ...params);
-      });
-      const visits = rowVisits(plan[0].Plan);
-      expect(
-        visits,
-        `${visits} row visits for ${seeded} rows seeded:\n` +
-          JSON.stringify(plan[0].Plan, null, 1),
-      ).toBeLessThanOrEqual(WORK_PER_ROW * seeded);
+      await expectBoundedPlan(sql, params);
       // The pick kept rows and dropped the second source's.
       const [{ n }] = await prisma.$queryRawUnsafe<Array<{ n: number }>>(
         sql,
@@ -230,4 +241,37 @@ describe("canonical-source pick on a table without statistics", () => {
       expect(n).toBeLessThan(seeded);
     },
   );
+});
+
+/**
+ * The blood-pressure series picks its own source per day (from the day's
+ * systolic rows above the floor, applied to both halves of the reading), so
+ * it does not go through `canonicalMeasurementsCte` and needs its own row
+ * here. Its windows are the series route's: ten years, a quarter, a week.
+ * The `DISTINCT ON` pick joined back to the readings measured about 4,900
+ * row visits per row seeded on the ten-year read; the window stays at 4.
+ */
+describe("blood-pressure series pick on a table without statistics", () => {
+  it.each([
+    ["3650 days", 3650],
+    ["90 days", 90],
+    ["7 days", 7],
+  ])("reads the window a bounded number of times: %s", async (_label, days) => {
+    const rank = buildSourceRankCase(null, '"type"', '"source"');
+    const params: unknown[] = [
+      USER,
+      new Date(NOW.getTime() - days * DAY),
+      VALUE_RANGES.BLOOD_PRESSURE_SYS.min,
+      VALUE_RANGES.BLOOD_PRESSURE_DIA.min,
+    ];
+    const sql = bloodPressureSeriesSql(rank);
+    await expectBoundedPlan(sql, params);
+    // Both halves came back, and the second source's days were dropped.
+    const rows = await prisma.$queryRawUnsafe<
+      Array<{ type: string; source: string }>
+    >(sql, ...params);
+    expect(rows.some((r) => r.type === "BLOOD_PRESSURE_SYS")).toBe(true);
+    expect(rows.some((r) => r.type === "BLOOD_PRESSURE_DIA")).toBe(true);
+    expect(rows.every((r) => r.source === "WITHINGS")).toBe(true);
+  });
 });
