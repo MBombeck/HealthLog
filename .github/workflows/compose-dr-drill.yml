@@ -2,11 +2,14 @@ name: Disaster recovery drill
 
 # Rebuilds a lost server from the nightly database dump and the keys alone,
 # against real containers: the app image built from this checkout, the
-# bundled compose file, the demo seed plus a Guardian with a managed profile,
-# the dump taken by the scheduled job, every volume destroyed, a new stack,
-# `docker compose run --rm db-restore latest`, and the app booted on the
-# result (health, login, an encrypted note, a document, the Guardian's
-# profile, every table's row count against the manifest).
+# bundled compose file with an S3-compatible bucket outside it, the demo seed
+# plus a Guardian with a managed profile, the dump taken and uploaded by the
+# scheduled job, every volume of the stack destroyed, a new stack, the
+# restore, and the app booted on the result (health, login, an encrypted
+# note, a document, the Guardian's profile, every table's row count against
+# the manifest). Two sources: from the bucket (`db-restore latest
+# --from-bucket`, the disaster path) and from dump files copied off the host
+# (`db-restore latest`).
 # `scripts/compose-dr-drill.sh` is the same drill, runnable locally; its
 # header lists what it checks and the mutations that must turn it red.
 
@@ -40,9 +43,13 @@ concurrency:
 
 jobs:
   drill:
-    name: Restore a lost server from its dump
+    name: Restore a lost server from its dump (${{ matrix.source }})
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [bucket, local]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -58,4 +65,6 @@ jobs:
       - run: pnpm db:generate
 
       - name: Drill
+        env:
+          DRILL_SOURCE: ${{ matrix.source }}
         run: bash scripts/compose-dr-drill.sh

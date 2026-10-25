@@ -4,16 +4,22 @@
 # nightly database dump and the keys alone (docs/ops/disaster-recovery.md).
 #
 #   1. Build the app image from this checkout and start the bundled compose
-#      stack with fixed throwaway keys.
+#      stack with fixed throwaway keys, and an S3-compatible bucket outside
+#      it (Versity S3 Gateway, pinned) as the off-host target.
 #   2. Seed real data: the demo seed (documents, encrypted notes, years of
 #      readings) and a Guardian with a managed profile, written by the app's
 #      own code; then, through the API, a reading with an encrypted note.
 #   3. Let the scheduled `database-backup` job take the dump (its cron is set
-#      to every minute here) and wait for its ledger row.
-#   4. Keep only the dump files, the way they would sit off the lost host,
-#      and DESTROY every volume of the stack.
-#   5. Start a new stack, put the dump in its backups volume and run
-#      `docker compose run --rm db-restore latest` with the same keys.
+#      to every minute here) and wait for its ledger row: kept on the server
+#      and uploaded to the bucket.
+#   4. DESTROY every volume of the stack, the local dumps included. The
+#      bucket lives outside the stack and survives, as an off-host copy does.
+#   5. Start a new stack and restore with the keys alone:
+#      DRILL_SOURCE=bucket (the default, the disaster path)
+#        `docker compose run --rm db-restore latest --from-bucket`;
+#      DRILL_SOURCE=local (the dump files had been copied off the host)
+#        the files go into the new backups volume, then
+#        `docker compose run --rm db-restore latest`.
 #   6. Count every table against the manifest, independently of the restore.
 #   7. Boot the app on the restored database and check: the health endpoint,
 #      the demo login, the encrypted note read back through the API, a
@@ -21,29 +27,44 @@
 #
 # DRILL_MUTATION breaks one step on purpose, and the drill must then fail
 # (a check that cannot fail proves nothing):
-#   wrong-key         restore with a different ENCRYPTION_KEY
-#   skip-table        a dump whose archive lacks one table's rows (the
-#                     manifest's checksum fixed up, its counts left true)
+#   wrong-key         restore with a different active encryption key
+#   wrong-backup-key  restore from the bucket with a different
+#                     BACKUP_ENCRYPTION_KEY (DRILL_SOURCE=bucket)
+#   skip-table        a dump whose archive lacks one table's rows, the
+#                     manifest's checksum fixed up and its counts left true
+#                     (DRILL_SOURCE=local)
 #   non-empty-target  the new app starts and migrates before the restore
 #
-# Needs Docker, openssl, pnpm and the repo's node_modules (for the seeds). Run it
-# from anywhere in the repo: `bash scripts/compose-dr-drill.sh`.
-# DRILL_IMAGE names an image to use instead of building one.
+# Needs Docker, openssl, pnpm and the repo's node_modules (for the seeds). Run
+# it from anywhere in the repo: `bash scripts/compose-dr-drill.sh`.
+# DRILL_IMAGE names an image to use instead of building one. The ports are
+# free ones picked at start unless DRILL_APP_PORT, DRILL_DB_PORT or
+# DRILL_BUCKET_PORT name them.
 set -euo pipefail
 
 ROOT=$(git rev-parse --show-toplevel)
 PROJECT=hl-dr-drill
-APP_PORT=${DRILL_APP_PORT:-39301}
-DB_PORT=${DRILL_DB_PORT:-55419}
+free_port() {
+  node -e "const s=require('node:net').createServer().listen(0,'127.0.0.1',()=>{console.log(s.address().port);s.close()})"
+}
+APP_PORT=${DRILL_APP_PORT:-$(free_port)}
+DB_PORT=${DRILL_DB_PORT:-$(free_port)}
+BUCKET_PORT=${DRILL_BUCKET_PORT:-$(free_port)}
 IMAGE=${DRILL_IMAGE:-}
 MUTATION=${DRILL_MUTATION:-}
-OFFSITE=${PROJECT}-offsite
+SOURCE=${DRILL_SOURCE:-bucket}
+OFFSITE=$PROJECT-offsite
+BUCKET=$PROJECT-bucket
+BUCKET_IMAGE=versity/versitygw:v1.8.0@sha256:30292fc2eeacc67a36993b01f7a7a5e3361a19cced0e80c1d71cfa2a4b0a2499
 WORK=$(mktemp -d)
 BASE_URL="http://127.0.0.1:$APP_PORT"
 
-case "$MUTATION" in
-  "" | wrong-key | skip-table | non-empty-target) ;;
-  *) echo "unknown DRILL_MUTATION: $MUTATION" >&2; exit 2 ;;
+case "$SOURCE/$MUTATION" in
+  bucket/ | local/ | */wrong-key | */non-empty-target | bucket/wrong-backup-key | local/skip-table) ;;
+  *)
+    echo "DRILL_SOURCE=$SOURCE with DRILL_MUTATION=$MUTATION is not a drill" >&2
+    exit 2
+    ;;
 esac
 
 export PRISMA_HIDE_UPDATE_MESSAGE=1
@@ -58,6 +79,14 @@ export API_TOKEN_HMAC_KEY=333333333333333333333333333333333333333333333333333333
 export SESSION_COOKIE_SECURE=false
 export NEXT_PUBLIC_APP_URL=$BASE_URL APP_URL=$BASE_URL
 export DB_BACKUP_SCHEDULE="* * * * *"
+# The off-host bucket, reached from the stack by its container name on a
+# network of its own that outlives the stack, as a real bucket does.
+export BACKUP_S3_ENDPOINT=http://$BUCKET:7070
+export BACKUP_S3_BUCKET=healthlog-backups
+export BACKUP_S3_ACCESS_KEY=drill-access
+export BACKUP_S3_SECRET_KEY=drill-secret-0123456789
+export BACKUP_S3_REGION=us-east-1
+export BACKUP_ENCRYPTION_KEY=5555555555555555555555555555555555555555555555555555555555555555
 
 step() { echo "== $*"; }
 fail() {
@@ -76,8 +105,9 @@ if [ -z "$IMAGE" ]; then
 fi
 
 # The bundled compose file, with this image, its own names and ports, so the
-# drill never meets another stack on the same machine.
-cat >"$WORK/drill.yml" <<EOF
+# drill never meets another stack on the same machine, and the app and the
+# restore on the bucket's network.
+cat >"$WORK/drill.yml" <<YAML
 services:
   app:
     image: $IMAGE
@@ -85,6 +115,7 @@ services:
     container_name: $PROJECT-app
     ports: !override
       - "127.0.0.1:$APP_PORT:3000"
+    networks: [default, bucket]
   db:
     container_name: $PROJECT-db
     ports:
@@ -94,13 +125,21 @@ services:
   db-restore:
     image: $IMAGE
     pull_policy: never
-EOF
+    networks: [default, bucket]
+networks:
+  bucket:
+    external: true
+    name: $BUCKET
+YAML
 
 stack() { docker compose -p "$PROJECT" -f "$ROOT/docker-compose.yml" -f "$WORK/drill.yml" "$@"; }
 sql() { docker exec "$PROJECT-db" psql -U healthlog -d healthlog -v ON_ERROR_STOP=1 -Atqc "$1"; }
 teardown() {
   stack down -v --remove-orphans >/dev/null 2>&1 || true
   docker volume rm "$OFFSITE" >/dev/null 2>&1 || true
+  docker rm -f "$BUCKET" >/dev/null 2>&1 || true
+  docker volume rm "$BUCKET-data" >/dev/null 2>&1 || true
+  docker network rm "$BUCKET" >/dev/null 2>&1 || true
 }
 trap 'teardown; rm -rf "$WORK"' EXIT
 
@@ -127,8 +166,8 @@ login() {
 api() { curl -s -b "$1" -w '\n%{http_code}' "${@:2}"; }
 json() { node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const v=JSON.parse(s);console.log((${1})(v))})"; }
 
-# A shell in the app image as root, with two volumes, for moving the dump
-# files the way an operator copies them; `cp -p` keeps the app user as owner.
+# A shell in the app image as root, with volumes, for moving the dump files
+# the way an operator copies them; `cp -p` keeps the app user as owner.
 as_root() {
   local command=$1 mounts=()
   shift
@@ -137,6 +176,13 @@ as_root() {
 }
 
 teardown
+
+step "an off-host bucket, outside the stack"
+docker network create "$BUCKET" >/dev/null
+docker run -d --name "$BUCKET" --network "$BUCKET" -p "127.0.0.1:$BUCKET_PORT:7070" \
+  -v "$BUCKET-data:/data" --entrypoint sh "$BUCKET_IMAGE" -c \
+  "mkdir -p /data/$BACKUP_S3_BUCKET && exec versitygw --access $BACKUP_S3_ACCESS_KEY --secret $BACKUP_S3_SECRET_KEY posix /data" \
+  >/dev/null || fail "the bucket did not start"
 
 step "a running server with real data"
 stack up -d app >"$WORK/up.log" 2>&1 || { tail -20 "$WORK/up.log" >&2; fail "the stack did not start"; }
@@ -163,21 +209,25 @@ DOCUMENTS=$(sql "SELECT count(*) FROM inbound_documents WHERE deleted_at IS NULL
 [ "$DOCUMENTS" -gt 0 ] || fail "the seed wrote no documents"
 SEEDED_AT=$(sql "SELECT now()")
 
-step "the scheduled job takes the dump"
+step "the scheduled job takes the dump and uploads it"
 i=0
-until DUMP=$(sql "SELECT file_name FROM database_backup_runs WHERE status = 'succeeded' AND started_at > '$SEEDED_AT'::timestamptz ORDER BY started_at DESC LIMIT 1") && [ -n "$DUMP" ]; do
+until DUMP=$(sql "SELECT file_name FROM database_backup_runs WHERE status = 'succeeded' AND local_result = 'written' AND offhost_result = 'uploaded' AND started_at > '$SEEDED_AT'::timestamptz ORDER BY started_at DESC LIMIT 1") && [ -n "$DUMP" ]; do
   i=$((i + 1))
-  [ "$i" -lt 120 ] || fail "no succeeded database-backup run within four minutes: $(sql "SELECT status, error FROM database_backup_runs ORDER BY started_at DESC LIMIT 3")"
+  [ "$i" -lt 120 ] || fail "no succeeded and uploaded database-backup run within four minutes: $(sql "SELECT status, local_result, offhost_result, error FROM database_backup_runs ORDER BY started_at DESC LIMIT 3")"
   sleep 2
 done
 BASE=${DUMP%.dump}
 echo "   $DUMP"
 
-step "only the dump leaves the host, then every volume is destroyed"
-docker volume create "$OFFSITE" >/dev/null
-as_root "cp -p /from/$BASE.dump /from/$BASE.manifest.json /to/" \
-  "${PROJECT}_backups:/from:ro" "$OFFSITE:/to" ||
-  fail "could not copy the dump off the host"
+if [ "$SOURCE" = local ]; then
+  step "the dump files are copied off the host"
+  docker volume create "$OFFSITE" >/dev/null
+  as_root "cp -p /from/$BASE.dump /from/$BASE.manifest.json /to/" \
+    "${PROJECT}_backups:/from:ro" "$OFFSITE:/to" ||
+    fail "could not copy the dump off the host"
+fi
+
+step "the host is lost: every volume of the stack is destroyed"
 stack down -v --remove-orphans >/dev/null 2>&1
 [ -z "$(docker volume ls -q --filter "name=^${PROJECT}_")" ] || fail "a volume of the old stack survived"
 
@@ -197,29 +247,52 @@ if [ "$MUTATION" = skip-table ]; then
     chown 1001:1001 "/d/$BASE.dump"' || fail "could not build the mutated dump"
 fi
 
-step "a new server: the compose file, the keys and the dump"
+step "a new server: the compose file, the keys and the $SOURCE copy"
 if [ "$MUTATION" = wrong-key ]; then
   echo "   MUTATION: the restore gets a different active encryption key"
   ENCRYPTION_KEYS='{"v1":"1111111111111111111111111111111111111111111111111111111111111111","v2":"4444444444444444444444444444444444444444444444444444444444444444"}'
 fi
-# Mounting the image's directory fills the new volume with the app user's
-# ownership; then the two files go in.
-stack run --rm --no-deps --entrypoint true db-restore >/dev/null 2>&1
-as_root "cp -p /from/* /to/" "$OFFSITE:/from:ro" "${PROJECT}_backups:/to" ||
-  fail "could not put the dump on the new server"
+if [ "$MUTATION" = wrong-backup-key ]; then
+  echo "   MUTATION: the restore gets a different BACKUP_ENCRYPTION_KEY"
+  BACKUP_ENCRYPTION_KEY=6666666666666666666666666666666666666666666666666666666666666666
+fi
+if [ "$SOURCE" = local ]; then
+  # Mounting the image's directory fills the new volume with the app user's
+  # ownership; then the two files go in.
+  stack run --rm --no-deps --entrypoint true db-restore >/dev/null 2>&1
+  as_root "cp -p /from/* /to/" "$OFFSITE:/from:ro" "${PROJECT}_backups:/to" ||
+    fail "could not put the dump on the new server"
+  RESTORE=(latest)
+else
+  RESTORE=(latest --from-bucket)
+fi
 if [ "$MUTATION" = non-empty-target ]; then
   echo "   MUTATION: the new app starts (and migrates) before the restore"
   stack up -d app >/dev/null 2>&1
   wait_healthy
 fi
 stack up -d db >/dev/null 2>&1
-if ! stack run --rm db-restore latest 2>&1 | tee "$WORK/restore.log"; then
+if ! stack run --rm db-restore "${RESTORE[@]}" 2>&1 | tee "$WORK/restore.log"; then
   fail "the restore failed"
 fi
 grep -q "^Restored $DUMP" "$WORK/restore.log" || fail "the restore did not say it restored $DUMP"
 
 step "every table against the manifest, counted apart from the restore"
-as_root "cat /d/$BASE.manifest.json" "$OFFSITE:/d:ro" >"$WORK/manifest.json"
+if [ "$SOURCE" = local ]; then
+  as_root "cat /d/$BASE.manifest.json" "$OFFSITE:/d:ro" >"$WORK/manifest.json"
+else
+  # From the bucket, opened with the restore's own reader.
+  (cd "$ROOT" && node --input-type=module -e '
+    import { writeFileSync } from "node:fs";
+    import { join } from "node:path";
+    const core = await import(join(process.cwd(), "src/lib/database-backup/dump-core.mjs"));
+    const [port, base, work] = process.argv.slice(1);
+    const bucket = await core.openBucket({ ...core.bucketConfigFromEnv(process.env), endpoint: `http://127.0.0.1:${port}` });
+    const name = `${base}.manifest.json.enc`;
+    await bucket.download(core.offhostObjectKey(name), join(work, name));
+    await core.decryptOffhostFile({ inPath: join(work, name), outPath: join(work, "manifest.json"), objectKey: core.offhostObjectKey(name), keys: core.offhostKeysFromEnv(process.env) });
+  ' "$BUCKET_PORT" "$BASE" "$WORK") || fail "could not read the manifest from the bucket"
+fi
 node -e '
   const m = require(process.argv[1]);
   const q = String.fromCharCode(39);
@@ -270,4 +343,4 @@ echo "$OUT" | sed '$d' | node -e "
   });" || fail "the Guardian no longer sees the managed profile"
 echo "   the Guardian still sees the managed profile"
 
-echo "OK: the server was rebuilt from the dump and the keys alone"
+echo "OK: the server was rebuilt from the $SOURCE copy of its dump and the keys alone"
