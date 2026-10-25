@@ -121,35 +121,45 @@ export interface CanonicalWindow {
 /**
  * Build the canonical-source SELECT body — the raw `measurements` rows
  * restricted to the ladder-winning source per (type, day) — WITHOUT the
- * outer `( … ) m` alias wrapper. The inner `DISTINCT ON` picks the
- * canonical source for each day and the join keeps only that source's
- * readings.
+ * outer `( … ) m` alias wrapper. One scan reads the window's rows; a window
+ * function names each (type, day)'s canonical source on every row, and the
+ * rows of any other source are dropped.
  *
  * Use this when the same canonical set must be referenced more than once in
  * one statement (e.g. a `window_stats` CTE plus the outer aggregate): bind it
  * once via `WITH cm AS (${canonicalMeasurementsCte(...)})` and select
- * `FROM cm m` everywhere, so the expensive DISTINCT-ON self-join runs once
- * rather than per reference. For the single-reference case use
- * `canonicalMeasurementsFrom`, which wraps this body in the alias.
+ * `FROM cm m` everywhere, so the pick runs once rather than per reference.
+ * For the single-reference case use `canonicalMeasurementsFrom`, which wraps
+ * this body in the alias.
+ *
+ * The rows carry every `measurements` column plus `canonical_source`, the
+ * picked source (equal to `source` on every row that survives). Readers
+ * select the columns they need, so the extra one never reaches them.
  *
  * The user id is bound as `$1`. `rankUnqualified` must be a CASE built with
- * unqualified `"type"`/`"source"` columns. `window`, when given, scopes both
- * the inner pick and the outer filter to the readings from `from` on, or from
- * `interval` (e.g. `"90 days"`, whitelisted) before it. `from` is an instant
- * the caller took (`boundInstantSql` or `instantLiteralSql`, see
- * `request-clock-sql.ts`), the request's `now` for a trailing window, so the
- * cut runs on the caller's clock and never on the database's. `onlyType`, when given, scopes both
- * halves to that one metric.
+ * unqualified `"type"`/`"source"` columns. `window`, when given, scopes the
+ * scan to the readings from `from` on, or from `interval` (e.g. `"90 days"`,
+ * whitelisted) before it. `from` is an instant the caller took
+ * (`boundInstantSql` or `instantLiteralSql`, see `request-clock-sql.ts`), the
+ * request's `now` for a trailing window, so the cut runs on the caller's
+ * clock and never on the database's. `onlyType`, when given, scopes the scan
+ * to that one metric.
  *
- * The pick groups before it sorts. Its order (rank, then source name) depends
- * only on a row's `(type, source)`, so every reading of one source on one day
- * sorts alike, and the distinct `(type, day, source)` triples carry the whole
- * decision. A hash aggregate reduces the window's rows to those triples (a
- * few thousand) and `DISTINCT ON` sorts only them; sorting every raw row by
- * a CASE expression no index can supply spilled to disk on a large account.
- * The picked source per day is the same by construction;
- * `tests/integration/canonical-source-pick-parity.test.ts` holds the old
- * statement as its reference.
+ * The pick is the first source of the day in ladder order (rank, then source
+ * name), the same order the `DISTINCT ON` pick it replaced used, over the
+ * same rows, so every (type, day) keeps the same source;
+ * `tests/integration/canonical-source-pick-parity.test.ts` holds the
+ * `DISTINCT ON` statement as its reference.
+ *
+ * Why no join: the earlier shape grouped the window to `(type, day, source)`,
+ * picked per day with `DISTINCT ON`, and joined the picks back to the rows.
+ * Whether that join ran as a hash join or as a nested loop that rescanned the
+ * pick for every row was the planner's call, made from table statistics. On
+ * a table without them (a new install, or an import still under the
+ * autoanalyze threshold) it estimated one row and chose the nested loop: on a
+ * 6,000-row fixture the all-time read took seconds, on a ten-year account it
+ * ran past the statement timeout. A window over one scan has no such choice
+ * to get wrong; `canonical-source-pick-unanalysed.test.ts` holds that.
  */
 export function canonicalMeasurementsCte(
   rankUnqualified: string,
@@ -161,52 +171,37 @@ export function canonicalMeasurementsCte(
     : window.interval === undefined
       ? assertInstantSql(window.from)
       : `${assertInstantSql(window.from)} - INTERVAL '${assertInterval(window.interval)}'`;
-  const sinceInner = bound ? `AND "measured_at" >= ${bound}` : "";
-  const sinceOuter = bound ? `AND mm."measured_at" >= ${bound}` : "";
-  // A single-type reader (a series for one metric) scopes both halves to that
-  // type, so the pick scans one metric's rows instead of every row the user
+  const since = bound ? `AND mm."measured_at" >= ${bound}` : "";
+  // A single-type reader (a series for one metric) scopes the scan to that
+  // type, so the pick reads one metric's rows instead of every row the user
   // has in the window.
-  const typeInner = onlyType
-    ? `AND "type" = '${assertEnumLiteral(onlyType)}'::"measurement_type"`
-    : "";
-  const typeOuter = onlyType
+  const typeOnly = onlyType
     ? `AND mm."type" = '${assertEnumLiteral(onlyType)}'::"measurement_type"`
     : "";
   return `
-        SELECT mm.*
-        FROM measurements mm
-        JOIN (
-          SELECT DISTINCT ON ("type", d)
-            "type"   AS t,
-            d,
-            "source" AS canon
-          FROM (
-            SELECT "type", date_trunc('day', "measured_at") AS d, "source"
-            FROM measurements
-            WHERE "user_id" = $1
-              AND "deleted_at" IS NULL
-              ${sinceInner}
-              ${typeInner}
-            GROUP BY "type", date_trunc('day', "measured_at"), "source"
-          ) g
-          ORDER BY "type", d, (${rankUnqualified}), "source"::text
-        ) c
-          ON c.t = mm."type"
-          AND c.d = date_trunc('day', mm."measured_at")
-          AND c.canon = mm."source"
-        WHERE mm."user_id" = $1
-          AND mm."deleted_at" IS NULL
-          ${sinceOuter}
-          ${typeOuter}`;
+        SELECT w.*
+        FROM (
+          SELECT mm.*,
+            FIRST_VALUE(mm."source") OVER (
+              PARTITION BY mm."type", date_trunc('day', mm."measured_at")
+              ORDER BY (${rankUnqualified}), mm."source"::text
+            ) AS canonical_source
+          FROM measurements mm
+          WHERE mm."user_id" = $1
+            AND mm."deleted_at" IS NULL
+            ${since}
+            ${typeOnly}
+        ) w
+        WHERE w."source" = w.canonical_source`;
 }
 
 /**
  * Build a FROM-clause subquery (aliased `m`) that restricts raw `measurements`
- * to the canonical-source rows per (type, day): the inner `DISTINCT ON` picks
- * the ladder-winning source for each day, and the join keeps only that source's
- * readings. Use it in place of `FROM measurements m` so a live aggregate over
- * an overlapping vital never blends two devices — the same collapse the rollup
- * readers apply, kept in lockstep for live/rollup parity.
+ * to the canonical-source rows per (type, day): the ladder-winning source for
+ * each day, and only that source's readings. Use it in place of
+ * `FROM measurements m` so a live aggregate over an overlapping vital never
+ * blends two devices — the same collapse the rollup readers apply, kept in
+ * lockstep for live/rollup parity.
  *
  * The user id is bound as `$1`; `rankUnqualified`, `window` and `onlyType` are
  * those of `canonicalMeasurementsCte`.

@@ -403,10 +403,10 @@ async function buildFromRollups(
       timeSubquery(timings, "narrow", () =>
         prisma.$queryRawUnsafe<NarrowAggregateRow[]>(
           `
-      -- v1.18.11 perf#3a — the canonical-source self-join is the dominant
+      -- v1.18.11 perf#3a — the canonical-source pick is the dominant
       -- cost; bind it ONCE as a CTE and reference it from both window_stats
-      -- and the outer aggregate so the DISTINCT-ON pick runs a single time
-      -- instead of twice per rebuild. Output is identical.
+      -- and the outer aggregate so the pick runs a single time instead of
+      -- twice per rebuild. Output is identical.
       WITH cm AS (${canonicalMeasurementsCte(rankUnqualified, NINETY_DAYS)}
       ),
       -- The z-score's mean and spread stay over every reading: they measure
@@ -626,9 +626,9 @@ async function buildFromLiveAggregate(
     timeSubquery(timings, "heavy", () =>
       prisma.$queryRawUnsafe<HeavyAggregateRow[]>(
         `
-      -- v1.18.11 perf#3a — bind the canonical-source self-join once (see the
+      -- v1.18.11 perf#3a — bind the canonical-source pick once (see the
       -- warm narrow query). window_stats + the outer aggregate both read cm,
-      -- so the DISTINCT-ON pick runs once. Output is identical.
+      -- so the pick runs once. Output is identical.
       WITH cm AS (${canonicalMeasurementsCte(rankUnqualified, NINETY_DAYS)}
       ),
       -- The z-score's mean and spread stay over every reading: they measure
