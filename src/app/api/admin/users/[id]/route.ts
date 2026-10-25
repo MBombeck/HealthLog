@@ -1,4 +1,8 @@
 import { prisma } from "@/lib/db";
+import {
+  assertAnotherAdminStays,
+  LastAdminError,
+} from "@/lib/auth/admin-roster";
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
@@ -55,42 +59,52 @@ export const PUT = apiHandler(
     });
     if (!target) return apiError("User not found", 404);
 
-    // Prevent removing the last admin
-    if (parsed.data.role === "USER" && target.role === "ADMIN") {
-      const adminCount = await prisma.user.count({ where: { role: "ADMIN" } });
-      if (adminCount <= 1) {
+    const demoting = parsed.data.role === "USER" && target.role === "ADMIN";
+
+    let updatedUser;
+    try {
+      updatedUser = await prisma.$transaction(async (tx) => {
+        // Another admin who can sign in must stay: one pending deletion does
+        // not count, and the count holds the roster lock an admin's own
+        // deletion takes too.
+        if (demoting) await assertAnotherAdminStays(tx, id);
+        return tx.user.update({
+          where: { id },
+          data: {
+            ...(parsed.data.username !== undefined && {
+              username: parsed.data.username,
+            }),
+            ...(parsed.data.email !== undefined && {
+              email: parsed.data.email,
+            }),
+            ...(parsed.data.role !== undefined && { role: parsed.data.role }),
+            ...(parsed.data.mfaEnforced !== undefined && {
+              mfaEnforced: parsed.data.mfaEnforced,
+            }),
+            ...(parsed.data.documentQuotaBytes !== undefined && {
+              documentQuotaBytes:
+                parsed.data.documentQuotaBytes === null
+                  ? null
+                  : BigInt(parsed.data.documentQuotaBytes),
+            }),
+          },
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            role: true,
+            createdAt: true,
+            mfaEnforced: true,
+            documentQuotaBytes: true,
+          },
+        });
+      });
+    } catch (error) {
+      if (error instanceof LastAdminError) {
         return apiError("The last admin cannot be demoted", 400);
       }
+      throw error;
     }
-
-    const updatedUser = await prisma.user.update({
-      where: { id },
-      data: {
-        ...(parsed.data.username !== undefined && {
-          username: parsed.data.username,
-        }),
-        ...(parsed.data.email !== undefined && { email: parsed.data.email }),
-        ...(parsed.data.role !== undefined && { role: parsed.data.role }),
-        ...(parsed.data.mfaEnforced !== undefined && {
-          mfaEnforced: parsed.data.mfaEnforced,
-        }),
-        ...(parsed.data.documentQuotaBytes !== undefined && {
-          documentQuotaBytes:
-            parsed.data.documentQuotaBytes === null
-              ? null
-              : BigInt(parsed.data.documentQuotaBytes),
-        }),
-      },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        mfaEnforced: true,
-        documentQuotaBytes: true,
-      },
-    });
 
     await auditLog("admin.user.update", {
       userId: user.id,

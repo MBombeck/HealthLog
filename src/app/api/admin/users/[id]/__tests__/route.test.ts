@@ -1,15 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-vi.mock("@/lib/db", () => ({
-  prisma: {
+vi.mock("@/lib/db", () => {
+  const prisma = {
     user: {
       findUnique: vi.fn(),
       count: vi.fn(),
       update: vi.fn(),
     },
-  },
-}));
+    $queryRaw: vi.fn(async () => [{ locked: 1 }]),
+    $transaction: vi.fn(),
+  };
+  prisma.$transaction.mockImplementation(
+    async (fn: (tx: typeof prisma) => unknown) => fn(prisma),
+  );
+  return { prisma };
+});
 
 vi.mock("@/lib/api-handler", async () => {
   const actual =
@@ -111,7 +117,8 @@ describe("PUT /api/admin/users/[id]", () => {
       id: "u1",
       role: "ADMIN",
     } as never);
-    vi.mocked(prisma.user.count).mockResolvedValue(1);
+    // No other admin who can sign in.
+    vi.mocked(prisma.user.count).mockResolvedValue(0);
     const res = await PUT(jsonReq({ role: "USER" }), params("u1"));
     expect(res.status).toBe(400);
     const body = (await res.json()) as { error: string };
@@ -119,12 +126,31 @@ describe("PUT /api/admin/users/[id]", () => {
     expect(vi.mocked(prisma.user.update)).not.toHaveBeenCalled();
   });
 
+  // An admin pending deletion cannot sign in and is erased when the window
+  // ends; counted, they let the last usable admin step down.
+  it("counts only the other admins who are not pending deletion, under the roster lock", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "u1",
+      role: "ADMIN",
+    } as never);
+    vi.mocked(prisma.user.count).mockResolvedValue(0);
+    await PUT(jsonReq({ role: "USER" }), params("u1"));
+    expect(vi.mocked(prisma.user.count).mock.calls[0]?.[0]).toEqual({
+      where: {
+        role: "ADMIN",
+        id: { not: "u1" },
+        deletionRequestedAt: null,
+      },
+    });
+    expect(prisma.$queryRaw).toHaveBeenCalled();
+  });
+
   it("allows demoting an admin while another admin exists", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: "u1",
       role: "ADMIN",
     } as never);
-    vi.mocked(prisma.user.count).mockResolvedValue(2);
+    vi.mocked(prisma.user.count).mockResolvedValue(1);
     vi.mocked(prisma.user.update).mockResolvedValue({
       id: "u1",
       username: "alice",

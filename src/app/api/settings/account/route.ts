@@ -22,6 +22,10 @@ import {
   lockAccountForDeletion,
 } from "@/lib/account-deletion/lifecycle";
 import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
+import {
+  assertAnotherAdminStays,
+  LastAdminError,
+} from "@/lib/auth/admin-roster";
 
 export const dynamic = "force-dynamic";
 
@@ -110,6 +114,9 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
     await deleteGuardianAccountWithLifecycle(
       userId,
       async (tx) => {
+        // Checked again under the roster lock: two admins deleting at the
+        // same moment must not each count the other.
+        if (user.role === "ADMIN") await assertAnotherAdminStays(tx, userId);
         // The invariant has now passed, so this success event cannot survive
         // a refusal. On an immediate erasure it is purged with the rest of the
         // account's audit history; during a grace window it is the account's
@@ -145,6 +152,9 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
       { erasing: purgeAt === null },
     );
   } catch (error) {
+    if (error instanceof LastAdminError) {
+      return apiError("The last admin account cannot be deleted", 400);
+    }
     if (error instanceof LastManagedGuardianError) {
       return apiError(
         "Add another Guardian or delete the managed profile first",
