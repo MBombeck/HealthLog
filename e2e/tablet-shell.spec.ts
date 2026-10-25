@@ -577,35 +577,47 @@ for (const vp of [
         if (inset) await setBottomInset(page, inset);
         const fab = page.locator('[data-slot="coach-fab"]');
         await expect(fab).toBeVisible();
-        await scrollMainToEnd(page);
-        const covered = await page.evaluate(() => {
-          const f = document
-            .querySelector('[data-slot="coach-fab"]')!
-            .getBoundingClientRect();
-          const main = document.getElementById("main-content")!;
-          const under: string[] = [];
-          for (const el of main.querySelectorAll<HTMLElement>("*")) {
-            const cs = getComputedStyle(el);
-            if (cs.position === "fixed" || cs.visibility === "hidden") continue;
-            const paints =
-              (el.childElementCount === 0 && !!el.textContent?.trim()) ||
-              cs.borderBottomWidth !== "0px" ||
-              cs.backgroundColor !== "rgba(0, 0, 0, 0)";
-            if (!paints) continue;
-            const b = el.getBoundingClientRect();
-            if (!b.width || !b.height) continue;
-            if (
-              b.right > f.left &&
-              b.left < f.right &&
-              b.bottom > f.top &&
-              b.top < f.bottom
-            ) {
-              under.push(el.getAttribute("data-slot") ?? el.tagName);
+        // A section near the end can still load once the scroll reaches it
+        // and show its skeleton for a moment; what has to hold is the page
+        // as it ends up, so scroll to the end and measure again until the
+        // last line is in place. Content that stays under the button fails.
+        const coveredAtEnd = async () => {
+          await scrollMainToEnd(page);
+          return page.evaluate(() => {
+            const f = document
+              .querySelector('[data-slot="coach-fab"]')!
+              .getBoundingClientRect();
+            const main = document.getElementById("main-content")!;
+            const under: string[] = [];
+            for (const el of main.querySelectorAll<HTMLElement>("*")) {
+              const cs = getComputedStyle(el);
+              if (cs.position === "fixed" || cs.visibility === "hidden")
+                continue;
+              const paints =
+                (el.childElementCount === 0 && !!el.textContent?.trim()) ||
+                cs.borderBottomWidth !== "0px" ||
+                cs.backgroundColor !== "rgba(0, 0, 0, 0)";
+              if (!paints) continue;
+              const b = el.getBoundingClientRect();
+              if (!b.width || !b.height) continue;
+              if (
+                b.right > f.left &&
+                b.left < f.right &&
+                b.bottom > f.top &&
+                b.top < f.bottom
+              ) {
+                under.push(el.getAttribute("data-slot") ?? el.tagName);
+              }
             }
-          }
-          return under;
-        });
-        expect(covered, `${path}: content under the Coach button`).toEqual([]);
+            return under;
+          });
+        };
+        await expect
+          .poll(coveredAtEnd, {
+            message: `${path}: content under the Coach button`,
+            timeout: 15_000,
+          })
+          .toEqual([]);
       }
     });
   }
