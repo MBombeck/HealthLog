@@ -65,6 +65,14 @@ export interface JobSpec<J extends Job<unknown>> {
    * filter of the jobs that are heavy on a queue that also carries light ones.
    */
   readonly lane?: true | ((job: J) => boolean);
+  /**
+   * The queue's per-account jobs run for an account pending deletion too.
+   * Without it a job whose payload names such an account is completed
+   * without running (`pending-deletion-gate`). Only for work that changes
+   * how rows are stored and not what the record holds (an encryption
+   * backfill), which is done or erased the same either way.
+   */
+  readonly actsForPendingAccounts?: true;
   /** Loads the handler that drains the queue. */
   readonly load: (ctx: JobContext) => Promise<BatchHandler<J>>;
 }

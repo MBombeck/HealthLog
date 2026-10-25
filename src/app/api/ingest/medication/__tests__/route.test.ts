@@ -376,7 +376,7 @@ describe("POST /api/ingest/medication — slot attribution + convergence (v1.16.
       expiresAt: null,
       lastUsedAt: null,
       user: { deletionRequestedAt: null },
-    } as Awaited<ReturnType<typeof prisma.apiToken.findUnique>>);
+    } as never);
   }
 
   it("gives a one-medication token the same 403 for an unknown and an out-of-scope name", async () => {

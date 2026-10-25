@@ -660,6 +660,8 @@ const jobs: readonly JobDefinition[] = [
       "Per-user encryption backfill (Coach title, custom-metric note, practitioner phone + address, workout GPS track); discovery drops the user once no readable value remains.",
     ),
     work: { localConcurrency: FREE_TEXT_ENCRYPTION_BACKFILL_CONCURRENCY },
+    // Seals what is already stored; see the module's account-deletion note.
+    actsForPendingAccounts: true,
     load: async () => (await encryption()).handleFreeTextEncryptionBackfill,
   }),
   // Physical purge of documents past the 30-day undo grace.

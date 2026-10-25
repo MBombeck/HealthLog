@@ -621,7 +621,6 @@ describe("a handover link and a profile pending deletion", () => {
   });
 
   it("revokes the links a Guardian minted when the Guardian deletes their account", async () => {
-    const prisma = getPrismaClient();
     const leaving = await seedAccount("guardian-leaving");
     const staying = await seedAccount("guardian-staying");
     const profile = await profileGuardedBy("managed-kid", [

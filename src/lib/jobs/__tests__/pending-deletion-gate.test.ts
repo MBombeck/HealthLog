@@ -76,4 +76,21 @@ describe("the pending-deletion gate on queued jobs", () => {
     expect(handler).toHaveBeenCalledTimes(1);
     expect(handler).toHaveBeenCalledWith([job("3", { userId: "u" })]);
   });
+
+  it("lets a queue that only changes how rows are stored run for it", async () => {
+    pending.clear();
+    pending.add("frozen");
+    const handler = vi.fn(async () => ({ ok: true as const, did: {} }));
+    const bound = bindableHandler(
+      {
+        queue: "free-text-encryption-backfill",
+        work: {},
+        actsForPendingAccounts: true,
+        load: async () => handler,
+      } as never,
+      { boss: {} as PgBoss },
+    );
+    await bound([job("1", { userId: "frozen" })]);
+    expect(handler).toHaveBeenCalledWith([job("1", { userId: "frozen" })]);
+  });
 });

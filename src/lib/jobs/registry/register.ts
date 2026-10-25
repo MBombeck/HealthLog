@@ -87,6 +87,7 @@ export function bindableHandler(
   // A job for an account pending deletion completes without running: it
   // was queued before the account was frozen (see `pending-deletion-gate`).
   let handler: BatchHandler<Job<unknown>> = async (jobs) => {
+    if (definition.actsForPendingAccounts) return (await load())(jobs);
     const { live, dropped } = await dropJobsOfPendingAccounts(jobs);
     if (live.length === 0) {
       return jobDone({ jobs_skipped_deletion_pending: dropped });
