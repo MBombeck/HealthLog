@@ -6928,10 +6928,12 @@
     "deleteAccountCardDescription": "패스키, 감사 로그, 세션까지 함께 계정을 삭제해요.",
     "deleteAccountCta": "계정 삭제",
     "deleteAccountConfirmTitle": "계정을 영구히 삭제할까요?",
+    "deleteAccountConfirmTitleGrace": "계정을 삭제할까요?",
     "deleteAccountConfirmDescription": "계정과 모든 건강 데이터, 패스키, 세션, 감사 기록이 영구히 삭제돼요. 삭제 직후 로그아웃돼요. 이 서버 백업에 남은 사본은 보관 기간이 지나면 사라져요.",
     "deleteAccountSuccess": "계정을 삭제했어요. 로그아웃할게요.",
     "deleteAccountFailed": "계정을 삭제하지 못했어요",
     "deleteAccountFinal": "영구 삭제",
+    "deleteAccountFinalGrace": "계정 삭제",
     "saved": "저장됨",
     "savingError": "저장 중 오류",
     "about": {

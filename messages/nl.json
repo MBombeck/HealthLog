@@ -6928,10 +6928,12 @@
     "deleteAccountCardDescription": "Verwijdert je account samen met passkeys, auditlogboek en sessies.",
     "deleteAccountCta": "Account verwijderen",
     "deleteAccountConfirmTitle": "Account definitief verwijderen?",
+    "deleteAccountConfirmTitleGrace": "Je account verwijderen?",
     "deleteAccountConfirmDescription": "Je account, alle gezondheidsgegevens, passkeys, sessies en auditregistraties worden definitief verwijderd. Je wordt daarna direct uitgelogd. Kopieën in de back-ups van deze server verlopen na hun bewaartermijn.",
     "deleteAccountSuccess": "Account verwijderd. Je wordt uitgelogd.",
     "deleteAccountFailed": "Account kon niet worden verwijderd",
     "deleteAccountFinal": "Definitief verwijderen",
+    "deleteAccountFinalGrace": "Account verwijderen",
     "saved": "Opgeslagen",
     "savingError": "Fout bij opslaan",
     "about": {

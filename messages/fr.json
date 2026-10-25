@@ -6928,10 +6928,12 @@
     "deleteAccountCardDescription": "Supprime votre compte ainsi que les clés d’accès, le journal d’audit et les sessions.",
     "deleteAccountCta": "Supprimer le compte",
     "deleteAccountConfirmTitle": "Supprimer définitivement le compte ?",
+    "deleteAccountConfirmTitleGrace": "Supprimer votre compte ?",
     "deleteAccountConfirmDescription": "Votre compte, toutes vos données de santé, vos clés d’accès, vos sessions et vos entrées d’audit seront définitivement supprimés. Vous serez déconnecté immédiatement après. Les copies dans les sauvegardes de ce serveur expirent à la fin de leur durée de conservation.",
     "deleteAccountSuccess": "Compte supprimé, déconnexion en cours.",
     "deleteAccountFailed": "Le compte n’a pas pu être supprimé",
     "deleteAccountFinal": "Supprimer définitivement",
+    "deleteAccountFinalGrace": "Supprimer le compte",
     "saved": "Enregistré",
     "savingError": "Erreur lors de l’enregistrement",
     "about": {

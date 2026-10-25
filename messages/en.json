@@ -6928,10 +6928,12 @@
     "deleteAccountCardDescription": "Deletes your account along with passkeys, audit log, and sessions.",
     "deleteAccountCta": "Delete account",
     "deleteAccountConfirmTitle": "Delete account permanently?",
+    "deleteAccountConfirmTitleGrace": "Delete your account?",
     "deleteAccountConfirmDescription": "Your account, all health data, passkeys, sessions, and audit entries will be permanently deleted. You will be signed out immediately after. Copies in this server's backups age out after their retention period.",
     "deleteAccountSuccess": "Account deleted. Signing you out.",
     "deleteAccountFailed": "Account could not be deleted",
     "deleteAccountFinal": "Delete permanently",
+    "deleteAccountFinalGrace": "Delete account",
     "saved": "Saved",
     "savingError": "Error saving",
     "about": {

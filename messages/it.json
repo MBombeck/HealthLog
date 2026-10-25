@@ -6928,10 +6928,12 @@
     "deleteAccountCardDescription": "Elimina il tuo account insieme a passkey, registro di controllo e sessioni.",
     "deleteAccountCta": "Elimina account",
     "deleteAccountConfirmTitle": "Eliminare definitivamente l’account?",
+    "deleteAccountConfirmTitleGrace": "Eliminare il tuo account?",
     "deleteAccountConfirmDescription": "Il tuo account, tutti i dati sanitari, le passkey, le sessioni e le voci di audit verranno eliminati definitivamente. Verrai disconnesso subito dopo. Le copie nei backup di questo server scadono al termine del loro periodo di conservazione.",
     "deleteAccountSuccess": "Account eliminato, disconnessione in corso.",
     "deleteAccountFailed": "Impossibile eliminare l’account",
     "deleteAccountFinal": "Elimina definitivamente",
+    "deleteAccountFinalGrace": "Elimina account",
     "saved": "Salvato",
     "savingError": "Errore durante il salvataggio",
     "about": {

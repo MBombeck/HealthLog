@@ -6928,10 +6928,12 @@
     "deleteAccountCardDescription": "Usuwa Twoje konto wraz z kluczami dostępu, dziennikiem audytu i sesjami.",
     "deleteAccountCta": "Usuń konto",
     "deleteAccountConfirmTitle": "Trwale usunąć konto?",
+    "deleteAccountConfirmTitleGrace": "Usunąć konto?",
     "deleteAccountConfirmDescription": "Twoje konto, wszystkie dane zdrowotne, klucze dostępu, sesje i wpisy audytu zostaną trwale usunięte. Zostaniesz wylogowany natychmiast po tym. Kopie w kopiach zapasowych tego serwera wygasają po upływie okresu przechowywania.",
     "deleteAccountSuccess": "Konto usunięte, trwa wylogowywanie.",
     "deleteAccountFailed": "Nie udało się usunąć konta",
     "deleteAccountFinal": "Usuń trwale",
+    "deleteAccountFinalGrace": "Usuń konto",
     "saved": "Zapisano",
     "savingError": "Błąd podczas zapisywania",
     "about": {

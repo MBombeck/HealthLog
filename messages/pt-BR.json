@@ -6928,10 +6928,12 @@
     "deleteAccountCardDescription": "Exclui sua conta junto com chaves de acesso, log de auditoria e sessões.",
     "deleteAccountCta": "Excluir conta",
     "deleteAccountConfirmTitle": "Excluir conta permanentemente?",
+    "deleteAccountConfirmTitleGrace": "Excluir sua conta?",
     "deleteAccountConfirmDescription": "Sua conta, todos os dados de saúde, chaves de acesso, sessões e registros de auditoria serão excluídos permanentemente. Você será desconectado imediatamente depois. As cópias nos backups deste servidor expiram depois do período de retenção.",
     "deleteAccountSuccess": "Conta excluída. Desconectando você.",
     "deleteAccountFailed": "Não foi possível excluir a conta",
     "deleteAccountFinal": "Excluir permanentemente",
+    "deleteAccountFinalGrace": "Excluir conta",
     "saved": "Salvo",
     "savingError": "Erro ao salvar",
     "about": {

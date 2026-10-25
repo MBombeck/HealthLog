@@ -6928,10 +6928,12 @@
     "deleteAccountCardDescription": "Löscht dein Konto inklusive Passkeys, Audit-Log und Sessions.",
     "deleteAccountCta": "Konto löschen",
     "deleteAccountConfirmTitle": "Konto endgültig löschen?",
+    "deleteAccountConfirmTitleGrace": "Konto löschen?",
     "deleteAccountConfirmDescription": "Dein Konto, alle Gesundheitsdaten, Passkeys, Sessions und Audit-Einträge werden unwiderruflich gelöscht. Du wirst danach automatisch abgemeldet. Kopien in den Sicherungen dieses Servers verfallen nach ihrer Aufbewahrungsfrist.",
     "deleteAccountSuccess": "Konto wurde gelöscht. Du wirst abgemeldet.",
     "deleteAccountFailed": "Konto konnte nicht gelöscht werden",
     "deleteAccountFinal": "Endgültig löschen",
+    "deleteAccountFinalGrace": "Konto löschen",
     "saved": "Gespeichert",
     "savingError": "Fehler beim Speichern",
     "about": {

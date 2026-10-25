@@ -267,9 +267,14 @@ function AccountDeleteCard() {
       // deleted the row); give the toast a beat to paint, then bounce to the
       // login page. Leave `deleting` set so the confirm button keeps its
       // pending state through the redirect: only an admin can undo it now.
-      setTimeout(() => {
-        loadDocument("/auth/login");
-      }, 1_500);
+      // With a grace window the message names the erase date, so it stays
+      // long enough to read.
+      setTimeout(
+        () => {
+          loadDocument("/auth/login");
+        },
+        typeof scheduledPurgeAt === "string" ? 5_000 : 1_500,
+      );
     } catch (err) {
       setDeleting(false);
       const message = recentProofErrorMessage(
@@ -330,7 +335,11 @@ function AccountDeleteCard() {
             if (deleting) return;
             setConfirmOpen(open);
           }}
-          title={t("settings.deleteAccountConfirmTitle")}
+          title={
+            graceDays > 0
+              ? t("settings.deleteAccountConfirmTitleGrace")
+              : t("settings.deleteAccountConfirmTitle")
+          }
           body={
             graceDays > 0
               ? t("settings.deleteAccountConfirmDescriptionGrace", {
@@ -338,7 +347,11 @@ function AccountDeleteCard() {
                 })
               : t("settings.deleteAccountConfirmDescription")
           }
-          confirmLabel={t("settings.deleteAccountFinal")}
+          confirmLabel={
+            graceDays > 0
+              ? t("settings.deleteAccountFinalGrace")
+              : t("settings.deleteAccountFinal")
+          }
           onConfirm={() => void handleDeleteAccount()}
           pending={deleting}
           slot="settings-account-delete"

@@ -6928,10 +6928,12 @@
     "deleteAccountCardDescription": "Elimina tu cuenta junto con las claves de acceso, el registro de auditoría y las sesiones.",
     "deleteAccountCta": "Eliminar cuenta",
     "deleteAccountConfirmTitle": "¿Eliminar la cuenta de forma permanente?",
+    "deleteAccountConfirmTitleGrace": "¿Eliminar tu cuenta?",
     "deleteAccountConfirmDescription": "Tu cuenta, todos los datos de salud, las claves de acceso, las sesiones y las entradas de auditoría se eliminarán de forma permanente. Se cerrará tu sesión inmediatamente después. Las copias en las copias de seguridad de este servidor caducan al terminar su periodo de conservación.",
     "deleteAccountSuccess": "Cuenta eliminada. Cerrando tu sesión.",
     "deleteAccountFailed": "No se pudo eliminar la cuenta",
     "deleteAccountFinal": "Eliminar permanentemente",
+    "deleteAccountFinalGrace": "Eliminar cuenta",
     "saved": "Guardado",
     "savingError": "Error al guardar",
     "about": {
