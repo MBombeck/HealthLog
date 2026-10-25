@@ -311,14 +311,18 @@ x-healthlog-env: &healthlog_env
   # X-Deploy-Webhook-Secret header (what Coolify's stock sender can do; no
   # replay protection) or with X-Deploy-Webhook-Signature: sha256=<HMAC of
   # "<X-Deploy-Webhook-Timestamp>.<body>" under the secret>, the timestamp
-  # within 5 minutes. DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP=true accepts signed
-  # requests only. DEPLOY_LOGS_URL is the deployment-dashboard URL (e.g. the
-  # Coolify UI) linked in deploy-failure notifications. Listed here so
-  # operator values in .env reach the container (the `environment:` block is
-  # a whitelist). See docs/ops/deploy.md.
+  # within 5 minutes. DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP=true also requires a
+  # fresh X-Deploy-Webhook-Timestamp on a secret-header request;
+  # DEPLOY_WEBHOOK_REQUIRE_SIGNATURE=true accepts signed requests only, the
+  # one setting that stops a replay. DEPLOY_LOGS_URL is the
+  # deployment-dashboard URL (e.g. the Coolify UI) linked in deploy-failure
+  # notifications. Listed here so operator values in .env reach the
+  # container (the `environment:` block is a whitelist). See
+  # docs/ops/deploy.md.
   DEPLOY_WEBHOOK_SECRET: "${DEPLOY_WEBHOOK_SECRET:-}"
   DEPLOY_LOGS_URL: "${DEPLOY_LOGS_URL:-}"
   DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP: "${DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP:-}"
+  DEPLOY_WEBHOOK_REQUIRE_SIGNATURE: "${DEPLOY_WEBHOOK_REQUIRE_SIGNATURE:-}"
   # TLS leaf SPKI-change alarm baseline (optional). The native client
   # pins the served TLS leaf; this is the known-good pin set the monitor
   # alarms against on a rotation. Comma-separated for the dual-pin

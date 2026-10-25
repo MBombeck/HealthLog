@@ -540,8 +540,17 @@ low-friction default.
   **5 minutes** of server time. A signed request sends no secret, and a
   captured one is useless once the window has passed.
 
-Set `DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP=true` to accept signed requests only.
-Use it when the sender, or a small relay in front of the app, can sign:
+Two settings tighten this:
+
+- `DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP=true` requires a fresh
+  `X-Deploy-Webhook-Timestamp` on a request that uses the secret header; one
+  without it is refused with `401 {"status":"stale"}`. This is what the
+  setting has always meant. It keeps an old capture out, but not someone who
+  saw the secret and sends a new request with a new timestamp.
+- `DEPLOY_WEBHOOK_REQUIRE_SIGNATURE=true` accepts signed requests only; the
+  secret header alone is refused with 401. This is the one that stops a
+  replay. Use it when the sender, or a small relay in front of the app, can
+  sign:
 
 ```sh
 TS=$(date +%s)
@@ -555,5 +564,5 @@ curl -X POST https://<host>/api/internal/deploy-webhook \
   -d "$BODY"
 ```
 
-Before 1.46 the strict setting accepted the secret header plus a fresh
-timestamp. Such a sender now gets 401 in strict mode and has to sign.
+Both may be set; a signed request satisfies both. An operator who set the
+timestamp flag before 1.46 keeps exactly the behaviour they had.

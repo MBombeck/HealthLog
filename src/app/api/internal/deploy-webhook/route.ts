@@ -110,9 +110,15 @@ function normalizePayload(payload: CoolifyDeployPayload): NormalizedEvent {
  *   - Default: a signed request is verified as above; an unsigned one
  *     authenticates with the secret header, as Coolify's stock sender does,
  *     and a timestamp it carries must still be fresh.
- *   - `DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP=true`: only a signed request is
- *     accepted. The name predates the signature; requiring a timestamp
- *     without one would not make a replay any harder.
+ *   - `DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP=true`: what it has always meant, the
+ *     secret header plus a fresh timestamp; an unsigned request without one
+ *     is refused. It keeps a stale capture out, not a fresh forgery by
+ *     someone who saw the secret. A signed request is accepted as above.
+ *   - `DEPLOY_WEBHOOK_REQUIRE_SIGNATURE=true`: only a signed request is
+ *     accepted; the secret header alone is refused. This is the setting
+ *     that stops a replay. It has its own name so that an operator who set
+ *     the timestamp flag, with a sender that adds a timestamp but cannot
+ *     sign, keeps the behaviour they asked for.
  *
  * See docs/ops/deploy.md ("Deploy-status webhook") for the operator
  * guidance.
@@ -132,7 +138,11 @@ function checkTimestampFreshness(
   now: number = Date.now(),
 ): { ok: boolean; reason?: string } {
   const raw = request.headers.get("x-deploy-webhook-timestamp");
-  if (raw === null || raw === "") return { ok: true };
+  if (raw === null || raw === "") {
+    return flagSet("DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP")
+      ? { ok: false, reason: "timestamp_missing" }
+      : { ok: true };
+  }
   const ts = parseTimestamp(raw);
   if (ts === null) return { ok: false, reason: "timestamp_invalid" };
   if (Math.abs(now - ts) > TIMESTAMP_WINDOW_MS) {
@@ -141,11 +151,11 @@ function checkTimestampFreshness(
   return { ok: true };
 }
 
-function strictMode(): boolean {
-  return (
-    process.env.DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP === "true" ||
-    process.env.DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP === "1"
-  );
+function flagSet(
+  name: "DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP" | "DEPLOY_WEBHOOK_REQUIRE_SIGNATURE",
+): boolean {
+  const value = process.env[name]?.trim().toLowerCase();
+  return value === "true" || value === "1";
 }
 
 /**
@@ -296,7 +306,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     getEvent()?.setAuth({ auth_method: "webhook_secret" });
     annotate({ meta: { deploy_webhook_auth: "signature" } });
   } else {
-    if (strictMode() || !hasValidSecret(request)) {
+    if (
+      flagSet("DEPLOY_WEBHOOK_REQUIRE_SIGNATURE") ||
+      !hasValidSecret(request)
+    ) {
       return NextResponse.json({ status: "unauthorized" }, { status: 401 });
     }
     // Freshness AFTER the secret check: an unauthenticated caller learns

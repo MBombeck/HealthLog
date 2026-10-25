@@ -268,7 +268,12 @@
         },
         {
           "name": "DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP",
-          "purpose": "\"true\" (or \"1\") accepts only signed deploy-webhook requests (X-Deploy-Webhook-Signature with a fresh X-Deploy-Webhook-Timestamp); the secret header alone is refused with 401. Leave unset for Coolify's stock sender, which can only send the secret header.",
+          "purpose": "\"true\" (or \"1\") requires a fresh X-Deploy-Webhook-Timestamp (within 5 minutes) on a deploy-webhook request that authenticates with the secret header; one without it is refused with 401. Keeps a stale capture out, not a fresh forgery by someone who saw the secret. Leave unset for Coolify's stock sender, which sends no timestamp.",
+          "example": "true"
+        },
+        {
+          "name": "DEPLOY_WEBHOOK_REQUIRE_SIGNATURE",
+          "purpose": "\"true\" (or \"1\") accepts only signed deploy-webhook requests (X-Deploy-Webhook-Signature with a fresh X-Deploy-Webhook-Timestamp); the secret header alone is refused with 401. The setting that stops a replay. Leave unset for Coolify's stock sender, which can only send the secret header.",
           "example": "true"
         }
       ]
