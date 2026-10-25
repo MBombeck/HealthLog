@@ -16,6 +16,7 @@ import {
   databaseBackupEnabled,
   isWritableDirectory,
   resolveBackupDir,
+  resolveDailyKeep,
 } from "./dump-core.mjs";
 
 export interface DatabaseBackupHealth {
@@ -23,6 +24,12 @@ export interface DatabaseBackupHealth {
   enabled: boolean;
   /** The directory dumps are kept in (`DB_BACKUP_DIR`). */
   directory: string;
+  /**
+   * Nightly dumps kept in that directory (`DB_BACKUP_KEEP`). Also how long a
+   * deleted account stays in the dumps on this server, which the backups
+   * page says.
+   */
+  keepNightly: number;
   /** This process can write there. False means dumps only go off-host. */
   localDirWritable: boolean;
   /** The off-host bucket is configured, or a dump has been uploaded to it. */
@@ -100,6 +107,7 @@ export async function getDatabaseBackupHealth(
   return {
     enabled: databaseBackupEnabled(env),
     directory,
+    keepNightly: resolveDailyKeep(env),
     localDirWritable: isWritableDirectory(directory),
     offhostConfigured: offhostBackupConfigured() || everUploaded > 0,
     lastGood: lastGood

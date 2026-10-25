@@ -14,6 +14,7 @@ import { SettingsInfoTile } from "@/components/settings/_info-tile";
 import { formatBytes } from "@/lib/format/bytes";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { DatabaseBackupHealth } from "@/lib/database-backup/health";
+import type { LifecycleVerdict } from "@/lib/jobs/offhost-lifecycle";
 
 function whereKept(
   good: NonNullable<DatabaseBackupHealth["lastGood"]>,
@@ -26,7 +27,14 @@ function whereKept(
   return t("admin.section.backups.database.whereLocal");
 }
 
-export function DatabaseDumpRow({ health }: { health: DatabaseBackupHealth }) {
+export function DatabaseDumpRow({
+  health,
+  bucketLifecycle,
+}: {
+  health: DatabaseBackupHealth;
+  /** The bucket's rule for `database/`; null when nothing goes off-host. */
+  bucketLifecycle: LifecycleVerdict | null;
+}) {
   const { t, locale } = useTranslations();
   const fmt = useFormatters();
   const good = health.lastGood;
@@ -70,6 +78,21 @@ export function DatabaseDumpRow({ health }: { health: DatabaseBackupHealth }) {
                 })
               : t("admin.section.backups.database.none")}
           </p>
+          {/* How long a deleted account stays in the dumps: the operator's
+              side of the deletion promise (GDPR retention of backups). */}
+          <p
+            className="text-muted-foreground text-xs"
+            data-slot="database-dump-retention"
+          >
+            {t("admin.section.backups.database.retentionLocal", {
+              nights: health.keepNightly,
+            })}
+            {bucketLifecycle?.state === "configured"
+              ? ` ${t("admin.section.backups.database.retentionOffhost", {
+                  days: bucketLifecycle.expirationDays ?? 0,
+                })}`
+              : null}
+          </p>
         </div>
       </div>
 
@@ -97,6 +120,17 @@ export function DatabaseDumpRow({ health }: { health: DatabaseBackupHealth }) {
             </div>
           </div>
         </div>
+      ) : null}
+
+      {bucketLifecycle?.state === "missing" ? (
+        <SettingsInfoTile
+          icon={AlertTriangle}
+          tone="warning"
+          role="alert"
+          data-slot="database-dump-no-lifecycle"
+        >
+          {t("admin.section.backups.database.retentionOffhostMissing")}
+        </SettingsInfoTile>
       ) : null}
 
       {setupProblem ? (

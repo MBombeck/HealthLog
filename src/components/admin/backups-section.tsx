@@ -111,7 +111,14 @@ export function BackupsSection() {
         }
       />
 
-      {data?.database ? <DatabaseDumpRow health={data.database} /> : null}
+      {data?.database ? (
+        <DatabaseDumpRow
+          health={data.database}
+          bucketLifecycle={
+            data.offhost.configured ? data.offhost.lifecycle.database : null
+          }
+        />
+      ) : null}
       {data?.schedule ? (
         <ScheduleHealthNotice schedule={data.schedule} />
       ) : null}

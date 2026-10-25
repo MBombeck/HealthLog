@@ -8322,7 +8322,10 @@
           "failedDescription": "{when}: {reason}",
           "disabled": "Datenbank-Dumps sind abgeschaltet (DB_BACKUP_ENABLED=false). Sichere die Datenbank auf anderem Weg.",
           "noDirectoryOffhost": "Dieser Server kann nicht nach {dir} schreiben. Dumps gehen deshalb nur extern, hier wird keiner aufbewahrt. Binde das Backup-Volume ein.",
-          "noDirectory": "Dieser Server kann nicht nach {dir} schreiben und es ist kein externer Speicher eingerichtet. Deshalb entsteht kein Datenbank-Dump. Binde das Backup-Volume ein."
+          "noDirectory": "Dieser Server kann nicht nach {dir} schreiben und es ist kein externer Speicher eingerichtet. Deshalb entsteht kein Datenbank-Dump. Binde das Backup-Volume ein.",
+          "retentionLocal": "Gelöschte Konten bleiben in den Dumps, bis diese aussortiert werden: Auf diesem Server bleiben die neuesten {nights}.",
+          "retentionOffhost": "Externe Kopien entfernt die Lebenszyklus-Regel des Buckets nach {days} Tagen.",
+          "retentionOffhostMissing": "Keine Lebenszyklus-Regel im Bucket gilt für database/. Dumps dort und die gelöschten Konten darin werden deshalb nie entfernt. Lege eine Regel für dieses Präfix an."
         }
       },
       "danger-zone": {

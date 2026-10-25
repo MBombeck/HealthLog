@@ -10,6 +10,7 @@
  * keeps owning the HTTP contract, the component keeps owning the UI.
  */
 import type { DatabaseBackupHealth } from "@/lib/database-backup/health";
+import type { OffhostLifecycle } from "@/lib/jobs/offhost-lifecycle";
 import type { BackupPassActivity } from "@/lib/jobs/backup-pass-attempts";
 import type { BackupScheduleStatus } from "@/lib/jobs/backup-schedule-status";
 import type { OffhostBackupFreshness } from "@/lib/jobs/offhost-backup-freshness";
@@ -77,10 +78,7 @@ export interface OffhostBackupOverview {
    * (`GetBucketLifecycleConfiguration`), cached for ten minutes; `unknown`
    * when the credential may not read it.
    */
-  lifecycle: {
-    state: "configured" | "missing" | "unknown";
-    expirationDays: number | null;
-  };
+  lifecycle: OffhostLifecycle;
 }
 
 export interface BackupsList {

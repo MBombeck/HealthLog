@@ -8322,7 +8322,10 @@
           "failedDescription": "{when}: {reason}",
           "disabled": "Database dumps are switched off (DB_BACKUP_ENABLED=false). Back the database up another way.",
           "noDirectoryOffhost": "This server cannot write to {dir}, so dumps go off-host only and none is kept here. Mount the backups volume.",
-          "noDirectory": "This server cannot write to {dir} and no off-host bucket is set, so no database dump can be taken. Mount the backups volume."
+          "noDirectory": "This server cannot write to {dir} and no off-host bucket is set, so no database dump can be taken. Mount the backups volume.",
+          "retentionLocal": "Deleted accounts stay in the dumps until those age out: the newest {nights} are kept on this server.",
+          "retentionOffhost": "Off-host copies are removed after {days} days by the bucket's lifecycle rule.",
+          "retentionOffhostMissing": "No lifecycle rule in the bucket covers database/, so dumps there, and the deleted accounts inside them, are never removed. Add a rule for that prefix."
         }
       },
       "danger-zone": {

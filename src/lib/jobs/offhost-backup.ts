@@ -44,6 +44,12 @@ import {
 import { annotate, getEvent } from "@/lib/logging/context";
 import { envValue } from "@/lib/env";
 import { OFFHOST_BACKUP_QUEUE } from "./offhost-backup-queue";
+import {
+  LIFECYCLE_MISSING,
+  LIFECYCLE_UNKNOWN,
+  lifecycleFromRules,
+  type OffhostLifecycle,
+} from "./offhost-lifecycle";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
@@ -634,18 +640,7 @@ export interface S3Like {
   getLifecycle?(): Promise<OffhostLifecycle>;
 }
 
-/**
- * Whether the bucket retires old copies by itself.
- *
- * `configured` names the shortest expiry of an enabled rule; `missing` means
- * the bucket answered that it has no rule; `unknown` means it would not say
- * (a credential without `s3:GetLifecycleConfiguration`, a target that does not
- * implement the call, a network failure) and says nothing either way.
- */
-export interface OffhostLifecycle {
-  state: "configured" | "missing" | "unknown";
-  expirationDays: number | null;
-}
+export type { OffhostLifecycle } from "./offhost-lifecycle";
 
 export async function getS3Client(cfg: OffhostBackupConfig): Promise<S3Like> {
   // Dynamic import so unit tests + dev environments without the SDK don't fail.
@@ -765,13 +760,7 @@ export async function getS3Client(cfg: OffhostBackupConfig): Promise<S3Like> {
           }),
           { abortSignal: AbortSignal.timeout(5_000) },
         );
-        const days = (out.Rules ?? [])
-          .filter((rule) => rule.Status === "Enabled")
-          .map((rule) => rule.Expiration?.Days)
-          .filter((d): d is number => typeof d === "number" && d > 0);
-        return days.length > 0
-          ? { state: "configured", expirationDays: Math.min(...days) }
-          : { state: "missing", expirationDays: null };
+        return lifecycleFromRules(out.Rules ?? []);
       } catch (err) {
         const name = (err as { name?: string; Code?: string }).name;
         const code = (err as { Code?: string }).Code;
@@ -779,9 +768,9 @@ export async function getS3Client(cfg: OffhostBackupConfig): Promise<S3Like> {
           name === "NoSuchLifecycleConfiguration" ||
           code === "NoSuchLifecycleConfiguration"
         ) {
-          return { state: "missing", expirationDays: null };
+          return LIFECYCLE_MISSING;
         }
-        return { state: "unknown", expirationDays: null };
+        return LIFECYCLE_UNKNOWN;
       }
     },
   };
@@ -806,15 +795,13 @@ export async function probeOffhostLifecycle(
     return lifecycleCache.value;
   }
   const cfg = loadOffhostConfigSafe();
-  if (!cfg) return { state: "unknown", expirationDays: null };
+  if (!cfg) return LIFECYCLE_UNKNOWN;
   let value: OffhostLifecycle;
   try {
     const s3 = s3Override ?? (await getS3Client(cfg));
-    value = s3.getLifecycle
-      ? await s3.getLifecycle()
-      : { state: "unknown", expirationDays: null };
+    value = s3.getLifecycle ? await s3.getLifecycle() : LIFECYCLE_UNKNOWN;
   } catch {
-    value = { state: "unknown", expirationDays: null };
+    value = LIFECYCLE_UNKNOWN;
   }
   if (!s3Override) lifecycleCache = { at: now, value };
   return value;

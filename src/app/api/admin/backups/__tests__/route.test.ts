@@ -54,12 +54,14 @@ vi.mock("@/lib/jobs/offhost-backup", () => ({
   probeOffhostLifecycle: async () => ({
     state: "missing",
     expirationDays: null,
+    database: { state: "missing", expirationDays: null },
   }),
 }));
 
 const databaseHealth = {
   enabled: true,
   directory: "/var/lib/healthlog/backups",
+  keepNightly: 7,
   localDirWritable: true,
   offhostConfigured: true,
   lastGood: {
@@ -184,7 +186,11 @@ describe("GET /api/admin/backups — off-host freshness", () => {
       periodHours: 24,
       rows: [],
       // No bucket to ask on a host that is not configured.
-      lifecycle: { state: "unknown", expirationDays: null },
+      lifecycle: {
+        state: "unknown",
+        expirationDays: null,
+        database: { state: "unknown", expirationDays: null },
+      },
     });
   });
 
@@ -247,6 +253,7 @@ describe("GET /api/admin/backups — off-host freshness", () => {
     expect(body.offhost.lifecycle).toEqual({
       state: "missing",
       expirationDays: null,
+      database: { state: "missing", expirationDays: null },
     });
     expect(body.offhost.pendingDeletions).toEqual({
       count: 2,

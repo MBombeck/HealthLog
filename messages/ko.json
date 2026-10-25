@@ -8297,7 +8297,10 @@
           "failedDescription": "{when}: {reason}",
           "disabled": "데이터베이스 덤프가 꺼져 있습니다(DB_BACKUP_ENABLED=false). 다른 방법으로 데이터베이스를 백업하세요.",
           "noDirectoryOffhost": "이 서버는 {dir}에 쓸 수 없어 덤프가 외부 저장소로만 가고 여기에는 보관되지 않습니다. 백업 볼륨을 마운트하세요.",
-          "noDirectory": "이 서버는 {dir}에 쓸 수 없고 외부 저장소도 설정되지 않아 데이터베이스 덤프를 만들 수 없습니다. 백업 볼륨을 마운트하세요."
+          "noDirectory": "이 서버는 {dir}에 쓸 수 없고 외부 저장소도 설정되지 않아 데이터베이스 덤프를 만들 수 없습니다. 백업 볼륨을 마운트하세요.",
+          "retentionLocal": "삭제된 계정은 덤프가 만료될 때까지 덤프에 남습니다. 이 서버에는 최신 덤프 {nights}개가 보관됩니다.",
+          "retentionOffhost": "버킷의 수명 주기 규칙이 외부 사본을 {days}일 후에 삭제합니다.",
+          "retentionOffhostMissing": "버킷의 어떤 수명 주기 규칙도 database/를 다루지 않아 그곳의 덤프와 그 안의 삭제된 계정이 절대 삭제되지 않습니다. 이 접두사에 대한 규칙을 추가하세요."
         }
       },
       "danger-zone": {

@@ -8322,7 +8322,10 @@
           "failedDescription": "{when}: {reason}",
           "disabled": "Databasedumps staan uit (DB_BACKUP_ENABLED=false). Maak op een andere manier een back-up van de database.",
           "noDirectoryOffhost": "Deze server kan niet schrijven naar {dir}, dus dumps gaan alleen extern en hier wordt er geen bewaard. Koppel het back-upvolume.",
-          "noDirectory": "Deze server kan niet schrijven naar {dir} en er is geen externe opslag ingesteld, dus er kan geen databasedump worden gemaakt. Koppel het back-upvolume."
+          "noDirectory": "Deze server kan niet schrijven naar {dir} en er is geen externe opslag ingesteld, dus er kan geen databasedump worden gemaakt. Koppel het back-upvolume.",
+          "retentionLocal": "Verwijderde accounts blijven in de dumps tot die verlopen: op deze server blijven de nieuwste {nights} bewaard.",
+          "retentionOffhost": "De levenscyclusregel van de bucket verwijdert externe kopieën na {days} dagen.",
+          "retentionOffhostMissing": "Geen levenscyclusregel in de bucket geldt voor database/, dus dumps daar, en de verwijderde accounts erin, worden nooit verwijderd. Voeg een regel voor dat voorvoegsel toe."
         }
       },
       "danger-zone": {

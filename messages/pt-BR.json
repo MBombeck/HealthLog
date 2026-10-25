@@ -8322,7 +8322,10 @@
           "failedDescription": "{when}: {reason}",
           "disabled": "Os dumps do banco de dados estão desligados (DB_BACKUP_ENABLED=false). Faça o backup do banco de outra forma.",
           "noDirectoryOffhost": "Este servidor não consegue gravar em {dir}, então os dumps vão só para fora e nenhum fica aqui. Monte o volume de backups.",
-          "noDirectory": "Este servidor não consegue gravar em {dir} e não há armazenamento externo configurado, então nenhum dump pode ser feito. Monte o volume de backups."
+          "noDirectory": "Este servidor não consegue gravar em {dir} e não há armazenamento externo configurado, então nenhum dump pode ser feito. Monte o volume de backups.",
+          "retentionLocal": "Contas excluídas continuam nos dumps até que eles expirem: este servidor guarda os {nights} mais recentes.",
+          "retentionOffhost": "A regra de ciclo de vida do bucket remove as cópias externas após {days} dias.",
+          "retentionOffhostMissing": "Nenhuma regra de ciclo de vida do bucket cobre database/, então os dumps ali, e as contas excluídas dentro deles, nunca são removidos. Adicione uma regra para esse prefixo."
         }
       },
       "danger-zone": {

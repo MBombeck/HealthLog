@@ -41,6 +41,7 @@ import {
   probeOffhostLifecycle,
 } from "@/lib/jobs/offhost-backup";
 import { OFFHOST_BACKUP_QUEUE } from "@/lib/jobs/offhost-backup-queue";
+import { LIFECYCLE_UNKNOWN } from "@/lib/jobs/offhost-lifecycle";
 import {
   classifyOffhostBackup,
   OFFHOST_BACKUP_PERIOD_HOURS,
@@ -202,9 +203,7 @@ export const GET = apiHandler(async () => {
       orderBy: { requestedAt: "asc" },
       select: { requestedAt: true, lastFailure: true },
     }),
-    configured
-      ? probeOffhostLifecycle()
-      : Promise.resolve({ state: "unknown" as const, expirationDays: null }),
+    configured ? probeOffhostLifecycle() : Promise.resolve(LIFECYCLE_UNKNOWN),
     getDatabaseBackupHealth(now),
   ]);
 
