@@ -41,7 +41,11 @@ import {
   type AiRecordKind,
 } from "./resolve";
 import type { AiCapabilities } from "./types";
-import { loadAiUsageState, loadRecordUsageLevel } from "./usage";
+import {
+  loadAiUsageState,
+  loadRecordAiUsage,
+  loadRecordUsageLevel,
+} from "./usage";
 
 /** Whose record, seen by whom, through which grant. */
 export interface AiCapabilityScope {
@@ -89,11 +93,8 @@ function loadActiveConsents(
  * (`src/lib/account-deletion/active-account.ts`).
  */
 async function loadRecordDeletionPending(recordId: string): Promise<boolean> {
-  const row = await prisma.user.findUnique({
-    where: { id: recordId },
-    select: { deletionRequestedAt: true },
-  });
-  return row?.deletionRequestedAt != null;
+  // The same memoised point read as the usage level.
+  return (await loadRecordAiUsage(recordId)).deletionPending;
 }
 
 function scopeKey(scope: AiCapabilityScope): string {

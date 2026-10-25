@@ -106,6 +106,11 @@ export function loadAiUsageSettings(): Promise<AiUsageSettings> {
 export interface RecordAiUsage extends AiUsageResolution {
   preference: AiUsageLevel | null;
   settings: AiUsageSettings;
+  /**
+   * The record is pending deletion. Read in the same point read as the level,
+   * so the capability gate's deletion check costs no statement of its own.
+   */
+  deletionPending: boolean;
 }
 
 /**
@@ -118,11 +123,12 @@ export function loadRecordAiUsage(recordId: string): Promise<RecordAiUsage> {
       loadAiUsageSettings(),
       prisma.user.findUnique({
         where: { id: recordId },
-        select: { aiUsageLevel: true },
+        select: { aiUsageLevel: true, deletionRequestedAt: true },
       }),
     ]);
     const preference = usageLevelFromDb(row?.aiUsageLevel);
     return {
+      deletionPending: row?.deletionRequestedAt != null,
       ...resolveAiUsageLevel({
         preference,
         defaultLevel: settings.defaultLevel,
