@@ -87,7 +87,7 @@ curl -s http://localhost:3000/api/version   # returns version + buildSha + built
 
 `SESSION_COOKIE_SECURE=false` is the one setting plain-HTTP self-hosts must set: without it the session cookie carries the `Secure` flag, the browser drops it over HTTP, and login silently fails. Leave it unset (or `true`) only when a TLS reverse proxy serves HTTPS — and then set `NEXT_PUBLIC_APP_URL` and `APP_URL` to the public URL first (see the [self-hosting guide](https://docs.healthlog.dev/self-hosting/)).
 
-Persistent state lives in exactly one named volume (`pgdata`, the Postgres data dir); the app container is stateless, so backing up the database backs up everything.
+Persistent state lives in exactly one named volume (`postgres-data`, the Postgres data); the app container is stateless, so backing up the database backs up everything. An install from v1.45 or earlier moves its Postgres 16 database into it on the first start ([details](docs/ops/postgres-major-upgrade.md)).
 
 NAS and homelab users have ready-made paths: [Unraid Community Applications](docs/self-hosting/unraid.md), [Portainer app templates](docs/self-hosting/portainer/README.md) and [TrueNAS](docs/self-hosting/truenas.md) (the Community train app is pending catalog review).
 
@@ -105,7 +105,7 @@ The App Store listing carries a small price, which exists to cover Apple's yearl
 
 ## Tech stack
 
-Next.js 16 (App Router, React Server Components), TypeScript strict, PostgreSQL 16 with Prisma, pg-boss for jobs, Tailwind CSS 4 + shadcn/ui, Recharts, WebAuthn passkeys, Vitest + Playwright, multi-stage Alpine Docker image. The OpenAPI 3.1 contract for native clients is generated from the Zod schemas at [`docs/api/openapi.yaml`](docs/api/openapi.yaml).
+Next.js 16 (App Router, React Server Components), TypeScript strict, PostgreSQL 18 with Prisma, pg-boss for jobs, Tailwind CSS 4 + shadcn/ui, Recharts, WebAuthn passkeys, Vitest + Playwright, multi-stage Alpine Docker image. The OpenAPI 3.1 contract for native clients is generated from the Zod schemas at [`docs/api/openapi.yaml`](docs/api/openapi.yaml).
 
 ## Documentation
 

@@ -129,6 +129,26 @@ An INVALID index whose migration is already recorded applied is not touched at
 boot. The boot names it on stderr with `WARNING — index … is INVALID`; rebuild
 it with `REINDEX INDEX CONCURRENTLY "<index>";` when the database is quiet.
 
+### v1.46.0 notes
+
+- **Postgres 18.** The compose file moves the bundled database from
+  Postgres 16 to 18. The first `docker compose up -d` with the new compose
+  file runs `db-upgrade`, which copies the database into a new
+  `postgres-data` volume, checks every table's row count, and only then lets
+  the app start; the old `pgdata` volume stays as it was, as the way back.
+  Pulling only the new image with the old compose file keeps 16, which this
+  release still runs on. Details, rollback and the steps for a database you
+  run yourself: [postgres-major-upgrade.md](postgres-major-upgrade.md).
+- Migration `0485` drops `preview_features_json` from `users`, the same
+  pattern as `0430` in v1.44.0 below: do not run the previous image beside
+  the new schema. The sequence above stops the old container first; a
+  web/worker split stops both roles before the first new container starts.
+- The other migrations add columns and one index (built concurrently).
+  Three touch rows: `0476` links API-written measurements to their token on
+  accounts that have exactly one measurement token, and `0478`/`0479` give
+  PDFs whose preview or text read failed one more attempt. On a prod-sized
+  copy all of them together finished in under a second.
+
 ### v1.45.0 notes
 
 A single-container install (`HEALTHLOG_PROCESS_TYPE=all`, the shipped

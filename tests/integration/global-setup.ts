@@ -44,10 +44,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_ROOT = resolve(__dirname, "..", "..");
 
-// The compose file ships Postgres 16; INTEGRATION_PG_IMAGE runs the same
-// suite against another major (the TrueNAS app defaults to 18).
+// The compose file ships Postgres 18; INTEGRATION_PG_IMAGE runs the same
+// suite against another major. The nightly run uses it for Postgres 16, the
+// oldest major a self-host on its own database may still run.
 const POSTGRES_IMAGE =
-  process.env.INTEGRATION_PG_IMAGE?.trim() || "postgres:16-alpine";
+  process.env.INTEGRATION_PG_IMAGE?.trim() || "postgres:18-alpine";
 
 let started: StartedPostgreSqlContainer | null = null;
 

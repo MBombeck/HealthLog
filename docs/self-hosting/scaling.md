@@ -174,7 +174,7 @@ sized for the web traffic alone leaves the worker's jobs queueing for
 the same connections.
 
 Plan total Postgres slots as **container_count × budget**.
-A stock Postgres 16 container ships with `max_connections = 100`, so
+A stock Postgres container ships with `max_connections = 100`, so
 the safe envelope is:
 
 | Web replicas | Worker replicas | Total containers | Pool slots used | Headroom under 100 |

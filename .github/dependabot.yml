@@ -79,6 +79,8 @@ updates:
       # The first run of this ecosystem proposed 16.15 -> 18.6, which would
       # have handed self-hosters a database their data directory cannot be
       # read by. Minor releases still arrive as PRs; a major is a deliberate
-      # project decision with a migration guide behind it.
+      # project decision with a migration guide behind it. The ignore also
+      # keeps `db-upgrade` on 16: it exists to read Postgres 16 data, and a
+      # bump to 18 would leave it unable to start on the volume it moves.
       - dependency-name: "postgres"
         update-types: ["version-update:semver-major"]

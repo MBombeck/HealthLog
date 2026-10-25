@@ -69,10 +69,12 @@ curl -s http://tower:3000/api/version
 Use this if you prefer the per-app Unraid UI. You install PostgreSQL yourself,
 then add HealthLog pointed at it.
 
-### Step 1 — install PostgreSQL 16
+### Step 1 — install PostgreSQL
 
 1. In **Apps** (Community Applications), search for a **PostgreSQL** container
-   (for example jj9987's `postgresql`). Install version 16.
+   (for example jj9987's `postgresql`). Install version 18; an existing 16
+   works too. Moving a 16 to 18 later is a dump and restore, see
+   [Moving to a newer Postgres major](../ops/postgres-major-upgrade.md#by-hand).
 2. Set:
    - `POSTGRES_USER` = `healthlog`
    - `POSTGRES_PASSWORD` = your generated password

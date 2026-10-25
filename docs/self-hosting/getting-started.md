@@ -81,7 +81,9 @@ explicitly in `.env` (see the commented example there).
 
 ### Using an existing or shared Postgres
 
-HealthLog can live in a database on a Postgres instance you already run.
+HealthLog can live in a database on a Postgres instance you already run,
+version 16 or newer; the compose file ships 18, and every release is tested
+on both.
 It stores every time as UTC and pins each connection it opens to UTC
 (`TimeZone=UTC`, sent with the libpq `options` startup parameter), so the
 server's or the database's own `timezone` setting does not matter: an
@@ -105,9 +107,12 @@ ALTER DATABASE healthlog SET timezone TO 'UTC';
 docker compose up -d
 ```
 
-Compose starts two services:
+Compose starts two services and one short-lived step:
 
-- `db` — PostgreSQL 16 with a named volume for persistence.
+- `db` — PostgreSQL 18 with a named volume for persistence.
+- `db-upgrade` — moves a Postgres 16 database from v1.45 or earlier into
+  the new one, once, and exits; on a new install it has nothing to do. See
+  [Moving to a newer Postgres major](../ops/postgres-major-upgrade.md).
 - `app` — HealthLog itself, listening on `localhost:3000`. The image
   runs `prisma migrate deploy` on boot so the schema lands
   automatically; subsequent restarts no-op when the database is

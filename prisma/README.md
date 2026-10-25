@@ -1,6 +1,6 @@
 # `prisma/`
 
-The database layer. HealthLog runs PostgreSQL 16 via Prisma 7. This directory holds the single schema file and the forward-only migration history; the generated client is emitted elsewhere.
+The database layer. HealthLog runs on PostgreSQL 18 (the compose default) or 16 via Prisma 7. This directory holds the single schema file and the forward-only migration history; the generated client is emitted elsewhere.
 
 ## Contents
 

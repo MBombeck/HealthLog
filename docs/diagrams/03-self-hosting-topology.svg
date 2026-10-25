@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" font-family="ui-sans-serif, -apple-system, Segoe UI, Roboto, sans-serif" role="img" aria-labelledby="title desc">
   <title id="title">HealthLog self-hosting topology</title>
-  <desc id="desc">Internet traffic terminates at a reverse proxy (Caddy, Traefik or Nginx) for TLS, then reaches the Next.js app on port 3000. The app shares a Postgres 16 database with the pg-boss worker process for reminders, insights, backups and the Apple Health import. GHCR ships the multi-arch image; Coolify watches the digest and pulls; off-host S3-compatible storage is optional for backups.</desc>
+  <desc id="desc">Internet traffic terminates at a reverse proxy (Caddy, Traefik or Nginx) for TLS, then reaches the Next.js app on port 3000. The app shares a Postgres 18 database with the pg-boss worker process for reminders, insights, backups and the Apple Health import. GHCR ships the multi-arch image; Coolify watches the digest and pulls; off-host S3-compatible storage is optional for backups.</desc>
 
   <rect x="0" y="0" width="1200" height="620" fill="#282a36" />
 
@@ -47,7 +47,7 @@
   <!-- Postgres (green) -->
   <g>
     <rect x="760" y="250" width="200" height="80" rx="10" fill="#44475a" stroke="#50fa7b" stroke-width="1.5" />
-    <text x="860" y="276" text-anchor="middle" fill="#f8f8f2" font-size="14" font-weight="600">PostgreSQL 16</text>
+    <text x="860" y="276" text-anchor="middle" fill="#f8f8f2" font-size="14" font-weight="600">PostgreSQL 18</text>
     <text x="860" y="296" text-anchor="middle" fill="#bd93f9" font-size="11">26 Prisma models</text>
     <text x="860" y="312" text-anchor="middle" fill="#6272a4" font-size="11">+ pg-boss queues</text>
   </g>

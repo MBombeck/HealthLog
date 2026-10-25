@@ -1,7 +1,7 @@
 # HealthLog on Portainer
 
 HealthLog ships a Portainer **app template** that deploys the app and its
-PostgreSQL 16 database as one stack from the project `docker-compose.yml`.
+PostgreSQL 18 database as one stack from the project `docker-compose.yml`.
 
 ## Add the template
 
@@ -39,7 +39,7 @@ curl -s http://<host>:3000/api/version
 
 ## Notes
 
-- Persistent state lives in one named volume (`pgdata`, the Postgres data dir);
+- Persistent state lives in one named volume (`postgres-data`, the Postgres data);
   the app container is stateless. Back up the database to back up everything.
 - Pin a release tag (`HEALTHLOG_IMAGE_REF=:vX.Y.Z`) for deliberate upgrades, or
   track `:latest`. Skim the
