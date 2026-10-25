@@ -154,11 +154,31 @@ it with `REINDEX INDEX CONCURRENTLY "<index>";` when the database is quiet.
   pattern as `0430` in v1.44.0 below: do not run the previous image beside
   the new schema. The sequence above stops the old container first; a
   web/worker split stops both roles before the first new container starts.
-- The other migrations add columns and one index (built concurrently).
-  Three touch rows: `0476` links API-written measurements to their token on
-  accounts that have exactly one measurement token, and `0478`/`0479` give
-  PDFs whose preview or text read failed one more attempt. On a prod-sized
-  copy all of them together finished in under a second.
+- Migration `0487` drops four columns from `app_settings`
+  (`encryption_key_backup_confirmed_at`, `_key_id`, `_fingerprint` and
+  `_by_user_id`) after carrying the confirmation they held into the new
+  `recovery_kit_confirmations` table. The previous image reads those columns
+  on nearly every request that loads the instance settings and fails once
+  they are gone, so the same rule holds: never run it beside the new schema.
+- The other migrations create tables (`0486`, `0487`), add columns
+  (`0480`, `0482`, `0483`, `0488`, `0489`) and build two indexes: `0477`
+  concurrently on `measurements`, `0488` without `CONCURRENTLY` on `users`,
+  which is small enough that the short lock does not matter. Three touch
+  rows: `0476` links API-written measurements to their token on accounts
+  that have exactly one measurement token, and `0478`/`0479` give PDFs whose
+  preview or text read failed one more attempt. On a prod-sized copy all of
+  them together finished in under a second.
+- **Rolling back to v1.45 while accounts are pending deletion.** v1.46 keeps
+  a deleted account, a deleted managed profile and a data wipe's copy for a
+  grace window (`0488`). v1.45 knows none of that: an account pending
+  deletion can sign in again with its password and every background job runs
+  for it again, nothing ever erases it, a wipe's off-host purge held to the
+  end of its window runs at once, and v1.45's wipe deletes the copies taken
+  before earlier wipes. Before going back, list the accounts with
+  `SELECT id, username, deletion_purge_at FROM users WHERE deletion_requested_at IS NOT NULL;`
+  and either undo each deletion in the admin users list or let the purge
+  finish them first; after coming forward again, delete any that should
+  still go.
 
 ### v1.45.0 notes
 
@@ -240,7 +260,11 @@ roll back:
    the column back via a fresh forward migration
    (`pnpm prisma migrate dev --create-only --name vX_Y_Z_rollback_<col>`),
    edit the SQL, commit, and re-deploy. Never `migrate resolve --rolled-back` against
-   production unless you've taken a fresh `pg_dump` first.
+   production unless you've taken a fresh `pg_dump` first. The columns each
+   release drops are named in its notes above: for v1.46.0 that is
+   `users.preview_features_json` (`0485`) and the four
+   `app_settings.encryption_key_backup_confirmed_*` columns (`0487`); the
+   key backup confirmation then has to be given again on v1.45.
 4. Rolling back from v1.40.2 or later to v1.40.1 or earlier: an account
    that saved the Coach lookback "Last year" reads its whole Coach
    preference blob as defaults on the older version, metric exclusions
