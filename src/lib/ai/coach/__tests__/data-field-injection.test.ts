@@ -20,6 +20,19 @@ import { resolve } from "node:path";
 
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
+// The labs module is on unless a test switches it off.
+const { labsModule } = vi.hoisted(() => ({ labsModule: { on: true } }));
+vi.mock("@/lib/modules/gate", async (importActual) => {
+  const actual = await importActual<typeof import("@/lib/modules/gate")>();
+  return {
+    ...actual,
+    isModuleEnabled: async (
+      userId: string,
+      key: Parameters<typeof actual.isModuleEnabled>[1],
+    ) => (key === "labs" ? labsModule.on : actual.isModuleEnabled(userId, key)),
+  };
+});
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     labResult: { findMany: vi.fn() },

@@ -404,6 +404,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "report-selection.body.invalid_shape",
       "report-selection.leaves.unknown",
     ],
+    request: ["request.cross_site"],
     route: ["route.retired"],
     search: ["search.invalid"],
     security_activity: ["security_activity.invalid"],

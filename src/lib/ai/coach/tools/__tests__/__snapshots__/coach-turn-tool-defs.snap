@@ -137,7 +137,7 @@
   },
   {
     "name": "get_labs",
-    "description": "Fetch the user's lab results over the whole record (or the user's lookback limit, when there is one): without arguments the latest reading per biomarker. Pass an analyte for how it changed over time: each matching marker then carries a history, the newest earlier values in full and older ones as one mean / min / max / count per year. Returns { present: false } with a reason — no_data means no labs are on file, outside_reach means they are older than the user's lookback limit.",
+    "description": "Fetch the user's lab results over the whole record (or the user's lookback limit, when there is one): without arguments the latest reading per biomarker. Pass an analyte for how it changed over time: each matching marker then carries a history, the newest earlier values in full and older ones as one mean / min / max / count per year. Returns { present: false } with a reason — no_data means no labs are on file, outside_reach means they are older than the user's lookback limit, module_disabled means the user switched the labs module off.",
     "parameters": {
       "type": "object",
       "additionalProperties": false,

@@ -5,7 +5,20 @@
  * audit asserts the model can always tell "no data" from "data".
  */
 import { DEFAULT_UNIT_PREFERENCES } from "@/lib/measurements/display-transform";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, onTestFinished } from "vitest";
+
+// The labs module is on unless a test switches it off.
+const { labsModule } = vi.hoisted(() => ({ labsModule: { on: true } }));
+vi.mock("@/lib/modules/gate", async (importActual) => {
+  const actual = await importActual<typeof import("@/lib/modules/gate")>();
+  return {
+    ...actual,
+    isModuleEnabled: async (
+      userId: string,
+      key: Parameters<typeof actual.isModuleEnabled>[1],
+    ) => (key === "labs" ? labsModule.on : actual.isModuleEnabled(userId, key)),
+  };
+});
 
 import type { CoachSnapshotResult } from "@/lib/ai/coach/snapshot";
 
@@ -267,6 +280,21 @@ describe("executeCoachTool", () => {
   // can cite the reading, not just name the biomarker. The snapshot labs block
   // already carries { analyte, value, unit, rangeStatus, … }; the tool passes
   // it through verbatim. This guards that the value + unit survive the tool.
+  it("get_labs answers module_disabled with the labs module off", async () => {
+    labsModule.on = false;
+    onTestFinished(() => {
+      labsModule.on = true;
+    });
+    buildCoachSnapshot.mockClear();
+    const result = await executeCoachTool({
+      userId: "u1",
+      name: "get_labs",
+      rawArguments: "{}",
+    });
+    expect(result).toMatchObject({ present: false, reason: "module_disabled" });
+    expect(buildCoachSnapshot).not.toHaveBeenCalled();
+  });
+
   it("get_labs carries each reading's value and unit (citation guarantee)", async () => {
     buildCoachSnapshot.mockResolvedValue(
       snapshot({

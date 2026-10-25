@@ -7,7 +7,12 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiSuccess, returnAllZodIssues, safeJson } from "@/lib/api-response";
+import {
+  apiSuccess,
+  returnAllZodIssues,
+  safeJson,
+  isJsonContentType,
+} from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { markDisconnected } from "@/lib/integrations/status";
@@ -23,7 +28,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   // The body is optional: no body is `{ deleteData: false }`.
   let body: unknown = {};
-  if (request.headers.get("content-type")?.includes("application/json")) {
+  if (isJsonContentType(request.headers.get("content-type"))) {
     const read = await safeJson(request, { maxBytes: 1024 });
     if (read.error) return read.error;
     body = read.data;

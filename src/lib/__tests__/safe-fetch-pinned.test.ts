@@ -73,6 +73,16 @@ function mockLookupTo(addresses: dns.LookupAddress[]): void {
 beforeAll(async () => {
   server = http.createServer((req, res) => {
     requestedPaths.push(req.url ?? "");
+    if (req.url === "/redirect-literal") {
+      res.writeHead(302, { location: `http://127.0.0.1:${port}/secret` });
+      res.end();
+      return;
+    }
+    if (req.url === "/redirect-public") {
+      res.writeHead(302, { location: `http://pinned.test:${port}/api` });
+      res.end();
+      return;
+    }
     if (req.url === "/redirect") {
       res.writeHead(302, {
         location: `http://redirect-target.test:${port}/api`,
@@ -190,6 +200,38 @@ describe("safeFetch pinned path — real transport", () => {
       deniedRedirectAddress,
     );
     expect(requestedPaths).toEqual(["/redirect"]);
+  }, 20_000);
+
+  it("checks a followed redirect to an IP literal, which the DNS pin never sees", async () => {
+    mockLookupTo([{ address: "127.0.0.1", family: 4 }]);
+    // The input-time floor, as it really decides for a literal: the harness
+    // host passes, the loopback literal the redirect names does not.
+    notificationMocks.isPublicUrl.mockImplementation(
+      (url: string) => !new URL(url).hostname.startsWith("127."),
+    );
+    requestedPaths.length = 0;
+
+    await expect(
+      safeFetch(
+        `http://pinned.test:${port}/redirect-literal`,
+        {},
+        { requirePublicHost: true, followRedirects: true, timeoutMs: 5000 },
+      ),
+    ).rejects.toMatchObject({ kind: "private_host" });
+    expect(requestedPaths).toEqual(["/redirect-literal"]);
+    notificationMocks.isPublicUrl.mockImplementation(() => true);
+  }, 20_000);
+
+  it("follows a redirect to a public host, one checked hop at a time", async () => {
+    mockLookupTo([{ address: "127.0.0.1", family: 4 }]);
+    requestedPaths.length = 0;
+    const res = await safeFetch(
+      `http://pinned.test:${port}/redirect-public`,
+      {},
+      { requirePublicHost: true, followRedirects: true, timeoutMs: 5000 },
+    );
+    expect(res.status).toBe(200);
+    expect(requestedPaths).toEqual(["/redirect-public", "/api"]);
   }, 20_000);
 
   it("streams a chunked response body via getReader() on the pinned path", async () => {

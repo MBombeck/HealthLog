@@ -325,3 +325,55 @@ describe("notification quick-answer token in the path", () => {
     );
   });
 });
+
+/**
+ * Prisma prints a failed call, arguments and all, into its error message and
+ * stack. Those went to the logs and to the operator's GlitchTip with a
+ * measurement's value or a note's text inside.
+ */
+describe("redactSecrets — a Prisma call's printed arguments", () => {
+  const message = [
+    "",
+    "Invalid `prisma.measurement.create()` invocation:",
+    "",
+    "{",
+    "  data: {",
+    '    type: "BLOOD_PRESSURE_SYS",',
+    "    value: 187,",
+    '    note: "felt dizzy after the argument",',
+    "+   userId: String",
+    "  }",
+    "}",
+    "",
+    "Argument `userId` is missing.",
+  ].join("\n");
+
+  it("keeps the call and the reason and drops the arguments", () => {
+    const out = redactSecrets(message);
+    expect(out).toContain("Invalid `prisma.measurement.create()` invocation");
+    expect(out).toContain("[query arguments removed]");
+    expect(out).toContain("Argument `userId` is missing.");
+    expect(out).not.toContain("187");
+    expect(out).not.toContain("dizzy");
+  });
+
+  it("keeps the stack frames after the arguments", () => {
+    const stack = `PrismaClientValidationError: ${message}\n    at Mn (/app/.next/server/chunks/1.js:1:2)\n    at async POST (/app/.next/server/app/api/measurements/route.js:3:4)`;
+    const out = redactSecrets(stack);
+    expect(out).not.toContain("dizzy");
+    expect(out).toContain("    at async POST");
+  });
+
+  it("drops a reason line that is not one of the field-naming forms", () => {
+    const out = redactSecrets(
+      'Invalid `prisma.note.update()` invocation in\n/app/x.js:1:1\n\n→ 1 prisma.note.update({ data: { text: "private" } })\n\nprivate text echoed back',
+    );
+    expect(out).not.toContain("private");
+  });
+
+  it("leaves every other message alone", () => {
+    expect(redactSecrets("plain failure at step 3")).toBe(
+      "plain failure at step 3",
+    );
+  });
+});

@@ -20,6 +20,7 @@ import {
 import { classifyAgainstEffectiveRange } from "@/lib/labs/reference-range";
 import { calendarDaysUntil } from "@/lib/measurement-reminders/due-day";
 import { resolveLabFields } from "@/lib/labs/serialise";
+import { isModuleEnabled } from "@/lib/modules/gate";
 import {
   readRollupBuckets,
   ROLLUP_FOLD_WINDOW_MS,
@@ -346,12 +347,15 @@ function sanitizeLabel(text: string, max = 80): string {
  * Most-recent reading per biomarker over the lookback window; hidden markers
  * excluded; qualitative rows neutral. Only abnormal (below/above) OR trending
  * markers surface, bounded. Returns `undefined` when nothing is flagged so the
- * block is omitted rather than emitting an empty shape.
+ * block is omitted rather than emitting an empty shape, and when the `labs`
+ * module is off, before any row is read: the briefing prompt never carries a
+ * switched-off domain.
  */
 export async function readLabsBriefingBlock(
   userId: string,
   now: number,
 ): Promise<AggregatedFeatures["labs"] | undefined> {
+  if (!(await isModuleEnabled(userId, "labs"))) return undefined;
   const nowDate = new Date(now);
   const cutoff = new Date(nowDate);
   cutoff.setMonth(cutoff.getMonth() - LABS_LOOKBACK_MONTHS);

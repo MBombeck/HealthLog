@@ -142,7 +142,7 @@ export async function loadShareViewData(
   // (report `null`, aggregator never called), so a disabled module collapses
   // the link to exactly the documents the owner attached. That is fail-closed
   // for the health record while keeping a public link from 500-ing. The
-  // documents themselves are a separate module and keep their own gate.
+  // documents themselves are a separate module with their own gate below.
   //
   // The whole map is resolved rather than the one key, because the per-leaf
   // verdicts below come off the same read. It is NOT handed to the aggregator:
@@ -168,7 +168,11 @@ export async function loadShareViewData(
     documentOnly
       ? Promise.resolve(null)
       : collectDoctorReportData(context.ownerUserId, range, selection),
-    loadShareDocuments(context),
+    // With the documents module off, the link lists no document, and the
+    // serve route (`/c/[token]/d/[id]`) answers 404 for each of them.
+    moduleMap.inboundDocuments === false
+      ? Promise.resolve([])
+      : loadShareDocuments(context),
   ]);
 
   return { report, selection, unavailableLeaves, documents, documentOnly };

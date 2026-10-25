@@ -14,11 +14,16 @@
  *
  * A place the account has signed in from before is not counted and not
  * blocked. "Before" means a remembered browser (the trusted-device cookie,
- * checked without being spent), a phone that presents the device id a login
- * of this account was issued to, or an address a session or device login of
- * this account was created from in the last thirty days. The guesser is by
- * definition somewhere the account has not signed in from; the owner mostly
- * is not. The per-IP limit still applies to every caller.
+ * checked without being spent) or a phone that presents the device id a
+ * login of this account was issued to. The guesser is by definition
+ * somewhere the account has not signed in from; the owner mostly is not. The
+ * per-IP limit still applies to every caller.
+ *
+ * An address the account signed in from used to count as such a place. An
+ * address is the one thing about a request a guesser can most easily claim:
+ * in a household or an office it is shared with the owner, and a caller that
+ * reached the server directly could name it in a forwarding header. Claiming
+ * it switched this whole throttle off.
  *
  * Everywhere else gets a growing wait instead of a wall. Five failures a day
  * cost nothing; after that each failure makes the next attempt wait twice as
@@ -46,15 +51,13 @@ const FAILURE_WINDOW_MS = 24 * 60 * 60 * 1000;
 export const BASE_WAIT_MS = 30 * 1000;
 /** No wait is ever longer than this. */
 export const MAX_WAIT_MS = 15 * 60 * 1000;
-/** How far back a sign-in from an address still makes it a known place. */
-const KNOWN_ADDRESS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 /**
  * The failure counter is read, not enforced, so its ceiling only has to be
  * out of reach; `limit - remaining` is the count.
  */
 const COUNTER_CEILING = 1_000_000;
 
-export type KnownSource = "trusted_device" | "device_id" | "address";
+export type KnownSource = "trusted_device" | "device_id";
 
 /**
  * Has this account signed in from where this request comes from? Read-only:
@@ -63,7 +66,6 @@ export type KnownSource = "trusted_device" | "device_id" | "address";
 export async function knownSignInSource(
   userId: string,
   request: Request,
-  ip: string | null,
 ): Promise<KnownSource | null> {
   const now = new Date();
 
@@ -90,21 +92,6 @@ export async function knownSignInSource(
       select: { id: true },
     });
     if (login) return "device_id";
-  }
-
-  if (ip) {
-    const since = new Date(now.getTime() - KNOWN_ADDRESS_WINDOW_MS);
-    const [session, login] = await Promise.all([
-      prisma.session.findFirst({
-        where: { userId, ipAddress: ip, createdAt: { gte: since } },
-        select: { id: true },
-      }),
-      prisma.refreshToken.findFirst({
-        where: { userId, ipAddress: ip, createdAt: { gte: since } },
-        select: { id: true },
-      }),
-    ]);
-    if (session || login) return "address";
   }
 
   return null;
@@ -138,12 +125,11 @@ export async function beginAccountLoginAttempt(args: {
   user: Pick<User, "id"> | null;
   identifier: string;
   request: Request;
-  ip: string | null;
 }): Promise<AccountLoginAttempt> {
-  const { user, identifier, request, ip } = args;
+  const { user, identifier, request } = args;
 
   if (user) {
-    const source = await knownSignInSource(user.id, request, ip);
+    const source = await knownSignInSource(user.id, request);
     if (source) {
       return { waiting: null, source, failed: noop, succeeded: noop };
     }

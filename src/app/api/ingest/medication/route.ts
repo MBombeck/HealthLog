@@ -186,17 +186,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const { medicationName, takenAt, idempotencyKey } = parsed.data;
 
-  // Idempotency check (scoped to token owner to prevent cross-user lookups)
-  const existing = await prisma.medicationIntakeEvent.findFirst({
-    where: {
-      idempotencyKey,
-      userId: apiToken.userId,
-    },
-  });
-  if (existing) {
-    return apiSuccess(existing);
-  }
-
   // Find medication by name for this user
   const medication = await prisma.medication.findFirst({
     where: {
@@ -206,16 +195,27 @@ export const POST = apiHandler(async (request: NextRequest) => {
     },
   });
 
-  if (!medication) {
-    return apiError("Medication not found", 404);
+  // A scoped token gets one answer for unknown and out-of-scope names; only a
+  // full-access token, which can list them anyway, learns a name is unknown.
+  const fullAccess = apiToken.permissions.includes("*");
+  if (
+    !medication ||
+    (!fullAccess &&
+      !apiToken.permissions.includes(`medication:${medication.id}:ingest`))
+  ) {
+    return !medication && fullAccess
+      ? apiError("Medication not found", 404)
+      : apiError("API endpoint for this medication is disabled", 403);
   }
 
-  const medicationScope = `medication:${medication.id}:ingest`;
-  if (
-    !apiToken.permissions.includes("*") &&
-    !apiToken.permissions.includes(medicationScope)
-  ) {
-    return apiError("API endpoint for this medication is disabled", 403);
+  // Replay after the scope check, for this medication only (key is per user).
+  const existing = await prisma.medicationIntakeEvent.findFirst({
+    where: { idempotencyKey, userId: apiToken.userId },
+  });
+  if (existing) {
+    return existing.medicationId === medication.id
+      ? apiSuccess(existing)
+      : apiError("Idempotency key already used for another medication", 409);
   }
 
   // A record-only medication takes no new dose — the same refusal every

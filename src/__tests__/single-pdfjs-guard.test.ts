@@ -26,9 +26,10 @@
  *     which is how the server finds it.
  *   - No runtime module under `src/` imports pdf-parse, and none imports
  *     pdfjs-dist (a type-only import included) except
- *     `src/lib/documents/pdfjs.ts`, so the text read and the rasterizer open
- *     documents with the same options. Comments are stripped first, so prose
- *     that names a package does not count.
+ *     `src/lib/documents/pdf-engine.mjs`, so the text read and the rasterizer
+ *     open documents with the same options, under the same image limit, in
+ *     the bounded child process. Comments are stripped first, so prose that
+ *     names a package does not count.
  *
  * It does not prove the image carries one copy; the Dockerfile hoists the
  * pinned version by name and the tracing glob can only find what the lockfile
@@ -49,7 +50,7 @@ import {
 
 const ROOT = process.cwd();
 /** Relative to `src/`. */
-const LOADER = "lib/documents/pdfjs.ts";
+const LOADER = "lib/documents/pdf-engine.mjs";
 
 const pkg = JSON.parse(readSourceText(join(ROOT, "package.json"))) as {
   dependencies?: Record<string, string>;

@@ -14,7 +14,20 @@
  * still surface the chip. The last assertion of each case is the one that
  * matters: `justIn` survives.
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, onTestFinished } from "vitest";
+
+// The labs module is on unless a test switches it off.
+const { labsModule } = vi.hoisted(() => ({ labsModule: { on: true } }));
+vi.mock("@/lib/modules/gate", async (importActual) => {
+  const actual = await importActual<typeof import("@/lib/modules/gate")>();
+  return {
+    ...actual,
+    isModuleEnabled: async (
+      userId: string,
+      key: Parameters<typeof actual.isModuleEnabled>[1],
+    ) => (key === "labs" ? labsModule.on : actual.isModuleEnabled(userId, key)),
+  };
+});
 
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { buildDailyDigest, type DailyDigestInput } from "@/lib/daily/digest";
@@ -334,6 +347,31 @@ describe("reaction line — degradation", () => {
       reason: "ungrounded_output",
     });
     expectSurfaceStillWorks();
+  });
+
+  it("gives the model no lab value once the labs module is off", async () => {
+    labsModule.on = false;
+    onTestFinished(() => {
+      labsModule.on = true;
+    });
+    labResultFindMany.mockResolvedValue([
+      { analyte: "LDL", value: 190, valueText: null, unit: "mg/dL" },
+    ]);
+    const generateCompletion = vi.fn().mockResolvedValue({
+      content: "A new lab panel arrived.",
+      tokensUsed: 300,
+      cachedInputTokens: 0,
+    });
+    resolveProviderChain.mockResolvedValue([
+      { providerType: "openai", instance: { generateCompletion } },
+    ]);
+
+    await runReactionLine({ ...JOB, kind: "labs_panel" });
+
+    expect(labResultFindMany).not.toHaveBeenCalled();
+    for (const [request] of generateCompletion.mock.calls) {
+      expect(JSON.stringify(request)).not.toContain("190");
+    }
   });
 
   it("fences free-text lab fields as data, never prompt instructions", async () => {

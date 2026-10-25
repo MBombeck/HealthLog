@@ -522,29 +522,36 @@ low-friction default.
 
 ## Deploy-status webhook: replay protection
 
-`POST /api/internal/deploy-webhook` authenticates via the static
-`X-Deploy-Webhook-Secret` header. Since v1.16.4 it additionally
-enforces a freshness window: a request carrying an
-`X-Deploy-Webhook-Timestamp` header (unix seconds, unix milliseconds,
-or ISO-8601) is rejected with `401 {"status":"stale"}` when the
-timestamp lies more than **5 minutes** from server time — so a captured
-request cannot be replayed later to re-page admins or forge deploy
-outcomes in the audit log.
+`POST /api/internal/deploy-webhook` accepts two kinds of request.
 
-Two modes:
+- **Secret header.** `X-Deploy-Webhook-Secret` carries the shared secret.
+  This is what Coolify's stock notification sender can do. It does not
+  protect against a replay: anyone who captures one request holds the
+  secret and can send any request they like. An `X-Deploy-Webhook-Timestamp`
+  beside it is still checked (a stale or unparseable one is refused with
+  `401 {"status":"stale"}`), but it is covered by nothing, so treat it as a
+  staleness hint. Versions before 1.46 described it as replay protection.
+- **Signature.** `X-Deploy-Webhook-Signature: sha256=<hex>` is the
+  HMAC-SHA256, under `DEPLOY_WEBHOOK_SECRET`, of the
+  `X-Deploy-Webhook-Timestamp` value, a dot, and the exact request body. The
+  timestamp (unix seconds, unix milliseconds or ISO-8601) must lie within
+  **5 minutes** of server time. A signed request sends no secret, and a
+  captured one is useless once the window has passed.
 
-- **Default (tolerant).** Requests _without_ the header pass — Coolify's
-  stock notification sender does not attach one. A header that is
-  present but stale or unparseable is always rejected.
-- **Strict.** Set `DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP=true` in the app
-  environment to make the header mandatory, closing the replay window
-  completely. Use this when the sender (or a reverse proxy in front of
-  the app) can attach the timestamp, e.g.:
+Set `DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP=true` to accept signed requests only.
+Use it when the sender, or a small relay in front of the app, can sign:
 
-  ```sh
-  curl -X POST https://<host>/api/internal/deploy-webhook \
-    -H "X-Deploy-Webhook-Secret: $SECRET" \
-    -H "X-Deploy-Webhook-Timestamp: $(date +%s)" \
-    -H "Content-Type: application/json" \
-    -d '{"status":"success"}'
-  ```
+```sh
+TS=$(date +%s)
+BODY='{"status":"success"}'
+SIG=$(printf '%s.%s' "$TS" "$BODY" \
+  | openssl dgst -sha256 -hmac "$SECRET" | sed 's/^.*= //')
+curl -X POST https://<host>/api/internal/deploy-webhook \
+  -H "X-Deploy-Webhook-Timestamp: $TS" \
+  -H "X-Deploy-Webhook-Signature: sha256=$SIG" \
+  -H "Content-Type: application/json" \
+  -d "$BODY"
+```
+
+Before 1.46 the strict setting accepted the secret header plus a fresh
+timestamp. Such a sender now gets 401 in strict mode and has to sign.

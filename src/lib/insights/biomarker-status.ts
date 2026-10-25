@@ -21,6 +21,7 @@
  * `insufficient` marker WITHOUT touching the provider chain.
  */
 import { prisma } from "@/lib/db";
+import { isModuleEnabled } from "@/lib/modules/gate";
 import { PROMPT_VERSION } from "@/lib/ai/prompts/base-system";
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 import {
@@ -129,6 +130,11 @@ export async function generateBiomarkerStatus(args: {
   if (!marker) {
     // Unknown / cross-user marker — degrade gracefully rather than throwing.
     return insufficient();
+  }
+  // With the labs module off no model writes about a marker, and text it
+  // wrote while the module was on is not served either.
+  if (!(await isModuleEnabled(args.userId, "labs"))) {
+    return { hasProvider: true, text: null, cached: false, updatedAt: null };
   }
 
   const prepared = await prepareBiomarkerStatus(marker, args);

@@ -99,6 +99,64 @@ function hasPrivateHostPolicyCause(error: unknown): boolean {
   );
 }
 
+/** Hops a followed redirect chain may take before it is refused. */
+const MAX_REDIRECTS = 5;
+
+/**
+ * Follow redirects one hop at a time, putting every new location through
+ * `isPublicUrl` before it is dialled.
+ *
+ * The pinned dispatcher vets an address in its DNS lookup, and Node never
+ * looks up an IP literal, so a redirect to `http://169.254.169.254/` would
+ * have been dialled without a check: the input-time `isPublicUrl` had only
+ * seen the first URL. A 301, 302 or 303 continues as a GET without a body,
+ * as fetch does; a 307 or 308 repeats the request only when it has no body
+ * to send again.
+ */
+async function followCheckingEachHop(
+  start: string,
+  init: RequestInit,
+  dispatcher: NonNullable<Parameters<typeof undiciFetch>[1]>["dispatcher"],
+): Promise<Response> {
+  let url = start;
+  let current: RequestInit = { ...init, redirect: "manual" };
+  for (let hop = 0; ; hop++) {
+    const res = (await undiciFetch(url, {
+      ...current,
+      dispatcher,
+    } as Parameters<typeof undiciFetch>[1])) as unknown as Response;
+    const location = res.headers.get("location");
+    if (res.status < 300 || res.status >= 400 || !location) return res;
+    void res.body?.cancel().catch(() => {});
+    if (hop >= MAX_REDIRECTS) {
+      throw new SafeFetchError(
+        "safeFetch followed too many redirects",
+        "network",
+      );
+    }
+    const next = new URL(location, url).toString();
+    if (!isPublicUrl(next)) {
+      throw new SafeFetchError(
+        "safeFetch refused a redirect to a private or non-public host",
+        "private_host",
+      );
+    }
+    if (res.status === 307 || res.status === 308) {
+      if (current.body != null) {
+        throw new SafeFetchError(
+          "safeFetch cannot repeat a request body across a redirect",
+          "network",
+        );
+      }
+    } else {
+      const { body: _body, ...rest } = current;
+      void _body;
+      current = { ...rest, method: "GET" };
+    }
+    url = next;
+  }
+}
+
 /**
  * Default-safe outbound fetch wrapper.
  *
@@ -217,6 +275,9 @@ export async function safeFetch(
       // locks the dispatcher and the fetch engine to one undici version.
       // The cast bridges undici's RequestInit (which carries `dispatcher`)
       // and its Response back to the DOM types this module exposes.
+      if (opts.requirePublicHost && redirect === "follow") {
+        return await followCheckingEachHop(target, finalInit, dispatcher);
+      }
       const res = await undiciFetch(target, {
         ...finalInit,
         dispatcher,
@@ -225,6 +286,7 @@ export async function safeFetch(
     }
     return await fetch(target, finalInit);
   } catch (err) {
+    if (err instanceof SafeFetchError) throw err;
     if (hasPrivateHostPolicyCause(err)) {
       throw new SafeFetchError(
         "safeFetch refused a private resolved destination",
