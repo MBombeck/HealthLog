@@ -23,6 +23,7 @@ import {
   tokenKitKeys,
   type KitEntry,
 } from "@/lib/recovery/kit-rules";
+import { fingerprintSecretText } from "@/lib/database-backup/dump-core.mjs";
 
 const NOW = new Date("2026-10-25T12:00:00Z");
 const DAY = 86_400_000;
@@ -163,10 +164,12 @@ describe("which keys the kit lists", () => {
   it("fingerprints the token key as the text the operator set", () => {
     const value = "x".repeat(40);
     const [token] = tokenKitKeys(value);
-    expect(token.fingerprint).toBe(
+    // Not a fast hash: a phrase must not be checkable against the kit.
+    expect(token.fingerprint).not.toBe(
       createHash("sha256").update(value).digest("hex").slice(0, 12),
     );
     expect(token.fingerprint).toBe(fingerprintText(value));
+    expect(token.fingerprint).toBe(fingerprintSecretText(value));
     expect(JSON.stringify(token)).not.toContain(value);
   });
 });

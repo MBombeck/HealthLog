@@ -3,7 +3,7 @@
  * stored confirmation covers, recording a confirmation, and "Check my copy".
  * The rules themselves are pure and live in `kit-rules.ts`.
  */
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
 import { prisma } from "@/lib/db";
 import { envValue } from "@/lib/env";
@@ -29,6 +29,9 @@ import {
   type KitKeyKind,
   type RecoveryKit,
 } from "@/lib/recovery/kit-rules";
+
+/** Keys the constant-time comparison below; never leaves the process. */
+const COMPARE_KEY = randomBytes(32);
 
 /** Every key the kit lists on this server right now, without a verdict. */
 export async function listKitKeys(
@@ -165,8 +168,11 @@ export function verifyKitKey(input: {
     case "token": {
       const configured = envValue("API_TOKEN_HMAC_KEY");
       if (!configured || input.id !== KIT_KEY_SOURCES.token) return false;
-      // Digests, so the comparison is constant time whatever the lengths.
-      const digest = (s: string) => createHash("sha256").update(s).digest();
+      // Keyed digests under a key of this process, so the comparison is
+      // constant time whatever the lengths and nothing derived from the
+      // secret outlives the call.
+      const digest = (s: string) =>
+        createHmac("sha256", COMPARE_KEY).update(s).digest();
       return timingSafeEqual(digest(value), digest(configured));
     }
   }

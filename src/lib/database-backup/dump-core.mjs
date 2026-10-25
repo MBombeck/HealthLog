@@ -26,7 +26,7 @@
  * writing still restores to exactly the counts it claims.
  */
 import { spawn } from "node:child_process";
-import { createDecipheriv, createHash } from "node:crypto";
+import { createDecipheriv, createHash, scryptSync } from "node:crypto";
 import {
   accessSync,
   closeSync,
@@ -453,6 +453,28 @@ export function fingerprintBytes(bytes) {
 }
 
 /**
+ * The public fingerprint of a secret an operator chose as text, such as
+ * `API_TOKEN_HMAC_KEY`. Unlike the encryption keys, which are 32 random bytes,
+ * such a value may be a phrase, and a fast hash of it shown on the admin page
+ * or written into a manifest in the bucket would let a guessed phrase be
+ * checked offline. scrypt makes every guess cost tens of milliseconds; the
+ * fixed salt keeps one fingerprint per value, which is what a fingerprint is
+ * for. `src/lib/recovery/kit-rules.ts` uses this same function.
+ *
+ * @param {string} value
+ */
+export function fingerprintSecretText(value) {
+  return scryptSync(value, "healthlog/secret-fingerprint/v1", 16, {
+    N: 2 ** 15,
+    r: 8,
+    p: 1,
+    maxmem: 64 * 1024 * 1024,
+  })
+    .toString("hex")
+    .slice(0, 12);
+}
+
+/**
  * @typedef {{
  *   encryption: {
  *     activeKeyId: string | null;
@@ -520,7 +542,7 @@ export function keyFingerprints(env = process.env) {
     backupEncryptionPreviousKeys: previous,
     // Used as a string by the app (`createHmac("sha256", key)`), so its
     // fingerprint is over the string's bytes.
-    apiTokenHmacKey: hmac ? fingerprintBytes(Buffer.from(hmac, "utf8")) : null,
+    apiTokenHmacKey: hmac ? fingerprintSecretText(hmac) : null,
   };
 }
 

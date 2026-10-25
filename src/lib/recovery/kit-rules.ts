@@ -28,12 +28,12 @@
  * hashed as the text the operator set, so `printf %s "$API_TOKEN_HMAC_KEY" |
  * sha256sum` reproduces it.
  */
-import { createHash } from "node:crypto";
 import { z } from "zod/v4";
 
 import { envValue } from "@/lib/env";
 import { decodeBackupKey, offhostKeyId } from "@/lib/jobs/offhost-key";
 import type { BackupKeyNeeds } from "@/lib/recovery/backup-key-needs";
+import { fingerprintSecretText } from "@/lib/database-backup/dump-core.mjs";
 
 /** Where the operator sets the keys; picks the tab the kit opens on. */
 export const KIT_PLATFORMS = [
@@ -127,9 +127,13 @@ export function resolvePlatformHint(
     : "compose";
 }
 
-/** The fingerprint rule for a key that is text rather than decoded bytes. */
+/**
+ * The fingerprint rule for a key that is text rather than decoded bytes: the
+ * slow one the dump manifest uses (`fingerprintSecretText`), so a phrase
+ * cannot be guessed from what the kit shows.
+ */
 export function fingerprintText(value: string): string {
-  return createHash("sha256").update(value, "utf8").digest("hex").slice(0, 12);
+  return fingerprintSecretText(value);
 }
 
 const kitEntrySchema = z.object({
