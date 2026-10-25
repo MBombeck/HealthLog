@@ -123,13 +123,15 @@ Set `SESSION_COOKIE_SECURE=true` (or leave it unset) only when a TLS reverse
 proxy serves HealthLog over HTTPS. In that case also point `NEXT_PUBLIC_APP_URL`
 and `APP_URL` at the public `https://` URL.
 
-## Back up your encryption key
+## Save the recovery kit
 
-Copy `ENCRYPTION_KEY` from the template into your password manager, then
-confirm it under Admin, Encryption (set `HEALTHLOG_PLATFORM=unraid` so the step
-opens on the Unraid instructions). A reinstall with a new key over the old
-database makes the data unreadable; HealthLog then refuses to serve and says
-so. See [Getting started](getting-started.md#back-up-your-encryption-key).
+Copy `ENCRYPTION_KEY`, `API_TOKEN_HMAC_KEY` and, with off-host copies,
+`BACKUP_ENCRYPTION_KEY` from the template into your password manager, then
+confirm the recovery kit under Admin, Encryption (set
+`HEALTHLOG_PLATFORM=unraid` so the kit opens on the Unraid instructions). A
+reinstall with a new key over the old database makes the data unreadable;
+HealthLog then refuses to serve and says so. See
+[Getting started](getting-started.md#save-the-recovery-kit).
 
 ## Updates
 

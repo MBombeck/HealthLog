@@ -270,14 +270,35 @@ ps` — the `app` healthcheck polls `/api/health` every 30 seconds
   `pull_policy: always` on the `app` service, and verify the running
   build with `GET /api/version` (it returns `version` + `buildSha`).
 
-## Back up your encryption key
+## Save the recovery kit
 
-`ENCRYPTION_KEY` (or the `ENCRYPTION_KEYS` map) is not stored in the database.
-Without it, the encrypted parts of the database and every in-database backup
-cannot be read. Keep a copy outside the server, then confirm it under Admin,
-Encryption: the step shows the key id and a fingerprint (the first 12 hex
-characters of SHA-256 over the key) and can check a pasted copy without
-storing it. Admins see a dashboard reminder until the active key is confirmed.
+No key HealthLog encrypts with is stored in the database. Without them the
+encrypted parts of the database, a database dump and every backup copy cannot
+be read. The recovery kit under Admin, Encryption lists every key a restore of
+this server needs:
+
+- `ENCRYPTION_KEY` (or each id in the `ENCRYPTION_KEYS` map), including a
+  retired id for as long as a stored or off-host backup copy still needs it;
+- `BACKUP_ENCRYPTION_KEY` and any `BACKUP_ENCRYPTION_PREVIOUS_KEYS`, when
+  off-host copies are set up;
+- `API_TOKEN_HMAC_KEY`, without which every session, token and share link ends
+  (no data is lost).
+
+Each key is shown by id and a fingerprint (the first 12 hex characters of
+SHA-256 over the key), never the key itself, and **Check my copy** compares a
+pasted copy without storing it. Keep a copy of each outside the server, then
+confirm the kit. Admins see a dashboard reminder until it is confirmed, and the
+kit is due again whenever a key it needs changes: a rotation, a new backup
+key, a re-keyed install. The kit also links the
+[disaster recovery guide](../ops/disaster-recovery.md).
+
+The **Recovery readiness** card on the admin overview and the Backups page
+judges every backup signal in one place: the database dump, the weekly account
+copies, the off-host copies, the last restore drill, whether off-host copies
+are set up, and the recovery kit. An hourly check sends each admin a
+**Backup health** notification when a signal turns to "needs attention" or "at
+risk", once a day while it stays at risk, and once when it recovers. Route or
+switch it off per channel under Notifications.
 
 | Platform  | Where the key is set                                                                               |
 | --------- | -------------------------------------------------------------------------------------------------- |
@@ -288,12 +309,13 @@ storing it. Admins see a dashboard reminder until the active key is confirmed.
 | Portainer | the stack's Environment variables                                                                  |
 
 Set `HEALTHLOG_PLATFORM` (`compose`, `truenas`, `coolify`, `unraid`,
-`portainer`) to open the step on your platform's instructions.
+`portainer`) to open the kit on your platform's instructions.
 
-To compute the fingerprint of your copy:
+To compute the fingerprint of your copy of a hex key, and of the token key:
 
 ```bash
 echo -n "<your key>" | xxd -r -p | sha256sum | cut -c1-12
+printf %s "<API_TOKEN_HMAC_KEY>" | sha256sum | cut -c1-12
 ```
 
 **HealthLog refuses to serve: encryption key does not match this database.**
