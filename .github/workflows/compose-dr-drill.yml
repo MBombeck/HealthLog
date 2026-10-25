@@ -1,0 +1,61 @@
+name: Disaster recovery drill
+
+# Rebuilds a lost server from the nightly database dump and the keys alone,
+# against real containers: the app image built from this checkout, the
+# bundled compose file, the demo seed plus a Guardian with a managed profile,
+# the dump taken by the scheduled job, every volume destroyed, a new stack,
+# `docker compose run --rm db-restore latest`, and the app booted on the
+# result (health, login, an encrypted note, a document, the Guardian's
+# profile, every table's row count against the manifest).
+# `scripts/compose-dr-drill.sh` is the same drill, runnable locally; its
+# header lists what it checks and the mutations that must turn it red.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - docker-compose.yml
+      - Dockerfile
+      - docker-entrypoint.sh
+      - scripts/compose-dr-drill.sh
+      - scripts/dr-drill-seed.ts
+      - scripts/db-dump.mjs
+      - scripts/db-restore.mjs
+      - scripts/pending-migrations.mjs
+      - src/lib/database-backup/**
+      - src/lib/jobs/database-backup-queue.ts
+      - src/lib/jobs/reminder/backup-handlers.ts
+      - .github/workflows/compose-dr-drill.yml
+  schedule:
+    # Nightly, 02:41 UTC: off the hour, after the evening merges.
+    - cron: "41 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: compose-dr-drill-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  drill:
+    name: Restore a lost server from its dump
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # The seed scripts run from the checkout against the drill's database.
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+
+      - name: Drill
+        run: bash scripts/compose-dr-drill.sh
