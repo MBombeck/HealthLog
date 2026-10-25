@@ -44,6 +44,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_ROOT = resolve(__dirname, "..", "..");
 
+// The compose file ships Postgres 16; INTEGRATION_PG_IMAGE runs the same
+// suite against another major (the TrueNAS app defaults to 18).
+const POSTGRES_IMAGE =
+  process.env.INTEGRATION_PG_IMAGE?.trim() || "postgres:16-alpine";
+
 let started: StartedPostgreSqlContainer | null = null;
 
 declare module "vitest" {
@@ -56,7 +61,7 @@ declare module "vitest" {
 export default async function setup(
   project: TestProject,
 ): Promise<() => Promise<void>> {
-  let container = new PostgreSqlContainer("postgres:16-alpine")
+  let container = new PostgreSqlContainer(POSTGRES_IMAGE)
     .withDatabase(TEMPLATE_DATABASE)
     .withUsername("healthlog")
     .withPassword("healthlog")
