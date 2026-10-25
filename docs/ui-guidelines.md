@@ -311,7 +311,7 @@ Tiles at the top of the dashboard live in a **single row**. Width caps
 at the chart's width directly below. **Never** wrap to a second row.
 
 If the user enables more tiles than fit, the dashboard surfaces a banner
-inviting them to deactivate or reorder via Settings → Dashboard. The
+inviting them to deactivate or reorder via Settings → Arrangement. The
 layout editor in Settings shows a live preview of the constraint and
 flags overflow before save.
 

@@ -9,6 +9,8 @@
  * both sides a route-handler-independent shared type home; the route
  * keeps owning the HTTP contract, the component keeps owning the UI.
  */
+import type { DatabaseBackupHealth } from "@/lib/database-backup/health";
+import type { OffhostLifecycle } from "@/lib/jobs/offhost-lifecycle";
 import type { BackupPassActivity } from "@/lib/jobs/backup-pass-attempts";
 import type { BackupScheduleStatus } from "@/lib/jobs/backup-schedule-status";
 import type { OffhostBackupFreshness } from "@/lib/jobs/offhost-backup-freshness";
@@ -76,10 +78,7 @@ export interface OffhostBackupOverview {
    * (`GetBucketLifecycleConfiguration`), cached for ten minutes; `unknown`
    * when the credential may not read it.
    */
-  lifecycle: {
-    state: "configured" | "missing" | "unknown";
-    expirationDays: number | null;
-  };
+  lifecycle: OffhostLifecycle;
 }
 
 export interface BackupsList {
@@ -101,6 +100,12 @@ export interface BackupsList {
    * the operator's bucket, and those two fail independently.
    */
   offhost: OffhostBackupOverview;
+  /**
+   * The nightly whole-database dump, the copy that rebuilds a lost server:
+   * the newest good dump (kept here, off-host, or both), the newest failed
+   * run, and whether this server can keep dumps at all.
+   */
+  database: DatabaseBackupHealth;
   /**
    * Soft retention hint — the worker is configured for weekly backups
    * (see `DATA_BACKUP_CRON` in `src/lib/jobs/reminder-worker.ts`), and

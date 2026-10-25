@@ -510,6 +510,52 @@ describe("get_illness_recovery — condition body site", () => {
 });
 
 describe("get_labs", () => {
+  it.each([{}, { analyte: "LDL" }])(
+    "declares empty-read availability for ordinary and filtered reads: %j",
+    async (args) => {
+      const { z } = await import("zod/v4");
+      const empty = {
+        present: false,
+        reason: "out_of_window",
+        searchedWindow: "lastYear",
+        available: {
+          count: 2,
+          firstDate: "2020-01-01",
+          lastDate: "2020-01-02",
+          reachableWithWindow: null,
+        },
+      };
+      vi.mocked(executeCoachTool).mockResolvedValue(empty);
+      const def = tool("get_labs");
+      const result = await def.run(CTX, args);
+      expect(executeCoachTool).toHaveBeenCalledWith({
+        userId: CTX.userId,
+        name: "get_labs",
+        rawArguments: JSON.stringify(args),
+      });
+      expect(z.object(def.outputShape!).strict().parse(result)).toEqual(empty);
+    },
+  );
+
+  it("keeps output validation closed and availability typed", async () => {
+    const { z } = await import("zod/v4");
+    const schema = z.object(tool("get_labs").outputShape!).strict();
+    expect(z.toJSONSchema(schema).additionalProperties).toBe(false);
+    expect(schema.safeParse({ present: false, unexpected: true }).success).toBe(
+      false,
+    );
+    expect(
+      schema.safeParse({ present: false, searchedWindow: 7 }).success,
+    ).toBe(false);
+    expect(
+      schema.safeParse({ present: false, available: { count: "2" } }).success,
+    ).toBe(false);
+    expect(schema.parse({ present: false, reason: "no_data" })).toEqual({
+      present: false,
+      reason: "no_data",
+    });
+  });
+
   it("forwards the optional analyte filter and returns readings with units + bands", async () => {
     vi.mocked(executeCoachTool).mockResolvedValue({
       present: true,

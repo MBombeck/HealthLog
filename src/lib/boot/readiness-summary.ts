@@ -19,6 +19,13 @@ import {
   LEGACY_ANY_HOST_WARNING,
   legacyAnyHostConfigured,
 } from "@/lib/ai/local-host-allowlist";
+import {
+  databaseBackupEnabled,
+  isWritableDirectory,
+  resolveBackupDir,
+  resolveBackupSchedule,
+  resolveDailyKeep,
+} from "@/lib/database-backup/dump-core.mjs";
 
 export interface ReadinessLine {
   /** Short label, e.g. "ENCRYPTION_KEY". */
@@ -60,8 +67,73 @@ function anySet(env: Env, keys: string[]): boolean {
   return keys.some((k) => (env[k] ?? "").trim().length > 0);
 }
 
-/** Inspect the environment and build the readiness report. Pure + side-effect free. */
-export function collectReadiness(env: Env = process.env): ReadinessReport {
+/**
+ * The nightly database dump's line. The dump is what rebuilds a lost server,
+ * so a host where it cannot be kept anywhere is said out loud at every boot,
+ * and so is one where it only goes off-host.
+ */
+export function databaseBackupReadiness(
+  env: Env,
+  writable: (dir: string) => boolean,
+): ReadinessLine[] {
+  const label = "Database dump";
+  if (!databaseBackupEnabled(env)) {
+    return [
+      {
+        label,
+        status: "warn",
+        detail:
+          "DB_BACKUP_ENABLED=false: no nightly database dump is taken; back the database up another way",
+      },
+    ];
+  }
+  const lines: ReadinessLine[] = [];
+  const schedule = resolveBackupSchedule(env);
+  if (!schedule.valid) {
+    lines.push({
+      label: "DB_BACKUP_SCHEDULE",
+      status: "warn",
+      detail: `not a five-field cron; using ${schedule.cron}`,
+    });
+  }
+  const dir = resolveBackupDir(env);
+  const offhost = allSet(env, [
+    "BACKUP_S3_ENDPOINT",
+    "BACKUP_S3_BUCKET",
+    "BACKUP_S3_ACCESS_KEY",
+    "BACKUP_S3_SECRET_KEY",
+    "BACKUP_ENCRYPTION_KEY",
+  ]);
+  if (writable(dir)) {
+    lines.push({
+      label,
+      status: "ok",
+      detail: `nightly (${schedule.cron}) into ${dir}, keeping ${resolveDailyKeep(env)}${offhost ? ", copied off-host" : ""}`,
+    });
+  } else if (offhost) {
+    lines.push({
+      label,
+      status: "warn",
+      detail: `${dir} is not writable: the nightly dump goes off-host only and none is kept on this server. Mount the backups volume (see docker-compose.yml) or set DB_BACKUP_DIR`,
+    });
+  } else {
+    lines.push({
+      label,
+      status: "warn",
+      detail: `${dir} is not writable and no off-host bucket is configured: no database dump can be taken. Mount the backups volume (see docker-compose.yml) or set DB_BACKUP_DIR`,
+    });
+  }
+  return lines;
+}
+
+/**
+ * Inspect the environment and build the readiness report. Pure apart from
+ * `writable`, the probe of the dump directory, which tests replace.
+ */
+export function collectReadiness(
+  env: Env = process.env,
+  writable: (dir: string) => boolean = isWritableDirectory,
+): ReadinessReport {
   const lines: ReadinessLine[] = [];
 
   // --- Core secrets (boot blockers) ---------------------------------------
@@ -138,6 +210,8 @@ export function collectReadiness(env: Env = process.env): ReadinessReport {
       detail: LEGACY_ANY_HOST_WARNING,
     });
   }
+
+  lines.push(...databaseBackupReadiness(env, writable));
 
   // --- Optional subsystems (informational) --------------------------------
   const optional: Array<[string, boolean]> = [

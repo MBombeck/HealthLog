@@ -1,7 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider } from "@/lib/i18n/context";
+
+const record = vi.hoisted(() => ({ inSharedRecord: false }));
+vi.mock("@/hooks/use-record-capabilities", () => ({
+  useRecordCapabilities: () => ({ inSharedRecord: record.inSharedRecord }),
+}));
 import type { DocumentSuggestionDto } from "@/lib/validations/inbound-documents";
 import { DocumentAiSection } from "../document-ai-section";
 

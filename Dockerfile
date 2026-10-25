@@ -77,7 +77,13 @@ FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb
 # security patches from the Alpine repo override it deliberately —
 # CVE-2026-14456 in openssl was the first instance the container scan
 # caught between base-image rebuilds).
-RUN apk add --no-cache tzdata && apk upgrade --no-cache
+#
+# `postgresql18-client` carries `pg_dump` and `pg_restore` for the nightly
+# database dump, the pre-migration dump in the entrypoint and the
+# `db-restore` service (docs/ops/disaster-recovery.md). Major 18 matches the
+# bundled database; a client dumps servers of its own major and older, so it
+# also serves an install still on its own Postgres 16.
+RUN apk add --no-cache tzdata postgresql18-client && apk upgrade --no-cache
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -110,6 +116,13 @@ ENV NEXT_PUBLIC_APP_BUILD_SHA=$NEXT_PUBLIC_APP_BUILD_SHA
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
+
+# Where the database dumps go (`DB_BACKUP_DIR`). Owned by the app user, so a
+# fresh named volume mounted here starts with that owner: Docker fills an
+# empty named volume from the image directory it covers, ownership included.
+RUN mkdir -p /var/lib/healthlog/backups && \
+    chown nextjs:nodejs /var/lib/healthlog/backups && \
+    chmod 700 /var/lib/healthlog/backups
 
 # Copy built assets
 COPY --from=builder /app/public ./public
@@ -233,11 +246,16 @@ COPY --from=builder /app/src/generated ./src/generated
 # the runbooks and the entrypoint against this list. `pending-migrations.mjs`
 # and `migrate-deploy.mjs` are the entrypoint's own: the first logs the
 # pending migration count, the second runs `migrate deploy` with its
-# lock-timeout retry. Root-owned on purpose: the app user can run them but not
-# rewrite them.
+# lock-timeout retry. `db-dump.mjs` takes the dump before migrating, and
+# `db-restore.mjs` is the `db-restore` service; both share
+# `src/lib/database-backup/dump-core.mjs` with the app. Root-owned on purpose:
+# the app user can run them but not rewrite them.
 COPY --from=builder /app/scripts/reset-password.mjs ./scripts/reset-password.mjs
 COPY --from=builder /app/scripts/pending-migrations.mjs ./scripts/pending-migrations.mjs
 COPY --from=builder /app/scripts/migrate-deploy.mjs ./scripts/migrate-deploy.mjs
+COPY --from=builder /app/scripts/db-dump.mjs ./scripts/db-dump.mjs
+COPY --from=builder /app/scripts/db-restore.mjs ./scripts/db-restore.mjs
+COPY --from=builder /app/src/lib/database-backup/dump-core.mjs ./src/lib/database-backup/dump-core.mjs
 COPY --from=builder /app/src/lib/auth/argon2-params.mjs ./src/lib/auth/argon2-params.mjs
 COPY --from=builder /app/scripts/repair-intake-anomalies.ts ./scripts/repair-intake-anomalies.ts
 # Prove the reset CLI's imports resolve in this tree: with every import found
@@ -247,6 +265,14 @@ RUN node scripts/reset-password.mjs 2>&1 | grep -q "reset-password: usage:"
 RUN env -u DATABASE_URL node scripts/pending-migrations.mjs && \
     node --input-type=module -e "await import('pg')" && \
     node --input-type=module -e "await import('./scripts/migrate-deploy.mjs')"
+# The dump and restore scripts load, the client tools they run are the
+# major the bundled database runs, and the S3 client `db-restore --from-bucket`
+# loads resolves from the shared module's place in the tree.
+RUN node scripts/db-dump.mjs 2>&1 | grep -q "db-dump: usage:" && \
+    node --input-type=module -e "import { createRequire } from 'node:module'; createRequire('/app/src/lib/database-backup/dump-core.mjs').resolve('@aws-sdk/client-s3')" && \
+    node scripts/db-restore.mjs 2>&1 | grep -q "db-restore: usage:" && \
+    pg_dump --version | grep -q "(PostgreSQL) 18\." && \
+    pg_restore --version | grep -q "(PostgreSQL) 18\."
 
 # Install the migration CLI, its config dependency, and a pinned launcher for
 # the maintenance scripts already shipped in the standalone tree. The Prisma

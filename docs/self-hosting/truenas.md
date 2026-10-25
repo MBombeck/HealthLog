@@ -49,9 +49,10 @@ HealthLog behind a reverse proxy with its own domain, change App URL to that
 
 Settings the form does not show go under Additional Environment Variables, for
 example `UPDATE_CHECK_DISABLED=1`. The full list is in
-[environment.md](environment.md). To use your own GeoLite2 databases, add the
-directory under Additional Storage and point `GEOLITE2_DIR` at its mount path
-([geolite2.md](geolite2.md)).
+[`.env.production.example`](../../.env.production.example) and on the
+[environment variables reference](https://docs.healthlog.dev/reference/environment-variables/).
+To use your own GeoLite2 databases, add the directory under Additional Storage
+and point `GEOLITE2_DIR` at its mount path ([geolite2.md](geolite2.md)).
 
 ## Plain HTTP on the LAN
 
@@ -207,15 +208,15 @@ before you touch it.
 Until the catalog app is listed, install HealthLog with Apps, Discover Apps,
 the menu next to Custom App, Install via YAML, using these values:
 
-| Setting      | Value                                                                                    |
-| ------------ | ---------------------------------------------------------------------------------------- |
-| Image        | `ghcr.io/mbombeck/healthlog`, tag `X.Y.Z` (amd64 and arm64)                              |
-| Port         | `3000` (HTTP)                                                                            |
-| User         | runs as uid `1001` by default; no extra capabilities, `no-new-privileges` is fine        |
-| Health check | `GET /api/health`, `200` when ready                                                      |
-| Start period | at least 60 s, with more retries than the image's 5 × 30 s: migrations run at every boot |
-| Database     | PostgreSQL 18 (16 works too), no extensions, in its own container with its own dataset   |
-| Volumes      | none for the app; the database gets its own dataset                                      |
+| Setting      | Value                                                                                  |
+| ------------ | -------------------------------------------------------------------------------------- |
+| Image        | `ghcr.io/mbombeck/healthlog`, tag `X.Y.Z` (amd64 and arm64)                            |
+| Port         | `3000` (HTTP)                                                                          |
+| User         | runs as uid `1001` by default; no extra capabilities, `no-new-privileges` is fine      |
+| Health check | `GET /api/health`, `200` when ready                                                    |
+| Start period | 10 min, like the image: migrations run at every boot and wait out a held lock          |
+| Database     | PostgreSQL 18 (16 works too), no extensions, in its own container with its own dataset |
+| Volumes      | none for the app; the database gets its own dataset                                    |
 
 | Variable                | Required | Notes                                                                                    |
 | ----------------------- | -------- | ---------------------------------------------------------------------------------------- |

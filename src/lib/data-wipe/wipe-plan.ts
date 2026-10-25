@@ -359,6 +359,8 @@ export const INSTANCE_SCOPED: Readonly<Record<string, string>> = {
     "per backup signal, what the admins were last told; a fact about the instance's backups, not about any account",
   RecoveryKitConfirmation:
     "the instance's recovery kit confirmation (key ids and fingerprints); the confirming admin is a plain id, not a relation",
+  DatabaseBackupRun:
+    "the instance's ledger of nightly whole-database dumps; describes the server, not any account",
   OffhostPurgeRequest:
     "the deletions an account deletion or wipe asked of the off-host bucket; written by the wipe itself and removed once the bucket holds nothing of the account",
   CycleSymptomCategory:

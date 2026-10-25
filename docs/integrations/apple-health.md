@@ -295,7 +295,7 @@ Concrete consequences:
 RMSSD HRV has its own ladder, **WHOOP ≻ OURA ≻ POLAR ≻ APPLE_HEALTH**,
 separate from the SDNN one.
 
-Override per-user via Settings → Sources (`/settings/sources`).
+Override per-user via Settings → Source priority (`/settings/sources`).
 
 ## Failure modes
 

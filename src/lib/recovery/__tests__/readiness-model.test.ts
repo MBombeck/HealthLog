@@ -48,6 +48,7 @@ function dump(
   return {
     enabled: true,
     directory: "/data/db-backups",
+    keepNightly: 7,
     localDirWritable: true,
     offhostConfigured: false,
     lastGood: lastGoodAt

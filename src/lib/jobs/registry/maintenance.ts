@@ -1,5 +1,6 @@
 /**
- * The housekeeping queues: backups (weekly in-database, nightly off-host),
+ * The housekeeping queues: backups (the nightly whole-database dump, weekly
+ * in-database account copies, nightly off-host),
  * the restore drill and restores, every ledger and retention cleanup, the
  * medication maintenance passes, the imports (Apple Health, Health Connect,
  * medication intake), the converging encryption backfills, the document vault
@@ -47,6 +48,11 @@ import {
   DATA_BACKUP_QUEUE,
   DATA_BACKUP_SEND_OPTIONS,
 } from "@/lib/jobs/data-backup-policy";
+import {
+  DATABASE_BACKUP_CRON,
+  DATABASE_BACKUP_QUEUE,
+  DATABASE_BACKUP_SEND_OPTIONS,
+} from "@/lib/jobs/database-backup-queue";
 import {
   DAWARICH_SYNC_CRON,
   DAWARICH_SYNC_QUEUE,
@@ -303,6 +309,16 @@ const jobs: readonly JobDefinition[] = [
     lock: () => WHOLE_PASS,
     lane: true,
     load: async () => (await backups()).handleDataBackup,
+  }),
+  // The whole-database dump: the copy that rebuilds a lost server. Locked, so
+  // a retry that starts while a run is still dumping waits its turn.
+  defineJob({
+    queue: DATABASE_BACKUP_QUEUE,
+    cron: DATABASE_BACKUP_CRON,
+    scheduleOptions: DATABASE_BACKUP_SEND_OPTIONS,
+    work: { localConcurrency: 1 },
+    lock: () => WHOLE_PASS,
+    load: async () => (await backups()).handleDatabaseBackup,
   }),
   prune(
     RATE_LIMIT_CLEANUP_QUEUE,

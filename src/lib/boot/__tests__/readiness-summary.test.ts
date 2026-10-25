@@ -149,3 +149,56 @@ describe("collectReadiness — retired AI grant", () => {
     expect(lineFor(baseEnv(), "ALLOW_LOCAL_AI_PRIVATE_HOSTS")).toBeUndefined();
   });
 });
+
+describe("collectReadiness — the database dump", () => {
+  const offhost = {
+    BACKUP_S3_ENDPOINT: "https://s3.example.test",
+    BACKUP_S3_BUCKET: "b",
+    BACKUP_S3_ACCESS_KEY: "a",
+    BACKUP_S3_SECRET_KEY: "s",
+    BACKUP_ENCRYPTION_KEY: HEX32,
+  };
+  const dumpLine = (
+    env: Record<string, string | undefined>,
+    writable: boolean,
+  ) =>
+    collectReadiness(env, () => writable).lines.find(
+      (l) => l.label === "Database dump",
+    );
+
+  it("names the schedule, the directory and the copies kept", () => {
+    const line = dumpLine(baseEnv(), true);
+    expect(line?.status).toBe("ok");
+    expect(line?.detail).toBe(
+      "nightly (30 1 * * *) into /var/lib/healthlog/backups, keeping 7",
+    );
+    expect(dumpLine({ ...baseEnv(), ...offhost }, true)?.detail).toContain(
+      "copied off-host",
+    );
+  });
+
+  it("warns when nothing can be kept on the server", () => {
+    expect(dumpLine({ ...baseEnv(), ...offhost }, false)).toMatchObject({
+      status: "warn",
+      detail: expect.stringContaining("goes off-host only"),
+    });
+    expect(dumpLine(baseEnv(), false)).toMatchObject({
+      status: "warn",
+      detail: expect.stringContaining("no database dump can be taken"),
+    });
+  });
+
+  it("warns when it is switched off, and names a schedule it ignored", () => {
+    expect(
+      dumpLine({ ...baseEnv(), DB_BACKUP_ENABLED: "false" }, true),
+    ).toMatchObject({ status: "warn" });
+    const report = collectReadiness(
+      { ...baseEnv(), DB_BACKUP_SCHEDULE: "nightly" },
+      () => true,
+    );
+    expect(
+      report.lines.find((l) => l.label === "DB_BACKUP_SCHEDULE")?.detail,
+    ).toBe("not a five-field cron; using 30 1 * * *");
+    expect(report.hasBlocker).toBe(false);
+  });
+});

@@ -17,9 +17,13 @@ notes, and machine-readable specs that ship alongside the source:
   encryption-key rotation, password reset and account recovery, env
   checks, TLS pinning, data repair. These are what an operator reaches
   for during an incident.
-- [`self-hosting/`](./self-hosting/) — horizontal-scaling notes
-  (`HEALTHLOG_PROCESS_TYPE=web|worker|all`) and the deploy-pipeline
-  recipe. Routine install steps stay on `docs.healthlog.dev`. Includes
+- [`self-hosting/`](./self-hosting/) — operator notes next to the code:
+  [`getting-started.md`](./self-hosting/getting-started.md) (install and
+  updates, the page the boot log points at), the TrueNAS, Unraid and
+  Portainer installs with their catalog templates, Tailscale, the reverse
+  proxy, horizontal scaling (`HEALTHLOG_PROCESS_TYPE=web|worker|all`),
+  notification channels, the environment module, document sources and
+  reproductive-health data. Includes
   [`self-hosting/mcp.md`](./self-hosting/mcp.md) — enabling the
   off-by-default MCP connector and pointing Claude.ai / ChatGPT /
   Claude Desktop at it, and [`self-hosting/sso.md`](./self-hosting/sso.md)
@@ -44,9 +48,11 @@ notes, and machine-readable specs that ship alongside the source:
 - [`migration/`](./migration/) — migration notes. Currently only
   v1.3 to v1.4; later releases are covered by `CHANGELOG.md` and
   <https://docs.healthlog.dev>.
-- [`integrations/`](./integrations/) — per-integration reference
-  (Withings, Fitbit, Google Health, WHOOP, Apple Health, AI providers,
-  data import).
+- [`integrations/`](./integrations/) — per-integration reference:
+  Withings, WHOOP, Fitbit, Google Health, Strava, Nightscout, Dawarich and
+  the Garmin route; the Apple Health, Health Connect, document and data
+  imports; AI providers; and Home Assistant with its blueprint. Oura and
+  Polar are covered on the docs site only.
 - [`adr/`](./adr/) — architecture decision records.
 - [`security/`](./security/) — threat-model notes.
 - [`diagrams/`](./diagrams/) — architecture diagrams rendered through
@@ -70,4 +76,4 @@ notes, and machine-readable specs that ship alongside the source:
 
 If you're a self-hoster looking to spin up an instance, start at
 <https://docs.healthlog.dev> or jump to the [Quick Start in the project
-README](../README.md#quick-start).
+README](../README.md#quick-start-docker-compose).

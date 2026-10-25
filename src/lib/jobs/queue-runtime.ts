@@ -42,6 +42,7 @@ import { ENCRYPTION_KEY_ROTATE_EXPIRE_SECONDS } from "@/lib/jobs/encryption-key-
 import { CONTENT_INDEX_BACKFILL_EXPIRE_SECONDS } from "@/lib/jobs/document-content-index-backfill";
 import { DOCUMENT_AI_RUN_EXPIRE_SECONDS } from "@/lib/jobs/document-ai-run";
 import { DATA_BACKUP_SEND_OPTIONS } from "@/lib/jobs/data-backup-policy";
+import { DATABASE_BACKUP_EXPIRE_SECONDS } from "@/lib/jobs/database-backup-queue";
 import { OFFHOST_BACKUP_EXPIRE_SECONDS } from "@/lib/jobs/offhost-backup-queue";
 import { BACKUP_RESTORE_EXPIRE_SECONDS } from "@/lib/jobs/backup-restore";
 import { RESTORE_DRILL_EXPIRE_SECONDS } from "@/lib/jobs/restore-drill-queue";
@@ -331,6 +332,17 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     },
     exclusive: "lockedPass",
     why: "Serialises every account's whole record.",
+  },
+  "database-backup": {
+    runtime: "long",
+    expireInSeconds: DATABASE_BACKUP_EXPIRE_SECONDS,
+    expiryVia: ["DATABASE_BACKUP_SEND_OPTIONS"],
+    stop: {
+      file: "lib/jobs/reminder/backup-handlers.ts",
+      fn: "handleDatabaseBackup",
+    },
+    exclusive: "lockedPass",
+    why: "Runs pg_dump over the whole database and uploads the dump off-host.",
   },
   "data-backup-offhost": {
     runtime: "long",
