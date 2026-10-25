@@ -75,6 +75,7 @@ vi.mock("@/lib/db", () => ({
     // Empty for the same reason as the sections above.
     documentConditionLink: { findMany: vi.fn().mockResolvedValue([]) },
     extractedFact: { findMany: vi.fn().mockResolvedValue([]) },
+    documentImportKey: { findMany: vi.fn(async () => []) },
     ecgRecording: { findMany: vi.fn().mockResolvedValue([]) },
     symptomDefinition: { findMany: vi.fn().mockResolvedValue([]) },
     lifeEvent: { findMany: vi.fn().mockResolvedValue([]) },

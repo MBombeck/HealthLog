@@ -539,7 +539,7 @@
             ],
             "source": "ARCHIVED",
             "supersededByIndex": null,
-            "createdAt": "2026-05-06T04:47:00.000Z"
+            "createdAt": "2026-05-06T06:27:00.000Z"
           },
           {
             "id": "<id:21>",
@@ -554,7 +554,7 @@
             ],
             "source": "ARCHIVED",
             "supersededByIndex": 2,
-            "createdAt": "2026-05-06T04:47:02.000Z"
+            "createdAt": "2026-05-06T06:27:02.000Z"
           },
           {
             "id": "<id:22>",
@@ -569,14 +569,14 @@
             ],
             "source": "MANUAL",
             "supersededByIndex": null,
-            "createdAt": "2026-05-06T04:47:01.000Z"
+            "createdAt": "2026-05-06T06:27:01.000Z"
           }
         ],
         "efficacyTargets": [
           {
             "id": "<id:23>",
-            "createdAt": "2026-05-06T06:25:00.000Z",
-            "updatedAt": "2026-05-06T06:26:00.000Z",
+            "createdAt": "2026-05-06T08:05:00.000Z",
+            "updatedAt": "2026-05-06T08:06:00.000Z",
             "measurementType": "WEIGHT",
             "biomarkerName": "Ferritin",
             "primary": false
@@ -972,7 +972,7 @@
             "name": "Ferr.",
             "source": "IMPORT_CHOICE",
             "id": "<id:40>",
-            "createdAt": "2026-05-06T11:26:00.000Z"
+            "createdAt": "2026-05-06T13:06:00.000Z"
           }
         ]
       }
@@ -985,7 +985,7 @@
         "sourceBiomarkerId": "merged-away-marker",
         "sourceName": "Ferritin (Serum)",
         "readingCount": 3,
-        "mergedAt": "2026-05-06T13:06:00.000Z"
+        "mergedAt": "2026-05-06T14:46:00.000Z"
       }
     ],
     "illnessEpisodes": [
@@ -1194,8 +1194,8 @@
         "sourceSystem": "PAPERLESS",
         "sourceId": "4711",
         "sourceInstance": "https://paperless.example.test",
-        "createdAt": "2026-05-04T01:24:00.000Z",
-        "updatedAt": "2026-05-04T01:25:00.000Z",
+        "createdAt": "2026-05-04T01:25:00.000Z",
+        "updatedAt": "2026-05-04T01:26:00.000Z",
         "contentEncrypted": "<sealed:v1:bytes:cm91bmQtdHJpcCBkb2N1bWVudCBieXRlcw==>",
         "contentSha256": "0a738470f0945033965858e9895ee721ce981a25f013514d587d0a7a1946be7a",
         "contentCodec": "binary2",
@@ -1206,7 +1206,8 @@
         "summaryState": "PENDING",
         "lastIndexAttemptAt": "2026-06-30T12:34:56.789Z",
         "lastIndexOutcome": "rt-InboundDocument-lastIndexOutcome",
-        "aiReadDeferred": true
+        "aiReadDeferred": true,
+        "extractionIncomplete": true
       }
     ],
     "manifest": {
@@ -1456,8 +1457,8 @@
     ],
     "onboardingRecord": {
       "id": "<id:65>",
-      "createdAt": "2026-05-06T09:47:00.000Z",
-      "updatedAt": "2026-05-06T09:48:00.000Z",
+      "createdAt": "2026-05-06T11:27:00.000Z",
+      "updatedAt": "2026-05-06T11:28:00.000Z",
       "needs": {
         "recordTarget": "me",
         "areas": [
@@ -1990,6 +1991,14 @@
         "updatedAt": "2026-05-05T18:52:00.000Z"
       }
     ],
+    "documentImportKeys": [
+      {
+        "sourceSystem": "PAPRA",
+        "sourceId": "doc_deleted",
+        "sourceInstance": "https://papra.example",
+        "createdAt": "2026-07-03T09:00:00.000Z"
+      }
+    ],
     "personalRecords": [
       {
         "metricType": "WALKING_RUNNING_DISTANCE",
@@ -2001,7 +2010,7 @@
         "sourceMeasurementId": null,
         "source": "APPLE_HEALTH",
         "externalId": "workout-pr-5km",
-        "createdAt": "2026-05-05T20:31:01.000Z"
+        "createdAt": "2026-05-05T22:11:01.000Z"
       },
       {
         "metricType": "WALKING_RUNNING_DISTANCE",
@@ -2013,7 +2022,7 @@
         "sourceMeasurementId": null,
         "source": "APPLE_HEALTH",
         "externalId": "workout-pr-10km",
-        "createdAt": "2026-05-05T20:31:02.000Z"
+        "createdAt": "2026-05-05T22:11:02.000Z"
       },
       {
         "metricType": "WEIGHT",
@@ -2025,19 +2034,19 @@
         "sourceMeasurementId": "<id:4>",
         "source": "MANUAL",
         "externalId": null,
-        "createdAt": "2026-05-05T20:31:00.000Z"
+        "createdAt": "2026-05-05T22:11:00.000Z"
       }
     ],
     "userAchievements": [
       {
         "achievementId": "retired-badge-from-an-older-release",
         "unlockedAt": "2025-11-05T08:00:00.000Z",
-        "createdAt": "2026-05-05T22:04:01.000Z"
+        "createdAt": "2026-05-05T23:44:01.000Z"
       },
       {
         "achievementId": "intake-total-10",
         "unlockedAt": "2026-02-21T10:15:00.000Z",
-        "createdAt": "2026-05-05T22:04:00.000Z"
+        "createdAt": "2026-05-05T23:44:00.000Z"
       }
     ],
     "environmentContexts": [
@@ -2083,8 +2092,8 @@
         "aqHours": 3,
         "aqFetchedAt": "2026-06-30T12:34:56.789Z",
         "fetchedAt": "2026-06-16T03:15:00.000Z",
-        "createdAt": "2026-05-06T00:20:00.000Z",
-        "updatedAt": "2026-05-06T00:21:00.000Z"
+        "createdAt": "2026-05-06T02:00:00.000Z",
+        "updatedAt": "2026-05-06T02:01:00.000Z"
       },
       {
         "date": "2026-07-01",
@@ -2128,8 +2137,8 @@
         "aqHours": null,
         "aqFetchedAt": null,
         "fetchedAt": "2026-07-02T03:15:00.000Z",
-        "createdAt": "2026-05-06T00:20:01.000Z",
-        "updatedAt": "2026-05-06T00:21:01.000Z"
+        "createdAt": "2026-05-06T02:00:01.000Z",
+        "updatedAt": "2026-05-06T02:01:01.000Z"
       }
     ],
     "environmentTravelLocations": [
@@ -2140,8 +2149,8 @@
         "lon": null,
         "label": null,
         "locationEncrypted": "<sealed:v1:{\"lat\":41.4,\"lon\":2.2,\"label\":\"Barcelona\"}>",
-        "createdAt": "2026-05-06T01:25:00.000Z",
-        "updatedAt": "2026-05-06T01:26:00.000Z"
+        "createdAt": "2026-05-06T03:05:00.000Z",
+        "updatedAt": "2026-05-06T03:06:00.000Z"
       }
     ],
     "dawarichDays": [
@@ -2156,8 +2165,8 @@
         "countryCodeEncrypted": "<sealed:v1:country:ES>",
         "isTravelDay": true,
         "fetchedAt": "2026-06-16T03:20:00.000Z",
-        "createdAt": "2026-05-06T03:11:00.000Z",
-        "updatedAt": "2026-05-06T03:12:00.000Z"
+        "createdAt": "2026-05-06T04:51:00.000Z",
+        "updatedAt": "2026-05-06T04:52:00.000Z"
       }
     ],
     "ecgRecordings": [
@@ -2174,8 +2183,8 @@
         "averageHeartRate": 88,
         "rhythmClassification": "IRREGULAR",
         "measurementId": "<id:5>",
-        "createdAt": "2026-05-06T08:13:00.000Z",
-        "updatedAt": "2026-05-06T08:14:00.000Z"
+        "createdAt": "2026-05-06T09:53:00.000Z",
+        "updatedAt": "2026-05-06T09:54:00.000Z"
       }
     ],
     "symptomDefinitions": [
@@ -2271,35 +2280,35 @@
       {
         "labResultId": "<id:37>",
         "documentId": "<id:53>",
-        "createdAt": "2026-05-06T14:44:00.000Z"
+        "createdAt": "2026-05-06T16:24:00.000Z"
       }
     ],
     "encounterMedicationLinks": [
       {
         "encounterId": "<id:68>",
         "medicationId": "<id:6>",
-        "createdAt": "2026-05-06T16:24:00.000Z"
+        "createdAt": "2026-05-06T18:04:00.000Z"
       }
     ],
     "encounterVaccinationLinks": [
       {
         "encounterId": "<id:68>",
         "vaccinationId": "<id:73>",
-        "createdAt": "2026-05-06T18:04:00.000Z"
+        "createdAt": "2026-05-06T19:44:00.000Z"
       }
     ],
     "medicationDocumentLinks": [
       {
         "medicationId": "<id:6>",
         "documentId": "<id:53>",
-        "createdAt": "2026-05-06T19:44:00.000Z"
+        "createdAt": "2026-05-06T21:24:00.000Z"
       }
     ],
     "medicationConditionLinks": [
       {
         "medicationId": "<id:6>",
         "episodeId": "<id:44>",
-        "createdAt": "2026-05-06T21:24:00.000Z"
+        "createdAt": "2026-05-06T23:04:00.000Z"
       }
     ],
     "nutrientDays": [
@@ -2367,6 +2376,7 @@
     "consentReceipts": 2,
     "documentConditionLinks": 1,
     "extractedFacts": 1,
+    "documentImportKeys": 1,
     "personalRecords": 3,
     "userAchievements": 2,
     "environmentContexts": 2,
@@ -2430,6 +2440,7 @@
     "consentReceipts": 2,
     "documentConditionLinks": 1,
     "extractedFacts": 1,
+    "documentImportKeys": 1,
     "personalRecords": 3,
     "userAchievements": 2,
     "environmentContexts": 2,
@@ -2942,8 +2953,8 @@
             "measurementType": "WEIGHT",
             "biomarkerName": "Ferritin",
             "primary": false,
-            "createdAt": "2026-05-06T06:25:00.000Z",
-            "updatedAt": "2026-05-06T06:26:00.000Z"
+            "createdAt": "2026-05-06T08:05:00.000Z",
+            "updatedAt": "2026-05-06T08:06:00.000Z"
           }
         ],
         "scheduleRevisions": [
@@ -2960,7 +2971,7 @@
             ],
             "source": "ARCHIVED",
             "supersededByIndex": null,
-            "createdAt": "2026-05-06T04:47:00.000Z"
+            "createdAt": "2026-05-06T06:27:00.000Z"
           },
           {
             "id": "<id:21>",
@@ -2975,7 +2986,7 @@
             ],
             "source": "ARCHIVED",
             "supersededByIndex": 2,
-            "createdAt": "2026-05-06T04:47:02.000Z"
+            "createdAt": "2026-05-06T06:27:02.000Z"
           },
           {
             "id": "<id:22>",
@@ -2990,7 +3001,7 @@
             ],
             "source": "MANUAL",
             "supersededByIndex": null,
-            "createdAt": "2026-05-06T04:47:01.000Z"
+            "createdAt": "2026-05-06T06:27:01.000Z"
           }
         ],
         "courses": [
@@ -3412,7 +3423,7 @@
             "id": "<id:40>",
             "name": "Ferr.",
             "source": "IMPORT_CHOICE",
-            "createdAt": "2026-05-06T11:26:00.000Z"
+            "createdAt": "2026-05-06T13:06:00.000Z"
           }
         ],
         "createdAt": "2026-05-02T12:30:00.000Z",
@@ -3427,7 +3438,7 @@
         "sourceBiomarkerId": "merged-away-marker",
         "sourceName": "Ferritin (Serum)",
         "readingCount": 3,
-        "mergedAt": "2026-05-06T13:06:00.000Z"
+        "mergedAt": "2026-05-06T14:46:00.000Z"
       }
     ],
     "illnessEpisodes": [
@@ -3736,8 +3747,9 @@
         "sourceId": "4711",
         "sourceInstance": "https://paperless.example.test",
         "aiReadDeferred": true,
-        "createdAt": "2026-05-04T01:24:00.000Z",
-        "updatedAt": "2026-05-04T01:25:00.000Z"
+        "extractionIncomplete": true,
+        "createdAt": "2026-05-04T01:25:00.000Z",
+        "updatedAt": "2026-05-04T01:26:00.000Z"
       }
     ],
     "documentConditionLinks": [
@@ -3761,6 +3773,14 @@
         "provenanceEncrypted": "<sealed:v1:{\"sourceText\":\"Ferritin  91 ng/mL   (30 - 400)\",\"anchored\":true,\"sourceOffset\":412,\"page\":2,\"confidence\":0.94}>",
         "createdAt": "2026-05-05T18:51:00.000Z",
         "updatedAt": "2026-05-05T18:52:00.000Z"
+      }
+    ],
+    "documentImportKeys": [
+      {
+        "sourceSystem": "PAPRA",
+        "sourceId": "doc_deleted",
+        "sourceInstance": "https://papra.example",
+        "createdAt": "2026-07-03T09:00:00.000Z"
       }
     ],
     "nutrientDays": [
@@ -4064,8 +4084,8 @@
       },
       "modulesDerivedAt": "2026-07-01T08:00:00.000Z",
       "completedAt": "2026-07-01T08:00:00.000Z",
-      "createdAt": "2026-05-06T09:47:00.000Z",
-      "updatedAt": "2026-05-06T09:48:00.000Z"
+      "createdAt": "2026-05-06T11:27:00.000Z",
+      "updatedAt": "2026-05-06T11:28:00.000Z"
     },
     "practitioners": [
       {
@@ -4226,35 +4246,35 @@
       {
         "labResultId": "<id:37>",
         "documentId": "<id:53>",
-        "createdAt": "2026-05-06T14:44:00.000Z"
+        "createdAt": "2026-05-06T16:24:00.000Z"
       }
     ],
     "encounterMedicationLinks": [
       {
         "encounterId": "<id:68>",
         "medicationId": "<id:6>",
-        "createdAt": "2026-05-06T16:24:00.000Z"
+        "createdAt": "2026-05-06T18:04:00.000Z"
       }
     ],
     "encounterVaccinationLinks": [
       {
         "encounterId": "<id:68>",
         "vaccinationId": "<id:73>",
-        "createdAt": "2026-05-06T18:04:00.000Z"
+        "createdAt": "2026-05-06T19:44:00.000Z"
       }
     ],
     "medicationDocumentLinks": [
       {
         "medicationId": "<id:6>",
         "documentId": "<id:53>",
-        "createdAt": "2026-05-06T19:44:00.000Z"
+        "createdAt": "2026-05-06T21:24:00.000Z"
       }
     ],
     "medicationConditionLinks": [
       {
         "medicationId": "<id:6>",
         "episodeId": "<id:44>",
-        "createdAt": "2026-05-06T21:24:00.000Z"
+        "createdAt": "2026-05-06T23:04:00.000Z"
       }
     ],
     "coachConversations": [
@@ -4560,7 +4580,7 @@
         "sourceMeasurementId": null,
         "source": "APPLE_HEALTH",
         "externalId": "workout-pr-5km",
-        "createdAt": "2026-05-05T20:31:01.000Z"
+        "createdAt": "2026-05-05T22:11:01.000Z"
       },
       {
         "metricType": "WALKING_RUNNING_DISTANCE",
@@ -4572,7 +4592,7 @@
         "sourceMeasurementId": null,
         "source": "APPLE_HEALTH",
         "externalId": "workout-pr-10km",
-        "createdAt": "2026-05-05T20:31:02.000Z"
+        "createdAt": "2026-05-05T22:11:02.000Z"
       },
       {
         "metricType": "WEIGHT",
@@ -4584,19 +4604,19 @@
         "sourceMeasurementId": "<id:4>",
         "source": "MANUAL",
         "externalId": null,
-        "createdAt": "2026-05-05T20:31:00.000Z"
+        "createdAt": "2026-05-05T22:11:00.000Z"
       }
     ],
     "userAchievements": [
       {
         "achievementId": "retired-badge-from-an-older-release",
         "unlockedAt": "2025-11-05T08:00:00.000Z",
-        "createdAt": "2026-05-05T22:04:01.000Z"
+        "createdAt": "2026-05-05T23:44:01.000Z"
       },
       {
         "achievementId": "intake-total-10",
         "unlockedAt": "2026-02-21T10:15:00.000Z",
-        "createdAt": "2026-05-05T22:04:00.000Z"
+        "createdAt": "2026-05-05T23:44:00.000Z"
       }
     ],
     "environmentContexts": [
@@ -4642,8 +4662,8 @@
         "aqHours": 3,
         "aqFetchedAt": "2026-06-30T12:34:56.789Z",
         "fetchedAt": "2026-06-16T03:15:00.000Z",
-        "createdAt": "2026-05-06T00:20:00.000Z",
-        "updatedAt": "2026-05-06T00:21:00.000Z"
+        "createdAt": "2026-05-06T02:00:00.000Z",
+        "updatedAt": "2026-05-06T02:01:00.000Z"
       },
       {
         "date": "2026-07-01",
@@ -4687,8 +4707,8 @@
         "aqHours": null,
         "aqFetchedAt": null,
         "fetchedAt": "2026-07-02T03:15:00.000Z",
-        "createdAt": "2026-05-06T00:20:01.000Z",
-        "updatedAt": "2026-05-06T00:21:01.000Z"
+        "createdAt": "2026-05-06T02:00:01.000Z",
+        "updatedAt": "2026-05-06T02:01:01.000Z"
       }
     ],
     "environmentTravelLocations": [
@@ -4699,8 +4719,8 @@
         "lon": null,
         "label": null,
         "locationEncrypted": "<sealed:v1:{\"lat\":41.4,\"lon\":2.2,\"label\":\"Barcelona\"}>",
-        "createdAt": "2026-05-06T01:25:00.000Z",
-        "updatedAt": "2026-05-06T01:26:00.000Z"
+        "createdAt": "2026-05-06T03:05:00.000Z",
+        "updatedAt": "2026-05-06T03:06:00.000Z"
       }
     ],
     "dawarichDays": [
@@ -4715,8 +4735,8 @@
         "countryCodeEncrypted": "<sealed:v1:country:ES>",
         "isTravelDay": true,
         "fetchedAt": "2026-06-16T03:20:00.000Z",
-        "createdAt": "2026-05-06T03:11:00.000Z",
-        "updatedAt": "2026-05-06T03:12:00.000Z"
+        "createdAt": "2026-05-06T04:51:00.000Z",
+        "updatedAt": "2026-05-06T04:52:00.000Z"
       }
     ],
     "ecgRecordings": [
@@ -4733,8 +4753,8 @@
         "averageHeartRate": 88,
         "rhythmClassification": "IRREGULAR",
         "measurementId": "<id:5>",
-        "createdAt": "2026-05-06T08:13:00.000Z",
-        "updatedAt": "2026-05-06T08:14:00.000Z"
+        "createdAt": "2026-05-06T09:53:00.000Z",
+        "updatedAt": "2026-05-06T09:54:00.000Z"
       }
     ],
     "manifest": {
@@ -4781,6 +4801,7 @@
     "documents": 1,
     "documentConditionLinks": 1,
     "extractedFacts": 1,
+    "documentImportKeys": 1,
     "healthProfile": 1,
     "healthProfileFactRevisions": 2,
     "customMetrics": 2,
@@ -4837,6 +4858,7 @@
       "documents": 1,
       "documentConditionLinks": 1,
       "extractedFacts": 1,
+      "documentImportKeys": 1,
       "healthProfile": 1,
       "healthProfileFactRevisions": 2,
       "customMetrics": 2,

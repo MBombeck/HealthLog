@@ -44015,6 +44015,34 @@ components:
               - createdAt
               - updatedAt
             additionalProperties: {}
+        documentImportKeys:
+          default: []
+          type: array
+          items:
+            type: object
+            properties:
+              sourceSystem:
+                type: string
+                enum:
+                  - PAPERLESS
+                  - PAPRA
+                  - OTHER
+              sourceId:
+                type: string
+                minLength: 1
+                maxLength: 128
+              sourceInstance:
+                anyOf:
+                  - type: string
+                    maxLength: 512
+                  - type: "null"
+              createdAt:
+                type: string
+                minLength: 1
+            required:
+              - sourceSystem
+              - sourceId
+            additionalProperties: {}
         nutrientDays:
           default: []
           type: array
@@ -46536,6 +46564,7 @@ components:
         - documents
         - documentConditionLinks
         - extractedFacts
+        - documentImportKeys
         - nutrientDays
         - healthProfile
         - healthProfileFacts

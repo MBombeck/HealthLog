@@ -76,6 +76,7 @@ vi.mock("@/lib/db", () => ({
     // What a document was filed against, and what was read out of it.
     documentConditionLink: { findMany: vi.fn() },
     extractedFact: { findMany: vi.fn() },
+    documentImportKey: { findMany: vi.fn(async () => []) },
     ecgRecording: { findMany: vi.fn() },
     symptomDefinition: { findMany: vi.fn() },
     lifeEvent: { findMany: vi.fn() },
@@ -305,6 +306,24 @@ describe("v1.4.41 W-DELETED-2 — soft-delete invisibility", () => {
     const documentCall = vi.mocked(prisma.inboundDocument.findMany).mock
       .calls[0][0] as { select?: Record<string, unknown> };
     expect(documentCall.select).not.toHaveProperty("contentEncrypted");
+    // The import ledger reads the source keys of documents waiting in
+    // Recently deleted, and nothing else of them: no tombstone travels.
+    for (const [args] of vi.mocked(prisma.inboundDocument.findMany).mock
+      .calls) {
+      const call = args as {
+        where?: { deletedAt?: unknown };
+        select?: Record<string, unknown>;
+      };
+      if (call.where?.deletedAt === null) continue;
+      expect(Object.keys(call.select ?? {}).sort()).toEqual([
+        "deletedAt",
+        "sourceAliases",
+        "sourceId",
+        "sourceInstance",
+        "sourceSystem",
+        "userId",
+      ]);
+    }
   });
 
   it("/api/export (legacy) scopes the measurement read to deletedAt: null", async () => {

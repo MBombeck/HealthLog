@@ -51,6 +51,7 @@ import {
 import {
   documentConditionLinkBackupSchema,
   extractedFactBackupSchema,
+  documentImportKeyBackupSchema,
 } from "@/lib/export/document-filing-backup-schema";
 import { documentBackupSchema } from "@/lib/export/documents-backup-schema";
 import { ecgRecordingBackupSchema } from "@/lib/export/ecg-backup-schema";
@@ -182,6 +183,9 @@ export const backupPayloadSchema = z
       .array(documentConditionLinkBackupSchema)
       .default([]),
     extractedFacts: z.array(extractedFactBackupSchema).default([]),
+    // The source keys of imported documents the person deleted. Defaulted:
+    // a file written before the import ledger travelled carries no key.
+    documentImportKeys: z.array(documentImportKeyBackupSchema).default([]),
     nutrientDays: z.array(nutrientDaySchema).default([]),
     // Durable self-context and user-defined series. Defaulted so files written
     // before either rode the wire still parse; an account with neither writes

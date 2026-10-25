@@ -167,6 +167,7 @@ const SUMMARY_COUNTS = [
   "documents",
   "documentConditionLinks",
   "extractedFacts",
+  "documentImportKeys",
   "healthProfile",
   "healthProfileFactRevisions",
   "customMetrics",

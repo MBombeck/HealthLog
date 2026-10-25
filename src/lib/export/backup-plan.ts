@@ -159,6 +159,7 @@ export const BACKED_UP_MODELS = [
   "InboundDocument",
   "DocumentConditionLink",
   "ExtractedFact",
+  "DocumentImportKey", // Deleted imports' keys: `document-filing-backup.ts`.
 
   // ── Visits ────────────────────────────────────────────────────────────────
   "Practitioner",
@@ -502,6 +503,7 @@ export const TWO_ENDED_MODELS = [
   // nulled together with its type when it resolves to nothing.
   "DocumentConditionLink",
   "ExtractedFact",
+  "DocumentImportKey",
   // What the account earned. The register called the bests "recomputable in
   // principle", which is true and does not help: nothing recomputes them, and
   // a recomputation over a restored history would not find the same rows:
@@ -768,12 +770,10 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "That this host's one-time fold repair has recomputed the account's hourly and daily means, which lets the compaction-tombstone purge delete the tombstones the repair reads. It describes this database, not the file: a restore of a file exported before the repair ran writes back the means and tombstones of that moment, so the restore removes the row and the repair runs again before anything is purged.",
   BackupPassAttempt:
     "When this host's backup passes last started and finished this account, kept so a pass the process died under is taken last next time and named on the backups page. It describes this deployment's own runs, so restoring it elsewhere would report an interrupted run that host never had, or hide one it did.",
-  DocumentImportKey:
-    "The source keys of imported documents the person deleted and the purge then removed, kept so a re-run of the importer does not store them again. The backup carries only live documents, so the tombstones that hold the same memory before the purge do not travel either; carrying the ledger alone would restore half of one decision. After a restore, a deliberate re-import can bring such a document back, and the person deletes it again.",
   DocumentAiRun:
     "A ticket for one background read (a document read with AI, a lab scan), deleted an hour after it finishes. The document and the committed rows travel; the ticket does not, and a restored run would point at a worker job that does not exist on the receiving host.",
   DocumentSourceAlias:
-    "Further import source keys that were answered with an already stored document because the bytes matched. The next import run writes the same alias again the moment it meets the same bytes, so a restore loses nothing a re-run does not rebuild; and for a deleted document it restores no less than the tombstones and ledger beside it do, which do not travel either.",
+    "Further import source keys that were answered with an already stored document because the bytes matched. The next import run writes the same alias again the moment it meets the same bytes, so a restore loses nothing a re-run does not rebuild. A deleted document's aliases travel as import-ledger entries (`DocumentImportKey`), which is what they mean once the document is gone.",
   ImportJob:
     "A job record pointing at an uploaded file that the backup does not carry, so restoring it would resurrect a task with nothing to work on.",
   HealthKitTypeSync:

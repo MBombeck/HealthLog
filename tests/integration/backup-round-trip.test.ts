@@ -286,6 +286,8 @@ const COUNT_BACK: Record<
   DocumentConditionLink: (p, userId) =>
     p.documentConditionLink.count({ where: { userId } }),
   ExtractedFact: (p, userId) => p.extractedFact.count({ where: { userId } }),
+  DocumentImportKey: (p, userId) =>
+    p.documentImportKey.count({ where: { userId } }),
   PersonalRecord: (p, userId) => p.personalRecord.count({ where: { userId } }),
   UserAchievement: (p, userId) =>
     p.userAchievement.count({ where: { userId } }),

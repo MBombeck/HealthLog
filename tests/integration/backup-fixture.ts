@@ -847,6 +847,19 @@ export async function seedEveryTwoEndedModel(
     },
   });
 
+  // An imported page the person deleted and the purge then removed: only the
+  // ledger remembers it, and a restore that dropped the row would let the
+  // importer store it again.
+  await prisma.documentImportKey.create({
+    data: {
+      userId: OWNER_ID,
+      sourceSystem: "PAPRA",
+      sourceId: "doc_deleted",
+      sourceInstance: "https://papra.example",
+      createdAt: AT("2026-07-03T09:00:00.000Z"),
+    },
+  });
+
   // The page filed under the SECOND condition, not the first. A restore that
   // kept the count and lost the pairing would leave the vault sorted wrongly
   // rather than visibly unsorted, which is harder to notice and worse.

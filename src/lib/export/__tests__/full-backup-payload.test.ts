@@ -463,6 +463,8 @@ function makePrisma() {
     // Empty for the same reason as the sections above.
     documentConditionLink: { findMany: vi.fn().mockResolvedValue([]) },
     extractedFact: { findMany: vi.fn().mockResolvedValue([]) },
+    documentImportKey: { findMany: vi.fn().mockResolvedValue([]) },
+    inboundDocument: { findMany: vi.fn().mockResolvedValue([]) },
     // The ECG strips. Empty for the same reason as the sections above:
     // an account whose watch has never taken one is the ordinary case the
     // builder must still answer for.

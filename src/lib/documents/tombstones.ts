@@ -39,7 +39,7 @@ interface ImportSourceKey {
 }
 
 /** The columns a row needs for {@link importKeysOf}. */
-const SOURCE_KEY_SELECT = {
+export const SOURCE_KEY_SELECT = {
   userId: true,
   sourceSystem: true,
   sourceId: true,
@@ -62,7 +62,7 @@ interface KeyedRow {
 }
 
 /** Every import source key a document holds: its own, then its aliases. */
-function importKeysOf(row: KeyedRow): ImportSourceKey[] {
+export function importKeysOf(row: KeyedRow): ImportSourceKey[] {
   return [
     ...(row.sourceSystem && row.sourceId
       ? [
