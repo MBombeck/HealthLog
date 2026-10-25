@@ -210,7 +210,10 @@ done
   fail "without the volume the run read '$RUN', not 'succeeded not_persistent uploaded'"
 LEFT=$(docker exec "$PROJECT-app" sh -c 'ls -A /var/lib/healthlog/backups')
 [ -z "$LEFT" ] || fail "a dump was left in the container's layer: $LEFT"
-docker logs "$PROJECT-app" 2>&1 | grep -q "is inside the container, not on a mounted volume" ||
+# Into a file first: `grep -q` stops reading at the match, and with pipefail
+# the SIGPIPE that leaves `docker logs` would read as a miss.
+docker logs "$PROJECT-app" >"$WORK/no-volume.log" 2>&1
+grep -q "is inside the container, not on a mounted volume" "$WORK/no-volume.log" ||
   fail "the start log does not say the dump directory is inside the container"
 echo "   $RUN, nothing in the container's layer"
 stack down -v --remove-orphans >/dev/null 2>&1

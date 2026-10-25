@@ -120,6 +120,8 @@ RUN addgroup --system --gid 1001 nodejs && \
 # Where the database dumps go (`DB_BACKUP_DIR`). Owned by the app user, so a
 # fresh named volume mounted here starts with that owner: Docker fills an
 # empty named volume from the image directory it covers, ownership included.
+# Without a mount the directory stays in the container's layer; the app reads
+# its mount table, sees that, and keeps no dump here (dump-core.mjs).
 RUN mkdir -p /var/lib/healthlog/backups && \
     chown nextjs:nodejs /var/lib/healthlog/backups && \
     chmod 700 /var/lib/healthlog/backups
