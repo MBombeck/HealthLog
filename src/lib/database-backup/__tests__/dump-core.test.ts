@@ -10,9 +10,14 @@
  * tests that keep its plain-JS reading of both from drifting.
  */
 import {
-  mkdtempSync,
+  chmodSync,
   createReadStream,
+  fstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
   rmSync,
+  statSync,
   utimesSync,
   writeFileSync,
 } from "node:fs";
@@ -46,6 +51,7 @@ import {
   resolveBackupSchedule,
   resolveDailyKeep,
   selectForDeletion,
+  verifyArchive,
   type DirectoryProbe,
   type DumpSet,
   type Env,
@@ -123,6 +129,44 @@ describe("dump names", () => {
     ]) {
       expect(parseDumpFileName(name), name).toBeNull();
     }
+  });
+});
+
+/** How many of this process's descriptors are open on `path`'s file. */
+function openHandlesOn(path: string): number {
+  const { dev, ino } = statSync(path);
+  return readdirSync("/dev/fd").filter((fd) => {
+    try {
+      const s = fstatSync(Number(fd));
+      return s.dev === dev && s.ino === ino;
+    } catch {
+      return false;
+    }
+  }).length;
+}
+
+describe("reading an archive back", () => {
+  // The worker lives for weeks and checks a dump every night. A handle it
+  // keeps on a checked dump keeps that dump's blocks allocated after
+  // retention deletes it, so the volume fills with "deleted" dumps.
+  it("leaves no handle open on the dump once the listing is read", async () => {
+    const dir = tempDir();
+    const bin = join(dir, "bin");
+    mkdirSync(bin);
+    // A pg_restore that does what the real one does with a custom-format
+    // archive: read the table of contents and exit without reading the rest.
+    writeFileSync(
+      join(bin, "pg_restore"),
+      `#!/bin/sh\nprintf '; header\\n1; 2615 2200 TABLE public a\\n2; 2615 2201 TABLE public b\\n'\n`,
+    );
+    chmodSync(join(bin, "pg_restore"), 0o755);
+    vi.stubEnv("PATH", `${bin}:${process.env.PATH ?? ""}`);
+    const dump = join(dir, "big.dump");
+    writeFileSync(dump, Buffer.alloc(16 * 1024 * 1024, 7));
+
+    expect(await verifyArchive(dump)).toBe(2);
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(openHandlesOn(dump)).toBe(0);
   });
 });
 

@@ -739,16 +739,19 @@ export async function serverVersion(client) {
 
 /**
  * Run one Postgres client tool. Standard output goes to `stdout` when given
- * (a file stream) and is collected otherwise; standard input comes from
- * `stdin` when given. Rejects with the tool's own last lines on a non-zero
- * exit, and kills it at `deadline` (epoch ms).
+ * (a file stream) and is collected otherwise. Rejects with the tool's own
+ * last lines on a non-zero exit, and kills it at `deadline` (epoch ms).
+ *
+ * A file the tool reads is named in `args`, never streamed to its standard
+ * input: `pg_restore --list` reads an archive's table of contents and exits,
+ * and a stream piped into it would stay open on the file. In the long-lived
+ * worker that kept every checked dump allocated after retention deleted it.
  *
  * @param {string} tool
  * @param {string[]} args
  * @param {{
  *   env?: Record<string, string>;
  *   stdout?: NodeJS.WritableStream;
- *   stdin?: NodeJS.ReadableStream;
  *   deadline?: number;
  * }} [options]
  * @returns {Promise<string>}
@@ -757,7 +760,7 @@ export function runTool(tool, args, options = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(tool, args, {
       env: { ...process.env, ...(options.env ?? {}) },
-      stdio: [options.stdin ? "pipe" : "ignore", "pipe", "pipe"],
+      stdio: ["ignore", "pipe", "pipe"],
     });
     /** @type {Buffer[]} */
     const out = [];
@@ -787,16 +790,6 @@ export function runTool(tool, args, options = {}) {
     child.stderr.on("data", (c) => {
       err = (err + c.toString("utf8")).slice(-4000);
     });
-    if (options.stdin && child.stdin) {
-      options.stdin.on("error", (e) => {
-        child.kill("SIGTERM");
-        reject(e);
-      });
-      child.stdin.on("error", () => {
-        // The tool closed its input early; its exit code says why.
-      });
-      options.stdin.pipe(child.stdin);
-    }
     child.on("error", (e) => {
       if (timer) clearTimeout(timer);
       reject(
@@ -841,9 +834,7 @@ export async function pgDumpVersion() {
  * @param {string} path
  */
 export async function verifyArchive(path) {
-  const listing = await runTool("pg_restore", ["--list"], {
-    stdin: createReadStream(path),
-  });
+  const listing = await runTool("pg_restore", ["--list", path]);
   const entries = listing
     .split("\n")
     .filter((line) => line.trim() && !line.startsWith(";")).length;
