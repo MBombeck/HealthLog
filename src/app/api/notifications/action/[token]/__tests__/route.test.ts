@@ -1,8 +1,9 @@
 /**
  * POST /api/notifications/action/{token} — a quick answer from a
- * notification. Pins the order of the gates and every refusal class: rate
- * limit before the token is read, then signature, expiry, account, module,
- * and the single-use write.
+ * notification. Pins the order of the gates and every refusal class: the
+ * signature (an HMAC, no database read), then the rate limit (per account for
+ * a genuine token, per address in a bucket of its own for any other), expiry,
+ * account, module, and the single-use write.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
@@ -18,6 +19,7 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 vi.mock("@/lib/rate-limit", () => ({
   checkAuthSurfaceRateLimit: vi.fn(),
+  checkRateLimit: vi.fn(),
   rateLimitHeaders: vi.fn(() => ({ "Retry-After": "60" })),
 }));
 vi.mock("@/lib/modules/gate", () => ({ isModuleEnabled: vi.fn() }));
@@ -31,7 +33,7 @@ vi.mock("@/lib/db-compat", () => ({
 
 import { POST } from "../route";
 import { prisma } from "@/lib/db";
-import { checkAuthSurfaceRateLimit } from "@/lib/rate-limit";
+import { checkAuthSurfaceRateLimit, checkRateLimit } from "@/lib/rate-limit";
 import { isModuleEnabled } from "@/lib/modules/gate";
 import { logTelegramMood } from "@/lib/mood/create-from-telegram";
 import {
@@ -65,6 +67,12 @@ beforeEach(() => {
     resetAt: new Date(),
     ip: "203.0.113.5",
   } as never);
+  vi.mocked(checkRateLimit).mockResolvedValue({
+    allowed: true,
+    limit: 20,
+    remaining: 19,
+    resetAt: Date.now(),
+  });
   vi.mocked(prisma.user.findUnique).mockResolvedValue({
     id: "user-1",
     timezone: "Europe/Berlin",
@@ -98,17 +106,39 @@ describe("POST /api/notifications/action/{token}", () => {
     });
   });
 
-  it("is rate-limited before the token is read", async () => {
+  it("limits a genuine token per account, before any database read", async () => {
+    vi.mocked(checkRateLimit).mockResolvedValue({
+      allowed: false,
+      limit: 20,
+      remaining: 0,
+      resetAt: Date.now(),
+    });
+    const res = await call(token());
+    expect(res.status).toBe(429);
+    expect(vi.mocked(checkRateLimit).mock.calls[0]![0]).toBe(
+      "notification-action:user:user-1",
+    );
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(logTelegramMood).not.toHaveBeenCalled();
+  });
+
+  it("charges junk to a bucket of its own, so it cannot hold genuine answers back", async () => {
+    // The junk bucket is spent, as it is for everyone when the address
+    // cannot be read and all junk lands in one bucket.
     vi.mocked(checkAuthSurfaceRateLimit).mockResolvedValue({
       allowed: false,
       remaining: 0,
       resetAt: new Date(),
-      ip: "203.0.113.5",
+      ip: null,
     } as never);
-    const res = await call(token());
-    expect(res.status).toBe(429);
-    expect(prisma.user.findUnique).not.toHaveBeenCalled();
-    expect(logTelegramMood).not.toHaveBeenCalled();
+    const junk = await call("hla_not-a-token");
+    expect(junk.status).toBe(429);
+    expect(vi.mocked(checkAuthSurfaceRateLimit).mock.calls[0]![1]).toBe(
+      "notification-action-invalid",
+    );
+
+    const genuine = await call(token());
+    expect(genuine.status).toBe(200);
   });
 
   it("refuses a tampered token with 401 and writes nothing", async () => {
