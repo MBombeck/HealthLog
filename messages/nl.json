@@ -8348,7 +8348,10 @@
           "retentionOffhost": "De levenscyclusregel van de bucket verwijdert externe kopieën na {days} dagen.",
           "retentionOffhostMissing": "Geen levenscyclusregel in de bucket geldt voor database/, dus dumps daar, en de verwijderde accounts erin, worden nooit verwijderd. Voeg een regel voor dat voorvoegsel toe.",
           "notPersistentOffhost": "{dir} staat niet op blijvende opslag (in de container in plaats van op een gekoppeld volume, of in het geheugen), dus een dump die daar wordt geschreven gaat bij de volgende update verloren. Dumps gaan alleen extern: hier wordt er geen bewaard en vóór een migratie wordt er geen gemaakt. Koppel het back-upvolume.",
-          "notPersistent": "{dir} staat niet op blijvende opslag (in de container in plaats van op een gekoppeld volume, of in het geheugen) en er is geen externe bucket ingesteld, dus nergens wordt een databasedump bewaard. Koppel het back-upvolume."
+          "notPersistent": "{dir} staat niet op blijvende opslag (in de container in plaats van op een gekoppeld volume, of in het geheugen) en er is geen externe bucket ingesteld, dus nergens wordt een databasedump bewaard. Koppel het back-upvolume.",
+          "offhostFailedTitle": "De nieuwste databasedump is niet in de externe bucket aangekomen",
+          "offhostLastUpload": "De nieuwste dump in de bucket is van {when}.",
+          "offhostNeverUploaded": "Er is nog geen databasedump in de bucket aangekomen."
         }
       },
       "danger-zone": {
@@ -8695,7 +8698,10 @@
           "fresh": "De nieuwste databasedump is recent.",
           "nowhere_to_write": "De dumpmap {directory} is niet beschrijfbaar en er is geen externe bucket ingesteld, dus er kan geen dump worden bewaard.",
           "not_persistent": "De dumpmap {directory} staat niet op blijvende opslag en er is geen externe bucket ingesteld, dus elke dump gaat bij de volgende update verloren. Koppel het back-upvolume.",
-          "fresh_offhost_only": "De nieuwste databasedump is recent en staat in de externe bucket. Op deze server wordt er geen bewaard, omdat {directory} niet op blijvende opslag staat, en vóór een migratie wordt er geen gemaakt."
+          "fresh_offhost_only": "De nieuwste databasedump is recent en staat in de externe bucket. Op deze server wordt er geen bewaard, omdat {directory} niet op blijvende opslag staat, en vóór een migratie wordt er geen gemaakt.",
+          "offhost_failed": "De nieuwste databasedump staat op deze server, maar het uploaden naar de externe bucket is mislukt.",
+          "offhost_stale": "Al {hours} uur is er geen databasedump in de externe bucket aangekomen: het uploaden blijft mislukken. Gaat deze server verloren, dan is er geen recente dump om hem mee te herstellen.",
+          "offhost_never": "Er is nog nooit een databasedump in de externe bucket aangekomen: het uploaden mislukt. Gaat deze server verloren, dan is er geen dump om hem mee te herstellen."
         },
         "weekly_copy": {
           "no_accounts": "Er zijn nog geen accounts om te kopiëren.",

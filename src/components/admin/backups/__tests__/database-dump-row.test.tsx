@@ -28,6 +28,7 @@ const HEALTHY: DatabaseBackupHealth = {
     offhost: true,
   },
   lastFailure: null,
+  offhost: { lastUploadAt: "2026-10-24T23:31:00.000Z", failure: null },
 };
 
 function render(
@@ -53,6 +54,36 @@ describe("<DatabaseDumpRow>", () => {
     expect(html).not.toContain('data-slot="database-dump-failed"');
     expect(html).not.toContain('data-slot="database-dump-setup"');
     expect(html).not.toContain('data-slot="database-dump-no-lifecycle"');
+  });
+
+  it("says when the newest dump stayed on this server because its upload failed", () => {
+    const at = "2026-10-25T23:31:00.000Z";
+    const html = render({
+      ...HEALTHY,
+      lastGood: { ...HEALTHY.lastGood!, at, offhost: false },
+      lastFailure: { at, error: "off-host upload failed: AccessDenied" },
+      offhost: {
+        lastUploadAt: "2026-10-22T23:31:00.000Z",
+        failure: { at, error: "off-host upload failed: AccessDenied" },
+      },
+    });
+    expect(html).toContain('data-slot="database-dump-offhost-failed"');
+    expect(html).toContain("did not reach the off-host bucket");
+    expect(html).toContain("AccessDenied");
+    expect(html).toContain("The newest dump in the bucket is from");
+    // Said once, as the upload it is, not also as a failed dump.
+    expect(html).not.toContain('data-slot="database-dump-failed"');
+  });
+
+  it("shows a failure at the instant of the newest dump, such as retention throwing", () => {
+    const at = "2026-10-25T23:31:00.000Z";
+    const html = render({
+      ...HEALTHY,
+      lastGood: { ...HEALTHY.lastGood!, at },
+      lastFailure: { at, error: "EACCES: permission denied, unlink" },
+    });
+    expect(html).toContain('data-slot="database-dump-failed"');
+    expect(html).not.toContain('data-slot="database-dump-offhost-failed"');
   });
 
   it("warns when no bucket rule ever removes the dumps", () => {

@@ -57,6 +57,20 @@ export interface DatabaseBackupHealth {
   } | null;
   /** The newest run that failed, or that a dying process left unfinished. */
   lastFailure: { at: string; error: string } | null;
+  /**
+   * The off-host leg on its own. A run that kept its dump on the server and
+   * failed the upload is a good dump and a failed run at once; read only as
+   * those two, it looked healthy while nothing reached the bucket.
+   */
+  offhost: {
+    /** When the newest dump reached the bucket; null when none ever did. */
+    lastUploadAt: string | null;
+    /**
+     * The newest dump that was taken but did not reach the bucket, when no
+     * later one did. Null while the newest dump taken is in the bucket.
+     */
+    failure: { at: string; error: string } | null;
+  };
 }
 
 /**
@@ -80,8 +94,8 @@ export async function getDatabaseBackupHealth(
   const keptWhere = local.persistent
     ? [{ localResult: "written" }, { offhostResult: "uploaded" }]
     : [{ offhostResult: "uploaded" }];
-  const [lastGood, lastFailed, lastAbandoned, everUploaded] = await Promise.all(
-    [
+  const [lastGood, lastFailed, lastAbandoned, lastUploaded, lastNotUploaded] =
+    await Promise.all([
       prisma.databaseBackupRun.findFirst({
         where: { fileName: { not: null }, OR: keptWhere },
         orderBy: { startedAt: "desc" },
@@ -107,9 +121,19 @@ export async function getDatabaseBackupHealth(
         orderBy: { startedAt: "desc" },
         select: { startedAt: true },
       }),
-      prisma.databaseBackupRun.count({ where: { offhostResult: "uploaded" } }),
-    ],
-  );
+      prisma.databaseBackupRun.findFirst({
+        where: { offhostResult: "uploaded" },
+        orderBy: { startedAt: "desc" },
+        select: { startedAt: true, finishedAt: true },
+      }),
+      // A dump was taken (the file name is set only when the run finishes)
+      // and its upload failed.
+      prisma.databaseBackupRun.findFirst({
+        where: { fileName: { not: null }, offhostResult: "failed" },
+        orderBy: { startedAt: "desc" },
+        select: { startedAt: true, finishedAt: true, error: true },
+      }),
+    ]);
 
   const failures = [
     lastFailed && {
@@ -131,7 +155,7 @@ export async function getDatabaseBackupHealth(
     localDirWritable: local.writable,
     localPersistent: local.persistent,
     localReason: local.reason,
-    offhostConfigured: offhostBackupConfigured() || everUploaded > 0,
+    offhostConfigured: offhostBackupConfigured() || lastUploaded !== null,
     lastGood: lastGood
       ? {
           at: (lastGood.finishedAt ?? lastGood.startedAt).toISOString(),
@@ -143,5 +167,22 @@ export async function getDatabaseBackupHealth(
         }
       : null,
     lastFailure: failures[0] ?? null,
+    offhost: {
+      lastUploadAt: lastUploaded ? runAt(lastUploaded) : null,
+      failure:
+        lastNotUploaded &&
+        (lastUploaded === null ||
+          lastNotUploaded.startedAt > lastUploaded.startedAt)
+          ? {
+              at: runAt(lastNotUploaded),
+              error: lastNotUploaded.error ?? "the upload failed",
+            }
+          : null,
+    },
   };
+}
+
+/** When a run ended, or began when it never ended. */
+function runAt(run: { startedAt: Date; finishedAt: Date | null }): string {
+  return (run.finishedAt ?? run.startedAt).toISOString();
 }

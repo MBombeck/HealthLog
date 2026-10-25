@@ -30,6 +30,7 @@ import {
   type OffhostBackupFreshness,
 } from "@/lib/jobs/offhost-backup-freshness";
 import type { LifecycleVerdict } from "@/lib/jobs/offhost-lifecycle";
+import { databaseDumpProblems } from "@/lib/database-backup/dump-problems";
 import type { DatabaseBackupHealth } from "@/lib/recovery/database-dump-health";
 import type { KitEntry } from "@/lib/recovery/kit-rules";
 
@@ -202,8 +203,9 @@ export function evaluateDatabaseDump(
       ? signal(id, "inactive", "disabled", null)
       : signal(id, "attention", "disabled", lastGoodAt);
   }
-  const lastFailureAt = dump.lastFailure ? new Date(dump.lastFailure.at) : null;
-  const failureReason = dump.lastFailure?.error ?? null;
+  const problems = databaseDumpProblems(dump);
+  const lastFailureAt = problems.failure ? new Date(problems.failure.at) : null;
+  const failureReason = problems.failure?.error ?? null;
   // A directory that keeps nothing (not writable, or writable inside the
   // container and lost at the next update) is a valid setup when the dumps
   // go to the bucket; with no bucket either, no dump is kept anywhere.
@@ -217,18 +219,19 @@ export function evaluateDatabaseDump(
     );
   }
   const limitMs = DUMP_FAILING_AFTER_HOURS * HOUR_MS;
-  const failedSinceGood =
-    lastFailureAt !== null &&
-    (lastGoodAt === null || lastFailureAt > lastGoodAt);
+  const failedSinceGood = lastFailureAt !== null;
   if (lastGoodAt === null) {
-    if (failedSinceGood) {
+    // Nothing kept anywhere yet; a dump that only failed its upload (no
+    // directory that survives) has not succeeded either.
+    const failed = problems.failure ?? problems.offhost;
+    if (failed) {
       return signal(
         id,
         "failing",
         "never_succeeded",
-        lastFailureAt,
+        new Date(failed.at),
         {},
-        failureReason,
+        failed.error,
       );
     }
     const watched = input.dumpWatchedSince ?? now;
@@ -248,6 +251,43 @@ export function evaluateDatabaseDump(
       { hours: wholeHours(ageMs) },
       failedSinceGood ? failureReason : null,
     );
+  }
+  // The dump is kept on this server, and the bucket configured for it did
+  // not get it: the copy that outlives the host is missing. Past the same
+  // limit as a stale dump, no copy off the host is recent enough to rebuild
+  // from.
+  if (problems.offhost) {
+    const uploadedAt = problems.offhost.lastUploadAt
+      ? new Date(problems.offhost.lastUploadAt)
+      : null;
+    if (uploadedAt === null) {
+      return signal(
+        id,
+        "failing",
+        "offhost_never",
+        lastGoodAt,
+        {},
+        problems.offhost.error,
+      );
+    }
+    const uploadAgeMs = now.getTime() - uploadedAt.getTime();
+    return uploadAgeMs > limitMs
+      ? signal(
+          id,
+          "failing",
+          "offhost_stale",
+          lastGoodAt,
+          { hours: wholeHours(uploadAgeMs) },
+          problems.offhost.error,
+        )
+      : signal(
+          id,
+          "attention",
+          "offhost_failed",
+          lastGoodAt,
+          {},
+          problems.offhost.error,
+        );
   }
   if (failedSinceGood) {
     return signal(

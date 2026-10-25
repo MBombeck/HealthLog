@@ -8348,7 +8348,10 @@
           "retentionOffhost": "La règle de cycle de vie du bucket supprime les copies hors site après {days} jours.",
           "retentionOffhostMissing": "Aucune règle de cycle de vie du bucket ne couvre database/ : les dumps qui s'y trouvent, et les comptes supprimés qu'ils contiennent, ne sont jamais effacés. Ajoutez une règle pour ce préfixe.",
           "notPersistentOffhost": "{dir} n'est pas sur un stockage persistant (il se trouve dans le conteneur et non sur un volume monté, ou en mémoire) : un dump écrit là serait perdu à la prochaine mise à jour. Les dumps partent uniquement hors site : aucun n'est conservé ici et aucun n'est pris avant une migration. Montez le volume de sauvegarde.",
-          "notPersistent": "{dir} n'est pas sur un stockage persistant (il se trouve dans le conteneur et non sur un volume monté, ou en mémoire) et aucun bucket hors site n'est configuré : aucun dump de la base n'est conservé nulle part. Montez le volume de sauvegarde."
+          "notPersistent": "{dir} n'est pas sur un stockage persistant (il se trouve dans le conteneur et non sur un volume monté, ou en mémoire) et aucun bucket hors site n'est configuré : aucun dump de la base n'est conservé nulle part. Montez le volume de sauvegarde.",
+          "offhostFailedTitle": "Le dump le plus récent de la base de données n'est pas arrivé dans le bucket externe",
+          "offhostLastUpload": "Le dump le plus récent du bucket date du {when}.",
+          "offhostNeverUploaded": "Aucun dump de la base de données n'est encore arrivé dans le bucket."
         }
       },
       "danger-zone": {
@@ -8695,7 +8698,10 @@
           "fresh": "Le dernier dump de la base de données est récent.",
           "nowhere_to_write": "Le dossier des dumps {directory} n'est pas accessible en écriture et aucun bucket externe n'est configuré, donc aucun dump ne peut être conservé.",
           "not_persistent": "Le répertoire des dumps {directory} n'est pas sur un stockage persistant et aucun bucket hors site n'est configuré : chaque dump serait perdu à la prochaine mise à jour. Montez le volume de sauvegarde.",
-          "fresh_offhost_only": "Le dump de base le plus récent est à jour et se trouve dans le bucket hors site. Aucun n'est conservé sur ce serveur, car {directory} n'est pas sur un stockage persistant, et aucun n'est pris avant une migration."
+          "fresh_offhost_only": "Le dump de base le plus récent est à jour et se trouve dans le bucket hors site. Aucun n'est conservé sur ce serveur, car {directory} n'est pas sur un stockage persistant, et aucun n'est pris avant une migration.",
+          "offhost_failed": "Le dump le plus récent de la base de données est conservé sur ce serveur, mais son envoi vers le bucket externe a échoué.",
+          "offhost_stale": "Aucun dump de la base de données n'est arrivé dans le bucket externe depuis {hours} heures : les envois échouent à chaque fois. Si ce serveur est perdu, aucun dump récent ne permet de le reconstruire.",
+          "offhost_never": "Aucun dump de la base de données n'est jamais arrivé dans le bucket externe : l'envoi échoue. Si ce serveur est perdu, aucun dump ne permet de le reconstruire."
         },
         "weekly_copy": {
           "no_accounts": "Il n'y a pas encore de compte à copier.",

@@ -71,6 +71,7 @@ function dump(
           error: lastFailureReason ?? "failed",
         }
       : null,
+    offhost: { lastUploadAt: null, failure: null },
     ...rest,
   };
 }
@@ -163,6 +164,89 @@ describe("database dump", () => {
       state: "attention",
       reason: "last_failed",
       detail: "pg_dump exited 1",
+    });
+  });
+
+  // The run that kept its dump here and failed its upload is the newest good
+  // dump and the newest failure at the same instant; read as only those two,
+  // it looked fresh while nothing reached the bucket.
+  it("says when the bucket did not get the newest dump, and fails once its copy there is stale", () => {
+    const keptAt = ago(2 * HOUR);
+    const uploadFailed = (lastUploadAt: Date | null) =>
+      dump({
+        offhostConfigured: true,
+        lastGoodAt: keptAt,
+        lastFailureAt: keptAt,
+        lastFailureReason: "off-host upload failed: AccessDenied",
+        offhost: {
+          lastUploadAt: lastUploadAt?.toISOString() ?? null,
+          failure: {
+            at: keptAt.toISOString(),
+            error: "off-host upload failed: AccessDenied",
+          },
+        },
+      });
+    expect(evalDump(uploadFailed(ago(26 * HOUR)))).toMatchObject({
+      state: "attention",
+      reason: "offhost_failed",
+      detail: "off-host upload failed: AccessDenied",
+    });
+    expect(
+      evalDump(uploadFailed(ago(DUMP_FAILING_AFTER_HOURS * HOUR + 1))),
+    ).toMatchObject({
+      state: "failing",
+      reason: "offhost_stale",
+      params: { hours: 36 },
+    });
+    expect(evalDump(uploadFailed(null))).toMatchObject({
+      state: "failing",
+      reason: "offhost_never",
+    });
+    // A bucket nobody configured is not missing a dump.
+    expect(
+      evalDump({ ...uploadFailed(null), offhostConfigured: false }),
+    ).toMatchObject({ state: "attention", reason: "last_failed" });
+  });
+
+  it("names a failure after the newest dump at the same instant, such as retention throwing", () => {
+    const keptAt = ago(2 * HOUR);
+    expect(
+      evalDump(
+        dump({
+          lastGoodAt: keptAt,
+          lastFailureAt: keptAt,
+          lastFailureReason: "EACCES: unlink",
+        }),
+      ),
+    ).toMatchObject({
+      state: "attention",
+      reason: "last_failed",
+      detail: "EACCES: unlink",
+    });
+  });
+
+  it("calls an upload-only setup whose upload never worked never succeeded", () => {
+    const at = ago(HOUR);
+    expect(
+      evalDump(
+        dump({
+          localDirWritable: true,
+          localPersistent: false,
+          localReason: "container_layer",
+          offhostConfigured: true,
+          lastGoodAt: null,
+          lastFailureAt: at,
+          offhost: {
+            lastUploadAt: null,
+            failure: { at: at.toISOString(), error: "AccessDenied" },
+          },
+        }),
+        ago(2 * HOUR),
+      ),
+    ).toMatchObject({
+      state: "failing",
+      reason: "never_succeeded",
+      detail: "AccessDenied",
     });
   });
 

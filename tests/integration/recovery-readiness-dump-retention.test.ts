@@ -44,6 +44,10 @@ const dumpGoingOffhost = async (): Promise<DatabaseBackupHealth> => ({
     offhost: true,
   },
   lastFailure: null,
+  offhost: {
+    lastUploadAt: new Date(NOW.getTime() - 3_600_000).toISOString(),
+    failure: null,
+  },
 });
 
 function useBucket(): void {

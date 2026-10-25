@@ -8348,7 +8348,10 @@
           "retentionOffhost": "La regola del ciclo di vita del bucket elimina le copie esterne dopo {days} giorni.",
           "retentionOffhostMissing": "Nessuna regola del ciclo di vita del bucket copre database/, quindi i dump lì, e gli account eliminati che contengono, non vengono mai rimossi. Aggiungi una regola per quel prefisso.",
           "notPersistentOffhost": "{dir} non è su uno spazio persistente (si trova dentro il container e non su un volume montato, oppure in memoria), quindi un dump scritto lì andrebbe perso al prossimo aggiornamento. I dump vanno solo fuori sede: qui non ne resta nessuno e prima di una migrazione non ne viene fatto nessuno. Monta il volume dei backup.",
-          "notPersistent": "{dir} non è su uno spazio persistente (si trova dentro il container e non su un volume montato, oppure in memoria) e non è configurato alcun bucket esterno, quindi nessun dump del database viene conservato da nessuna parte. Monta il volume dei backup."
+          "notPersistent": "{dir} non è su uno spazio persistente (si trova dentro il container e non su un volume montato, oppure in memoria) e non è configurato alcun bucket esterno, quindi nessun dump del database viene conservato da nessuna parte. Monta il volume dei backup.",
+          "offhostFailedTitle": "Il dump più recente del database non è arrivato nel bucket esterno",
+          "offhostLastUpload": "Il dump più recente nel bucket è del {when}.",
+          "offhostNeverUploaded": "Nessun dump del database è ancora arrivato nel bucket."
         }
       },
       "danger-zone": {
@@ -8695,7 +8698,10 @@
           "fresh": "L'ultimo dump del database è recente.",
           "nowhere_to_write": "La cartella dei dump {directory} non è scrivibile e non è configurato nessun bucket esterno, quindi non si può conservare alcun dump.",
           "not_persistent": "La cartella dei dump {directory} non è su uno spazio persistente e non è configurato alcun bucket esterno, quindi ogni dump andrebbe perso al prossimo aggiornamento. Monta il volume dei backup.",
-          "fresh_offhost_only": "Il dump del database più recente è aggiornato e si trova nel bucket esterno. Su questo server non ne viene conservato nessuno, perché {directory} non è su uno spazio persistente, e prima di una migrazione non ne viene fatto nessuno."
+          "fresh_offhost_only": "Il dump del database più recente è aggiornato e si trova nel bucket esterno. Su questo server non ne viene conservato nessuno, perché {directory} non è su uno spazio persistente, e prima di una migrazione non ne viene fatto nessuno.",
+          "offhost_failed": "Il dump più recente del database è conservato su questo server, ma il caricamento nel bucket esterno non è riuscito.",
+          "offhost_stale": "Da {hours} ore nessun dump del database è arrivato nel bucket esterno: i caricamenti continuano a non riuscire. Se questo server va perso, non c'è un dump recente da cui ricostruirlo.",
+          "offhost_never": "Nessun dump del database è mai arrivato nel bucket esterno: il caricamento non riesce. Se questo server va perso, non c'è alcun dump da cui ricostruirlo."
         },
         "weekly_copy": {
           "no_accounts": "Non ci sono ancora account da copiare.",

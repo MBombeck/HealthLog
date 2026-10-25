@@ -29,6 +29,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { prisma } from "@/lib/db";
 import { getDatabaseBackupHealth } from "@/lib/database-backup/health";
+import { evaluateDatabaseDump } from "@/lib/recovery/readiness-model";
 import { runDatabaseBackup } from "@/lib/database-backup/run";
 import {
   connect,
@@ -388,6 +389,61 @@ describe("the nightly database dump", () => {
     expect(row).toMatchObject({
       localResult: "not_persistent",
       offhostResult: "uploaded",
+    });
+  });
+
+  // A dump kept on the volume and refused by the bucket is the newest good
+  // dump and the newest failure at once. Read as only those two it looked
+  // healthy, night after night, while nothing left the host.
+  it("does not read a kept dump as healthy when the bucket refused it", async () => {
+    const { mkdirSync } = await import("node:fs");
+    const dir = join(work, "upload-refused");
+    mkdirSync(dir);
+    vi.stubEnv("BACKUP_S3_ENDPOINT", "https://bucket.invalid");
+    vi.stubEnv("BACKUP_S3_BUCKET", "b");
+    vi.stubEnv("BACKUP_S3_ACCESS_KEY", "a");
+    vi.stubEnv("BACKUP_S3_SECRET_KEY", "s");
+    vi.stubEnv("BACKUP_ENCRYPTION_KEY", OFFHOST_KEY);
+    const refusing = {
+      putStream: async (_key: string, body: Readable) => {
+        for await (const _ of body) void _;
+        throw new Error("AccessDenied on database/");
+      },
+    };
+    const report = await runDatabaseBackup(prisma, {
+      now: new Date("2026-10-24T07:00:00Z"),
+      env: backupEnv({ DB_BACKUP_DIR: dir }),
+      s3: refusing as never,
+    });
+    vi.unstubAllEnvs();
+    expect(report).toMatchObject({
+      status: "failed",
+      local: "written",
+      offhost: "failed",
+    });
+
+    const health = await getDatabaseBackupHealth(
+      new Date(),
+      backupEnv({ DB_BACKUP_DIR: dir }),
+    );
+    expect(health.lastGood).toMatchObject({
+      fileName: "healthlog-20261024T070000Z-daily.dump",
+      local: true,
+      offhost: false,
+    });
+    expect(health.offhostConfigured).toBe(true);
+    expect(health.offhost.lastUploadAt).not.toBeNull();
+    expect(health.offhost.failure?.error).toMatch(/AccessDenied/);
+    expect(
+      evaluateDatabaseDump({
+        now: new Date(),
+        dump: health,
+        dumpWatchedSince: null,
+      }),
+    ).toMatchObject({
+      state: "attention",
+      reason: "offhost_failed",
+      detail: expect.stringMatching(/AccessDenied/),
     });
   });
 

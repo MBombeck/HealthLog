@@ -8348,7 +8348,10 @@
           "retentionOffhost": "La regla de ciclo de vida del bucket elimina las copias externas tras {days} días.",
           "retentionOffhostMissing": "Ninguna regla de ciclo de vida del bucket cubre database/, así que los volcados de ahí, y las cuentas eliminadas que contienen, nunca se borran. Añade una regla para ese prefijo.",
           "notPersistentOffhost": "{dir} no está en almacenamiento persistente (está dentro del contenedor y no en un volumen montado, o en memoria), así que un volcado guardado ahí se perdería en la próxima actualización. Los volcados solo se guardan fuera: aquí no queda ninguno y no se hace ninguno antes de una migración. Monta el volumen de copias.",
-          "notPersistent": "{dir} no está en almacenamiento persistente (está dentro del contenedor y no en un volumen montado, o en memoria) y no hay un bucket externo configurado, así que no se conserva ningún volcado de la base de datos en ningún sitio. Monta el volumen de copias."
+          "notPersistent": "{dir} no está en almacenamiento persistente (está dentro del contenedor y no en un volumen montado, o en memoria) y no hay un bucket externo configurado, así que no se conserva ningún volcado de la base de datos en ningún sitio. Monta el volumen de copias.",
+          "offhostFailedTitle": "El volcado más reciente de la base de datos no llegó al bucket externo",
+          "offhostLastUpload": "El volcado más reciente del bucket es del {when}.",
+          "offhostNeverUploaded": "Todavía no ha llegado ningún volcado de la base de datos al bucket."
         }
       },
       "danger-zone": {
@@ -8695,7 +8698,10 @@
           "fresh": "El último volcado de la base de datos es reciente.",
           "nowhere_to_write": "No se puede escribir en el directorio de volcados {directory} y no hay ningún bucket externo configurado, así que no se puede guardar ningún volcado.",
           "not_persistent": "El directorio de volcados {directory} no está en almacenamiento persistente y no hay un bucket externo configurado, así que cada volcado se perdería en la próxima actualización. Monta el volumen de copias.",
-          "fresh_offhost_only": "El volcado más reciente de la base de datos es actual y está en el bucket externo. En este servidor no se conserva ninguno, porque {directory} no está en almacenamiento persistente, y no se hace ninguno antes de una migración."
+          "fresh_offhost_only": "El volcado más reciente de la base de datos es actual y está en el bucket externo. En este servidor no se conserva ninguno, porque {directory} no está en almacenamiento persistente, y no se hace ninguno antes de una migración.",
+          "offhost_failed": "El volcado más reciente de la base de datos se guarda en este servidor, pero la subida al bucket externo falló.",
+          "offhost_stale": "Ningún volcado de la base de datos ha llegado al bucket externo en {hours} horas: las subidas siguen fallando. Si se pierde este servidor, no hay un volcado reciente para reconstruirlo.",
+          "offhost_never": "Ningún volcado de la base de datos ha llegado nunca al bucket externo: la subida falla. Si se pierde este servidor, no hay ningún volcado para reconstruirlo."
         },
         "weekly_copy": {
           "no_accounts": "Todavía no hay cuentas que copiar.",

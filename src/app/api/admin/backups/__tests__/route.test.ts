@@ -74,6 +74,7 @@ const databaseHealth = {
     offhost: true,
   },
   lastFailure: null,
+  offhost: { lastUploadAt: "2026-09-21T23:31:40.000Z", failure: null },
 };
 vi.mock("@/lib/database-backup/health", () => ({
   getDatabaseBackupHealth: async () => databaseHealth,

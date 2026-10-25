@@ -6,7 +6,8 @@
  * The account copies below it restore one account on this server; the dump is
  * the copy that rebuilds the server. So the row leads the card and says three
  * things: when the newest good dump was taken and where it is, whether the
- * newest run failed, and whether this server can keep a dump at all. A
+ * newest run failed (or, with a bucket, did not get its dump there), and
+ * whether this server can keep a dump at all. A
  * directory inside the container (the image's own, without the volume) is
  * writable and still keeps nothing past the next update, so "kept on this
  * server" is only said of a directory that survives it.
@@ -16,6 +17,7 @@ import { AlertTriangle, HardDrive } from "lucide-react";
 import { SettingsInfoTile } from "@/components/settings/_info-tile";
 import { formatBytes } from "@/lib/format/bytes";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { databaseDumpProblems } from "@/lib/database-backup/dump-problems";
 import type { DatabaseBackupHealth } from "@/lib/database-backup/health";
 import type { LifecycleVerdict } from "@/lib/jobs/offhost-lifecycle";
 
@@ -41,9 +43,9 @@ export function DatabaseDumpRow({
   const { t, locale } = useTranslations();
   const fmt = useFormatters();
   const good = health.lastGood;
-  const failure = health.lastFailure;
-  const failedSinceGood =
-    failure !== null && (good === null || failure.at > good.at);
+  const problems = databaseDumpProblems(health);
+  const failure = problems.failure;
+  const offhostFailure = problems.offhost;
 
   let setupProblem: string | null = null;
   if (!health.enabled) {
@@ -115,7 +117,7 @@ export function DatabaseDumpRow({
         </div>
       </div>
 
-      {failedSinceGood && failure ? (
+      {failure ? (
         <div
           role="alert"
           data-slot="database-dump-failed"
@@ -135,6 +137,39 @@ export function DatabaseDumpRow({
                   when: fmt.dateTime(failure.at),
                   reason: failure.error,
                 })}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {offhostFailure ? (
+        <div
+          role="alert"
+          data-slot="database-dump-offhost-failed"
+          className="border-destructive/40 bg-destructive/10 rounded-md border px-3 py-2 text-sm"
+        >
+          <div className="flex items-start gap-2">
+            <AlertTriangle
+              className="mt-0.5 h-4 w-4 shrink-0"
+              aria-hidden="true"
+            />
+            <div>
+              <p className="font-medium">
+                {t("admin.section.backups.database.offhostFailedTitle")}
+              </p>
+              <p className="text-xs">
+                {t("admin.section.backups.database.failedDescription", {
+                  when: fmt.dateTime(offhostFailure.at),
+                  reason: offhostFailure.error,
+                })}
+              </p>
+              <p className="text-xs">
+                {offhostFailure.lastUploadAt
+                  ? t("admin.section.backups.database.offhostLastUpload", {
+                      when: fmt.dateTime(offhostFailure.lastUploadAt),
+                    })
+                  : t("admin.section.backups.database.offhostNeverUploaded")}
               </p>
             </div>
           </div>
