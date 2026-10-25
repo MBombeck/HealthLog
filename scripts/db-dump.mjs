@@ -12,7 +12,9 @@
  * newest two, neither older than the oldest nightly dump except the newest.
  *
  * Exit 0: the dump was written, or there was nothing to do (no pending
- * migration, a new database, `DB_BACKUP_BEFORE_MIGRATE=false`), or there is no
+ * migration, a new database, `DB_BACKUP_BEFORE_MIGRATE=false`; a count of
+ * pending migrations that fails is not "none", and the dump is taken), or
+ * there is no
  * directory to put it in that survives the container (none writable, or only
  * the image's own directory without the volume, which the update that brings
  * these migrations is about to throw away), which is said as a warning and is
@@ -74,6 +76,11 @@ export async function preMigrationDump(env = process.env, options = {}) {
   const databaseUrl = env.DATABASE_URL;
   if (!databaseUrl) return 0;
 
+  // "Cannot tell" is not "nothing to do": a count that timed out on a
+  // database still starting up was read as no pending migration, and the
+  // migration a second later ran without its way back. Unknown, the dump is
+  // taken.
+  /** @type {string[] | null} */
   let pending;
   try {
     pending = await pendingMigrations({
@@ -82,11 +89,15 @@ export async function preMigrationDump(env = process.env, options = {}) {
     });
   } catch (error) {
     warn(
-      `could not count pending migrations (${error instanceof Error ? error.message : String(error)}); no dump before migrating.`,
+      `could not count pending migrations (${error instanceof Error ? error.message : String(error)}); taking the dump before migrating anyway.`,
     );
-    return 0;
+    pending = null;
   }
-  if (pending.length === 0) return 0;
+  if (pending !== null && pending.length === 0) return 0;
+  const migrations =
+    pending === null
+      ? "any pending migrations"
+      : `${pending.length} pending migration(s)`;
 
   // A database no migration has touched holds nothing to lose.
   const client = await connect(databaseUrl);
@@ -115,15 +126,13 @@ export async function preMigrationDump(env = process.env, options = {}) {
         ? "is in memory (tmpfs) and would not keep a dump past a restart"
         : "is inside the container, not on a mounted volume, and would not keep a dump past this update";
     warn(
-      `${dir} ${why}, so no dump is taken before the ${pending.length} pending migration(s). ` +
+      `${dir} ${why}, so no dump is taken before ${pending === null ? migrations : `the ${migrations}`}. ` +
         "Mount the backups volume (docker-compose.yml) to keep a way back; continuing.",
     );
     return 0;
   }
 
-  log(
-    `taking a database dump before ${pending.length} pending migration(s) into ${dir}...`,
-  );
+  log(`taking a database dump before ${migrations} into ${dir}...`);
   const started = Date.now();
   try {
     const { dumpPath, manifest } = await createDatabaseDump({
