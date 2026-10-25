@@ -95,8 +95,14 @@ function seedRows(): Prisma.MeasurementCreateManyInput[] {
       unit: type === "PULSE" ? "bpm" : "mmHg",
       measuredAt: new Date(at),
     });
+  // Blood pressure at 10:00 UTC (the second source at 10:10) from yesterday
+  // back, never relative to the clock: a reading taken six hours before a run
+  // at 05:50 to 06:00 UTC put the second source's pair just past midnight, on
+  // a UTC day of its own, where the pick rightly chose it and the series
+  // assertion below failed for that ten minutes of the day.
+  const bpDay = Math.floor(now / DAY) * DAY - DAY + 10 * 3_600_000;
   for (let d = 0; d < 3000; d += 1) {
-    const at = now - (d + 0.25) * DAY;
+    const at = bpDay - d * DAY;
     push("BLOOD_PRESSURE_SYS", "WITHINGS", 120 + (d % 30), at);
     push("BLOOD_PRESSURE_DIA", "WITHINGS", 75 + (d % 15), at);
     if (d % 3 === 0) {
