@@ -484,7 +484,7 @@ export function planInboundTextReads(
 export async function planInboundReads(
   source: InboundReadSource,
   schedule: OcrSchedule,
-): Promise<({ ok: true } & InboundReads) | { ok: false }> {
+): Promise<({ ok: true } & InboundReads) | { ok: false; busy?: true }> {
   if (source.mode === "text") {
     return { ok: true, ...planInboundTextReads(source.text, schedule) };
   }
@@ -494,7 +494,7 @@ export async function planInboundReads(
     source.pdfSupported,
     schedule,
   );
-  if (!plan.ok) return { ok: false };
+  if (!plan.ok) return plan;
   return {
     ok: true,
     args: { mode: "vision", chunks: plan.chunks, totalPages: plan.totalPages },

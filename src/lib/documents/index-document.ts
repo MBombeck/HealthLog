@@ -58,6 +58,7 @@ import {
 import { transcribeDocument } from "@/lib/documents/describe";
 import { documentAutoReadEnabled } from "@/lib/documents/document-settings";
 import { localExtractText } from "@/lib/documents/local-extract";
+import { PdfReaderUnavailableError } from "@/lib/documents/pdfjs";
 import { resolveDocumentVisionProvider } from "@/lib/documents/provider-order";
 import { decryptDocumentContent } from "@/lib/documents/store";
 import { prisma } from "@/lib/db";
@@ -237,6 +238,12 @@ async function tryProviderIndex(
     }
     if (vision.reason === "rasterFailed") {
       return { outcome: null, note: "raster-failed" };
+    }
+    if (vision.reason === "readerBusy") {
+      // The reader could not take the document now. Falling back to the
+      // local text layer would settle for the lesser read for good; the job
+      // runs again instead.
+      throw new PdfReaderUnavailableError("busy");
     }
     if (vision.reason === "pdfNeedsAnthropic") {
       return { outcome: null, note: "pdf-needs-anthropic" };

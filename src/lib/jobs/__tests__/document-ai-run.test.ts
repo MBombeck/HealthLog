@@ -285,6 +285,32 @@ describe("runDocumentAiRun", () => {
     );
   });
 
+  it("reads as interactive work of the run's owner, so the document reader serves it first", async () => {
+    let seen: unknown = null;
+    executeDocumentIndex.mockImplementation(async () => {
+      const { currentPdfWork } = await import("@/lib/documents/pdf-isolation");
+      seen = currentPdfWork();
+      return { ok: true, data: {} };
+    });
+    await runDocumentAiRun("run1", NOW + 2_700_000, now);
+    expect(seen).toEqual({ owner: "u1", lane: "interactive" });
+  });
+
+  it("answers a busy document reader with a retryable code and hands the reservation back", async () => {
+    const { PdfReaderUnavailableError } = await import("@/lib/documents/pdfjs");
+    executeDocumentIndex.mockRejectedValue(
+      new PdfReaderUnavailableError("busy"),
+    );
+    expect(await runDocumentAiRun("run1", NOW + 2_700_000, now)).toBe("failed");
+    expect(settleAiRunBudget).toHaveBeenCalledWith("u1", budget, 0, null);
+    expect(failAiRun).toHaveBeenCalledWith(
+      "run1",
+      expect.objectContaining({ status: 503, errorCode: "aiRuns.readerBusy" }),
+      "RUNNING",
+      new Date(NOW),
+    );
+  });
+
   it("fails a run whose document is gone and hands the reservation back", async () => {
     loadOwnedDocument.mockResolvedValue(null);
     expect(await runDocumentAiRun("run1", NOW + 2_700_000, now)).toBe("failed");

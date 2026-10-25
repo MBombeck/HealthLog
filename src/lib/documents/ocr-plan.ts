@@ -170,7 +170,12 @@ export type OcrVisionPlan =
       /** Set when the PDF is longer than the page cap: only the first pages are read. */
       pageCoverage?: { read: number; total: number };
     }
-  | { ok: false };
+  /**
+   * `busy`: the reader could not take the PDF now (busy past the wait a read
+   * gets, or its process ended for no measured reason). Not a verdict on the
+   * file; the person asks again.
+   */
+  | { ok: false; busy?: true };
 
 /**
  * Plan the reads of an image or a PDF. Every PDF is rendered first: a report
@@ -226,7 +231,12 @@ export async function planVisionReads(
         : {}),
     };
   }
-  if (!pdfSupported) return { ok: false };
+  if (!pdfSupported) {
+    return !raster.ok &&
+      (raster.reason === "busy" || raster.reason === "interrupted")
+      ? { ok: false, busy: true }
+      : { ok: false };
+  }
   return {
     ok: true,
     chunks: [

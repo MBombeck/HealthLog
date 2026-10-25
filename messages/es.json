@@ -175,6 +175,9 @@
           "failed": "No se pudo leer la etiqueta. Prueba con una foto más nítida."
         }
       }
+    },
+    "aiRuns": {
+      "readerBusy": "El lector de documentos está ocupado con otras tareas. Inténtalo de nuevo en un minuto."
     }
   },
   "doctorReport": {
@@ -13258,7 +13261,8 @@
     "backgroundScan": "Leyendo en segundo plano. Con un modelo lento puede tardar unos minutos.",
     "waitingForWorker": "Esperando al proceso en segundo plano. Si no cambia, puede que el worker del servidor no esté en marcha.",
     "errorWorkerUnavailable": "El proceso en segundo plano no está disponible ahora mismo. Inténtalo de nuevo en un momento o pide a quien administra el servidor que lo revise.",
-    "errorTimedOut": "La lectura tardó más de lo que permite tu tiempo de respuesta de IA. Inténtalo de nuevo o aumenta el tiempo de respuesta en los ajustes de IA."
+    "errorTimedOut": "La lectura tardó más de lo que permite tu tiempo de respuesta de IA. Inténtalo de nuevo o aumenta el tiempo de respuesta en los ajustes de IA.",
+    "errorReaderBusy": "El lector de documentos está ocupado con otras tareas. Inténtalo de nuevo en un minuto."
   },
   "symptoms": {
     "add": "Nuevo síntoma",

@@ -175,6 +175,9 @@
           "failed": "Het etiket kon niet worden gelezen. Probeer een scherpere foto."
         }
       }
+    },
+    "aiRuns": {
+      "readerBusy": "De documentlezer is met ander werk bezig. Probeer het over een minuut opnieuw."
     }
   },
   "doctorReport": {
@@ -13258,7 +13261,8 @@
     "backgroundScan": "Wordt op de achtergrond gelezen. Met een traag model kan dit een paar minuten duren.",
     "waitingForWorker": "Wachten op het achtergrondproces. Als dit niet verandert, draait het achtergrondproces van de server mogelijk niet.",
     "errorWorkerUnavailable": "Het achtergrondproces is op dit moment niet beschikbaar. Probeer het zo opnieuw, of vraag de beheerder van de server om het te controleren.",
-    "errorTimedOut": "Het lezen duurde langer dan je ingestelde AI-responstijd toestaat. Probeer het opnieuw, of verhoog de responstijd in de AI-instellingen."
+    "errorTimedOut": "Het lezen duurde langer dan je ingestelde AI-responstijd toestaat. Probeer het opnieuw, of verhoog de responstijd in de AI-instellingen.",
+    "errorReaderBusy": "De documentlezer is met ander werk bezig. Probeer het over een minuut opnieuw."
   },
   "symptoms": {
     "add": "Nieuw symptoom",

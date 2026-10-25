@@ -175,6 +175,9 @@
           "failed": "Non è stato possibile leggere l'etichetta. Prova con una foto più nitida."
         }
       }
+    },
+    "aiRuns": {
+      "readerBusy": "Il lettore di documenti è occupato con altre attività. Riprova tra un minuto."
     }
   },
   "doctorReport": {
@@ -13258,7 +13261,8 @@
     "backgroundScan": "Lettura in background. Con un modello lento può richiedere qualche minuto.",
     "waitingForWorker": "In attesa del processo in background. Se non cambia, il worker del server potrebbe non essere attivo.",
     "errorWorkerUnavailable": "Il processo in background non è disponibile al momento. Riprova tra poco o chiedi a chi gestisce il server di controllarlo.",
-    "errorTimedOut": "La lettura ha richiesto più tempo di quanto consenta il tuo tempo di risposta dell'IA. Riprova o aumenta il tempo di risposta nelle impostazioni IA."
+    "errorTimedOut": "La lettura ha richiesto più tempo di quanto consenta il tuo tempo di risposta dell'IA. Riprova o aumenta il tempo di risposta nelle impostazioni IA.",
+    "errorReaderBusy": "Il lettore di documenti è occupato con altre attività. Riprova tra un minuto."
   },
   "symptoms": {
     "add": "Nuovo sintomo",

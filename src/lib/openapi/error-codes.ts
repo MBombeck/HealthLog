@@ -57,6 +57,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     aiRuns: [
       "aiRuns.failed",
       "aiRuns.notFound",
+      "aiRuns.readerBusy",
       "aiRuns.timedOut",
       "aiRuns.workerUnavailable",
     ],

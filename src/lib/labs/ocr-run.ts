@@ -20,6 +20,7 @@ import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 import { refusalAsFailure } from "@/lib/documents/ai-runs/http";
 import type { ProviderChainType } from "@/lib/ai/provider-chain";
 import { meteredReadBudget } from "@/lib/documents/ai-runs/metered-budget";
+import { readerBusyFailure } from "@/lib/documents/ai-runs/run-support";
 import {
   AI_RUN_ERROR_CODES,
   type AiRunBudget,
@@ -221,6 +222,10 @@ export async function executeOcrExtraction(args: {
     input.pick.pdfSupported,
     schedule,
   );
+  if (!plan.ok && plan.busy) {
+    await settle(false);
+    return readerBusyFailure();
+  }
   if (!plan.ok) {
     annotate({
       action: { name: "labs.ocr.fileRejected" },

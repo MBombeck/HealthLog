@@ -175,6 +175,9 @@
           "failed": "Das Etikett konnte nicht gelesen werden. Versuch ein schärferes Foto."
         }
       }
+    },
+    "aiRuns": {
+      "readerBusy": "Der Dokumentleser ist gerade mit anderen Aufgaben beschäftigt. Versuch es in einer Minute noch einmal."
     }
   },
   "doctorReport": {
@@ -13258,7 +13261,8 @@
     "backgroundScan": "Wird im Hintergrund gelesen. Mit einem langsamen Modell kann das ein paar Minuten dauern.",
     "waitingForWorker": "Warte auf den Hintergrunddienst. Ändert sich das nicht, läuft der Worker auf dem Server vielleicht nicht.",
     "errorWorkerUnavailable": "Der Hintergrunddienst ist gerade nicht erreichbar. Versuch es gleich noch einmal oder bitte die Person, die den Server betreibt, ihn zu prüfen.",
-    "errorTimedOut": "Das Lesen hat länger gedauert, als deine KI-Antwortzeit erlaubt. Versuch es noch einmal oder erhöhe die Antwortzeit in den KI-Einstellungen."
+    "errorTimedOut": "Das Lesen hat länger gedauert, als deine KI-Antwortzeit erlaubt. Versuch es noch einmal oder erhöhe die Antwortzeit in den KI-Einstellungen.",
+    "errorReaderBusy": "Der Dokumentleser ist gerade mit anderen Aufgaben beschäftigt. Versuch es in einer Minute noch einmal."
   },
   "symptoms": {
     "add": "Neues Symptom",

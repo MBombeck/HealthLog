@@ -13,7 +13,7 @@ import type {
 } from "@/lib/documents/provider-order";
 import type { VisionInput } from "@/lib/documents/ai-route-support";
 
-import type { AiRunOutcome } from "./types";
+import { AI_RUN_ERROR_CODES, type AiRunOutcome } from "./types";
 
 export type DocumentVisionPick = Awaited<
   ReturnType<typeof requireDocumentVisionProvider>
@@ -45,6 +45,19 @@ export function unreadableDocument(parseError: boolean): AiRunOutcome<never> {
 }
 
 /**
+ * The document reader was busy with other work for longer than a person's
+ * read waits, or its process ended for no reason it measured. Nothing was
+ * read and nothing is charged; asking again in a minute is the answer.
+ */
+export function readerBusyFailure(): AiRunOutcome<never> {
+  return runFailure({
+    status: 503,
+    message: "The document reader is busy. Try again in a minute.",
+    errorCode: AI_RUN_ERROR_CODES.readerBusy,
+  });
+}
+
+/**
  * A stored original that could not become a provider input, as the summary
  * and suggest routes have always answered it.
  */
@@ -59,6 +72,7 @@ export function visionPreparationFailure(
       errorCode: "documents.inbound.pdfNeedsAnthropic",
     });
   }
+  if (reason === "readerBusy") return readerBusyFailure();
   if (reason === "fileType") {
     return runFailure({
       status: 422,
