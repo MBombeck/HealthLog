@@ -3,7 +3,7 @@
  * from the account copies: a rule scoped to another prefix, or to a tag, does
  * not touch them.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { LifecycleRule } from "@aws-sdk/client-s3";
 
 import { lifecycleFromRules, ruleAppliesTo } from "../offhost-lifecycle";
@@ -27,6 +27,25 @@ describe("lifecycle rules and the database dumps", () => {
         rule(14, { Filter: { Prefix: "database/" } }),
       ]).database,
     ).toEqual({ state: "configured", expirationDays: 14 });
+  });
+
+  it("reads the rules for this instance's own folder under database/", () => {
+    vi.stubEnv("APP_URL", "https://health.example.org");
+    try {
+      expect(
+        lifecycleFromRules([
+          rule(30, { Filter: { Prefix: "2026-" } }),
+          rule(9, { Filter: { Prefix: "database/health.example.org/" } }),
+        ]).database,
+      ).toEqual({ state: "configured", expirationDays: 9 });
+      expect(
+        lifecycleFromRules([
+          rule(9, { Filter: { Prefix: "database/staging.example.org/" } }),
+        ]).database,
+      ).toEqual({ state: "missing", expirationDays: null });
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("says database/ is not covered when the only rule is scoped elsewhere", () => {

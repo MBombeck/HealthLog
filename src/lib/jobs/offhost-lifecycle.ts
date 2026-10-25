@@ -16,6 +16,10 @@
  * without `s3:GetLifecycleConfiguration`, a target that does not implement the
  * call, a network failure) and says nothing either way.
  */
+import {
+  instanceIdFromEnv,
+  offhostObjectKey,
+} from "@/lib/database-backup/dump-core.mjs";
 import type { LifecycleRule } from "@aws-sdk/client-s3";
 
 export interface LifecycleVerdict {
@@ -40,9 +44,17 @@ export const LIFECYCLE_MISSING: OffhostLifecycle = {
   database: { state: "missing", expirationDays: null },
 };
 
-/** A key a database dump is stored under, to test the rules against. */
-const DATABASE_SAMPLE_KEY =
-  "database/healthlog-20260101T013000Z-daily.dump.enc";
+/**
+ * A key this instance's database dumps are stored under, to test the rules
+ * against: inside its own folder (`database/<host of APP_URL>/`), so a rule
+ * scoped to that folder counts and one scoped to another instance's does not.
+ */
+function databaseSampleKey(): string {
+  return offhostObjectKey(
+    "healthlog-20260101T013000Z-daily.dump.enc",
+    instanceIdFromEnv(),
+  );
+}
 
 /**
  * Whether a rule's filter takes in `key`. Our objects carry no tags, so a
@@ -73,7 +85,7 @@ export function lifecycleFromRules(
   return {
     ...verdict(rules),
     database: verdict(
-      rules.filter((rule) => ruleAppliesTo(rule, DATABASE_SAMPLE_KEY)),
+      rules.filter((rule) => ruleAppliesTo(rule, databaseSampleKey())),
     ),
   };
 }
