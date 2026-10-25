@@ -7,7 +7,6 @@ import type { RecoveryKit } from "@/lib/recovery/kit-rules";
 
 export type {
   KitKey,
-  KitKeyKind,
   KitPlatform,
   RecoveryKit,
 } from "@/lib/recovery/kit-rules";
