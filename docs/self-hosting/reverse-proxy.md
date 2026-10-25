@@ -16,17 +16,18 @@ tailnet with no extra container. See
 
 ## Pre-flight — env vars the proxy interacts with
 
-| Variable              | Required for                                   | Notes                                    |
-| --------------------- | ---------------------------------------------- | ---------------------------------------- |
-| `NEXT_PUBLIC_APP_URL` | Every public-facing absolute URL the UI emits  | Must match the hostname the proxy serves |
-| `APP_URL`             | Server-side absolute URLs from background jobs | Mirror of the above; both must match     |
-| `TRUST_PROXY_HOPS`    | `X-Forwarded-For` chain trust                  | Defaults to `1` — one trusted hop        |
+| Variable                 | Required for                                   | Notes                                    |
+| ------------------------ | ---------------------------------------------- | ---------------------------------------- |
+| `NEXT_PUBLIC_APP_URL`    | Every public-facing absolute URL the UI emits  | Must match the hostname the proxy serves |
+| `APP_URL`                | Server-side absolute URLs from background jobs | Mirror of the above; both must match     |
+| `TRUST_PROXY_HOPS`       | `X-Forwarded-For` chain trust                  | Defaults to `1` — one trusted hop        |
+| `TRUST_CF_CONNECTING_IP` | Reading the visitor address Cloudflare sends   | Off unless `1`; see the warning below    |
 
 Set the URL pair to the public origin (`https://your-instance.example.com`)
 and restart the `app` container. The image reads both at startup; no
 rebuild needed.
 
-All three variables are on the shipped `docker-compose.yml`
+All four variables are on the shipped `docker-compose.yml`
 `environment:` whitelist, so a value in `.env` reaches the container
 without editing the compose file. (Before v1.37.33 the whitelist was
 missing `TRUST_PROXY_HOPS`; on those versions add
@@ -51,17 +52,44 @@ A misconfigured count logs a one-shot warning to stderr and collapses
 every anonymous caller into one shared rate-limit bucket. Match the
 value to the actual hop count.
 
-Forwarding headers are believed only from a connection that could come
-from a proxy: loopback, a private or unique-local network, or CGNAT (a
-Tailscale address). A request that reaches HealthLog straight from a public
+Forwarding headers are believed only from a connection whose own address
+is not a public one, which is where a proxy you run connects from:
+
+- IPv4: loopback (`127.0.0.0/8`), `0.0.0.0/8`, the private ranges
+  (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), CGNAT
+  (`100.64.0.0/10`, Tailscale), link-local (`169.254.0.0/16`), the reserved
+  blocks `192.0.0.0/24` and `198.18.0.0/15`, and everything from
+  `224.0.0.0` up (multicast and reserved);
+- IPv6: `::` and `::1`, link-local (`fe80::/10`), site-local (`fec0::/10`),
+  unique-local (`fc00::/7`, Tailscale), multicast (`ff00::/8`), and an
+  IPv4-mapped or embedded address from one of the IPv4 ranges above.
+
+The reserved and multicast blocks are in the list because no host on the
+internet can open a connection from them, so a peer there sits on a network
+you run. A request that reaches HealthLog straight from a public
 address carries headers its sender wrote, so HealthLog ignores them and
 uses the connection's own address, and says so once in the log. A proxy on
 the same host or Docker network connects from a private address, so the
 usual setups above need nothing. If your proxy reaches HealthLog over a
-public address, put it on a private network with HealthLog instead (or, for
-Cloudflare straight to the origin, use `TRUST_CF_CONNECTING_IP=1`). The log
+public address, put it on a private network with HealthLog instead. The log
 line also shows up when the published port is open to the internet beside
 the proxy; bind it to the proxy's network or to `127.0.0.1` then.
+
+### `TRUST_CF_CONNECTING_IP` — only when the origin takes Cloudflare only
+
+With `TRUST_CF_CONNECTING_IP=1` HealthLog takes the visitor's address from
+the `CF-Connecting-IP` header, before any of the checks above: from every
+connection, whatever its address, and whatever `TRUST_PROXY_HOPS` says.
+Cloudflare sets that header on every request through its edge, but any
+client can send it too. So the flag is safe only when nothing but
+Cloudflare can reach the origin: a Cloudflare Tunnel with no published
+port, or a firewall that admits only
+[Cloudflare's address ranges](https://www.cloudflare.com/ips/) to the port
+HealthLog or its proxy listens on (Authenticated Origin Pulls on top is
+better still). If the origin also answers on its own public address, a
+caller who finds it chooses the address every per-IP rate limit, the audit
+log and the sign-in locations record, and changes it on every request.
+Without Cloudflare in front, leave the flag unset.
 
 `X-Real-IP` gets the same trust as `X-Forwarded-For`. It is read only
 when `TRUST_PROXY_HOPS` is exactly `1` and the request carries no

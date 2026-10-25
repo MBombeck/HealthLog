@@ -92,8 +92,10 @@ x-healthlog-env: &healthlog_env
   TELEGRAM_WEBHOOK_SECRET: "${TELEGRAM_WEBHOOK_SECRET:-}"
   # v1.18.11 (W3) — client-IP resolution + geo lookup. Behind Cloudflare
   # the real visitor IP is in `cf-connecting-ip`; set
-  # TRUST_CF_CONNECTING_IP=1 ONLY when Cloudflare is in front (off by
-  # default — a direct-exposed host must not trust a forgeable header).
+  # TRUST_CF_CONNECTING_IP=1 ONLY when the origin accepts connections from
+  # Cloudflare alone (a Tunnel, or a firewall admitting only Cloudflare's
+  # ranges): the header is believed from every connection (off by default;
+  # see docs/self-hosting/reverse-proxy.md).
   # IP_GEO_LOOKUP_URL overrides the default ipwho.is provider (HTTPS by
   # default); IP_GEO_LOOKUP_DISABLED=1 stops all third-party IP egress.
   # IP_GEO_ALLOW_INSECURE=true permits a plain-HTTP provider URL (e.g. the

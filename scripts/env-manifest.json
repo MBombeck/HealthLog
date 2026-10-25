@@ -424,7 +424,12 @@
         },
         {
           "name": "TRUST_PROXY_HOPS",
-          "purpose": "Trusted reverse-proxy hop count; the client IP is read that many entries from the right of X-Forwarded-For.",
+          "purpose": "Trusted reverse-proxy hop count; the client IP is read that many entries from the right of X-Forwarded-For. Forwarding headers are read only from a peer whose own address is not public (loopback, private, CGNAT, unique-local, link-local, reserved, multicast).",
+          "example": "1"
+        },
+        {
+          "name": "TRUST_CF_CONNECTING_IP",
+          "purpose": "\"1\" takes the client IP from Cloudflare's CF-Connecting-IP header, from every connection and before the peer check. Safe only when the origin accepts connections from Cloudflare alone (a Tunnel, or a firewall admitting only Cloudflare's ranges); otherwise any caller forges the address rate limits and the audit log record. Off by default.",
           "example": "1"
         },
         {
