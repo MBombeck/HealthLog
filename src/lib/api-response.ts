@@ -643,11 +643,6 @@ function warnUnreadProxyHeadersOnce(hops: number, header: string): void {
  */
 let publicPeerForwardingWarned = false;
 
-/** Test-only reset for {@link warnPublicPeerForwardingOnce}. */
-export function _resetPublicPeerForwardingWarningForTests(): void {
-  publicPeerForwardingWarned = false;
-}
-
 function warnPublicPeerForwardingOnce(): void {
   if (publicPeerForwardingWarned) return;
   publicPeerForwardingWarned = true;
