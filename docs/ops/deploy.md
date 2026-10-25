@@ -270,10 +270,13 @@ always confirm the served build after a deploy:
 ```sh
 # Asserts prod + demo serve 1.9.0, prints each target's buildSha,
 # exits non-zero on a mismatch or timeout after a bounded retry loop.
-pnpm dlx tsx scripts/assert-deploy.ts 1.9.0
+HEALTHLOG_PROD_URL=https://healthlog.example.com \
+  pnpm dlx tsx scripts/assert-deploy.ts 1.9.0
 ```
 
-Pass `--only=prod` / `--only=demo` to check a single target, or
+`HEALTHLOG_PROD_URL` is the base URL of your instance; it has no default and
+is required unless you pass `--only=demo`. Pass `--only=prod` /
+`--only=demo` to check a single target, or
 `--attempts=N --interval=ms` to widen the retry window while a slow
 pull settles.
 

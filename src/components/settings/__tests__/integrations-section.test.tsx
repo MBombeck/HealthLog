@@ -251,8 +251,13 @@ describe("IntegrationsSection — one status display per card", () => {
     for (const provider of PROVIDERS) {
       expect(html).toContain(`data-testid="${provider}-setup-guide"`);
       expect(html).toContain(
-        `href="https://docs.healthlog.dev/integrations/${provider}"`,
+        `href="https://docs.healthlog.dev/guides/connect-${provider}/"`,
       );
     }
+    // Garmin has no connector; its note goes straight to the section of the
+    // Google Health guide that explains the route, not through a redirect.
+    expect(html).toContain(
+      'href="https://docs.healthlog.dev/guides/connect-google-health/#garmin-owners"',
+    );
   });
 });

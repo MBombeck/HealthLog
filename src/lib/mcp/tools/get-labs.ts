@@ -5,16 +5,14 @@ import { resolveMarkerForRead } from "@/lib/labs/biomarker-resolve";
 import { getLabHistory, LAB_HISTORY_MAX_LIMIT } from "@/lib/mcp/rich-reads";
 import { decodeOffsetCursor } from "@/lib/mcp/pagination";
 import type { McpAuthContext } from "../auth";
+import { coachReadOutput } from "./output-shapes";
 import { runCoachTool, whenModuleOn } from "./shared";
 import { READ_ONLY_ANNOTATIONS, type McpToolDefinition } from "./types";
 
 /** Output schema for `get_labs` — latest-per-biomarker OR a paginated history. */
 const getLabsOutput: z.ZodRawShape = {
-  present: z.boolean(),
-  reason: z.string().optional(),
-  // Latest-mode payload (the Coach labs section, carried opaque).
-  data: z.unknown().optional(),
-  grounding: z.string().optional(),
+  // Latest-mode payload, including typed empty-read availability metadata.
+  ...coachReadOutput,
   // History-mode payload (per-analyte trajectory + pagination).
   analyte: z.string().optional(),
   readings: z

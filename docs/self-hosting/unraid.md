@@ -116,8 +116,8 @@ PostgreSQL container you installed in Step 1. Back that one up.
 
 `SESSION_COOKIE_SECURE=false` is required for plain-HTTP LAN installs
 (`http://tower:3000`). Left at its default, the session cookie carries the
-`Secure` flag, the browser refuses to send it over HTTP, and login appears to
-"do nothing" — the page reloads to the login screen with no error.
+`Secure` flag, which the browser would drop over HTTP. The login page says so
+before anything is sent: "Signing in cannot complete on this page".
 
 Set `SESSION_COOKIE_SECURE=true` (or leave it unset) only when a TLS reverse
 proxy serves HealthLog over HTTPS. In that case also point `NEXT_PUBLIC_APP_URL`

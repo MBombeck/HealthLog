@@ -313,6 +313,9 @@ describe("GET /api/fhir/metadata", () => {
               z.looseObject({
                 type: z.string(),
                 interaction: z.array(z.object({ code: z.string() })),
+                searchParam: z.array(
+                  z.object({ name: z.string(), type: z.string() }),
+                ),
                 operation: z.array(z.object({ name: z.string() })).optional(),
               }),
             ),
@@ -329,6 +332,21 @@ describe("GET /api/fhir/metadata", () => {
     const patient = resources.filter((r) => r.type === "Patient");
     expect(patient).toHaveLength(1);
     expect(patient[0].operation?.map((o) => o.name)).toEqual(["everything"]);
+
+    // Paging on every search; the Observation search alone honours the
+    // time-series range and the code filter, and says so.
+    for (const resource of resources) {
+      expect(resource.searchParam, resource.type).toEqual([
+        { name: "_count", type: "number" },
+        { name: "_offset", type: "number" },
+        ...(resource.type === "Observation"
+          ? [
+              { name: "date", type: "date" },
+              { name: "code", type: "token" },
+            ]
+          : []),
+      ]);
+    }
 
     const root = path.join(process.cwd(), "src/app/api/fhir");
     for (const resource of resources) {

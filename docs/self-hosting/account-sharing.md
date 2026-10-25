@@ -214,11 +214,15 @@ as something to log in as.
   or delete the profile under a fresh second factor. Deleting the profile
   deletes everything recorded for it.
 - A guardian may keep that record's settings: modules, units, thresholds,
-  its language and timezone, and its notification preferences. Connected
-  services are visible as a status only. Connect, callback, sync,
-  credential, disconnect, resume and test are not guardian surfaces in
-  this release, and their deep links land on the shared-record unavailable
-  page rather than on a raw refusal.
+  its language and timezone, and its notification preferences. A guardian
+  can also connect and disconnect the record's Withings, WHOOP, Oura, Polar,
+  Strava and Google Health from its integrations page; the data lands in the
+  profile's record, and a profile without its own provider app uses the
+  guardian's. Fitbit (no new connections), Nightscout and Dawarich cannot be
+  connected for a profile. Sync, the connection test and provider
+  credentials are not guardian surfaces: once connected, the record syncs on
+  its own schedule, and their deep links land on the shared-record
+  unavailable page rather than on a raw refusal.
 - **Its reminders go to its guardians.** A record with no login has no
   channels of its own, so medication reminders, measurement reminders,
   safety-floor alerts and low-stock alerts fan out to every active

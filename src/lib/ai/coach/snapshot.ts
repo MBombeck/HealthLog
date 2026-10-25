@@ -667,8 +667,9 @@ async function buildCoachSnapshotImpl(
   // v1.18.11 (#65) — lab-result context. Like illness it is CONTEXT, not a
   // scope-gated metric: attached without a `registerBlock` so the budget
   // degrader never sheds it. The helper is module-gated internally: with the
-  // labs module off it reads nothing and answers null. The block carries the most-recent resolved reading per biomarker (last 12 months,
-  // capped) so the Coach can answer "what was my LDL" without re-deriving.
+  // labs module off it reads nothing and answers null. The block carries the
+  // latest resolved reading per biomarker (whole record or the lookback limit,
+  // capped) so the Coach can answer "what was my LDL".
   const labsBlockPromise = buildLabsSnapshotBlock(userId, now, reach);
 
   // v1.38 — doctor-visit context. Like illness/labs it is attempted always (a

@@ -51,7 +51,10 @@
  * and no lab row is read, so neither the Coach prompt nor its `get_labs` tool
  * sees a value. It used to ride regardless, a decision from before Labs could
  * be switched off; the data routes (`/api/labs`) stay ungated, because a
- * module decides what a model is given, not what the owner can read.
+ * module decides what a model is given, not what the owner can read. With the
+ * module on, the block is `null` only when no reading falls inside the
+ * lookback limit (the whole record when there is none), or, for a named read,
+ * when no marker matches the analyte.
  */
 import { sameLabUnit } from "@/lib/labs/unit-normalise";
 import {

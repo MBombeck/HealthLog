@@ -75,10 +75,12 @@ const healthKitEntry = z
       "One resolved HealthKit metric mapping (defaults merged with the user's stored overrides).",
   });
 
-// The health-shaped fields that predate `health` (v1.42.4). They stay on the
-// wire through v1.43 so App 1.2.0 keeps decoding, are marked deprecated in the
-// document, and go in v1.44.
-const LEGACY_HEALTH_FIELD = "Deprecated: removed in v1.44, read `health`.";
+// The health-shaped fields that predate `health`. They are marked deprecated
+// in the document and stay on the wire: native builds from before `health`
+// still decode them, the current one falls back to them only against a server
+// that sends no `health`, and the web card's copied diagnostics read the
+// failure streak. No removal release is set.
+const LEGACY_HEALTH_FIELD = "Deprecated, still served: read `health`.";
 
 function legacy(text?: string): { deprecated: true; description: string } {
   return {
@@ -1184,7 +1186,7 @@ const integrationEnvelopeEntry = z
     health: connectionHealth
       .nullable()
       .describe(
-        "The unified connection state, null when the provider is not connected (and for Fitbit once `retirement.ended`). It supersedes `state`, `lastError`, `consecutiveFailuresByKind`, `syncHealth`, `tokenExpired`, `needsReauth`, `hasActivityScope`, `planUnavailable` and `scopeReconnect` on this entry; those nine are deprecated and removed in v1.44.",
+        "The unified connection state, null when the provider is not connected (and for Fitbit once `retirement.ended`). It supersedes `state`, `lastError`, `consecutiveFailuresByKind`, `syncHealth`, `tokenExpired`, `needsReauth`, `hasActivityScope`, `planUnavailable` and `scopeReconnect` on this entry; those nine are deprecated and still served for clients that predate `health`.",
       ),
   })
   .meta({

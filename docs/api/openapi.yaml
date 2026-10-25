@@ -82145,7 +82145,7 @@ components:
             - type: "null"
         syncHealth:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Present on the GET read; omitted from the PATCH echo."
+          description: "Deprecated, still served: read `health`. Present on the GET read; omitted from the PATCH echo."
           $ref: "#/components/schemas/SyncHealth"
         metricFreshness:
           description: Per-metric-type freshness for the `APPLE_HEALTH` source, with the per-type arrival facts. Present on the
@@ -82823,7 +82823,7 @@ components:
           type: boolean
         state:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           type: string
           enum:
             - connected
@@ -82846,14 +82846,14 @@ components:
             - type: "null"
         lastError:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Last recorded failure message, decrypted from the ledger.
-            Null when the last attempt succeeded or none has run."
+          description: "Deprecated, still served: read `health`. Last recorded failure message, decrypted from the ledger. Null
+            when the last attempt succeeded or none has run."
           type:
             - string
             - "null"
         syncHealth:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           $ref: "#/components/schemas/SyncHealth"
         health:
           description: The unified connection state. Present whenever the connection exists; null in the rare case it resolved to
@@ -83042,9 +83042,9 @@ components:
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         tokenExpired:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. The stored access token's expiry is in the past. Read
-            straight off the row — unlike the Withings status read, this endpoint does not refresh; the sync path
-            refreshes lazily instead."
+          description: "Deprecated, still served: read `health`. The stored access token's expiry is in the past. Read straight
+            off the row — unlike the Withings status read, this endpoint does not refresh; the sync path refreshes
+            lazily instead."
           type: boolean
         tokenExpiresAt:
           type: string
@@ -83133,8 +83133,7 @@ components:
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         tokenExpired:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. True after a refresh attempt that did not produce a live
-            token."
+          description: "Deprecated, still served: read `health`. True after a refresh attempt that did not produce a live token."
           type: boolean
         tokenRefreshFailed:
           description: The read tried to refresh an expired token and could not — either the per-user credentials are gone or
@@ -83154,8 +83153,8 @@ components:
             - "null"
         hasActivityScope:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Pre-computed convenience flag the reconnect banner reads. A
-            null `scope` counts as missing activity."
+          description: "Deprecated, still served: read `health`. Pre-computed convenience flag the reconnect banner reads. A null
+            `scope` counts as missing activity."
           type: boolean
         health:
           description: The unified connection state. Present whenever the connection exists; null in the rare case it resolved to
@@ -83464,8 +83463,8 @@ components:
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         tokenExpired:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Read straight off the row — this endpoint does not refresh;
-            the sync path refreshes lazily."
+          description: "Deprecated, still served: read `health`. Read straight off the row — this endpoint does not refresh; the
+            sync path refreshes lazily."
           type: boolean
         tokenExpiresAt:
           type: string
@@ -83635,8 +83634,8 @@ components:
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         tokenExpired:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Read straight off the row — this endpoint does not refresh;
-            the sync path refreshes lazily."
+          description: "Deprecated, still served: read `health`. Read straight off the row — this endpoint does not refresh; the
+            sync path refreshes lazily."
           type: boolean
         tokenExpiresAt:
           type: string
@@ -83686,7 +83685,7 @@ components:
             when every type was read to its start. Kept after the backfill completes; cleared on reconnect.
         needsReauth:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. The stored refresh token was rejected with `invalid_grant` —
+          description: "Deprecated, still served: read `health`. The stored refresh token was rejected with `invalid_grant` —
             Google expires it after 7 days while the OAuth client is in Testing publishing mode, and a user-revoked
             grant lands here too. Distinct from `parked` and from `disconnected`: the connection still exists, it just
             cannot mint a token until the user reconnects. Only Google Health has this field."
@@ -83890,7 +83889,7 @@ components:
           description: The user has stored their own BYO client id and secret.
         state:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           type: string
           enum:
             - connected
@@ -83913,13 +83912,13 @@ components:
             - type: "null"
         lastError:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           type:
             - string
             - "null"
         syncHealth:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           $ref: "#/components/schemas/SyncHealth"
         health:
           description: The unified connection state. Present whenever the connection exists; null in the rare case it resolved to
@@ -84314,7 +84313,7 @@ components:
             - disconnected
             - parked
             - unknown
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           deprecated: true
         lastSuccessAt:
           anyOf:
@@ -84330,7 +84329,7 @@ components:
             - type: "null"
         lastError:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           type:
             - string
             - "null"
@@ -84357,11 +84356,11 @@ components:
               additionalProperties: false
             - type: "null"
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Per-kind consecutive-failure counters, or null when the row
-            has never written a bucket payload. Compare against the top-level `threshold` to know how close the provider
-            is to the operator alert."
+          description: "Deprecated, still served: read `health`. Per-kind consecutive-failure counters, or null when the row has
+            never written a bucket payload. Compare against the top-level `threshold` to know how close the provider is
+            to the operator alert."
         syncHealth:
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           deprecated: true
           $ref: "#/components/schemas/SyncHealth"
         metricFreshness:
@@ -84398,7 +84397,7 @@ components:
             - type: "null"
         tokenExpired:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Null — not false — when there is no connection to judge."
+          description: "Deprecated, still served: read `health`. Null — not false — when there is no connection to judge."
           type:
             - boolean
             - "null"
@@ -84441,14 +84440,14 @@ components:
             - "null"
         hasActivityScope:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Withings only."
+          description: "Deprecated, still served: read `health`. Withings only."
           type: boolean
         planUnavailable:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Withings only. The readings this connection's Withings API
-            plan withholds (status 277 since the 2026-10-12 plan split), deduplicated and in display order. Empty when
-            the plan refuses nothing. The sync skips these and keeps importing everything else; the list refreshes when
-            the weekly re-probe asks again."
+          description: "Deprecated, still served: read `health`. Withings only. The readings this connection's Withings API plan
+            withholds (status 277 since the 2026-10-12 plan split), deduplicated and in display order. Empty when the
+            plan refuses nothing. The sync skips these and keeps importing everything else; the list refreshes when the
+            weekly re-probe asks again."
           type: array
           items:
             type: string
@@ -84477,7 +84476,7 @@ components:
               - weight
         needsReauth:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Google Health only."
+          description: "Deprecated, still served: read `health`. Google Health only."
           type: boolean
         available:
           description: Oura / Polar / Strava only.
@@ -84487,7 +84486,7 @@ components:
           type: boolean
         scopeReconnect:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Oura only. Collections the stored grant does not cover: Oura
+          description: "Deprecated, still served: read `health`. Oura only. Collections the stored grant does not cover: Oura
             refused them for a missing scope (named in its 401, or inferred when sibling collections succeeded with the
             same token), or the scopes Oura reported at connect leave theirs out. Not a failure and not counted toward
             the reconnect threshold; one reconnect asks for the missing scopes. Empty when the grant covers everything
@@ -84543,7 +84542,7 @@ components:
           description: The unified connection state, null when the provider is not connected (and for Fitbit once
             `retirement.ended`). It supersedes `state`, `lastError`, `consecutiveFailuresByKind`, `syncHealth`,
             `tokenExpired`, `needsReauth`, `hasActivityScope`, `planUnavailable` and `scopeReconnect` on this entry;
-            those nine are deprecated and removed in v1.44.
+            those nine are deprecated and still served for clients that predate `health`.
       required:
         - integration
         - state
