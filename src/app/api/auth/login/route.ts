@@ -113,7 +113,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   // The per-account half of the throttle (`@/lib/auth/login-throttle`): a
-  // place this account has signed in from is neither counted nor held back,
+  // remembered browser or a phone this account signed in on is neither
+  // counted nor held back,
   // anywhere else waits longer after each failure past the first few, up to
   // fifteen minutes. Decided before the Argon2id verification, so a waiting
   // attempt costs no hashing.
@@ -121,7 +122,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
     user,
     identifier,
     request,
-    ip: rl.ip,
   });
   annotate({ meta: { login_known_source: attempt.source ?? "none" } });
   if (attempt.waiting) {
