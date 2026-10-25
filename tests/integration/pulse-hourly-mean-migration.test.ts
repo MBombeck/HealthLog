@@ -102,6 +102,13 @@ const readRows = () =>
   `;
 
 let before: Row[] = [];
+/**
+ * The rows right after the migration. "Matches what the writer stores now"
+ * folds the rollups again, and a fold sums in whatever order the plan reads,
+ * so its sums can differ from the first fold's in the last bit; what the
+ * migration left is compared from here.
+ */
+let migrated: Row[] = [];
 
 beforeAll(async () => {
   await truncateAllTables(prisma);
@@ -121,6 +128,7 @@ beforeAll(async () => {
   `;
   before = await readRows();
   await runMigration();
+  migrated = await readRows();
 }, 120_000);
 
 const meanOf = (all: Row[], type: string, granularity: string, at?: number) =>
@@ -187,10 +195,9 @@ describe("migration 0372", () => {
     }
   });
 
-  it("leaves every column but mean alone", async () => {
-    const after = await readRows();
+  it("leaves every column but mean alone", () => {
     const strip = ({ mean: _mean, ...rest }: Row) => rest;
-    expect(after.map(strip)).toEqual(before.map(strip));
+    expect(migrated.map(strip)).toEqual(before.map(strip));
   });
 
   it("is idempotent", async () => {
