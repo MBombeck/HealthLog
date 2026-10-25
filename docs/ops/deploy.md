@@ -13,11 +13,13 @@ Migrations land **before** the new app container takes traffic. The
 canonical command sequence on a single-instance host:
 
 ```sh
-# 0. Dump the database first. A migration is not undone by going back to
-#    the previous image; the dump is the way back. See "Updates" in
-#    docs/self-hosting/getting-started.md.
-docker compose exec -T db pg_dump -U healthlog healthlog \
-  | gzip > healthlog-before-update-$(date +%F).sql.gz
+# 0. Nothing to do by hand for the way back: when the new image brings
+#    migrations, its entrypoint first writes
+#    healthlog-<time>-pre-migration.dump into DB_BACKUP_DIR (the `backups`
+#    volume) and keeps the last two. A migration is not undone by going back
+#    to the previous image; that dump is the way back
+#    (docs/ops/disaster-recovery.md, "Going back to before a migration").
+#    Copy it off the host if the host itself is what you are worried about.
 
 # 1. Pull the new image. If you pin a version with HEALTHLOG_IMAGE_REF,
 #    set it to the new one first.
@@ -32,6 +34,14 @@ docker compose run --rm app sh -c 'exit 0'
 # 3. Recreate the app container so it picks up the new image.
 docker compose up -d app
 ```
+
+Step 2 takes the pre-migration dump too, in the one-off container, before it
+migrates. When the backups directory is writable and that dump fails (a full
+disk, most often), the entrypoint stops before migrating and says so; free
+the space and run the step again, or set `DB_BACKUP_BEFORE_MIGRATE=false` for
+one start without the dump. Without a writable directory (an install that
+runs the image without the `backups` volume) the log carries a warning, no
+dump is taken, and the migrations run.
 
 Use `docker compose run` rather than a plain `docker run` for step 2. A
 plain `docker run` starts outside the stack's network, where `db` does not
@@ -230,12 +240,15 @@ roll back:
 dev --create-only --name vX_Y_Z_rollback_<col>`), edit the SQL,
    commit, and re-deploy. Never `migrate resolve --rolled-back` against
    production unless you've taken a fresh `pg_dump` first.
-4. Rolling back from v1.40.2 or later to v1.40.1 or earlier: an account
-   that saved the Coach lookback "Last year" reads its whole Coach
-   preference blob as defaults on the older version, metric exclusions
-   included, until the setting is saved again. Ask affected accounts to
-   pick another lookback before the rollback, or re-save their exclusions
-   after it.
+
+When the data itself has to go back to before the update, restore the
+pre-migration dump with the previous image; the steps are in
+[`disaster-recovery.md`](disaster-recovery.md#going-back-to-before-a-migration). 4. Rolling back from v1.40.2 or later to v1.40.1 or earlier: an account
+that saved the Coach lookback "Last year" reads its whole Coach
+preference blob as defaults on the older version, metric exclusions
+included, until the setting is saved again. Ask affected accounts to
+pick another lookback before the rollback, or re-save their exclusions
+after it.
 
 ## Catalog templates
 

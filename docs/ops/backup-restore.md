@@ -5,6 +5,11 @@ user's JSON dump, encrypted with AES-256-GCM under a SEPARATE key
 (`BACKUP_ENCRYPTION_KEY`), to any S3-compatible bucket — Cloudflare R2,
 AWS S3, Backblaze B2, MinIO, etc.
 
+These per-account copies roll one account back on the same server. To
+rebuild a server, use the nightly database dump, which the same job
+configuration also uploads (`database/healthlog-<time>-daily.dump.enc`, in the
+envelope below): [`disaster-recovery.md`](disaster-recovery.md).
+
 The backup runs at **02:30 Europe/Berlin** every day from the worker
 container (queue `data-backup-offhost`). Object key layout:
 
