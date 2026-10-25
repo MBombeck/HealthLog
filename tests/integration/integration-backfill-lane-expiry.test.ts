@@ -68,6 +68,17 @@ const payload: IntegrationBackfillAdmissionPayload = {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * Waits for a state rather than a fixed time: the retry is fetched about a
+ * second and a half after the overrun ends, later on a loaded machine, and a
+ * fixed window turned that lateness into a red run. The deadline only bounds
+ * a run that never gets there.
+ */
+async function until(done: () => boolean, deadlineMs = 40_000): Promise<void> {
+  const end = Date.now() + deadlineMs;
+  while (!done() && Date.now() < end) await sleep(100);
+}
+
 beforeAll(async () => {
   boss = new PgBoss({ connectionString: process.env.DATABASE_URL });
   await boss.start();
@@ -101,14 +112,14 @@ describe("an import that outlives its expiry", () => {
       ...EXPIRY_OVERRIDE,
     });
 
-    await sleep(12_000);
+    await until(() => runs.length >= 2);
     await boss.offWork(queue);
 
     expect(runs.length).toBeGreaterThanOrEqual(2);
     expect(new Set(runs.map((r) => r.id)).size).toBe(1);
     expect(maxRunning).toBe(1);
     expect(runs[1]!.start).toBeGreaterThanOrEqual(runs[0]!.end!);
-  }, 60_000);
+  }, 90_000);
 
   it("the lane's handler runs one import at a time while the expired run overruns", async () => {
     const queue = `lane-expiry-drain-${suffix}`;
@@ -129,16 +140,19 @@ describe("an import that outlives its expiry", () => {
     });
 
     // The run holds for eight seconds, past its two-second expiry; the retry
-    // waits for it and starts after.
-    await sleep(12_000);
+    // waits for it and starts after. The retry's own run is let finish so the
+    // call count is read at rest.
+    await until(() => deliveries.length >= 2);
     await boss.offWork(queue);
-    await sleep(8_500);
+    await until(
+      () => runner.running === 0 && runner.calls >= deliveries.length,
+    );
 
     expect(deliveries.length).toBeGreaterThanOrEqual(2);
     expect(new Set(deliveries).size).toBe(1);
     expect(runner.maxRunning).toBe(1);
     expect(runner.calls).toBe(deliveries.length);
-  }, 60_000);
+  }, 100_000);
 });
 
 describe("withIntegrationBackfillLock", () => {
