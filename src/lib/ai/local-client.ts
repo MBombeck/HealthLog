@@ -12,7 +12,6 @@ import {
 } from "./openai-wire";
 import {
   hasLearnedJsonModeDialect,
-  isResponseFormatRejection,
   jsonModeDialectFor,
   rememberJsonModeDialect,
   resetJsonModeDialectCache,
@@ -65,8 +64,6 @@ type LocalJsonDialect = JsonModeDialect;
 
 /** Test hook — clears the learned per-endpoint dialect cache. */
 export const resetLocalJsonDialectCache = resetJsonModeDialectCache;
-
-export { isResponseFormatRejection };
 
 /**
  * #89 — the streaming path's absolute backstop. The real ceiling is the

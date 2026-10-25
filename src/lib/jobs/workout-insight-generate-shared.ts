@@ -16,7 +16,7 @@ import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
 import { logCaught } from "@/lib/logging/signal";
 import {
-  STATUS_RUN_CEILING_MS,
+  COMPLETION_CEILING_MS,
   expireAboveModelTime,
 } from "@/lib/jobs/model-time";
 
@@ -30,7 +30,7 @@ export const WORKOUT_INSIGHT_GENERATE_QUEUE = "workout-insight-generate";
  * the attempt was recorded as a failure.
  */
 export const WORKOUT_INSIGHT_GENERATE_EXPIRE_SECONDS = expireAboveModelTime(
-  STATUS_RUN_CEILING_MS,
+  COMPLETION_CEILING_MS,
 );
 
 /** Serial — this is a provider path, kept off the request pool entirely. */

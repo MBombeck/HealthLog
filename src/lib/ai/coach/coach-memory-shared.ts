@@ -22,7 +22,7 @@
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
 import {
-  STATUS_RUN_CEILING_MS,
+  COMPLETION_CEILING_MS,
   expireAboveModelTime,
 } from "@/lib/jobs/model-time";
 
@@ -41,7 +41,7 @@ export const COACH_MEMORY_MODEL_RUNS = 3;
  * beside the refresh still writing (#1274).
  */
 export const COACH_MEMORY_REFRESH_EXPIRE_SECONDS = expireAboveModelTime(
-  COACH_MEMORY_MODEL_RUNS * STATUS_RUN_CEILING_MS,
+  COACH_MEMORY_MODEL_RUNS * COMPLETION_CEILING_MS,
 );
 
 /** How long a conversation must be quiet before its memory is refreshed. */

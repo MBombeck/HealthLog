@@ -4,7 +4,7 @@
  * worker registry and every sender can read them without loading it.
  */
 import {
-  STATUS_RUN_CEILING_MS,
+  COMPLETION_CEILING_MS,
   expireAboveModelTime,
 } from "@/lib/jobs/model-time";
 
@@ -17,7 +17,7 @@ export const INSIGHT_STATUS_GENERATE_QUEUE = "insight-status-generate";
  * retry beside the generation still running (#1274).
  */
 export const INSIGHT_STATUS_GENERATE_EXPIRE_SECONDS = expireAboveModelTime(
-  STATUS_RUN_CEILING_MS,
+  COMPLETION_CEILING_MS,
 );
 
 /**

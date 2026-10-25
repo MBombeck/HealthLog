@@ -55,7 +55,6 @@ import { QUEUE_RUNTIME, type QueueRuntime } from "@/lib/jobs/queue-runtime";
 import {
   COMPLETION_CEILING_MS,
   COMPREHENSIVE_WARM_CEILING_MS,
-  STATUS_RUN_CEILING_MS,
 } from "@/lib/jobs/model-time";
 import {
   COMPREHENSIVE_MODEL_CALLS,
@@ -147,7 +146,7 @@ function modelSecondsOf(runs: {
   completions?: number;
 }) {
   return (
-    ((runs.status ?? 0) * STATUS_RUN_CEILING_MS +
+    ((runs.status ?? 0) * COMPLETION_CEILING_MS +
       (runs.comprehensive ?? 0) * COMPREHENSIVE_WARM_CEILING_MS +
       (runs.completions ?? 0) * COMPLETION_CEILING_MS) /
     1000
@@ -204,7 +203,7 @@ describe("jobs that wait on the response timeout outlast it", () => {
   });
 
   it("sizes the run ceilings from the largest setting and the call counts", () => {
-    expect(STATUS_RUN_CEILING_MS).toBe(
+    expect(COMPLETION_CEILING_MS).toBe(
       AI_RESPONSE_TIMEOUT_MAX_SECONDS * 1000 * STATUS_MODEL_CALLS,
     );
     expect(COMPREHENSIVE_WARM_CEILING_MS).toBeGreaterThan(
@@ -238,14 +237,14 @@ describe("jobs that wait on the response timeout outlast it", () => {
       },
       "coach-memory-refresh": {
         runtime: "bounded",
-        modelSeconds: STATUS_RUN_CEILING_MS / 1000,
+        modelSeconds: COMPLETION_CEILING_MS / 1000,
         expireInSeconds: 1400,
         expiryVia: [],
         why: "planted: one run counted instead of three",
       },
     };
     expect(findings(before)).toEqual([
-      `coach-memory-refresh: model time ${STATUS_RUN_CEILING_MS / 1000}s below the ${modelSecondsOf({ status: 3 })}s its runs take`,
+      `coach-memory-refresh: model time ${COMPLETION_CEILING_MS / 1000}s below the ${modelSecondsOf({ status: 3 })}s its runs take`,
       "morning-digest-refresh: declared short, but it waits on the person's response timeout",
     ]);
   });

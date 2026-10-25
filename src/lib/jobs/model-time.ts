@@ -63,13 +63,10 @@ export function comprehensiveWarmBudgetMs(
  * it: the call and the one repeat the Local and gateway clients send when a
  * thinking model answered with reasoning alone (`STATUS_MODEL_CALLS`), each
  * at the full timeout. A document read's call and its corrective retry are
- * two completions.
+ * two completions; a status run (`runStatusCompletion`) is one.
  */
 export const COMPLETION_CEILING_MS =
   AI_RESPONSE_TIMEOUT_MAX_MS * STATUS_MODEL_CALLS;
-
-/** The longest one status run (`runStatusCompletion`, one completion) waits. */
-export const STATUS_RUN_CEILING_MS = COMPLETION_CEILING_MS;
 
 /**
  * Room a job's expiry leaves on top of its model work for what the handler

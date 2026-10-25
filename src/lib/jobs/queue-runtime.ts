@@ -61,7 +61,6 @@ import {
 import {
   COMPLETION_CEILING_MS,
   COMPREHENSIVE_WARM_CEILING_MS,
-  STATUS_RUN_CEILING_MS,
 } from "@/lib/jobs/model-time";
 import { DOCUMENT_INDEX_EXPIRE_SECONDS } from "@/lib/jobs/document-index-queue";
 import { DOCUMENT_SUMMARY_EXPIRE_SECONDS } from "@/lib/jobs/document-summary-queue";
@@ -199,7 +198,7 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   },
   "insight-status-generate": {
     runtime: "bounded",
-    modelSeconds: STATUS_RUN_CEILING_MS / 1000,
+    modelSeconds: COMPLETION_CEILING_MS / 1000,
     expireInSeconds: INSIGHT_STATUS_GENERATE_EXPIRE_SECONDS,
     expiryVia: ["INSIGHT_STATUS_GENERATE_EXPIRE_SECONDS"],
     why: "One account, one note: one status run, the call and its one reasoning repeat at the account's timeout.",
@@ -208,7 +207,7 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "reaction-line-generate": short("One provider call for one reaction line."),
   "workout-insight-generate": {
     runtime: "bounded",
-    modelSeconds: STATUS_RUN_CEILING_MS / 1000,
+    modelSeconds: COMPLETION_CEILING_MS / 1000,
     expireInSeconds: WORKOUT_INSIGHT_GENERATE_EXPIRE_SECONDS,
     expiryVia: ["WORKOUT_INSIGHT_GENERATE_EXPIRE_SECONDS"],
     why: "One workout's line: one status run at the account's timeout.",
@@ -235,7 +234,7 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   },
   "coach-memory-refresh": {
     runtime: "bounded",
-    modelSeconds: (COACH_MEMORY_MODEL_RUNS * STATUS_RUN_CEILING_MS) / 1000,
+    modelSeconds: (COACH_MEMORY_MODEL_RUNS * COMPLETION_CEILING_MS) / 1000,
     expireInSeconds: COACH_MEMORY_REFRESH_EXPIRE_SECONDS,
     expiryVia: ["COACH_MEMORY_REFRESH_EXPIRE_SECONDS"],
     why: "One conversation's summary, facts and plan proposals: three status runs in a row at the account's timeout.",
