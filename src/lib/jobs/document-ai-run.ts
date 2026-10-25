@@ -42,6 +42,8 @@ import { loadOwnedDocument } from "@/lib/documents/ai-route-support";
 import { loadDocumentChatText } from "@/lib/documents/content-index";
 import { refusalAsFailure } from "@/lib/documents/ai-runs/http";
 import { executeDocumentExtract } from "@/lib/documents/ai-runs/extract-run";
+import { withPdfWork } from "@/lib/documents/pdf-isolation";
+import { PdfReaderUnavailableError } from "@/lib/documents/pdfjs";
 import {
   DOCUMENT_INDEX_MODEL_CALLS,
   executeDocumentIndex,
@@ -183,6 +185,34 @@ async function armDeadline(
     where: { id: runId, status: "RUNNING" },
     data: { expiresAt: new Date(ends) },
   });
+}
+
+/**
+ * Move a running run's deadline by `ms`, never past the job's own expiry.
+ * The document reader calls it (`PdfWork.extendDeadline`): the deadline is
+ * model time, and a wait in the reader's queue or the read itself is not, so
+ * a person's read is not timed out because other work held the reader.
+ */
+export async function moveRunDeadline(
+  runId: string,
+  ms: number,
+  deadlineAt: number | undefined,
+): Promise<void> {
+  const delta = Math.round(ms);
+  if (deadlineAt === undefined) {
+    await prisma.$executeRaw`
+      UPDATE document_ai_runs
+      SET expires_at = expires_at + (${delta}::double precision * interval '1 millisecond')
+      WHERE id = ${runId} AND status = 'RUNNING'`;
+    return;
+  }
+  await prisma.$executeRaw`
+    UPDATE document_ai_runs
+    SET expires_at = LEAST(
+      expires_at + (${delta}::double precision * interval '1 millisecond'),
+      ${new Date(deadlineAt)}
+    )
+    WHERE id = ${runId} AND status = 'RUNNING'`;
 }
 
 async function runDocumentIndex(
@@ -614,7 +644,16 @@ export async function runDocumentAiRun(
 
   let outcome: AiRunOutcome<AiRunResult>;
   try {
-    outcome = await RUN_DISPATCH[run.kind](run, deadlineAt, now);
+    // A person asked for this read and is waiting on it: the document
+    // reader serves it ahead of background work, in turn with other people.
+    outcome = await withPdfWork(
+      {
+        owner: run.userId,
+        lane: "interactive",
+        extendDeadline: (ms) => moveRunDeadline(run.id, ms, deadlineAt),
+      },
+      () => RUN_DISPATCH[run.kind](run, deadlineAt, now),
+    );
   } catch (err) {
     // Everything that throws here threw before the body took over the
     // reservation, so it goes back here.
@@ -622,6 +661,13 @@ export async function runDocumentAiRun(
     const failure: AiRunFailure = (err instanceof RunRefused
       ? err.failure
       : null) ??
+      (err instanceof PdfReaderUnavailableError
+        ? {
+            status: 503,
+            errorCode: AI_RUN_ERROR_CODES.readerBusy,
+            message: "The document reader is busy. Try again in a minute.",
+          }
+        : null) ??
       refusalAsFailure(err) ?? {
         status: 500,
         errorCode: AI_RUN_ERROR_CODES.failed,

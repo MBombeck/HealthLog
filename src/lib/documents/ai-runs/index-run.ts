@@ -32,6 +32,7 @@ import { recordIndexAttempt } from "@/lib/documents/index-document";
 import type { requireDocumentVisionProvider } from "@/lib/documents/provider-order";
 import { annotate } from "@/lib/logging/context";
 
+import { readerBusyFailure } from "./run-support";
 import { settleAiRunBudget } from "./store";
 import type {
   AiRunBudget,
@@ -157,6 +158,8 @@ export async function executeDocumentIndex(args: {
     // gone.
     await settleAiRunBudget(userId, budget, 0, null);
     await refundDocumentAiSlot(userId);
+    // A busy reader says nothing about the document: no attempt is recorded.
+    if (vision.reason === "readerBusy") return readerBusyFailure();
     if (vision.reason === "pdfNeedsAnthropic") {
       await recordIndexAttempt(userId, document.id, {
         indexed: false,

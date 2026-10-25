@@ -5,7 +5,7 @@
       "type": 3,
       "title": "HealthLog",
       "name": "healthlog",
-      "description": "Self-hosted personal health tracker (PWA + native iOS client): weight, blood pressure, pulse, blood glucose, body composition, sleep, mood, menstrual cycle, and medications on one encrypted timeline. AES-256-GCM at rest, no vendor cloud, no telemetry. Ships app + PostgreSQL 16 as one stack.",
+      "description": "Self-hosted personal health tracker (PWA + native iOS client): weight, blood pressure, pulse, blood glucose, body composition, sleep, mood, menstrual cycle, and medications on one encrypted timeline. AES-256-GCM at rest, no vendor cloud, no telemetry. Ships app + PostgreSQL 18 as one stack.",
       "note": "Generate each secret with: openssl rand -hex 32 (a 64-char hex string). For plain-HTTP / LAN access set SESSION_COOKIE_SECURE to false, or login fails. Set NEXT_PUBLIC_APP_URL and APP_URL to how you reach the app. Full guide: https://github.com/MBombeck/HealthLog/blob/main/docs/self-hosting/getting-started.md",
       "categories": ["Tools", "Other"],
       "platform": "linux",
@@ -33,7 +33,7 @@
         {
           "name": "HEALTHLOG_PLATFORM",
           "label": "Platform hint",
-          "description": "Opens the admin's encryption key backup step on the Portainer instructions.",
+          "description": "Opens the admin's recovery kit on the Portainer instructions.",
           "default": "portainer"
         },
         {

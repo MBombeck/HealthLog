@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { shouldRunWeb } from "@/lib/process-type";
+import { readSessionCookie } from "@/lib/auth/session-cookie";
 import {
   findRetiredRoute,
   retiredRouteEnvelope,
@@ -560,8 +561,7 @@ export function proxy(request: NextRequest) {
   // can never be session-gated without also being uncacheable.
   const isSessionGatedPage = !isApiRoute && !isStaticFile && !isPublic;
   if (isSessionGatedPage) {
-    const hasSession = request.cookies.has("healthlog_session");
-    if (!hasSession) {
+    if (!readSessionCookie(request.cookies)) {
       return applyBaselineSecurityHeaders(
         NextResponse.redirect(new URL("/auth/login", request.url)),
       );

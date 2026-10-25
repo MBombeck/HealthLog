@@ -52,6 +52,7 @@ import { dateOnlyAtNoonUtc } from "@/lib/tz/date-only";
 import { refusalAsFailure } from "./http";
 import { meteredReadBudget } from "./metered-budget";
 import {
+  readerBusyFailure,
   runFailure,
   unreadableDocument,
   type DocumentTextPick,
@@ -306,7 +307,9 @@ export async function executeDocumentExtract(args: {
     source = { mode: "text", text: input.text };
   }
   const plan = await planInboundReads(source, schedule);
-  if (!plan.ok) return refused(pdfUnreadable());
+  if (!plan.ok) {
+    return refused(plan.busy ? readerBusyFailure() : pdfUnreadable());
+  }
   await schedule.arm(plan.args.chunks.length * OCR_EXTRACT_MODEL_CALLS);
 
   let result: InboundExtractionResult;

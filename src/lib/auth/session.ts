@@ -11,13 +11,14 @@ import { SessionStoreUnavailableError } from "@/lib/api-errors";
 import { credentialRevocations } from "@/lib/auth/credential-revocations";
 import { locales, type Locale } from "@/lib/i18n/config";
 import { LOCALE_COOKIE, setLocaleCookie } from "@/lib/i18n/locale-cookie";
+import {
+  expireSessionCookies,
+  issueSessionCookie,
+  readSessionCookie,
+  sessionCookieName,
+} from "@/lib/auth/session-cookie";
 
-const SESSION_COOKIE = "healthlog_session";
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
-
-/** Public name of the browser session cookie, for routes that read it off a
- * `NextRequest` directly (rather than through `getSession()`'s `cookies()`). */
-export const SESSION_COOKIE_NAME = SESSION_COOKIE;
 
 /**
  * Marks a cookie value as a v1.30.32 session secret. Doubles as the branch
@@ -244,7 +245,7 @@ export async function setOnboardingPendingCookie(
       secure: shouldEmitSecureCookie(),
       // v1.4.22 — Strict (not Lax) because
       // no cross-site redirect flow ever depends on this cookie. The
-      // sibling `healthlog_session` cookie stays Lax because the
+      // sibling session cookie stays Lax because the
       // Withings OAuth callback arrives via top-level cross-site
       // redirect; the onboarding hint has no equivalent flow.
       sameSite: "strict",
@@ -291,15 +292,7 @@ export async function createSession(
   });
 
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, secret, {
-    httpOnly: true,
-    secure: shouldEmitSecureCookie(),
-    // OAuth callbacks (e.g. Withings) arrive via top-level cross-site redirect.
-    // Lax keeps CSRF protection for unsafe methods while allowing this flow.
-    sameSite: "lax",
-    maxAge: SESSION_MAX_AGE_MS / 1000,
-    path: "/",
-  });
+  issueSessionCookie(cookieStore, secret, SESSION_MAX_AGE_MS / 1000);
 
   // Anchor the onboarding cookie alongside the session cookie so a
   // future auth surface added without remembering the helper can never
@@ -329,8 +322,9 @@ export async function getSession(): Promise<{
   }
 
   const cookieStore = await cookies();
-  const cookieValue = cookieStore.get(SESSION_COOKIE)?.value;
-  if (!cookieValue) return null;
+  const carried = readSessionCookie(cookieStore);
+  if (!carried) return null;
+  const cookieValue = carried.value;
 
   const session = await findSessionByCookie(cookieValue);
 
@@ -340,7 +334,7 @@ export async function getSession(): Promise<{
         .deleteMany({ where: { id: session.id } })
         .catch(() => {});
     }
-    cookieStore.delete(SESSION_COOKIE);
+    expireSessionCookies(cookieStore);
     cookieStore.delete(ONBOARDING_COOKIE);
     return null;
   }
@@ -364,13 +358,16 @@ export async function getSession(): Promise<{
       where: { id: session.id },
       data: { expiresAt: newExpiry },
     });
-    cookieStore.set(SESSION_COOKIE, cookieValue, {
-      httpOnly: true,
-      secure: shouldEmitSecureCookie(),
-      sameSite: "lax",
-      maxAge: SESSION_MAX_AGE_MS / 1000,
-      path: "/",
-    });
+    issueSessionCookie(cookieStore, cookieValue, SESSION_MAX_AGE_MS / 1000);
+  } else if (carried.name !== sessionCookieName()) {
+    // Issued before the `__Host-` name: re-issued under it, so the upgrade
+    // signs nobody out. A server-component render cannot write cookies; the
+    // next route request does.
+    try {
+      issueSessionCookie(cookieStore, cookieValue, SESSION_MAX_AGE_MS / 1000);
+    } catch {
+      // Read-only cookie context.
+    }
   }
 
   // v1.23 — sliding "last seen" stamp for the active-session list. Throttled
@@ -501,7 +498,7 @@ export async function getSession(): Promise<{
  */
 export async function getSessionUserLocale(): Promise<string | null> {
   const cookieStore = await cookies();
-  const cookieValue = cookieStore.get(SESSION_COOKIE)?.value;
+  const cookieValue = readSessionCookie(cookieStore)?.value;
   if (!cookieValue) return null;
 
   // Same two-path resolution as `getSession`, read-only: this runs in the root
@@ -514,7 +511,7 @@ export async function getSessionUserLocale(): Promise<string | null> {
 
 export async function destroySession(): Promise<void> {
   const cookieStore = await cookies();
-  const cookieValue = cookieStore.get(SESSION_COOKIE)?.value;
+  const cookieValue = readSessionCookie(cookieStore)?.value;
   if (cookieValue) {
     // Resolve the cookie to its row before deleting — the cookie is a secret,
     // not the primary key, so `delete({ where: { id: cookieValue } })` would
@@ -547,7 +544,7 @@ export async function destroySession(): Promise<void> {
         });
     }
   }
-  cookieStore.delete(SESSION_COOKIE);
+  expireSessionCookies(cookieStore);
   cookieStore.delete(ONBOARDING_COOKIE);
 }
 

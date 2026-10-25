@@ -10,16 +10,22 @@ import {
 import {
   getClientIp,
   getClientIpOrTrustWarning,
+  _resetInvalidHopsWarningForTests,
+  _resetPublicPeerForwardingWarningForTests,
   _resetTrustViolationWarningForTests,
   _resetUnreadProxyHeadersWarningForTests,
 } from "../api-response";
+import { describeProxyTrust } from "../http/proxy-trust";
 
 const ORIGINAL_HOPS = process.env.TRUST_PROXY_HOPS;
 const ORIGINAL_CF_FLAG = process.env.TRUST_CF_CONNECTING_IP;
+const ORIGINAL_CIDRS = process.env.TRUSTED_PROXY_CIDRS;
 
 beforeEach(() => {
   delete process.env.TRUST_PROXY_HOPS;
   delete process.env.TRUST_CF_CONNECTING_IP;
+  delete process.env.TRUSTED_PROXY_CIDRS;
+  _resetPublicPeerForwardingWarningForTests();
   _resetTrustViolationWarningForTests();
   _resetUnreadProxyHeadersWarningForTests();
 });
@@ -29,6 +35,8 @@ afterEach(() => {
   else process.env.TRUST_PROXY_HOPS = ORIGINAL_HOPS;
   if (ORIGINAL_CF_FLAG === undefined) delete process.env.TRUST_CF_CONNECTING_IP;
   else process.env.TRUST_CF_CONNECTING_IP = ORIGINAL_CF_FLAG;
+  if (ORIGINAL_CIDRS === undefined) delete process.env.TRUSTED_PROXY_CIDRS;
+  else process.env.TRUSTED_PROXY_CIDRS = ORIGINAL_CIDRS;
 });
 
 function makeRequest(headers: Record<string, string>): Request {
@@ -64,11 +72,23 @@ describe("getClientIp trusted-proxy semantics (V3 audit)", () => {
     expect(ip).toBeNull();
   });
 
-  it("throws at boot when TRUST_PROXY_HOPS is unparseable (fixes review L-1)", () => {
+  it("resolves no address for an unparseable TRUST_PROXY_HOPS instead of failing the request", () => {
+    // It used to throw on every request that asked for the client address,
+    // so every route answered 500, the health probe included. Reading the
+    // headers anyway would silently trust a chain the operator never
+    // described (review L-1), so: no address, a trust violation, one warning.
     process.env.TRUST_PROXY_HOPS = "garbage";
-    expect(() =>
-      getClientIp(makeRequest({ "x-forwarded-for": "5.6.7.8" })),
-    ).toThrow(/TRUST_PROXY_HOPS/);
+    _resetInvalidHopsWarningForTests();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    onTestFinished(() => warn.mockRestore());
+    const request = makeRequest({ "x-forwarded-for": "5.6.7.8" });
+    expect(getClientIpOrTrustWarning(request)).toEqual({
+      ip: null,
+      trustViolation: true,
+    });
+    expect(getClientIp(request)).toBeNull();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]![0]).toMatch(/TRUST_PROXY_HOPS="garbage"/);
   });
 
   it.each(["", "   "])(
@@ -478,5 +498,95 @@ describe("getClientIp against the connection's own peer", () => {
     expect(
       getClientIp(stamped("", { "x-forwarded-for": "203.0.113.1" })),
     ).toBeNull();
+  });
+});
+
+/**
+ * Behind Docker Desktop, OrbStack or `docker-proxy`, every connection to a
+ * published port arrives from the gateway, a private address, so the
+ * private-range default believed a direct caller's forwarding headers again.
+ * `TRUSTED_PROXY_CIDRS` names the proxies; no other peer may forward.
+ */
+describe("getClientIp with TRUSTED_PROXY_CIDRS", () => {
+  const stamped = (peer: string, headers: Record<string, string> = {}) =>
+    makeRequest({ ...headers, "x-healthlog-peer-address": peer });
+
+  it("reads forwarding headers only from a peer inside the list", () => {
+    process.env.TRUSTED_PROXY_CIDRS = "172.18.0.0/16, 127.0.0.1";
+    expect(
+      getClientIp(stamped("172.18.0.5", { "x-forwarded-for": "203.0.113.5" })),
+    ).toBe("203.0.113.5");
+    expect(
+      getClientIp(stamped("127.0.0.1", { "x-real-ip": "203.0.113.6" })),
+    ).toBe("203.0.113.6");
+  });
+
+  it("uses the gateway's own address for a direct caller from a private network outside the list", () => {
+    process.env.TRUSTED_PROXY_CIDRS = "172.18.0.0/16";
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const forged = ["203.0.113.1", "203.0.113.2"].map((ip) =>
+      getClientIp(
+        stamped("192.168.65.1", { "x-forwarded-for": ip, "x-real-ip": ip }),
+      ),
+    );
+    expect(forged).toEqual(["192.168.65.1", "192.168.65.1"]);
+    vi.restoreAllMocks();
+  });
+
+  it("believes a proxy on a public address once it is listed", () => {
+    process.env.TRUSTED_PROXY_CIDRS = "198.51.100.7/32";
+    expect(
+      getClientIp(
+        stamped("198.51.100.7", { "x-forwarded-for": "203.0.113.9" }),
+      ),
+    ).toBe("203.0.113.9");
+  });
+
+  it("takes IPv6 ranges and bare addresses", () => {
+    process.env.TRUSTED_PROXY_CIDRS = "fd00::/8,2001:db8::1";
+    expect(
+      getClientIp(stamped("fd12::3", { "x-forwarded-for": "203.0.113.1" })),
+    ).toBe("203.0.113.1");
+    expect(
+      getClientIp(stamped("2001:db8::1", { "x-forwarded-for": "203.0.113.2" })),
+    ).toBe("203.0.113.2");
+    expect(
+      getClientIp(stamped("2001:db8::2", { "x-forwarded-for": "203.0.113.3" })),
+    ).toBe("2001:db8::2");
+  });
+
+  it("lets no peer forward when an entry is not a CIDR", () => {
+    process.env.TRUSTED_PROXY_CIDRS = "172.18.0.0/16, not-a-range";
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(
+      getClientIp(stamped("172.18.0.5", { "x-forwarded-for": "203.0.113.5" })),
+    ).toBe("172.18.0.5");
+    vi.restoreAllMocks();
+  });
+});
+
+describe("the boot line naming the proxy rule", () => {
+  it("names the private-range default, and what it lets in behind a port forwarder", () => {
+    expect(describeProxyTrust()).toMatchObject({
+      level: "info",
+      message: expect.stringMatching(/TRUSTED_PROXY_CIDRS unset.*docker-proxy/),
+    });
+  });
+
+  it("names the list when one is set", () => {
+    process.env.TRUSTED_PROXY_CIDRS = "127.0.0.1/32";
+    expect(describeProxyTrust()).toMatchObject({
+      level: "info",
+      message: expect.stringContaining("only connections from 127.0.0.1/32"),
+    });
+  });
+
+  it("names a bad TRUST_PROXY_HOPS and a bad CIDR as errors", () => {
+    process.env.TRUST_PROXY_HOPS = "one";
+    process.env.TRUSTED_PROXY_CIDRS = "10.0.0.0/33";
+    const line = describeProxyTrust();
+    expect(line.level).toBe("error");
+    expect(line.message).toContain('TRUST_PROXY_HOPS="one"');
+    expect(line.message).toContain('"10.0.0.0/33"');
   });
 });

@@ -38530,8 +38530,8 @@ components:
                 activity.calendar.too_old; ai — ai.budget.exceeded, ai.provider.none, ai.record.notPermitted,
                 ai.unavailable, ai.usage.aboveCeiling, ai.usage.defaultAboveCeiling, ai.usage.invalid,
                 ai.usage.levelTooLow, ai.usage.rateLimited; ai_provider — ai_provider.invalid, ai_provider.no_fields;
-                aiRuns — aiRuns.failed, aiRuns.notFound, aiRuns.timedOut, aiRuns.workerUnavailable; allergy —
-                allergy.invalid; analytics — analytics.invalid_query; anamnesis — anamnesis.auditC.invalid,
+                aiRuns — aiRuns.failed, aiRuns.notFound, aiRuns.readerBusy, aiRuns.timedOut, aiRuns.workerUnavailable;
+                allergy — allergy.invalid; analytics — analytics.invalid_query; anamnesis — anamnesis.auditC.invalid,
                 anamnesis.auditC.notFound, anamnesis.auditC.rateLimited, anamnesis.fact.conflict,
                 anamnesis.fact.currentExists, anamnesis.fact.invalidValue, anamnesis.lifeConfirm.invalid,
                 anamnesis.lifeSections.invalid; auth — auth.account.deletion_pending, auth.admin.required,
@@ -75841,7 +75841,8 @@ components:
           description: "Present once `status` is `FAILED`: the `meta.errorCode`, message and HTTP status the queuing route would
             have answered with, or one of the run's own codes: `aiRuns.workerUnavailable` (no worker took the run within
             fifteen minutes), `aiRuns.timedOut` (the read outlived the calls the AI response time allows),
-            `aiRuns.failed` (anything else)."
+            `aiRuns.readerBusy` (the server's document reader was busy past the wait a read gets, or stopped before it
+            answered; nothing was read or charged, try again in a minute), `aiRuns.failed` (anything else)."
         createdAt:
           type: string
         startedAt:
@@ -94543,4 +94544,6 @@ components:
       type: apiKey
       in: cookie
       name: healthlog_session
-      description: Browser session cookie — set by /api/auth/login.
+      description: Browser session cookie — set by /api/auth/login. Named `__Host-healthlog_session` wherever the cookie is
+        `Secure` (every HTTPS install); a plain-HTTP install, which cannot hold a `__Host-` cookie, keeps
+        `healthlog_session`.

@@ -107,9 +107,11 @@ In the admin area, or with a signed-in admin session:
 ```sh
 curl -X POST https://<your-instance>/api/admin/maintenance/measurements \
   -H 'content-type: application/json' \
-  --cookie 'healthlog_session=<session>' \
+  --cookie '__Host-healthlog_session=<session>' \
   -d '{"vacuum": true, "reindex": true}'
 ```
+
+On a plain-HTTP install the cookie is named `healthlog_session`.
 
 The answer is `202` with `{ "enqueued": true }`, or `enqueued: false` when a
 run is already queued or running. A Bearer token is refused: the route is

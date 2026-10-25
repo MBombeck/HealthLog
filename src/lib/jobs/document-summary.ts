@@ -43,6 +43,8 @@ import type { Locale } from "@/lib/i18n/config";
 import { resolveJobLocale } from "@/lib/i18n/job-locale";
 import { documentAutoReadEnabled } from "@/lib/documents/document-settings";
 import { resolveDocumentVisionProvider } from "@/lib/documents/provider-order";
+import { withPdfWork } from "@/lib/documents/pdf-isolation";
+import { PdfReaderUnavailableError } from "@/lib/documents/pdfjs";
 import { encryptDocumentSummary } from "@/lib/documents/store";
 import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
@@ -79,6 +81,25 @@ export interface DocumentSummaryPayload {
   userId: string;
   documentId: string;
   enqueuedAt?: string;
+}
+
+/**
+ * The stored original as provider input, read as this account's background
+ * work. A busy reader is not a property of the document: the job throws, and
+ * pg-boss runs it again.
+ */
+async function prepareSummaryVision(
+  userId: string,
+  document: Parameters<typeof prepareVisionInput>[0],
+  pick: { pdfSupported: boolean },
+): Promise<ReturnType<typeof prepareVisionInput>> {
+  const vision = await withPdfWork({ owner: userId, lane: "background" }, () =>
+    prepareVisionInput(document, pick.pdfSupported),
+  );
+  if (!vision.ok && vision.reason === "readerBusy") {
+    throw new PdfReaderUnavailableError("busy");
+  }
+  return vision;
 }
 
 /**
@@ -210,7 +231,7 @@ export async function runDocumentSummaryJob(
   const document = await loadOwnedDocument(userId, documentId);
   if (!document) return;
 
-  const vision = await prepareVisionInput(document, pick.pdfSupported);
+  const vision = await prepareSummaryVision(userId, document, pick);
   if (!vision.ok) {
     // Cannot read this file with the picked provider (decrypt miss, unsupported
     // type, or a PDF needing an Anthropic provider). Graceful no-op.

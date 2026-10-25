@@ -444,11 +444,17 @@ describe("POST /api/internal/deploy-webhook (timestamp replay protection)", () =
  */
 describe("POST /api/internal/deploy-webhook (signed requests)", () => {
   const ORIGINAL_REQUIRE = process.env.DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP;
+  const ORIGINAL_SIGNATURE = process.env.DEPLOY_WEBHOOK_REQUIRE_SIGNATURE;
   afterEach(() => {
     if (ORIGINAL_REQUIRE === undefined) {
       delete process.env.DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP;
     } else {
       process.env.DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP = ORIGINAL_REQUIRE;
+    }
+    if (ORIGINAL_SIGNATURE === undefined) {
+      delete process.env.DEPLOY_WEBHOOK_REQUIRE_SIGNATURE;
+    } else {
+      process.env.DEPLOY_WEBHOOK_REQUIRE_SIGNATURE = ORIGINAL_SIGNATURE;
     }
   });
 
@@ -491,8 +497,8 @@ describe("POST /api/internal/deploy-webhook (signed requests)", () => {
     expect(auditLog).not.toHaveBeenCalled();
   });
 
-  it("in strict mode accepts only a signed request, not the bare secret with a fresh timestamp", async () => {
-    process.env.DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP = "true";
+  it("with DEPLOY_WEBHOOK_REQUIRE_SIGNATURE accepts only a signed request, not the bare secret with a fresh timestamp", async () => {
+    process.env.DEPLOY_WEBHOOK_REQUIRE_SIGNATURE = "true";
     const unsigned = jsonRequest(
       { status: "success" },
       {
@@ -501,6 +507,26 @@ describe("POST /api/internal/deploy-webhook (signed requests)", () => {
       },
     );
     expect((await POST(unsigned)).status).toBe(401);
+    expect((await POST(await signed('{"status":"success"}'))).status).toBe(200);
+  });
+
+  it("keeps DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP meaning the secret plus a fresh timestamp", async () => {
+    // What the flag meant before 1.46, and what an operator who set it with
+    // a sender that timestamps but cannot sign still gets.
+    process.env.DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP = "true";
+    const fresh = jsonRequest(
+      { status: "success" },
+      {
+        "x-deploy-webhook-secret": "test-secret",
+        "x-deploy-webhook-timestamp": String(Math.floor(Date.now() / 1000)),
+      },
+    );
+    expect((await POST(fresh)).status).toBe(200);
+    const bare = jsonRequest(
+      { status: "success" },
+      { "x-deploy-webhook-secret": "test-secret" },
+    );
+    expect((await POST(bare)).status).toBe(401);
     expect((await POST(await signed('{"status":"success"}'))).status).toBe(200);
   });
 });

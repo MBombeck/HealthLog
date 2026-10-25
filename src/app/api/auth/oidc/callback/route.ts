@@ -3,10 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { checkAuthSurfaceRateLimit } from "@/lib/rate-limit";
-import {
-  validateSessionFromCookieValue,
-  SESSION_COOKIE_NAME,
-} from "@/lib/auth/session";
+import { validateSessionFromCookieValue } from "@/lib/auth/session";
+import { readSessionCookie } from "@/lib/auth/session-cookie";
 import {
   discoverOidcMetadata,
   exchangeCodeForTokens,
@@ -225,7 +223,7 @@ export const GET = apiHandler(async (req: NextRequest) => {
     // session gains nothing here but a redirect to a page they could already
     // reach — no code redemption, no session mint, no identity change.
     const existingSession = await validateSessionFromCookieValue(
-      req.cookies.get(SESSION_COOKIE_NAME)?.value,
+      readSessionCookie(req.cookies)?.value,
     );
     if (existingSession) {
       annotate({ meta: { reason: "duplicate_callback_authenticated" } });
@@ -258,7 +256,7 @@ export const GET = apiHandler(async (req: NextRequest) => {
     : null;
   if (isClaim) {
     const liveSession = await validateSessionFromCookieValue(
-      req.cookies.get(SESSION_COOKIE_NAME)?.value,
+      readSessionCookie(req.cookies)?.value,
     );
     if (liveSession) {
       annotate({ meta: { reason: "claim_signed_in" } });

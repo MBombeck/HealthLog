@@ -302,11 +302,13 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "*": [
       "./src/lib/ai/prompts/safety-contracts.*.yaml",
-      // PDFs are read and rendered in a child process with a memory ceiling
-      // and a time limit (`src/lib/documents/pdf-isolation.ts`). The child is
-      // started from these two files by path, which the tracer cannot follow.
+      // PDFs are read and rendered, and uploaded images decoded into their
+      // thumbnails, in a child process with a memory ceiling and a time limit
+      // (`src/lib/documents/pdf-isolation.ts`). The child is started from
+      // these files by path, which the tracer cannot follow.
       "./src/lib/documents/pdf-child.mjs",
       "./src/lib/documents/pdf-engine.mjs",
+      "./src/lib/documents/image-engine.mjs",
       // Document AI local text extraction and rasterization both run the
       // app's one pdfjs-dist (`src/lib/documents/pdfjs.ts`) server-side; the
       // text read is the provider-free fallback that keeps content search

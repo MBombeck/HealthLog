@@ -16,6 +16,7 @@
  *   - `X-Client-Type: native` always forces native policy.
  *   - `X-Client-Type: web`    always forces web policy.
  */
+import { cookieHeaderCarriesSession } from "./session-cookie";
 
 export type ClientPolicy = "web" | "native";
 
@@ -96,13 +97,6 @@ export function resolveTokenPolicy(headers: Headers): TokenPolicyDecision {
 }
 
 /**
- * Name of the browser session cookie (mirrors `SESSION_COOKIE` in
- * `src/lib/auth/session.ts`). A request that round-trips this cookie is a
- * browser, not a genuine cookie-less native caller.
- */
-const SESSION_COOKIE_NAME = "healthlog_session";
-
-/**
  * True only for a genuinely cookie-less native caller — the gate for
  * *issuing* a 60-day refresh token (M-3 hardening).
  *
@@ -110,7 +104,7 @@ const SESSION_COOKIE_NAME = "healthlog_session";
  * a browser context (DOM/XSS-reachable), even when that browser spoofs
  * `X-Client-Type: native`. Two browser tells suppress issuance:
  *   - a `Mozilla/`-bearing User-Agent (every real browser sends one), and
- *   - an inbound `healthlog_session` cookie (a browser round-trips its
+ *   - an inbound session cookie, under either of its names (a browser round-trips its
  *     session cookie; the native client authenticates by Bearer and never
  *     holds one).
  *
@@ -127,9 +121,7 @@ export function isCookielessNativeCaller(headers: Headers): boolean {
 
   // Belt-and-braces: a request that presents the session cookie is a
   // browser round-trip regardless of UA. Native callers never hold one.
-  const cookie = headers.get("cookie") ?? "";
-  if (cookie.split(/;\s*/).some((c) => c.startsWith(`${SESSION_COOKIE_NAME}=`)))
-    return false;
+  if (cookieHeaderCarriesSession(headers.get("cookie"))) return false;
 
   return true;
 }

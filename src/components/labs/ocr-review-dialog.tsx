@@ -117,6 +117,8 @@ export function extractErrorMessage(
         return t("aiRuns.errorWorkerUnavailable");
       case "aiRuns.timedOut":
         return t("aiRuns.errorTimedOut");
+      case "aiRuns.readerBusy":
+        return t("aiRuns.errorReaderBusy");
       default:
         break;
     }

@@ -175,6 +175,9 @@
           "failed": "Não foi possível ler o rótulo. Tente uma foto mais nítida."
         }
       }
+    },
+    "aiRuns": {
+      "readerBusy": "O leitor de documentos está ocupado com outras tarefas. Tente novamente em um minuto."
     }
   },
   "doctorReport": {
@@ -13274,7 +13277,8 @@
     "backgroundScan": "Lendo em segundo plano. Com um modelo lento, isso pode levar alguns minutos.",
     "waitingForWorker": "Aguardando o worker em segundo plano. Se isso não mudar, o worker do servidor pode não estar em execução.",
     "errorWorkerUnavailable": "O worker em segundo plano não está disponível agora. Tente novamente em instantes, ou peça ao operador do servidor para verificá-lo.",
-    "errorTimedOut": "A leitura demorou mais do que o seu tempo de resposta de IA permite. Tente novamente, ou aumente o tempo de resposta nas configurações de IA."
+    "errorTimedOut": "A leitura demorou mais do que o seu tempo de resposta de IA permite. Tente novamente, ou aumente o tempo de resposta nas configurações de IA.",
+    "errorReaderBusy": "O leitor de documentos está ocupado com outras tarefas. Tente novamente em um minuto."
   },
   "symptoms": {
     "add": "Novo sintoma",

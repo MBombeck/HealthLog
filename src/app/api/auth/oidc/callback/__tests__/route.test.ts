@@ -42,7 +42,6 @@ vi.mock("@/lib/auth/audit", () => ({ auditLog: vi.fn() }));
 vi.mock("@/lib/auth/session", () => ({
   createSession: vi.fn(),
   validateSessionFromCookieValue: vi.fn(),
-  SESSION_COOKIE_NAME: "healthlog_session",
 }));
 vi.mock("@/lib/auth/login-alert", () => ({ recordSignInDevice: vi.fn() }));
 vi.mock("@/lib/auth/mfa/challenge", () => ({

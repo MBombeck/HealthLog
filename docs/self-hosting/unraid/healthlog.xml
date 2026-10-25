@@ -46,14 +46,14 @@
 
   <Config Name="WebUI Port" Target="3000" Default="3000" Mode="tcp" Description="HTTP port HealthLog listens on." Type="Port" Display="always" Required="true" Mask="false">3000</Config>
 
-  <Config Name="DATABASE_URL" Target="DATABASE_URL" Default="postgresql://healthlog:CHANGE-ME@POSTGRES-HOST:5432/healthlog?schema=public" Mode="" Description="Connection string for your separately-installed PostgreSQL 16. Replace CHANGE-ME with the DB password and POSTGRES-HOST with the Postgres container IP or name." Type="Variable" Display="always" Required="true" Mask="true"/>
+  <Config Name="DATABASE_URL" Target="DATABASE_URL" Default="postgresql://healthlog:CHANGE-ME@POSTGRES-HOST:5432/healthlog?schema=public" Mode="" Description="Connection string for your separately-installed PostgreSQL (18, or 16). Replace CHANGE-ME with the DB password and POSTGRES-HOST with the Postgres container IP or name." Type="Variable" Display="always" Required="true" Mask="true"/>
 
   <Config Name="ENCRYPTION_KEY" Target="ENCRYPTION_KEY" Default="" Mode="" Description="AES-256-GCM key for data at rest. Generate with: openssl rand -hex 32 (64-char hex). Back this up — losing it makes encrypted data unrecoverable." Type="Variable" Display="always" Required="true" Mask="true"/>
 
   <Config Name="API_TOKEN_HMAC_KEY" Target="API_TOKEN_HMAC_KEY" Default="" Mode="" Description="HMAC key for API token hashing. Generate with: openssl rand -hex 32 (64-char hex)." Type="Variable" Display="always" Required="true" Mask="true"/>
 
   <Config Name="SESSION_COOKIE_SECURE" Target="SESSION_COOKIE_SECURE" Default="false" Mode="" Description="Set to false for LAN / plain-HTTP installs (http://tower:3000) or login fails. Set to true only behind an HTTPS reverse proxy." Type="Variable" Display="always" Required="true" Mask="false">false</Config>
-  <Config Name="HEALTHLOG_PLATFORM" Target="HEALTHLOG_PLATFORM" Default="unraid" Mode="" Description="Where this server is configured. Opens the admin's encryption key backup step on the Unraid instructions." Type="Variable" Display="advanced" Required="false" Mask="false">unraid</Config>
+  <Config Name="HEALTHLOG_PLATFORM" Target="HEALTHLOG_PLATFORM" Default="unraid" Mode="" Description="Where this server is configured. Opens the admin's recovery kit on the Unraid instructions." Type="Variable" Display="advanced" Required="false" Mask="false">unraid</Config>
   <Config Name="ENCRYPTION_KEY_CHECK" Target="ENCRYPTION_KEY_CHECK" Default="enforce" Mode="" Description="Start-up encryption key check. enforce refuses to serve when the key does not open the stored data. warn only logs it: a last resort for a refusal you are certain is false, and it disables a safety check." Type="Variable" Display="advanced" Required="false" Mask="false">enforce</Config>
 
   <Config Name="NEXT_PUBLIC_APP_URL" Target="NEXT_PUBLIC_APP_URL" Default="http://tower:3000" Mode="" Description="Public URL users reach HealthLog at. Use the LAN URL (e.g. http://tower:3000) or your HTTPS domain behind a reverse proxy." Type="Variable" Display="always" Required="true" Mask="false"/>

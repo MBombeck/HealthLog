@@ -105,7 +105,9 @@ describe("demo seed, short-window shape", () => {
   it("leaves the median of the window in the settled band", () => {
     // The usual range is the median ± 3 MAD of the last 30 days. A stretch
     // that fills half the window moves that median onto the stretch and
-    // widens the band to something like 87-181 mmHg.
+    // widens the band to something like 87-181 mmHg. The seed's own spread
+    // reaches about ±22 in one run of 150, so the bound sits at 24, still far
+    // below what a stretch that long produces.
     const sorted = [...systolic].sort((a, b) => a - b);
     const median = sorted[Math.floor(sorted.length / 2)];
     expect(median).toBeLessThanOrEqual(124);
@@ -113,7 +115,7 @@ describe("demo seed, short-window shape", () => {
       .map((v) => Math.abs(v - median))
       .sort((a, b) => a - b);
     const mad = deviations[Math.floor(deviations.length / 2)];
-    expect(3 * 1.4826 * mad).toBeLessThanOrEqual(20);
+    expect(3 * 1.4826 * mad).toBeLessThanOrEqual(24);
   });
 
   it("raises ramipril on the day the stretch turns", () => {

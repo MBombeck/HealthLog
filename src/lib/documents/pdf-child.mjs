@@ -1,9 +1,10 @@
 // @ts-check
 /**
- * The process a PDF is read and rendered in. `./pdf-isolation.ts` starts it
- * for one request, hands it the bytes over the IPC channel, and takes back
- * either the result or the fact that it died. It holds no secrets: it is
- * started with an almost empty environment and never opens the database.
+ * The process a PDF is read and rendered in, and an uploaded image is decoded
+ * into its thumbnail in. `./pdf-isolation.ts` starts it for one request,
+ * hands it the bytes over the IPC channel, and takes back either the result
+ * or the fact that it died. It holds no secrets: it is started with an almost
+ * empty environment and never opens the database.
  *
  * On Linux it volunteers itself to the kernel's out-of-memory killer first,
  * so when a document outruns the memory check between two samples and the
@@ -12,6 +13,7 @@
  */
 import { writeFileSync } from "node:fs";
 
+import { renderImageThumbnail } from "./image-engine.mjs";
 import { readTextLayer, renderPdfPages } from "./pdf-engine.mjs";
 
 try {
@@ -22,7 +24,8 @@ try {
 
 /**
  * @typedef {{ op: "text"; data: Uint8Array; maxPages: number }
- *   | { op: "render"; data: Uint8Array; options: import("./pdf-engine.mjs").RenderOptions }} PdfChildRequest
+ *   | { op: "render"; data: Uint8Array; options: import("./pdf-engine.mjs").RenderOptions }
+ *   | { op: "image-thumbnail"; data: Uint8Array; options: import("./image-engine.mjs").ImageThumbnailOptions }} PdfChildRequest
  */
 
 /**
@@ -50,6 +53,12 @@ async function handle(request) {
       return {
         ok: true,
         document: await renderPdfPages(data, request.options),
+      };
+    }
+    if (request.op === "image-thumbnail") {
+      return {
+        ok: true,
+        thumbnail: await renderImageThumbnail(data, request.options),
       };
     }
     return failure(new Error("unknown request"));

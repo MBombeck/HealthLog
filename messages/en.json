@@ -175,6 +175,9 @@
           "failed": "The label could not be read. Try a sharper photo."
         }
       }
+    },
+    "aiRuns": {
+      "readerBusy": "The document reader is busy with other work. Try again in a minute."
     }
   },
   "doctorReport": {
@@ -13274,7 +13277,8 @@
     "backgroundScan": "Reading in the background. With a slow model this can take a few minutes.",
     "waitingForWorker": "Waiting for the background worker. If this does not change, the server's worker may not be running.",
     "errorWorkerUnavailable": "The background worker is not available right now. Try again in a moment, or ask the server operator to check it.",
-    "errorTimedOut": "Reading took longer than your AI response time allows. Try again, or raise the response time in the AI settings."
+    "errorTimedOut": "Reading took longer than your AI response time allows. Try again, or raise the response time in the AI settings.",
+    "errorReaderBusy": "The document reader is busy with other work. Try again in a minute."
   },
   "symptoms": {
     "add": "New symptom",

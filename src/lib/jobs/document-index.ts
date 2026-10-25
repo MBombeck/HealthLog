@@ -15,6 +15,7 @@
 import { STATUS_MODEL_CALLS } from "@/lib/ai/ai-budgets";
 import { maybeAutoStageLabFacts } from "@/lib/documents/auto-stage-labs";
 import { indexDocumentContent } from "@/lib/documents/index-document";
+import { withPdfWork } from "@/lib/documents/pdf-isolation";
 import type { OcrSchedule } from "@/lib/documents/ocr-plan";
 import { ocrReadCallMs } from "@/lib/documents/ocr-read";
 import { prisma } from "@/lib/db";
@@ -50,9 +51,9 @@ export async function runDocumentIndex(
   const { userId, documentId } = payload;
   if (!userId || !documentId) return;
   const localOnly = payload.localOnly === true;
-  const outcome = await indexDocumentContent(userId, documentId, {
-    localOnly,
-  });
+  const outcome = await withPdfWork({ owner: userId, lane: "background" }, () =>
+    indexDocumentContent(userId, documentId, { localOnly }),
+  );
   annotate({
     action: { name: "documents.autoIndex.run" },
     meta: outcome.indexed
@@ -72,9 +73,9 @@ export async function runDocumentIndex(
       options.deadlineAt === undefined
         ? undefined
         : await stagingSchedule(userId, options.deadlineAt, options.now);
-    await maybeAutoStageLabFacts(userId, documentId, { schedule }).catch(
-      caughtAs("documents.auto_index.lab_staging_failed"),
-    );
+    await withPdfWork({ owner: userId, lane: "background" }, () =>
+      maybeAutoStageLabFacts(userId, documentId, { schedule }),
+    ).catch(caughtAs("documents.auto_index.lab_staging_failed"));
   }
 }
 

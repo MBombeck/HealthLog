@@ -64,7 +64,7 @@ const aiRun = z
       })
       .nullable()
       .describe(
-        "Present once `status` is `FAILED`: the `meta.errorCode`, message and HTTP status the queuing route would have answered with, or one of the run's own codes: `aiRuns.workerUnavailable` (no worker took the run within fifteen minutes), `aiRuns.timedOut` (the read outlived the calls the AI response time allows), `aiRuns.failed` (anything else).",
+        "Present once `status` is `FAILED`: the `meta.errorCode`, message and HTTP status the queuing route would have answered with, or one of the run's own codes: `aiRuns.workerUnavailable` (no worker took the run within fifteen minutes), `aiRuns.timedOut` (the read outlived the calls the AI response time allows), `aiRuns.readerBusy` (the server's document reader was busy past the wait a read gets, or stopped before it answered; nothing was read or charged, try again in a minute), `aiRuns.failed` (anything else).",
       ),
     createdAt: z.string(),
     startedAt: z.string().nullable(),

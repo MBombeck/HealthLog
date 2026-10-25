@@ -175,6 +175,9 @@
           "failed": "Nie udało się odczytać etykiety. Spróbuj ostrzejszego zdjęcia."
         }
       }
+    },
+    "aiRuns": {
+      "readerBusy": "Czytnik dokumentów jest zajęty innymi zadaniami. Spróbuj ponownie za minutę."
     }
   },
   "doctorReport": {
@@ -13274,7 +13277,8 @@
     "backgroundScan": "Odczyt w tle. Przy wolnym modelu może to potrwać kilka minut.",
     "waitingForWorker": "Oczekiwanie na proces w tle. Jeśli nic się nie zmienia, worker na serwerze może nie działać.",
     "errorWorkerUnavailable": "Proces w tle jest teraz niedostępny. Spróbuj ponownie za chwilę albo poproś administratora serwera o sprawdzenie go.",
-    "errorTimedOut": "Odczyt trwał dłużej, niż pozwala ustawiony czas odpowiedzi AI. Spróbuj ponownie albo wydłuż czas odpowiedzi w ustawieniach AI."
+    "errorTimedOut": "Odczyt trwał dłużej, niż pozwala ustawiony czas odpowiedzi AI. Spróbuj ponownie albo wydłuż czas odpowiedzi w ustawieniach AI.",
+    "errorReaderBusy": "Czytnik dokumentów jest zajęty innymi zadaniami. Spróbuj ponownie za minutę."
   },
   "symptoms": {
     "add": "Nowy objaw",

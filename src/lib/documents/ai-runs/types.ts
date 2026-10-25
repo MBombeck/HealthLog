@@ -74,6 +74,7 @@ export const AI_RUN_ERROR_CODES = {
   workerUnavailable: "aiRuns.workerUnavailable",
   timedOut: "aiRuns.timedOut",
   failed: "aiRuns.failed",
+  readerBusy: "aiRuns.readerBusy",
 } as const;
 
 /** How long a queued run waits for a worker before it is failed. */

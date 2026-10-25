@@ -55,6 +55,7 @@ import {
   upsertContentIndex,
 } from "@/lib/documents/content-index";
 import { transcribeDocument } from "@/lib/documents/describe";
+import { withPdfWork } from "@/lib/documents/pdf-isolation";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { resolveDocumentVisionProvider } from "@/lib/documents/provider-order";
 import { annotate } from "@/lib/logging/context";
@@ -320,7 +321,10 @@ export async function runContentIndexBackfillForUser(
         skipped += 1;
         continue;
       }
-      const vision = await prepareVisionInput(document, pick.pdfSupported);
+      const vision = await withPdfWork(
+        { owner: userId, lane: "background" },
+        () => prepareVisionInput(document, pick.pdfSupported),
+      );
       if (!vision.ok) {
         // Not vision-indexable after all (undecryptable, unreadable bytes,
         // or a PDF the rasteriser could not render) — refund and move on so
