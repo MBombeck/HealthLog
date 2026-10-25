@@ -1,6 +1,7 @@
 /**
  * Authorize endpoint — consent gate + audience + PKCE + redirect-URI binding.
  */
+import { NextRequest } from "next/server";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 process.env.API_TOKEN_HMAC_KEY = "x".repeat(48);
@@ -494,5 +495,60 @@ describe("authorize CSP — the consent form may lead only to the validated redi
     const unavailable = await GET(getReq(authorizeUrl()) as never);
     expect(unavailable.status).toBe(503);
     expect(csp(unavailable)).toContain("default-src 'none'");
+  });
+});
+
+/**
+ * Dynamic registration lets anyone register "Claude" with a callback on a
+ * host of their own and send a signed-in person the authorize link. The
+ * consent page used to show the borrowed name and "Unverified application",
+ * never where the code would go.
+ */
+describe("GET /authorize — where the access goes (M3)", () => {
+  it("names the redirect host for a self-registered client, on the page and on Allow", async () => {
+    const phish = registerDcrClient({
+      clientName: "Claude",
+      redirectUris: ["https://collector.example.net/cb"],
+    });
+    signedIn();
+    const body = await (
+      await GET(
+        new NextRequest(
+          authorizeUrl({
+            client_id: phish.clientId,
+            redirect_uri: "https://collector.example.net/cb",
+          }),
+        ),
+      )
+    ).text();
+    expect(body).toMatch(/Check where this access goes/);
+    expect(body).toMatch(
+      /Access goes to:<\/strong> <code>collector\.example\.net<\/code>/,
+    );
+    expect(body).toMatch(
+      /value="allow">Allow access for collector\.example\.net</,
+    );
+    // The warning comes before the borrowed name.
+    expect(body.indexOf("Check where")).toBeLessThan(body.indexOf("Claude"));
+  });
+
+  it("says a loopback redirect stays on this device", async () => {
+    const desktop = registerDcrClient({
+      clientName: "Desktop client",
+      redirectUris: ["http://127.0.0.1:4000/callback"],
+    });
+    signedIn();
+    const body = await (
+      await GET(
+        new NextRequest(
+          authorizeUrl({
+            client_id: desktop.clientId,
+            redirect_uri: "http://127.0.0.1:4000/callback",
+          }),
+        ),
+      )
+    ).text();
+    expect(body).toMatch(/an application running on this device/);
+    expect(body).not.toMatch(/Check where this access goes/);
   });
 });
