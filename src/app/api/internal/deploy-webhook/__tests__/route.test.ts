@@ -436,3 +436,71 @@ describe("POST /api/internal/deploy-webhook (timestamp replay protection)", () =
     expect(dispatchLocalisedNotification).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * The secret header cannot stop a replay: a captured request carries the
+ * secret, and the timestamp beside it was covered by nothing. A signed
+ * request carries no secret and binds its timestamp to its body.
+ */
+describe("POST /api/internal/deploy-webhook (signed requests)", () => {
+  const ORIGINAL_REQUIRE = process.env.DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP;
+  afterEach(() => {
+    if (ORIGINAL_REQUIRE === undefined) {
+      delete process.env.DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP;
+    } else {
+      process.env.DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP = ORIGINAL_REQUIRE;
+    }
+  });
+
+  async function signed(
+    body: string,
+    opts: { ts?: string; sign?: string; secret?: string } = {},
+  ): Promise<NextRequest> {
+    const { createHmac } = await import("node:crypto");
+    const ts = opts.ts ?? String(Math.floor(Date.now() / 1000));
+    const mac = createHmac("sha256", opts.secret ?? "test-secret")
+      .update(`${ts}.${opts.sign ?? body}`)
+      .digest("hex");
+    return new NextRequest("https://app.example/api/internal/deploy-webhook", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-deploy-webhook-timestamp": ts,
+        "x-deploy-webhook-signature": `sha256=${mac}`,
+      },
+      body,
+    });
+  }
+
+  it("accepts a signed request without the secret header", async () => {
+    const res = await POST(await signed('{"status":"success"}'));
+    expect(res.status).toBe(200);
+    expect(auditLog).toHaveBeenCalledOnce();
+  });
+
+  it("refuses a signature over another body, an old timestamp, or another key", async () => {
+    for (const req of [
+      await signed('{"status":"failed"}', { sign: '{"status":"success"}' }),
+      await signed('{"status":"success"}', {
+        ts: String(Math.floor(Date.now() / 1000) - 600),
+      }),
+      await signed('{"status":"success"}', { secret: "other-secret" }),
+    ]) {
+      expect((await POST(req)).status).toBe(401);
+    }
+    expect(auditLog).not.toHaveBeenCalled();
+  });
+
+  it("in strict mode accepts only a signed request, not the bare secret with a fresh timestamp", async () => {
+    process.env.DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP = "true";
+    const unsigned = jsonRequest(
+      { status: "success" },
+      {
+        "x-deploy-webhook-secret": "test-secret",
+        "x-deploy-webhook-timestamp": String(Math.floor(Date.now() / 1000)),
+      },
+    );
+    expect((await POST(unsigned)).status).toBe(401);
+    expect((await POST(await signed('{"status":"success"}'))).status).toBe(200);
+  });
+});
