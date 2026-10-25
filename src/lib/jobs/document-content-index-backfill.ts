@@ -31,6 +31,7 @@
  * (`src/lib/jobs/reminder/register-maintenance.ts`) so pg-boss provisions it.
  */
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
+import { aiEgressRefusal } from "@/lib/ai/capabilities/egress";
 import { aiCapabilityForJob } from "@/lib/ai/capabilities/gate";
 import { PICK_DECIDED_REASONS } from "@/lib/ai/capabilities/types";
 import {
@@ -333,6 +334,22 @@ export async function runContentIndexBackfillForUser(
         continue;
       }
 
+      // The wire again, before every read: a consent withdrawn or a switch
+      // turned off while the walk runs stops it at the next document, not
+      // at the next run.
+      const refusal = await aiEgressRefusal("documentAi", userId, [
+        pick.providerType,
+      ]);
+      if (refusal) {
+        await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+          servedBy: null,
+          reservedOwner: reservation.owner,
+        });
+        reason =
+          refusal.reason === "consent_required" ? "no-consent" : "unavailable";
+        break outer;
+      }
+
       calls += 1;
       const read = await transcribeAndIndex(userId, document.id, pick, vision, {
         reserved: reservation.reserved,
@@ -392,14 +409,24 @@ async function transcribeAndIndex(
       servedBy,
       reservedOwner: budget.owner,
     });
+  let text: string;
   try {
-    const { text } = await transcribeDocument({
+    ({ text } = await transcribeDocument({
       provider: pick.entry.instance,
       providerType: pick.providerType,
       images: vision.images,
       documents: vision.documents,
-    });
-    await settle(budget.reserved, pick.entry.providerType);
+    }));
+  } catch (err) {
+    await settle(spentTokensOf(err) ?? 0, null);
+    // Counted into the run's `failed` tally by the caller.
+    return { error: err };
+  }
+  // Settled once, for the read that was made. The index write below is ours,
+  // not the provider's: a failure there charges nothing back, or the
+  // reservation would be handed back a second time.
+  await settle(budget.reserved, pick.entry.providerType);
+  try {
     await upsertContentIndex({
       userId,
       documentId,
@@ -407,12 +434,10 @@ async function transcribeAndIndex(
       source: "vision",
       providerType: pick.providerType,
     });
-    return "indexed";
   } catch (err) {
-    await settle(spentTokensOf(err) ?? 0, null);
-    // Counted into the run's `failed` tally by the caller.
     return { error: err };
   }
+  return "indexed";
 }
 
 /**

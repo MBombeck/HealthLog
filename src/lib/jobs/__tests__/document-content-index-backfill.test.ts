@@ -54,6 +54,9 @@ vi.mock("@/lib/ai/coach/budget", () => ({
   resolveCostOwner: vi.fn(() => "operator" as const),
 }));
 vi.mock("@/lib/jobs/boss-instance", () => ({ getGlobalBoss: vi.fn() }));
+vi.mock("@/lib/ai/capabilities/egress", () => ({
+  aiEgressRefusal: vi.fn().mockResolvedValue(null),
+}));
 
 import { runContentIndexBackfillForUser } from "../document-content-index-backfill";
 import { prisma } from "@/lib/db";
@@ -62,7 +65,8 @@ import { rasterizePdf } from "@/lib/documents/rasterize-pdf";
 import { transcribeDocument } from "@/lib/documents/describe";
 import { resolveDocumentVisionProvider } from "@/lib/documents/provider-order";
 import { AiUnavailableError } from "@/lib/ai/capabilities/refusal";
-import { reserveBudget } from "@/lib/ai/coach/budget";
+import { reconcileSpend, reserveBudget } from "@/lib/ai/coach/budget";
+import { aiEgressRefusal } from "@/lib/ai/capabilities/egress";
 import { aiCapabilityForJob } from "@/lib/ai/capabilities/gate";
 import {
   decryptIndexText,
@@ -135,6 +139,14 @@ function seedIndexRows(
       .map(({ id, textEncrypted }) => ({ id, textEncrypted }));
     return Promise.resolve(matched);
   }) as never);
+}
+
+/** A pick, and one page of candidates with these ids. */
+function walk(ids: string[]) {
+  vi.mocked(resolveDocumentVisionProvider).mockResolvedValue(PICK as never);
+  vi.mocked(prisma.inboundDocument.findMany).mockResolvedValue(
+    ids.map((id) => ({ id })) as never,
+  );
 }
 
 describe("runContentIndexBackfillForUser", () => {
@@ -253,13 +265,9 @@ describe("runContentIndexBackfillForUser", () => {
   );
 
   it("indexes the not-yet-indexed documents", async () => {
-    vi.mocked(resolveDocumentVisionProvider).mockResolvedValue(PICK as never);
     // One short page (< PAGE_SIZE) — the walk breaks after it, so a single
     // findMany return is enough (a trailing once would leak to the next test).
-    vi.mocked(prisma.inboundDocument.findMany).mockResolvedValue([
-      { id: "d1" },
-      { id: "d2" },
-    ] as never);
+    walk(["d1", "d2"]);
 
     const result = await runContentIndexBackfillForUser("user-1");
     expect(result).toEqual({
@@ -274,6 +282,36 @@ describe("runContentIndexBackfillForUser", () => {
     expect(
       vi.mocked(prisma.inboundDocument.findMany).mock.calls[0]?.[0]?.where,
     ).toMatchObject({ aiReadDeferred: false });
+  });
+
+  it("settles a document's reservation once when its index write fails after the read", async () => {
+    walk(["d1"]);
+    vi.mocked(upsertContentIndex).mockRejectedValueOnce(new Error("write"));
+
+    const result = await runContentIndexBackfillForUser("user-1");
+    expect(result).toMatchObject({ indexed: 0, failed: 1 });
+    // The read happened and is charged; nothing is handed back a second time.
+    expect(reconcileSpend).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(reconcileSpend).mock.calls[0]![2]).toBe(1);
+  });
+
+  it("asks the wire again before every document's read", async () => {
+    walk(["d1", "d2"]);
+    // Consent withdrawn while the walk is between the two documents.
+    vi.mocked(aiEgressRefusal)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(
+        new AiUnavailableError("documentAi", "consent_required"),
+      );
+
+    const result = await runContentIndexBackfillForUser("user-1");
+    expect(transcribeDocument).toHaveBeenCalledTimes(1);
+    expect(aiEgressRefusal).toHaveBeenCalledWith("documentAi", "user-1", [
+      "anthropic",
+    ]);
+    expect(result).toMatchObject({ indexed: 1, reason: "no-consent" });
+    // The second document's reservation went back untouched.
+    expect(vi.mocked(reconcileSpend).mock.calls.at(-1)![2]).toBe(0);
   });
 
   it("includes PDFs as candidates for an image-input provider and rasterises them", async () => {

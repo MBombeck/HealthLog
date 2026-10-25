@@ -77,6 +77,9 @@ vi.mock("@/lib/ai/coach/budget", () => ({
   resolveCostOwner: () => "user",
 }));
 vi.mock("@/lib/jobs/boss-instance", () => ({ getGlobalBoss: vi.fn() }));
+vi.mock("@/lib/ai/capabilities/egress", () => ({
+  aiEgressRefusal: vi.fn().mockResolvedValue(null),
+}));
 
 import {
   BACKFILL_FAILURES_IN_A_ROW,
