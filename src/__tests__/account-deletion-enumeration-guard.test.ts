@@ -49,6 +49,9 @@ const SRC = join(process.cwd(), "src");
 const EXTRA_FILES = [
   "lib/measurements/consolidation-base.ts",
   "lib/integrations/watchdog.ts",
+  // Read by the hourly readiness evaluation, which judges every account's
+  // copies.
+  "lib/recovery/readiness.ts",
 ];
 
 function backgroundFiles(): string[] {

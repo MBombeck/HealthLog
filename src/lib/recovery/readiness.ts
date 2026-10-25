@@ -17,6 +17,7 @@
  *   - the kit: the same assessment the kit card shows;
  *   - the dump: whatever the dump module reports, through a provider.
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import {
   offhostBackupConfigured,
@@ -53,7 +54,11 @@ export async function readReadinessInputs(
         orderBy: { createdAt: "asc" },
         select: { createdAt: true },
       }),
+      // The weekly and off-host passes skip an account pending deletion on
+      // purpose, so its copies age without anything being wrong; counted
+      // here, every deletion turned both signals red and pushed the admins.
       prisma.user.findMany({
+        where: ACTIVE_ACCOUNT,
         select: {
           createdAt: true,
           dataBackups: {
