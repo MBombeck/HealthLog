@@ -857,14 +857,14 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Apply to all routes except static files, Next.js internals, SW, and
-    // manifest — and except the large-upload API routes listed in
+    // Apply to all routes except static files outside `/api/`, Next.js
+    // internals, SW, and manifest — and except the large-upload API routes in
     // `src/lib/http/proxy-bypass-routes.ts`. Next reads a request body into
     // memory for the proxy before the route runs, so a route whose body may
     // exceed `proxyClientMaxBodySize` (1 MB, next.config.ts) is left out of
     // the matcher and `apiHandler` performs the proxy's duties for it. The
     // alternation must stay equal to that list; `proxy-body-limit.test.ts`
     // compiles this exactly as Next does and checks.
-    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.json|robots\\.txt|sitemap\\.xml|api/(?:import(?:/csv|/labs-csv|/medications-csv|/apple-health-export|/health-connect-export)?|admin/import-apple-health-export|admin/backups/upload|documents/inbound|medications/intake/(?:dose-history-import|bulk)|labs/ocr/extract|medications/[^/]+/ingredients/extract|user/avatar|measurements/batch|workouts/batch|insights/ecg|mood-entries/bulk|cycle/day-logs/bulk)/?$|.*\\.(?:svg|png|jpg|jpeg|gif|webp|txt|xml)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.json|robots\\.txt|sitemap\\.xml|api/(?:import(?:/csv|/labs-csv|/medications-csv|/apple-health-export|/health-connect-export)?|admin/import-apple-health-export|admin/backups/upload|documents/inbound|medications/intake/(?:dose-history-import|bulk)|labs/ocr/extract|medications/[^/]+/ingredients/extract|user/avatar|measurements/batch|workouts/batch|insights/ecg|mood-entries/bulk|cycle/day-logs/bulk)/?$|(?!api/).*\\.(?:svg|png|jpg|jpeg|gif|webp|txt|xml)$).*)",
   ],
 };
