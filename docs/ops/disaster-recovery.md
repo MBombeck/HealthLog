@@ -157,9 +157,31 @@ docker compose up -d
 ```
 
 The dump before a migration is taken while the new image starts. If it fails
-on a writable directory (a full disk, most often), the start stops before
+on a directory that keeps it (a full disk, most often), the start stops before
 anything is migrated and the log names the switch: `DB_BACKUP_BEFORE_MIGRATE=false`
 starts without it, once.
+
+## Knowing the copies are there
+
+Nobody opens the backups page until the day it matters, so the server tells
+the admins instead:
+
+- The **Recovery readiness** card, on the admin overview and on Admin,
+  Backups, judges every copy in one verdict each: the database dump (fresh,
+  failed, or kept nowhere that survives the container), the weekly account
+  copies, the off-host copies, the last restore drill, whether the bucket is
+  set up, whether its lifecycle rule ever removes the dumps under
+  `database/`, and the recovery kit.
+- The **recovery kit** under Admin, Encryption lists every key a restore
+  needs (the table above), by id and fingerprint, and lets an admin check a
+  saved copy and confirm it. It is due again after any key change.
+- An hourly check sends each admin a **Backup health** notification
+  (`BACKUP_HEALTH`) when a signal on the card turns to needs attention or at
+  risk, a reminder once a day while one stays at risk, and one more when it
+  recovers. Each admin chooses the channels for it under Notifications.
+
+[Getting started](../self-hosting/getting-started.md#save-the-recovery-kit)
+walks through saving the kit.
 
 ## How this is tested
 

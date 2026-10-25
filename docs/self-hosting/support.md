@@ -101,5 +101,6 @@ and host names before it is shown.
 
 `docker compose logs app` prints every wide event as one JSON line;
 `LOG_LEVEL=debug` adds debug events. With `LOKI_ENDPOINT` set the same events
-go to Loki, and GlitchTip (Admin, General) receives unexpected server errors.
+go to Loki, and GlitchTip (Admin, Integrations, once a DSN is set there)
+receives unexpected server errors.
 Each line carries `request_id`, so an error id finds its line there too.
