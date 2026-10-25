@@ -1,6 +1,7 @@
 {
-  "registeredQueueCount": 123,
+  "registeredQueueCount": 125,
   "registeredQueues": [
+    "account-deletion-purge",
     "achievement-unlock-sweep",
     "apple-health-import",
     "apple-health-import-reconcile",
@@ -96,6 +97,7 @@
     "push-attempt-cleanup",
     "rate-limit-cleanup",
     "reaction-line-generate",
+    "recovery-readiness",
     "recovery-score-compute",
     "reminder-satisfy",
     "rollup-full-backfill",
@@ -126,6 +128,21 @@
     "workout-insight-generate"
   ],
   "queues": [
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "account-deletion-purge",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
     {
       "dead_letter": null,
       "deletion_seconds": 604800,
@@ -1556,6 +1573,21 @@
       "deletion_seconds": 604800,
       "expire_seconds": 900,
       "heartbeat_seconds": null,
+      "name": "recovery-readiness",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
       "name": "recovery-score-compute",
       "notify": false,
       "partition": false,
@@ -1973,6 +2005,18 @@
     }
   ],
   "schedules": [
+    {
+      "cron": "23 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "account-deletion-purge",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
     {
       "cron": "25 4 * * *",
       "data": {},
@@ -2702,6 +2746,18 @@
       "timezone": "Europe/Berlin"
     },
     {
+      "cron": "33 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "recovery-readiness",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
       "cron": "45 4 * * *",
       "data": {},
       "key": "",
@@ -2906,6 +2962,13 @@
     }
   ],
   "bindings": [
+    {
+      "queue": "account-deletion-purge",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
     {
       "queue": "achievement-unlock-sweep",
       "options": {
@@ -3520,6 +3583,13 @@
       "queue": "reaction-line-generate",
       "options": {
         "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "recovery-readiness",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
       }
     },
     {
