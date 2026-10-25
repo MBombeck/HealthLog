@@ -8606,6 +8606,96 @@
       "confirmedAt": "Confermato il {date}.",
       "confirmedAtBy": "Confermato il {date} da {who}.",
       "dueAgain": "Il kit è stato confermato il {date}, ma ora elenca chiavi che quella conferma non copre: {keys}."
+    },
+    "recoveryReadiness": {
+      "title": "Preparazione al ripristino",
+      "description": "Se questo server potrebbe essere rimesso in piedi dopo una perdita, valutato in base a ogni backup che esegue.",
+      "loading": "Controllo dei backup…",
+      "loadError": "Impossibile caricare la preparazione al ripristino.",
+      "state": {
+        "ok": "Pronto",
+        "attention": "Richiede attenzione",
+        "failing": "A rischio"
+      },
+      "signal": {
+        "database_dump": "Dump del database",
+        "weekly_copy": "Copie settimanali degli account",
+        "offhost_copies": "Copie fuori host",
+        "restore_drill": "Prova di ripristino",
+        "offhost_setup": "Backup fuori host",
+        "recovery_kit": "Kit di recupero"
+      },
+      "at": {
+        "database_dump": "Dump più recente: {date}",
+        "weekly_copy": "Copia di account più vecchia: {date}",
+        "offhost_copies": "Copia fuori host meno recente: {date}",
+        "restore_drill": "Ultima prova: {date}",
+        "recovery_kit": "Confermato: {date}"
+      },
+      "dueBy": "Scadenza: {date}",
+      "fix": {
+        "database_dump": "Apri i backup",
+        "weekly_copy": "Apri i backup",
+        "offhost_copies": "Apri i backup",
+        "restore_drill": "Apri i backup",
+        "offhost_setup": "Apri i backup",
+        "recovery_kit": "Apri il kit"
+      },
+      "reason": {
+        "database_dump": {
+          "not_available": "Questa versione non pianifica un dump del database.",
+          "disabled": "Il dump pianificato del database è disattivato.",
+          "unreadable": "Non è stato possibile leggere lo stato del dump del database.",
+          "never_succeeded": "Nessun dump del database è ancora riuscito, e l'ultimo tentativo non è andato a buon fine.",
+          "never_ran": "Nelle {hours} ore trascorse da quando i dump sono stati attivati non è stato scritto alcun dump del database.",
+          "first_pending": "Il primo dump del database non è ancora stato eseguito.",
+          "stale": "Il dump del database più recente ha {hours} ore.",
+          "last_failed": "L'ultimo dump del database non è riuscito. Quello precedente è ancora recente.",
+          "fresh": "L'ultimo dump del database è recente.",
+          "nowhere_to_write": "La cartella dei dump {directory} non è scrivibile e non è configurato nessun bucket esterno, quindi non si può conservare alcun dump."
+        },
+        "weekly_copy": {
+          "no_accounts": "Non ci sono ancora account da copiare.",
+          "stale": "La copia settimanale più vecchia ha {days} giorni. Account in ritardo: {accounts}.",
+          "never": "Un account non ha una copia settimanale da {days} giorni. Account in ritardo: {accounts}.",
+          "first_pending": "La prima copia settimanale viene creata domenica mattina presto.",
+          "fresh": "Ogni account ha una copia dell'ultima settimana."
+        },
+        "offhost_copies": {
+          "not_configured": "Non è configurato alcun bucket fuori host.",
+          "stale": "Le copie fuori host sono indietro di più di due notti. Account in ritardo: {accounts}.",
+          "first_pending": "Il giro notturno fuori host non ha ancora raggiunto alcun account.",
+          "fresh": "Ogni account ha una copia recente nel bucket fuori host."
+        },
+        "restore_drill": {
+          "not_configured": "La prova legge il bucket fuori host, che non è configurato.",
+          "not_run_yet": "La prova di ripristino mensile non è ancora stata eseguita.",
+          "failed": "L'ultima prova di ripristino non è riuscita: {failed} copie su {checked} non si sono potute rileggere.",
+          "failed_run": "L'ultima prova di ripristino non è riuscita ad arrivare in fondo.",
+          "passed": "L'ultima prova di ripristino ha riletto {checked} copie."
+        },
+        "offhost_setup": {
+          "configured": "Le copie lasciano questo server ogni notte.",
+          "no_admin": "Non esiste ancora un account amministratore.",
+          "not_configured": "Non è configurato alcun bucket fuori host, quindi ogni copia si trova solo su questo server.",
+          "not_configured_grace": "Non è ancora configurato alcun bucket fuori host, quindi ogni copia si trova solo su questo server."
+        },
+        "recovery_kit": {
+          "confirmed": "Esiste una copia di ogni chiave necessaria per un ripristino.",
+          "out_of_date": "Il kit di recupero elenca chiavi di cui nessuno ha confermato una copia: {keys}.",
+          "no_admin": "Non esiste ancora un account amministratore.",
+          "not_confirmed": "Nessuno ha confermato una copia delle chiavi necessarie per un ripristino: {keys}.",
+          "not_confirmed_grace": "Salva una copia delle chiavi necessarie per un ripristino: {keys}."
+        }
+      },
+      "recovered": {
+        "database_dump": "Il dump del database è di nuovo recente.",
+        "weekly_copy": "Ogni account ha di nuovo una copia settimanale recente.",
+        "offhost_copies": "Ogni account ha di nuovo una copia fuori host recente.",
+        "restore_drill": "La prova di ripristino è di nuovo riuscita.",
+        "offhost_setup": "Le copie fuori host ora sono configurate.",
+        "recovery_kit": "Il kit di recupero è di nuovo confermato."
+      }
     }
   },
   "achievements": {
@@ -9071,6 +9161,14 @@
     "checkupReminders": {
       "title": "Promemoria dei controlli",
       "description": "Attiva o disattiva i singoli promemoria dei controlli."
+    },
+    "eventBackupHealth": "Stato dei backup",
+    "eventBackupHealthDesc": "Quando un backup si ferma, resta indietro o torna a funzionare. Inviato solo agli amministratori.",
+    "recoveryReadiness": {
+      "titleAttention": "I backup richiedono attenzione",
+      "titleFailing": "I backup sono a rischio",
+      "titleReminder": "I backup sono ancora a rischio",
+      "titleRecovered": "I backup sono tornati alla normalità"
     }
   },
   "i18n": {

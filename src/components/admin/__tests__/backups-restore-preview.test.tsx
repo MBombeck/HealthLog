@@ -53,7 +53,7 @@ vi.mock("@tanstack/react-query", () => ({
         schedule: {
           lastSuccessAt: "2026-09-01T03:00:00.000Z",
           lastSuccessAgeDays: 2,
-          staleAfterDays: 10,
+          staleAfterDays: 9,
           stale: false,
           lastRun: null,
           lastRunFailed: false,

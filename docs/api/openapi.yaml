@@ -37138,6 +37138,7 @@ components:
             - SECURITY_ALERT
             - DAILY_BRIEFING
             - SHARED_RECORD_INTAKE
+            - BACKUP_HEALTH
         enabled:
           type: boolean
       required:
@@ -38519,7 +38520,7 @@ components:
                 documents.sources.tokenRequired, documents.sources.unavailable, documents.sources.unreachable,
                 documents.sources.versionTooOld; encounter — encounter.invalid, encounter.link.invalid,
                 encounter.practitioner-not-found, encounter.reminder-conflict, encounter.reminder-not-found; encryption
-                — encryption.keyBackup.stale, encryption.key_mismatch; environment — environment.backfill_pending,
+                — encryption.key_mismatch; environment — environment.backfill_pending,
                 environment.backfill_rate_limited, environment.invalid, environment.no_home,
                 environment.range_too_large, environment.travel.not_found, environment.travel_suggestion.not_found;
                 export — export.selection.empty, export.selection.unknown_leaf; familyHistory — familyHistory.invalid;
@@ -38580,30 +38581,30 @@ components:
                 profile.update.emailInUse, profile.update.emailRateLimited, profile.update.emailSecondFactorRequired,
                 profile.update.invalidBody, profile.update.nothingSaved; profile_claim — profile_claim.invalid,
                 profile_claim.oidc_only_unsupported, profile_claim.sso_unavailable, profile_claim.taken; record_write —
-                record_write.rate_limited; report-selection — report-selection.body.invalid_json,
-                report-selection.body.invalid_shape, report-selection.leaves.unknown; route — route.retired; search —
-                search.invalid; security_activity — security_activity.invalid; share-link —
-                share-link.document.decryptFailed, share-link.document.notFound, share-link.document.rateLimited,
-                share-link.documents.invalid, share-link.report.notFound, share-link.report.rateLimited,
-                share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf; sharing —
-                sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending, sharing.accept.revoked,
-                sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid, sharing.invite.invalid_scope,
-                sharing.invite.manage_browser_only, sharing.invite.no_account, sharing.invite.refused,
-                sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended, sharing.renounce.not_found,
-                sharing.revoke.already_ended, sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
-                sharing.switch.wrong_transport; source-priority — source-priority.body.invalid_json,
-                source-priority.body.invalid_shape; symptoms — symptoms.definition.limitReached,
-                symptoms.definition.notFound, symptoms.episode.notOpen, symptoms.event.notFound, symptoms.invalid;
-                timeline — timeline.invalid; tokens — tokens.documents.ceiling_reached,
-                tokens.measurements.ceiling_reached, tokens.mirror.not_measurement_token,
-                tokens.workouts.ceiling_reached; vaccination — vaccination.booster-invalid,
-                vaccination.booster-no-antigen, vaccination.booster-out-of-scope, vaccination.custom-vaccine-not-found,
-                vaccination.custom.invalid, vaccination.custom.name-taken, vaccination.custom.not-found,
-                vaccination.encounter-not-found, vaccination.identity-required, vaccination.invalid,
-                vaccination.link.invalid, vaccination.not-found, vaccination.practitioner-not-found; workout —
-                workout.batch.invalid, workout.batch.payload_too_large, workout.batch.source_not_permitted,
-                workout.batch.too_large, workout.delete.synced_source; (unprefixed) — about_me_conflict,
-                ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
+                record_write.rate_limited; recovery — recovery.kit.stale; report-selection —
+                report-selection.body.invalid_json, report-selection.body.invalid_shape,
+                report-selection.leaves.unknown; route — route.retired; search — search.invalid; security_activity —
+                security_activity.invalid; share-link — share-link.document.decryptFailed, share-link.document.notFound,
+                share-link.document.rateLimited, share-link.documents.invalid, share-link.report.notFound,
+                share-link.report.rateLimited, share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf;
+                sharing — sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending,
+                sharing.accept.revoked, sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid,
+                sharing.invite.invalid_scope, sharing.invite.manage_browser_only, sharing.invite.no_account,
+                sharing.invite.refused, sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended,
+                sharing.renounce.not_found, sharing.revoke.already_ended, sharing.revoke.not_found,
+                sharing.session.changed, sharing.switch.invalid, sharing.switch.wrong_transport; source-priority —
+                source-priority.body.invalid_json, source-priority.body.invalid_shape; symptoms —
+                symptoms.definition.limitReached, symptoms.definition.notFound, symptoms.episode.notOpen,
+                symptoms.event.notFound, symptoms.invalid; timeline — timeline.invalid; tokens —
+                tokens.documents.ceiling_reached, tokens.measurements.ceiling_reached,
+                tokens.mirror.not_measurement_token, tokens.workouts.ceiling_reached; vaccination —
+                vaccination.booster-invalid, vaccination.booster-no-antigen, vaccination.booster-out-of-scope,
+                vaccination.custom-vaccine-not-found, vaccination.custom.invalid, vaccination.custom.name-taken,
+                vaccination.custom.not-found, vaccination.encounter-not-found, vaccination.identity-required,
+                vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
+                vaccination.practitioner-not-found; workout — workout.batch.invalid, workout.batch.payload_too_large,
+                workout.batch.source_not_permitted, workout.batch.too_large, workout.delete.synced_source; (unprefixed)
+                — about_me_conflict, ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
                 health_score_config_conflict, insights_layout_conflict, invalid_base_updated_at,
                 json_carries_no_intake_time, json_not_an_array, medication_layout_conflict, missing_required_columns,
                 modules_conflict, mood_tag_layout_conflict, not_configured, notification_prefs_conflict, oidc_only,
@@ -87952,6 +87953,7 @@ components:
               - SECURITY_ALERT
               - DAILY_BRIEFING
               - SHARED_RECORD_INTAKE
+              - BACKUP_HEALTH
             description: Notification category a per-channel preference can toggle.
           additionalProperties:
             type: boolean
@@ -87973,6 +87975,7 @@ components:
             - SECURITY_ALERT
             - DAILY_BRIEFING
             - SHARED_RECORD_INTAKE
+            - BACKUP_HEALTH
           description: What each event does on a channel with no stored row, resolved for this account by the function delivery
             uses. Most are constant per category; the mood reminder follows the account's mood-reminder setting
             (`moodReminderEnabled` on `/api/user/profile`). Render a switch without a row from this map rather than from
@@ -88043,6 +88046,7 @@ components:
             - SECURITY_ALERT
             - DAILY_BRIEFING
             - SHARED_RECORD_INTAKE
+            - BACKUP_HEALTH
           description: Notification category a per-channel preference can toggle.
         enabled:
           type: boolean

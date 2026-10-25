@@ -23,13 +23,15 @@
  * alive.
  */
 import type { LastQueueRun } from "@/lib/jobs/job-failures";
+import { WEEKLY_COPY_ATTENTION_AFTER_DAYS } from "@/lib/recovery/readiness-model";
 
 /**
  * How old the newest scheduled copy may get before the page says so. The cron
- * is weekly, so seven days is normal and eight is a rounding error; ten means
- * at least one Sunday produced nothing.
+ * is weekly, so seven days is normal and eight is a long week; past nine at
+ * least one Sunday produced nothing. The recovery readiness model draws its
+ * attention line at the same instant, so this page and the push agree.
  */
-export const BACKUP_STALE_AFTER_DAYS = 10;
+export const BACKUP_STALE_AFTER_DAYS = WEEKLY_COPY_ATTENTION_AFTER_DAYS;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -71,7 +73,9 @@ export function summariseBackupSchedule(args: {
     // new — the page's empty state already says there is nothing there, and
     // calling a fresh install "overdue" would train the operator to ignore the
     // warning that matters.
-    stale: ageDays !== null && ageDays > BACKUP_STALE_AFTER_DAYS,
+    stale:
+      newest !== null &&
+      args.now.getTime() - newest.getTime() > BACKUP_STALE_AFTER_DAYS * DAY_MS,
     lastRun: args.lastRun,
     lastRunFailed: args.lastRun !== null && args.lastRun.state !== "completed",
   };

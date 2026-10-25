@@ -8606,6 +8606,96 @@
       "confirmedAt": "Bestätigt am {date}.",
       "confirmedAtBy": "Bestätigt am {date} von {who}.",
       "dueAgain": "Das Kit wurde am {date} bestätigt, führt jetzt aber Schlüssel auf, die diese Bestätigung nicht abdeckt: {keys}."
+    },
+    "recoveryReadiness": {
+      "title": "Wiederherstellbarkeit",
+      "description": "Ob sich dieser Server nach einem Ausfall wiederherstellen ließe, beurteilt anhand jeder Sicherung, die er anlegt.",
+      "loading": "Sicherungen werden geprüft…",
+      "loadError": "Die Wiederherstellbarkeit konnte nicht geladen werden.",
+      "state": {
+        "ok": "Bereit",
+        "attention": "Braucht Aufmerksamkeit",
+        "failing": "Gefährdet"
+      },
+      "signal": {
+        "database_dump": "Datenbank-Dump",
+        "weekly_copy": "Wöchentliche Kontokopien",
+        "offhost_copies": "Externe Kopien",
+        "restore_drill": "Wiederherstellungsprobe",
+        "offhost_setup": "Externe Sicherung",
+        "recovery_kit": "Wiederherstellungs-Kit"
+      },
+      "at": {
+        "database_dump": "Neuester Dump: {date}",
+        "weekly_copy": "Älteste Kontokopie: {date}",
+        "offhost_copies": "Älteste externe Kopie: {date}",
+        "restore_drill": "Letzte Probe: {date}",
+        "recovery_kit": "Bestätigt: {date}"
+      },
+      "dueBy": "Fällig bis {date}",
+      "fix": {
+        "database_dump": "Sicherungen öffnen",
+        "weekly_copy": "Sicherungen öffnen",
+        "offhost_copies": "Sicherungen öffnen",
+        "restore_drill": "Sicherungen öffnen",
+        "offhost_setup": "Sicherungen öffnen",
+        "recovery_kit": "Kit öffnen"
+      },
+      "reason": {
+        "database_dump": {
+          "not_available": "Diese Version legt keinen geplanten Datenbank-Dump an.",
+          "disabled": "Der geplante Datenbank-Dump ist ausgeschaltet.",
+          "unreadable": "Der Zustand des Datenbank-Dumps konnte nicht gelesen werden.",
+          "never_succeeded": "Noch kein Datenbank-Dump ist gelungen, und der letzte Versuch ist fehlgeschlagen.",
+          "never_ran": "In den {hours} Stunden, seit Dumps eingeschaltet sind, wurde kein Datenbank-Dump geschrieben.",
+          "first_pending": "Der erste Datenbank-Dump ist noch nicht gelaufen.",
+          "stale": "Der neueste Datenbank-Dump ist {hours} Stunden alt.",
+          "last_failed": "Der letzte Datenbank-Dump ist fehlgeschlagen. Der davor ist noch aktuell.",
+          "fresh": "Der neueste Datenbank-Dump ist aktuell.",
+          "nowhere_to_write": "Das Dump-Verzeichnis {directory} ist nicht beschreibbar und es ist kein externer Bucket eingerichtet, daher kann kein Dump aufbewahrt werden."
+        },
+        "weekly_copy": {
+          "no_accounts": "Es gibt noch keine Konten zum Kopieren.",
+          "stale": "Die älteste wöchentliche Kopie ist {days} Tage alt. Konten im Rückstand: {accounts}.",
+          "never": "Ein Konto hat seit {days} Tagen keine wöchentliche Kopie. Konten im Rückstand: {accounts}.",
+          "first_pending": "Die erste wöchentliche Kopie entsteht am frühen Sonntagmorgen.",
+          "fresh": "Jedes Konto hat eine Kopie aus der letzten Woche."
+        },
+        "offhost_copies": {
+          "not_configured": "Es ist kein externer Bucket eingerichtet.",
+          "stale": "Externe Kopien liegen mehr als zwei Nächte zurück. Konten im Rückstand: {accounts}.",
+          "first_pending": "Der nächtliche Lauf für externe Kopien hat noch kein Konto erreicht.",
+          "fresh": "Jedes Konto hat eine aktuelle Kopie im externen Bucket."
+        },
+        "restore_drill": {
+          "not_configured": "Die Probe liest den externen Bucket, und der ist nicht eingerichtet.",
+          "not_run_yet": "Die monatliche Wiederherstellungsprobe ist noch nicht gelaufen.",
+          "failed": "Die letzte Wiederherstellungsprobe ist fehlgeschlagen: {failed} von {checked} Kopien ließen sich nicht zurücklesen.",
+          "failed_run": "Die letzte Wiederherstellungsprobe konnte nicht zu Ende laufen.",
+          "passed": "Die letzte Wiederherstellungsprobe hat {checked} Kopien zurückgelesen."
+        },
+        "offhost_setup": {
+          "configured": "Kopien verlassen diesen Server jede Nacht.",
+          "no_admin": "Es gibt noch kein Admin-Konto.",
+          "not_configured": "Es ist kein externer Bucket eingerichtet, daher liegt jede Kopie nur auf diesem Server.",
+          "not_configured_grace": "Es ist noch kein externer Bucket eingerichtet, daher liegt jede Kopie nur auf diesem Server."
+        },
+        "recovery_kit": {
+          "confirmed": "Von jedem Schlüssel, den eine Wiederherstellung braucht, gibt es eine Kopie.",
+          "out_of_date": "Das Wiederherstellungs-Kit führt Schlüssel auf, für die niemand eine Kopie bestätigt hat: {keys}.",
+          "no_admin": "Es gibt noch kein Admin-Konto.",
+          "not_confirmed": "Niemand hat eine Kopie der Schlüssel bestätigt, die eine Wiederherstellung braucht: {keys}.",
+          "not_confirmed_grace": "Sichere eine Kopie der Schlüssel, die eine Wiederherstellung braucht: {keys}."
+        }
+      },
+      "recovered": {
+        "database_dump": "Der Datenbank-Dump ist wieder aktuell.",
+        "weekly_copy": "Jedes Konto hat wieder eine aktuelle wöchentliche Kopie.",
+        "offhost_copies": "Jedes Konto hat wieder eine aktuelle externe Kopie.",
+        "restore_drill": "Die Wiederherstellungsprobe ist wieder bestanden.",
+        "offhost_setup": "Externe Kopien sind jetzt eingerichtet.",
+        "recovery_kit": "Das Wiederherstellungs-Kit ist wieder bestätigt."
+      }
     }
   },
   "achievements": {
@@ -9071,6 +9161,14 @@
     "checkupReminders": {
       "title": "Vorsorge-Erinnerungen",
       "description": "Schalte einzelne Vorsorge-Erinnerungen ein oder aus."
+    },
+    "eventBackupHealth": "Zustand der Sicherungen",
+    "eventBackupHealthDesc": "Wenn eine Sicherung ausbleibt, zurückfällt oder wieder läuft. Nur für Admins.",
+    "recoveryReadiness": {
+      "titleAttention": "Sicherungen brauchen Aufmerksamkeit",
+      "titleFailing": "Sicherungen sind gefährdet",
+      "titleReminder": "Sicherungen sind weiterhin gefährdet",
+      "titleRecovered": "Sicherungen laufen wieder normal"
     }
   },
   "i18n": {

@@ -234,6 +234,13 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "restore_drill_plaintext_bytes",
   "restore_drill_unchecked",
   "restore_drill_stale",
+  // The hourly recovery readiness evaluation: the overall verdict, how many
+  // signals need attention or are failing, notices sent, admins reached.
+  "recovery_readiness_admins",
+  "recovery_readiness_attention",
+  "recovery_readiness_failing",
+  "recovery_readiness_notices",
+  "recovery_readiness_state",
   "restore_fail_cause",
   "restore_failed",
   "restore_measurements",

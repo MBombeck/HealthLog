@@ -8606,6 +8606,96 @@
       "confirmedAt": "Potwierdzono {date}.",
       "confirmedAtBy": "Potwierdzono {date}, potwierdził(a): {who}.",
       "dueAgain": "Zestaw potwierdzono {date}, ale teraz wymienia klucze, których to potwierdzenie nie obejmuje: {keys}."
+    },
+    "recoveryReadiness": {
+      "title": "Gotowość do odzyskiwania",
+      "description": "Czy ten serwer dałoby się odtworzyć po utracie, oceniane na podstawie każdej kopii zapasowej, którą tworzy.",
+      "loading": "Sprawdzanie kopii zapasowych…",
+      "loadError": "Nie udało się wczytać gotowości do odzyskiwania.",
+      "state": {
+        "ok": "Gotowe",
+        "attention": "Wymaga uwagi",
+        "failing": "Zagrożone"
+      },
+      "signal": {
+        "database_dump": "Zrzut bazy danych",
+        "weekly_copy": "Cotygodniowe kopie kont",
+        "offhost_copies": "Kopie poza hostem",
+        "restore_drill": "Próba przywracania",
+        "offhost_setup": "Kopia poza hostem",
+        "recovery_kit": "Zestaw odzyskiwania"
+      },
+      "at": {
+        "database_dump": "Najnowszy zrzut: {date}",
+        "weekly_copy": "Najstarsza kopia konta: {date}",
+        "offhost_copies": "Najstarsza kopia poza hostem: {date}",
+        "restore_drill": "Ostatnia próba: {date}",
+        "recovery_kit": "Potwierdzono: {date}"
+      },
+      "dueBy": "Termin: {date}",
+      "fix": {
+        "database_dump": "Otwórz kopie zapasowe",
+        "weekly_copy": "Otwórz kopie zapasowe",
+        "offhost_copies": "Otwórz kopie zapasowe",
+        "restore_drill": "Otwórz kopie zapasowe",
+        "offhost_setup": "Otwórz kopie zapasowe",
+        "recovery_kit": "Otwórz zestaw"
+      },
+      "reason": {
+        "database_dump": {
+          "not_available": "Ta wersja nie planuje zrzutu bazy danych.",
+          "disabled": "Zaplanowany zrzut bazy danych jest wyłączony.",
+          "unreadable": "Nie udało się odczytać stanu zrzutu bazy danych.",
+          "never_succeeded": "Żaden zrzut bazy danych jeszcze się nie udał, a ostatnia próba zakończyła się błędem.",
+          "never_ran": "Od włączenia zrzutów minęło {hours} h, a nie zapisano żadnego zrzutu bazy danych.",
+          "first_pending": "Pierwszy zrzut bazy danych jeszcze się nie odbył.",
+          "stale": "Najnowszy zrzut bazy danych ma {hours} h.",
+          "last_failed": "Ostatni zrzut bazy danych nie powiódł się. Poprzedni jest jeszcze aktualny.",
+          "fresh": "Najnowszy zrzut bazy danych jest aktualny.",
+          "nowhere_to_write": "Katalog zrzutów {directory} nie jest zapisywalny i nie skonfigurowano zewnętrznego bucketu, więc żaden zrzut nie może zostać zachowany."
+        },
+        "weekly_copy": {
+          "no_accounts": "Nie ma jeszcze kont do skopiowania.",
+          "stale": "Najstarsza cotygodniowa kopia ma {days} dni. Zaległe konta: {accounts}.",
+          "never": "Jedno z kont od {days} dni nie ma cotygodniowej kopii. Zaległe konta: {accounts}.",
+          "first_pending": "Pierwsza cotygodniowa kopia powstaje wcześnie rano w niedzielę.",
+          "fresh": "Każde konto ma kopię z ostatniego tygodnia."
+        },
+        "offhost_copies": {
+          "not_configured": "Nie skonfigurowano bucketu poza hostem.",
+          "stale": "Kopie poza hostem są opóźnione o ponad dwie noce. Zaległe konta: {accounts}.",
+          "first_pending": "Nocny przebieg kopii poza hostem nie objął jeszcze żadnego konta.",
+          "fresh": "Każde konto ma aktualną kopię w buckecie poza hostem."
+        },
+        "restore_drill": {
+          "not_configured": "Próba odczytuje bucket poza hostem, który nie jest skonfigurowany.",
+          "not_run_yet": "Comiesięczna próba przywracania jeszcze się nie odbyła.",
+          "failed": "Ostatnia próba przywracania nie powiodła się: nie udało się odczytać {failed} z {checked} kopii.",
+          "failed_run": "Ostatnia próba przywracania nie dobiegła końca.",
+          "passed": "Ostatnia próba przywracania odczytała kopie: {checked}."
+        },
+        "offhost_setup": {
+          "configured": "Kopie opuszczają ten serwer każdej nocy.",
+          "no_admin": "Nie ma jeszcze konta administratora.",
+          "not_configured": "Nie skonfigurowano bucketu poza hostem, więc każda kopia jest tylko na tym serwerze.",
+          "not_configured_grace": "Nie skonfigurowano jeszcze bucketu poza hostem, więc każda kopia jest tylko na tym serwerze."
+        },
+        "recovery_kit": {
+          "confirmed": "Istnieje kopia każdego klucza potrzebnego do przywrócenia.",
+          "out_of_date": "Zestaw odzyskiwania wymienia klucze, których kopii nikt nie potwierdził: {keys}.",
+          "no_admin": "Nie ma jeszcze konta administratora.",
+          "not_confirmed": "Nikt nie potwierdził kopii kluczy potrzebnych do przywrócenia: {keys}.",
+          "not_confirmed_grace": "Zapisz kopię kluczy potrzebnych do przywrócenia: {keys}."
+        }
+      },
+      "recovered": {
+        "database_dump": "Zrzut bazy danych znów jest aktualny.",
+        "weekly_copy": "Każde konto znów ma aktualną cotygodniową kopię.",
+        "offhost_copies": "Każde konto znów ma aktualną kopię poza hostem.",
+        "restore_drill": "Próba przywracania znów się powiodła.",
+        "offhost_setup": "Kopie poza hostem są już skonfigurowane.",
+        "recovery_kit": "Zestaw odzyskiwania jest znów potwierdzony."
+      }
     }
   },
   "achievements": {
@@ -9071,6 +9161,14 @@
     "checkupReminders": {
       "title": "Przypomnienia o badaniach kontrolnych",
       "description": "Włączaj lub wyłączaj pojedyncze przypomnienia o badaniach."
+    },
+    "eventBackupHealth": "Stan kopii zapasowych",
+    "eventBackupHealthDesc": "Gdy kopia zapasowa przestaje powstawać, zostaje w tyle lub wraca do normy. Wysyłane tylko do administratorów.",
+    "recoveryReadiness": {
+      "titleAttention": "Kopie zapasowe wymagają uwagi",
+      "titleFailing": "Kopie zapasowe są zagrożone",
+      "titleReminder": "Kopie zapasowe są nadal zagrożone",
+      "titleRecovered": "Kopie zapasowe znów działają normalnie"
     }
   },
   "i18n": {

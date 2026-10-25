@@ -8606,6 +8606,96 @@
       "confirmedAt": "Confirmé le {date}.",
       "confirmedAtBy": "Confirmé le {date} par {who}.",
       "dueAgain": "Le kit a été confirmé le {date}, mais il liste maintenant des clés que cette confirmation ne couvre pas : {keys}."
+    },
+    "recoveryReadiness": {
+      "title": "Capacité de restauration",
+      "description": "Indique si ce serveur pourrait être remis en route après une perte, d'après chaque sauvegarde qu'il réalise.",
+      "loading": "Vérification des sauvegardes…",
+      "loadError": "Impossible de charger la capacité de restauration.",
+      "state": {
+        "ok": "Prêt",
+        "attention": "Demande de l'attention",
+        "failing": "Menacé"
+      },
+      "signal": {
+        "database_dump": "Dump de la base de données",
+        "weekly_copy": "Copies hebdomadaires des comptes",
+        "offhost_copies": "Copies hors hôte",
+        "restore_drill": "Test de restauration",
+        "offhost_setup": "Sauvegarde hors hôte",
+        "recovery_kit": "Kit de récupération"
+      },
+      "at": {
+        "database_dump": "Dump le plus récent : {date}",
+        "weekly_copy": "Copie de compte la plus ancienne : {date}",
+        "offhost_copies": "Copie hors hôte la plus ancienne : {date}",
+        "restore_drill": "Dernier test : {date}",
+        "recovery_kit": "Confirmé : {date}"
+      },
+      "dueBy": "À faire avant le {date}",
+      "fix": {
+        "database_dump": "Ouvrir les sauvegardes",
+        "weekly_copy": "Ouvrir les sauvegardes",
+        "offhost_copies": "Ouvrir les sauvegardes",
+        "restore_drill": "Ouvrir les sauvegardes",
+        "offhost_setup": "Ouvrir les sauvegardes",
+        "recovery_kit": "Ouvrir le kit"
+      },
+      "reason": {
+        "database_dump": {
+          "not_available": "Cette version ne planifie pas de dump de la base de données.",
+          "disabled": "Le dump planifié de la base de données est désactivé.",
+          "unreadable": "L'état du dump de la base de données n'a pas pu être lu.",
+          "never_succeeded": "Aucun dump de la base de données n'a encore réussi, et la dernière tentative a échoué.",
+          "never_ran": "Aucun dump de la base de données n'a été écrit dans les {hours} heures écoulées depuis l'activation des dumps.",
+          "first_pending": "Le premier dump de la base de données n'a pas encore été lancé.",
+          "stale": "Le dump de la base de données le plus récent date de {hours} heures.",
+          "last_failed": "Le dernier dump de la base de données a échoué. Le précédent est encore récent.",
+          "fresh": "Le dernier dump de la base de données est récent.",
+          "nowhere_to_write": "Le dossier des dumps {directory} n'est pas accessible en écriture et aucun bucket externe n'est configuré, donc aucun dump ne peut être conservé."
+        },
+        "weekly_copy": {
+          "no_accounts": "Il n'y a pas encore de compte à copier.",
+          "stale": "La copie hebdomadaire la plus ancienne date de {days} jours. Comptes en retard : {accounts}.",
+          "never": "Un compte n'a pas eu de copie hebdomadaire depuis {days} jours. Comptes en retard : {accounts}.",
+          "first_pending": "La première copie hebdomadaire est faite tôt le dimanche matin.",
+          "fresh": "Chaque compte a une copie de la semaine dernière."
+        },
+        "offhost_copies": {
+          "not_configured": "Aucun bucket hors hôte n'est configuré.",
+          "stale": "Les copies hors hôte ont plus de deux nuits de retard. Comptes en retard : {accounts}.",
+          "first_pending": "L'envoi nocturne hors hôte n'a encore atteint aucun compte.",
+          "fresh": "Chaque compte a une copie récente dans le bucket hors hôte."
+        },
+        "restore_drill": {
+          "not_configured": "Le test lit le bucket hors hôte, qui n'est pas configuré.",
+          "not_run_yet": "Le test de restauration mensuel n'a pas encore été lancé.",
+          "failed": "Le dernier test de restauration a échoué : {failed} copies sur {checked} n'ont pas pu être relues.",
+          "failed_run": "Le dernier test de restauration n'a pas pu aller jusqu'au bout.",
+          "passed": "Le dernier test de restauration a relu {checked} copies."
+        },
+        "offhost_setup": {
+          "configured": "Les copies quittent ce serveur chaque nuit.",
+          "no_admin": "Il n'y a pas encore de compte administrateur.",
+          "not_configured": "Aucun bucket hors hôte n'est configuré, donc chaque copie se trouve uniquement sur ce serveur.",
+          "not_configured_grace": "Aucun bucket hors hôte n'est encore configuré, donc chaque copie se trouve uniquement sur ce serveur."
+        },
+        "recovery_kit": {
+          "confirmed": "Une copie de chaque clé nécessaire à une restauration est conservée.",
+          "out_of_date": "Le kit de récupération liste des clés dont personne n'a confirmé de copie : {keys}.",
+          "no_admin": "Il n'y a pas encore de compte administrateur.",
+          "not_confirmed": "Personne n'a confirmé de copie des clés nécessaires à une restauration : {keys}.",
+          "not_confirmed_grace": "Sauvegarde une copie des clés nécessaires à une restauration : {keys}."
+        }
+      },
+      "recovered": {
+        "database_dump": "Le dump de la base de données est de nouveau récent.",
+        "weekly_copy": "Chaque compte a de nouveau une copie hebdomadaire récente.",
+        "offhost_copies": "Chaque compte a de nouveau une copie hors hôte récente.",
+        "restore_drill": "Le test de restauration réussit de nouveau.",
+        "offhost_setup": "Les copies hors hôte sont maintenant configurées.",
+        "recovery_kit": "Le kit de récupération est de nouveau confirmé."
+      }
     }
   },
   "achievements": {
@@ -9071,6 +9161,14 @@
     "checkupReminders": {
       "title": "Rappels de bilans",
       "description": "Activez ou désactivez chaque rappel de bilan."
+    },
+    "eventBackupHealth": "État des sauvegardes",
+    "eventBackupHealthDesc": "Quand une sauvegarde s'arrête, prend du retard ou repart. Envoyé uniquement aux administrateurs.",
+    "recoveryReadiness": {
+      "titleAttention": "Les sauvegardes demandent de l'attention",
+      "titleFailing": "Les sauvegardes sont menacées",
+      "titleReminder": "Les sauvegardes sont toujours menacées",
+      "titleRecovered": "Les sauvegardes sont revenues à la normale"
     }
   },
   "i18n": {

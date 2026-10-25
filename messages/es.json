@@ -8606,6 +8606,96 @@
       "confirmedAt": "Confirmado el {date}.",
       "confirmedAtBy": "Confirmado el {date} por {who}.",
       "dueAgain": "El kit se confirmó el {date}, pero ahora muestra claves que esa confirmación no cubre: {keys}."
+    },
+    "recoveryReadiness": {
+      "title": "Preparación para la recuperación",
+      "description": "Si este servidor se podría recuperar tras una pérdida, a juzgar por cada copia de seguridad que hace.",
+      "loading": "Comprobando las copias de seguridad…",
+      "loadError": "No se pudo cargar la preparación para la recuperación.",
+      "state": {
+        "ok": "Listo",
+        "attention": "Necesita atención",
+        "failing": "En riesgo"
+      },
+      "signal": {
+        "database_dump": "Volcado de la base de datos",
+        "weekly_copy": "Copias semanales de las cuentas",
+        "offhost_copies": "Copias fuera del host",
+        "restore_drill": "Simulacro de restauración",
+        "offhost_setup": "Copia fuera del host",
+        "recovery_kit": "Kit de recuperación"
+      },
+      "at": {
+        "database_dump": "Volcado más reciente: {date}",
+        "weekly_copy": "Copia de cuenta más antigua: {date}",
+        "offhost_copies": "Copia fuera del host más antigua: {date}",
+        "restore_drill": "Último simulacro: {date}",
+        "recovery_kit": "Confirmado: {date}"
+      },
+      "dueBy": "Vence el {date}",
+      "fix": {
+        "database_dump": "Abrir copias de seguridad",
+        "weekly_copy": "Abrir copias de seguridad",
+        "offhost_copies": "Abrir copias de seguridad",
+        "restore_drill": "Abrir copias de seguridad",
+        "offhost_setup": "Abrir copias de seguridad",
+        "recovery_kit": "Abrir el kit"
+      },
+      "reason": {
+        "database_dump": {
+          "not_available": "Esta versión no programa un volcado de la base de datos.",
+          "disabled": "El volcado programado de la base de datos está desactivado.",
+          "unreadable": "No se pudo leer el estado del volcado de la base de datos.",
+          "never_succeeded": "Ningún volcado de la base de datos ha salido bien todavía, y el último intento falló.",
+          "never_ran": "No se ha escrito ningún volcado de la base de datos en las {hours} horas transcurridas desde que se activaron los volcados.",
+          "first_pending": "El primer volcado de la base de datos aún no se ha ejecutado.",
+          "stale": "El volcado de la base de datos más reciente tiene {hours} horas.",
+          "last_failed": "El último volcado de la base de datos falló. El anterior sigue siendo reciente.",
+          "fresh": "El último volcado de la base de datos es reciente.",
+          "nowhere_to_write": "No se puede escribir en el directorio de volcados {directory} y no hay ningún bucket externo configurado, así que no se puede guardar ningún volcado."
+        },
+        "weekly_copy": {
+          "no_accounts": "Todavía no hay cuentas que copiar.",
+          "stale": "La copia semanal más antigua tiene {days} días. Cuentas con retraso: {accounts}.",
+          "never": "Una cuenta lleva {days} días sin copia semanal. Cuentas con retraso: {accounts}.",
+          "first_pending": "La primera copia semanal se hace el domingo de madrugada.",
+          "fresh": "Cada cuenta tiene una copia de la última semana."
+        },
+        "offhost_copies": {
+          "not_configured": "No hay ningún bucket fuera del host configurado.",
+          "stale": "Las copias fuera del host llevan más de dos noches de retraso. Cuentas con retraso: {accounts}.",
+          "first_pending": "La ejecución nocturna fuera del host aún no ha llegado a ninguna cuenta.",
+          "fresh": "Cada cuenta tiene una copia reciente en el bucket fuera del host."
+        },
+        "restore_drill": {
+          "not_configured": "El simulacro lee el bucket fuera del host, que no está configurado.",
+          "not_run_yet": "El simulacro de restauración mensual aún no se ha ejecutado.",
+          "failed": "El último simulacro de restauración falló: no se pudieron volver a leer {failed} de {checked} copias.",
+          "failed_run": "El último simulacro de restauración no pudo terminar.",
+          "passed": "El último simulacro de restauración volvió a leer {checked} copias."
+        },
+        "offhost_setup": {
+          "configured": "Las copias salen de este servidor cada noche.",
+          "no_admin": "Todavía no hay ninguna cuenta de administrador.",
+          "not_configured": "No hay ningún bucket fuera del host configurado, así que cada copia está solo en este servidor.",
+          "not_configured_grace": "Aún no hay ningún bucket fuera del host configurado, así que cada copia está solo en este servidor."
+        },
+        "recovery_kit": {
+          "confirmed": "Se guarda una copia de cada clave que necesita una restauración.",
+          "out_of_date": "El kit de recuperación muestra claves de las que nadie ha confirmado una copia: {keys}.",
+          "no_admin": "Todavía no hay ninguna cuenta de administrador.",
+          "not_confirmed": "Nadie ha confirmado una copia de las claves que necesita una restauración: {keys}.",
+          "not_confirmed_grace": "Guarda una copia de las claves que necesita una restauración: {keys}."
+        }
+      },
+      "recovered": {
+        "database_dump": "El volcado de la base de datos vuelve a ser reciente.",
+        "weekly_copy": "Cada cuenta vuelve a tener una copia semanal reciente.",
+        "offhost_copies": "Cada cuenta vuelve a tener una copia fuera del host reciente.",
+        "restore_drill": "El simulacro de restauración vuelve a superarse.",
+        "offhost_setup": "Las copias fuera del host ya están configuradas.",
+        "recovery_kit": "El kit de recuperación vuelve a estar confirmado."
+      }
     }
   },
   "achievements": {
@@ -9071,6 +9161,14 @@
     "checkupReminders": {
       "title": "Recordatorios de chequeos",
       "description": "Activa o desactiva recordatorios de chequeos concretos."
+    },
+    "eventBackupHealth": "Estado de las copias de seguridad",
+    "eventBackupHealthDesc": "Cuando una copia de seguridad se detiene, se retrasa o se recupera. Solo se envía a los administradores.",
+    "recoveryReadiness": {
+      "titleAttention": "Las copias de seguridad necesitan atención",
+      "titleFailing": "Las copias de seguridad están en riesgo",
+      "titleReminder": "Las copias de seguridad siguen en riesgo",
+      "titleRecovered": "Las copias de seguridad vuelven a la normalidad"
     }
   },
   "i18n": {

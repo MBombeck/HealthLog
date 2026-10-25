@@ -14,7 +14,12 @@ vi.mock("../report-worker-error", () => ({
   reportWorkerError: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("../restore-drill-outcome", () => ({
+  recordRestoreDrillOutcome: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { reportWorkerError } from "../report-worker-error";
+import { recordRestoreDrillOutcome } from "../restore-drill-outcome";
 
 const ENC_KEY =
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
@@ -257,6 +262,8 @@ describe("handleRestoreDrill", () => {
     vi.stubEnv("BACKUP_S3_ENDPOINT", "");
     await handleRestoreDrill([]);
     expect(reportWorkerError).not.toHaveBeenCalled();
+    // Nothing was checked, so there is no verdict to keep.
+    expect(recordRestoreDrillOutcome).not.toHaveBeenCalled();
   });
 
   it("pages via reportWorkerError when the drill fails", async () => {
@@ -270,5 +277,22 @@ describe("handleRestoreDrill", () => {
     expect(vi.mocked(reportWorkerError).mock.calls[0][0]).toBe(
       RESTORE_DRILL_QUEUE,
     );
+    // The failure is kept for the readiness tile, past pg-boss's retention.
+    expect(recordRestoreDrillOutcome).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(recordRestoreDrillOutcome).mock.calls[0][0]).toMatchObject(
+      { ok: false, accountsChecked: 0, accountsFailed: 0 },
+    );
+  });
+
+  it("keeps a failed drill's verdict even when keeping it fails", async () => {
+    stubConfigEnv();
+    vi.stubEnv("BACKUP_ENCRYPTION_KEY", "not-a-key");
+    vi.mocked(recordRestoreDrillOutcome).mockRejectedValueOnce(
+      new Error("database away"),
+    );
+    const outcome = await handleRestoreDrill([]);
+    // The drill's own failure is still what the run reports.
+    expect(outcome.ok).toBe(false);
+    expect(reportWorkerError).toHaveBeenCalledTimes(1);
   });
 });

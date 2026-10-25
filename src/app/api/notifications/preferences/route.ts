@@ -9,7 +9,10 @@ import {
   sanitiseZodIssues,
 } from "@/lib/api-response";
 import { notificationPreferenceSchema } from "@/lib/validations/notifications";
-import { EVENT_TYPES, CHANNEL_TYPE_LABELS } from "@/lib/notifications/types";
+import {
+  CHANNEL_TYPE_LABELS,
+  eventTypesForRole,
+} from "@/lib/notifications/types";
 import type { ChannelType } from "@/lib/notifications/types";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { resolveEventDefaults } from "@/lib/notifications/event-defaults";
@@ -92,7 +95,9 @@ export const GET = apiHandler(async () => {
   return apiSuccess({
     channels: channelData,
     preferences,
-    eventTypes: EVENT_TYPES as unknown as string[],
+    // Admin-only events (backup health) are listed for admins only: nobody
+    // else is ever sent one, so a switch for it would switch nothing.
+    eventTypes: eventTypesForRole(user.role),
     // What an event does on a channel with no stored row, resolved for this
     // account by the same function the dispatcher asks. A client renders a
     // switch without a row from this map, never from its own copy of the

@@ -8606,6 +8606,96 @@
       "confirmedAt": "Bevestigd op {date}.",
       "confirmedAtBy": "Bevestigd op {date} door {who}.",
       "dueAgain": "De kit is bevestigd op {date}, maar bevat nu sleutels die niet onder die bevestiging vallen: {keys}."
+    },
+    "recoveryReadiness": {
+      "title": "Herstelbaarheid",
+      "description": "Of deze server na verlies weer op te bouwen is, beoordeeld op basis van elke back-up die hij maakt.",
+      "loading": "Back-ups controleren…",
+      "loadError": "De herstelbaarheid kon niet worden geladen.",
+      "state": {
+        "ok": "Gereed",
+        "attention": "Aandacht nodig",
+        "failing": "In gevaar"
+      },
+      "signal": {
+        "database_dump": "Databasedump",
+        "weekly_copy": "Wekelijkse accountkopieën",
+        "offhost_copies": "Externe kopieën",
+        "restore_drill": "Hersteltest",
+        "offhost_setup": "Externe back-up",
+        "recovery_kit": "Herstelkit"
+      },
+      "at": {
+        "database_dump": "Nieuwste dump: {date}",
+        "weekly_copy": "Oudste accountkopie: {date}",
+        "offhost_copies": "Oudste externe kopie: {date}",
+        "restore_drill": "Laatste test: {date}",
+        "recovery_kit": "Bevestigd: {date}"
+      },
+      "dueBy": "Uiterlijk {date}",
+      "fix": {
+        "database_dump": "Back-ups openen",
+        "weekly_copy": "Back-ups openen",
+        "offhost_copies": "Back-ups openen",
+        "restore_drill": "Back-ups openen",
+        "offhost_setup": "Back-ups openen",
+        "recovery_kit": "Kit openen"
+      },
+      "reason": {
+        "database_dump": {
+          "not_available": "Deze versie plant geen databasedump in.",
+          "disabled": "De geplande databasedump is uitgeschakeld.",
+          "unreadable": "De status van de databasedump kon niet worden gelezen.",
+          "never_succeeded": "Er is nog geen databasedump gelukt, en de laatste poging is mislukt.",
+          "never_ran": "In de {hours} uur sinds dumps zijn ingeschakeld, is er geen databasedump geschreven.",
+          "first_pending": "De eerste databasedump is nog niet uitgevoerd.",
+          "stale": "De nieuwste databasedump is {hours} uur oud.",
+          "last_failed": "De laatste databasedump is mislukt. De dump daarvoor is nog recent.",
+          "fresh": "De nieuwste databasedump is recent.",
+          "nowhere_to_write": "De dumpmap {directory} is niet beschrijfbaar en er is geen externe bucket ingesteld, dus er kan geen dump worden bewaard."
+        },
+        "weekly_copy": {
+          "no_accounts": "Er zijn nog geen accounts om te kopiëren.",
+          "stale": "De oudste wekelijkse kopie is {days} dagen oud. Achterlopende accounts: {accounts}.",
+          "never": "Een account heeft al {days} dagen geen wekelijkse kopie. Achterlopende accounts: {accounts}.",
+          "first_pending": "De eerste wekelijkse kopie wordt vroeg op zondag gemaakt.",
+          "fresh": "Elk account heeft een kopie van de afgelopen week."
+        },
+        "offhost_copies": {
+          "not_configured": "Er is geen externe bucket ingesteld.",
+          "stale": "Externe kopieën lopen meer dan twee nachten achter. Achterlopende accounts: {accounts}.",
+          "first_pending": "De nachtelijke run voor externe kopieën heeft nog geen enkel account bereikt.",
+          "fresh": "Elk account heeft een recente kopie in de externe bucket."
+        },
+        "restore_drill": {
+          "not_configured": "De test leest de externe bucket, en die is niet ingesteld.",
+          "not_run_yet": "De maandelijkse hersteltest is nog niet uitgevoerd.",
+          "failed": "De laatste hersteltest is mislukt: {failed} van {checked} kopieën konden niet worden teruggelezen.",
+          "failed_run": "De laatste hersteltest kon niet worden afgerond.",
+          "passed": "De laatste hersteltest heeft {checked} kopieën teruggelezen."
+        },
+        "offhost_setup": {
+          "configured": "Kopieën verlaten deze server elke nacht.",
+          "no_admin": "Er is nog geen beheerdersaccount.",
+          "not_configured": "Er is geen externe bucket ingesteld, dus elke kopie staat alleen op deze server.",
+          "not_configured_grace": "Er is nog geen externe bucket ingesteld, dus elke kopie staat alleen op deze server."
+        },
+        "recovery_kit": {
+          "confirmed": "Van elke sleutel die een herstel nodig heeft, wordt een kopie bewaard.",
+          "out_of_date": "De herstelkit bevat sleutels waarvan niemand een kopie heeft bevestigd: {keys}.",
+          "no_admin": "Er is nog geen beheerdersaccount.",
+          "not_confirmed": "Niemand heeft een kopie bevestigd van de sleutels die een herstel nodig heeft: {keys}.",
+          "not_confirmed_grace": "Bewaar een kopie van de sleutels die een herstel nodig heeft: {keys}."
+        }
+      },
+      "recovered": {
+        "database_dump": "De databasedump is weer recent.",
+        "weekly_copy": "Elk account heeft weer een recente wekelijkse kopie.",
+        "offhost_copies": "Elk account heeft weer een recente externe kopie.",
+        "restore_drill": "De hersteltest is weer geslaagd.",
+        "offhost_setup": "Externe kopieën zijn nu ingesteld.",
+        "recovery_kit": "De herstelkit is weer bevestigd."
+      }
     }
   },
   "achievements": {
@@ -9071,6 +9161,14 @@
     "checkupReminders": {
       "title": "Herinneringen voor controles",
       "description": "Zet afzonderlijke herinneringen voor controles aan of uit."
+    },
+    "eventBackupHealth": "Status van back-ups",
+    "eventBackupHealthDesc": "Wordt verstuurd als een back-up stopt, achterloopt of weer bijgewerkt is. Alleen voor beheerders.",
+    "recoveryReadiness": {
+      "titleAttention": "Back-ups hebben aandacht nodig",
+      "titleFailing": "Back-ups lopen gevaar",
+      "titleReminder": "Back-ups lopen nog steeds gevaar",
+      "titleRecovered": "Back-ups zijn weer in orde"
     }
   },
   "i18n": {

@@ -368,6 +368,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "geo-backfill": short("At most 500 audit rows per pass."),
   "geolite2-fetch": short("One database download."),
   "tls-pin-monitor": short("One TLS handshake."),
+  "recovery-readiness": short(
+    "A few indexed reads, one row per account from two backup ledgers, and at most one notice per signal.",
+  ),
   "integration-watchdog-hourly": short(
     "A few indexed reads per account with a connection and no provider call; a 14-day history count only for a silent source.",
   ),

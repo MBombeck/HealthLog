@@ -8606,6 +8606,96 @@
       "confirmedAt": "Confirmed on {date}.",
       "confirmedAtBy": "Confirmed on {date} by {who}.",
       "dueAgain": "The kit was confirmed on {date}, but it now lists keys that confirmation does not cover: {keys}."
+    },
+    "recoveryReadiness": {
+      "title": "Recovery readiness",
+      "description": "Whether this server could be put back after a loss, judged from every backup it makes.",
+      "loading": "Checking the backups…",
+      "loadError": "Could not load the recovery readiness.",
+      "state": {
+        "ok": "Ready",
+        "attention": "Needs attention",
+        "failing": "At risk"
+      },
+      "signal": {
+        "database_dump": "Database dump",
+        "weekly_copy": "Weekly account copies",
+        "offhost_copies": "Off-host copies",
+        "restore_drill": "Restore drill",
+        "offhost_setup": "Off-host backup",
+        "recovery_kit": "Recovery kit"
+      },
+      "at": {
+        "database_dump": "Newest dump: {date}",
+        "weekly_copy": "Oldest account copy: {date}",
+        "offhost_copies": "Least recent off-host copy: {date}",
+        "restore_drill": "Last drill: {date}",
+        "recovery_kit": "Confirmed: {date}"
+      },
+      "dueBy": "Due by {date}",
+      "fix": {
+        "database_dump": "Open backups",
+        "weekly_copy": "Open backups",
+        "offhost_copies": "Open backups",
+        "restore_drill": "Open backups",
+        "offhost_setup": "Open backups",
+        "recovery_kit": "Open the kit"
+      },
+      "reason": {
+        "database_dump": {
+          "not_available": "This version does not schedule a database dump.",
+          "disabled": "The scheduled database dump is switched off.",
+          "unreadable": "The status of the database dump could not be read.",
+          "never_succeeded": "No database dump has succeeded yet, and the last attempt failed.",
+          "never_ran": "No database dump has been written in the {hours} hours since dumps were switched on.",
+          "first_pending": "The first database dump has not run yet.",
+          "stale": "The newest database dump is {hours} hours old.",
+          "last_failed": "The last database dump failed. The one before it is still recent.",
+          "fresh": "The newest database dump is recent.",
+          "nowhere_to_write": "The dump directory {directory} cannot be written to and no off-host bucket is set up, so no dump can be kept."
+        },
+        "weekly_copy": {
+          "no_accounts": "There are no accounts to copy yet.",
+          "stale": "The oldest weekly copy is {days} days old. Accounts behind: {accounts}.",
+          "never": "An account has had no weekly copy for {days} days. Accounts behind: {accounts}.",
+          "first_pending": "The first weekly copy is made early on Sunday.",
+          "fresh": "Every account has a copy from the last week."
+        },
+        "offhost_copies": {
+          "not_configured": "No off-host bucket is set up.",
+          "stale": "Off-host copies are more than two nights behind. Accounts behind: {accounts}.",
+          "first_pending": "The nightly off-host run has not reached any account yet.",
+          "fresh": "Every account has a recent copy in the off-host bucket."
+        },
+        "restore_drill": {
+          "not_configured": "The drill reads the off-host bucket, which is not set up.",
+          "not_run_yet": "The monthly restore drill has not run yet.",
+          "failed": "The last restore drill failed: {failed} of {checked} copies could not be read back.",
+          "failed_run": "The last restore drill could not finish.",
+          "passed": "The last restore drill read back {checked} copies."
+        },
+        "offhost_setup": {
+          "configured": "Copies leave this server every night.",
+          "no_admin": "There is no admin account yet.",
+          "not_configured": "No off-host bucket is set up, so every copy lives on this server only.",
+          "not_configured_grace": "No off-host bucket is set up yet, so every copy lives on this server only."
+        },
+        "recovery_kit": {
+          "confirmed": "A copy of every key a restore needs is kept.",
+          "out_of_date": "The recovery kit lists keys nobody has confirmed a copy of: {keys}.",
+          "no_admin": "There is no admin account yet.",
+          "not_confirmed": "Nobody has confirmed a copy of the keys a restore needs: {keys}.",
+          "not_confirmed_grace": "Save a copy of the keys a restore needs: {keys}."
+        }
+      },
+      "recovered": {
+        "database_dump": "The database dump is recent again.",
+        "weekly_copy": "Every account has a recent weekly copy again.",
+        "offhost_copies": "Every account has a recent off-host copy again.",
+        "restore_drill": "The restore drill passed again.",
+        "offhost_setup": "Off-host copies are set up now.",
+        "recovery_kit": "The recovery kit is confirmed again."
+      }
     }
   },
   "achievements": {
@@ -9071,6 +9161,14 @@
     "checkupReminders": {
       "title": "Checkup reminders",
       "description": "Switch individual checkup reminders on or off."
+    },
+    "eventBackupHealth": "Backup health",
+    "eventBackupHealthDesc": "When a backup stops, falls behind or recovers. Sent to admins only.",
+    "recoveryReadiness": {
+      "titleAttention": "Backups need attention",
+      "titleFailing": "Backups are at risk",
+      "titleReminder": "Backups are still at risk",
+      "titleRecovered": "Backups are back to normal"
     }
   },
   "i18n": {

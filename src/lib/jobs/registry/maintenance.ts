@@ -170,6 +170,10 @@ import {
 import { PULSE_DAY_MEAN_QUEUE } from "@/lib/jobs/pulse-day-mean";
 import { cronIsTheRetry } from "@/lib/jobs/reminder/registrar-shared";
 import {
+  RECOVERY_READINESS_CRON,
+  RECOVERY_READINESS_QUEUE,
+} from "@/lib/jobs/recovery-readiness-queue";
+import {
   RESTORE_DRILL_CRON,
   RESTORE_DRILL_QUEUE,
   RESTORE_DRILL_SEND_OPTIONS,
@@ -342,6 +346,17 @@ const jobs: readonly JobDefinition[] = [
     lane: true,
     load: async () =>
       (await import("@/lib/jobs/restore-drill")).handleRestoreDrill,
+  }),
+  // Hourly: judge every backup signal and push each change to the admins.
+  // Single-flight and no retries; the next tick is the retry, and the notice
+  // claim keeps two evaluations from sending the same notice.
+  defineJob({
+    queue: RECOVERY_READINESS_QUEUE,
+    cron: RECOVERY_READINESS_CRON,
+    scheduleOptions: cronIsTheRetry,
+    work: { localConcurrency: 1 },
+    load: async () =>
+      (await import("@/lib/jobs/recovery-readiness")).handleRecoveryReadiness,
   }),
   // The nightly backstop for the purge an account deletion kicks at once.
   prune(
