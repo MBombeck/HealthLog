@@ -45,6 +45,8 @@ export const SOURCE_KEY_SELECT = {
   sourceId: true,
   sourceInstance: true,
   sourceAliases: {
+    // The backup reads through this select, and its export is totally ordered.
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     select: { sourceSystem: true, sourceId: true, sourceInstance: true },
   },
 } as const;
