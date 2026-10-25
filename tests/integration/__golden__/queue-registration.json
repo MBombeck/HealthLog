@@ -1,5 +1,5 @@
 {
-  "registeredQueueCount": 122,
+  "registeredQueueCount": 123,
   "registeredQueues": [
     "achievement-unlock-sweep",
     "apple-health-import",
@@ -23,6 +23,7 @@
     "data-backup",
     "data-backup-offhost",
     "data-restore-drill",
+    "database-backup",
     "dawarich-sync",
     "dense-intraday-hourly-rebuild",
     "dense-intraday-retention",
@@ -446,6 +447,21 @@
       "expire_seconds": 900,
       "heartbeat_seconds": null,
       "name": "data-restore-drill",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "database-backup",
       "notify": false,
       "partition": false,
       "policy": "standard",
@@ -2138,6 +2154,21 @@
       "timezone": "Europe/Berlin"
     },
     {
+      "cron": "30 1 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "database-backup",
+      "options": {
+        "expireInSeconds": 14400,
+        "heartbeatSeconds": 300,
+        "retryDelay": 900,
+        "retryLimit": 1,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
       "cron": "20 3 * * *",
       "data": {},
       "key": "",
@@ -3017,6 +3048,13 @@
     },
     {
       "queue": "data-restore-drill",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "database-backup",
       "options": {
         "localConcurrency": 1,
         "pollingIntervalSeconds": 30

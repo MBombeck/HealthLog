@@ -8310,7 +8310,23 @@
         "restoreSkippedMoodLabelCiphertext": "Name eines Stimmungs-Tags oder einer Gruppe mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (ohne Namen behalten)",
         "restoreSkippedVisitCiphertext": "Text zu Arztbesuch oder Praxis mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (ohne ihn behalten)",
         "restoreSkippedVaccinationCiphertext": "Impf-Notiz mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (Impfung ohne sie behalten)",
-        "restoreSkippedEnvironmentLocationCiphertext": "Ort eines Umweltzeitraums oder -tags mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (verschlüsselt behalten, diese Tage werden nicht neu abgerufen)"
+        "restoreSkippedEnvironmentLocationCiphertext": "Ort eines Umweltzeitraums oder -tags mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (verschlüsselt behalten, diese Tage werden nicht neu abgerufen)",
+        "database": {
+          "title": "Datenbank-Dump",
+          "lastGood": "Letzter gültiger Dump {when}, {size}, {where}.",
+          "whereBoth": "auf diesem Server und extern gespeichert",
+          "whereLocal": "auf diesem Server gespeichert",
+          "whereOffhost": "nur extern gespeichert",
+          "none": "Noch kein Datenbank-Dump. Der erste läuft heute Nacht.",
+          "failedTitle": "Der letzte Datenbank-Dump ist fehlgeschlagen",
+          "failedDescription": "{when}: {reason}",
+          "disabled": "Datenbank-Dumps sind abgeschaltet (DB_BACKUP_ENABLED=false). Sichere die Datenbank auf anderem Weg.",
+          "noDirectoryOffhost": "Dieser Server kann nicht nach {dir} schreiben. Dumps gehen deshalb nur extern, hier wird keiner aufbewahrt. Binde das Backup-Volume ein.",
+          "noDirectory": "Dieser Server kann nicht nach {dir} schreiben und es ist kein externer Speicher eingerichtet. Deshalb entsteht kein Datenbank-Dump. Binde das Backup-Volume ein.",
+          "retentionLocal": "Gelöschte Konten bleiben in den Dumps, bis diese aussortiert werden: Auf diesem Server bleiben die neuesten {nights}.",
+          "retentionOffhost": "Externe Kopien entfernt die Lebenszyklus-Regel des Buckets nach {days} Tagen.",
+          "retentionOffhostMissing": "Keine Lebenszyklus-Regel im Bucket gilt für database/. Dumps dort und die gelöschten Konten darin werden deshalb nie entfernt. Lege eine Regel für dieses Präfix an."
+        }
       },
       "danger-zone": {
         "title": "Gefahrenzone",

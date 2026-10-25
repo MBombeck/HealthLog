@@ -361,6 +361,38 @@
       ]
     },
     {
+      "name": "Database dumps",
+      "description": "The nightly whole-database dump and the dump before migrations (docs/ops/disaster-recovery.md). Optional: each has a default, and the bundled compose file mounts the `backups` volume at the default directory.",
+      "required": false,
+      "variables": [
+        {
+          "name": "DB_BACKUP_ENABLED",
+          "purpose": "Set false to stop the nightly database dump. On when unset.",
+          "example": "true"
+        },
+        {
+          "name": "DB_BACKUP_DIR",
+          "purpose": "Directory the dumps are written to and restored from. Default /var/lib/healthlog/backups, the `backups` volume. Without a writable directory the nightly dump only goes off-host and no dump is taken before migrations.",
+          "example": "/var/lib/healthlog/backups"
+        },
+        {
+          "name": "DB_BACKUP_SCHEDULE",
+          "purpose": "Five-field cron for the nightly dump, in Europe/Berlin time like every scheduled job. Default 30 1 * * * (01:30).",
+          "example": "30 1 * * *"
+        },
+        {
+          "name": "DB_BACKUP_KEEP",
+          "purpose": "How many nightly dumps stay in DB_BACKUP_DIR (default 7, at least 1). The last two dumps taken before a migration are kept besides.",
+          "example": "7"
+        },
+        {
+          "name": "DB_BACKUP_BEFORE_MIGRATE",
+          "purpose": "Set false to start without the dump the entrypoint takes before applying migrations. On when unset; a failed dump stops the start until it works or this is false.",
+          "example": "true"
+        }
+      ]
+    },
+    {
       "name": "Operational windows and cookie flags",
       "description": "Values the product states back to a user or that decide whether a session cookie is accepted. Optional: each has a documented default. They are listed so `pnpm check-env` reports them, and so the compose whitelist and the example files can be held in step with this manifest.",
       "required": false,

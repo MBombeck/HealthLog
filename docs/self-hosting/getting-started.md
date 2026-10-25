@@ -346,6 +346,15 @@ written under that key, so remove the setting once the key is confirmed.
 Your database is the only stateful piece — back it up, and back up the
 key that decrypts it.
 
+**Database dumps the app takes itself.** Every night, and before an update
+applies migrations, the app writes a `pg_dump` of the whole database with a
+manifest into the `backups` volume and keeps the newest few. With the
+off-host bucket configured, each nightly dump is also uploaded, encrypted.
+`docker compose run --rm db-restore latest` restores one into an empty
+database. What is kept where, the keys a restore needs, and restoring onto a
+new server: [`docs/ops/disaster-recovery.md`](../ops/disaster-recovery.md).
+Keep a copy of those dumps off this host.
+
 **Local snapshot (the common single-box case).** Dump the `db` service
 with `pg_dump`:
 
@@ -379,8 +388,11 @@ encryption key safely (keep the old key until zero rows remain on it) see
 A new image can bring database migrations, and `docker-entrypoint.sh`
 applies them on the first start of that image. Most are additive, but some
 rewrite data, and going back to the previous image does not undo them. The
-only way back from a migration that went wrong is the dump you took before
-it. So take one before every pull:
+way back from a migration that went wrong is a dump taken before it. The
+entrypoint takes one itself (`healthlog-<time>-pre-migration.dump` in the
+`backups` volume, see
+[`docs/ops/disaster-recovery.md`](../ops/disaster-recovery.md)); a dump of
+your own before every pull, kept off the host, is the second copy:
 
 ```bash
 # 1. Dump the database (same command as under "Backup and restore").
@@ -405,14 +417,18 @@ the `image:` line, a new major (16 to 18) is a dump and restore, described in
 The start log says what is about to happen before the migrations run:
 
 ```text
-HealthLog: 2 database migrations pending. Back up the database before updating (pg_dump, see the Updates section of docs/self-hosting/getting-started.md); a migration is not undone by going back to the previous image.
+HealthLog: 2 database migrations pending. Unless DB_BACKUP_BEFORE_MIGRATE=false, a pg_dump of the database is written to DB_BACKUP_DIR before they run (docs/ops/disaster-recovery.md); a migration is not undone by going back to the previous image.
+HealthLog: taking a database dump before 2 pending migration(s) into /var/lib/healthlog/backups...
+HealthLog: pre-migration dump written: healthlog-20261025T081502Z-pre-migration.dump (212.4 MB, 231 tables, 38 s).
 HealthLog: Running database migrations...
 ```
 
 or `HealthLog: Database schema is up to date.` when the image brings none.
-The line is a notice and does not pause the start: the migrations run right
-after it. So the dump belongs before step 2, not after you see the line; by
-then the database is already being migrated.
+The migrations run right after the dump. A dump that fails on a writable
+directory stops the start before anything is migrated, and the log names the
+switch that skips it once (`DB_BACKUP_BEFORE_MIGRATE=false`). Your own dump
+belongs before step 2, not after you see these lines; by then the database is
+already being migrated.
 
 If an update to v1.43 stops at migration `0409_drop_plaintext_location`,
 nothing was changed; the recovery is in

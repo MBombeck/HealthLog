@@ -8310,7 +8310,23 @@
         "restoreSkippedMoodLabelCiphertext": "Nome di tag o gruppo dell’umore cifrato con una chiave che questo server non possiede (mantenuto senza nome)",
         "restoreSkippedVisitCiphertext": "Testo di visita o professionista cifrato con una chiave che questo server non possiede (mantenuto senza)",
         "restoreSkippedVaccinationCiphertext": "Nota di vaccinazione cifrata con una chiave che questo server non possiede (dose mantenuta senza)",
-        "restoreSkippedEnvironmentLocationCiphertext": "Luogo di un periodo o giorno ambientale cifrato con una chiave che questo server non possiede (mantenuto cifrato, quei giorni non vengono aggiornati)"
+        "restoreSkippedEnvironmentLocationCiphertext": "Luogo di un periodo o giorno ambientale cifrato con una chiave che questo server non possiede (mantenuto cifrato, quei giorni non vengono aggiornati)",
+        "database": {
+          "title": "Dump del database",
+          "lastGood": "Ultimo dump valido {when}, {size}, {where}.",
+          "whereBoth": "conservato su questo server e fuori sede",
+          "whereLocal": "conservato su questo server",
+          "whereOffhost": "solo fuori sede",
+          "none": "Ancora nessun dump del database. Il primo viene eseguito stanotte.",
+          "failedTitle": "L'ultimo dump del database non è riuscito",
+          "failedDescription": "{when}: {reason}",
+          "disabled": "I dump del database sono disattivati (DB_BACKUP_ENABLED=false). Esegui il backup del database in un altro modo.",
+          "noDirectoryOffhost": "Questo server non può scrivere in {dir}, quindi i dump vanno solo fuori sede e qui non ne resta nessuno. Monta il volume dei backup.",
+          "noDirectory": "Questo server non può scrivere in {dir} e non è configurato alcuno storage esterno, quindi non si può fare alcun dump. Monta il volume dei backup.",
+          "retentionLocal": "Gli account eliminati restano nei dump finché questi non scadono: su questo server restano i {nights} più recenti.",
+          "retentionOffhost": "La regola del ciclo di vita del bucket elimina le copie esterne dopo {days} giorni.",
+          "retentionOffhostMissing": "Nessuna regola del ciclo di vita del bucket copre database/, quindi i dump lì, e gli account eliminati che contengono, non vengono mai rimossi. Aggiungi una regola per quel prefisso."
+        }
       },
       "danger-zone": {
         "title": "Zona pericolosa",

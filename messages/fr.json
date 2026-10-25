@@ -8310,7 +8310,23 @@
         "restoreSkippedMoodLabelCiphertext": "Nom d’étiquette ou de groupe d’humeur chiffré avec une clé que ce serveur ne possède pas (conservé sans son nom)",
         "restoreSkippedVisitCiphertext": "Texte de consultation ou de praticien chiffré avec une clé que ce serveur ne possède pas (conservé sans)",
         "restoreSkippedVaccinationCiphertext": "Note de vaccination chiffrée avec une clé que ce serveur ne possède pas (dose conservée sans)",
-        "restoreSkippedEnvironmentLocationCiphertext": "Lieu d'une période ou d'un jour environnemental chiffré avec une clé que ce serveur ne possède pas (conservé chiffré, ces jours ne sont pas actualisés)"
+        "restoreSkippedEnvironmentLocationCiphertext": "Lieu d'une période ou d'un jour environnemental chiffré avec une clé que ce serveur ne possède pas (conservé chiffré, ces jours ne sont pas actualisés)",
+        "database": {
+          "title": "Dump de la base de données",
+          "lastGood": "Dernier dump valide {when}, {size}, {where}.",
+          "whereBoth": "conservé sur ce serveur et hors site",
+          "whereLocal": "conservé sur ce serveur",
+          "whereOffhost": "hors site uniquement",
+          "none": "Aucun dump de la base de données pour l'instant. Le premier a lieu cette nuit.",
+          "failedTitle": "Le dernier dump de la base de données a échoué",
+          "failedDescription": "{when} : {reason}",
+          "disabled": "Les dumps de la base de données sont désactivés (DB_BACKUP_ENABLED=false). Sauvegardez la base de données autrement.",
+          "noDirectoryOffhost": "Ce serveur ne peut pas écrire dans {dir} : les dumps partent uniquement hors site et aucun n'est conservé ici. Montez le volume de sauvegarde.",
+          "noDirectory": "Ce serveur ne peut pas écrire dans {dir} et aucun stockage hors site n'est configuré : aucun dump ne peut être fait. Montez le volume de sauvegarde.",
+          "retentionLocal": "Les comptes supprimés restent dans les dumps jusqu'à leur expiration : ce serveur conserve les {nights} plus récents.",
+          "retentionOffhost": "La règle de cycle de vie du bucket supprime les copies hors site après {days} jours.",
+          "retentionOffhostMissing": "Aucune règle de cycle de vie du bucket ne couvre database/ : les dumps qui s'y trouvent, et les comptes supprimés qu'ils contiennent, ne sont jamais effacés. Ajoutez une règle pour ce préfixe."
+        }
       },
       "danger-zone": {
         "title": "Zone de danger",

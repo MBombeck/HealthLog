@@ -5,6 +5,11 @@ user's JSON dump, encrypted with AES-256-GCM under a SEPARATE key
 (`BACKUP_ENCRYPTION_KEY`), to any S3-compatible bucket — Cloudflare R2,
 AWS S3, Backblaze B2, MinIO, etc.
 
+These per-account copies roll one account back on the same server. To
+rebuild a server, use the nightly database dump, which the same job
+configuration also uploads (`database/healthlog-<time>-daily.dump.enc`, in the
+envelope below): [`disaster-recovery.md`](disaster-recovery.md).
+
 The backup runs at **02:30 Europe/Berlin** every day from the worker
 container (queue `data-backup-offhost`). Object key layout:
 
@@ -71,6 +76,14 @@ only those:
   every night at 03:40. A copy the nightly upload was writing while the account
   was deleted is removed by the upload itself.
 - **The connection test** deletes its own `_healthcheck/<ts>.bin`.
+
+The database dumps are not purged per account. A dump is the whole database
+at one moment, so an account deleted since stays in the dumps taken before
+its deletion until they age out: after `DB_BACKUP_KEEP` nights on the server,
+and in the bucket after the lifecycle rule for `database/`. That is backup
+retention, and the period to state to the people using your instance; the
+backups page shows both numbers and warns when no rule covers `database/`
+([`disaster-recovery.md`](disaster-recovery.md)).
 
 The admin wipe of every account deletes nothing in the bucket. It is you
 clearing your own host, the bucket is yours, and its copies are the way back

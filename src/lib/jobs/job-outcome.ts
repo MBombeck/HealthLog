@@ -78,6 +78,12 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "continued",
   "conversation_titles_migrated",
   "created",
+  // The nightly whole-database dump: where it went and how big.
+  "database_backup_bytes",
+  "database_backup_local",
+  "database_backup_offhost",
+  "database_backup_removed",
+  "database_backup_status",
   "daily_rows_retired",
   "days_consolidated",
   "days_rebuilt",

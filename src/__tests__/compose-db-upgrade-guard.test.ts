@@ -58,7 +58,9 @@ describe("the Postgres 16 -> 18 move in docker-compose.yml", () => {
   it("keeps the new data where the Postgres 18 image expects it", () => {
     // Mounted at .../data, as 16 had it, the 18 image refuses to start.
     expect(db.volumes).toEqual(["postgres-data:/var/lib/postgresql"]);
+    // `backups` holds the app's database dumps, not database files.
     expect(Object.keys(compose.volumes).sort()).toEqual([
+      "backups",
       "pgdata",
       "postgres-data",
     ]);

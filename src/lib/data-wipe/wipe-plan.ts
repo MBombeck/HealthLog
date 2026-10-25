@@ -353,6 +353,8 @@ export const INSTANCE_SCOPED: Readonly<Record<string, string>> = {
   HostMetric: "instance-wide host telemetry, not attributable to an account",
   OffhostBackupKeyUse:
     "per encryption key, when the nightly off-host run last wrote an object needing it; says nothing about any account",
+  DatabaseBackupRun:
+    "the instance's ledger of nightly whole-database dumps; describes the server, not any account",
   OffhostPurgeRequest:
     "the deletions an account deletion or wipe asked of the off-host bucket; written by the wipe itself and removed once the bucket holds nothing of the account",
   CycleSymptomCategory:
