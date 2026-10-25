@@ -1,4 +1,17 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, onTestFinished } from "vitest";
+
+// The labs module is on unless a test switches it off.
+const { labsModule } = vi.hoisted(() => ({ labsModule: { on: true } }));
+vi.mock("@/lib/modules/gate", async (importActual) => {
+  const actual = await importActual<typeof import("@/lib/modules/gate")>();
+  return {
+    ...actual,
+    isModuleEnabled: async (
+      userId: string,
+      key: Parameters<typeof actual.isModuleEnabled>[1],
+    ) => (key === "labs" ? labsModule.on : actual.isModuleEnabled(userId, key)),
+  };
+});
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -45,6 +58,21 @@ beforeEach(() => {
 });
 
 describe("buildLabsSnapshotBlock", () => {
+  it("reads no lab row and answers null with the labs module off", async () => {
+    labsModule.on = false;
+    onTestFinished(() => {
+      labsModule.on = true;
+    });
+    prismaMock.labResult.findMany.mockResolvedValue([numericRow()]);
+    expect(await buildLabsSnapshotBlock("user_1", NOW)).toBeNull();
+    expect(
+      await buildLabsSnapshotBlock("user_1", NOW, undefined, {
+        analyte: "ldl",
+      }),
+    ).toBeNull();
+    expect(prismaMock.labResult.findMany).not.toHaveBeenCalled();
+  });
+
   it("returns null when the account has no readings", async () => {
     prismaMock.labResult.findMany.mockResolvedValue([]);
     const block = await buildLabsSnapshotBlock("user_1", NOW);

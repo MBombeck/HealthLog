@@ -46,10 +46,12 @@
  * `labs_read` tool result, so sanitisation lives here at the shared source.
  *
  * `userId` is narrowed from the authenticated session by the caller and feeds
- * the Prisma `where` field-by-field; it is never an input. Unlike the illness
- * block, Labs is intentionally NOT module-gated (mirrors `/api/labs` — the data
- * is always owner-scoped and safe to read), so the block is `null` only when the
- * account has no recent readings.
+ * the Prisma `where` field-by-field; it is never an input. Like the illness
+ * block it is module-gated: with the `labs` module off the block is `null`
+ * and no lab row is read, so neither the Coach prompt nor its `get_labs` tool
+ * sees a value. It used to ride regardless, a decision from before Labs could
+ * be switched off; the data routes (`/api/labs`) stay ungated, because a
+ * module decides what a model is given, not what the owner can read.
  */
 import { sameLabUnit } from "@/lib/labs/unit-normalise";
 import {
@@ -61,6 +63,7 @@ import { classifyAgainstEffectiveRange } from "@/lib/labs/reference-range";
 import { resolveLabFields } from "@/lib/labs/serialise";
 import { sanitizeForPrompt } from "@/lib/insights/sanitize";
 import { prisma } from "@/lib/db";
+import { isModuleEnabled } from "@/lib/modules/gate";
 
 /** Cap on distinct biomarkers in the block (newest reading first). */
 const MAX_BIOMARKERS = 24;
@@ -235,6 +238,7 @@ export async function buildLabsSnapshotBlock(
     analyte?: string;
   } = {},
 ): Promise<CoachLabsBlock | null> {
+  if (!(await isModuleEnabled(userId, "labs"))) return null;
   const wanted = options.analyte?.trim().toLowerCase() || null;
   const floor = reachFloor(reach, now);
 
