@@ -14,6 +14,15 @@
  * bytes (`DOCUMENT_CONTENT_LEFT_OUT` in their place), and
  * `forEachDocumentContent` reads them again one document at a time.
  *
+ * The other sections that grow with a record (`BACKUP_STREAMED_SECTIONS`) are
+ * read an element at a time too and kept as they are, so no section of the
+ * file is ever one string of its own. That string, and the parse beside it,
+ * is what a reader that takes a section whole pays twice over.
+ *
+ * Every reader of a backup file goes through `readStreamedBackup`, or, where
+ * it only counts and checks keys, through `BACKUP_STREAM_KEYS`: the sections
+ * read element by element are named here and nowhere else.
+ *
  * So the file is read twice. The first read keeps everything except the
  * measurements, and checks each measurement against the same element schema
  * the whole-file schema uses, counting them. Nothing is written on the
@@ -51,7 +60,28 @@ export type BackupSource = () => AsyncIterable<Uint8Array>;
 
 const MEASUREMENTS = "measurements";
 const DOCUMENTS = "documents";
-const STREAMED = new Set([MEASUREMENTS, DOCUMENTS]);
+
+/**
+ * The sections a backup reader takes an element at a time, never whole: the
+ * ones that grow with a record, in rows (measurements, intake events, mood
+ * entries) or in stored bytes (documents, ECG traces). How the first read
+ * treats each: the measurements are checked and counted, not kept; the
+ * documents are kept without their stored bytes; the rest are kept element
+ * by element.
+ */
+export const BACKUP_STREAMED_SECTIONS = [
+  MEASUREMENTS,
+  "intakeEvents",
+  "moodEntries",
+  DOCUMENTS,
+  "ecgRecordings",
+] as const;
+
+/** `BACKUP_STREAMED_SECTIONS` as `scanBackupJson` takes it. */
+export const BACKUP_STREAM_KEYS: ReadonlySet<string> = new Set(
+  BACKUP_STREAMED_SECTIONS,
+);
+
 const MEASUREMENTS_ONLY = new Set([MEASUREMENTS]);
 const DOCUMENTS_ONLY = new Set([DOCUMENTS]);
 
@@ -149,7 +179,8 @@ export async function readStreamedBackup(
   let firstWithoutId: number | null = null;
   let bytes = 0;
   const keys = new BackupKeyIdCollector();
-  const documents: unknown[] = [];
+  // Every streamed section but the measurements, as `raw` keeps it.
+  const kept = new Map<string, unknown[]>();
   async function* counted() {
     for await (const chunk of source()) {
       bytes += chunk.byteLength;
@@ -157,16 +188,20 @@ export async function readStreamedBackup(
     }
   }
   const { document, streamedCounts } = await scanBackupJson(counted(), {
-    streamKeys: STREAMED,
+    streamKeys: BACKUP_STREAM_KEYS,
     onElement: (key, element, index) => {
-      if (key === DOCUMENTS) {
-        documents.push(withoutContent(element, index, keys));
+      if (key === MEASUREMENTS) {
+        const row = parseMeasurement(schema, element, index);
+        if (!row.id && firstWithoutId === null) firstWithoutId = index;
+        keys.visit(element, MEASUREMENTS);
+        options.onMeasurementChecked?.(index + 1, row);
         return;
       }
-      const row = parseMeasurement(schema, element, index);
-      if (!row.id && firstWithoutId === null) firstWithoutId = index;
-      keys.visit(element, MEASUREMENTS);
-      options.onMeasurementChecked?.(index + 1, row);
+      let section = kept.get(key);
+      if (!section) kept.set(key, (section = []));
+      section.push(
+        key === DOCUMENTS ? withoutContent(element, index, keys) : element,
+      );
     },
   });
 
@@ -182,7 +217,9 @@ export async function readStreamedBackup(
     );
   }
 
-  if (DOCUMENTS in document) document[DOCUMENTS] = documents;
+  // A section the file carries holds what was kept of it (an empty one kept
+  // nothing); one it does not carry stays absent.
+  for (const [key, elements] of kept) document[key] = elements;
   keys.visit(document);
 
   const skipKeys = new Set(

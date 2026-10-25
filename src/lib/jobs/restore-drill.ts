@@ -31,6 +31,7 @@
  */
 import type { Job } from "pg-boss";
 import { BackupJsonError, scanBackupJson } from "@/lib/export/backup-json-scan";
+import { BACKUP_STREAM_KEYS } from "@/lib/export/streamed-backup";
 import {
   assessBackupKeys,
   BackupKeyIdCollector,
@@ -133,7 +134,7 @@ async function drillObject(
   let scanned;
   try {
     scanned = await scanBackupJson(counted(), {
-      streamKeys: new Set(["measurements", "intakeEvents", "moodEntries"]),
+      streamKeys: BACKUP_STREAM_KEYS,
       onElement: (key, element) => keys.visit(element, key),
     });
   } catch (err) {
