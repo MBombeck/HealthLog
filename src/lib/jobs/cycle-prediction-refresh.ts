@@ -19,6 +19,7 @@
  * moves on a day scale and the reminder windows are days wide, so a fixed
  * server-side hour is close enough for every timezone the cohort spans.
  */
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { Job } from "pg-boss";
 
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
@@ -62,7 +63,7 @@ export async function runCyclePredictionRefresh(
   const prisma = getWorkerPrisma();
 
   const profiles = await prisma.cycleProfile.findMany({
-    where: { NOT: { predictionEnabled: false } },
+    where: { NOT: { predictionEnabled: false }, ...OWNED_BY_ACTIVE_ACCOUNT },
     select: { userId: true },
   });
 

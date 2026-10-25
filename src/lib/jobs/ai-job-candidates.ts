@@ -27,6 +27,7 @@ export async function userIdsWithModuleOff(
   prisma: Pick<PrismaClient, "$queryRaw">,
   module: ModuleKey,
 ): Promise<string[]> {
+  // account-deletion: the accounts to leave out; the candidate queries using it filter.
   const rows = await prisma.$queryRaw<Array<{ id: string }>>`
     SELECT "id" FROM "users"
      WHERE "module_preferences_json" -> ${module}::text = 'false'::jsonb`;

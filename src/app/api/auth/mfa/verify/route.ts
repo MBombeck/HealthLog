@@ -112,6 +112,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
       username: true,
       email: true,
       onboardingCompletedAt: true,
+      deletionRequestedAt: true,
+      deletionPurgeAt: true,
       totpConfirmedAt: true,
       totpSecretEncrypted: true,
       totpLastStep: true,

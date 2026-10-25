@@ -2201,11 +2201,18 @@ paths:
                   - $ref: "#/components/schemas/MfaRequiredResponse"
         "401": *a1
         "403":
-          description: "Password login is disabled — the operator runs `OIDC_ONLY=true`. `meta.errorCode` = `oidc_only`; sign in
+          description: >-
+            Password login is disabled — the operator runs `OIDC_ONLY=true`. `meta.errorCode` = `oidc_only`; sign in
             through SSO instead. The one exception is a browser the SSO callback sent back with a pending link to
             confirm an existing account: it may sign in with that one account's password, which links the account. A
             sign-in to any other account on that browser is refused before its password is checked, so the answer is the
-            same whether the password was right or wrong."
+            same whether the password was right or wrong.
+
+
+            Also 403 `auth.account.deletion_pending`, after the password was proved and before a second factor is asked
+            for: the account is pending deletion and locked. `meta.purgeAt` is when it is erased; an admin can undo the
+            deletion until then. Every other sign-in surface (passkey, second-factor completion, refresh, the native
+            token exchanges) refuses with the same code.
           content:
             application/json:
               schema:
@@ -14987,11 +14994,19 @@ paths:
     delete:
       tags:
         - Auth
-      summary: Permanently delete the account and everything in it
+      summary: Delete the account and everything in it
       description: >-
-        Erasure, not deactivation: the user row goes, every related row cascades with it, and the account's own audit
-        history — IP addresses, login geo — is purged inside the same transaction rather than being left orphaned. There
-        is no undo and no grace period.
+        Erasure, after a grace window. With `ACCOUNT_DELETION_GRACE_DAYS` above 0 (14 by default) the account is locked
+        at once — every session, refresh token, API token, connector and share link is revoked, sign-in is refused with
+        403 `auth.account.deletion_pending` and the erasure date in `meta.purgeAt`, and nothing acts for the account any
+        more — and the purge job erases it when the window ends. Until then an admin can undo the deletion, and the
+        record is exactly as it was. `scheduledPurgeAt` in the answer is that date. With the window set to 0 the account
+        is erased in this request, as before, and `scheduledPurgeAt` is null.
+
+
+        The erasure itself: the user row goes, every related row cascades with it, the off-host copies are purged, and
+        the account's own audit history — IP addresses, login geo — is purged inside the same transaction rather than
+        being left orphaned.
 
 
         Two gates, and they compose. The body must carry the typed confirmation. And for an account with a second factor
@@ -15020,7 +15035,8 @@ paths:
               $ref: "#/components/schemas/DeleteAccountRequest"
       responses:
         "200":
-          description: Account and all associated data deleted.
+          description: Account locked for deletion (erased at `scheduledPurgeAt`), or erased now when there is no grace window
+            (`scheduledPurgeAt` null).
           content:
             application/json:
               schema:
@@ -15321,6 +15337,12 @@ paths:
         data.
 
 
+        With a deletion grace window (`ACCOUNT_DELETION_GRACE_DAYS`, 14 days by default) the whole record is first
+        stored as an account copy of its own (`PRE_WIPE_<ms>`), through the writer the weekly copy uses. The wipe leaves
+        that copy in place, an admin can restore it until `restorableUntil`, and the off-host purge waits until then
+        too. A copy that cannot be written stops the wipe before anything is deleted: 503 `data_wipe.copy_failed`.
+
+
         Gated like account deletion: the typed confirmation, plus a fresh factor proof for an MFA-enrolled account — on
         a cookie session the second factor completed within the last five minutes, on a Bearer token a single-use
         `X-Step-Up` elevation minted at `POST /api/auth/step-up` against a `totp`, `webauthn`, or `passkey` proof. The
@@ -15389,6 +15411,13 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
+        "503":
+          description: The account copy kept before a wipe could not be written (`meta.errorCode` = `data_wipe.copy_failed`), so
+            nothing was deleted. Only with a deletion grace window.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /api/settings/module-list-layout:
     get:
       tags:
@@ -23418,10 +23447,16 @@ paths:
       tags:
         - Account sharing
       summary: Delete a managed record
-      description: "Ends the record and everything in it. This is the documented way OUT of the last-Guardian floor, which is
-        why it carries no last-Guardian refusal of its own: a Guardian may not strand a record with nobody looking after
-        it, but they may end the record. Any active Guardian may do it, from a cookie session with a fresh second
-        factor."
+      description: >-
+        Ends the record and everything in it. This is the documented way OUT of the last-Guardian floor, which is why it
+        carries no last-Guardian refusal of its own: a Guardian may not strand a record with nobody looking after it,
+        but they may end the record. Any active Guardian may do it, from a cookie session with a fresh second factor.
+
+
+        With a deletion grace window (`ACCOUNT_DELETION_GRACE_DAYS`, 14 days by default) the record is locked rather
+        than erased: it leaves every Guardian's view at once (reads of it answer 404), nothing acts for it, and the
+        purge job erases it at `scheduledPurgeAt`. Until then an admin can undo the deletion. Without a window it is
+        erased now and `scheduledPurgeAt` is null.
       parameters:
         - in: path
           name: id
@@ -23430,7 +23465,8 @@ paths:
           required: true
       responses:
         "200":
-          description: The record is gone.
+          description: The record is gone from the Guardian's view; it is erased at `scheduledPurgeAt`, or already was when that
+            is null.
           content:
             application/json:
               schema:
@@ -38474,18 +38510,18 @@ components:
                 one the native client names; the integration-probe classes (`credentials_rejected`, `rate_limited`,
                 `upstream_error`, `timeout`, `connection_failed` and the per-provider additions) are enumerated in each
                 `/test` operation instead, where the differences can be stated; and a 401 raised by a route checking a
-                credential of its own carries the generic `http.unauthenticated`. activity —
-                activity.calendar.future_date, activity.calendar.too_old; ai — ai.budget.exceeded, ai.provider.none,
-                ai.record.notPermitted, ai.unavailable, ai.usage.aboveCeiling, ai.usage.defaultAboveCeiling,
-                ai.usage.invalid, ai.usage.levelTooLow, ai.usage.rateLimited; ai_provider — ai_provider.invalid,
-                ai_provider.no_fields; aiRuns — aiRuns.failed, aiRuns.notFound, aiRuns.timedOut,
+                credential of its own carries the generic `http.unauthenticated`. account —
+                account.deletion.not_pending; activity — activity.calendar.future_date, activity.calendar.too_old; ai —
+                ai.budget.exceeded, ai.provider.none, ai.record.notPermitted, ai.unavailable, ai.usage.aboveCeiling,
+                ai.usage.defaultAboveCeiling, ai.usage.invalid, ai.usage.levelTooLow, ai.usage.rateLimited; ai_provider
+                — ai_provider.invalid, ai_provider.no_fields; aiRuns — aiRuns.failed, aiRuns.notFound, aiRuns.timedOut,
                 aiRuns.workerUnavailable; allergy — allergy.invalid; analytics — analytics.invalid_query; anamnesis —
                 anamnesis.auditC.invalid, anamnesis.auditC.notFound, anamnesis.auditC.rateLimited,
                 anamnesis.fact.conflict, anamnesis.fact.currentExists, anamnesis.fact.invalidValue,
-                anamnesis.lifeConfirm.invalid, anamnesis.lifeSections.invalid; auth — auth.admin.required,
-                auth.already_authenticated, auth.mfa.code_invalid, auth.missing, auth.refresh.invalid,
-                auth.refresh.reuse, auth.refresh.revoked, auth.reproof.failed, auth.reproof.required,
-                auth.reproof.too_weak, auth.scope.insufficient, auth.session.insecure_transport,
+                anamnesis.lifeConfirm.invalid, anamnesis.lifeSections.invalid; auth — auth.account.deletion_pending,
+                auth.admin.required, auth.already_authenticated, auth.mfa.code_invalid, auth.missing,
+                auth.refresh.invalid, auth.refresh.reuse, auth.refresh.revoked, auth.reproof.failed,
+                auth.reproof.required, auth.reproof.too_weak, auth.scope.insufficient, auth.session.insecure_transport,
                 auth.session.unavailable, auth.stepup.required, auth.token.expired, auth.token.invalid; backup —
                 backup.foreign_reference, backup.key.missing, backup.payload.undecryptable, backup.restore.active,
                 backup.section.missing, backup.upload.too_large; biomarkers — biomarkers.unit.locked; body-site —
@@ -38498,23 +38534,23 @@ components:
                 cycle.calendar.range, cycle.cycles.invalid, cycle.day-log.conflict, cycle.day-log.invalid,
                 cycle.disabled, cycle.period.invalid, cycle.symptom.custom.invalid, cycle.symptom.custom.limit;
                 cycle-prefs — cycle-prefs.body.invalid_json, cycle-prefs.invalid; disable-coach —
-                disable-coach.body.invalid_json; dawarich — dawarich.credentials_rejected, dawarich.home_place_unknown,
-                dawarich.invalid, dawarich.not_connected, dawarich.rate_limited, dawarich.unreachable; day —
-                day.invalid; demo — demo.readOnly; documents — documents.chat.conversationNotFound,
-                documents.chat.invalid, documents.inbound.alreadyConfirmed, documents.inbound.alreadyPartlyConfirmed,
-                documents.inbound.budgetExceeded, documents.inbound.decryptFailed, documents.inbound.encounterNotFound,
-                documents.inbound.episodeNotFound, documents.inbound.extractFailed, documents.inbound.factNotFound,
-                documents.inbound.factNotPending, documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge,
-                documents.inbound.fileType, documents.inbound.invalidMetadata, documents.inbound.invalidQuery,
-                documents.inbound.invalidUpdate, documents.inbound.localOcrDisabled, documents.inbound.notDeleted,
-                documents.inbound.notFound, documents.inbound.notIndexed, documents.inbound.outputLimit,
-                documents.inbound.pdfNeedsAnthropic, documents.inbound.providerUnsupported,
-                documents.inbound.quotaExceeded, documents.inbound.rateLimited, documents.inbound.restoreDuplicate,
-                documents.inbound.restoreGone, documents.inbound.sourceAliasLimit, documents.inbound.uploadBusy,
-                documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound, documents.sources.authRefused,
-                documents.sources.badResponse, documents.sources.browserOnly, documents.sources.invalidAddress,
-                documents.sources.linkTargetNotFound, documents.sources.notConnected, documents.sources.notFound,
-                documents.sources.organizationRequired, documents.sources.originNotAllowed,
+                disable-coach.body.invalid_json; data_wipe — data_wipe.copy_failed; dawarich —
+                dawarich.credentials_rejected, dawarich.home_place_unknown, dawarich.invalid, dawarich.not_connected,
+                dawarich.rate_limited, dawarich.unreachable; day — day.invalid; demo — demo.readOnly; documents —
+                documents.chat.conversationNotFound, documents.chat.invalid, documents.inbound.alreadyConfirmed,
+                documents.inbound.alreadyPartlyConfirmed, documents.inbound.budgetExceeded,
+                documents.inbound.decryptFailed, documents.inbound.encounterNotFound, documents.inbound.episodeNotFound,
+                documents.inbound.extractFailed, documents.inbound.factNotFound, documents.inbound.factNotPending,
+                documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge, documents.inbound.fileType,
+                documents.inbound.invalidMetadata, documents.inbound.invalidQuery, documents.inbound.invalidUpdate,
+                documents.inbound.localOcrDisabled, documents.inbound.notDeleted, documents.inbound.notFound,
+                documents.inbound.notIndexed, documents.inbound.outputLimit, documents.inbound.pdfNeedsAnthropic,
+                documents.inbound.providerUnsupported, documents.inbound.quotaExceeded, documents.inbound.rateLimited,
+                documents.inbound.restoreDuplicate, documents.inbound.restoreGone, documents.inbound.sourceAliasLimit,
+                documents.inbound.uploadBusy, documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound,
+                documents.sources.authRefused, documents.sources.badResponse, documents.sources.browserOnly,
+                documents.sources.invalidAddress, documents.sources.linkTargetNotFound, documents.sources.notConnected,
+                documents.sources.notFound, documents.sources.organizationRequired, documents.sources.originNotAllowed,
                 documents.sources.permissionMissing, documents.sources.rateLimited, documents.sources.redirected,
                 documents.sources.tokenRequired, documents.sources.unavailable, documents.sources.unreachable,
                 documents.sources.versionTooOld; encounter — encounter.invalid, encounter.link.invalid,
@@ -73326,8 +73362,15 @@ components:
           properties:
             deleted:
               type: boolean
+            scheduledPurgeAt:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                - type: "null"
           required:
             - deleted
+            - scheduledPurgeAt
           additionalProperties: false
         error:
           type: "null"
@@ -73517,10 +73560,20 @@ components:
             maximum: 9007199254740991
           description: Per-model row counts, listing only the models that actually had rows. A model absent from this map had
             nothing to delete — it was not skipped.
+        restorableUntil:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: "Until when an admin can restore the record from the account copy taken immediately before the wipe; the
+            off-host copies from before the wipe are kept until then too. Null when the instance has no deletion grace
+            window (`ACCOUNT_DELETION_GRACE_DAYS=0`): the wipe was final."
       required:
         - cleared
         - deletedRows
         - models
+        - restorableUntil
       additionalProperties: false
     ModuleListLayoutEnvelope:
       type: object
@@ -73654,10 +73707,19 @@ components:
               minimum: -9007199254740991
               maximum: 9007199254740991
               description: Fixed 90-day window on the push-attempt and mood-dispatch ledgers.
+            accountDeletionGraceDays:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+              description: Days between asking to delete the account (or a managed profile, or every entry) and the erasure
+                completing. The account is locked at once; until the window ends an admin can undo the deletion, or
+                restore the copy a data wipe took first. 0 means the erasure completes immediately. Read from the same
+                resolver the purge job uses.
           required:
             - coachMessagesDays
             - auditLogDays
             - deliveryLogDays
+            - accountDeletionGraceDays
           additionalProperties: false
           description: Retention windows as the privacy dashboard states them. Off-host backup retention is operator
             infrastructure rather than an app setting and is deliberately absent — it is disclosed as prose in the UI,
@@ -87524,8 +87586,15 @@ components:
             deleted:
               type: boolean
               const: true
+            scheduledPurgeAt:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                - type: "null"
           required:
             - deleted
+            - scheduledPurgeAt
           additionalProperties: false
         error:
           type: "null"

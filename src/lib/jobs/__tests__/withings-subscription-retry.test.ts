@@ -137,7 +137,10 @@ describe("handleWithingsFallbackSync subscription repair", () => {
       },
     });
 
-    expect(findMany).toHaveBeenCalledWith({ select: { userId: true } });
+    expect(findMany).toHaveBeenCalledWith({
+      where: { user: { deletionRequestedAt: null } },
+      select: { userId: true },
+    });
     expect(syncUserMeasurements).toHaveBeenNthCalledWith(
       1,
       "repair-failed-user",

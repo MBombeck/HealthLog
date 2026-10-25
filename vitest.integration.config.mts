@@ -37,6 +37,11 @@ export default defineConfig({
       API_TOKEN_HMAC_KEY:
         "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
       SESSION_SECRET: "integration-test-session-secret-32-bytes",
+      // Deletions erase at once here, the behaviour the suite was written
+      // against; the grace window (14 days in production) is pinned by the
+      // files that set it themselves (`account-deletion-grace.test.ts`,
+      // `offhost-purge-on-deletion.test.ts`).
+      ACCOUNT_DELETION_GRACE_DAYS: "0",
     },
     include: ["tests/integration/**/*.test.ts"],
     // Container boot + migration apply is slow; give each test a generous

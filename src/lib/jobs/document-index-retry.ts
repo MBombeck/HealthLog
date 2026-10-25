@@ -18,6 +18,7 @@
  * module is off keeps its marks until the module is on again; a boot with
  * nothing marked costs one query.
  */
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import { enqueueDocumentIndex } from "@/lib/jobs/document-index";
 import { annotate } from "@/lib/logging/context";
@@ -52,6 +53,7 @@ export async function enqueueBootTimeIndexRetry(): Promise<{
           lastIndexAttemptAt: null,
           lastIndexOutcome: { not: null },
           contentIndex: { is: null },
+          ...OWNED_BY_ACTIVE_ACCOUNT,
           ...(moduleOff.length > 0 ? { userId: { notIn: moduleOff } } : {}),
           // Past the last row read. Not Prisma's `cursor` + `skip`: the
           // cursor row may belong to an account the filter now leaves out,

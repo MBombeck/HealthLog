@@ -11,6 +11,7 @@
  * Every run is its own background event (`job.dawarich_sync`), so its lines
  * and its failure carry the action they belong to.
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { Job, PgBoss } from "pg-boss";
 
 import { loadDawarichConnection } from "@/lib/dawarich/connection";
@@ -67,7 +68,7 @@ export async function enqueueDawarichSync(payload: {
 async function discover(boss: PgBoss): Promise<JobOutcome> {
   const [candidates, operatorAvailability] = await Promise.all([
     prisma.user.findMany({
-      where: { dawarichUrlEncrypted: { not: null } },
+      where: { dawarichUrlEncrypted: { not: null }, ...ACTIVE_ACCOUNT },
       select: { id: true, modulePreferencesJson: true },
     }),
     getOperatorModuleAvailability(),

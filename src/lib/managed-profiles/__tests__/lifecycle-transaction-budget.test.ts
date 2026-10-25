@@ -7,7 +7,7 @@
  * on every retry. Pinned at the call: a budget declared and not passed is the
  * failure this replaces.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { transaction } = vi.hoisted(() => ({ transaction: vi.fn() }));
 
@@ -44,6 +44,10 @@ function fakeTx() {
   };
 }
 
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
 beforeEach(() => {
   transaction.mockReset();
   transaction.mockImplementation(
@@ -69,6 +73,8 @@ describe("account deletion transaction budget", () => {
   });
 
   it("is passed by the managed profile deletion", async () => {
+    // The immediate erasure: the transaction that ends in `user.delete`.
+    vi.stubEnv("ACCOUNT_DELETION_GRACE_DAYS", "0");
     await deleteManagedProfile({
       profileId: "profile-1",
       guardianId: "guardian-1",

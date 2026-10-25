@@ -303,6 +303,10 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
     kind: "adminConsole",
     methods: ["POST"],
   },
+  "/api/admin/users/{id}/undo-deletion": {
+    kind: "adminConsole",
+    methods: ["POST"],
+  },
   "/api/fitbit/connect": { kind: "browserHandoff", methods: ["GET"] },
   "/api/google-health/connect": { kind: "browserHandoff", methods: ["GET"] },
   // `/api/nightscout/connect` sat here as a `browserHandoff` and is published

@@ -31,9 +31,17 @@ import { detectInsecureCookieTransport } from "@/lib/auth/secure-cookie";
 import { annotate } from "@/lib/logging/context";
 import { completePendingOidcLink } from "@/lib/auth/oidc-pending-link";
 import type { User } from "@/generated/prisma/client";
+import { refuseIfPendingDeletion } from "@/lib/account-deletion/pending";
 
 export interface FinishLoginParams {
-  user: Pick<User, "id" | "username" | "onboardingCompletedAt">;
+  user: Pick<
+    User,
+    | "id"
+    | "username"
+    | "onboardingCompletedAt"
+    | "deletionRequestedAt"
+    | "deletionPurgeAt"
+  >;
   request: NextRequest;
   ip: string;
   userAgent: string | null;
@@ -57,6 +65,12 @@ export async function finishLogin(
   params: FinishLoginParams,
 ): Promise<Response> {
   const { user, request, ip, userAgent, source, mfaVerified } = params;
+
+  // Every sign-in completes here (password, second factor, the native and
+  // single sign-on token exchanges), so no credential leaves for an account
+  // pending deletion. A credential minted in the moment before a deletion
+  // commits is refused on its first use by the session and Bearer resolvers.
+  refuseIfPendingDeletion(user);
 
   // v1.23 — new-device / new-location alert. Fire-and-forget: never let the
   // device ledger or the dispatcher add latency to — or fail — a sign-in. Runs

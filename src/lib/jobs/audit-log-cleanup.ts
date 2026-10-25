@@ -10,6 +10,7 @@
  * env). Rows older than the cutoff are deleted in a single bulk
  * `deleteMany`; runs daily via pg-boss.
  */
+// account-deletion(file): the audit-trail retention sweep over rows, by age.
 import type { PrismaClient } from "@/generated/prisma/client";
 import { purgeInBatches, type PurgeOutcome } from "@/lib/jobs/purge-batch";
 

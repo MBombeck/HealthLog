@@ -14,6 +14,7 @@
  * `register-integration-sync.ts` or pg-boss never provisions it and the boot
  * enqueue silently never drains (the v1.4.37 dead-queue class).
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
@@ -194,6 +195,7 @@ export async function enqueueBootTimeStravaBackfill(
       where: {
         stravaAccessTokenEncrypted: { not: null },
         stravaBackfillCompletedAt: null,
+        ...ACTIVE_ACCOUNT,
       },
       select: { id: true },
     });

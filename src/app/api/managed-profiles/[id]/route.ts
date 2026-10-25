@@ -162,8 +162,12 @@ export const DELETE = apiHandler(
     const { user } = await requireFreshMfa(MFA_STEP_UP_MAX_AGE_SECONDS);
     const { id } = await params;
 
+    let scheduledPurgeAt: Date | null;
     try {
-      await deleteManagedProfile({ profileId: id, guardianId: user.id });
+      ({ scheduledPurgeAt } = await deleteManagedProfile({
+        profileId: id,
+        guardianId: user.id,
+      }));
     } catch (error) {
       if (error instanceof ManagedProfileLifecycleError) return notFound();
       throw error;
@@ -171,8 +175,13 @@ export const DELETE = apiHandler(
 
     annotate({
       action: { name: "managed_profile.delete" },
-      meta: { profile_id: id },
+      meta: { profile_id: id, deletion_scheduled: scheduledPurgeAt !== null },
     });
-    return apiSuccess({ deleted: true });
+    // When the profile is erased; null when it already was. Until then it is
+    // locked and an admin can undo the deletion.
+    return apiSuccess({
+      deleted: true,
+      scheduledPurgeAt: scheduledPurgeAt?.toISOString() ?? null,
+    });
   },
 );

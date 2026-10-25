@@ -8,6 +8,7 @@
  */
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
+import { isoDateTime } from "@/lib/validations/datetime";
 import {
   emailSettingsSchema,
   notificationChannelEnabledSchema,
@@ -207,6 +208,12 @@ const privacySummaryResponse = z
           .describe(
             "Fixed 90-day window on the push-attempt and mood-dispatch ledgers.",
           ),
+        accountDeletionGraceDays: z
+          .number()
+          .int()
+          .describe(
+            "Days between asking to delete the account (or a managed profile, or every entry) and the erasure completing. The account is locked at once; until the window ends an admin can undo the deletion, or restore the copy a data wipe took first. 0 means the erasure completes immediately. Read from the same resolver the purge job uses.",
+          ),
       })
       .describe(
         "Retention windows as the privacy dashboard states them. Off-host backup retention is operator infrastructure rather than an app setting and is deliberately absent — it is disclosed as prose in the UI, not as a number here.",
@@ -254,6 +261,11 @@ const dataWipeResponse = z
       .record(z.string(), z.number().int())
       .describe(
         "Per-model row counts, listing only the models that actually had rows. A model absent from this map had nothing to delete — it was not skipped.",
+      ),
+    restorableUntil: isoDateTime()
+      .nullable()
+      .describe(
+        "Until when an admin can restore the record from the account copy taken immediately before the wipe; the off-host copies from before the wipe are kept until then too. Null when the instance has no deletion grace window (`ACCOUNT_DELETION_GRACE_DAYS=0`): the wipe was final.",
       ),
   })
   .meta({ id: "DataWipeResponse" });
@@ -623,9 +635,10 @@ export const settingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/settings/account": {
     delete: {
       tags: ["Auth"],
-      summary: "Permanently delete the account and everything in it",
+      summary: "Delete the account and everything in it",
       description:
-        "Erasure, not deactivation: the user row goes, every related row cascades with it, and the account's own audit history — IP addresses, login geo — is purged inside the same transaction rather than being left orphaned. There is no undo and no grace period.\n\n" +
+        "Erasure, after a grace window. With `ACCOUNT_DELETION_GRACE_DAYS` above 0 (14 by default) the account is locked at once — every session, refresh token, API token, connector and share link is revoked, sign-in is refused with 403 `auth.account.deletion_pending` and the erasure date in `meta.purgeAt`, and nothing acts for the account any more — and the purge job erases it when the window ends. Until then an admin can undo the deletion, and the record is exactly as it was. `scheduledPurgeAt` in the answer is that date. With the window set to 0 the account is erased in this request, as before, and `scheduledPurgeAt` is null.\n\n" +
+        "The erasure itself: the user row goes, every related row cascades with it, the off-host copies are purged, and the account's own audit history — IP addresses, login geo — is purged inside the same transaction rather than being left orphaned.\n\n" +
         "Two gates, and they compose. The body must carry the typed confirmation. And for an account with a second factor enrolled — a confirmed TOTP secret OR a registered security key — the caller must additionally present a fresh factor proof. An account with NO second factor keeps the typed-confirmation-only contract on either transport, deliberately, because a user who never enrolled has no ceremony to complete.\n\n" +
         "How the fresh proof is presented depends on the transport. A cookie session carries it on the session row: complete the second factor within the last five minutes and retry. A Bearer caller presents a single-use elevation from `POST /api/auth/step-up` in the `X-Step-Up` header, minted against a `totp`, `webauthn`, or `passkey` proof — a `password`-proved elevation is refused here exactly as a password login never satisfies step-up on the web. The elevation is bound to the token that minted it, valid five minutes, and spent only when the deletion is about to run, so a rejected confirmation does not burn it. A recovery code is not accepted on the Bearer path: the mint does not take one, so an account that has lost its authenticator deletes itself from the web.\n\n" +
         "Two refusals are not about the caller's credentials at all. The last remaining admin cannot delete themselves, and the last Guardian of a managed profile cannot leave that profile unattended.",
@@ -635,11 +648,15 @@ export const settingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
       responses: {
         "200": {
-          description: "Account and all associated data deleted.",
+          description:
+            "Account locked for deletion (erased at `scheduledPurgeAt`), or erased now when there is no grace window (`scheduledPurgeAt` null).",
           content: {
             "application/json": {
               schema: dataEnvelope(
-                z.object({ deleted: z.boolean() }),
+                z.object({
+                  deleted: z.boolean(),
+                  scheduledPurgeAt: isoDateTime().nullable(),
+                }),
                 "DeleteAccountEnvelope",
               ),
             },
@@ -860,6 +877,7 @@ export const settingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         "The other half of account deletion: this removes what the account HAS and keeps what signs into it. Ninety-nine models are hard-deleted for this user — measurements and every derived rollup, medications and their intake history, mood, labs, documents, cycle, workouts, nutrients, notification channels, Coach conversations, consent receipts, audit history — with no `deletedAt` filter, so soft-deleted tombstones go too. The account row survives with its personal columns reset: body and identity fields, home location, cached AI output. What is deliberately kept is the credential set (password hash, SSO binding, second-factor secret and enrolment, trusted-device state) and the interface preferences (timezone, locale, units, time and date format, glucose unit), because those are about the account rather than the record.\n\n" +
         "The model list is not written at the route. It is declared once in the wipe plan and held against the Prisma schema by a completeness test, which exists because this endpoint once deleted thirteen tables out of eighty-odd while telling people it had deleted everything.\n\n" +
         "One transaction, with a two-minute budget: a half-applied wipe is worse than none, because the person is told it succeeded either way. Every cached payload for the account is evicted afterwards so no surface serves pre-wipe data.\n\n" +
+        "With a deletion grace window (`ACCOUNT_DELETION_GRACE_DAYS`, 14 days by default) the whole record is first stored as an account copy of its own (`PRE_WIPE_<ms>`), through the writer the weekly copy uses. The wipe leaves that copy in place, an admin can restore it until `restorableUntil`, and the off-host purge waits until then too. A copy that cannot be written stops the wipe before anything is deleted: 503 `data_wipe.copy_failed`.\n\n" +
         "Gated like account deletion: the typed confirmation, plus a fresh factor proof for an MFA-enrolled account — on a cookie session the second factor completed within the last five minutes, on a Bearer token a single-use `X-Step-Up` elevation minted at `POST /api/auth/step-up` against a `totp`, `webauthn`, or `passkey` proof. The confirmation string is `DELETE`, NOT the `DELETE_ACCOUNT` that route wants.\n\n" +
         "One audit row survives the wipe that clears the rest of the audit history: it is written after the transaction commits, as the receipt for the erasure the person asked for.\n\n" +
         "A Bearer client should expect to be signed out by its own request: API tokens are on the wipe list, so the token that called this — and any step-up elevation minted from it — is removed along with the record. Sign in again rather than retrying with the same credential.",
@@ -880,6 +898,11 @@ export const settingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         "409": {
           description:
             "The caller is the last Guardian of a managed profile (`meta.errorCode` = `managed_profile.guardian.required`). Nothing was deleted — the managed records are locked for the whole transaction, so the refusal is atomic rather than partial. Add another Guardian, or delete the managed profile, first.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "503": {
+          description:
+            "The account copy kept before a wipe could not be written (`meta.errorCode` = `data_wipe.copy_failed`), so nothing was deleted. Only with a deletion grace window.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "413": {

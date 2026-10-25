@@ -28,6 +28,7 @@
  * that grants the missing scope reads only those collections: the first slice
  * of every chain asks again for the refused ones.
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
@@ -476,6 +477,7 @@ export async function enqueueBootTimeOuraBackfill(
     const users = await prisma.user.findMany({
       where: {
         ouraBackfillCompletedAt: null,
+        ...ACTIVE_ACCOUNT,
         OR: [
           { ouraAccessTokenEncrypted: { not: null } },
           { measurements: { some: OURA_EQUIVALENT_DISTANCE_WHERE } },

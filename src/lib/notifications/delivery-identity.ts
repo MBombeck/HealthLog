@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { prisma } from "@/lib/db";
+import { getEvent } from "@/lib/logging/context";
 import {
   activeGuardianWhere,
   withManagedProfileLock,
@@ -91,6 +92,12 @@ export async function resolveManagedGuardianRecipientIds(
  * The final authorization is a separate short transaction that commits a
  * durable egress claim immediately before the provider operation starts.
  */
+/** No delivery: the record or the recipient is pending deletion. */
+function deletionPending(): null {
+  getEvent()?.addMeta("notification_skipped_deletion_pending", true);
+  return null;
+}
+
 export async function resolveNotificationDeliveryIdentity(
   payload: NotificationPayload,
 ): Promise<NotificationDeliveryIdentity | null> {
@@ -107,9 +114,14 @@ export async function resolveNotificationDeliveryIdentity(
 
   const record = await prisma.user.findUnique({
     where: { id: recordUserId },
-    select: { managedProfileAt: true },
+    select: { managedProfileAt: true, deletionRequestedAt: true },
   });
   if (!record) return null;
+  // Nothing is sent about, or to, an account pending deletion: it is locked,
+  // and the person asked to be gone. Every reminder, digest and nudge passes
+  // here, so a job that enumerates without the shared filter
+  // (`active-account.ts`) still sends nothing.
+  if (record.deletionRequestedAt != null) return deletionPending();
 
   if (record.managedProfileAt == null) {
     return recipientUserId === recordUserId
@@ -120,6 +132,10 @@ export async function resolveNotificationDeliveryIdentity(
   if (recipientUserId === recordUserId) return null;
 
   if (!isManagedGuardianFanoutAllowed(payload)) return null;
+  const guardianPending = await prisma.user.count({
+    where: { id: recipientUserId, deletionRequestedAt: { not: null } },
+  });
+  if (guardianPending > 0) return deletionPending();
 
   return withManagedGuardianAuthorization(recordUserId, recipientUserId, () =>
     Promise.resolve({ recordUserId, recipientUserId, managed: true }),

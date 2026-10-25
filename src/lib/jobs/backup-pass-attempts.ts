@@ -27,6 +27,7 @@
  * accounts at most every second run, and the account itself is attempted at
  * least every second run.
  */
+// account-deletion(file): reads the backup passes' own ledger; which accounts a pass walks is decided by the pass.
 import type { PrismaClient } from "@/generated/prisma/client";
 import { logCaught } from "@/lib/logging/signal";
 

@@ -38,6 +38,7 @@
  * `src/lib/jobs/reminder/register-rollup.ts` or pg-boss never provisions it
  * and the boot enqueue silently never drains (the v1.4.37 dead-queue class).
  */
+import { dropPendingDeletion } from "@/lib/account-deletion/active-account";
 import type { MeasurementSource } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
@@ -269,7 +270,9 @@ export async function enqueueBootTimeStepConsolidationRepair(
     // Splice-free: every literal is a compile-time constant; the horizon
     // is a bound parameter. `NOT EXISTS` excludes wedge-blocked rows so the
     // set shrinks to empty once every resurrectable row is live.
-    const users = await prisma.$queryRaw<Array<{ id: string }>>`
+    const users = await dropPendingDeletion(
+      prisma,
+      await prisma.$queryRaw<Array<{ id: string }>>`
       SELECT DISTINCT t."user_id" AS id
       FROM measurements t
       WHERE t."type" = 'ACTIVITY_STEPS'
@@ -287,7 +290,9 @@ export async function enqueueBootTimeStepConsolidationRepair(
             AND l."sleep_stage" IS NULL
             AND l."deleted_at" IS NULL
         )
-    `;
+    `,
+      (u) => u.id,
+    );
 
     if (users.length === 0) {
       return { enqueued: 0, skipped: 0, error: null };

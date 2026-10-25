@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 348,
-  "total": 112810,
+  "total": 112749,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 286,
@@ -9,7 +9,7 @@
     "app/api/admin/settings/route.ts :: apiHandler(arg) #2": 211,
     "app/api/auth/login/route.ts :: apiHandler(arg)": 262,
     "app/api/auth/me/route.ts :: apiHandler(arg)": 386,
-    "app/api/auth/oidc/callback/route.ts :: apiHandler(arg)": 294,
+    "app/api/auth/oidc/callback/route.ts :: apiHandler(arg)": 281,
     "app/api/auth/register/route.ts :: apiHandler(arg)": 268,
     "app/api/coach/about-me/route.ts :: apiHandler(arg) #2": 309,
     "app/api/cycle/calendar/route.ts :: apiHandler(arg)": 230,
@@ -315,8 +315,8 @@
     "lib/jobs/medication-low-stock.ts :: runMedicationLowStockTick": 286,
     "lib/jobs/oura-backfill.ts :: runOuraBackfillForUser": 236,
     "lib/jobs/reaction-line.ts :: runReactionLine": 337,
-    "lib/jobs/reminder/medication-reminder-check.ts :: handleReminderCheck": 616,
-    "lib/jobs/reminder/medication-reminder-check.ts :: handleReminderCheck > withBackgroundEvent(arg)": 611,
+    "lib/jobs/reminder/medication-reminder-check.ts :: handleReminderCheck": 592,
+    "lib/jobs/reminder/medication-reminder-check.ts :: handleReminderCheck > withBackgroundEvent(arg)": 587,
     "lib/jobs/workout-insight-generate.ts :: runWorkoutInsightGenerate": 324,
     "lib/labs/biomarker-merge.ts :: runMerge": 254,
     "lib/measurements/consolidate-daily-mean.ts :: consolidateDailyMean": 278,

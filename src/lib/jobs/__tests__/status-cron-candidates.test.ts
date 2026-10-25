@@ -100,7 +100,10 @@ describe("findStatusCronCandidates — gates", () => {
     const { prisma, findMany } = makePrisma([userRow()]);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await findStatusCronCandidates(prisma as any, NOW);
-    expect(findMany.mock.calls[0][0].where).toEqual({});
+    // Only the accounts pending deletion are left out.
+    expect(findMany.mock.calls[0][0].where).toEqual({
+      deletionRequestedAt: null,
+    });
     expect(JSON.stringify(findMany.mock.calls[0][0])).not.toContain(
       "disableCoach",
     );
@@ -117,6 +120,7 @@ describe("findStatusCronCandidates — gates", () => {
     // The module key rides as a bound parameter, never spliced.
     expect(queryRaw.mock.calls[0].slice(1)).toContain("insights");
     expect(findMany.mock.calls[0][0].where).toEqual({
+      deletionRequestedAt: null,
       id: { notIn: ["opted-out-a", "opted-out-b"] },
     });
     expect(result).toEqual([{ id: "kept", locale: "de" }]);

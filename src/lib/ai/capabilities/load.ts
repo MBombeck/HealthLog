@@ -81,6 +81,21 @@ function loadActiveConsents(
   );
 }
 
+/**
+ * Whether the record is pending deletion. No model work is admitted for one:
+ * it is locked, and nothing acts for it until it is erased or an admin undoes
+ * the deletion. This is the chokepoint every AI job and route passes, so a
+ * job that enumerates without the shared filter still starts nothing
+ * (`src/lib/account-deletion/active-account.ts`).
+ */
+async function loadRecordDeletionPending(recordId: string): Promise<boolean> {
+  const row = await prisma.user.findUnique({
+    where: { id: recordId },
+    select: { deletionRequestedAt: true },
+  });
+  return row?.deletionRequestedAt != null;
+}
+
 function scopeKey(scope: AiCapabilityScope): string {
   return [
     scope.recordId,
@@ -108,6 +123,7 @@ export function loadAiCapabilityInputs(
           provider,
           consents,
           usageLevel,
+          deletionPending,
         ] = await Promise.all([
           loadAssistantSwitches(),
           resolveModuleMap(scope.recordId),
@@ -115,6 +131,7 @@ export function loadAiCapabilityInputs(
           probeProviderChain(scope.recordId, scope.authority),
           loadActiveConsents(scope.recordId),
           loadRecordUsageLevel(scope.recordId),
+          loadRecordDeletionPending(scope.recordId),
         ]);
         if (switches === null) return null;
         const { moduleAccess } = buildModuleDisclosure(
@@ -125,7 +142,8 @@ export function loadAiCapabilityInputs(
         return {
           switches,
           moduleAccess,
-          providerWorkAdmitted: mayEnqueueProviderWork(scope.authority),
+          providerWorkAdmitted:
+            mayEnqueueProviderWork(scope.authority) && !deletionPending,
           provider,
           activeConsentKinds: consents.kinds,
           fullConsentSince: consents.fullSince,

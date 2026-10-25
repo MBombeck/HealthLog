@@ -11,6 +11,7 @@
  * provisions it and the boot enqueue silently never drains (the v1.4.37
  * dead-queue class).
  */
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
@@ -486,7 +487,7 @@ export async function enqueueBootTimeGoogleHealthBackfill(
 
   try {
     const connections = await prisma.googleHealthConnection.findMany({
-      where: { backfillCompletedAt: null },
+      where: { backfillCompletedAt: null, ...OWNED_BY_ACTIVE_ACCOUNT },
       select: { userId: true },
     });
 

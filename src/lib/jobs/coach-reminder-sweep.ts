@@ -57,6 +57,10 @@
  * cron-behind-event pattern the Vorsorge engine uses. Every trigger
  * converges on the ONE surfacing transaction in `ai/coach/reminder-surface.ts`.
  */
+import {
+  OWNED_BY_ACTIVE_ACCOUNT,
+  ownedByActiveAccount,
+} from "@/lib/account-deletion/active-account";
 import type { PrismaClient } from "@/generated/prisma/client";
 
 import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
@@ -178,11 +182,11 @@ export async function runCoachReminderSweep(
   // Minted `active` with `dueAt: now` so the surfacing pass below picks them
   // up in this same tick. One path reaches the conversation, not two.
   const plans = await prisma.coachPlan.findMany({
-    where: {
+    where: ownedByActiveAccount({
       deletedAt: null,
       status: "active",
       reviewDate: { not: null, lte: now },
-    },
+    }),
     take: PLAN_REVIEW_BATCH,
     select: {
       id: true,
@@ -243,12 +247,12 @@ export async function runCoachReminderSweep(
   // ones showing a badge with nothing behind it. Picking them up here converts
   // a stuck indicator into the message it always promised.
   const overdue = await prisma.coachReminder.findMany({
-    where: {
+    where: ownedByActiveAccount({
       deletedAt: null,
       status: { in: ["active", "due"] },
       triggerKind: "date",
       dueAt: { not: null, lte: now },
-    },
+    }),
     take: SURFACE_BATCH,
     orderBy: { dueAt: "asc" },
     select: { id: true, userId: true, noteEncrypted: true },
@@ -280,12 +284,12 @@ export async function runCoachReminderSweep(
   // within a day. NEXT_APP_OPEN is deliberately absent: only a real
   // app-open signal may satisfy it.
   const contextRows = await prisma.coachReminder.findMany({
-    where: {
+    where: ownedByActiveAccount({
       deletedAt: null,
       status: { in: ["active", "due"] },
       triggerKind: "context",
       contextCue: { not: "NEXT_APP_OPEN" },
-    },
+    }),
     take: CONTEXT_BACKSTOP_BATCH,
     orderBy: { createdAt: "asc" },
     select: { userId: true },
@@ -316,7 +320,7 @@ export async function runCoachReminderSweep(
   // the badge was dark and there was nothing to open. Those users' rows are
   // neither charged nor dismissed.
   const surfacedOwners = await prisma.coachReminder.findMany({
-    where: { deletedAt: null, status: "surfaced" },
+    where: { deletedAt: null, status: "surfaced", ...OWNED_BY_ACTIVE_ACCOUNT },
     distinct: ["userId"],
     select: { userId: true },
   });

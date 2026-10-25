@@ -46,6 +46,7 @@
  * can be walked.
  */
 import { NextRequest } from "next/server";
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 
 import {
   apiHandler,
@@ -100,7 +101,9 @@ export const GET = apiHandler(async () => {
       ),
       listPage(MAX_GRANTS_PER_DIRECTION, (take) =>
         prisma.accountGrant.findMany({
-          where: { granteeId: user.id },
+          // A record pending deletion is locked for everyone who could
+          // reach it, so it leaves the list of records shared with them.
+          where: { granteeId: user.id, grantor: ACTIVE_ACCOUNT },
           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           take,
           include: { grantor: { select: GRANT_PARTY_SELECT } },

@@ -23,6 +23,7 @@
  * by a single proxy rule) is the largest shift Withings supports
  * end-to-end.
  */
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { syncUserMeasurements } from "@/lib/withings/sync";
@@ -143,8 +144,9 @@ export async function processWithingsNotification(
   // A Withings account belongs to one record; callbacks refuse a second
   // holder. A pair linked before that rule routes to the record that linked
   // the account first, never to whichever row a lookup happens to find.
+  // A record pending deletion is frozen: its notifications sync nothing.
   const holders = await prisma.withingsConnection.findMany({
-    where: { withingsUserId },
+    where: { withingsUserId, ...OWNED_BY_ACTIVE_ACCOUNT },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     select: { userId: true },
     take: 2,

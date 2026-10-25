@@ -18,6 +18,7 @@
  * `REBUILD_WINDOW_DAYS`), so the process holds a window's aggregate rows and
  * never an account's readings: the heap stays flat however long the history.
  */
+import { activeAccountSql } from "@/lib/account-deletion/active-account";
 import type { Job } from "pg-boss";
 
 import { buildSourceRankCase } from "@/lib/analytics/source-rank-sql";
@@ -198,6 +199,7 @@ async function pulseAccounts(): Promise<PulseAccount[]> {
              WHERE m."user_id" = u."id" AND m."type" = 'PULSE'
                AND m."deleted_at" IS NULL) AS last
     FROM users u
+    WHERE ${activeAccountSql(`u."id"`)}
     ORDER BY u."created_at", u."id"
   `;
   return rows

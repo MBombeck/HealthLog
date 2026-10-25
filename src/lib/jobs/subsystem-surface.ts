@@ -101,6 +101,7 @@ const subsystemSurface = {
   "data-backup-offhost": { audience: "system" },
   "data-restore-drill": { audience: "system" },
   "offhost-backup-purge": { audience: "system" },
+  "account-deletion-purge": { audience: "system" },
   "backup-restore": { audience: "system" },
   "host-metric-sample": { audience: "system" },
   "feedback-aggregator": { audience: "system" },

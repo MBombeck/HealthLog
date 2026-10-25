@@ -371,6 +371,11 @@
           "example": "365"
         },
         {
+          "name": "ACCOUNT_DELETION_GRACE_DAYS",
+          "purpose": "Days an account deletion, a managed-profile deletion or a data wipe stays undoable before the purge erases it (14 by default, 30 at most, 0 erases immediately). The account is locked at once. Published: the deletion dialogs and the Data & Privacy page state the number.",
+          "example": "14"
+        },
+        {
           "name": "SESSION_COOKIE_SECURE",
           "purpose": "Forces the Secure flag on every cookie the app issues. Unset, it tracks NODE_ENV. Set false for a LAN / VPN-only self-host served over plain HTTP, where the default makes login look broken.",
           "example": "false"

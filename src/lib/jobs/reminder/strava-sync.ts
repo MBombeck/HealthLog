@@ -11,6 +11,7 @@
  * The queue name, cron schedule, and boss.work registration live in
  * `register-integration-sync.ts`.
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { recordStravaFailure, syncUserStrava } from "@/lib/strava/sync";
 import { makePollCohortHandler, type PollCohortPayload } from "./poll-cohort";
 
@@ -20,7 +21,7 @@ export const handleStravaSync = makePollCohortHandler({
   taskName: "job.strava_sync",
   findCohort: async (prisma) => {
     const users = await prisma.user.findMany({
-      where: { stravaAccessTokenEncrypted: { not: null } },
+      where: { stravaAccessTokenEncrypted: { not: null }, ...ACTIVE_ACCOUNT },
       select: { id: true },
     });
     return users.map((u) => u.id);

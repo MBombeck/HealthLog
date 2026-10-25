@@ -264,7 +264,11 @@ describe("DELETE /api/settings/account over Bearer with a second factor", () => 
     const res = await deleteAccount();
 
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ data: { deleted: true }, error: null });
+    // No grace window in this suite: erased now, nothing scheduled.
+    expect(await res.json()).toEqual({
+      data: { deleted: true, scheduledPurgeAt: null },
+      error: null,
+    });
     expect(await userExists()).toBe(false);
     // The token and its elevation went with the account.
     expect(await getPrismaClient().apiToken.count()).toBe(0);

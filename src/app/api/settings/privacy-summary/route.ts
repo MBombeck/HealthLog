@@ -11,6 +11,7 @@ import { apiSuccess } from "@/lib/api-response";
 import { getAuditLogRetentionDays } from "@/lib/jobs/audit-log-cleanup";
 import { annotate } from "@/lib/logging/context";
 import { ENCRYPTED_COLUMNS } from "@/lib/crypto/encrypted-columns";
+import { accountDeletionGraceDays } from "@/lib/account-deletion/grace";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,11 @@ function resolveRetention() {
     auditLogDays: getAuditLogRetentionDays(),
     // The push-attempt + mood-dispatch ledgers are a fixed 90-day window.
     deliveryLogDays: 90,
+    // Account deletion, a data wipe and a managed-profile deletion complete
+    // after this many days (0: at once). The same resolver the purge job and
+    // the deletion routes read, so the dialogs and this page state the
+    // window that is enforced.
+    accountDeletionGraceDays: accountDeletionGraceDays(),
   };
 }
 

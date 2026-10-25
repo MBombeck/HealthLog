@@ -23,6 +23,7 @@
  * provisions it and the boot enqueue silently never drains (the v1.4.37
  * dead-queue class).
  */
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
@@ -150,7 +151,7 @@ export async function enqueueBootTimeGoogleHealthSleepRepair(
 
   try {
     const connections = await prisma.googleHealthConnection.findMany({
-      where: { sleepRepairedAt: null },
+      where: { sleepRepairedAt: null, ...OWNED_BY_ACTIVE_ACCOUNT },
       select: { userId: true },
     });
 

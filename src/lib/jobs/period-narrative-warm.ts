@@ -19,6 +19,7 @@
  * Recurring pg-boss task — never runs inside an HTTP request, never shells out
  * to `tsx` (CLAUDE.md DO-NOTs).
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getAssistantFlags } from "@/lib/feature-flags";
@@ -123,11 +124,15 @@ export async function findNarrativeCandidates(
 ): Promise<NarrativeCandidate[]> {
   const optedOut = await userIdsWithModuleOff(prisma, "insights");
   const users: NarrativeCandidate[] = await prisma.user.findMany({
-    where: optedOut.length > 0 ? { id: { notIn: optedOut } } : {},
+    where: {
+      ...ACTIVE_ACCOUNT,
+      ...(optedOut.length > 0 ? { id: { notIn: optedOut } } : {}),
+    },
     select: { id: true, locale: true },
   });
   if (users.length <= cap) return users;
 
+  // account-deletion: when each account's narrative was last written, to order the filtered list above.
   const latest = await prisma.insightNarrative.groupBy({
     by: ["userId"],
     _max: { updatedAt: true },

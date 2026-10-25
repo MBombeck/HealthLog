@@ -18,7 +18,7 @@ vi.mock("@/lib/db", () => ({
       update: vi.fn(),
       upsert: vi.fn(),
     },
-    user: { findUnique: vi.fn() },
+    user: { findUnique: vi.fn(), count: vi.fn().mockResolvedValue(0) },
     auditLog: { create: vi.fn() },
   },
 }));

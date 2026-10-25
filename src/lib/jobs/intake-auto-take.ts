@@ -52,6 +52,7 @@
  * The hourly auto-miss pass (`intake-auto-skip.ts`) leaves the slots this job
  * owns alone, so the two never write the same slot.
  */
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { MEDICATION_WINDOW_SELECT } from "@/lib/medications/course-window";
 
@@ -261,7 +262,11 @@ export async function runIntakeAutoTakePass(
   const medications = (await prisma.medication.findMany({
     // Opted in, active, not paused, not as-needed, intake tracked (a
     // record-only medication expects no dose, so none is recorded).
-    where: { ...autoTakeEligibleWhere(now), ...TRACKED_INTAKE_WHERE },
+    where: {
+      ...autoTakeEligibleWhere(now),
+      ...TRACKED_INTAKE_WHERE,
+      ...OWNED_BY_ACTIVE_ACCOUNT,
+    },
     select: {
       id: true,
       userId: true,

@@ -651,6 +651,7 @@ const LIVE_PG_BOSS_STATES = new Set(["active", "created", "retry"]);
  */
 export async function stagedImportFilesInUse(): Promise<StagingInUse | null> {
   const prisma = getWorkerPrisma();
+  // account-deletion: staged files of running imports, not accounts.
   const rows = await prisma.importJob.findMany({
     where: { status: { in: [...ACTIVE_IMPORT_STATUSES] } },
     select: { status: true, pgBossJobId: true, kind: true },
@@ -712,6 +713,7 @@ export async function stagedImportFilesInUse(): Promise<StagingInUse | null> {
  */
 export async function reconcileOrphanImportJobs(): Promise<void> {
   const prisma = getWorkerPrisma();
+  // account-deletion: import-job bookkeeping after a restart, not work for an account.
   const candidates = await prisma.importJob.findMany({
     where: {
       status: { in: ["unpacking", "parsing", "upserting"] },

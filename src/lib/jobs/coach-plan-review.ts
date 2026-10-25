@@ -22,6 +22,7 @@
  * behavioral (the plan extractor never records a clinical/dose trial); the
  * prompt + B0 cases enforce the refuse-clinical-experiment boundary.
  */
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { MeasurementType, PrismaClient } from "@/generated/prisma/client";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { isCumulativeDaySumType } from "@/lib/measurements/cumulative-day-sum";
@@ -264,6 +265,7 @@ export async function runCoachPlanReviewTick(
       source: "extractor",
       relatedPlanId: { not: null },
       status: { in: ["due", "surfaced"] },
+      ...OWNED_BY_ACTIVE_ACCOUNT,
     },
     take: REVIEW_BATCH,
     select: { relatedPlanId: true },

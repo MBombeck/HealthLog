@@ -352,6 +352,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     why: "Fetches and stream-parses every account's newest off-host object.",
   },
   "offhost-backup-purge": short("At most 200 delete requests per run."),
+  "account-deletion-purge": short(
+    "At most 50 account erasures per run, plus one DELETE of expired pre-wipe copies.",
+  ),
   "backup-restore": {
     runtime: "long",
     expireInSeconds: BACKUP_RESTORE_EXPIRE_SECONDS,

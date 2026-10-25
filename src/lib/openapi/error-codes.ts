@@ -40,6 +40,7 @@ import { DEFAULT_ERROR_CODES } from "@/lib/api/default-error-codes";
  */
 export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
   {
+    account: ["account.deletion.not_pending"],
     activity: ["activity.calendar.future_date", "activity.calendar.too_old"],
     ai: [
       "ai.budget.exceeded",
@@ -72,6 +73,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "anamnesis.lifeSections.invalid",
     ],
     auth: [
+      "auth.account.deletion_pending",
       "auth.admin.required",
       "auth.already_authenticated",
       "auth.mfa.code_invalid",
@@ -132,6 +134,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     ],
     "cycle-prefs": ["cycle-prefs.body.invalid_json", "cycle-prefs.invalid"],
     "disable-coach": ["disable-coach.body.invalid_json"],
+    data_wipe: ["data_wipe.copy_failed"],
     dawarich: [
       "dawarich.credentials_rejected",
       "dawarich.home_place_unknown",

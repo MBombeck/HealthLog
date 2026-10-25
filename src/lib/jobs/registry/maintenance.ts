@@ -161,6 +161,10 @@ import {
   OFFHOST_PURGE_QUEUE,
 } from "@/lib/jobs/offhost-purge-queue";
 import {
+  ACCOUNT_DELETION_PURGE_CRON,
+  ACCOUNT_DELETION_PURGE_QUEUE,
+} from "@/lib/jobs/account-deletion-purge-queue";
+import {
   PR_DETECTION_CONCURRENCY,
   PR_DETECTION_EXPIRE_SECONDS,
   PR_DETECTION_FALLBACK_CRON,
@@ -348,6 +352,15 @@ const jobs: readonly JobDefinition[] = [
     OFFHOST_PURGE_QUEUE,
     OFFHOST_PURGE_CRON,
     async () => (await import("@/lib/jobs/offhost-purge")).handleOffhostPurge,
+  ),
+  // Erases the accounts whose deletion grace window ended, and the copies
+  // data wipes took whose window ended with them.
+  prune(
+    ACCOUNT_DELETION_PURGE_QUEUE,
+    ACCOUNT_DELETION_PURGE_CRON,
+    async () =>
+      (await import("@/lib/jobs/account-deletion-purge"))
+        .handleAccountDeletionPurge,
   ),
   // One restore at a time: each holds a transaction over a whole account.
   defineJob({

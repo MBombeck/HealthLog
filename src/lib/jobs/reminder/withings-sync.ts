@@ -4,6 +4,7 @@
  * Extracted from reminder-worker.ts, which owns the queue names, cron
  * schedules, and boss.work registrations.
  */
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { type Job } from "pg-boss";
 import { fireAndForget } from "@/lib/logging/fire-and-forget";
 import { recordError, recordWithingsSync } from "@/lib/jobs/worker-status";
@@ -85,6 +86,7 @@ export async function handleWithingsFallbackSync(
         evt.addWarning("Withings plan-park release failed; continuing");
       }
       const connections = await prisma.withingsConnection.findMany({
+        where: OWNED_BY_ACTIVE_ACCOUNT,
         select: { userId: true },
       });
 
@@ -193,6 +195,7 @@ export async function handleWithingsEcgSync(
       // No user-specific enqueue → cron fallback iterating every connection.
       if (targets.length === 0) {
         const connections = await prisma.withingsConnection.findMany({
+          where: OWNED_BY_ACTIVE_ACCOUNT,
           select: { userId: true },
         });
         targets.push(...connections);
@@ -277,6 +280,7 @@ export async function handleWithingsActivitySync(
       // No user-specific enqueue → cron fallback iterating everyone.
       if (targets.length === 0) {
         const connections = await prisma.withingsConnection.findMany({
+          where: OWNED_BY_ACTIVE_ACCOUNT,
           select: { userId: true },
         });
         targets.push(...connections);
@@ -350,6 +354,7 @@ export async function handleWithingsSleepSync(
       }
       if (targets.length === 0) {
         const connections = await prisma.withingsConnection.findMany({
+          where: OWNED_BY_ACTIVE_ACCOUNT,
           select: { userId: true },
         });
         targets.push(...connections);

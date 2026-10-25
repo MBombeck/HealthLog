@@ -114,7 +114,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // (5) Load the user (may have been deleted mid-flight).
   const user = await prisma.user.findUnique({
     where: { id: result.userId },
-    select: { id: true, username: true, onboardingCompletedAt: true },
+    select: {
+      id: true,
+      username: true,
+      onboardingCompletedAt: true,
+      deletionRequestedAt: true,
+      deletionPurgeAt: true,
+    },
   });
   if (!user) {
     annotate({ action: { name: "auth.native.token.user_missing" } });

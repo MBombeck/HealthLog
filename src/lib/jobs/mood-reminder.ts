@@ -20,6 +20,7 @@
  * keeps the test surface focused and lets the unit tests run without
  * booting pg-boss.
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { coerceLocale } from "@/lib/i18n/config";
@@ -163,7 +164,7 @@ export async function runMoodReminderTick(
   };
 
   const candidates = await prisma.user.findMany({
-    where: { moodReminderEnabled: true },
+    where: { moodReminderEnabled: true, ...ACTIVE_ACCOUNT },
     select: { id: true, timezone: true, locale: true, notificationPrefs: true },
   });
 

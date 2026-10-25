@@ -74,6 +74,7 @@
  * `src/lib/jobs/reminder/register-maintenance.ts`, or the sends silently
  * no-op.
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { createHash } from "node:crypto";
 import type { Job } from "pg-boss";
 
@@ -755,7 +756,7 @@ export async function enqueueBootTimeMeasurementFoldRepair(
   if (!boss) return { enqueued: 0, skipped: 0, error: null };
   try {
     const users = await prisma.user.findMany({
-      where: { measurementFoldRepair: null },
+      where: { measurementFoldRepair: null, ...ACTIVE_ACCOUNT },
       select: { id: true },
     });
     let enqueued = 0;

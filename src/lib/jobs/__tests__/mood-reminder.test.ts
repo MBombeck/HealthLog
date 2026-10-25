@@ -387,7 +387,9 @@ describe("runMoodReminderTick", () => {
     });
 
     expect(prisma.user.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { moodReminderEnabled: true } }),
+      expect.objectContaining({
+        where: { moodReminderEnabled: true, deletionRequestedAt: null },
+      }),
     );
   });
 

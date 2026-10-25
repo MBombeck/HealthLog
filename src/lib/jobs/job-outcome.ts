@@ -43,6 +43,12 @@ export type JobFacts = Readonly<Record<string, JobFact>>;
  */
 export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "access_tokens_deleted",
+  // The account-deletion purge: accounts whose grace window ended and
+  // were erased, ones whose erasure was refused and stays pending, and the
+  // copies taken before a data wipe that aged out with their window.
+  "account_deletions_due",
+  "account_deletions_purged",
+  "account_deletions_refused",
   "accounts_completed",
   // v1.40 — the document AI run reaper's three outcomes.
   "ai_runs_deleted",
@@ -201,6 +207,7 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "persisted",
   "plan_reviews_minted",
   "practitioner_contacts_migrated",
+  "pre_wipe_copies_deleted",
   "pr_detection_inserted",
   "pr_detection_jobs",
   "pr_detection_ties",

@@ -351,6 +351,11 @@ async function resolveSwitchedRecord(
   // is deleted with it. Fail closed anyway: an authorization we cannot resolve
   // to a person is not one to act on.
   if (!owner) throw denied("owner_missing");
+  // A record pending deletion is locked for everyone, its Guardians and
+  // delegates included, until an admin undoes the deletion or it is erased.
+  if (owner.deletionRequestedAt != null) {
+    throw denied("owner_deletion_pending");
+  }
 
   const refusal = admit(grant, owner);
   if (refusal !== null) throw denied(refusal);

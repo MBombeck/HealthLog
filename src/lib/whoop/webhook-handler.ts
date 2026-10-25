@@ -179,9 +179,11 @@ export async function processWhoopNotification(
 
   const connection = await prisma.whoopConnection.findUnique({
     where: { whoopUserId },
-    select: { userId: true },
+    select: { userId: true, user: { select: { deletionRequestedAt: true } } },
   });
-  if (!connection) {
+  // A record pending deletion is frozen: its notifications sync nothing, and
+  // the answer is the one an unknown account gets, so WHOOP stops retrying.
+  if (!connection || connection.user?.deletionRequestedAt != null) {
     // Unknown / disconnected user. Return 200 so WHOOP stops retrying.
     annotate({ action: { name: "whoop.webhook.unknown_user" } });
     return NextResponse.json({ status: "unknown_user" }, { status: 200 });

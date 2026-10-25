@@ -100,6 +100,8 @@ describe("GET /api/admin/users", () => {
       // BigInt in Prisma, plain number on the wire.
       documentQuotaBytes: 2_147_483_648,
       passkeyCount: 2,
+      // Not pending deletion.
+      deletion: null,
     });
     expect(body.data[1].passkeyCount).toBe(0);
     expect(body.data[1].email).toBeNull();
@@ -123,6 +125,9 @@ describe("GET /api/admin/users", () => {
       createdAt: true,
       mfaEnforced: true,
       documentQuotaBytes: true,
+      deletionRequestedAt: true,
+      deletionPurgeAt: true,
+      deletionRequestedById: true,
       _count: { select: { passkeys: true } },
     });
     expect(args.select).not.toHaveProperty("passwordHash");

@@ -13,6 +13,7 @@
  * reminder-worker.ts — no new queue: the workout leg rides the existing hourly
  * `polar-sync` tick (one extra request per connected user per hour).
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { recordPolarSyncFailure, syncUserPolar } from "@/lib/polar/sync";
 import { syncUserPolarWorkouts } from "@/lib/polar/sync-workouts";
 import type { SyncWriteResult } from "@/lib/outcome/written-outcome";
@@ -75,7 +76,7 @@ export const handlePolarSync = makePollCohortHandler({
   taskName: "job.polar_sync",
   findCohort: async (prisma) => {
     const users = await prisma.user.findMany({
-      where: { polarAccessTokenEncrypted: { not: null } },
+      where: { polarAccessTokenEncrypted: { not: null }, ...ACTIVE_ACCOUNT },
       select: { id: true },
     });
     return users.map((u) => u.id);

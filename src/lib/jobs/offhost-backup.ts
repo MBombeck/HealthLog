@@ -38,9 +38,8 @@ import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
 import {
   markBackupAttemptFinished,
   markBackupAttemptStarted,
-  orderInterruptedLast,
-  readAccountsToTakeLast,
 } from "@/lib/jobs/backup-pass-attempts";
+import { readOffhostCohort } from "./offhost-backup-cohort";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { envValue } from "@/lib/env";
 import { OFFHOST_BACKUP_QUEUE } from "./offhost-backup-queue";
@@ -908,26 +907,7 @@ export async function runOffhostBackup(
   // eslint-disable-next-line healthlog/no-utc-day-key -- UTC by design: off-host object key date, the name the restore drill and the purge look up
   const dateKey = (runStartedAt ?? now).toISOString().slice(0, 10);
 
-  // By id, with an account whose last walk never came back behind the rest:
-  // a record that killed the process once would otherwise lead every retry
-  // and keep every account after it out of the bucket. Behind them for one
-  // run only, so a pass that stops on its budget still reaches it the run
-  // after (`backup-pass-attempts.ts`).
-  const users = orderInterruptedLast(
-    await prisma.user.findMany({
-      select: { id: true },
-      orderBy: { id: "asc" },
-    }),
-    await readAccountsToTakeLast(prisma, OFFHOST_BACKUP_QUEUE),
-  );
-  const doneThisRun = new Set<string>();
-  if (runStartedAt) {
-    const done = await prisma.offhostBackupState.findMany({
-      where: { lastSuccessAt: { gte: runStartedAt } },
-      select: { userId: true },
-    });
-    for (const row of done) doneThisRun.add(row.userId);
-  }
+  const { users, doneThisRun } = await readOffhostCohort(prisma, runStartedAt);
   let alreadyUploaded = 0;
   let stoppedEarly = false;
   let uploaded = 0;

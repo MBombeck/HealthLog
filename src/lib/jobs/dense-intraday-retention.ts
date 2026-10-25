@@ -18,6 +18,7 @@
  * `src/lib/jobs/reminder-worker.ts` so pg-boss provisions it at boot; an
  * unregistered queue silently never drains.
  */
+import { dropPendingDeletion } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
@@ -176,16 +177,20 @@ export async function enqueueBootTimeDenseIntradayRetention(): Promise<{
     // `distinct` dedups in the client AFTER pulling every matching row,
     // an instance-wide scan of every out-of-window dense-tier row just
     // to list user ids.
-    const users = await prisma.measurement.groupBy({
-      by: ["userId"],
-      where: {
-        source: { in: [...DENSE_INTRADAY_FOLD_SOURCES] },
-        type: { in: types },
-        deletedAt: null,
-        NOT: { externalId: { startsWith: "stats:" } },
-        measuredAt: { lt: windowStart },
-      },
-    });
+    const users = await dropPendingDeletion(
+      prisma,
+      await prisma.measurement.groupBy({
+        by: ["userId"],
+        where: {
+          source: { in: [...DENSE_INTRADAY_FOLD_SOURCES] },
+          type: { in: types },
+          deletedAt: null,
+          NOT: { externalId: { startsWith: "stats:" } },
+          measuredAt: { lt: windowStart },
+        },
+      }),
+      (u) => u.userId,
+    );
 
     if (users.length === 0) {
       return { enqueued: 0, skipped: 0, error: null };

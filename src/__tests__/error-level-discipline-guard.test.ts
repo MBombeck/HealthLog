@@ -235,7 +235,7 @@ const ALLOWED: Readonly<Record<string, { count: number; reason: string }>> = {
     reason:
       "Trying each key of the ring in turn; the last error is thrown when no key opens the object.",
   },
-  "lib/jobs/reminder/medication-reminder-check.ts::cleanupScheduledTelegramDeletions":
+  "lib/jobs/reminder/telegram-deletion-cleanup.ts::cleanupScheduledTelegramDeletions":
     {
       count: 1,
       reason:

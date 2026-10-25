@@ -166,7 +166,7 @@ describe("POST /api/whoop/webhook/[token]", () => {
     expect(res.status).toBe(200);
     expect(prisma.whoopConnection.findUnique).toHaveBeenCalledWith({
       where: { whoopUserId: "42" },
-      select: { userId: true },
+      select: { userId: true, user: { select: { deletionRequestedAt: true } } },
     });
     // v1.16.16 (iOS #17) — the resource id rides through so the worker can do
     // a targeted fetch-by-id refresh instead of re-walking the collection.

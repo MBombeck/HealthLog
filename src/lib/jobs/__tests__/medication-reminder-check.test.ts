@@ -189,10 +189,12 @@ describe("handleReminderCheck — as-needed skip (v1.16.11, #316)", () => {
       where: Record<string, unknown>;
     };
     // v1.39.1 (#1033) — nor a medication with intake tracking off.
+    // Nor one whose account is pending deletion.
     expect(args.where).toEqual({
       active: true,
       asNeeded: false,
       trackIntake: true,
+      user: { deletionRequestedAt: null },
     });
   });
 

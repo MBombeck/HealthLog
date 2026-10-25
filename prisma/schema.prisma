@@ -77,6 +77,25 @@ model User {
   /// delivery fanout after it defines consent and preference semantics.
   managedProfileAt DateTime? @map("managed_profile_at")
 
+  /// When deletion of this account was asked for. Non-null means the
+  /// account is pending deletion: it is locked (every session, refresh token
+  /// and API token was revoked in the same transaction, and sign-in is
+  /// refused), every background pass skips it (`ACTIVE_ACCOUNT`,
+  /// `src/lib/account-deletion/active-account.ts`), and its data, stored
+  /// copies and off-host objects stay untouched until `deletionPurgeAt`. An
+  /// admin can undo it until then. Null on every account nobody asked to
+  /// delete. Readers: the session and Bearer resolvers, the sign-in refusal,
+  /// the admin users list and the undo route.
+  deletionRequestedAt   DateTime? @map("deletion_requested_at")
+  /// When the account-deletion purge job erases the account for good:
+  /// `deletionRequestedAt` plus `ACCOUNT_DELETION_GRACE_DAYS`. The sign-in
+  /// refusal names this date. Reader: `processDueAccountDeletions`.
+  deletionPurgeAt       DateTime? @map("deletion_purge_at")
+  /// Who asked: the account itself, or the Guardian who deleted a
+  /// managed profile. A plain id, not a relation: the requester's own
+  /// deletion must not touch this row. Reader: the admin users list.
+  deletionRequestedById String?   @map("deletion_requested_by_id")
+
   // Profile
   heightCm    Float?    @map("height_cm")
   dateOfBirth DateTime? @map("date_of_birth")
@@ -1154,6 +1173,7 @@ model User {
   // OIDC key (both NULL on accounts that never signed in via SSO; Postgres
   // unique indexes ignore NULL pairs).
   @@unique([oidcIssuer, oidcSub])
+  @@index([deletionPurgeAt], map: "users_deletion_purge_at_idx")
   @@map("users")
 }
 
@@ -5924,6 +5944,12 @@ model OffhostPurgeRequest {
   lastAttemptAt DateTime? @map("last_attempt_at")
   /// The bucket's last refusal, trimmed; shown to the operator.
   lastFailure   String?   @map("last_failure")
+  /// The purge leaves this request alone until then. A data wipe
+  /// writes its request with the end of the deletion grace window here, so
+  /// the off-host copies from before the wipe stay restorable as long as the
+  /// account copy taken before it. Null: due at once (every account deletion,
+  /// which writes its request only when the purge erases the account).
+  notBefore     DateTime? @map("not_before")
 
   @@index([requestedAt])
   @@map("offhost_purge_requests")

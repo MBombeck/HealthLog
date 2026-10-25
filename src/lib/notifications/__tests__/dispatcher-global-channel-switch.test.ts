@@ -16,7 +16,7 @@ vi.mock("@/lib/db", () => ({
     appSettings: { findUnique: vi.fn() },
     notificationChannel: { findMany: vi.fn(), update: vi.fn() },
     pushAttempt: { create: vi.fn() },
-    user: { findUnique: vi.fn() },
+    user: { findUnique: vi.fn(), count: vi.fn().mockResolvedValue(0) },
   },
 }));
 

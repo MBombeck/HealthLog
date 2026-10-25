@@ -8,6 +8,7 @@ import { getEvent } from "@/lib/logging/context";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 import { isInputRefusal, isP2025 } from "@/lib/prisma-errors";
 import { SessionStoreUnavailableError } from "@/lib/api-errors";
+import { credentialRevocations } from "@/lib/auth/credential-revocations";
 import { locales, type Locale } from "@/lib/i18n/config";
 import { LOCALE_COOKIE, setLocaleCookie } from "@/lib/i18n/locale-cookie";
 
@@ -133,6 +134,22 @@ async function findSessionByCookie(cookieValue: string) {
 }
 
 /**
+ * A session row that may answer for its user: it exists, has not expired, and
+ * its account is not pending deletion. Deleting an account revokes every
+ * session in the same transaction; this refuses one minted in the moment
+ * between a sign-in's own check and that commit, so the lock holds without
+ * relying on the order of two transactions.
+ */
+function isUsableSession(session: {
+  expiresAt: Date;
+  user: { deletionRequestedAt: Date | null };
+}): boolean {
+  return (
+    session.expiresAt >= new Date() && session.user.deletionRequestedAt == null
+  );
+}
+
+/**
  * Validate a session straight from a raw cookie value — no `next/headers`,
  * no sliding-expiry write, no cookie mutation. Runs the same hardened lookup
  * `getSession()` uses (`hashToken` secret path or the passive legacy-cuid
@@ -154,7 +171,7 @@ export async function validateSessionFromCookieValue(
 } | null> {
   if (!cookieValue) return null;
   const session = await findSessionByCookie(cookieValue);
-  if (!session || session.expiresAt < new Date()) return null;
+  if (!session || !isUsableSession(session)) return null;
   return {
     session: { id: session.id, expiresAt: session.expiresAt },
     user: session.user,
@@ -186,7 +203,7 @@ export async function validateSessionWithCreatedAt(
 } | null> {
   if (!cookieValue) return null;
   const session = await findSessionByCookie(cookieValue);
-  if (!session || session.expiresAt < new Date()) return null;
+  if (!session || !isUsableSession(session)) return null;
   return {
     session: {
       id: session.id,
@@ -317,7 +334,7 @@ export async function getSession(): Promise<{
 
   const session = await findSessionByCookie(cookieValue);
 
-  if (!session || session.expiresAt < new Date()) {
+  if (!session || !isUsableSession(session)) {
     if (session) {
       await prisma.session
         .deleteMany({ where: { id: session.id } })
@@ -491,7 +508,7 @@ export async function getSessionUserLocale(): Promise<string | null> {
   // layout where the cookie store cannot be written, so there is nothing to
   // refresh or clear here.
   const session = await findSessionByCookie(cookieValue);
-  if (!session || session.expiresAt < new Date()) return null;
+  if (!session || !isUsableSession(session)) return null;
   return session.user.locale;
 }
 
@@ -550,35 +567,7 @@ export async function destroySession(): Promise<void> {
  * survives — the rows linger as evidence of the rotation event.
  */
 export async function destroyAllSessions(userId: string): Promise<void> {
-  await prisma.$transaction([
-    prisma.session.deleteMany({ where: { userId } }),
-    prisma.apiToken.updateMany({
-      where: { userId, revoked: false },
-      data: { revoked: true },
-    }),
-    prisma.refreshToken.updateMany({
-      where: { userId, revokedAt: null },
-      data: { revokedAt: new Date() },
-    }),
-    // v1.23 — a credential rotation also kills every "remember this device"
-    // trusted-device token: a stolen device cookie must not survive a
-    // password change or account-credential remediation.
-    prisma.trustedDevice.deleteMany({ where: { userId } }),
-    // A connected AI assistant holds a refresh chain of its own: revoking its
-    // access tokens above left the connection able to mint the next one.
-    prisma.mcpOAuthConnection.updateMany({
-      where: { userId, revokedAt: null },
-      data: { revokedAt: new Date() },
-    }),
-    // A clinician share link opens the record without signing in. Whoever
-    // held the old password could have made one, and it would outlive the
-    // change; the owner makes a fresh link for the people who should keep it.
-    prisma.clinicianShareLink.updateMany({
-      where: { userId, revokedAt: null },
-      data: { revokedAt: new Date() },
-    }),
-    prisma.stepUpElevation.deleteMany({ where: { userId } }),
-  ]);
+  await prisma.$transaction(credentialRevocations(prisma, userId));
 }
 
 /**

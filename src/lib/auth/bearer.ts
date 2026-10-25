@@ -25,7 +25,8 @@ export type BearerAuthReason =
   | "expired"
   | "insufficient_permissions"
   | "undeclared_scope"
-  | "user_missing";
+  | "user_missing"
+  | "account_deletion_pending";
 
 /**
  * What a caller demands of a token's scope set. Required on every
@@ -154,6 +155,17 @@ export async function resolveBearerToken(
     throw new BearerAuthError(
       401,
       "user_missing",
+      apiToken.userId,
+      apiToken.id,
+    );
+  }
+
+  // Deleting an account revokes its tokens in the same transaction; this
+  // refuses one minted in the moment before that commit.
+  if (user.deletionRequestedAt != null) {
+    throw new BearerAuthError(
+      401,
+      "account_deletion_pending",
       apiToken.userId,
       apiToken.id,
     );

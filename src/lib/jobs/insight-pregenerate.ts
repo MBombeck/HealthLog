@@ -48,6 +48,7 @@
  * Recurring pg-boss task — never runs inside an HTTP request and never
  * shells out to `tsx` (CLAUDE.md DO-NOTs).
  */
+import { activeAccount } from "@/lib/account-deletion/active-account";
 import { createHash, randomUUID } from "node:crypto";
 import pLimit from "p-limit";
 
@@ -456,19 +457,18 @@ export async function findPregenerateCandidates(
   const staleBefore = new Date(now.getTime() - PREGENERATE_STALE_MS);
   const optedOut = await userIdsWithModuleOff(prisma, "insights");
   return prisma.user.findMany({
-    where: {
+    where: activeAccount({
       ...(optedOut.length > 0 ? { id: { notIn: optedOut } } : {}),
       OR: [
         { insightsCachedAt: null },
         { insightsCachedAt: { lt: staleBefore } },
       ],
-    },
+    }),
     // nulls-first is the default ascending order in Postgres, so
     // never-generated users sort ahead of merely-stale ones.
     orderBy: { insightsCachedAt: "asc" },
     take: cap,
-    // v1.25.3 — carry the per-user response-timeout so the warm outer abort
-    // scales with the operator's setting instead of a fixed cap.
+    // The per-user response timeout, so the warm outer abort scales with it.
     select: { id: true, locale: true, aiResponseTimeoutSeconds: true },
   });
 }

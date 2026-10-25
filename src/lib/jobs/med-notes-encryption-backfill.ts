@@ -38,6 +38,7 @@
  * (`src/lib/jobs/reminder/register-maintenance.ts`) so pg-boss provisions it at
  * boot; an unregistered queue silently never drains.
  */
+// account-deletion(file): encrypts existing rows at rest; it changes how a row is stored, not what the record holds.
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";

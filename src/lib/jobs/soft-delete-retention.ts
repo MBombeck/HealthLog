@@ -33,6 +33,7 @@
  * `soft-delete-retention-register.test.ts` derives the set from the schema,
  * so a new nulling key into a purged model cannot ship without one.
  */
+// account-deletion(file): a retention sweep over rows already deleted, with its own retention clock; it does no work for an account.
 import type { PrismaClient } from "@/generated/prisma/client";
 import { TOMBSTONE_RETENTION_DAYS } from "@/lib/auth/native-client";
 import { getCoachMessageRetentionDays } from "@/lib/jobs/coach-message-cleanup";

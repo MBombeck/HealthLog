@@ -23,6 +23,7 @@
  * The queue MUST be registered in the maintenance registrar
  * (`src/lib/jobs/reminder/register-maintenance.ts`) so pg-boss provisions it.
  */
+import { activeAccountSql } from "@/lib/account-deletion/active-account";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { nativeCanvasSupported } from "@/lib/documents/native-canvas-support";
@@ -188,7 +189,8 @@ export async function enqueueBootTimeThumbnailBackfill(): Promise<{
           f.reason NOT IN (${Prisma.join([...FINAL_THUMBNAIL_FAILURES])})
           AND f.attempts < ${MAX_THUMBNAIL_ATTEMPTS}
         )
-      )`;
+      )
+      AND ${activeAccountSql("d.user_id")}`;
 
   let enqueued = 0;
   for (const { user_id: userId } of rows) {

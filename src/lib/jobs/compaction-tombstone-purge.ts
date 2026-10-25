@@ -48,6 +48,7 @@
  * means as stored, and each account's delete takes the fold lock so it never
  * lands between a re-fold's reads.
  */
+// account-deletion(file): a retention sweep over rows already deleted, with its own retention clock; it does no work for an account.
 import { createHash } from "node:crypto";
 import type { Job } from "pg-boss";
 

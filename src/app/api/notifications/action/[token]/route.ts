@@ -100,12 +100,14 @@ export const POST = apiHandler(
 
     const user = await prisma.user.findUnique({
       where: { id: verdict.userId },
-      select: { id: true, timezone: true },
+      select: { id: true, timezone: true, deletionRequestedAt: true },
     });
-    if (!user) {
+    // An account pending deletion is locked: a quick answer from a
+    // notification sent before the deletion records nothing.
+    if (!user || user.deletionRequestedAt != null) {
       annotate({
         action: { name: "notification.action.refused" },
-        meta: { reason: "unknown_user" },
+        meta: { reason: user ? "account_deletion_pending" : "unknown_user" },
       });
       return apiError("Invalid action", 401, {
         errorCode: "notification.action.invalid",

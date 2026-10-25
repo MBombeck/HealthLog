@@ -168,6 +168,7 @@ x-healthlog-env: &healthlog_env
   # the block exists: `environment:` is a whitelist, and a value in .env that
   # is not named here never arrives.
   AUDIT_LOG_RETENTION_DAYS: "${AUDIT_LOG_RETENTION_DAYS:-}"
+  ACCOUNT_DELETION_GRACE_DAYS: "${ACCOUNT_DELETION_GRACE_DAYS:-}"
   # How long Coach conversations are kept, in days (default 365, floor 30).
   # Like the audit window this number is PUBLISHED to the user on the Data &
   # Privacy page, so an instance running 90 has to be able to say 90.

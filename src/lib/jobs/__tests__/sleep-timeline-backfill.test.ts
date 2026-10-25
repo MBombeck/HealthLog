@@ -71,10 +71,20 @@ describe("enqueueBootTimeSleepTimelineBackfill — discovery", () => {
     const result = await enqueueBootTimeSleepTimelineBackfill();
 
     expect(prismaMock.whoopConnection.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { sleepTimelineBackfillAt: null } }),
+      expect.objectContaining({
+        where: {
+          sleepTimelineBackfillAt: null,
+          user: { deletionRequestedAt: null },
+        },
+      }),
     );
     expect(prismaMock.withingsConnection.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { sleepTimelineBackfillAt: null } }),
+      expect.objectContaining({
+        where: {
+          sleepTimelineBackfillAt: null,
+          user: { deletionRequestedAt: null },
+        },
+      }),
     );
     expect(result.enqueued).toBe(2);
     expect(bossSend).toHaveBeenCalledWith(

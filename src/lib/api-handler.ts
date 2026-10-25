@@ -39,6 +39,7 @@ export {
 // the api-handler ↔ record-session-fence import cycle) and are re-exported
 // here so the hundreds of existing importers read exactly as before.
 import {
+  AccountDeletionPendingError,
   AUTH_ERROR_CODES,
   HttpError,
   SharingAuthError,
@@ -49,6 +50,7 @@ import {
 } from "./api-errors";
 
 export {
+  AccountDeletionPendingError,
   AUTH_ERROR_CODES,
   HttpError,
   SharingAuthError,
@@ -279,7 +281,7 @@ export function apiHandler<T extends (...args: any[]) => Promise<Response>>(
                 data: null,
                 error: error.message,
                 ...(error.errorCode
-                  ? { meta: { errorCode: error.errorCode } }
+                  ? { meta: { ...error.extraMeta, errorCode: error.errorCode } }
                   : {}),
               },
               { status: error.statusCode },

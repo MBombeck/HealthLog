@@ -9,6 +9,7 @@
  * `./poll-cohort`; reminder-worker.ts owns the queue name, cron schedule, and
  * boss.work registration.
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import {
   recordNightscoutSyncFailure,
   syncUserNightscout,
@@ -22,7 +23,7 @@ export const handleNightscoutSync = makePollCohortHandler({
   findCohort: async (prisma) => {
     // The URL column is the connect marker (a public instance stores no token).
     const users = await prisma.user.findMany({
-      where: { nightscoutUrlEncrypted: { not: null } },
+      where: { nightscoutUrlEncrypted: { not: null }, ...ACTIVE_ACCOUNT },
       select: { id: true },
     });
     return users.map((u) => u.id);

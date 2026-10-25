@@ -47,6 +47,7 @@ import {
   completeSsoClaim,
   SSO_CLAIM_LANDING,
 } from "@/lib/managed-profiles/claim-sso";
+import { pendingDeletionOf } from "@/lib/account-deletion/pending";
 import { isHandoverUsable } from "@/lib/managed-profiles/handover";
 
 const LOGIN_ERROR_URL = "/auth/login";
@@ -55,6 +56,51 @@ function errorRedirect(reason: string): NextResponse {
   const response = NextResponse.redirect(
     oidcAppUrl(`${LOGIN_ERROR_URL}?error=${reason}`),
   );
+  deleteStateCookie(response);
+  return response;
+}
+
+/**
+ * The web sign-in page, with the single-use second-factor ticket parked in a
+ * short-lived cookie its script reads (`OIDC_MFA_COOKIE`).
+ */
+function secondFactorRedirect(
+  next: string,
+  secondFactor: { ticket: string; methods: readonly string[] },
+): NextResponse {
+  const loginUrl = oidcAppUrl(LOGIN_ERROR_URL);
+  if (next !== "/") {
+    loginUrl.searchParams.set("next", next);
+  }
+  const response = NextResponse.redirect(loginUrl);
+  deleteStateCookie(response);
+  response.cookies.set(
+    OIDC_MFA_COOKIE,
+    JSON.stringify({
+      ticket: secondFactor.ticket,
+      methods: secondFactor.methods,
+    }),
+    {
+      // Not httpOnly by design — see the constant's doc comment.
+      httpOnly: false,
+      secure: shouldEmitSecureCookie(),
+      sameSite: "lax",
+      maxAge: Math.floor(OIDC_MFA_TTL_MS / 1000),
+      path: OIDC_MFA_COOKIE_PATH,
+    },
+  );
+  return response;
+}
+
+/**
+ * The web sign-in page for an account pending deletion, with the date it is
+ * erased, so the page can say until when an admin can undo it.
+ */
+function deletionPendingRedirect(purgeAt: Date | null): NextResponse {
+  const url = oidcAppUrl(LOGIN_ERROR_URL);
+  url.searchParams.set("error", "account_deletion_pending");
+  if (purgeAt) url.searchParams.set("purgeAt", purgeAt.toISOString());
+  const response = NextResponse.redirect(url);
   deleteStateCookie(response);
   return response;
 }
@@ -305,6 +351,14 @@ export const GET = apiHandler(async (req: NextRequest) => {
     }
     const user = account.user;
 
+    // An account pending deletion is locked. The identity provider proved
+    // the caller is this account, so the sign-in page may name the date.
+    const pendingDeletion = await pendingDeletionOf(user.id);
+    if (pendingDeletion) {
+      if (isNative || isClaim) return failRedirect("account_deletion_pending");
+      return deletionPendingRedirect(pendingDeletion.purgeAt);
+    }
+
     const secondFactor = await startOidcSecondFactor(user, ip, isNative);
     if (secondFactor) {
       // Native: hand the app the SAME single-use ticket via the custom scheme.
@@ -325,28 +379,7 @@ export const GET = apiHandler(async (req: NextRequest) => {
         return response;
       }
 
-      const loginUrl = oidcAppUrl(LOGIN_ERROR_URL);
-      if (stored.next !== "/") {
-        loginUrl.searchParams.set("next", stored.next);
-      }
-      const response = NextResponse.redirect(loginUrl);
-      deleteStateCookie(response);
-      response.cookies.set(
-        OIDC_MFA_COOKIE,
-        JSON.stringify({
-          ticket: secondFactor.ticket,
-          methods: secondFactor.methods,
-        }),
-        {
-          // Not httpOnly by design — see the constant's doc comment.
-          httpOnly: false,
-          secure: shouldEmitSecureCookie(),
-          sameSite: "lax",
-          maxAge: Math.floor(OIDC_MFA_TTL_MS / 1000),
-          path: OIDC_MFA_COOKIE_PATH,
-        },
-      );
-      return response;
+      return secondFactorRedirect(stored.next, secondFactor);
     }
 
     const ua = req.headers.get("user-agent");

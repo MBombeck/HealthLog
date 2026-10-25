@@ -6,6 +6,7 @@
  * says what it waits for (`backup-restore-wait.ts`). The worker and the
  * admission check live in `backup-restore.ts`.
  */
+// account-deletion(file): reads restore jobs for the admin view; restores are started by an admin, not for an account by the schedule.
 import { z } from "zod/v4";
 
 import { prisma } from "@/lib/db";

@@ -104,7 +104,9 @@ describe("enqueueBootTimeGoogleHealthSleepRepair — discovery", () => {
     const result = await enqueueBootTimeGoogleHealthSleepRepair();
 
     expect(prismaMock.googleHealthConnection.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { sleepRepairedAt: null } }),
+      expect.objectContaining({
+        where: { sleepRepairedAt: null, user: { deletionRequestedAt: null } },
+      }),
     );
     expect(result.enqueued).toBe(2);
     expect(bossSend).toHaveBeenCalledWith(

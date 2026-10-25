@@ -20,6 +20,10 @@
  * own alerts do), a reason and an instant. Never a token, a value or an error
  * message from the provider.
  */
+import {
+  ACTIVE_ACCOUNT,
+  OWNED_BY_ACTIVE_ACCOUNT,
+} from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import type { MeasurementSource } from "@/generated/prisma/client";
 import { getEvent } from "@/lib/logging/context";
@@ -114,15 +118,27 @@ async function countDeliveredDays(
 async function listWatchedUserIds(): Promise<string[]> {
   const [withings, whoop, fitbit, google, userRows, healthKit, watches] =
     await Promise.all([
-      prisma.withingsConnection.findMany({ select: { userId: true } }),
-      prisma.whoopConnection.findMany({
-        where: { whoopUserId: { not: null } },
+      // An account pending deletion is frozen: its connections are not
+      // synced, so their silence is not an incident.
+      prisma.withingsConnection.findMany({
+        where: OWNED_BY_ACTIVE_ACCOUNT,
         select: { userId: true },
       }),
-      prisma.fitbitConnection.findMany({ select: { userId: true } }),
-      prisma.googleHealthConnection.findMany({ select: { userId: true } }),
+      prisma.whoopConnection.findMany({
+        where: { whoopUserId: { not: null }, ...OWNED_BY_ACTIVE_ACCOUNT },
+        select: { userId: true },
+      }),
+      prisma.fitbitConnection.findMany({
+        where: OWNED_BY_ACTIVE_ACCOUNT,
+        select: { userId: true },
+      }),
+      prisma.googleHealthConnection.findMany({
+        where: OWNED_BY_ACTIVE_ACCOUNT,
+        select: { userId: true },
+      }),
       prisma.user.findMany({
         where: {
+          ...ACTIVE_ACCOUNT,
           OR: [
             { polarAccessTokenEncrypted: { not: null } },
             { ouraAccessTokenEncrypted: { not: null } },
@@ -135,6 +151,7 @@ async function listWatchedUserIds(): Promise<string[]> {
         select: { id: true },
       }),
       prisma.healthKitTypeSync.findMany({
+        where: OWNED_BY_ACTIVE_ACCOUNT,
         distinct: ["userId"],
         select: { userId: true },
       }),
@@ -144,6 +161,7 @@ async function listWatchedUserIds(): Promise<string[]> {
             { silentSince: { not: null } },
             { incidentReason: { not: null } },
           ],
+          ...OWNED_BY_ACTIVE_ACCOUNT,
         },
         select: { userId: true },
       }),

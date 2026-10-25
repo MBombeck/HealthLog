@@ -14,6 +14,7 @@ import { checkAuthSurfaceRateLimit } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
+import { refuseIfPendingDeletion } from "@/lib/account-deletion/pending";
 import { issueApiToken, isNativeClientRequest } from "@/lib/auth/issue-token";
 import {
   resolveTokenPolicy,
@@ -138,6 +139,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (!user) {
     return apiError("User not found", 404);
   }
+
+  // An account pending deletion is locked; the passkey proved the caller
+  // could sign in, so the refusal may say why and until when.
+  refuseIfPendingDeletion(user);
 
   // v1.4.22 — `createSession` anchors the
   // `hl_onboarding` cookie itself; pass the user's onboarding state

@@ -4,6 +4,7 @@
  * Extracted from reminder-worker.ts, which owns the queue names, cron
  * schedules, and boss.work registrations.
  */
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { type Job } from "pg-boss";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { fireAndForget } from "@/lib/logging/fire-and-forget";
@@ -96,6 +97,7 @@ export async function runWhoopResourceSync(
       if (targets.length === 0) {
         // Cron tick — re-walk every connection's collection.
         const connections = await prisma.whoopConnection.findMany({
+          where: OWNED_BY_ACTIVE_ACCOUNT,
           select: { userId: true },
         });
         targets.push(...connections);

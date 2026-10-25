@@ -30,6 +30,7 @@
  * never provisions it and the boot enqueue silently never drains (the v1.4.37
  * dead-queue class).
  */
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
@@ -153,11 +154,11 @@ export async function enqueueBootTimeSleepTimelineBackfill(
   try {
     const [whoop, withings] = await Promise.all([
       prisma.whoopConnection.findMany({
-        where: { sleepTimelineBackfillAt: null },
+        where: { sleepTimelineBackfillAt: null, ...OWNED_BY_ACTIVE_ACCOUNT },
         select: { userId: true },
       }),
       prisma.withingsConnection.findMany({
-        where: { sleepTimelineBackfillAt: null },
+        where: { sleepTimelineBackfillAt: null, ...OWNED_BY_ACTIVE_ACCOUNT },
         select: { userId: true },
       }),
     ]);

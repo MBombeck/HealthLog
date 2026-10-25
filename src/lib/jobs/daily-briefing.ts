@@ -18,6 +18,7 @@
  * loads a digest for the handful of users at their fallback minute-window this
  * tick.
  */
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { PrismaClient } from "@/generated/prisma/client";
 
 import { getEvent } from "@/lib/logging/context";
@@ -79,7 +80,11 @@ export async function runDailyBriefingTick(
   // preference row. Deduped by userId (a user may have opted several channels
   // in) and carrying the timezone so the slot gate needs no extra read.
   const prefs = await prisma.notificationPreference.findMany({
-    where: { eventType: "DAILY_BRIEFING", enabled: true },
+    where: {
+      eventType: "DAILY_BRIEFING",
+      enabled: true,
+      channel: OWNED_BY_ACTIVE_ACCOUNT,
+    },
     select: {
       channel: {
         select: { userId: true, user: { select: { timezone: true } } },

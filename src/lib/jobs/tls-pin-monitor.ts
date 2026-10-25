@@ -28,6 +28,7 @@
  * set from, and an unset baseline fails LOUD ("not configured"), never by
  * auto-adopting whatever it observed.
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -62,7 +63,7 @@ async function alertAdminsOfPinChange(
   knownPins: string[],
 ): Promise<void> {
   const admins = await prisma.user.findMany({
-    where: { role: "ADMIN" },
+    where: { role: "ADMIN", ...ACTIVE_ACCOUNT },
     select: { id: true },
   });
 

@@ -32,6 +32,7 @@
  * scores. 04:35 is free, and it sits after the inputs this job reads have
  * settled. (04:40 is not free: the geo backfill runs at `40 * * * *`.)
  */
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { Job } from "pg-boss";
 
 import {
@@ -150,10 +151,12 @@ export async function runMoodPrognosisRefresh(
         deletedAt: null,
         moodA1: { not: null },
         date: { gte: since },
+        ...OWNED_BY_ACTIVE_ACCOUNT,
       },
       _count: { _all: true },
     }),
     prisma.moodPrediction.findMany({
+      where: OWNED_BY_ACTIVE_ACCOUNT,
       distinct: ["userId"],
       select: { userId: true },
     }),

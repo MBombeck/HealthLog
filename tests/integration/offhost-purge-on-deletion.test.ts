@@ -8,9 +8,15 @@
  * turn this red: drop `requestOffhostPurge` from either route (no request is
  * written and the objects stay), or write the request outside the deletion's
  * transaction and let it fail (the deletion commits without one).
+ *
+ * With a deletion grace window the objects stay until it ends: an account
+ * deletion writes no request until the purge job erases the account, and a
+ * wipe's request waits for its `notBefore`. Mutations that must turn the
+ * second block red: purge in the deletion route again, or drop the
+ * `notBefore` filter from the purge job.
  */
 import { NextRequest } from "next/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
@@ -166,5 +172,121 @@ describe("off-host copies leave with the account", () => {
     const report = await processOffhostPurges(prisma);
     expect(report).toMatchObject({ completed: 1, awaitingRun: 0 });
     expect(await prisma.offhostPurgeRequest.count()).toBe(0);
+  });
+});
+
+describe("with a deletion grace window, the copies wait for it", () => {
+  beforeEach(() => {
+    vi.stubEnv("ACCOUNT_DELETION_GRACE_DAYS", "14");
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  async function deleteAccount() {
+    const { DELETE } = await import("@/app/api/settings/account/route");
+    return DELETE(
+      new NextRequest("http://localhost/api/settings/account", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ confirm: "DELETE_ACCOUNT" }),
+      }),
+    );
+  }
+
+  it("keeps an undone deletion's copies, and purges them once the window ends", async () => {
+    const prisma = getPrismaClient();
+    const other = await prisma.user.create({
+      data: { username: "neighbour3", email: "neighbour3@example.test" },
+    });
+    const admin = await prisma.user.create({
+      data: { username: "admin3", email: "admin3@example.test", role: "ADMIN" },
+    });
+    const userId = await seedUserWithSession("changing-mind");
+    seedBucket(userId, other.id);
+
+    // Locked, not erased: no request, every copy still there.
+    expect((await deleteAccount()).status).toBe(200);
+    expect(await prisma.offhostPurgeRequest.count()).toBe(0);
+    const { processOffhostPurges } = await import("@/lib/jobs/offhost-purge");
+    await processOffhostPurges(prisma);
+    expect([...bucket].filter((k) => k.includes(userId))).toHaveLength(3);
+
+    // Undone: still every copy.
+    const { cancelAccountDeletion } =
+      await import("@/lib/account-deletion/lifecycle");
+    expect(await cancelAccountDeletion({ userId, adminId: admin.id })).toBe(
+      "cancelled",
+    );
+    expect([...bucket].filter((k) => k.includes(userId))).toHaveLength(3);
+
+    // Deleted again and left to run out: the purge job erases the account and
+    // writes the request with the erasure; the off-host purge empties it.
+    const session = await prisma.session.create({
+      data: { userId, expiresAt: new Date(Date.now() + 3_600_000) },
+    });
+    cookieJar.set("healthlog_session", session.id);
+    expect((await deleteAccount()).status).toBe(200);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { deletionPurgeAt: new Date(Date.now() - 1000) },
+    });
+    const { processDueAccountDeletions } =
+      await import("@/lib/jobs/account-deletion-purge");
+    expect(await processDueAccountDeletions(new Date())).toMatchObject({
+      purged: 1,
+    });
+    expect(await prisma.user.findUnique({ where: { id: userId } })).toBeNull();
+    const pending = await prisma.offhostPurgeRequest.findMany();
+    expect(pending.map((r) => [r.subjectId, r.reason, r.notBefore])).toEqual([
+      [userId, "account_deleted", null],
+    ]);
+    const report = await processOffhostPurges(prisma);
+    expect(report).toMatchObject({ completed: 1, objectsDeleted: 3 });
+    expect([...bucket].filter((k) => k.includes(userId))).toEqual([]);
+    expect([...bucket].filter((k) => k.includes(other.id))).toHaveLength(3);
+  });
+
+  it("holds a wipe's purge back until the window ends", async () => {
+    const prisma = getPrismaClient();
+    const other = await prisma.user.create({
+      data: { username: "neighbour4", email: "neighbour4@example.test" },
+    });
+    const userId = await seedUserWithSession("wiping-later");
+    seedBucket(userId, other.id);
+
+    const { DELETE } = await import("@/app/api/settings/data/route");
+    const res = await DELETE(
+      new NextRequest("http://localhost/api/settings/data", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ confirm: "DELETE" }),
+      }),
+    );
+    expect(res.status).toBe(200);
+
+    const [request] = await prisma.offhostPurgeRequest.findMany();
+    expect(request?.reason).toBe("data_wiped");
+    expect(request!.notBefore!.getTime() - Date.now()).toBeGreaterThan(
+      13.9 * 24 * 60 * 60 * 1000,
+    );
+
+    // Not due: nothing leaves the bucket.
+    const { processOffhostPurges } = await import("@/lib/jobs/offhost-purge");
+    expect(await processOffhostPurges(prisma)).toMatchObject({
+      pending: 0,
+      objectsDeleted: 0,
+    });
+    expect([...bucket].filter((k) => k.includes(userId))).toHaveLength(3);
+
+    // Due: the copies from before the wipe go, as an immediate wipe's did.
+    await prisma.offhostPurgeRequest.update({
+      where: { id: request!.id },
+      data: { notBefore: new Date(Date.now() - 1000) },
+    });
+    const report = await processOffhostPurges(prisma);
+    expect(report.objectsDeleted).toBe(3);
+    expect([...bucket].filter((k) => k.includes(userId))).toEqual([]);
+    expect([...bucket].filter((k) => k.includes(other.id))).toHaveLength(3);
   });
 });

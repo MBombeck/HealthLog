@@ -36,6 +36,8 @@ import {
   probeOffhostLifecycle,
 } from "@/lib/jobs/offhost-backup";
 import { OFFHOST_BACKUP_QUEUE } from "@/lib/jobs/offhost-backup-queue";
+import { offhostPurgeDue } from "@/lib/jobs/offhost-purge-queue";
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import {
   classifyOffhostBackup,
   OFFHOST_BACKUP_PERIOD_HOURS,
@@ -106,7 +108,10 @@ export const GET = apiHandler(async () => {
   // listing call from a page render would put the operator's credentials on
   // the request path of every page view.
   const now = new Date();
+  // An account pending deletion is skipped by the nightly upload on purpose;
+  // its copy ageing is not a backup failure, so it is not listed.
   const offhostAccounts = await prisma.user.findMany({
+    where: ACTIVE_ACCOUNT,
     select: {
       id: true,
       username: true,
@@ -175,12 +180,16 @@ export const GET = apiHandler(async () => {
   // A wipe whose copies are already gone waits for the next nightly run
   // before its request is removed (see `offhost-purge.ts`); nothing of it is
   // left in the bucket, so it is not counted as a pending deletion.
+  //
+  // A wipe's request held back to the end of its grace window is not a
+  // pending deletion either: those copies are kept on purpose until then.
   const stillInBucket = {
     NOT: {
       reason: "data_wiped",
       lastFailure: null,
       lastAttemptAt: { not: null },
     },
+    ...offhostPurgeDue(new Date()),
   };
   const [weeklyRunningSince, offhostRunningSince] = await Promise.all([
     readQueueRunningSince(DATA_BACKUP_QUEUE),

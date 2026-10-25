@@ -1,7 +1,12 @@
+import { kickOffhostPurge } from "@/lib/jobs/offhost-purge";
 import {
-  kickOffhostPurge,
-  requestOffhostPurge,
-} from "@/lib/jobs/offhost-purge";
+  accountDeletionGraceDays,
+  accountDeletionPurgeAt,
+} from "@/lib/account-deletion/grace";
+import {
+  eraseAccount,
+  lockAccountForDeletion,
+} from "@/lib/account-deletion/lifecycle";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { releaseUnbackedClientApps } from "@/lib/integrations/oauth-kit/connect-target";
@@ -49,7 +54,11 @@ export async function withManagedProfileLock<T>(
   tx: Transaction,
   profileId: string,
   operation: (
-    profile: { id: string; managedProfileAt: Date | null } | null,
+    profile: {
+      id: string;
+      managedProfileAt: Date | null;
+      deletionRequestedAt: Date | null;
+    } | null,
   ) => Promise<T>,
 ): Promise<T> {
   await tx.$queryRaw`
@@ -58,7 +67,7 @@ export async function withManagedProfileLock<T>(
   `;
   const profile = await tx.user.findUnique({
     where: { id: profileId },
-    select: { id: true, managedProfileAt: true },
+    select: { id: true, managedProfileAt: true, deletionRequestedAt: true },
   });
   return operation(profile);
 }
@@ -110,10 +119,18 @@ export const ACCOUNT_DELETION_TRANSACTION_OPTIONS = {
  * Keep account deletion and its Guardian checks inside the same transaction.
  * Profiles are locked in id order so an account protecting more than one
  * profile cannot deadlock with a concurrent lifecycle operation.
+ *
+ * `erasing: false` is the request that only locks the account for a grace
+ * window: the Guardian invariant is decided exactly as for an erasure, so a
+ * request that could never complete is refused while the person is still
+ * there to act on the answer, but the grants stay and so does any provider
+ * app a profile borrowed through them. The purge job runs this again with
+ * `erasing: true` when the window ends, and the invariant is decided again.
  */
 export async function deleteGuardianAccountWithLifecycle<T>(
   guardianId: string,
   deleteAccount: (tx: Transaction) => Promise<T>,
+  options: { erasing: boolean } = { erasing: true },
 ): Promise<T> {
   return prisma.$transaction(async (tx) => {
     const now = new Date();
@@ -150,6 +167,7 @@ export async function deleteGuardianAccountWithLifecycle<T>(
     }
 
     const result = await deleteAccount(tx);
+    if (!options.erasing) return result;
     // The guardian's grants went with their account; a provider app any of
     // their profiles borrowed from them goes too.
     for (const { grantorId } of grants) {
@@ -224,13 +242,32 @@ export async function protectManagedProfilesDuringDataWipe(
   return affectedProfiles.map((p) => p.grantorId);
 }
 
+/**
+ * Delete a managed profile on a Guardian's word.
+ *
+ * With a grace window the profile is locked rather than erased (see
+ * `lockAccountForDeletion`): it leaves every Guardian's roster, nothing acts
+ * for it, and the purge job erases it when the window ends unless an admin
+ * undoes it first. Without one (`ACCOUNT_DELETION_GRACE_DAYS=0`) it is
+ * erased here, as before. Answers when it will be erased, or null when it
+ * already was.
+ */
 export async function deleteManagedProfile(input: {
   profileId: string;
   guardianId: string;
-}): Promise<void> {
+}): Promise<{ scheduledPurgeAt: Date | null }> {
+  const requestedAt = new Date();
+  const purgeAt = accountDeletionPurgeAt(
+    requestedAt,
+    accountDeletionGraceDays(),
+  );
   await prisma.$transaction(async (tx) => {
     await withManagedProfileLock(tx, input.profileId, async (profile) => {
-      if (!profile) throw new ManagedProfileLifecycleError("not_found");
+      // A profile already pending deletion has left every roster; to its
+      // Guardians it is gone, and only an admin can bring it back.
+      if (!profile || profile.deletionRequestedAt) {
+        throw new ManagedProfileLifecycleError("not_found");
+      }
       if (!profile.managedProfileAt) {
         throw new ManagedProfileLifecycleError("not_managed");
       }
@@ -247,14 +284,26 @@ export async function deleteManagedProfile(input: {
 
       await auditLog("managed_profile.deleted", {
         userId: input.guardianId,
-        details: { profileId: profile.id },
+        details: {
+          profileId: profile.id,
+          scheduledPurgeAt: purgeAt?.toISOString() ?? null,
+        },
         client: tx,
       });
-      await requestOffhostPurge(tx, profile.id, "managed_profile_deleted");
-      await tx.user.delete({ where: { id: profile.id } });
+      if (purgeAt) {
+        await lockAccountForDeletion(tx, {
+          userId: profile.id,
+          requestedById: input.guardianId,
+          requestedAt,
+          purgeAt,
+        });
+        return;
+      }
+      await eraseAccount(tx, profile.id, "managed_profile_deleted");
     });
   }, ACCOUNT_DELETION_TRANSACTION_OPTIONS);
-  await kickOffhostPurge();
+  if (!purgeAt) await kickOffhostPurge();
+  return { scheduledPurgeAt: purgeAt };
 }
 
 /**
@@ -330,9 +379,13 @@ export async function readManagedProfileForGuardian(input: {
 }): Promise<ManagedProfileView | null> {
   const profile = await prisma.user.findUnique({
     where: { id: input.profileId },
-    select: { ...MANAGED_PROFILE_VIEW_SELECT, managedProfileAt: true },
+    select: {
+      ...MANAGED_PROFILE_VIEW_SELECT,
+      managedProfileAt: true,
+      deletionRequestedAt: true,
+    },
   });
-  if (!profile?.managedProfileAt) return null;
+  if (!profile?.managedProfileAt || profile.deletionRequestedAt) return null;
 
   const guardian = await prisma.accountGrant.findFirst({
     where: {
@@ -387,7 +440,9 @@ export async function updateManagedProfile(input: {
 }): Promise<ManagedProfileView> {
   return prisma.$transaction(async (tx) => {
     return withManagedProfileLock(tx, input.profileId, async (profile) => {
-      if (!profile) throw new ManagedProfileLifecycleError("not_found");
+      if (!profile || profile.deletionRequestedAt) {
+        throw new ManagedProfileLifecycleError("not_found");
+      }
       if (!profile.managedProfileAt) {
         throw new ManagedProfileLifecycleError("not_managed");
       }

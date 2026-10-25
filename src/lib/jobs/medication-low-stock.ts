@@ -60,6 +60,7 @@
  * an absolute floor instead: `AS_NEEDED_LOW_STOCK_DOSES` doses or fewer
  * left, once per crossing, with the same stamp and re-arm rule.
  */
+import { activeAccount } from "@/lib/account-deletion/active-account";
 import type { PrismaClient } from "@/generated/prisma/client";
 import {
   classifyLowStockState,
@@ -391,7 +392,7 @@ export async function runMedicationLowStockTick(
   // Only users who own at least one ACTIVE, unpaused medication with
   // tracked inventory (any container ever registered) are candidates.
   const users = await prisma.user.findMany({
-    where: {
+    where: activeAccount({
       medications: {
         some: {
           active: true,
@@ -402,7 +403,7 @@ export async function runMedicationLowStockTick(
           inventoryItems: { some: {} },
         },
       },
-    },
+    }),
     select: { id: true, locale: true, notificationPrefs: true },
   });
 

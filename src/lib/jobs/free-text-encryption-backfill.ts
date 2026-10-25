@@ -64,6 +64,7 @@
  * (`src/lib/jobs/reminder/register-maintenance.ts`) so pg-boss provisions it at
  * boot; an unregistered queue silently never drains.
  */
+// account-deletion(file): encrypts existing rows at rest; it changes how a row is stored, not what the record holds, and a pending account's rows are erased or kept as they are either way.
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";

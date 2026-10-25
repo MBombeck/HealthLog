@@ -61,6 +61,7 @@
  * cached compliance / intake / summary payloads were built on the
  * pre-flip denominator and would otherwise serve it for up to their TTL.
  */
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { PrismaClient } from "@/generated/prisma/client";
 
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
@@ -251,7 +252,11 @@ export async function runIntakeAutoSkipPass(
   // users' server caches below.
   const candidates = await prisma.medicationIntakeEvent.groupBy({
     by: ["medicationId", "userId"],
-    where: { ...pendingWhere, scheduledFor: { lt: baseCutoff } },
+    where: {
+      ...pendingWhere,
+      scheduledFor: { lt: baseCutoff },
+      ...OWNED_BY_ACTIVE_ACCOUNT,
+    },
   });
   if (candidates.length === 0) {
     return { skippedCount: 0, cutoff: baseCutoff, invalidatedUserIds: [] };

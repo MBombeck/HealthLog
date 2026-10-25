@@ -11,7 +11,7 @@ vi.mock("@/lib/db", () => ({
       update: vi.fn(),
       upsert: vi.fn(),
     },
-    user: { findUnique: vi.fn() },
+    user: { findUnique: vi.fn(), count: vi.fn().mockResolvedValue(0) },
     accountGrant: { findMany: vi.fn() },
     notificationEgressAuthorization: {
       update: (...args: unknown[]) => authorizationUpdateMock(...args),

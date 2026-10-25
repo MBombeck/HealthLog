@@ -112,7 +112,10 @@ describe("findNarrativeCandidates", () => {
     const result = await findNarrativeCandidates(prisma as any, 50);
     expect(queryRaw.mock.calls[0].slice(1)).toContain("insights");
     const arg = findMany.mock.calls[0][0];
-    expect(arg.where).toEqual({ id: { notIn: ["opted-out"] } });
+    expect(arg.where).toEqual({
+      deletionRequestedAt: null,
+      id: { notIn: ["opted-out"] },
+    });
     expect(arg.where.disableCoach).toBeUndefined();
     expect(result).toEqual([{ id: "u1", locale: "de" }]);
     // Below the cap the ordering aggregate never runs.

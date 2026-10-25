@@ -11,6 +11,7 @@
  * `src/lib/jobs/reminder-worker.ts` so pg-boss provisions it at boot;
  * an unregistered queue silently never drains.
  */
+import { dropPendingDeletion } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
@@ -121,7 +122,9 @@ export async function enqueueBootTimeStepConsolidation(
     // GOOGLE_HEALTH / FITBIT daily totals (`stats:steps:…`) from the boot
     // sweep that this closes. Splice-free: every literal is a compile-time
     // constant, not user input.
-    const users = await prisma.$queryRaw<Array<{ id: string }>>`
+    const users = await dropPendingDeletion(
+      prisma,
+      await prisma.$queryRaw<Array<{ id: string }>>`
       SELECT DISTINCT m."user_id" AS id
       FROM measurements m
       WHERE m."type" = 'ACTIVITY_STEPS'
@@ -131,7 +134,9 @@ export async function enqueueBootTimeStepConsolidation(
           m."external_id" IS NULL
           OR m."external_id" NOT LIKE 'stats:%'
         )
-    `;
+    `,
+      (u) => u.id,
+    );
 
     if (users.length === 0) {
       return { enqueued: 0, skipped: 0, error: null };

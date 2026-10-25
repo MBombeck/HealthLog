@@ -48,9 +48,11 @@
  *     `DataBackup` row, which stays where it is whatever happens, so no retry
  *     ever needs the file again.
  */
+// account-deletion(file): restore-job bookkeeping; a restore is started by an admin, and the pending-deletion lock does not stop an admin.
 import { createHash } from "node:crypto";
 
 import type { Job, PgBoss } from "pg-boss";
+import { isPreWipeBackupType } from "@/lib/account-deletion/pre-wipe-type";
 
 import { invalidateUserData } from "@/lib/cache/invalidate";
 import { prisma, toJson } from "@/lib/db";
@@ -123,6 +125,31 @@ export const BACKUP_RESTORE_MAX_ATTEMPTS = 2;
 
 /** Finished jobs older than this are deleted when the account restores again. */
 export const BACKUP_RESTORE_RETENTION_DAYS = 30;
+
+/**
+ * A restore of the copy a data wipe took first undoes that wipe, so the
+ * off-host purge the wipe asked for — held back to the end of the grace
+ * window — no longer has anything to do: the copies from before the wipe hold
+ * the record the account has again. It is withdrawn; a request already due
+ * (no window, or one that has ended) is left to run.
+ */
+async function withdrawHeldWipePurge(
+  backupId: string,
+  userId: string,
+): Promise<void> {
+  const backup = await prisma.dataBackup.findUnique({
+    where: { id: backupId },
+    select: { type: true },
+  });
+  if (!backup || !isPreWipeBackupType(backup.type)) return;
+  await prisma.offhostPurgeRequest.deleteMany({
+    where: {
+      subjectId: userId,
+      reason: "data_wiped",
+      notBefore: { gt: new Date() },
+    },
+  });
+}
 
 export type BackupRestorePayload = { restoreJobId: string } | { sweep: true };
 
@@ -476,6 +503,7 @@ export async function runBackupRestoreJob(
 
     if (outcome.ok) {
       const { summary, skipped, cleared } = outcome.response;
+      await withdrawHeldWipePurge(row.backupId, row.userId);
       await finish("succeeded", {
         result: {
           summary: { ...summary },

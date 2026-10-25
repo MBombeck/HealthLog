@@ -24,6 +24,7 @@
  * `src/lib/jobs/reminder/register-rollup.ts` so pg-boss provisions it at
  * boot; an unregistered queue silently never drains.
  */
+import { dropPendingDeletion } from "@/lib/account-deletion/active-account";
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
@@ -127,7 +128,9 @@ export async function findHourlyRebuildCandidateUserIds(
   const types = Array.from(DENSE_INTRADAY_RETENTION_TYPES).map(String);
   if (types.length === 0) return [];
 
-  const users = await prismaClient.$queryRaw<Array<{ user_id: string }>>`
+  const users = await dropPendingDeletion(
+    prismaClient,
+    await prismaClient.$queryRaw<Array<{ user_id: string }>>`
     SELECT DISTINCT m."user_id"
     FROM "measurements" m
     WHERE m."source" = 'APPLE_HEALTH'
@@ -146,7 +149,9 @@ export async function findHourlyRebuildCandidateUserIds(
           AND t."measured_at" >= m."measured_at" - interval '14 hours'
           AND t."measured_at" <  m."measured_at" + interval '14 hours'
       )
-  `;
+  `,
+    (u) => u.user_id,
+  );
   return users.map((u) => u.user_id);
 }
 
