@@ -25,7 +25,8 @@ Take the encryption key's copy out of its safe place first: the dump is
 unreadable without it, and this is the moment you would find out.
 
 ```bash
-# 1. Stop the app so nothing writes while the dump runs.
+# 1. Stop the app so nothing writes while the dump runs. If you run the
+#    worker role in its own container, stop it too: docker compose stop app app-worker
 docker compose stop app
 
 # 2. Dump the database in Postgres' custom format.
@@ -61,7 +62,7 @@ docker compose ps db
 docker compose exec -T db pg_restore -U healthlog -d healthlog --no-owner \
   < healthlog-pg16-<date>.dump
 
-# 7. Start the app and confirm it.
+# 7. Start the app (and app-worker, if you run it) and confirm it.
 docker compose up -d app
 curl -s http://localhost:3000/api/version
 ```
