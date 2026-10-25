@@ -1202,21 +1202,71 @@ export function selectForDeletion(sets, options) {
 }
 
 /**
+ * The directories a restore opens an off-host copy into (`.restore-…`) and
+ * downloads one into (`.download-…`). What is in them is a whole database,
+ * decrypted. A restore removes its own when it ends; one that was killed
+ * (out of memory, `docker kill`) cannot, so they are swept: by the next
+ * restore before it starts, and by the nightly retention once they are older
+ * than a restore could still be running.
+ */
+export const SCRATCH_DIR_PATTERN = /^\.(?:restore|download)-/;
+
+/**
+ * Remove the restore scratch directories in `dir` older than `olderThanMs`.
+ * Answers the paths removed. Never throws.
+ *
+ * @param {string} dir
+ * @param {{ olderThanMs: number; now?: number }} options
+ */
+export async function removeStaleScratch(dir, options) {
+  const now = options.now ?? Date.now();
+  /** @type {string[]} */
+  const removed = [];
+  let names = [];
+  try {
+    names = readdirSync(dir);
+  } catch {
+    return removed;
+  }
+  for (const name of names) {
+    if (!SCRATCH_DIR_PATTERN.test(name)) continue;
+    const path = join(dir, name);
+    try {
+      const info = statSync(path);
+      if (!info.isDirectory()) continue;
+      if (options.olderThanMs > 0 && now - info.mtimeMs < options.olderThanMs) {
+        continue;
+      }
+      await rm(path, { recursive: true, force: true });
+      removed.push(path);
+    } catch {
+      // Gone already, or not ours to remove.
+    }
+  }
+  return removed;
+}
+
+/**
  * Apply retention to `dir`. Answers the paths removed.
  *
  * @param {string} dir
  * @param {{ dailyKeep?: number; now?: number }} [options]
  */
 export async function applyRetention(dir, options = {}) {
+  const now = options.now ?? Date.now();
   const doomed = selectForDeletion(listDumpSets(dir), {
     keep: {
       daily: options.dailyKeep ?? DEFAULT_DAILY_KEEP,
       "pre-migration": PRE_MIGRATION_KEEP,
     },
-    now: options.now ?? Date.now(),
+    now,
   });
   for (const path of doomed) await rm(path, { force: true });
-  return doomed;
+  const scratch = await removeStaleScratch(dir, {
+    olderThanMs: STALE_LEFTOVER_MS,
+    now,
+  });
+  return [...doomed, ...scratch];
 }
 
 /** @param {string} path */
@@ -1227,14 +1277,65 @@ export async function readManifestFile(path) {
 // ── Off-host copies ────────────────────────────────────────────────────────
 
 /**
- * The bucket key of an off-host database object. It is also the associated
- * data its encryption is bound to, so a copy cannot be passed off under
- * another name.
+ * Which instance wrote a dump into a shared bucket: the host of its public
+ * URL (`APP_URL`, else `NEXT_PUBLIC_APP_URL`), lowercased, with anything but
+ * letters, digits, dots and dashes as a dash. Null when neither is set.
+ *
+ * A bucket may hold the copies of more than one instance; nothing forbids it,
+ * and it was safe for the per-account objects. Database dumps were named by
+ * their time alone, so two instances dumping at the same second (the default
+ * schedule is the same everywhere) overwrote each other, and `latest
+ * --from-bucket` restored whichever instance's dump was newest.
+ *
+ * @param {Env} env
+ * @returns {string | null}
+ */
+export function instanceIdFromEnv(env = process.env) {
+  for (const name of ["APP_URL", "NEXT_PUBLIC_APP_URL"]) {
+    const raw = (env[name] ?? "").trim();
+    if (!raw) continue;
+    try {
+      const host = new URL(raw).host.toLowerCase().replace(/[^a-z0-9.-]/g, "-");
+      if (host) return host;
+    } catch {
+      // Not a URL; try the next one.
+    }
+  }
+  return null;
+}
+
+/**
+ * The bucket key of an off-host database object: under the instance's own
+ * folder (`database/<instance>/…`), or at the top of `database/` for an
+ * instance with no public URL set. It is also the associated data its
+ * encryption is bound to, so a copy cannot be passed off under another name,
+ * or as another instance's.
  *
  * @param {string} fileName e.g. `healthlog-…-daily.dump.enc`
+ * @param {string | null} [instanceId]
  */
-export function offhostObjectKey(fileName) {
-  return `${OFFHOST_DATABASE_PREFIX}${fileName}`;
+export function offhostObjectKey(fileName, instanceId = null) {
+  return instanceId
+    ? `${OFFHOST_DATABASE_PREFIX}${instanceId}/${fileName}`
+    : `${OFFHOST_DATABASE_PREFIX}${fileName}`;
+}
+
+/**
+ * A database object key read back: the instance folder it is in (null at the
+ * top of `database/`) and its file name, or null for anything else.
+ *
+ * @param {string} key
+ * @returns {{ instance: string | null; fileName: string } | null}
+ */
+export function parseOffhostObjectKey(key) {
+  if (!key.startsWith(OFFHOST_DATABASE_PREFIX)) return null;
+  const rest = key.slice(OFFHOST_DATABASE_PREFIX.length);
+  const parts = rest.split("/");
+  if (parts.length === 1) return { instance: null, fileName: parts[0] };
+  if (parts.length === 2 && parts[0]) {
+    return { instance: parts[0], fileName: parts[1] };
+  }
+  return null;
 }
 
 const ENVELOPE_MAGIC = "HLBK";
@@ -1364,45 +1465,76 @@ export function bucketConfigFromEnv(env = process.env) {
 }
 
 /**
- * The newest database dump in a bucket listing whose manifest is there too,
- * or the one `name` asks for. Pure. `name` may carry the `.enc` suffix or
- * not. Answers both object keys, or null.
+ * Every database dump in a bucket listing whose manifest is there too, with
+ * the instance that wrote it, newest first. Pure.
  *
  * @param {string[]} keys every key under the `database/` prefix
- * @param {string | null} name
- * @returns {{ dumpKey: string; manifestKey: string } | null}
+ * @returns {Array<{ instance: string | null; base: string; timestamp: number; dumpKey: string; manifestKey: string }>}
  */
-export function pickBucketDump(keys, name = null) {
+export function listBucketDumps(keys) {
   const present = new Set(keys);
-  const wanted = name
-    ? name.replace(/\.enc$/, "").replace(/^database\//, "")
-    : null;
-  const candidates = keys
-    .map((key) => ({
-      key,
-      parsed: parseDumpFileName(key.slice(OFFHOST_DATABASE_PREFIX.length)),
-    }))
+  return keys
+    .map((key) => {
+      const where = parseOffhostObjectKey(key);
+      const parsed = where ? parseDumpFileName(where.fileName) : null;
+      return where && parsed ? { where, parsed } : null;
+    })
     .filter(
-      ({ key, parsed }) =>
-        key.startsWith(OFFHOST_DATABASE_PREFIX) &&
-        parsed !== null &&
-        parsed.role === "dump" &&
-        parsed.variant === "encrypted" &&
-        (wanted === null || `${parsed.base}.dump` === wanted),
+      (c) =>
+        c !== null &&
+        c.parsed.role === "dump" &&
+        c.parsed.variant === "encrypted",
     )
-    .map(({ parsed }) => {
-      const p = /** @type {ParsedDumpName} */ (parsed);
+    .map((c) => {
+      const { where, parsed } =
+        /** @type {{ where: { instance: string | null }; parsed: ParsedDumpName }} */ (
+          c
+        );
       return {
-        timestamp: p.timestamp.getTime(),
-        dumpKey: offhostObjectKey(`${p.base}.dump.enc`),
-        manifestKey: offhostObjectKey(`${p.base}.manifest.json.enc`),
+        instance: where.instance,
+        base: parsed.base,
+        timestamp: parsed.timestamp.getTime(),
+        dumpKey: offhostObjectKey(`${parsed.base}.dump.enc`, where.instance),
+        manifestKey: offhostObjectKey(
+          `${parsed.base}.manifest.json.enc`,
+          where.instance,
+        ),
       };
     })
     .filter((c) => present.has(c.manifestKey))
     .sort((a, b) => b.timestamp - a.timestamp);
-  return candidates[0]
-    ? { dumpKey: candidates[0].dumpKey, manifestKey: candidates[0].manifestKey }
-    : null;
+}
+
+/**
+ * The newest database dump of `instance` in a bucket listing whose manifest
+ * is there too, or the one `name` asks for. Pure. `name` may carry the
+ * `.enc` suffix or not; a name with a folder
+ * (`database/<instance>/healthlog-….dump.enc` or `<instance>/…`) names that
+ * instance's dump, which is how an operator restores another instance's dump
+ * on purpose. Answers both object keys, or null.
+ *
+ * @param {string[]} keys every key under the `database/` prefix
+ * @param {string | null} name
+ * @param {string | null} [instance] the instance whose dumps count; null for
+ *   the dumps at the top of `database/`
+ * @returns {{ dumpKey: string; manifestKey: string } | null}
+ */
+export function pickBucketDump(keys, name = null, instance = null) {
+  let wanted = null;
+  let folder = instance;
+  if (name) {
+    const path = name
+      .replace(/\.enc$/, "")
+      .replace(new RegExp(`^${OFFHOST_DATABASE_PREFIX}`), "");
+    const slash = path.lastIndexOf("/");
+    if (slash >= 0) folder = path.slice(0, slash) || null;
+    wanted = path.slice(slash + 1);
+  }
+  const pick = listBucketDumps(keys).find(
+    (c) =>
+      c.instance === folder && (wanted === null || `${c.base}.dump` === wanted),
+  );
+  return pick ? { dumpKey: pick.dumpKey, manifestKey: pick.manifestKey } : null;
 }
 
 /**

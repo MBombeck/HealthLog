@@ -113,8 +113,9 @@ gzipped and sealed with AES-256-GCM under `BACKUP_ENCRYPTION_KEY`, with the
 object's own name as associated data and the key's id in the header.
 
 The nightly database dump goes into the same bucket, as
-`database/healthlog-<time>-daily.dump.enc` with its manifest beside it, sealed
-the same way. It is the copy that rebuilds a lost server
+`database/<host of APP_URL>/healthlog-<time>-daily.dump.enc` with its manifest
+beside it, sealed the same way. The folder keeps the dumps of instances that
+share a bucket apart. It is the copy that rebuilds a lost server
 ([disaster-recovery.md](disaster-recovery.md)).
 
 **Permissions.** The worker needs `PutObject`, `GetObject`, `ListBucket`,

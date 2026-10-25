@@ -6,11 +6,11 @@ onto a new server, and how the procedure is tested.
 
 ## What is backed up, and where
 
-| Copy                    | When                                                                        | Where                                                               | Kept                            |
-| ----------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------- |
-| Nightly dump            | 01:30 Europe/Berlin, the zone every schedule runs in (`DB_BACKUP_SCHEDULE`) | `DB_BACKUP_DIR`, the `backups` volume of the bundled compose file   | the newest 7 (`DB_BACKUP_KEEP`) |
-| Pre-migration dump      | on start, when the new image brings migrations, before them                 | the same directory                                                  | the newest 2                    |
-| Off-host copy of a dump | right after each nightly dump, if the bucket is configured                  | your bucket, under `database/`, sealed with `BACKUP_ENCRYPTION_KEY` | your bucket's lifecycle rule    |
+| Copy                    | When                                                                        | Where                                                                                 | Kept                            |
+| ----------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------- |
+| Nightly dump            | 01:30 Europe/Berlin, the zone every schedule runs in (`DB_BACKUP_SCHEDULE`) | `DB_BACKUP_DIR`, the `backups` volume of the bundled compose file                     | the newest 7 (`DB_BACKUP_KEEP`) |
+| Pre-migration dump      | on start, when the new image brings migrations, before them                 | the same directory                                                                    | the newest 2                    |
+| Off-host copy of a dump | right after each nightly dump, if the bucket is configured                  | your bucket, under `database/<host of APP_URL>/`, sealed with `BACKUP_ENCRYPTION_KEY` | your bucket's lifecycle rule    |
 
 A dump is `pg_dump --format=custom` of the whole database: every account,
 sign-ins, passkeys, sharing grants and managed profiles, documents, the job
@@ -103,9 +103,21 @@ different.
    docker compose run --rm db-restore latest --from-bucket
    ```
 
-   `latest --from-bucket` downloads the newest `database/…dump.enc` whose
+   `latest --from-bucket` downloads the newest dump of this instance whose
    manifest is in the bucket too, opens both with `BACKUP_ENCRYPTION_KEY`
    and restores. Name a dump instead of `latest` to take an older one.
+   Each instance uploads under its own folder, `database/<host of APP_URL>/`,
+   so set `APP_URL` as on the old server. A bucket shared with another
+   instance holds its dumps too: `latest` refuses rather than take one of
+   those, and `list --from-bucket` marks them. To restore one on purpose
+   (after moving to a new domain, the old one), add
+   `--instance=<old host>`, or name the dump by its full key,
+   `database/<host>/healthlog-….dump.enc`.
+
+   The opened copy is a whole database, decrypted, in a scratch directory
+   beside the backups. The restore removes it when it ends, on Ctrl-C and
+   `docker compose stop` too. One left by a restore that was killed outright
+   is removed when the next restore starts, and by the nightly retention.
 
    With the files in hand instead (copied off the host, or downloaded from
    the bucket with your own tools: both `<name>.dump.enc` and

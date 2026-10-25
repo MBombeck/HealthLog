@@ -52,6 +52,8 @@ import {
   resolveDailyKeep,
   selectForDeletion,
   verifyArchive,
+  instanceIdFromEnv,
+  listBucketDumps,
   type DirectoryProbe,
   type DumpSet,
   type Env,
@@ -781,6 +783,81 @@ describe("finding a dump in the bucket", () => {
     expect(
       bucketConfigFromEnv({ ...env, BACKUP_S3_SECRET_KEY: "" }),
     ).toBeNull();
+  });
+});
+
+describe("dumps of more than one instance in one bucket", () => {
+  it("names the instance by the host of its public URL", () => {
+    expect(instanceIdFromEnv({ APP_URL: "https://Health.Example.org/" })).toBe(
+      "health.example.org",
+    );
+    expect(
+      instanceIdFromEnv({ NEXT_PUBLIC_APP_URL: "http://10.0.0.5:3000" }),
+    ).toBe("10.0.0.5-3000");
+    expect(instanceIdFromEnv({ APP_URL: "not a url" })).toBeNull();
+    expect(instanceIdFromEnv({})).toBeNull();
+    expect(offhostObjectKey("x.dump.enc", "health.example.org")).toBe(
+      "database/health.example.org/x.dump.enc",
+    );
+    expect(offhostObjectKey("x.dump.enc")).toBe("database/x.dump.enc");
+  });
+
+  it("takes the newest dump of this instance, never another's, unless named", () => {
+    const pair = (folder: string, stamp: string) => [
+      `database/${folder}healthlog-${stamp}-daily.dump.enc`,
+      `database/${folder}healthlog-${stamp}-daily.manifest.json.enc`,
+    ];
+    const keys = [
+      ...pair("prod.example/", "20261024T013000Z"),
+      // Newer, and another instance's.
+      ...pair("staging.example/", "20261025T013000Z"),
+      ...pair("", "20261023T013000Z"),
+    ];
+    expect(pickBucketDump(keys, null, "prod.example")?.dumpKey).toBe(
+      "database/prod.example/healthlog-20261024T013000Z-daily.dump.enc",
+    );
+    expect(pickBucketDump(keys, null, "nobody.example")).toBeNull();
+    // The dumps of an instance with no public URL, at the top.
+    expect(pickBucketDump(keys, null, null)?.dumpKey).toBe(
+      "database/healthlog-20261023T013000Z-daily.dump.enc",
+    );
+    // Named by its full key: on purpose.
+    expect(
+      pickBucketDump(
+        keys,
+        "database/staging.example/healthlog-20261025T013000Z-daily.dump.enc",
+        "prod.example",
+      )?.manifestKey,
+    ).toBe(
+      "database/staging.example/healthlog-20261025T013000Z-daily.manifest.json.enc",
+    );
+    expect(listBucketDumps(keys).map((d) => d.instance)).toEqual([
+      "staging.example",
+      "prod.example",
+      null,
+    ]);
+  });
+});
+
+describe("a restore's decrypted scratch", () => {
+  it("is swept by retention once it is older than a restore can run", async () => {
+    const dir = tempDir();
+    const { mkdirSync, existsSync } = await import("node:fs");
+    for (const name of [".restore-old", ".download-old", ".restore-new"]) {
+      mkdirSync(join(dir, name));
+      writeFileSync(join(dir, name, "x.dump"), "PGDMP");
+    }
+    const old = new Date(Date.now() - 13 * 60 * 60 * 1000);
+    utimesSync(join(dir, ".restore-old"), old, old);
+    utimesSync(join(dir, ".download-old"), old, old);
+    mkdirSync(join(dir, "not-ours"));
+    utimesSync(join(dir, "not-ours"), old, old);
+
+    await applyRetention(dir, { dailyKeep: 7 });
+    expect(existsSync(join(dir, ".restore-old"))).toBe(false);
+    expect(existsSync(join(dir, ".download-old"))).toBe(false);
+    expect(existsSync(join(dir, ".restore-new"))).toBe(true);
+    expect(existsSync(join(dir, "not-ours"))).toBe(true);
   });
 });
 

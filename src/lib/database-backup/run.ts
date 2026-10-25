@@ -41,6 +41,7 @@ import {
   backupDirectoryStatus,
   createDatabaseDump,
   databaseBackupEnabled,
+  instanceIdFromEnv,
   offhostObjectKey,
   resolveBackupDir,
   resolveDailyKeep,
@@ -93,10 +94,11 @@ async function uploadFile(
   s3: S3Like,
   key: Buffer,
   path: string,
+  instanceId: string | null,
 ): Promise<number> {
   return uploadEncryptedBackup(
     s3,
-    offhostObjectKey(`${basename(path)}.enc`),
+    offhostObjectKey(`${basename(path)}.enc`, instanceId),
     key,
     async (write) => {
       for await (const chunk of createReadStream(path)) {
@@ -196,8 +198,21 @@ export async function runDatabaseBackup(
           const s3 = options.s3 ?? (await getS3Client(offhostConfig));
           // The manifest goes up first: a dump object in the bucket always
           // has the manifest a restore checks it against.
-          await uploadFile(s3, offhostConfig.encryptionKey, dump.manifestPath);
-          await uploadFile(s3, offhostConfig.encryptionKey, dump.dumpPath);
+          // Under this instance's own folder: a bucket may hold the copies
+          // of more than one instance (`instanceIdFromEnv`).
+          const instanceId = instanceIdFromEnv(env);
+          await uploadFile(
+            s3,
+            offhostConfig.encryptionKey,
+            dump.manifestPath,
+            instanceId,
+          );
+          await uploadFile(
+            s3,
+            offhostConfig.encryptionKey,
+            dump.dumpPath,
+            instanceId,
+          );
           report.offhost = "uploaded";
         } catch (err) {
           uploadError = `off-host upload failed: ${reason(err)}`;

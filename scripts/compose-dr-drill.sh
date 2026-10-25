@@ -323,8 +323,9 @@ else
     const [port, base, work] = process.argv.slice(1);
     const bucket = await core.openBucket({ ...core.bucketConfigFromEnv(process.env), endpoint: `http://127.0.0.1:${port}` });
     const name = `${base}.manifest.json.enc`;
-    await bucket.download(core.offhostObjectKey(name), join(work, name));
-    await core.decryptOffhostFile({ inPath: join(work, name), outPath: join(work, "manifest.json"), objectKey: core.offhostObjectKey(name), keys: core.offhostKeysFromEnv(process.env) });
+    const key = core.offhostObjectKey(name, core.instanceIdFromEnv(process.env));
+    await bucket.download(key, join(work, name));
+    await core.decryptOffhostFile({ inPath: join(work, name), outPath: join(work, "manifest.json"), objectKey: key, keys: core.offhostKeysFromEnv(process.env) });
   ' "$BUCKET_PORT" "$BASE" "$WORK") || fail "could not read the manifest from the bucket"
 fi
 node -e '

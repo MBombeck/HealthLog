@@ -3,7 +3,7 @@
  *
  *   docker compose run --rm db-restore list [directory]
  *   docker compose run --rm db-restore list --from-bucket
- *   docker compose run --rm db-restore latest [--from-bucket]
+ *   docker compose run --rm db-restore latest [--from-bucket] [--instance=<host>]
  *   docker compose run --rm db-restore <file> [--ignore-key-mismatch]
  *
  * Runs in the app image with plain `node` (no `tsx`, no source checkout), as
@@ -14,7 +14,16 @@
  * (`.manifest.json` or `.manifest.json.enc`) beside it. With `--from-bucket`
  * it fetches the pair from the bucket the `BACKUP_S3_*` variables name (the
  * newest for `latest`), which is the restore after the host and its local
- * dumps are gone.
+ * dumps are gone. Only this instance's dumps count there: the ones under
+ * `database/<host of APP_URL>/`. A bucket shared with another instance holds
+ * its dumps too, and `latest` refuses rather than restore one of them; name
+ * the other instance with `--instance=<host>` (after a move to a new
+ * domain, the old one) or the dump by its full key to restore it on purpose.
+ *
+ * A copy opened from the bucket is a whole database, decrypted, in a scratch
+ * directory beside the backups. It is removed when the restore ends, on
+ * Ctrl-C and `docker stop` too; one left by a restore that was killed outright
+ * is removed when the next restore starts, and by the nightly retention.
  *
  * In this order, and it stops at the first thing that is wrong, before it
  * writes anything:
@@ -32,6 +41,7 @@
  *
  * Exit 0 restored (or listed), 1 refused or failed, 2 usage.
  */
+import { rmSync } from "node:fs";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join } from "node:path";
@@ -62,6 +72,9 @@ import {
   openBucket,
   pickBucketDump,
   OFFHOST_DATABASE_PREFIX,
+  instanceIdFromEnv,
+  listBucketDumps,
+  removeStaleScratch,
 } from "../src/lib/database-backup/dump-core.mjs";
 import { shippedMigrations } from "./pending-migrations.mjs";
 
@@ -69,6 +82,33 @@ const out = (line = "") => console.log(line);
 const say = (line) => console.log(`db-restore: ${line}`);
 
 class Refusal extends Error {}
+
+/**
+ * The scratch directories this process holds, removed on the way out when a
+ * signal ends it before its own `finally` can.
+ */
+const liveScratch = new Set();
+
+async function makeScratch(dir, prefix) {
+  const path = await mkdtemp(
+    join(isWritableDirectory(dir) ? dir : tmpdir(), prefix),
+  );
+  liveScratch.add(path);
+  return path;
+}
+
+async function dropScratch(path) {
+  liveScratch.delete(path);
+  await rm(path, { recursive: true, force: true });
+}
+
+/** The instance whose bucket dumps count: `--instance=<host>`, else APP_URL's. */
+function bucketInstance(flags, env) {
+  const named = [...flags].find((f) => f.startsWith("--instance="));
+  return named
+    ? named.slice("--instance=".length) || null
+    : instanceIdFromEnv(env);
+}
 
 function mb(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
@@ -116,7 +156,7 @@ function listCommand(dir) {
  * The dump and manifest to restore: a local pair, or an encrypted pair
  * opened into `scratch`.
  */
-async function resolveInput(arg, dir, env) {
+async function resolveInput(arg, dir, env, objectKeys = null) {
   if (arg === "latest") {
     const set = listDumpSets(dir).find(
       (s) =>
@@ -163,19 +203,39 @@ async function resolveInput(arg, dir, env) {
       "this is an off-host copy and BACKUP_ENCRYPTION_KEY is not set; it cannot be opened without it",
     );
   }
-  const scratch = await mkdtemp(
-    join(isWritableDirectory(dir) ? dir : tmpdir(), ".restore-"),
-  );
+  const scratch = await makeScratch(dir, ".restore-");
+  // The name the copy had in the bucket is part of what its encryption is
+  // bound to. Fetched from the bucket here, it is known; a file downloaded by
+  // hand was under this instance's folder, or at the top of `database/`.
+  const instance = instanceIdFromEnv(env);
+  const keyCandidates = (fileName, fetched) =>
+    fetched
+      ? [fetched]
+      : [
+          ...(instance ? [offhostObjectKey(fileName, instance)] : []),
+          offhostObjectKey(fileName),
+        ];
+  const open = async (inPath, outPath, candidates) => {
+    let last;
+    for (const objectKey of candidates) {
+      try {
+        await decryptOffhostFile({ inPath, outPath, objectKey, keys });
+        return;
+      } catch (error) {
+        last = error;
+      }
+    }
+    throw last;
+  };
   try {
     let manifest;
     if (await statOrNull(encManifest)) {
       const opened = join(scratch, `${parsed.base}.manifest.json`);
-      await decryptOffhostFile({
-        inPath: encManifest,
-        outPath: opened,
-        objectKey: offhostObjectKey(basename(encManifest)),
-        keys,
-      });
+      await open(
+        encManifest,
+        opened,
+        keyCandidates(basename(encManifest), objectKeys?.manifest),
+      );
       manifest = parseManifest(JSON.parse(await readFile(opened, "utf8")));
     } else if (await statOrNull(plainManifest)) {
       manifest = parseManifest(
@@ -188,15 +248,10 @@ async function resolveInput(arg, dir, env) {
     }
     say(`opening the off-host copy ${name}...`);
     const dumpPath = join(scratch, `${parsed.base}.dump`);
-    await decryptOffhostFile({
-      inPath: path,
-      outPath: dumpPath,
-      objectKey: offhostObjectKey(name),
-      keys,
-    });
+    await open(path, dumpPath, keyCandidates(name, objectKeys?.dump));
     return { dumpPath, manifest, scratch };
   } catch (error) {
-    await rm(scratch, { recursive: true, force: true });
+    await dropScratch(scratch);
     throw error instanceof Refusal ? error : new Refusal(error.message);
   }
 }
@@ -206,7 +261,7 @@ async function resolveInput(arg, dir, env) {
  * a scratch directory: the newest pair for `latest`, the named one otherwise.
  * Answers the downloaded `.dump.enc` and the directory to remove afterwards.
  */
-async function downloadFromBucket(arg, dir, env) {
+async function downloadFromBucket(arg, dir, env, instance) {
   const config = bucketConfigFromEnv(env);
   if (!config) {
     throw new Refusal(
@@ -215,17 +270,34 @@ async function downloadFromBucket(arg, dir, env) {
   }
   const bucket = await openBucket(config);
   const keys = await bucket.list(OFFHOST_DATABASE_PREFIX);
-  const pick = pickBucketDump(keys, arg === "latest" ? null : basename(arg));
+  const pick = pickBucketDump(
+    keys,
+    arg === "latest"
+      ? null
+      : arg.startsWith(OFFHOST_DATABASE_PREFIX)
+        ? arg
+        : basename(arg),
+    instance,
+  );
   if (!pick) {
+    const folder = `${OFFHOST_DATABASE_PREFIX}${instance ? `${instance}/` : ""}`;
+    const others = [
+      ...new Set(
+        listBucketDumps(keys)
+          .filter((c) => c.instance !== instance)
+          .map((c) => c.instance ?? "(no instance, top of database/)"),
+      ),
+    ];
     throw new Refusal(
-      arg === "latest"
-        ? `no database dump with its manifest under ${OFFHOST_DATABASE_PREFIX} in bucket ${config.bucket}`
-        : `${basename(arg)} and its manifest are not both under ${OFFHOST_DATABASE_PREFIX} in bucket ${config.bucket}`,
+      (arg === "latest"
+        ? `no database dump of this instance (${instance ?? "APP_URL is not set"}) with its manifest under ${folder} in bucket ${config.bucket}`
+        : `${basename(arg)} and its manifest are not both under ${folder} in bucket ${config.bucket}`) +
+        (others.length > 0
+          ? `. The bucket holds dumps of: ${others.join(", ")}. To restore one of those on purpose, run again with --instance=<host> or name the dump by its full key.`
+          : ""),
     );
   }
-  const scratch = await mkdtemp(
-    join(isWritableDirectory(dir) ? dir : tmpdir(), ".download-"),
-  );
+  const scratch = await makeScratch(dir, ".download-");
   try {
     say(
       `downloading ${pick.dumpKey} and its manifest from ${config.bucket}...`,
@@ -236,28 +308,36 @@ async function downloadFromBucket(arg, dir, env) {
       join(scratch, basename(pick.manifestKey)),
     );
     await bucket.download(pick.dumpKey, dumpPath);
-    return { dumpPath, scratch };
+    return {
+      dumpPath,
+      scratch,
+      objectKeys: { dump: pick.dumpKey, manifest: pick.manifestKey },
+    };
   } catch (error) {
-    await rm(scratch, { recursive: true, force: true });
+    await dropScratch(scratch);
     throw new Refusal(
       `could not download from the bucket: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 }
 
-async function listBucketCommand(env) {
+async function listBucketCommand(flags, env) {
   const config = bucketConfigFromEnv(env);
   if (!config)
     throw new Refusal("--from-bucket needs the BACKUP_S3_* variables");
-  const keys = (await (await openBucket(config)).list(OFFHOST_DATABASE_PREFIX))
-    .filter((k) => k.endsWith(".dump.enc"))
-    .sort()
-    .reverse();
-  out(
-    `Dumps in bucket ${config.bucket} under ${OFFHOST_DATABASE_PREFIX}, newest first:`,
+  const instance = bucketInstance(flags, env);
+  const dumps = listBucketDumps(
+    await (await openBucket(config)).list(OFFHOST_DATABASE_PREFIX),
   );
-  for (const key of keys) out(`  ${key}`);
-  if (keys.length === 0) say("none");
+  out(
+    `Dumps in bucket ${config.bucket} under ${OFFHOST_DATABASE_PREFIX}, newest first (this instance: ${instance ?? "APP_URL is not set"}):`,
+  );
+  for (const dump of dumps) {
+    out(
+      `  ${dump.dumpKey}${dump.instance === instance ? "" : "  (another instance)"}`,
+    );
+  }
+  if (dumps.length === 0) say("none");
   return 0;
 }
 
@@ -266,18 +346,35 @@ async function restoreCommand(arg, flags, env) {
   const databaseUrl = env.DATABASE_URL;
   if (!databaseUrl) throw new Refusal("DATABASE_URL is not set");
 
+  // A decrypted copy a killed restore left behind goes before anything else.
+  for (const path of await removeStaleScratch(dir, { olderThanMs: 0 })) {
+    say(
+      `removed ${basename(path)}, left behind by a restore that did not finish`,
+    );
+  }
+
   let input = arg;
   let download = null;
   if (flags.has("--from-bucket")) {
-    download = await downloadFromBucket(arg, dir, env);
+    download = await downloadFromBucket(
+      arg,
+      dir,
+      env,
+      bucketInstance(flags, env),
+    );
     input = download.dumpPath;
   }
   let resolved;
   try {
-    resolved = await resolveInput(input, dir, env);
+    resolved = await resolveInput(
+      input,
+      dir,
+      env,
+      download ? download.objectKeys : null,
+    );
   } finally {
     // The sealed copy is not needed once it is opened (or failed to open).
-    if (download) await rm(download.scratch, { recursive: true, force: true });
+    if (download) await dropScratch(download.scratch);
   }
   const { dumpPath, manifest, scratch } = resolved;
   try {
@@ -380,7 +477,7 @@ async function restoreCommand(arg, flags, env) {
     );
     return 0;
   } finally {
-    if (scratch) await rm(scratch, { recursive: true, force: true });
+    if (scratch) await dropScratch(scratch);
   }
 }
 
@@ -389,13 +486,13 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
   const [command] = argv.filter((a) => !a.startsWith("--"));
   if (!command) {
     console.error(
-      "db-restore: usage: db-restore list [directory] | latest | <file> [--from-bucket] [--ignore-key-mismatch]",
+      "db-restore: usage: db-restore list [directory] | latest | <file> [--from-bucket [--instance=<host>]] [--ignore-key-mismatch]",
     );
     return 2;
   }
   try {
     if (command === "list" && flags.has("--from-bucket")) {
-      return await listBucketCommand(env);
+      return await listBucketCommand(flags, env);
     }
     if (command === "list") {
       const [, other] = argv.filter((a) => !a.startsWith("--"));
@@ -411,5 +508,18 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  // Ctrl-C or `docker stop` ends the process before its own `finally`: take
+  // the decrypted copy with it.
+  for (const [signal, code] of [
+    ["SIGINT", 130],
+    ["SIGTERM", 143],
+  ]) {
+    process.on(signal, () => {
+      for (const path of liveScratch) {
+        rmSync(path, { recursive: true, force: true });
+      }
+      process.exit(code);
+    });
+  }
   process.exit(await main());
 }

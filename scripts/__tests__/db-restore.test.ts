@@ -18,12 +18,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const tablesInTarget = vi.fn(async (): Promise<string[]> => []);
 const runTool = vi.fn(async () => "");
 const end = vi.fn(async () => {});
+/** What the stand-in bucket lists under `database/`; downloads are refused. */
+const bucketKeys = vi.fn(async (): Promise<string[]> => []);
+const downloads = vi.fn(async (key: string) => {
+  throw new Error(`no download in this test: ${key}`);
+});
 
 vi.mock("../../src/lib/database-backup/dump-core.mjs", async (original) => ({
   ...(await original<Record<string, unknown>>()),
   connect: async () => ({ query: async () => ({ rows: [] }), end }),
   listUserTables: () => tablesInTarget(),
   runTool: (...args: unknown[]) => runTool(...(args as [])),
+  openBucket: async () => ({
+    list: () => bucketKeys(),
+    download: (key: string) => downloads(key),
+  }),
 }));
 
 import { buildManifest } from "../../src/lib/database-backup/dump-core.mjs";
@@ -151,6 +160,50 @@ describe("db-restore refuses before it writes", () => {
     expect(await main(["latest", "--from-bucket"], env())).toBe(1);
     expect(errors.join("\n")).toMatch(/--from-bucket needs BACKUP_S3_ENDPOINT/);
     expect(runTool).not.toHaveBeenCalled();
+  });
+
+  // Two instances may share a bucket. `latest --from-bucket` took the newest
+  // dump in it, whichever instance wrote it.
+  it("does not take another instance's dump from a shared bucket unless told", async () => {
+    const bucketEnv = env({
+      APP_URL: "https://health.example.org",
+      BACKUP_S3_ENDPOINT: "https://bucket.example",
+      BACKUP_S3_BUCKET: "shared",
+      BACKUP_S3_ACCESS_KEY: "a",
+      BACKUP_S3_SECRET_KEY: "s",
+      BACKUP_ENCRYPTION_KEY: KEY_B,
+    });
+    const other =
+      "database/staging.example.org/healthlog-20261025T013000Z-daily";
+    bucketKeys.mockResolvedValue([
+      `${other}.dump.enc`,
+      `${other}.manifest.json.enc`,
+    ]);
+    expect(await main(["latest", "--from-bucket"], bucketEnv)).toBe(1);
+    expect(errors.join("\n")).toMatch(
+      /no database dump of this instance \(health\.example\.org\).*holds dumps of: staging\.example\.org.*--instance=/,
+    );
+    expect(downloads).not.toHaveBeenCalled();
+
+    // Told: the other instance's newest dump is fetched.
+    await main(
+      ["latest", "--from-bucket", "--instance=staging.example.org"],
+      bucketEnv,
+    );
+    expect(downloads).toHaveBeenCalledWith(`${other}.manifest.json.enc`);
+  });
+
+  it("removes a decrypted copy a killed restore left behind before it starts", async () => {
+    const { mkdirSync, existsSync } = await import("node:fs");
+    mkdirSync(join(dir, ".restore-abc123"));
+    writeFileSync(join(dir, ".restore-abc123", `${BASE}.dump`), "PGDMP");
+    mkdirSync(join(dir, ".download-def456"));
+    writeDump();
+    tablesInTarget.mockResolvedValue(["public.users"]);
+    await main(["latest"], env());
+    expect(existsSync(join(dir, ".restore-abc123"))).toBe(false);
+    expect(existsSync(join(dir, ".download-def456"))).toBe(false);
+    expect(lines.join("\n")).toMatch(/removed \.restore-abc123/);
   });
 
   it("lists what is there", async () => {
