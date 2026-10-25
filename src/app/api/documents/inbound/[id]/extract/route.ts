@@ -50,6 +50,7 @@ import {
   getClientIp,
   safeJson,
   sanitiseZodIssues,
+  isJsonContentType,
 } from "@/lib/api-response";
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 import { requireAiCapability } from "@/lib/ai/capabilities/gate";
@@ -152,7 +153,7 @@ export const POST = apiHandler(
 
     const background = prefersRespondAsync(request);
     const contentType = request.headers.get("content-type") ?? "";
-    if (contentType.includes("application/json")) {
+    if (isJsonContentType(contentType)) {
       // One body read for both JSON modes, BEFORE any bucket charge — a
       // malformed body never needs a refund because nothing was charged yet.
       const { data: body, error: jsonError } = await safeJson(request, {

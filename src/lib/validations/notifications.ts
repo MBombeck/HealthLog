@@ -75,6 +75,9 @@ function isPrivateIpv4(ip: [number, number, number, number]): boolean {
   if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12 RFC1918
   if (a === 192 && b === 168) return true; // 192.168.0.0/16 RFC1918
   if (a === 100 && b >= 64 && b <= 127) return true; // 100.64.0.0/10 CGNAT
+  if (a === 192 && b === 0 && ip[2] === 0) return true; // 192.0.0.0/24 IETF protocol assignments
+  if (a === 198 && (b === 18 || b === 19)) return true; // 198.18.0.0/15 benchmarking
+  if (a >= 224) return true; // 224/4 multicast, 240/4 reserved, broadcast
   return false;
 }
 
@@ -155,6 +158,14 @@ function embeddedIpv4(
     return [bytes[12], bytes[13], bytes[14], bytes[15]];
   }
 
+  // IPv4-translated (`::ffff:0:a.b.c.d`, RFC 2765).
+  if (
+    bytesEqual(bytes, 0, Array(8).fill(0)) &&
+    bytesEqual(bytes, 8, [0xff, 0xff, 0x00, 0x00])
+  ) {
+    return [bytes[12], bytes[13], bytes[14], bytes[15]];
+  }
+
   if (bytesEqual(bytes, 0, Array(12).fill(0))) {
     return [bytes[12], bytes[13], bytes[14], bytes[15]];
   }
@@ -219,6 +230,10 @@ export function isPublicIp(ip: string): boolean {
       return false;
     }
     if (bytes[0] === 0xfe && (bytes[1] & 0xc0) === 0x80) return false;
+    // Site-local (fec0::/10, deprecated but still routed inside some
+    // networks) and multicast (ff00::/8).
+    if (bytes[0] === 0xfe && (bytes[1] & 0xc0) === 0xc0) return false;
+    if (bytes[0] === 0xff) return false;
     if ((bytes[0] & 0xfe) === 0xfc) return false;
 
     const embedded = embeddedIpv4(bytes);
@@ -320,6 +335,9 @@ export function isPublicUrl(url: string): boolean {
     }
     let h = parsed.hostname.toLowerCase();
     if (h.startsWith("[") && h.endsWith("]")) h = h.slice(1, -1);
+    // A fully qualified name ends in a dot (`localhost.`, `foo.internal.`);
+    // the resolver treats it as the same name, so the denylist must too.
+    h = h.replace(/\.+$/, "");
 
     // Hostname denylist (literal strings).
     if (

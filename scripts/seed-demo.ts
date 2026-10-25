@@ -9,7 +9,9 @@
  * - 1 admin user (demo/demo123demo123)
  * - 90 days of measurements (weight, BP, pulse, resting HR, body fat,
  *   sleep, steps, fortnightly waist) — flat-or-improving trends,
- *   most-recent point from today
+ *   most-recent point from today; blood pressure has one busy stretch two
+ *   to three weeks back (about 144/91 for some ten days) that comes down
+ *   after a ramipril dose increase
  * - A full week of per-stage sleep nights (awake/REM/light(core)/deep),
  *   ~7.5 h each, including last night
  * - 90 days of body composition (fat/lean/muscle mass, total body water,
@@ -42,12 +44,13 @@
  *   temperature, period flow, fertile-window mucus/OPK, per-day symptoms,
  *   and a cached forward prediction
  * - Two practitioners, a knee arthroscopy with its operative report and
- *   discharge letter linked (small generated PDFs), its follow-up visit, and
- *   a check-up booked for tomorrow morning
+ *   discharge letter linked (small generated PDFs), its follow-up visit, the
+ *   blood-pressure visit that raised ramipril, and a check-up booked for
+ *   tomorrow morning
  * - An AI-configured Coach with five sample conversations spread from
  *   today back over a few weeks
- * - App settings (registration disabled, English locale, the key-backup
- *   step confirmed for the key the demo runs with)
+ * - App settings (registration disabled, English locale) and the recovery
+ *   kit confirmed for the keys the demo runs with
  * - A multi-year history before the 90-day window (about four and a half
  *   years) for the timeline and the day view: blood pressure in bursts with
  *   real gaps, weekly weight, phone steps, watch resting heart rate / HRV /
@@ -87,8 +90,14 @@ import {
   encrypt,
   encryptBytes,
   getActiveKeyId,
+  getConfiguredKeyIds,
   getKeyFingerprint,
 } from "../src/lib/crypto";
+import {
+  applicationKitKeys,
+  backupKitKeys,
+  tokenKitKeys,
+} from "../src/lib/recovery/kit-rules";
 import { ENVIRONMENT_LOCATION_AAD } from "../src/lib/crypto/encrypted-columns";
 import { withBriefingGeneratedAt } from "../src/lib/insights/briefing-generated-at";
 import { dailyStatsExternalId } from "../src/lib/measurements/apple-health-mapping";
@@ -403,19 +412,45 @@ async function bulkInsert(
 
 /**
  * A busy stretch inside the 90-day window, in days before "now": blood
- * pressure and pulse rise and settle again, and the mood dips with them.
- * Without it every short-window series was flat noise around its target and a
- * 7-day trend line over 30 days drew a straight line; with it the line has a
- * shape to follow. It ends well before today, so the latest readings, the
- * tiles and the stored texts still describe a settled, optimal band.
+ * pressure climbs over two days to about 144/91 and stays there for some ten
+ * days, pulse rises with it and the mood dips. At the family practice on
+ * `doseUp` ramipril goes from 5 to 10 mg, and over the following days the
+ * readings come back down to the settled band. Without it every short-window
+ * series was flat noise around its target, and on a blood-pressure axis that
+ * has to fit both systolic and diastolic, even a 15 mmHg swing read as a flat
+ * line. It ends a few days before today, so the latest readings, the tiles and
+ * the stored texts describe a settled, optimal band again.
+ *
+ * It is also no longer than this on purpose. The personal usual range is the
+ * median ± 3 MAD of the last 30 days: once the stretch fills about half of that
+ * window, the median lands on the stretch and the band reads something like
+ * 87-181 mmHg. Kept to this length the band stays around 107-132.
  */
-const BUSY_STRETCH = { from: 27, to: 12 } as const;
+const BUSY_STRETCH = { from: 21, peak: 19, doseUp: 11, settled: 6 } as const;
 
-/** 0 outside the busy stretch, rising smoothly to 1 at its middle. */
+/**
+ * Systolic, diastolic and pulse on top of the settled band at the stretch's
+ * height. The chart pads its axis and rounds it to even ticks: with systolic
+ * readings up to about 148 the 30-day axis runs 60 to 160 in steps of 20, one
+ * mmHg more and it jumps to 50 to 200 in steps of 50, which flattens the very
+ * rise the stretch is there to show. So the lift stops short of that.
+ */
+const BUSY_STRETCH_LIFT = { sys: 25, dia: 15, pulse: 6 } as const;
+
+/** Ramipril dose after the stretch, in mg (from 5 mg before it). */
+const RAMIPRIL_STRETCH_DOSE = 10;
+
+/**
+ * 0 outside the busy stretch, 1 while it holds: a smooth climb from `from` to
+ * `peak`, level until the dose change on `doseUp`, a smooth fall to `settled`.
+ */
 function busyStretch(daysBefore: number): number {
-  const { from, to } = BUSY_STRETCH;
-  if (daysBefore > from || daysBefore < to) return 0;
-  return Math.sin((Math.PI * (from - daysBefore)) / (from - to)) ** 2;
+  const { from, peak, doseUp, settled } = BUSY_STRETCH;
+  const smooth = (t: number) => t * t * (3 - 2 * t);
+  if (daysBefore >= from || daysBefore <= settled) return 0;
+  if (daysBefore > peak) return smooth((from - daysBefore) / (from - peak));
+  if (daysBefore >= doseUp) return 1;
+  return smooth((daysBefore - settled) / (doseUp - settled));
 }
 
 /** Pollen season bump: 0 outside `[from, to]`, peaking at `peak` mid-season. */
@@ -577,12 +612,14 @@ export async function seed() {
 
     // Weight: 86.5 → trending down to a stable ~82 (healthy BMI ~24.7 at 182cm)
     const weights = randomWalk(86.5, 82.0, span, 0.6);
-    // Systolic BP: 128 → settled in the optimal band ~118 (clamped)
+    // Systolic BP: 128 → settled in the optimal band ~118 (clamped). The day-
+    // to-day noise is kept small, so the 7-day trend over the busy stretch
+    // below draws an arc rather than jitter.
     const sysBP = randomWalk(
       128,
       118,
       span,
-      3,
+      1.2,
       VALUE_RANGES.BLOOD_PRESSURE_SYS,
       0.1,
     );
@@ -591,7 +628,7 @@ export async function seed() {
       82,
       76,
       span,
-      2.5,
+      1,
       VALUE_RANGES.BLOOD_PRESSURE_DIA,
       0.1,
     );
@@ -637,9 +674,21 @@ export async function seed() {
           Math.max(range.min, Math.round((series[i] + by) * 10) / 10),
         );
       };
-      lift(sysBP, busy * 12 + weekend * 2, VALUE_RANGES.BLOOD_PRESSURE_SYS);
-      lift(diaBP, busy * 7 + weekend * 1, VALUE_RANGES.BLOOD_PRESSURE_DIA);
-      lift(pulse, busy * 6, VALUE_RANGES.PULSE);
+      // A little reading-to-reading scatter on top of the slow walk, as a
+      // cuff has; the 7-day mean averages it out.
+      lift(
+        sysBP,
+        busy * BUSY_STRETCH_LIFT.sys + weekend * 1 + (Math.random() - 0.5) * 3,
+        VALUE_RANGES.BLOOD_PRESSURE_SYS,
+      );
+      lift(
+        diaBP,
+        busy * BUSY_STRETCH_LIFT.dia +
+          weekend * 0.5 +
+          (Math.random() - 0.5) * 2,
+        VALUE_RANGES.BLOOD_PRESSURE_DIA,
+      );
+      lift(pulse, busy * BUSY_STRETCH_LIFT.pulse, VALUE_RANGES.PULSE);
     }
     for (const series of [weights, restingHr]) {
       settleLatest(series);
@@ -647,7 +696,7 @@ export async function seed() {
     // Today's reading settles on the days after the busy stretch only, so it
     // describes the band the series came back to.
     for (const series of [sysBP, diaBP, pulse]) {
-      settleLatest(series, BUSY_STRETCH.to - 1);
+      settleLatest(series, BUSY_STRETCH.settled);
     }
 
     // Each series carries the source that writes it on a real account, the
@@ -1406,19 +1455,21 @@ export async function seed() {
     console.log("Creating medications...");
 
     // Medication 1: Ramipril (blood pressure). Started about three years
-    // back at 2.5 mg and raised to 5 mg a year later; the multi-year history
-    // section below writes the dose changes, a short sick-day pause and the
-    // intakes before the 90-day window. `starts_on` is the stated start the
-    // timeline lane draws from.
+    // back at 2.5 mg, raised to 5 mg a year later, and to 10 mg during the
+    // busy stretch inside the 90-day window; the multi-year history section
+    // below writes the dose changes, a short sick-day pause and the intakes
+    // before the 90-day window. `starts_on` is the stated start the timeline
+    // lane draws from.
     const med1Id = cuid();
     await client.query(
       `INSERT INTO medications (id, user_id, name, dose, active, notifications_enabled, starts_on, created_at, updated_at)
-       VALUES ($1, $2, 'Ramipril', '5mg', true, true, $3, $4, $4)`,
+       VALUES ($1, $2, 'Ramipril', $5, true, true, $3, $4, $4)`,
       [
         med1Id,
         userId,
         formatDate(daysAgo(RAMIPRIL_START_DAYS_AGO)),
         daysAgo(RAMIPRIL_START_DAYS_AGO),
+        `${RAMIPRIL_STRETCH_DOSE}mg`,
       ],
     );
     const sched1Id = cuid();
@@ -2311,6 +2362,16 @@ export async function seed() {
       reason: "Follow-up two weeks after the arthroscopy.",
       outcome: "Healing well, full range of motion. Physiotherapy continues.",
     });
+    // The visit that turned the busy stretch: ten days of high home readings,
+    // ramipril raised that morning.
+    await insertEncounter({
+      occurredAt: daysAgoAt(BUSY_STRETCH.doseUp, 8, 15),
+      status: "DONE",
+      kind: "ROUTINE",
+      practitionerId: familyPracticeId,
+      reason: "Home blood pressure high for about ten days.",
+      outcome: `Readings around 144/91 during a stressful stretch at work. Ramipril raised to ${RAMIPRIL_STRETCH_DOSE} mg, home readings again in two weeks.`,
+    });
     await insertEncounter({
       occurredAt: daysAgoAt(-1, 9, 30),
       status: "PLANNED",
@@ -2633,10 +2694,12 @@ export async function seed() {
       intakeRows,
     );
 
-    // The ramipril dose history and its sick-day pause.
+    // The ramipril dose history and its sick-day pause. The last step falls
+    // inside the 90-day window, on the day the busy stretch turns.
     for (const [n, value] of [
       [RAMIPRIL_START_DAYS_AGO, 2.5],
       [RAMIPRIL_DOSE_UP_DAYS_AGO, 5],
+      [BUSY_STRETCH.doseUp, RAMIPRIL_STRETCH_DOSE],
     ] as const) {
       await client.query(
         `INSERT INTO medication_dose_changes (id, medication_id, effective_from, dose_value, dose_unit, created_at)
@@ -3353,9 +3416,10 @@ export async function seed() {
             content: "How has my blood pressure been trending lately?",
           },
           answer(
-            "Your blood pressure has been settling nicely. After a higher " +
-              "stretch about three weeks ago, the morning readings have come back " +
-              "down into the optimal band, and " +
+            "Your blood pressure has come back down nicely. During the stressful " +
+              "stretch two to three weeks ago your morning readings sat around " +
+              "144/91 for about ten days; since ramipril went up to 10 mg they " +
+              "have eased back into the optimal band within about a week, and " +
               "your resting heart rate is sitting in a comfortable range too. " +
               "Keeping up the steady sleep and daily movement looks like it is " +
               "paying off — worth staying consistent with the morning measurements " +
@@ -3633,10 +3697,11 @@ export async function seed() {
         keyFindings: [
           {
             tone: "good",
-            headline: "Blood pressure has settled into the optimal range.",
+            headline: "Blood pressure is back in the optimal range.",
             detail:
-              "Your 30-day average is well inside the optimal band and lower " +
-              "than where the quarter began.",
+              "After a higher stretch two to three weeks ago and a ramipril " +
+              "dose increase, your readings have come back down below where " +
+              "the quarter began.",
             delta: "↓ ~10 mmHg",
             sourceWindow: "30d",
             sourceMetric: "bp",
@@ -3674,7 +3739,7 @@ export async function seed() {
         ],
       },
       trendAnnotations: {
-        bp: "Your systolic is trending down into the optimal band — a pattern worth keeping.",
+        bp: "After a higher stretch and a ramipril dose increase, your systolic has come back down into the optimal band.",
         weight:
           "Weight has levelled off after an earlier decline — a stable, healthy place to hold.",
         mood: "Mood has been on a quiet upward run across the quarter.",
@@ -3727,11 +3792,10 @@ export async function seed() {
       {
         scope: "blood-pressure",
         text:
-          "Your blood pressure is averaging about 118/76 over the last two " +
-          "weeks, back down after a busier stretch before that. It sits " +
-          "roughly 10 mmHg systolic below where this quarter started, " +
-          "comfortably inside the optimal band. That is a real, earned " +
-          "shift, not day-to-day noise. Keeping the morning " +
+          "Your blood pressure is back around 118/76 this week. Two to three " +
+          "weeks ago it climbed to about 144/91 and held there for about ten " +
+          "days; after ramipril went up to 10 mg it came down over the " +
+          "following days and now sits inside the optimal band again. Keeping the morning " +
           "readings on a steady schedule will make the trend even easier to " +
           "follow.",
       },
@@ -3846,8 +3910,9 @@ export async function seed() {
         period: "month",
         text:
           "Over the past month the gains from earlier in the quarter have " +
-          "become your new normal. Blood pressure has held in the optimal " +
-          "band rather than just dipping into it, weight has stabilised at a " +
+          "become your new normal. Blood pressure had one higher stretch, " +
+          "came back down after the ramipril dose went up and now sits in the " +
+          "optimal band again, weight has stabilised at a " +
           "healthy point, and resting heart rate has stayed low alongside " +
           "consistent daily activity. Sleep lengthened and steadied, and " +
           "your mood trend continued its quiet climb. The month reads less " +
@@ -3890,24 +3955,44 @@ export async function seed() {
 
     // ── App Settings ─────────────────────────
     console.log("Creating app settings...");
-    // The key-backup step is confirmed for the key the demo runs with, the
-    // same fields `POST /api/admin/encryption/key-backup/confirm` writes (key
-    // id + its public fingerprint, never the key). The demo account is an
-    // admin, so an unconfirmed step put a "Back up your encryption key"
-    // banner above the dashboard for every visitor, about a key no visitor
-    // can reach.
-    const activeKeyId = getActiveKeyId();
     await client.query(
-      `INSERT INTO app_settings (id, registration_enabled, default_locale,
-         encryption_key_backup_confirmed_at, encryption_key_backup_confirmed_key_id,
-         encryption_key_backup_confirmed_fingerprint, encryption_key_backup_confirmed_by_user_id)
-       VALUES ('singleton', false, 'en', NOW(), $1, $2, $3)
-       ON CONFLICT (id) DO UPDATE SET registration_enabled = false, default_locale = 'en',
-         encryption_key_backup_confirmed_at = EXCLUDED.encryption_key_backup_confirmed_at,
-         encryption_key_backup_confirmed_key_id = EXCLUDED.encryption_key_backup_confirmed_key_id,
-         encryption_key_backup_confirmed_fingerprint = EXCLUDED.encryption_key_backup_confirmed_fingerprint,
-         encryption_key_backup_confirmed_by_user_id = EXCLUDED.encryption_key_backup_confirmed_by_user_id`,
-      [activeKeyId, getKeyFingerprint(activeKeyId), userId],
+      `INSERT INTO app_settings (id, registration_enabled, default_locale)
+       VALUES ('singleton', false, 'en')
+       ON CONFLICT (id) DO UPDATE SET registration_enabled = false, default_locale = 'en'`,
+    );
+    // The recovery kit is confirmed for the keys the demo runs with, the same
+    // entries `POST /api/admin/recovery-kit/confirm` writes (key ids and
+    // public fingerprints, never a key). The demo account is an admin, so an
+    // unconfirmed kit put a "Save your recovery kit" banner above the
+    // dashboard for every visitor, about keys no visitor can reach. The seed
+    // writes no backup copies, so no retired key is needed.
+    const kitEntries = [
+      ...applicationKitKeys({
+        activeKeyId: getActiveKeyId(),
+        configuredKeyIds: getConfiguredKeyIds(),
+        fingerprintOf: getKeyFingerprint,
+        needs: {
+          stored: [],
+          unrecorded: { copies: 0, oldestAt: null },
+          offhost: [],
+          offhostExpirationDays: null,
+          retiredKeysStillNeeded: [],
+        },
+        now: new Date(),
+      }),
+      ...backupKitKeys(
+        process.env.BACKUP_ENCRYPTION_KEY,
+        process.env.BACKUP_ENCRYPTION_PREVIOUS_KEYS,
+      ),
+      ...tokenKitKeys(process.env.API_TOKEN_HMAC_KEY),
+    ].map(({ kind, id, fingerprint }) => ({ kind, id, fingerprint }));
+    await client.query(
+      `INSERT INTO recovery_kit_confirmations (id, confirmed_at, confirmed_by_user_id, entries)
+       VALUES ('singleton', NOW(), $1, $2::jsonb)
+       ON CONFLICT (id) DO UPDATE SET confirmed_at = EXCLUDED.confirmed_at,
+         confirmed_by_user_id = EXCLUDED.confirmed_by_user_id,
+         entries = EXCLUDED.entries`,
+      [userId, JSON.stringify(kitEntries)],
     );
 
     // ── Audit Log (some login entries) ──────
@@ -3962,7 +4047,7 @@ export async function seed() {
       `  Cycle: ${cycleLengths.length} cycles with BBT, flow, mucus/OPK, symptoms + a forecast`,
     );
     console.log(
-      `  Visits: knee arthroscopy (2 linked PDFs) + follow-up, check-up booked for tomorrow`,
+      `  Visits: knee arthroscopy (2 linked PDFs) + follow-up, a blood-pressure visit, check-up booked for tomorrow`,
     );
     console.log(`  Coach: ${coachConversations.length} conversations`);
     console.log(

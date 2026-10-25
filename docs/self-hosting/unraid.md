@@ -116,20 +116,22 @@ PostgreSQL container you installed in Step 1. Back that one up.
 
 `SESSION_COOKIE_SECURE=false` is required for plain-HTTP LAN installs
 (`http://tower:3000`). Left at its default, the session cookie carries the
-`Secure` flag, the browser refuses to send it over HTTP, and login appears to
-"do nothing" — the page reloads to the login screen with no error.
+`Secure` flag, which the browser would drop over HTTP. The login page says so
+before anything is sent: "Signing in cannot complete on this page".
 
 Set `SESSION_COOKIE_SECURE=true` (or leave it unset) only when a TLS reverse
 proxy serves HealthLog over HTTPS. In that case also point `NEXT_PUBLIC_APP_URL`
 and `APP_URL` at the public `https://` URL.
 
-## Back up your encryption key
+## Save the recovery kit
 
-Copy `ENCRYPTION_KEY` from the template into your password manager, then
-confirm it under Admin, Encryption (set `HEALTHLOG_PLATFORM=unraid` so the step
-opens on the Unraid instructions). A reinstall with a new key over the old
-database makes the data unreadable; HealthLog then refuses to serve and says
-so. See [Getting started](getting-started.md#back-up-your-encryption-key).
+Copy `ENCRYPTION_KEY`, `API_TOKEN_HMAC_KEY` and, with off-host copies,
+`BACKUP_ENCRYPTION_KEY` from the template into your password manager, then
+confirm the recovery kit under Admin, Encryption (set
+`HEALTHLOG_PLATFORM=unraid` so the kit opens on the Unraid instructions). A
+reinstall with a new key over the old database makes the data unreadable;
+HealthLog then refuses to serve and says so. See
+[Getting started](getting-started.md#save-the-recovery-kit).
 
 ## Updates
 

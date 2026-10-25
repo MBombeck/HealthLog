@@ -780,13 +780,13 @@
         "bmi": "kg/m²"
       }
     },
-    "keyBackupBanner": {
-      "title": "Maak een back-up van je versleutelingssleutel",
-      "body": "Zonder een kopie van de sleutel kunnen je gegevens na een herinstallatie niet worden hersteld. Het kost een minuutje.",
-      "action": "Stap openen"
-    },
     "quickAddSymptom": "Symptoom vastleggen",
-    "todayCardVisible": "Bovenste kaart tonen"
+    "todayCardVisible": "Bovenste kaart tonen",
+    "recoveryKitBanner": {
+      "title": "Bewaar je herstelkit",
+      "body": "Zonder kopieën van de sleutels die deze server gebruikt, kunnen de gegevens na een herinstallatie niet worden hersteld. Het kost een paar minuten.",
+      "action": "Kit openen"
+    }
   },
   "measurements": {
     "title": "Metingen",
@@ -8331,7 +8331,23 @@
         "restoreSkippedEnvironmentLocationCiphertext": "Locatie van een omgevingsperiode of -dag versleuteld met een sleutel die deze server niet heeft (versleuteld behouden, die dagen worden niet bijgewerkt)",
         "typePreWipe": "Voor het verwijderen van alle gegevens",
         "retentionNote": "De wekelijkse kopie wordt elke zondag vervangen. Een kopie die vóór 'Alle gegevens verwijderen' is gemaakt, wordt na {days} dagen verwijderd. Geüploade kopieën blijven tot hun account gewist wordt.",
-        "retentionNoteNoGrace": "De wekelijkse kopie wordt elke zondag vervangen. Geüploade kopieën blijven tot hun account gewist wordt."
+        "retentionNoteNoGrace": "De wekelijkse kopie wordt elke zondag vervangen. Geüploade kopieën blijven tot hun account gewist wordt.",
+        "database": {
+          "title": "Databasedump",
+          "lastGood": "Laatste geldige dump {when}, {size}, {where}.",
+          "whereBoth": "bewaard op deze server en extern",
+          "whereLocal": "bewaard op deze server",
+          "whereOffhost": "alleen extern",
+          "none": "Nog geen databasedump. De eerste wordt vannacht gemaakt.",
+          "failedTitle": "De laatste databasedump is mislukt",
+          "failedDescription": "{when}: {reason}",
+          "disabled": "Databasedumps staan uit (DB_BACKUP_ENABLED=false). Maak op een andere manier een back-up van de database.",
+          "noDirectoryOffhost": "Deze server kan niet schrijven naar {dir}, dus dumps gaan alleen extern en hier wordt er geen bewaard. Koppel het back-upvolume.",
+          "noDirectory": "Deze server kan niet schrijven naar {dir} en er is geen externe opslag ingesteld, dus er kan geen databasedump worden gemaakt. Koppel het back-upvolume.",
+          "retentionLocal": "Verwijderde accounts blijven in de dumps tot die verlopen: op deze server blijven de nieuwste {nights} bewaard.",
+          "retentionOffhost": "De levenscyclusregel van de bucket verwijdert externe kopieën na {days} dagen.",
+          "retentionOffhostMissing": "Geen levenscyclusregel in de bucket geldt voor database/, dus dumps daar, en de verwijderde accounts erin, worden nooit verwijderd. Voeg een regel voor dat voorvoegsel toe."
+        }
       },
       "danger-zone": {
         "title": "Gevarenzone",
@@ -8527,47 +8543,6 @@
       "title": "Dit deel van de pagina kon niet worden weergegeven",
       "description": "De rest van de pagina werkt nog; probeer het opnieuw of herlaad de pagina als het blijft mislukken."
     },
-    "keyBackup": {
-      "title": "Maak een back-up van je versleutelingssleutel",
-      "description": "Zonder een kopie van deze sleutel kunnen je versleutelde gegevens en de back-ups van deze server niet meer worden gelezen.",
-      "loading": "Status van de sleutelback-up laden…",
-      "loadError": "De status van de sleutelback-up kon niet worden geladen.",
-      "badgeDue": "Te doen",
-      "badgeDone": "Back-up gemaakt",
-      "keyId": "Actieve sleutel-ID",
-      "fingerprint": "Vingerafdruk",
-      "whatIsLost": "Bewaar een kopie van de sleutel ergens buiten deze server, bijvoorbeeld in een wachtwoordmanager. Als de server opnieuw wordt geïnstalleerd met een andere sleutel, weigert HealthLog te starten tot de oorspronkelijke sleutel terug is.",
-      "fingerprintHint": "De vingerafdruk bestaat uit de eerste 12 tekens van de SHA-256-hash van de sleutel. Hij identificeert de sleutel zonder deze prijs te geven, zodat je hem met je kopie kunt vergelijken.",
-      "checkLabel": "Mijn kopie controleren",
-      "checkButton": "Controleren",
-      "checkNote": "De sleutel die je plakt, wordt vergeleken met de actieve sleutel en daarna weggegooid. Hij wordt nooit opgeslagen of gelogd.",
-      "checkInsecureNote": "Deze pagina wordt niet via https:// geserveerd, dus de sleutel die je plakt gaat onversleuteld over het netwerk, net als je wachtwoord. Hij wordt vergeleken en weggegooid, nooit opgeslagen of gelogd.",
-      "checkMatches": "Je kopie komt overeen met de actieve sleutel.",
-      "checkNoMatch": "Je kopie komt niet overeen met de actieve sleutel. Controleer of je de hele waarde hebt gekopieerd.",
-      "checkFailed": "De controle is mislukt.",
-      "confirmButton": "Ik heb een back-up van deze sleutel gemaakt",
-      "confirmed": "Sleutelback-up bevestigd.",
-      "confirmFailed": "De bevestiging kon niet worden opgeslagen.",
-      "stale": "De sleutel van de server is gewijzigd sinds deze pagina is geladen. Controleer de nieuwe sleutel-ID en vingerafdruk en bevestig daarna opnieuw.",
-      "confirmedAt": "Bevestigd op {date}.",
-      "confirmedAtBy": "Bevestigd op {date} door {who}.",
-      "dueAgain": "Er is een back-up bevestigd voor sleutel {keyId}, maar de server gebruikt nu een andere sleutel. Maak een back-up van de huidige sleutel.",
-      "tileLabel": "Back-up van versleutelingssleutel",
-      "tileDue": "Niet bevestigd",
-      "tileDone": "Bevestigd",
-      "platform": {
-        "composeLabel": "Compose",
-        "composeWhere": "De sleutel is ENCRYPTION_KEY (of ENCRYPTION_KEYS) in het .env-bestand naast docker-compose.yml.",
-        "truenasLabel": "TrueNAS",
-        "truenasWhere": "Open Apps, selecteer HealthLog en kies Edit. De sleutel staat in het veld Encryption Key onder HealthLog Configuration; bij een app die via YAML is geïnstalleerd, is het ENCRYPTION_KEY in de omgevingsinstellingen.",
-        "coolifyLabel": "Coolify",
-        "coolifyWhere": "Open de applicatie in Coolify en kopieer ENCRYPTION_KEY uit de Environment Variables.",
-        "unraidLabel": "Unraid",
-        "unraidWhere": "Bewerk op het tabblad Docker de HealthLog-container en kopieer ENCRYPTION_KEY uit de template, of uit het .env-bestand van je Compose Manager-stack.",
-        "portainerLabel": "Portainer",
-        "portainerWhere": "Open de HealthLog-stack in Portainer en kopieer ENCRYPTION_KEY uit de omgevingsvariabelen."
-      }
-    },
     "keyMismatch": {
       "title": "HealthLog kan zijn gegevens niet openen",
       "body": "De versleutelingssleutel waarmee deze server is gestart, is niet de sleutel waarmee de database is geschreven. Om je gegevens te beschermen, levert HealthLog niets uit totdat dit is opgelost.",
@@ -8598,6 +8573,166 @@
       "defaultAboveCeiling": "Het standaardniveau kan niet hoger zijn dan het hoogste niveau.",
       "gapLabel": "Uren tussen het vernieuwen van kaarten na een synchronisatie (Standaard)",
       "gapHint": "Hele uren van 1 tot 48. Laat leeg om AI_SYNC_REGEN_GAP_HOURS te gebruiken, anders 6. Nu van kracht: {hours} u."
+    },
+    "recoveryKit": {
+      "title": "Herstelkit",
+      "description": "Elke sleutel die nodig is om deze server terug te zetten, met ID en vingerafdruk.",
+      "intro": "Bewaar van elke sleutel hieronder een kopie buiten deze server, bijvoorbeeld in een wachtwoordmanager. Zonder die kopieën kunnen een databasedump en een back-upkopie niet meer worden gelezen, en HealthLog weigert te starten als een benodigde sleutel ontbreekt.",
+      "loading": "Herstelkit laden…",
+      "loadError": "De herstelkit kon niet worden geladen.",
+      "badgeDue": "Te doen",
+      "badgeDone": "Bewaard",
+      "keyId": "ID",
+      "fingerprint": "Vingerafdruk",
+      "noFingerprint": "Niet op deze server",
+      "kind": {
+        "application": "Applicatiesleutel {id}",
+        "backup": "Sleutel voor externe back-ups",
+        "backupPrevious": "Vorige sleutel voor externe back-ups",
+        "token": "Tokensleutel"
+      },
+      "need": {
+        "active": "Versleutelt nieuwe gegevens.",
+        "configured": "Staat op deze server.",
+        "storedCopies": "Nodig voor {count} opgeslagen kopieën.",
+        "offhostUntil": "Nodig voor externe kopieën tot {date}.",
+        "offhostUnknown": "Nodig voor externe kopieën zolang de bucket ze bewaart.",
+        "backupActive": "Verzegelt elke nieuwe externe kopie.",
+        "backupPrevious": "Opent externe kopieën die vóór de laatste sleutelwissel zijn geschreven.",
+        "token": "Ondertekent sessies, tokens en deellinks. Zonder deze sleutel wordt iedereen afgemeld, maar gaan er geen gegevens verloren."
+      },
+      "source": "Ingesteld in {variable}.",
+      "status": {
+        "confirmed": "Bewaard",
+        "new": "Nog niet bewaard",
+        "notConfigured": "Niet op deze server",
+        "unreadable": "Geen geldige sleutel"
+      },
+      "notConfiguredHint": "Een back-up heeft deze sleutel nog nodig, maar deze server heeft hem niet. Alleen een kopie die je elders bewaart, kan die back-ups lezen. Bevestig de kit zodra je die kopie hebt.",
+      "unreadableHint": "De variabele is ingesteld, maar bevat geen geldige sleutel. Los dat op voordat je op de externe kopieën vertrouwt.",
+      "fingerprintHint": "De vingerafdruk bestaat uit de eerste 12 tekens van de SHA-256-hash van een sleutel. Hij identificeert de sleutel zonder deze prijs te geven, zodat je hem met je kopie kunt vergelijken.",
+      "whereTitle": "Waar de sleutels zijn ingesteld",
+      "platform": {
+        "composeLabel": "Compose",
+        "composeWhere": "De sleutels staan in het .env-bestand naast docker-compose.yml: ENCRYPTION_KEY of ENCRYPTION_KEYS, API_TOKEN_HMAC_KEY en, bij externe kopieën, BACKUP_ENCRYPTION_KEY.",
+        "truenasLabel": "TrueNAS",
+        "truenasWhere": "Open Apps, selecteer HealthLog en kies Edit. De sleutels staan onder HealthLog Configuration; bij een app die via YAML is geïnstalleerd, zijn het ENCRYPTION_KEY, API_TOKEN_HMAC_KEY en BACKUP_ENCRYPTION_KEY in de omgevingsinstellingen.",
+        "coolifyLabel": "Coolify",
+        "coolifyWhere": "Open de applicatie in Coolify en kopieer ENCRYPTION_KEY, API_TOKEN_HMAC_KEY en BACKUP_ENCRYPTION_KEY uit de Environment Variables.",
+        "unraidLabel": "Unraid",
+        "unraidWhere": "Bewerk op het tabblad Docker de HealthLog-container en kopieer ENCRYPTION_KEY, API_TOKEN_HMAC_KEY en BACKUP_ENCRYPTION_KEY uit de template, of uit het .env-bestand van je Compose Manager-stack.",
+        "portainerLabel": "Portainer",
+        "portainerWhere": "Open de HealthLog-stack in Portainer en kopieer ENCRYPTION_KEY, API_TOKEN_HMAC_KEY en BACKUP_ENCRYPTION_KEY uit de omgevingsvariabelen."
+      },
+      "restoreTitle": "Deze server terugzetten",
+      "restoreBody": "Installeer HealthLog met dezelfde sleutels, zet de nieuwste databasedump terug in een lege database en start dan de app. De handleiding loopt elke stap door.",
+      "restoreLink": "Handleiding voor noodherstel",
+      "checkLabel": "Mijn kopie controleren",
+      "checkKeyLabel": "Te controleren sleutel",
+      "checkValueLabel": "Jouw kopie van de sleutel",
+      "checkButton": "Controleren",
+      "checkNote": "De sleutel die je plakt, wordt vergeleken met die op deze server en daarna weggegooid. Hij wordt nooit opgeslagen of gelogd.",
+      "checkInsecureNote": "Deze pagina wordt niet via https:// geserveerd, dus de sleutel die je plakt gaat onversleuteld over het netwerk, net als je wachtwoord. Hij wordt vergeleken en weggegooid, nooit opgeslagen of gelogd.",
+      "checkMatches": "Je kopie komt overeen met deze sleutel.",
+      "checkNoMatch": "Je kopie komt niet overeen met deze sleutel. Controleer of je de hele waarde hebt gekopieerd.",
+      "checkFailed": "De controle is mislukt.",
+      "confirmButton": "Ik heb een kopie van elke sleutel",
+      "confirmed": "Herstelkit bevestigd.",
+      "confirmFailed": "De bevestiging kon niet worden opgeslagen.",
+      "stale": "De kit is gewijzigd sinds deze pagina is geladen. Controleer de sleutels die er nu in staan en bevestig daarna opnieuw.",
+      "confirmedAt": "Bevestigd op {date}.",
+      "confirmedAtBy": "Bevestigd op {date} door {who}.",
+      "dueAgain": "De kit is bevestigd op {date}. Hij vermeldt nu ook {keys}, die die bevestiging niet dekte. Bewaar van elk een kopie en bevestig opnieuw."
+    },
+    "recoveryReadiness": {
+      "title": "Herstelbaarheid",
+      "description": "Of deze server na verlies weer op te bouwen is, beoordeeld op basis van elke back-up die hij maakt.",
+      "loading": "Back-ups controleren…",
+      "loadError": "De herstelbaarheid kon niet worden geladen.",
+      "state": {
+        "ok": "Gereed",
+        "attention": "Aandacht nodig",
+        "failing": "In gevaar"
+      },
+      "signal": {
+        "database_dump": "Databasedump",
+        "weekly_copy": "Wekelijkse accountkopieën",
+        "offhost_copies": "Externe kopieën",
+        "restore_drill": "Hersteltest",
+        "offhost_setup": "Externe back-up",
+        "recovery_kit": "Herstelkit"
+      },
+      "at": {
+        "database_dump": "Nieuwste dump: {date}",
+        "weekly_copy": "Oudste accountkopie: {date}",
+        "offhost_copies": "Oudste externe kopie: {date}",
+        "restore_drill": "Laatste test: {date}",
+        "recovery_kit": "Bevestigd: {date}"
+      },
+      "dueBy": "Uiterlijk {date}",
+      "fix": {
+        "database_dump": "Back-ups openen",
+        "weekly_copy": "Back-ups openen",
+        "offhost_copies": "Back-ups openen",
+        "restore_drill": "Back-ups openen",
+        "offhost_setup": "Back-ups openen",
+        "recovery_kit": "Kit openen"
+      },
+      "reason": {
+        "database_dump": {
+          "not_available": "Deze versie plant geen databasedump in.",
+          "disabled": "De geplande databasedump staat uit, dus geen enkele kopie kan deze server opnieuw opbouwen. Verwijder DB_BACKUP_ENABLED of zet het op true en herstart HealthLog om hem weer aan te zetten.",
+          "unreadable": "De status van de databasedump kon niet worden gelezen.",
+          "never_succeeded": "Er is nog geen databasedump gelukt, en de laatste poging is mislukt.",
+          "never_ran": "In de {hours} uur sinds dumps zijn ingeschakeld, is er geen databasedump geschreven.",
+          "first_pending": "De eerste databasedump is nog niet uitgevoerd.",
+          "stale": "De nieuwste databasedump is {hours} uur oud.",
+          "last_failed": "De laatste databasedump is mislukt. De dump daarvoor is nog recent.",
+          "fresh": "De nieuwste databasedump is recent.",
+          "nowhere_to_write": "De dumpmap {directory} is niet beschrijfbaar en er is geen externe bucket ingesteld, dus er kan geen dump worden bewaard."
+        },
+        "weekly_copy": {
+          "no_accounts": "Er zijn nog geen accounts om te kopiëren.",
+          "stale": "De oudste wekelijkse kopie is {days} dagen oud. Achterlopende accounts: {accounts}.",
+          "never": "Een account heeft al {days} dagen geen wekelijkse kopie. Achterlopende accounts: {accounts}.",
+          "first_pending": "De eerste wekelijkse kopie wordt vroeg op zondag gemaakt.",
+          "fresh": "Elk account heeft een kopie van de afgelopen week."
+        },
+        "offhost_copies": {
+          "not_configured": "Er is geen externe bucket ingesteld.",
+          "stale": "Externe kopieën lopen meer dan twee nachten achter. Achterlopende accounts: {accounts}.",
+          "first_pending": "De nachtelijke run voor externe kopieën heeft nog geen enkel account bereikt.",
+          "fresh": "Elk account heeft een recente kopie in de externe bucket."
+        },
+        "restore_drill": {
+          "not_configured": "De test leest de externe bucket, en die is niet ingesteld.",
+          "not_run_yet": "De maandelijkse hersteltest is nog niet uitgevoerd.",
+          "failed": "De laatste hersteltest is mislukt: {failed} van {checked} kopieën konden niet worden teruggelezen.",
+          "failed_run": "De laatste hersteltest kon niet worden afgerond.",
+          "passed": "De laatste hersteltest heeft {checked} kopieën teruggelezen."
+        },
+        "offhost_setup": {
+          "configured": "Kopieën verlaten deze server elke nacht.",
+          "no_admin": "Er is nog geen beheerdersaccount.",
+          "not_configured": "Er is geen externe bucket ingesteld, dus elke kopie staat alleen op deze server.",
+          "not_configured_grace": "Er is nog geen externe bucket ingesteld, dus elke kopie staat alleen op deze server."
+        },
+        "recovery_kit": {
+          "confirmed": "Van elke sleutel die een herstel nodig heeft, wordt een kopie bewaard.",
+          "out_of_date": "De herstelkit vermeldt nu ook {keys}, die de laatste bevestiging niet dekte. Er is niets kapot: bewaar een kopie en bevestig de kit opnieuw.",
+          "no_admin": "Er is nog geen beheerdersaccount.",
+          "not_confirmed": "Niemand heeft een kopie bevestigd van de sleutels die een herstel nodig heeft: {keys}.",
+          "not_confirmed_grace": "Bewaar een kopie van de sleutels die een herstel nodig heeft: {keys}."
+        }
+      },
+      "recovered": {
+        "database_dump": "De databasedump is weer recent.",
+        "weekly_copy": "Elk account heeft weer een recente wekelijkse kopie.",
+        "offhost_copies": "Elk account heeft weer een recente externe kopie.",
+        "restore_drill": "De hersteltest is weer geslaagd.",
+        "offhost_setup": "Externe kopieën zijn nu ingesteld.",
+        "recovery_kit": "De herstelkit is weer bevestigd."
+      }
     }
   },
   "achievements": {
@@ -9065,6 +9200,14 @@
     "checkupReminders": {
       "title": "Herinneringen voor controles",
       "description": "Zet afzonderlijke herinneringen voor controles aan of uit."
+    },
+    "eventBackupHealth": "Status van back-ups",
+    "eventBackupHealthDesc": "Wordt verstuurd als een back-up stopt, achterloopt of weer bijgewerkt is. Alleen voor beheerders.",
+    "recoveryReadiness": {
+      "titleAttention": "Back-ups hebben aandacht nodig",
+      "titleFailing": "Back-ups lopen gevaar",
+      "titleReminder": "Back-ups lopen nog steeds gevaar",
+      "titleRecovered": "Back-ups zijn weer in orde"
     }
   },
   "i18n": {
@@ -11792,7 +11935,7 @@
       "dismiss": "Negeren",
       "empty": "Er kon niets uit dit document worden gelezen.",
       "unavailableBody": "Stel een AI-provider in om een titel, soort en datum voor te stellen.",
-      "unavailableLocalOcr": "Zet lokale OCR aan in de AI-instellingen om afbeeldingen op dit apparaat te lezen.",
+      "unavailableLocalOcr": "Zet “Scans op dit apparaat lezen” aan onder Instellingen → Modules → Labwaarden om afbeeldingen op dit apparaat te lezen.",
       "unavailableAction": "AI-instellingen openen",
       "errorGeneric": "Het document kon niet worden gelezen. Probeer het opnieuw.",
       "errorOcr": "Er kon geen tekst uit deze afbeelding worden gelezen.",
@@ -11805,11 +11948,12 @@
       "errorFileType": "Dit bestandstype kan niet worden gelezen.",
       "errorNotIndexed": "Laat het document eerst lezen en extraheer daarna.",
       "errorOutputLimit": "De AI-provider bereikte zijn uitvoerlimiet voordat hij één waarde teruggaf. Probeer een model dat langere antwoorden toestaat.",
-      "errorLocalOcrDisabled": "Zet eerst lokale OCR aan in de AI-instellingen.",
+      "errorLocalOcrDisabled": "Zet eerst “Scans op dit apparaat lezen” aan onder Instellingen → Modules → Labwaarden.",
       "errorProvider": "Hiervoor is geen AI-provider ingesteld.",
       "errorTextImageOnly": "Lokale OCR leest alleen afbeeldingen, niet dit bestand.",
       "errorConsent": "Voor het lezen van documenten met AI is eerst je toestemming nodig.",
-      "errorUnavailable": "Documenten lezen met AI is hier op dit moment niet beschikbaar."
+      "errorUnavailable": "Documenten lezen met AI is hier op dit moment niet beschikbaar.",
+      "unavailableLocalOcrAction": "Instellingen voor labwaarden openen"
     },
     "summary": {
       "summarise": "Samenvatten",

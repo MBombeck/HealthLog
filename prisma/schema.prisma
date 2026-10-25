@@ -5489,21 +5489,6 @@ model AppSettings {
   documentMaxFileBytes Int    @default(26214400) @map("document_max_file_bytes")
   documentQuotaBytes   BigInt @default(1073741824) @map("document_quota_bytes")
 
-  // The operator's confirmation that the encryption key is backed up, bound to
-  // the key it was given for: the active key id and its fingerprint (the first
-  // twelve hex characters of SHA-256 over the raw key bytes). A rotation or a
-  // re-keyed install changes either one, and the step is due again. Never the
-  // key itself. Written by `POST /api/admin/encryption/key-backup/confirm`;
-  // consumer: `readKeyBackupStatus` (the admin step, the overview tile and the
-  // dashboard banner for admins).
-  encryptionKeyBackupConfirmedAt          DateTime? @map("encryption_key_backup_confirmed_at")
-  encryptionKeyBackupConfirmedKeyId       String?   @map("encryption_key_backup_confirmed_key_id")
-  encryptionKeyBackupConfirmedFingerprint String?   @map("encryption_key_backup_confirmed_fingerprint")
-  /// Plain id, not a relation: the instance row must not become user-scoped,
-  /// and a deleted admin leaves the confirmation standing. Consumer: the admin
-  /// step names who confirmed when the account still exists.
-  encryptionKeyBackupConfirmedByUserId    String?   @map("encryption_key_backup_confirmed_by_user_id")
-
   /// When this instance first stored a discovery finding under the seasonally
   /// adjusted correlation engine (v1.42). Stamped once, by the first
   /// `syncAcceptedPatterns` run of a discovery family, before it writes; null
@@ -5926,6 +5911,70 @@ model OffhostBackupKeyUse {
   @@map("offhost_backup_key_use")
 }
 
+/// The monthly restore drill's last result, one row for the instance. pg-boss
+/// forgets a failed run after seven days and the failing-jobs card looks back
+/// 72 hours, so the drill's verdict lives here for as long as it is the last
+/// one. Written by `recordRestoreDrillOutcome` at the end of every drill that
+/// had something to check; consumer: `readRecoveryReadiness` (the readiness
+/// tile and the hourly evaluation).
+model RestoreDrillOutcome {
+  id                String    @id @default("singleton")
+  /// When the last drill finished. Consumer: the tile's drill row.
+  lastRunAt         DateTime  @map("last_run_at")
+  /// When a drill last passed every object it checked. A failure stays the
+  /// verdict until a later success. Consumer: the readiness model.
+  lastSuccessAt     DateTime? @map("last_success_at")
+  /// When a drill last failed. Consumer: the readiness model.
+  lastFailureAt     DateTime? @map("last_failure_at")
+  /// One line naming why, already redacted. Consumer: the tile's drill row.
+  lastFailureReason String?   @map("last_failure_reason")
+  /// Objects the last drill checked and how many of them failed. Consumer:
+  /// the tile's drill row.
+  accountsChecked   Int       @default(0) @map("accounts_checked")
+  accountsFailed    Int       @default(0) @map("accounts_failed")
+
+  @@map("restore_drill_outcomes")
+}
+
+/// Per readiness signal, the state the admins were last notified about. The
+/// hourly evaluation compares the current state against it: a change to
+/// attention or failing notifies once, a failing signal is reminded at most
+/// once a day, and a return to ok is announced once. The update is a
+/// compare-and-set on both columns, so two workers never send the same
+/// notice. Written and read by `notifyReadinessChanges`.
+model RecoveryReadinessNotice {
+  /// The signal's id (`database_dump`, `weekly_copy`, …).
+  signal        String    @id
+  /// `ok`, `attention` or `failing`; null until anything was announced.
+  notifiedState String?   @map("notified_state")
+  notifiedAt    DateTime? @map("notified_at")
+  /// Since when the evaluation has seen the signal apply (not `inactive`);
+  /// cleared when it stops applying. Consumer: the readiness model, which
+  /// judges a dump that has never been attempted against it.
+  watchedSince  DateTime? @map("watched_since")
+
+  @@map("recovery_readiness_notices")
+}
+
+/// The recovery kit an admin confirmed: every key a restore needs, by kind,
+/// id and fingerprint, never the key itself. The kit is due again as soon as
+/// a key it needs is not in this set (a rotation, a new backup key). Written
+/// by `POST /api/admin/recovery-kit/confirm`; consumer: `readRecoveryKit`
+/// (the kit card, the dashboard banner for admins and the readiness model).
+model RecoveryKitConfirmation {
+  id                String   @id @default("singleton")
+  confirmedAt       DateTime @map("confirmed_at")
+  /// Plain id, not a relation: the instance row must not become user-scoped,
+  /// and a deleted admin leaves the confirmation standing. Consumer: the kit
+  /// card names who confirmed while the account still exists.
+  confirmedByUserId String?  @map("confirmed_by_user_id")
+  /// `[{ kind, id, fingerprint }]`, validated on read
+  /// (`parseKitEntries`). Consumer: `assessRecoveryKit`.
+  entries           Json
+
+  @@map("recovery_kit_confirmations")
+}
+
 /// An account whose off-host copies have to leave the bucket: it was deleted,
 /// or its data was wiped. Written in the same transaction as the deletion, so
 /// the request cannot be lost between the two, and deleted once every object
@@ -5953,6 +6002,35 @@ model OffhostPurgeRequest {
 
   @@index([requestedAt])
   @@map("offhost_purge_requests")
+}
+
+/// One run of the nightly whole-database dump (the `database-backup` job):
+/// whether a dump was written on this server and copied off-host, and why not
+/// when it was not. Instance metadata, not an account's data. Written by
+/// `runDatabaseBackup`; read by `getDatabaseBackupHealth`, which feeds the
+/// database row of the admin backups card and the backup alerts. A row left
+/// `running` by a process that died is read as a failed run once the job's
+/// expiry has passed.
+model DatabaseBackupRun {
+  id            String    @id @default(cuid())
+  startedAt     DateTime  @map("started_at")
+  finishedAt    DateTime? @map("finished_at")
+  /// `running`, `succeeded`, `failed` or `skipped`.
+  status        String
+  /// The dump's file name, once one was written and checked.
+  fileName      String?   @map("file_name")
+  /// Size of the dump in bytes.
+  dumpBytes     BigInt?   @map("dump_bytes")
+  /// `written` (kept in DB_BACKUP_DIR), `no_directory` (no writable
+  /// directory, the dump went off-host only), or `failed`.
+  localResult   String    @map("local_result")
+  /// `uploaded`, `not_configured` or `failed`.
+  offhostResult String    @map("offhost_result")
+  /// Why the run failed or was skipped, trimmed. Never key material.
+  error         String?
+
+  @@index([startedAt])
+  @@map("database_backup_runs")
 }
 
 // ─── Apple Health export.zip import (v1.4.34) ───────────────

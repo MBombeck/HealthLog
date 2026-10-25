@@ -112,6 +112,11 @@ Objects are named `YYYY-MM-DD/user-<id>.json.enc`: the record as JSON,
 gzipped and sealed with AES-256-GCM under `BACKUP_ENCRYPTION_KEY`, with the
 object's own name as associated data and the key's id in the header.
 
+The nightly database dump goes into the same bucket, as
+`database/healthlog-<time>-daily.dump.enc` with its manifest beside it, sealed
+the same way. It is the copy that rebuilds a lost server
+([disaster-recovery.md](disaster-recovery.md)).
+
 **Permissions.** The worker needs `PutObject`, `GetObject`, `ListBucket`,
 `DeleteObject` and `AbortMultipartUpload` (R2's Object Read & Write token covers
 them). It deletes only two things: the objects of an account that was erased or
@@ -121,8 +126,8 @@ Backups → Off-host. The admin wipe of every account deletes nothing in the
 bucket.
 
 **Retention.** The app never expires objects by age. Set a lifecycle rule on
-the bucket (for example, expire all objects after 30 days); Admin → Backups
-says when there is none.
+the bucket that covers both the account objects and `database/` (for example,
+expire all objects after 30 days); Admin → Backups says when there is none.
 
 **Checking it works.** Admin → Backups → Off-host shows, per account, when the
 last object landed: fresh, due (one night missed), stale (two missed), never,

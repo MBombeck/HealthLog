@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { AdminShell } from "@/components/admin/admin-shell";
+import { RecoveryReadinessCard } from "@/components/admin/recovery-readiness-card";
 import { SystemStatusSummary } from "@/components/admin/system-status-summary";
 import { VersionTileSection } from "@/components/admin/version-tile-section";
 import { RecentAuditPreview } from "@/components/admin/recent-audit-preview";
@@ -48,6 +49,9 @@ export default function AdminOverviewPage() {
         <VersionTileSection />
 
         <SystemStatusSummary />
+
+        {/* v1.46 — every backup signal, the recovery kit included. */}
+        <RecoveryReadinessCard />
 
         <RecentAuditPreview />
       </div>

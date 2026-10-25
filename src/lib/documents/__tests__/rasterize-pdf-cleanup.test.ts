@@ -6,10 +6,6 @@ const { destroyLoadingTask } = vi.hoisted(() => ({
   destroyLoadingTask: vi.fn(async () => undefined),
 }));
 
-vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
-vi.mock("../native-canvas-support", () => ({
-  nativeCanvasSupported: () => true,
-}));
 vi.mock("pdfjs-dist/legacy/build/pdf.mjs", () => ({
   getDocument: () => ({
     destroy: destroyLoadingTask,
@@ -42,19 +38,22 @@ vi.mock("pdfjs-dist/legacy/build/pdf.mjs", () => ({
   }),
 }));
 
-import { rasterizePdf } from "../rasterize-pdf";
+import { renderPdfPages } from "../pdf-engine.mjs";
 
-describe("rasterizePdf PDF.js lifecycle", () => {
+describe("renderPdfPages PDF.js lifecycle", () => {
   beforeEach(() => {
     destroyLoadingTask.mockClear();
   });
 
   it("destroys the loading task after rendering", async () => {
-    await expect(rasterizePdf(Buffer.from("synthetic"))).resolves.toMatchObject(
-      {
-        ok: true,
-      },
-    );
+    await expect(
+      renderPdfPages(Buffer.from("synthetic"), {
+        maxPages: 1,
+        targetLongEdge: 1600,
+        jpegQuality: 80,
+        minInkRatio: 0.0001,
+      }),
+    ).resolves.toMatchObject({ pageCount: 1 });
     expect(destroyLoadingTask).toHaveBeenCalledOnce();
   });
 });

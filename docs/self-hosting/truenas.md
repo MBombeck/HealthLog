@@ -20,7 +20,7 @@ database dataset and in one value you must keep yourself: the encryption key.
    ```
 
    Each run prints 64 hex characters. Put both in your password manager
-   before you continue; see [Back up your encryption key](#back-up-your-encryption-key).
+   before you continue; see [Save the recovery kit](#save-the-recovery-kit).
 
 2. Open Apps, Discover Apps, search for **HealthLog** and choose Install.
 3. Fill in the form:
@@ -49,9 +49,10 @@ HealthLog behind a reverse proxy with its own domain, change App URL to that
 
 Settings the form does not show go under Additional Environment Variables, for
 example `UPDATE_CHECK_DISABLED=1`. The full list is in
-[environment.md](environment.md). To use your own GeoLite2 databases, add the
-directory under Additional Storage and point `GEOLITE2_DIR` at its mount path
-([geolite2.md](geolite2.md)).
+[`.env.production.example`](../../.env.production.example) and on the
+[environment variables reference](https://docs.healthlog.dev/reference/environment-variables/).
+To use your own GeoLite2 databases, add the directory under Additional Storage
+and point `GEOLITE2_DIR` at its mount path ([geolite2.md](geolite2.md)).
 
 ## Plain HTTP on the LAN
 
@@ -61,7 +62,7 @@ and the login page says so before you type a password: "Signing in cannot
 complete on this page". Turn it on only when HealthLog is served over
 `https://`, and set App URL to that `https://` address.
 
-## Back up your encryption key
+## Save the recovery kit
 
 HealthLog encrypts tokens, notes, documents and in-database backups with the
 Encryption Key. The key is not stored in the database. If the app is deleted
@@ -75,9 +76,10 @@ password manager or another place outside the NAS.
 
 1. Open Apps, select HealthLog and choose Edit. The key is the Encryption Key
    field under HealthLog Configuration.
-2. Sign in as the admin and open Admin, Encryption. The **Back up your
-   encryption key** step shows the active key id and a fingerprint, the first
-   12 hex characters of SHA-256 over the key. Compare it with your copy:
+2. Sign in as the admin and open Admin, Encryption. The **Recovery kit** lists
+   every key a restore needs (the Encryption Key, the token key and, with
+   off-host copies, the backup key), each with an id and a fingerprint, the
+   first 12 hex characters of SHA-256 over the key. Compare it with your copy:
 
    ```bash
    echo -n "<your key>" | xxd -r -p | sha256sum | cut -c1-12
@@ -86,10 +88,10 @@ password manager or another place outside the NAS.
    or paste the copy into **Check my copy**. It is compared and dropped, never
    stored or logged.
 
-3. Press **I have backed up this key**. Until you do, admins see a reminder on
-   the dashboard. After a key rotation the step comes back for the new key.
+3. Press **I have a copy of every key**. Until you do, admins see a reminder on
+   the dashboard. After a key rotation or a new backup key the kit is due again.
 
-The catalog app sets `HEALTHLOG_PLATFORM=truenas`, so the step opens on these
+The catalog app sets `HEALTHLOG_PLATFORM=truenas`, so the kit opens on these
 instructions.
 
 ## Backups and restore
@@ -206,15 +208,15 @@ before you touch it.
 Until the catalog app is listed, install HealthLog with Apps, Discover Apps,
 the menu next to Custom App, Install via YAML, using these values:
 
-| Setting      | Value                                                                                    |
-| ------------ | ---------------------------------------------------------------------------------------- |
-| Image        | `ghcr.io/mbombeck/healthlog`, tag `X.Y.Z` (amd64 and arm64)                              |
-| Port         | `3000` (HTTP)                                                                            |
-| User         | runs as uid `1001` by default; no extra capabilities, `no-new-privileges` is fine        |
-| Health check | `GET /api/health`, `200` when ready                                                      |
-| Start period | at least 60 s, with more retries than the image's 5 × 30 s: migrations run at every boot |
-| Database     | PostgreSQL 18 (16 works too), no extensions, in its own container with its own dataset   |
-| Volumes      | none for the app; the database gets its own dataset                                      |
+| Setting      | Value                                                                                  |
+| ------------ | -------------------------------------------------------------------------------------- |
+| Image        | `ghcr.io/mbombeck/healthlog`, tag `X.Y.Z` (amd64 and arm64)                            |
+| Port         | `3000` (HTTP)                                                                          |
+| User         | runs as uid `1001` by default; no extra capabilities, `no-new-privileges` is fine      |
+| Health check | `GET /api/health`, `200` when ready                                                    |
+| Start period | 10 min, like the image: migrations run at every boot and wait out a held lock          |
+| Database     | PostgreSQL 18 (16 works too), no extensions, in its own container with its own dataset |
+| Volumes      | none for the app; the database gets its own dataset                                    |
 
 | Variable                | Required | Notes                                                                                    |
 | ----------------------- | -------- | ---------------------------------------------------------------------------------------- |
@@ -224,7 +226,7 @@ the menu next to Custom App, Install via YAML, using these values:
 | `NEXT_PUBLIC_APP_URL`   | yes      | the address people open, for example `http://truenas.local:30180`                        |
 | `APP_URL`               | yes      | the same address                                                                         |
 | `SESSION_COOKIE_SECURE` | no       | `false` for a LAN install served over plain `http://`; leave unset behind an HTTPS proxy |
-| `HEALTHLOG_PLATFORM`    | no       | `truenas`: the admin's key backup step opens on the TrueNAS instructions                 |
+| `HEALTHLOG_PLATFORM`    | no       | `truenas`: the admin's recovery kit opens on the TrueNAS instructions                    |
 
 `HEALTHLOG_PROCESS_TYPE` stays unset (`all`): one container serves the web app
 and runs the background jobs. In a YAML install the key sits in the

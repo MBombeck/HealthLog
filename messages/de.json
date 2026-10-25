@@ -780,13 +780,13 @@
         "bmi": "kg/m²"
       }
     },
-    "keyBackupBanner": {
-      "title": "Sichere deinen Verschlüsselungsschlüssel",
-      "body": "Ohne eine Kopie des Schlüssels lassen sich deine Daten nach einer Neuinstallation nicht wiederherstellen. Es dauert eine Minute.",
-      "action": "Zum Schritt"
-    },
     "quickAddSymptom": "Symptom erfassen",
-    "todayCardVisible": "Obere Karte anzeigen"
+    "todayCardVisible": "Obere Karte anzeigen",
+    "recoveryKitBanner": {
+      "title": "Wiederherstellungs-Kit sichern",
+      "body": "Ohne Kopien der Schlüssel, die dieser Server nutzt, lassen sich seine Daten nach einer Neuinstallation nicht wiederherstellen. Das dauert nur ein paar Minuten.",
+      "action": "Kit öffnen"
+    }
   },
   "measurements": {
     "title": "Messungen",
@@ -8331,7 +8331,23 @@
         "restoreSkippedEnvironmentLocationCiphertext": "Ort eines Umweltzeitraums oder -tags mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (verschlüsselt behalten, diese Tage werden nicht neu abgerufen)",
         "typePreWipe": "Vor dem Löschen aller Daten",
         "retentionNote": "Die wöchentliche Kopie wird jeden Sonntag ersetzt. Eine Kopie, die vor „Alle Daten löschen“ angelegt wurde, wird nach {days} Tagen gelöscht. Hochgeladene Kopien bleiben, bis ihr Konto gelöscht wird.",
-        "retentionNoteNoGrace": "Die wöchentliche Kopie wird jeden Sonntag ersetzt. Hochgeladene Kopien bleiben, bis ihr Konto gelöscht wird."
+        "retentionNoteNoGrace": "Die wöchentliche Kopie wird jeden Sonntag ersetzt. Hochgeladene Kopien bleiben, bis ihr Konto gelöscht wird.",
+        "database": {
+          "title": "Datenbank-Dump",
+          "lastGood": "Letzter gültiger Dump {when}, {size}, {where}.",
+          "whereBoth": "auf diesem Server und extern gespeichert",
+          "whereLocal": "auf diesem Server gespeichert",
+          "whereOffhost": "nur extern gespeichert",
+          "none": "Noch kein Datenbank-Dump. Der erste läuft heute Nacht.",
+          "failedTitle": "Der letzte Datenbank-Dump ist fehlgeschlagen",
+          "failedDescription": "{when}: {reason}",
+          "disabled": "Datenbank-Dumps sind abgeschaltet (DB_BACKUP_ENABLED=false). Sichere die Datenbank auf anderem Weg.",
+          "noDirectoryOffhost": "Dieser Server kann nicht nach {dir} schreiben. Dumps gehen deshalb nur extern, hier wird keiner aufbewahrt. Binde das Backup-Volume ein.",
+          "noDirectory": "Dieser Server kann nicht nach {dir} schreiben und es ist kein externer Speicher eingerichtet. Deshalb entsteht kein Datenbank-Dump. Binde das Backup-Volume ein.",
+          "retentionLocal": "Gelöschte Konten bleiben in den Dumps, bis diese aussortiert werden: Auf diesem Server bleiben die neuesten {nights}.",
+          "retentionOffhost": "Externe Kopien entfernt die Lebenszyklus-Regel des Buckets nach {days} Tagen.",
+          "retentionOffhostMissing": "Keine Lebenszyklus-Regel im Bucket gilt für database/. Dumps dort und die gelöschten Konten darin werden deshalb nie entfernt. Lege eine Regel für dieses Präfix an."
+        }
       },
       "danger-zone": {
         "title": "Gefahrenzone",
@@ -8527,47 +8543,6 @@
       "title": "Dieser Teil der Seite konnte nicht angezeigt werden",
       "description": "Der Rest der Seite funktioniert weiter; versuche es erneut oder lade neu, wenn es bleibt."
     },
-    "keyBackup": {
-      "title": "Sichere deinen Verschlüsselungsschlüssel",
-      "description": "Ohne eine Kopie dieses Schlüssels lassen sich deine verschlüsselten Daten und Sicherungen nie wieder lesen.",
-      "loading": "Status der Schlüsselsicherung wird geladen…",
-      "loadError": "Der Status der Schlüsselsicherung konnte nicht geladen werden.",
-      "badgeDue": "Offen",
-      "badgeDone": "Gesichert",
-      "keyId": "Aktive Schlüssel-ID",
-      "fingerprint": "Fingerabdruck",
-      "whatIsLost": "Bewahre eine Kopie des Schlüssels außerhalb dieses Servers auf, zum Beispiel in einem Passwortmanager. Wird der Server mit einem anderen Schlüssel neu installiert, nimmt HealthLog den Betrieb erst wieder auf, wenn der ursprüngliche Schlüssel zurück ist.",
-      "fingerprintHint": "Der Fingerabdruck sind die ersten 12 Zeichen des SHA-256-Hashes des Schlüssels. Er erkennt den Schlüssel, ohne ihn preiszugeben, damit du ihn mit deiner Kopie vergleichen kannst.",
-      "checkLabel": "Meine Kopie prüfen",
-      "checkButton": "Prüfen",
-      "checkNote": "Der eingefügte Schlüssel wird mit dem aktiven Schlüssel verglichen und danach verworfen. Er wird nie gespeichert oder protokolliert.",
-      "checkInsecureNote": "Diese Seite läuft nicht über https://, also geht der eingefügte Schlüssel unverschlüsselt über das Netz, genau wie dein Passwort. Er wird verglichen und verworfen, nie gespeichert oder protokolliert.",
-      "checkMatches": "Deine Kopie passt zum aktiven Schlüssel.",
-      "checkNoMatch": "Deine Kopie passt nicht zum aktiven Schlüssel. Prüfe, ob du den ganzen Wert kopiert hast.",
-      "checkFailed": "Die Prüfung ist fehlgeschlagen.",
-      "confirmButton": "Ich habe diesen Schlüssel gesichert",
-      "confirmed": "Schlüsselsicherung bestätigt.",
-      "confirmFailed": "Die Bestätigung konnte nicht gespeichert werden.",
-      "stale": "Der Schlüssel des Servers hat sich geändert, seit diese Seite geladen wurde. Prüfe die neue Schlüssel-ID und den Fingerabdruck und bestätige dann erneut.",
-      "confirmedAt": "Bestätigt am {date}.",
-      "confirmedAtBy": "Bestätigt am {date} von {who}.",
-      "dueAgain": "Für Schlüssel {keyId} wurde eine Sicherung bestätigt, aber der Server nutzt jetzt einen anderen Schlüssel. Sichere den aktuellen.",
-      "tileLabel": "Sicherung des Verschlüsselungsschlüssels",
-      "tileDue": "Nicht bestätigt",
-      "tileDone": "Bestätigt",
-      "platform": {
-        "composeLabel": "Compose",
-        "composeWhere": "Der Schlüssel ist ENCRYPTION_KEY (oder ENCRYPTION_KEYS) in der .env-Datei neben docker-compose.yml.",
-        "truenasLabel": "TrueNAS",
-        "truenasWhere": "Öffne Apps, wähle HealthLog, dann Bearbeiten. Der Schlüssel steht im Feld Encryption Key unter HealthLog Configuration; bei einer per YAML installierten App ist es ENCRYPTION_KEY in den Umgebungsvariablen.",
-        "coolifyLabel": "Coolify",
-        "coolifyWhere": "Öffne die Anwendung in Coolify und kopiere ENCRYPTION_KEY aus den Environment Variables.",
-        "unraidLabel": "Unraid",
-        "unraidWhere": "Bearbeite im Docker-Tab den HealthLog-Container und kopiere ENCRYPTION_KEY aus der Vorlage oder aus der .env deines Compose-Manager-Stacks.",
-        "portainerLabel": "Portainer",
-        "portainerWhere": "Öffne den HealthLog-Stack in Portainer und kopiere ENCRYPTION_KEY aus seinen Umgebungsvariablen."
-      }
-    },
     "keyMismatch": {
       "title": "HealthLog kann seine Daten nicht öffnen",
       "body": "Der Verschlüsselungsschlüssel, mit dem dieser Server gestartet wurde, ist nicht der, mit dem seine Datenbank geschrieben wurde. Zum Schutz deiner Daten liefert HealthLog nichts aus, bis das behoben ist.",
@@ -8598,6 +8573,166 @@
       "defaultAboveCeiling": "Die Standardstufe darf nicht über der höchsten Stufe liegen.",
       "gapLabel": "Stunden zwischen Karten-Erneuerungen nach einem Sync (Standard)",
       "gapHint": "Ganze Stunden von 1 bis 48. Leer lassen für AI_SYNC_REGEN_GAP_HOURS, sonst 6. Gerade wirksam: {hours} h."
+    },
+    "recoveryKit": {
+      "title": "Wiederherstellungs-Kit",
+      "description": "Jeder Schlüssel, den eine Wiederherstellung dieses Servers braucht, mit Kennung und Fingerabdruck.",
+      "intro": "Bewahre von jedem Schlüssel unten eine Kopie außerhalb dieses Servers auf, zum Beispiel in einem Passwortmanager. Ohne sie lassen sich weder ein Datenbank-Dump noch eine Sicherungskopie wieder lesen, und HealthLog startet nicht, wenn ein benötigter Schlüssel fehlt.",
+      "loading": "Wiederherstellungs-Kit wird geladen…",
+      "loadError": "Das Wiederherstellungs-Kit konnte nicht geladen werden.",
+      "badgeDue": "Offen",
+      "badgeDone": "Gesichert",
+      "keyId": "Kennung",
+      "fingerprint": "Fingerabdruck",
+      "noFingerprint": "Nicht auf diesem Server",
+      "kind": {
+        "application": "Anwendungsschlüssel {id}",
+        "backup": "Schlüssel für externe Sicherungen",
+        "backupPrevious": "Früherer Schlüssel für externe Sicherungen",
+        "token": "Token-Schlüssel"
+      },
+      "need": {
+        "active": "Verschlüsselt neue Daten.",
+        "configured": "Liegt auf diesem Server.",
+        "storedCopies": "Wird von {count} gespeicherten Kopien gebraucht.",
+        "offhostUntil": "Wird von externen Kopien bis {date} gebraucht.",
+        "offhostUnknown": "Wird von externen Kopien gebraucht, solange der Bucket sie aufbewahrt.",
+        "backupActive": "Versiegelt jede neue externe Kopie.",
+        "backupPrevious": "Öffnet externe Kopien, die vor dem letzten Schlüsselwechsel geschrieben wurden.",
+        "token": "Signiert Sitzungen, Tokens und Freigabelinks. Ohne ihn werden alle abgemeldet, Daten gehen aber nicht verloren."
+      },
+      "source": "Gesetzt in {variable}.",
+      "status": {
+        "confirmed": "Gesichert",
+        "new": "Noch nicht gesichert",
+        "notConfigured": "Nicht auf diesem Server",
+        "unreadable": "Kein gültiger Schlüssel"
+      },
+      "notConfiguredHint": "Eine Sicherung braucht diesen Schlüssel noch, aber dieser Server hat ihn nicht. Nur eine Kopie, die du anderswo aufbewahrst, kann diese Sicherungen lesen. Bestätige das Kit, sobald du diese Kopie hast.",
+      "unreadableHint": "Die Variable ist gesetzt, enthält aber keinen gültigen Schlüssel. Behebe das, bevor du dich auf die externen Kopien verlässt.",
+      "fingerprintHint": "Der Fingerabdruck besteht aus den ersten 12 Zeichen des SHA-256-Hashs eines Schlüssels. Er erkennt den Schlüssel, ohne ihn preiszugeben, sodass du ihn mit deiner Kopie vergleichen kannst.",
+      "whereTitle": "Wo die Schlüssel gesetzt sind",
+      "platform": {
+        "composeLabel": "Compose",
+        "composeWhere": "Die Schlüssel stehen in der .env-Datei neben docker-compose.yml: ENCRYPTION_KEY oder ENCRYPTION_KEYS, API_TOKEN_HMAC_KEY und, mit externen Kopien, BACKUP_ENCRYPTION_KEY.",
+        "truenasLabel": "TrueNAS",
+        "truenasWhere": "Öffne Apps, wähle HealthLog und dann Edit. Die Schlüssel stehen unter HealthLog Configuration; bei einer per YAML installierten App sind es ENCRYPTION_KEY, API_TOKEN_HMAC_KEY und BACKUP_ENCRYPTION_KEY in den Umgebungsvariablen.",
+        "coolifyLabel": "Coolify",
+        "coolifyWhere": "Öffne die Anwendung in Coolify und kopiere ENCRYPTION_KEY, API_TOKEN_HMAC_KEY und BACKUP_ENCRYPTION_KEY aus den Environment Variables.",
+        "unraidLabel": "Unraid",
+        "unraidWhere": "Bearbeite auf dem Docker-Tab den HealthLog-Container und kopiere ENCRYPTION_KEY, API_TOKEN_HMAC_KEY und BACKUP_ENCRYPTION_KEY aus der Vorlage oder aus der .env deines Compose-Manager-Stacks.",
+        "portainerLabel": "Portainer",
+        "portainerWhere": "Öffne den HealthLog-Stack in Portainer und kopiere ENCRYPTION_KEY, API_TOKEN_HMAC_KEY und BACKUP_ENCRYPTION_KEY aus den Umgebungsvariablen."
+      },
+      "restoreTitle": "Diesen Server wiederherstellen",
+      "restoreBody": "Installiere HealthLog mit denselben Schlüsseln, spiele den neuesten Datenbank-Dump in eine leere Datenbank ein und starte dann die App. Die Anleitung führt durch jeden Schritt.",
+      "restoreLink": "Anleitung zur Notfallwiederherstellung",
+      "checkLabel": "Meine Kopie prüfen",
+      "checkKeyLabel": "Zu prüfender Schlüssel",
+      "checkValueLabel": "Deine Kopie des Schlüssels",
+      "checkButton": "Prüfen",
+      "checkNote": "Der eingefügte Schlüssel wird mit dem auf diesem Server verglichen und danach verworfen. Er wird nie gespeichert oder protokolliert.",
+      "checkInsecureNote": "Diese Seite wird nicht über https:// ausgeliefert. Der eingefügte Schlüssel geht deshalb unverschlüsselt über das Netzwerk, genau wie dein Passwort. Er wird verglichen und verworfen, nie gespeichert oder protokolliert.",
+      "checkMatches": "Deine Kopie passt zu diesem Schlüssel.",
+      "checkNoMatch": "Deine Kopie passt nicht zu diesem Schlüssel. Prüfe, ob du den ganzen Wert kopiert hast.",
+      "checkFailed": "Die Prüfung ist fehlgeschlagen.",
+      "confirmButton": "Ich habe von jedem Schlüssel eine Kopie",
+      "confirmed": "Wiederherstellungs-Kit bestätigt.",
+      "confirmFailed": "Die Bestätigung konnte nicht gespeichert werden.",
+      "stale": "Das Kit hat sich geändert, seit die Seite geladen wurde. Prüfe die Schlüssel, die es jetzt aufführt, und bestätige erneut.",
+      "confirmedAt": "Bestätigt am {date}.",
+      "confirmedAtBy": "Bestätigt am {date} von {who}.",
+      "dueAgain": "Das Kit wurde am {date} bestätigt. Es führt jetzt auch {keys} auf, was diese Bestätigung nicht abgedeckt hat. Sichere von jedem eine Kopie und bestätige erneut."
+    },
+    "recoveryReadiness": {
+      "title": "Wiederherstellbarkeit",
+      "description": "Ob sich dieser Server nach einem Ausfall wiederherstellen ließe, beurteilt anhand jeder Sicherung, die er anlegt.",
+      "loading": "Sicherungen werden geprüft…",
+      "loadError": "Die Wiederherstellbarkeit konnte nicht geladen werden.",
+      "state": {
+        "ok": "Bereit",
+        "attention": "Braucht Aufmerksamkeit",
+        "failing": "Gefährdet"
+      },
+      "signal": {
+        "database_dump": "Datenbank-Dump",
+        "weekly_copy": "Wöchentliche Kontokopien",
+        "offhost_copies": "Externe Kopien",
+        "restore_drill": "Wiederherstellungsprobe",
+        "offhost_setup": "Externe Sicherung",
+        "recovery_kit": "Wiederherstellungs-Kit"
+      },
+      "at": {
+        "database_dump": "Neuester Dump: {date}",
+        "weekly_copy": "Älteste Kontokopie: {date}",
+        "offhost_copies": "Älteste externe Kopie: {date}",
+        "restore_drill": "Letzte Probe: {date}",
+        "recovery_kit": "Bestätigt: {date}"
+      },
+      "dueBy": "Fällig bis {date}",
+      "fix": {
+        "database_dump": "Sicherungen öffnen",
+        "weekly_copy": "Sicherungen öffnen",
+        "offhost_copies": "Sicherungen öffnen",
+        "restore_drill": "Sicherungen öffnen",
+        "offhost_setup": "Sicherungen öffnen",
+        "recovery_kit": "Kit öffnen"
+      },
+      "reason": {
+        "database_dump": {
+          "not_available": "Diese Version legt keinen geplanten Datenbank-Dump an.",
+          "disabled": "Der geplante Datenbank-Dump ist ausgeschaltet, daher kann keine Kopie diesen Server wieder aufbauen. Zum Wiedereinschalten DB_BACKUP_ENABLED entfernen oder auf true setzen und HealthLog neu starten.",
+          "unreadable": "Der Zustand des Datenbank-Dumps konnte nicht gelesen werden.",
+          "never_succeeded": "Noch kein Datenbank-Dump ist gelungen, und der letzte Versuch ist fehlgeschlagen.",
+          "never_ran": "In den {hours} Stunden, seit Dumps eingeschaltet sind, wurde kein Datenbank-Dump geschrieben.",
+          "first_pending": "Der erste Datenbank-Dump ist noch nicht gelaufen.",
+          "stale": "Der neueste Datenbank-Dump ist {hours} Stunden alt.",
+          "last_failed": "Der letzte Datenbank-Dump ist fehlgeschlagen. Der davor ist noch aktuell.",
+          "fresh": "Der neueste Datenbank-Dump ist aktuell.",
+          "nowhere_to_write": "Das Dump-Verzeichnis {directory} ist nicht beschreibbar und es ist kein externer Bucket eingerichtet, daher kann kein Dump aufbewahrt werden."
+        },
+        "weekly_copy": {
+          "no_accounts": "Es gibt noch keine Konten zum Kopieren.",
+          "stale": "Die älteste wöchentliche Kopie ist {days} Tage alt. Konten im Rückstand: {accounts}.",
+          "never": "Ein Konto hat seit {days} Tagen keine wöchentliche Kopie. Konten im Rückstand: {accounts}.",
+          "first_pending": "Die erste wöchentliche Kopie entsteht am frühen Sonntagmorgen.",
+          "fresh": "Jedes Konto hat eine Kopie aus der letzten Woche."
+        },
+        "offhost_copies": {
+          "not_configured": "Es ist kein externer Bucket eingerichtet.",
+          "stale": "Externe Kopien liegen mehr als zwei Nächte zurück. Konten im Rückstand: {accounts}.",
+          "first_pending": "Der nächtliche Lauf für externe Kopien hat noch kein Konto erreicht.",
+          "fresh": "Jedes Konto hat eine aktuelle Kopie im externen Bucket."
+        },
+        "restore_drill": {
+          "not_configured": "Die Probe liest den externen Bucket, und der ist nicht eingerichtet.",
+          "not_run_yet": "Die monatliche Wiederherstellungsprobe ist noch nicht gelaufen.",
+          "failed": "Die letzte Wiederherstellungsprobe ist fehlgeschlagen: {failed} von {checked} Kopien ließen sich nicht zurücklesen.",
+          "failed_run": "Die letzte Wiederherstellungsprobe konnte nicht zu Ende laufen.",
+          "passed": "Die letzte Wiederherstellungsprobe hat {checked} Kopien zurückgelesen."
+        },
+        "offhost_setup": {
+          "configured": "Kopien verlassen diesen Server jede Nacht.",
+          "no_admin": "Es gibt noch kein Admin-Konto.",
+          "not_configured": "Es ist kein externer Bucket eingerichtet, daher liegt jede Kopie nur auf diesem Server.",
+          "not_configured_grace": "Es ist noch kein externer Bucket eingerichtet, daher liegt jede Kopie nur auf diesem Server."
+        },
+        "recovery_kit": {
+          "confirmed": "Von jedem Schlüssel, den eine Wiederherstellung braucht, gibt es eine Kopie.",
+          "out_of_date": "Das Wiederherstellungs-Kit führt jetzt auch {keys} auf, was die letzte Bestätigung nicht abgedeckt hat. Nichts ist kaputt: Sichere eine Kopie und bestätige das Kit erneut.",
+          "no_admin": "Es gibt noch kein Admin-Konto.",
+          "not_confirmed": "Niemand hat eine Kopie der Schlüssel bestätigt, die eine Wiederherstellung braucht: {keys}.",
+          "not_confirmed_grace": "Sichere eine Kopie der Schlüssel, die eine Wiederherstellung braucht: {keys}."
+        }
+      },
+      "recovered": {
+        "database_dump": "Der Datenbank-Dump ist wieder aktuell.",
+        "weekly_copy": "Jedes Konto hat wieder eine aktuelle wöchentliche Kopie.",
+        "offhost_copies": "Jedes Konto hat wieder eine aktuelle externe Kopie.",
+        "restore_drill": "Die Wiederherstellungsprobe ist wieder bestanden.",
+        "offhost_setup": "Externe Kopien sind jetzt eingerichtet.",
+        "recovery_kit": "Das Wiederherstellungs-Kit ist wieder bestätigt."
+      }
     }
   },
   "achievements": {
@@ -9065,6 +9200,14 @@
     "checkupReminders": {
       "title": "Vorsorge-Erinnerungen",
       "description": "Schalte einzelne Vorsorge-Erinnerungen ein oder aus."
+    },
+    "eventBackupHealth": "Zustand der Sicherungen",
+    "eventBackupHealthDesc": "Wenn eine Sicherung ausbleibt, zurückfällt oder wieder läuft. Nur für Admins.",
+    "recoveryReadiness": {
+      "titleAttention": "Sicherungen brauchen Aufmerksamkeit",
+      "titleFailing": "Sicherungen sind gefährdet",
+      "titleReminder": "Sicherungen sind weiterhin gefährdet",
+      "titleRecovered": "Sicherungen laufen wieder normal"
     }
   },
   "i18n": {
@@ -11792,7 +11935,7 @@
       "dismiss": "Verwerfen",
       "empty": "Aus diesem Dokument konnte nichts gelesen werden.",
       "unavailableBody": "Richte einen KI-Anbieter ein, um Titel, Typ und Datum vorzuschlagen.",
-      "unavailableLocalOcr": "Aktiviere lokale Texterkennung in den KI-Einstellungen, um Bilder auf diesem Gerät zu lesen.",
+      "unavailableLocalOcr": "Schalte „Scans auf diesem Gerät lesen“ unter Einstellungen → Module → Labor ein, um Bilder auf diesem Gerät zu lesen.",
       "unavailableAction": "KI-Einstellungen öffnen",
       "errorGeneric": "Dokument konnte nicht gelesen werden. Bitte erneut versuchen.",
       "errorOcr": "Aus diesem Bild konnte kein Text gelesen werden.",
@@ -11805,11 +11948,12 @@
       "errorFileType": "Dieser Dateityp kann nicht gelesen werden.",
       "errorNotIndexed": "Lies das Dokument zuerst aus, dann extrahiere.",
       "errorOutputLimit": "Der KI-Anbieter hat sein Ausgabelimit erreicht, bevor er einen einzigen Wert geliefert hat. Versuche ein Modell, das längere Antworten erlaubt.",
-      "errorLocalOcrDisabled": "Aktiviere zuerst die lokale Texterkennung in den KI-Einstellungen.",
+      "errorLocalOcrDisabled": "Schalte zuerst „Scans auf diesem Gerät lesen“ unter Einstellungen → Module → Labor ein.",
       "errorProvider": "Dafür ist kein KI-Anbieter eingerichtet.",
       "errorTextImageOnly": "Lokale Texterkennung liest nur Bilder, nicht diese Datei.",
       "errorConsent": "Für das Lesen von Dokumenten mit KI brauchst du zuerst deine Einwilligung.",
-      "errorUnavailable": "Das Lesen von Dokumenten mit KI ist hier gerade nicht verfügbar."
+      "errorUnavailable": "Das Lesen von Dokumenten mit KI ist hier gerade nicht verfügbar.",
+      "unavailableLocalOcrAction": "Labor-Einstellungen öffnen"
     },
     "summary": {
       "summarise": "Zusammenfassen",

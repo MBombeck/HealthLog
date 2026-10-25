@@ -23,12 +23,7 @@
  */
 import { envOr } from "@/lib/env";
 import { Buffer } from "node:buffer";
-import {
-  createCipheriv,
-  createDecipheriv,
-  createHash,
-  randomBytes,
-} from "node:crypto";
+import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { Readable, Transform } from "node:stream";
 import { createGunzip, createGzip, gunzipSync, gzipSync } from "node:zlib";
 import type { PrismaClient } from "@/generated/prisma/client";
@@ -43,6 +38,13 @@ import { readOffhostCohort } from "./offhost-backup-cohort";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { envValue } from "@/lib/env";
 import { OFFHOST_BACKUP_QUEUE } from "./offhost-backup-queue";
+import { decodeBackupKey, offhostKeyId } from "./offhost-key";
+import {
+  LIFECYCLE_MISSING,
+  LIFECYCLE_UNKNOWN,
+  lifecycleFromRules,
+  type OffhostLifecycle,
+} from "./offhost-lifecycle";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
@@ -71,17 +73,6 @@ export class OffhostBackupNotConfiguredError extends Error {
     super(message);
     this.name = "OffhostBackupNotConfiguredError";
   }
-}
-
-function decodeBackupKey(raw: string): Buffer {
-  if (/^[0-9a-fA-F]{64}$/.test(raw)) return Buffer.from(raw, "hex");
-  if (/^[A-Za-z0-9+/=]+$/.test(raw)) {
-    const buf = Buffer.from(raw, "base64");
-    if (buf.length === 32) return buf;
-  }
-  throw new Error(
-    "BACKUP_ENCRYPTION_KEY must be 64 hex chars or 32-byte base64",
-  );
 }
 
 /**
@@ -197,11 +188,6 @@ export function offhostKeyRing(cfg: OffhostBackupConfig): OffhostKeyRing {
 
 function asKeyRing(key: Buffer | OffhostKeyRing): OffhostKeyRing {
   return Buffer.isBuffer(key) ? { active: key, previous: [] } : key;
-}
-
-/** The id a version-4 object records for the key it was written under. */
-export function offhostKeyId(key: Buffer): string {
-  return createHash("sha256").update(key).digest("hex").slice(0, 12);
 }
 
 function offhostAad(objectKey: string): Buffer {
@@ -493,9 +479,9 @@ function createEnvelopeStream(
   return { stream, bytes: () => written };
 }
 
-/** Produces the backup JSON in pieces. Every piece is written in order. */
+/** Produces the plaintext (JSON text, or a dump's bytes) in ordered pieces. */
 export type BackupJsonProducer = (
-  write: (chunk: string) => Promise<void>,
+  write: (chunk: string | Buffer) => Promise<void>,
 ) => Promise<unknown>;
 
 export interface UploadBackupOptions {
@@ -571,9 +557,9 @@ export async function uploadEncryptedBackup(
     },
   );
 
-  const write = async (chunk: string): Promise<void> => {
+  const write = async (chunk: string | Buffer): Promise<void> => {
     if (failure) throw failure;
-    if (gzip.write(chunk, "utf8")) return;
+    if (gzip.write(chunk, "utf8")) return; // a Buffer ignores the encoding
     await new Promise<void>((resolve, reject) => {
       const onDrain = (): void => {
         gzip.off("error", onError);
@@ -633,18 +619,7 @@ export interface S3Like {
   getLifecycle?(): Promise<OffhostLifecycle>;
 }
 
-/**
- * Whether the bucket retires old copies by itself.
- *
- * `configured` names the shortest expiry of an enabled rule; `missing` means
- * the bucket answered that it has no rule; `unknown` means it would not say
- * (a credential without `s3:GetLifecycleConfiguration`, a target that does not
- * implement the call, a network failure) and says nothing either way.
- */
-export interface OffhostLifecycle {
-  state: "configured" | "missing" | "unknown";
-  expirationDays: number | null;
-}
+export type { OffhostLifecycle } from "./offhost-lifecycle";
 
 export async function getS3Client(cfg: OffhostBackupConfig): Promise<S3Like> {
   // Dynamic import so unit tests + dev environments without the SDK don't fail.
@@ -764,13 +739,7 @@ export async function getS3Client(cfg: OffhostBackupConfig): Promise<S3Like> {
           }),
           { abortSignal: AbortSignal.timeout(5_000) },
         );
-        const days = (out.Rules ?? [])
-          .filter((rule) => rule.Status === "Enabled")
-          .map((rule) => rule.Expiration?.Days)
-          .filter((d): d is number => typeof d === "number" && d > 0);
-        return days.length > 0
-          ? { state: "configured", expirationDays: Math.min(...days) }
-          : { state: "missing", expirationDays: null };
+        return lifecycleFromRules(out.Rules ?? []);
       } catch (err) {
         const name = (err as { name?: string; Code?: string }).name;
         const code = (err as { Code?: string }).Code;
@@ -778,9 +747,9 @@ export async function getS3Client(cfg: OffhostBackupConfig): Promise<S3Like> {
           name === "NoSuchLifecycleConfiguration" ||
           code === "NoSuchLifecycleConfiguration"
         ) {
-          return { state: "missing", expirationDays: null };
+          return LIFECYCLE_MISSING;
         }
-        return { state: "unknown", expirationDays: null };
+        return LIFECYCLE_UNKNOWN;
       }
     },
   };
@@ -805,15 +774,13 @@ export async function probeOffhostLifecycle(
     return lifecycleCache.value;
   }
   const cfg = loadOffhostConfigSafe();
-  if (!cfg) return { state: "unknown", expirationDays: null };
+  if (!cfg) return LIFECYCLE_UNKNOWN;
   let value: OffhostLifecycle;
   try {
     const s3 = s3Override ?? (await getS3Client(cfg));
-    value = s3.getLifecycle
-      ? await s3.getLifecycle()
-      : { state: "unknown", expirationDays: null };
+    value = s3.getLifecycle ? await s3.getLifecycle() : LIFECYCLE_UNKNOWN;
   } catch {
-    value = { state: "unknown", expirationDays: null };
+    value = LIFECYCLE_UNKNOWN;
   }
   if (!s3Override) lifecycleCache = { at: now, value };
   return value;

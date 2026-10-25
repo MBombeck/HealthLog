@@ -6,7 +6,7 @@
  */
 import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { type Job, type JobWithMetadata } from "pg-boss";
-import { jobBudget } from "@/lib/jobs/job-budget";
+import { jobBudget, jobDeadline } from "@/lib/jobs/job-budget";
 import { recordError } from "@/lib/jobs/worker-status";
 import {
   BackupBlobTooLargeError,
@@ -28,6 +28,37 @@ import {
   readAccountsToTakeLast,
 } from "@/lib/jobs/backup-pass-attempts";
 import { DATA_BACKUP_QUEUE } from "@/lib/jobs/data-backup-policy";
+
+/**
+ * The nightly whole-database dump (`database-backup`).
+ *
+ * One `pg_dump` in a child process, so it is not in the heavy lane: the heap
+ * holds a part of the upload at a time, not the database. `pg_dump` is stopped
+ * at three quarters of the job's expiry (`jobDeadline`), so a dump that hangs
+ * on a lock ends as a failed run with its reason rather than an expired job.
+ * A skipped run (switched off, nowhere to put it) completes; the admin page
+ * and the boot summary carry why.
+ */
+export async function handleDatabaseBackup(
+  jobs: Job<Record<string, never>>[],
+): Promise<JobOutcome> {
+  return withBackgroundEvent("job.database_backup", async () => {
+    const { runDatabaseBackup } = await import("@/lib/database-backup/run");
+    const report = await runDatabaseBackup(getWorkerPrisma(), {
+      deadline: jobs[0] ? jobDeadline(jobs[0]) : undefined,
+    });
+    const did = {
+      database_backup_status: report.status,
+      database_backup_local: report.local,
+      database_backup_offhost: report.offhost,
+      database_backup_bytes: report.dumpBytes ?? 0,
+      database_backup_removed: report.removed,
+    };
+    return report.status === "failed"
+      ? jobFailed("database dump failed", report.error ?? undefined, did)
+      : jobDone(did);
+  });
+}
 
 export interface DataBackupPayload {
   triggeredAt: string;

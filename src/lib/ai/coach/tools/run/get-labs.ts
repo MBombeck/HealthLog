@@ -2,6 +2,7 @@ import { buildCoachSnapshot } from "@/lib/ai/coach/snapshot";
 import { buildLabsSnapshotBlock } from "@/lib/ai/coach/labs-snapshot";
 import type { CoachScope, CoachScopeWindow } from "@/lib/ai/coach/types";
 import type { CoachHistoryReach } from "@/lib/ai/coach/history-reach";
+import { isModuleEnabled } from "@/lib/modules/gate";
 import { getLabsArgsSchema } from "../definitions";
 import { subjectForTool } from "../availability";
 import { badArgs, emptyRead, pickSection, scopeFor } from "./shared";
@@ -16,6 +17,11 @@ export async function getLabs(
 ): Promise<CoachToolResult> {
   const parsed = getLabsArgsSchema.safeParse(rawArgs);
   if (!parsed.success) return badArgs("get_labs", parsed.error);
+  // The labs module off: said as such, not probed for rows (the block below
+  // would be empty and the availability probe would count lab rows).
+  if (!(await isModuleEnabled(userId, "labs"))) {
+    return { present: false, reason: "module_disabled" };
+  }
   // Labs ride the snapshot regardless of `sources` (attached unconditionally),
   // so a minimal scope still surfaces them.
   //

@@ -112,3 +112,22 @@ describe("every caller's fence opens and closes exactly once", () => {
     }
   });
 });
+
+describe("scrubFenceMarkers — any spelling of a marker", () => {
+  it("removes a marker written in another case or with spaces inside", () => {
+    for (const marker of ALL_FENCE_MARKERS) {
+      const name = marker.slice(3, -3);
+      for (const spelling of [
+        `<<<${name.toLowerCase()}>>>`,
+        `<<< ${name} >>>`,
+        `<<<\t${name[0]}${name.slice(1).toLowerCase()}\n>>>`,
+      ]) {
+        expect(scrubFenceMarkers(`a ${spelling} b`)).toBe("a  b");
+      }
+    }
+  });
+
+  it("leaves text without a marker alone", () => {
+    expect(scrubFenceMarkers("LDL << 3 >> HDL")).toBe("LDL << 3 >> HDL");
+  });
+});

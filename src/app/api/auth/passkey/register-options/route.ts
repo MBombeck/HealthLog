@@ -21,6 +21,7 @@ import {
   apiSuccess,
   getClientIp,
   safeJson,
+  isJsonContentType,
 } from "@/lib/api-response";
 import { apiHandler, requireCookieAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
@@ -32,7 +33,7 @@ const proofRequired = () =>
 export const POST = apiHandler(async (request: NextRequest) => {
   const { user, session } = await requireCookieAuth();
 
-  if (!request.headers.get("content-type")?.includes("application/json")) {
+  if (!isJsonContentType(request.headers.get("content-type"))) {
     return proofRequired();
   }
 

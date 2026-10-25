@@ -50,8 +50,8 @@ import {
   throwIfReproofRequired,
   useRecentProof,
 } from "@/components/settings/security-section/use-recent-proof";
-import { KeyBackupCard } from "./key-backup-card";
-import { useKeyBackupStatus } from "./use-key-backup-status";
+import { RecoveryKitCard } from "./recovery-kit-card";
+import { useRecoveryKit } from "./use-recovery-kit";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -101,7 +101,7 @@ export function EncryptionSection() {
 
   // Same query as the card's own (deduplicated by key): read here only to
   // know when the page can paint the cards below it in one step.
-  const keyBackup = useKeyBackupStatus();
+  const recoveryKit = useRecoveryKit();
   const statusQuery = useQuery({
     queryKey: queryKeys.adminEncryptionStatus(),
     queryFn: async (): Promise<EncryptionStatus> => {
@@ -158,14 +158,14 @@ export function EncryptionSection() {
   // downward the moment the status resolved. Same shape as
   // `coach-feedback-section.tsx`, which fixed this for itself and never had
   // the fix carried across.
-  // Until both reads land, only the key-backup card paints. It is the first
+  // Until both reads land, only the recovery kit card paints. It is the first
   // card and grows into its loaded shape with nothing under it yet; painting
-  // the coverage card below it while the backup card was still a one-line
-  // loader moved that card down the page when the backup status arrived.
-  if (statusQuery.isLoading || keyBackup.isLoading) {
+  // the coverage card below it while the kit was still a one-line loader
+  // moved that card down the page when the kit arrived.
+  if (statusQuery.isLoading || recoveryKit.isLoading) {
     return (
       <div className="space-y-6">
-        <KeyBackupCard />
+        <RecoveryKitCard />
       </div>
     );
   }
@@ -173,7 +173,7 @@ export function EncryptionSection() {
   if (statusQuery.isError || !statusQuery.data) {
     return (
       <div className="space-y-6">
-        <KeyBackupCard />
+        <RecoveryKitCard />
         <SettingsCard>
           <SettingsCardHeader
             icon={ShieldCheck}
@@ -208,7 +208,7 @@ export function EncryptionSection() {
   return (
     <div className="space-y-6">
       {recentProof.dialog}
-      <KeyBackupCard />
+      <RecoveryKitCard />
       {/* ── Coverage summary ───────────────────────────────────────── */}
       <SettingsCard>
         <SettingsCardHeader

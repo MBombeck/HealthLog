@@ -96,8 +96,9 @@ maintenance refuses to start while one is.
 
   Have at least twice the largest size free on the database volume.
 
-- **Take a backup** (Settings, Data, Backups), as before any operation on the
-  whole table.
+- **Take a backup**: a database dump, as in
+  [Updates](../self-hosting/getting-started.md#updates), as before any
+  operation on the whole table.
 
 ## Starting it
 

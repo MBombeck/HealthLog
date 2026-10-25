@@ -183,6 +183,7 @@ vi.mock("@/lib/tz/resolver", () => ({
 }));
 vi.mock("@/lib/modules/gate", () => ({
   resolveModuleMap: async () => ({}),
+  isModuleEnabled: async () => true,
 }));
 vi.mock("@/lib/ai/coach/persistence", () => ({
   readMessageResults: async () => null,

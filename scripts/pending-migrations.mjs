@@ -1,12 +1,11 @@
 /**
  * Boot-time notice before `prisma migrate deploy`: how many migrations this
- * image is about to apply, and a reminder to have a backup first.
+ * image is about to apply, and that a dump is taken first
+ * (`scripts/db-dump.mjs`, which imports `pendingMigrations` from here).
  *
  * Run by `docker-entrypoint.sh` as `node scripts/pending-migrations.mjs`.
  * It only reports. A migration that changes data cannot be undone by pulling
- * the previous image, so an operator who reads the count in the log still has
- * a moment to stop the container and take a `pg_dump`; the entrypoint does
- * not wait for that.
+ * the previous image; the dump the entrypoint takes next is the way back.
  *
  * Best effort by design: any failure to count (no `_prisma_migrations` table
  * yet is not a failure, it means every migration is pending) prints one line
@@ -67,9 +66,9 @@ export function pendingNotice(count) {
   const noun = count === 1 ? "migration" : "migrations";
   return (
     `HealthLog: ${count} database ${noun} pending. ` +
-    "Back up the database before updating (pg_dump, see the Updates section " +
-    "of docs/self-hosting/getting-started.md); a migration is not undone by " +
-    "going back to the previous image."
+    "Unless DB_BACKUP_BEFORE_MIGRATE=false, a pg_dump of the database is " +
+    "written to DB_BACKUP_DIR before they run (docs/ops/disaster-recovery.md); " +
+    "a migration is not undone by going back to the previous image."
   );
 }
 

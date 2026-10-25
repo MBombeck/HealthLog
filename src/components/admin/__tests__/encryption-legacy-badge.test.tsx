@@ -20,7 +20,7 @@ vi.mock("@tanstack/react-query", () => ({
   useMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
-vi.mock("../key-backup-card", () => ({ KeyBackupCard: () => null }));
+vi.mock("../recovery-kit-card", () => ({ RecoveryKitCard: () => null }));
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { ColumnCoverage, EncryptionSection } from "../encryption-section";

@@ -780,13 +780,13 @@
         "bmi": "kg/m²"
       }
     },
-    "keyBackupBanner": {
-      "title": "Back up your encryption key",
-      "body": "Without a copy of the key, your data cannot be recovered after a reinstall. It takes a minute.",
-      "action": "Open the step"
-    },
     "quickAddSymptom": "Log symptom",
-    "todayCardVisible": "Show the top card"
+    "todayCardVisible": "Show the top card",
+    "recoveryKitBanner": {
+      "title": "Save your recovery kit",
+      "body": "Without copies of the keys this server uses, its data cannot be recovered after a reinstall. It takes a few minutes.",
+      "action": "Open the kit"
+    }
   },
   "measurements": {
     "title": "Measurements",
@@ -8331,7 +8331,23 @@
         "restoreSkippedEnvironmentLocationCiphertext": "Location of an environment period or day sealed with a key this server does not hold (kept sealed, those days are not refreshed)",
         "typePreWipe": "Before all data was deleted",
         "retentionNote": "The weekly copy is replaced every Sunday. A copy taken before \"Delete all data\" is deleted after {days} days. Uploaded copies stay until their account is erased.",
-        "retentionNoteNoGrace": "The weekly copy is replaced every Sunday. Uploaded copies stay until their account is erased."
+        "retentionNoteNoGrace": "The weekly copy is replaced every Sunday. Uploaded copies stay until their account is erased.",
+        "database": {
+          "title": "Database dump",
+          "lastGood": "Last good dump {when}, {size}, {where}.",
+          "whereBoth": "kept on this server and off-host",
+          "whereLocal": "kept on this server",
+          "whereOffhost": "off-host only",
+          "none": "No database dump yet. The first one runs tonight.",
+          "failedTitle": "The last database dump failed",
+          "failedDescription": "{when}: {reason}",
+          "disabled": "Database dumps are switched off (DB_BACKUP_ENABLED=false). Back the database up another way.",
+          "noDirectoryOffhost": "This server cannot write to {dir}, so dumps go off-host only and none is kept here. Mount the backups volume.",
+          "noDirectory": "This server cannot write to {dir} and no off-host bucket is set, so no database dump can be taken. Mount the backups volume.",
+          "retentionLocal": "Deleted accounts stay in the dumps until those age out: the newest {nights} are kept on this server.",
+          "retentionOffhost": "Off-host copies are removed after {days} days by the bucket's lifecycle rule.",
+          "retentionOffhostMissing": "No lifecycle rule in the bucket covers database/, so dumps there, and the deleted accounts inside them, are never removed. Add a rule for that prefix."
+        }
       },
       "danger-zone": {
         "title": "Danger zone",
@@ -8527,47 +8543,6 @@
       "title": "This part of the page could not be shown",
       "description": "The rest of the page still works; try again or reload if it keeps failing."
     },
-    "keyBackup": {
-      "title": "Back up your encryption key",
-      "description": "Without a copy of this key, your encrypted data and this server's backups cannot be read again.",
-      "loading": "Loading the key backup status…",
-      "loadError": "Could not load the key backup status.",
-      "badgeDue": "To do",
-      "badgeDone": "Backed up",
-      "keyId": "Active key id",
-      "fingerprint": "Fingerprint",
-      "whatIsLost": "Keep a copy of the key somewhere outside this server, for example in a password manager. If the server is reinstalled with a different key, HealthLog refuses to start serving until the original key is back.",
-      "fingerprintHint": "The fingerprint is the first 12 characters of the SHA-256 hash of the key. It identifies the key without revealing it, so you can compare it with your copy.",
-      "checkLabel": "Check my copy",
-      "checkButton": "Check",
-      "checkNote": "The key you paste is compared with the active key and then discarded. It is never stored or logged.",
-      "checkInsecureNote": "This page is not served over https://, so the key you paste crosses the network unencrypted, just like your password does. It is compared and discarded, never stored or logged.",
-      "checkMatches": "Your copy matches the active key.",
-      "checkNoMatch": "Your copy does not match the active key. Check that you copied the whole value.",
-      "checkFailed": "The check failed.",
-      "confirmButton": "I have backed up this key",
-      "confirmed": "Key backup confirmed.",
-      "confirmFailed": "Could not save the confirmation.",
-      "stale": "The server's key changed since this page loaded. Check the new key id and fingerprint, then confirm again.",
-      "confirmedAt": "Confirmed on {date}.",
-      "confirmedAtBy": "Confirmed on {date} by {who}.",
-      "dueAgain": "A backup was confirmed for key {keyId}, but the server now uses another key. Back up the current one.",
-      "tileLabel": "Encryption key backup",
-      "tileDue": "Not confirmed",
-      "tileDone": "Confirmed",
-      "platform": {
-        "composeLabel": "Compose",
-        "composeWhere": "The key is ENCRYPTION_KEY (or ENCRYPTION_KEYS) in the .env file next to docker-compose.yml.",
-        "truenasLabel": "TrueNAS",
-        "truenasWhere": "Open Apps, select HealthLog and choose Edit. The key is the Encryption Key field under HealthLog Configuration; in an app installed via YAML, it is ENCRYPTION_KEY in the environment settings.",
-        "coolifyLabel": "Coolify",
-        "coolifyWhere": "Open the application in Coolify and copy ENCRYPTION_KEY from its Environment Variables.",
-        "unraidLabel": "Unraid",
-        "unraidWhere": "On the Docker tab, edit the HealthLog container and copy ENCRYPTION_KEY from the template, or from the .env of your Compose Manager stack.",
-        "portainerLabel": "Portainer",
-        "portainerWhere": "Open the HealthLog stack in Portainer and copy ENCRYPTION_KEY from its environment variables."
-      }
-    },
     "keyMismatch": {
       "title": "HealthLog cannot open its data",
       "body": "The encryption key this server was started with is not the key its database was written with. To protect your data, HealthLog does not serve anything until this is fixed.",
@@ -8598,6 +8573,166 @@
       "defaultAboveCeiling": "The default level cannot be above the highest level.",
       "gapLabel": "Hours between card refreshes after a sync (Standard)",
       "gapHint": "Whole hours from 1 to 48. Leave empty to use AI_SYNC_REGEN_GAP_HOURS, else 6. In effect now: {hours} h."
+    },
+    "recoveryKit": {
+      "title": "Recovery kit",
+      "description": "Every key a restore of this server needs, by id and fingerprint.",
+      "intro": "Keep a copy of each key below outside this server, for example in a password manager. Without them, neither a database dump nor a backup copy can be read again, and HealthLog refuses to start if a key it needs is missing.",
+      "loading": "Loading the recovery kit…",
+      "loadError": "Could not load the recovery kit.",
+      "badgeDue": "To do",
+      "badgeDone": "Saved",
+      "keyId": "Id",
+      "fingerprint": "Fingerprint",
+      "noFingerprint": "Not on this server",
+      "kind": {
+        "application": "Application key {id}",
+        "backup": "Off-host backup key",
+        "backupPrevious": "Previous off-host backup key",
+        "token": "Token key"
+      },
+      "need": {
+        "active": "Encrypts new data.",
+        "configured": "Held by this server.",
+        "storedCopies": "Needed by {count} stored copies.",
+        "offhostUntil": "Needed by off-host copies until {date}.",
+        "offhostUnknown": "Needed by off-host copies for as long as the bucket keeps them.",
+        "backupActive": "Seals every new off-host copy.",
+        "backupPrevious": "Opens off-host copies written before the last key change.",
+        "token": "Signs sessions, tokens and share links. Without it everyone is signed out, but no data is lost."
+      },
+      "source": "Set in {variable}.",
+      "status": {
+        "confirmed": "Saved",
+        "new": "Not saved yet",
+        "notConfigured": "Not on this server",
+        "unreadable": "Not a valid key"
+      },
+      "notConfiguredHint": "A backup still needs this key and this server does not hold it. Only a copy you keep elsewhere can read those backups. Confirm the kit once you have that copy.",
+      "unreadableHint": "The variable is set but does not hold a valid key. Fix it before you rely on the off-host copies.",
+      "fingerprintHint": "A fingerprint is the first 12 characters of the SHA-256 hash of a key. It identifies the key without revealing it, so you can compare it with your copy.",
+      "whereTitle": "Where the keys are set",
+      "platform": {
+        "composeLabel": "Compose",
+        "composeWhere": "The keys are in the .env file next to docker-compose.yml: ENCRYPTION_KEY or ENCRYPTION_KEYS, API_TOKEN_HMAC_KEY and, with off-host copies, BACKUP_ENCRYPTION_KEY.",
+        "truenasLabel": "TrueNAS",
+        "truenasWhere": "Open Apps, select HealthLog and choose Edit. The keys are under HealthLog Configuration; in an app installed via YAML, they are ENCRYPTION_KEY, API_TOKEN_HMAC_KEY and BACKUP_ENCRYPTION_KEY in the environment settings.",
+        "coolifyLabel": "Coolify",
+        "coolifyWhere": "Open the application in Coolify and copy ENCRYPTION_KEY, API_TOKEN_HMAC_KEY and BACKUP_ENCRYPTION_KEY from its Environment Variables.",
+        "unraidLabel": "Unraid",
+        "unraidWhere": "On the Docker tab, edit the HealthLog container and copy ENCRYPTION_KEY, API_TOKEN_HMAC_KEY and BACKUP_ENCRYPTION_KEY from the template, or from the .env of your Compose Manager stack.",
+        "portainerLabel": "Portainer",
+        "portainerWhere": "Open the HealthLog stack in Portainer and copy ENCRYPTION_KEY, API_TOKEN_HMAC_KEY and BACKUP_ENCRYPTION_KEY from its environment variables."
+      },
+      "restoreTitle": "Restoring this server",
+      "restoreBody": "Install HealthLog with the same keys, restore the newest database dump into an empty database, then start the app. The guide walks through each step.",
+      "restoreLink": "Disaster recovery guide",
+      "checkLabel": "Check my copy",
+      "checkKeyLabel": "Key to check",
+      "checkValueLabel": "Your copy of the key",
+      "checkButton": "Check",
+      "checkNote": "The key you paste is compared with the one this server holds and then discarded. It is never stored or logged.",
+      "checkInsecureNote": "This page is not served over https://, so the key you paste crosses the network unencrypted, just like your password does. It is compared and discarded, never stored or logged.",
+      "checkMatches": "Your copy matches this key.",
+      "checkNoMatch": "Your copy does not match this key. Check that you copied the whole value.",
+      "checkFailed": "The check failed.",
+      "confirmButton": "I have a copy of every key",
+      "confirmed": "Recovery kit confirmed.",
+      "confirmFailed": "Could not save the confirmation.",
+      "stale": "The kit changed since this page loaded. Check the keys it lists now, then confirm again.",
+      "confirmedAt": "Confirmed on {date}.",
+      "confirmedAtBy": "Confirmed on {date} by {who}.",
+      "dueAgain": "The kit was confirmed on {date}. It now also lists {keys}, which that confirmation did not cover. Save a copy of each and confirm again."
+    },
+    "recoveryReadiness": {
+      "title": "Recovery readiness",
+      "description": "Whether this server could be put back after a loss, judged from every backup it makes.",
+      "loading": "Checking the backups…",
+      "loadError": "Could not load the recovery readiness.",
+      "state": {
+        "ok": "Ready",
+        "attention": "Needs attention",
+        "failing": "At risk"
+      },
+      "signal": {
+        "database_dump": "Database dump",
+        "weekly_copy": "Weekly account copies",
+        "offhost_copies": "Off-host copies",
+        "restore_drill": "Restore drill",
+        "offhost_setup": "Off-host backup",
+        "recovery_kit": "Recovery kit"
+      },
+      "at": {
+        "database_dump": "Newest dump: {date}",
+        "weekly_copy": "Oldest account copy: {date}",
+        "offhost_copies": "Least recent off-host copy: {date}",
+        "restore_drill": "Last drill: {date}",
+        "recovery_kit": "Confirmed: {date}"
+      },
+      "dueBy": "Due by {date}",
+      "fix": {
+        "database_dump": "Open backups",
+        "weekly_copy": "Open backups",
+        "offhost_copies": "Open backups",
+        "restore_drill": "Open backups",
+        "offhost_setup": "Open backups",
+        "recovery_kit": "Open the kit"
+      },
+      "reason": {
+        "database_dump": {
+          "not_available": "This version does not schedule a database dump.",
+          "disabled": "The scheduled database dump is switched off, so no copy can rebuild this server. To turn it back on, remove DB_BACKUP_ENABLED or set it to true, then restart HealthLog.",
+          "unreadable": "The status of the database dump could not be read.",
+          "never_succeeded": "No database dump has succeeded yet, and the last attempt failed.",
+          "never_ran": "No database dump has been written in the {hours} hours since dumps were switched on.",
+          "first_pending": "The first database dump has not run yet.",
+          "stale": "The newest database dump is {hours} hours old.",
+          "last_failed": "The last database dump failed. The one before it is still recent.",
+          "fresh": "The newest database dump is recent.",
+          "nowhere_to_write": "The dump directory {directory} cannot be written to and no off-host bucket is set up, so no dump can be kept."
+        },
+        "weekly_copy": {
+          "no_accounts": "There are no accounts to copy yet.",
+          "stale": "The oldest weekly copy is {days} days old. Accounts behind: {accounts}.",
+          "never": "An account has had no weekly copy for {days} days. Accounts behind: {accounts}.",
+          "first_pending": "The first weekly copy is made early on Sunday.",
+          "fresh": "Every account has a copy from the last week."
+        },
+        "offhost_copies": {
+          "not_configured": "No off-host bucket is set up.",
+          "stale": "Off-host copies are more than two nights behind. Accounts behind: {accounts}.",
+          "first_pending": "The nightly off-host run has not reached any account yet.",
+          "fresh": "Every account has a recent copy in the off-host bucket."
+        },
+        "restore_drill": {
+          "not_configured": "The drill reads the off-host bucket, which is not set up.",
+          "not_run_yet": "The monthly restore drill has not run yet.",
+          "failed": "The last restore drill failed: {failed} of {checked} copies could not be read back.",
+          "failed_run": "The last restore drill could not finish.",
+          "passed": "The last restore drill read back {checked} copies."
+        },
+        "offhost_setup": {
+          "configured": "Copies leave this server every night.",
+          "no_admin": "There is no admin account yet.",
+          "not_configured": "No off-host bucket is set up, so every copy lives on this server only.",
+          "not_configured_grace": "No off-host bucket is set up yet, so every copy lives on this server only."
+        },
+        "recovery_kit": {
+          "confirmed": "A copy of every key a restore needs is kept.",
+          "out_of_date": "The recovery kit now also lists {keys}, which the last confirmation did not cover. Nothing is broken: save a copy and confirm the kit again.",
+          "no_admin": "There is no admin account yet.",
+          "not_confirmed": "Nobody has confirmed a copy of the keys a restore needs: {keys}.",
+          "not_confirmed_grace": "Save a copy of the keys a restore needs: {keys}."
+        }
+      },
+      "recovered": {
+        "database_dump": "The database dump is recent again.",
+        "weekly_copy": "Every account has a recent weekly copy again.",
+        "offhost_copies": "Every account has a recent off-host copy again.",
+        "restore_drill": "The restore drill passed again.",
+        "offhost_setup": "Off-host copies are set up now.",
+        "recovery_kit": "The recovery kit is confirmed again."
+      }
     }
   },
   "achievements": {
@@ -9065,6 +9200,14 @@
     "checkupReminders": {
       "title": "Checkup reminders",
       "description": "Switch individual checkup reminders on or off."
+    },
+    "eventBackupHealth": "Backup health",
+    "eventBackupHealthDesc": "When a backup stops, falls behind or recovers. Sent to admins only.",
+    "recoveryReadiness": {
+      "titleAttention": "Backups need attention",
+      "titleFailing": "Backups are at risk",
+      "titleReminder": "Backups are still at risk",
+      "titleRecovered": "Backups are back to normal"
     }
   },
   "i18n": {
@@ -11792,7 +11935,7 @@
       "dismiss": "Dismiss",
       "empty": "Nothing could be read from this document.",
       "unavailableBody": "Set up an AI provider to suggest a title, type, and date.",
-      "unavailableLocalOcr": "Turn on local OCR in the AI settings to read images on this device.",
+      "unavailableLocalOcr": "Turn on “Read scans on this device” under Settings → Modules → Labs to read images on this device.",
       "unavailableAction": "Open AI settings",
       "errorGeneric": "Couldn't read the document. Try again.",
       "errorOcr": "Couldn't read text from this image.",
@@ -11805,11 +11948,12 @@
       "errorFileType": "This file type can't be read.",
       "errorNotIndexed": "Read the document first, then extract.",
       "errorOutputLimit": "The AI provider reached its output limit before it returned a single value. Try a model that allows longer answers.",
-      "errorLocalOcrDisabled": "Turn on local OCR in the AI settings first.",
+      "errorLocalOcrDisabled": "Turn on “Read scans on this device” under Settings → Modules → Labs first.",
       "errorProvider": "No AI provider is set up for this.",
       "errorTextImageOnly": "Local OCR reads images only, not this file.",
       "errorConsent": "Reading documents with AI needs your consent first.",
-      "errorUnavailable": "Reading documents with AI is not available here right now."
+      "errorUnavailable": "Reading documents with AI is not available here right now.",
+      "unavailableLocalOcrAction": "Open lab settings"
     },
     "summary": {
       "summarise": "Summarise",

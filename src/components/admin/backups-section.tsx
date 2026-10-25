@@ -28,6 +28,7 @@ import type { BackupRow, BackupsList } from "@/types/backups";
 
 import { RestoreJobStatus, visibleRestoreJobs } from "./backup-restore-status";
 import { BackupRowsCards, BackupRowsTable } from "./backups/backup-rows";
+import { DatabaseDumpRow } from "./backups/database-dump-row";
 import { BackupUploadCard } from "./backups/backup-upload-card";
 import {
   RestoreRefusalNotice,
@@ -98,7 +99,7 @@ export function BackupsSection() {
             {/* External docs link — `noopener noreferrer` because this
                 leaves the admin shell. */}
             <a
-              href="https://docs.healthlog.dev/admin/backups"
+              href="https://docs.healthlog.dev/guides/backups/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary inline-flex items-center gap-1 underline-offset-2 hover:underline"
@@ -110,6 +111,14 @@ export function BackupsSection() {
         }
       />
 
+      {data?.database ? (
+        <DatabaseDumpRow
+          health={data.database}
+          bucketLifecycle={
+            data.offhost.configured ? data.offhost.lifecycle.database : null
+          }
+        />
+      ) : null}
       {data?.schedule ? (
         <ScheduleHealthNotice schedule={data.schedule} />
       ) : null}

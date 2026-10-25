@@ -51,6 +51,7 @@ export const NOTIFICATION_TAP_PATHS: Record<EventType, string | null> = {
   SECURITY_ALERT: "/settings/security",
   DAILY_BRIEFING: "/",
   SHARED_RECORD_INTAKE: "/medications",
+  BACKUP_HEALTH: "/admin/backups",
 };
 
 const MAX_PATH_LENGTH = 512;

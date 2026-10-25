@@ -4,7 +4,7 @@
  * The case it exists for: somebody who is not the owner types wrong passwords
  * for the account from two addresses. That used to lock a password-only
  * account (the phone app's password sign-in with it) for as long as they kept
- * it up. Now the owner's own device or network is not held back at all, and
+ * it up. Now the owner's own browser or phone is not held back at all, and
  * anywhere else waits a bounded, growing time.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -97,8 +97,7 @@ async function guess(
   const attempt = await beginAccountLoginAttempt({
     user: OWNER,
     identifier: "owner",
-    request: req(opts.headers),
-    ip,
+    request: req({ "x-forwarded-for": ip, ...opts.headers }),
   });
   if (attempt.waiting) return "waiting";
   if (opts.right) await attempt.succeeded();
@@ -172,24 +171,19 @@ describe("somebody guessing from two addresses", () => {
     expect(await guess("203.0.113.51", { right: true })).toBe("checked");
   });
 
-  it("the owner's home network, seen on a recent session, still gets through", async () => {
-    await tenGuesses();
-    vi.mocked(prisma.session.findFirst).mockImplementation((async (args: {
-      where: { ipAddress?: string };
-    }) =>
-      args.where.ipAddress === "203.0.113.9" ? { id: "s-1" } : null) as never);
-    expect(await guess("203.0.113.9", { right: true })).toBe("checked");
-  });
-
-  it("a place the account has signed in from never counts toward the wait", async () => {
+  it("an address the account signed in from is no exemption: a guesser can claim it", async () => {
+    // A session of the owner's from this address. The guesser shares the
+    // network, or names the address in a forwarding header; either way the
+    // address says nothing about who is typing.
     vi.mocked(prisma.session.findFirst).mockResolvedValue({
       id: "s-1",
     } as never);
-    for (let i = 0; i < 20; i++) {
-      expect(await guess("203.0.113.9")).toBe("checked");
-    }
-    vi.mocked(prisma.session.findFirst).mockResolvedValue(null);
-    expect(await guess("198.51.100.1")).toBe("checked");
+    vi.mocked(prisma.refreshToken.findFirst).mockResolvedValue({
+      id: "rt-1",
+    } as never);
+    const answers: string[] = [];
+    for (let i = 0; i < 10; i++) answers.push(await guess("203.0.113.9"));
+    expect(answers.slice(FREE_FAILURES)).toContain("waiting");
   });
 
   it("an unknown place waits at most fifteen minutes, however long the guessing went on", async () => {
@@ -215,8 +209,7 @@ describe("an identifier that names no account", () => {
       const attempt = await beginAccountLoginAttempt({
         user: null,
         identifier: "Nobody",
-        request: req(),
-        ip: "198.51.100.1",
+        request: req({ "x-forwarded-for": "198.51.100.1" }),
       });
       await attempt.failed();
     }

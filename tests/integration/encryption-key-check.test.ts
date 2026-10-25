@@ -1,6 +1,5 @@
 /**
- * The boot encryption key check and the "Back up your encryption key" step,
- * against real Postgres.
+ * The boot encryption key check, against real Postgres.
  *
  *   - a first boot writes a canary; a second boot with the same key opens it;
  *   - a boot with another key under the same id refuses: the state is set,
@@ -9,9 +8,9 @@
  *   - a database written before the canary existed is probed: data that does
  *     not open under the configured key refuses rather than sealing the wrong
  *     key as the right one;
- *   - the confirmation binds to the active key id and fingerprint, refuses a
- *     stale one with 409, and is due again after a re-keyed install;
- *   - "Check my copy" answers a boolean, stores nothing, and is rate limited.
+ *
+ * The recovery kit that replaced the key backup step is pinned in
+ * `recovery-kit.test.ts`.
  */
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -83,7 +82,6 @@ import {
   _resetCryptoCacheForTests,
   encrypt,
   encryptUnderKeyId,
-  getKeyFingerprint,
 } from "@/lib/crypto";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { runBootKeyCheck } from "@/lib/boot/key-check";
@@ -145,7 +143,6 @@ beforeEach(async () => {
   const prisma = getPrismaClient();
   await truncateAllTables(prisma);
   await prisma.$executeRaw`DELETE FROM encryption_key_canaries`;
-  await prisma.$executeRaw`DELETE FROM rate_limits WHERE key LIKE 'key-backup-verify:%'`;
   cookieJar.clear();
   headerJar.clear();
   useKey(KEY_A);
@@ -185,10 +182,10 @@ describe("boot encryption key check (real Postgres)", () => {
     expect(await prisma.encryptionKeyCanary.findMany()).toEqual(before);
 
     await seedAdmin();
-    const { GET: keyBackupGet } =
-      await import("@/app/api/admin/encryption/key-backup/route");
-    const refused = await asRoute(keyBackupGet)(
-      new NextRequest("http://localhost/api/admin/encryption/key-backup"),
+    const { GET: recoveryKitGet } =
+      await import("@/app/api/admin/recovery-kit/route");
+    const refused = await asRoute(recoveryKitGet)(
+      new NextRequest("http://localhost/api/admin/recovery-kit"),
     );
     expect(refused.status).toBe(503);
     const body = await refused.json();
@@ -526,10 +523,10 @@ describe("ENCRYPTION_KEY_CHECK (real Postgres)", () => {
 
     // Requests are served, through apiHandler and outside it.
     await seedAdmin();
-    const { GET: keyBackupGet } =
-      await import("@/app/api/admin/encryption/key-backup/route");
-    const served = await asRoute(keyBackupGet)(
-      new NextRequest("http://localhost/api/admin/encryption/key-backup"),
+    const { GET: recoveryKitGet } =
+      await import("@/app/api/admin/recovery-kit/route");
+    const served = await asRoute(recoveryKitGet)(
+      new NextRequest("http://localhost/api/admin/recovery-kit"),
     );
     expect(served.status).toBe(200);
     const { POST: mcp } = await import("@/app/mcp/route");
@@ -705,108 +702,5 @@ describe("routes outside apiHandler refuse while the key does not match", () => 
       expect(body.error).toBe("temporarily_unavailable");
       expect(body.error_description).toContain("encryption key");
     }
-  });
-});
-
-describe("encryption key backup step (real Postgres)", () => {
-  it("is due, refuses a stale confirmation, records the right one, and is due again after a re-key", async () => {
-    const prisma = getPrismaClient();
-    const adminId = await seedAdmin();
-    const { GET } = await import("@/app/api/admin/encryption/key-backup/route");
-    const { POST: confirm } =
-      await import("@/app/api/admin/encryption/key-backup/confirm/route");
-    const status = async () =>
-      (
-        await (
-          await asRoute(GET)(
-            new NextRequest("http://localhost/api/admin/encryption/key-backup"),
-          )
-        ).json()
-      ).data;
-
-    const first = await status();
-    expect(first.due).toBe(true);
-    expect(first.activeKeyId).toBe("v1");
-    expect(first.fingerprint).toBe(getKeyFingerprint("v1"));
-    expect(first.platformHint).toBe("compose");
-    expect(JSON.stringify(first)).not.toContain(KEY_A);
-
-    const stale = await confirm(
-      post("/api/admin/encryption/key-backup/confirm", {
-        keyId: "v1",
-        fingerprint: "000000000000",
-      }),
-    );
-    expect(stale.status).toBe(409);
-    expect((await stale.json()).meta.errorCode).toBe(
-      "encryption.keyBackup.stale",
-    );
-    expect(
-      (await prisma.appSettings.findUnique({ where: { id: "singleton" } }))
-        ?.encryptionKeyBackupConfirmedAt ?? null,
-    ).toBeNull();
-
-    const ok = await confirm(
-      post("/api/admin/encryption/key-backup/confirm", {
-        keyId: "v1",
-        fingerprint: first.fingerprint,
-      }),
-    );
-    expect(ok.status).toBe(200);
-    const confirmed = (await ok.json()).data;
-    expect(confirmed.due).toBe(false);
-    expect(confirmed.confirmedBy).toEqual({
-      id: adminId,
-      email: "key-admin@example.test",
-    });
-    const audit = await prisma.auditLog.findFirst({
-      where: { action: "encryption.keyBackup.confirmed" },
-    });
-    expect(audit).not.toBeNull();
-
-    vi.stubEnv("HEALTHLOG_PLATFORM", "truenas");
-    useKey(KEY_B);
-    const after = await status();
-    expect(after.due).toBe(true);
-    expect(after.confirmedKeyId).toBe("v1");
-    expect(after.platformHint).toBe("truenas");
-  });
-
-  it("checks a copy without storing it, and limits the checks", async () => {
-    const prisma = getPrismaClient();
-    await seedAdmin();
-    const { POST: verify } =
-      await import("@/app/api/admin/encryption/key-backup/verify/route");
-    const check = (encryptionKey: string) =>
-      verify(
-        post("/api/admin/encryption/key-backup/verify", { encryptionKey }),
-      );
-
-    const good = await check(`${KEY_A}\n`);
-    expect(good.status).toBe(200);
-    expect((await good.json()).data).toEqual({ matches: true, keyId: "v1" });
-
-    const bad = await check(KEY_B);
-    expect((await bad.json()).data.matches).toBe(false);
-
-    const invalid = await verify(
-      post("/api/admin/encryption/key-backup/verify", { encryptionKey: "" }),
-    );
-    expect(invalid.status).toBe(422);
-    expect(JSON.stringify(await invalid.json())).not.toContain("issues");
-
-    // Nothing of the candidate is stored anywhere a row could hold it.
-    const audits = await prisma.auditLog.findMany();
-    expect(JSON.stringify(audits)).not.toContain(KEY_A);
-    expect(JSON.stringify(audits)).not.toContain(KEY_B);
-    expect(
-      (await prisma.appSettings.findUnique({ where: { id: "singleton" } }))
-        ?.encryptionKeyBackupConfirmedAt ?? null,
-    ).toBeNull();
-
-    await check(KEY_B);
-    await check(KEY_B);
-    const limited = await check(KEY_A);
-    expect(limited.status).toBe(429);
   });
 });

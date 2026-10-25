@@ -780,13 +780,13 @@
         "bmi": "kg/m²"
       }
     },
-    "keyBackupBanner": {
-      "title": "Fai un backup della tua chiave di cifratura",
-      "body": "Senza una copia della chiave, i tuoi dati non si possono recuperare dopo una reinstallazione. Ci vuole un minuto.",
-      "action": "Apri il passaggio"
-    },
     "quickAddSymptom": "Registra sintomo",
-    "todayCardVisible": "Mostra la scheda in alto"
+    "todayCardVisible": "Mostra la scheda in alto",
+    "recoveryKitBanner": {
+      "title": "Salva il tuo kit di recupero",
+      "body": "Senza copie delle chiavi usate da questo server, i suoi dati non si possono recuperare dopo una reinstallazione. Ci vogliono pochi minuti.",
+      "action": "Apri il kit"
+    }
   },
   "measurements": {
     "title": "Misurazioni",
@@ -8331,7 +8331,23 @@
         "restoreSkippedEnvironmentLocationCiphertext": "Luogo di un periodo o giorno ambientale cifrato con una chiave che questo server non possiede (mantenuto cifrato, quei giorni non vengono aggiornati)",
         "typePreWipe": "Prima dell’eliminazione di tutti i dati",
         "retentionNote": "La copia settimanale viene sostituita ogni domenica. Una copia presa prima di «Elimina tutti i dati» viene eliminata dopo {days} giorni. Le copie caricate restano finché il loro account non viene cancellato.",
-        "retentionNoteNoGrace": "La copia settimanale viene sostituita ogni domenica. Le copie caricate restano finché il loro account non viene cancellato."
+        "retentionNoteNoGrace": "La copia settimanale viene sostituita ogni domenica. Le copie caricate restano finché il loro account non viene cancellato.",
+        "database": {
+          "title": "Dump del database",
+          "lastGood": "Ultimo dump valido {when}, {size}, {where}.",
+          "whereBoth": "conservato su questo server e fuori sede",
+          "whereLocal": "conservato su questo server",
+          "whereOffhost": "solo fuori sede",
+          "none": "Ancora nessun dump del database. Il primo viene eseguito stanotte.",
+          "failedTitle": "L'ultimo dump del database non è riuscito",
+          "failedDescription": "{when}: {reason}",
+          "disabled": "I dump del database sono disattivati (DB_BACKUP_ENABLED=false). Esegui il backup del database in un altro modo.",
+          "noDirectoryOffhost": "Questo server non può scrivere in {dir}, quindi i dump vanno solo fuori sede e qui non ne resta nessuno. Monta il volume dei backup.",
+          "noDirectory": "Questo server non può scrivere in {dir} e non è configurato alcuno storage esterno, quindi non si può fare alcun dump. Monta il volume dei backup.",
+          "retentionLocal": "Gli account eliminati restano nei dump finché questi non scadono: su questo server restano i {nights} più recenti.",
+          "retentionOffhost": "La regola del ciclo di vita del bucket elimina le copie esterne dopo {days} giorni.",
+          "retentionOffhostMissing": "Nessuna regola del ciclo di vita del bucket copre database/, quindi i dump lì, e gli account eliminati che contengono, non vengono mai rimossi. Aggiungi una regola per quel prefisso."
+        }
       },
       "danger-zone": {
         "title": "Zona pericolosa",
@@ -8527,47 +8543,6 @@
       "title": "Questa parte della pagina non è stata mostrata",
       "description": "Il resto della pagina funziona; riprova o ricarica se il problema continua."
     },
-    "keyBackup": {
-      "title": "Fai un backup della tua chiave di cifratura",
-      "description": "Senza una copia di questa chiave, i tuoi dati cifrati e i backup di questo server non saranno più leggibili.",
-      "loading": "Caricamento dello stato del backup della chiave…",
-      "loadError": "Impossibile caricare lo stato del backup della chiave.",
-      "badgeDue": "Da fare",
-      "badgeDone": "Salvata",
-      "keyId": "ID della chiave attiva",
-      "fingerprint": "Impronta",
-      "whatIsLost": "Conserva una copia della chiave fuori da questo server, per esempio in un gestore di password. Se il server viene reinstallato con un'altra chiave, HealthLog non torna in servizio finché la chiave originale non è di nuovo al suo posto.",
-      "fingerprintHint": "L'impronta sono i primi 12 caratteri dell'hash SHA-256 della chiave. Identifica la chiave senza rivelarla, così puoi confrontarla con la tua copia.",
-      "checkLabel": "Verifica la mia copia",
-      "checkButton": "Verifica",
-      "checkNote": "La chiave incollata viene confrontata con quella attiva e poi scartata. Non viene mai salvata né registrata.",
-      "checkInsecureNote": "Questa pagina non è servita tramite https://, quindi la chiave incollata attraversa la rete in chiaro, come la tua password. Viene confrontata e scartata, mai salvata né registrata.",
-      "checkMatches": "La tua copia corrisponde alla chiave attiva.",
-      "checkNoMatch": "La tua copia non corrisponde alla chiave attiva. Controlla di aver copiato l'intero valore.",
-      "checkFailed": "La verifica non è riuscita.",
-      "confirmButton": "Ho salvato questa chiave",
-      "confirmed": "Backup della chiave confermato.",
-      "confirmFailed": "Impossibile salvare la conferma.",
-      "stale": "La chiave del server è cambiata da quando questa pagina è stata caricata. Controlla il nuovo ID e l'impronta, poi conferma di nuovo.",
-      "confirmedAt": "Confermato il {date}.",
-      "confirmedAtBy": "Confermato il {date} da {who}.",
-      "dueAgain": "È stato confermato un backup per la chiave {keyId}, ma ora il server usa un'altra chiave. Salva quella attuale.",
-      "tileLabel": "Backup della chiave di cifratura",
-      "tileDue": "Non confermato",
-      "tileDone": "Confermato",
-      "platform": {
-        "composeLabel": "Compose",
-        "composeWhere": "La chiave è ENCRYPTION_KEY (o ENCRYPTION_KEYS) nel file .env accanto a docker-compose.yml.",
-        "truenasLabel": "TrueNAS",
-        "truenasWhere": "Apri Apps, seleziona HealthLog e scegli Modifica. La chiave è nel campo Encryption Key sotto HealthLog Configuration; in un'app installata tramite YAML è ENCRYPTION_KEY nelle variabili d'ambiente.",
-        "coolifyLabel": "Coolify",
-        "coolifyWhere": "Apri l'applicazione in Coolify e copia ENCRYPTION_KEY dalle sue Environment Variables.",
-        "unraidLabel": "Unraid",
-        "unraidWhere": "Nella scheda Docker, modifica il container di HealthLog e copia ENCRYPTION_KEY dal modello, oppure dal .env del tuo stack di Compose Manager.",
-        "portainerLabel": "Portainer",
-        "portainerWhere": "Apri lo stack di HealthLog in Portainer e copia ENCRYPTION_KEY dalle sue variabili d'ambiente."
-      }
-    },
     "keyMismatch": {
       "title": "HealthLog non riesce ad aprire i suoi dati",
       "body": "La chiave di cifratura con cui è stato avviato questo server non è quella con cui è stato scritto il suo database. Per proteggere i tuoi dati, HealthLog non serve nulla finché il problema non è risolto.",
@@ -8598,6 +8573,166 @@
       "defaultAboveCeiling": "Il livello predefinito non può superare il livello più alto.",
       "gapLabel": "Ore tra due aggiornamenti delle schede dopo una sincronizzazione (Standard)",
       "gapHint": "Ore intere da 1 a 48. Lascia vuoto per usare AI_SYNC_REGEN_GAP_HOURS, altrimenti 6. In vigore ora: {hours} h."
+    },
+    "recoveryKit": {
+      "title": "Kit di recupero",
+      "description": "Ogni chiave necessaria per ripristinare questo server, con ID e impronta.",
+      "intro": "Conserva una copia di ciascuna chiave qui sotto fuori da questo server, per esempio in un gestore di password. Senza di esse non si possono più leggere né un dump del database né una copia di backup, e HealthLog si rifiuta di avviarsi se manca una chiave di cui ha bisogno.",
+      "loading": "Caricamento del kit di recupero…",
+      "loadError": "Impossibile caricare il kit di recupero.",
+      "badgeDue": "Da fare",
+      "badgeDone": "Salvato",
+      "keyId": "ID",
+      "fingerprint": "Impronta",
+      "noFingerprint": "Non presente su questo server",
+      "kind": {
+        "application": "Chiave dell'applicazione {id}",
+        "backup": "Chiave dei backup fuori host",
+        "backupPrevious": "Chiave precedente dei backup fuori host",
+        "token": "Chiave dei token"
+      },
+      "need": {
+        "active": "Cifra i nuovi dati.",
+        "configured": "Presente su questo server.",
+        "storedCopies": "Serve a {count} copie archiviate.",
+        "offhostUntil": "Serve alle copie fuori host fino al {date}.",
+        "offhostUnknown": "Serve alle copie fuori host finché il bucket le conserva.",
+        "backupActive": "Sigilla ogni nuova copia fuori host.",
+        "backupPrevious": "Apre le copie fuori host scritte prima dell'ultimo cambio di chiave.",
+        "token": "Firma sessioni, token e link di condivisione. Senza di essa tutti vengono disconnessi, ma nessun dato va perso."
+      },
+      "source": "Impostata in {variable}.",
+      "status": {
+        "confirmed": "Salvata",
+        "new": "Non ancora salvata",
+        "notConfigured": "Non presente su questo server",
+        "unreadable": "Chiave non valida"
+      },
+      "notConfiguredHint": "Un backup ha ancora bisogno di questa chiave e questo server non ce l'ha. Solo una copia che conservi altrove può leggere quei backup. Conferma il kit quando hai quella copia.",
+      "unreadableHint": "La variabile è impostata ma non contiene una chiave valida. Correggila prima di fare affidamento sulle copie fuori host.",
+      "fingerprintHint": "L'impronta sono i primi 12 caratteri dell'hash SHA-256 di una chiave. Identifica la chiave senza rivelarla, così puoi confrontarla con la tua copia.",
+      "whereTitle": "Dove sono impostate le chiavi",
+      "platform": {
+        "composeLabel": "Compose",
+        "composeWhere": "Le chiavi sono nel file .env accanto a docker-compose.yml: ENCRYPTION_KEY o ENCRYPTION_KEYS, API_TOKEN_HMAC_KEY e, con le copie fuori host, BACKUP_ENCRYPTION_KEY.",
+        "truenasLabel": "TrueNAS",
+        "truenasWhere": "Apri Apps, seleziona HealthLog e scegli Edit. Le chiavi sono sotto HealthLog Configuration; in un'app installata tramite YAML sono ENCRYPTION_KEY, API_TOKEN_HMAC_KEY e BACKUP_ENCRYPTION_KEY nelle impostazioni dell'ambiente.",
+        "coolifyLabel": "Coolify",
+        "coolifyWhere": "Apri l'applicazione in Coolify e copia ENCRYPTION_KEY, API_TOKEN_HMAC_KEY e BACKUP_ENCRYPTION_KEY dalle sue Environment Variables.",
+        "unraidLabel": "Unraid",
+        "unraidWhere": "Nella scheda Docker, modifica il container di HealthLog e copia ENCRYPTION_KEY, API_TOKEN_HMAC_KEY e BACKUP_ENCRYPTION_KEY dal modello, oppure dal .env del tuo stack di Compose Manager.",
+        "portainerLabel": "Portainer",
+        "portainerWhere": "Apri lo stack di HealthLog in Portainer e copia ENCRYPTION_KEY, API_TOKEN_HMAC_KEY e BACKUP_ENCRYPTION_KEY dalle sue variabili d'ambiente."
+      },
+      "restoreTitle": "Ripristinare questo server",
+      "restoreBody": "Installa HealthLog con le stesse chiavi, ripristina il dump del database più recente in un database vuoto, poi avvia l'app. La guida ti accompagna passo per passo.",
+      "restoreLink": "Guida al ripristino dopo un disastro",
+      "checkLabel": "Verifica la mia copia",
+      "checkKeyLabel": "Chiave da verificare",
+      "checkValueLabel": "La tua copia della chiave",
+      "checkButton": "Verifica",
+      "checkNote": "La chiave incollata viene confrontata con quella presente su questo server e poi scartata. Non viene mai salvata né registrata.",
+      "checkInsecureNote": "Questa pagina non è servita tramite https://, quindi la chiave incollata attraversa la rete in chiaro, come la tua password. Viene confrontata e scartata, mai salvata né registrata.",
+      "checkMatches": "La tua copia corrisponde a questa chiave.",
+      "checkNoMatch": "La tua copia non corrisponde a questa chiave. Controlla di aver copiato l'intero valore.",
+      "checkFailed": "La verifica non è riuscita.",
+      "confirmButton": "Ho una copia di ogni chiave",
+      "confirmed": "Kit di recupero confermato.",
+      "confirmFailed": "Impossibile salvare la conferma.",
+      "stale": "Il kit è cambiato da quando questa pagina è stata caricata. Controlla le chiavi che elenca ora, poi conferma di nuovo.",
+      "confirmedAt": "Confermato il {date}.",
+      "confirmedAtBy": "Confermato il {date} da {who}.",
+      "dueAgain": "Il kit è stato confermato il {date}. Ora elenca anche {keys}, che quella conferma non copriva. Salva una copia di ciascuna e conferma di nuovo."
+    },
+    "recoveryReadiness": {
+      "title": "Preparazione al ripristino",
+      "description": "Se questo server potrebbe essere rimesso in piedi dopo una perdita, valutato in base a ogni backup che esegue.",
+      "loading": "Controllo dei backup…",
+      "loadError": "Impossibile caricare la preparazione al ripristino.",
+      "state": {
+        "ok": "Pronto",
+        "attention": "Richiede attenzione",
+        "failing": "A rischio"
+      },
+      "signal": {
+        "database_dump": "Dump del database",
+        "weekly_copy": "Copie settimanali degli account",
+        "offhost_copies": "Copie fuori host",
+        "restore_drill": "Prova di ripristino",
+        "offhost_setup": "Backup fuori host",
+        "recovery_kit": "Kit di recupero"
+      },
+      "at": {
+        "database_dump": "Dump più recente: {date}",
+        "weekly_copy": "Copia di account più vecchia: {date}",
+        "offhost_copies": "Copia fuori host meno recente: {date}",
+        "restore_drill": "Ultima prova: {date}",
+        "recovery_kit": "Confermato: {date}"
+      },
+      "dueBy": "Scadenza: {date}",
+      "fix": {
+        "database_dump": "Apri i backup",
+        "weekly_copy": "Apri i backup",
+        "offhost_copies": "Apri i backup",
+        "restore_drill": "Apri i backup",
+        "offhost_setup": "Apri i backup",
+        "recovery_kit": "Apri il kit"
+      },
+      "reason": {
+        "database_dump": {
+          "not_available": "Questa versione non pianifica un dump del database.",
+          "disabled": "Il dump pianificato del database è disattivato, quindi nessuna copia può ricostruire questo server. Per riattivarlo, rimuovi DB_BACKUP_ENABLED o impostalo su true, poi riavvia HealthLog.",
+          "unreadable": "Non è stato possibile leggere lo stato del dump del database.",
+          "never_succeeded": "Nessun dump del database è ancora riuscito, e l'ultimo tentativo non è andato a buon fine.",
+          "never_ran": "Nelle {hours} ore trascorse da quando i dump sono stati attivati non è stato scritto alcun dump del database.",
+          "first_pending": "Il primo dump del database non è ancora stato eseguito.",
+          "stale": "Il dump del database più recente ha {hours} ore.",
+          "last_failed": "L'ultimo dump del database non è riuscito. Quello precedente è ancora recente.",
+          "fresh": "L'ultimo dump del database è recente.",
+          "nowhere_to_write": "La cartella dei dump {directory} non è scrivibile e non è configurato nessun bucket esterno, quindi non si può conservare alcun dump."
+        },
+        "weekly_copy": {
+          "no_accounts": "Non ci sono ancora account da copiare.",
+          "stale": "La copia settimanale più vecchia ha {days} giorni. Account in ritardo: {accounts}.",
+          "never": "Un account non ha una copia settimanale da {days} giorni. Account in ritardo: {accounts}.",
+          "first_pending": "La prima copia settimanale viene creata domenica mattina presto.",
+          "fresh": "Ogni account ha una copia dell'ultima settimana."
+        },
+        "offhost_copies": {
+          "not_configured": "Non è configurato alcun bucket fuori host.",
+          "stale": "Le copie fuori host sono indietro di più di due notti. Account in ritardo: {accounts}.",
+          "first_pending": "Il giro notturno fuori host non ha ancora raggiunto alcun account.",
+          "fresh": "Ogni account ha una copia recente nel bucket fuori host."
+        },
+        "restore_drill": {
+          "not_configured": "La prova legge il bucket fuori host, che non è configurato.",
+          "not_run_yet": "La prova di ripristino mensile non è ancora stata eseguita.",
+          "failed": "L'ultima prova di ripristino non è riuscita: {failed} copie su {checked} non si sono potute rileggere.",
+          "failed_run": "L'ultima prova di ripristino non è riuscita ad arrivare in fondo.",
+          "passed": "L'ultima prova di ripristino ha riletto {checked} copie."
+        },
+        "offhost_setup": {
+          "configured": "Le copie lasciano questo server ogni notte.",
+          "no_admin": "Non esiste ancora un account amministratore.",
+          "not_configured": "Non è configurato alcun bucket fuori host, quindi ogni copia si trova solo su questo server.",
+          "not_configured_grace": "Non è ancora configurato alcun bucket fuori host, quindi ogni copia si trova solo su questo server."
+        },
+        "recovery_kit": {
+          "confirmed": "Esiste una copia di ogni chiave necessaria per un ripristino.",
+          "out_of_date": "Il kit di ripristino ora elenca anche {keys}, che l'ultima conferma non copriva. Non c'è nulla di rotto: salva una copia e conferma di nuovo il kit.",
+          "no_admin": "Non esiste ancora un account amministratore.",
+          "not_confirmed": "Nessuno ha confermato una copia delle chiavi necessarie per un ripristino: {keys}.",
+          "not_confirmed_grace": "Salva una copia delle chiavi necessarie per un ripristino: {keys}."
+        }
+      },
+      "recovered": {
+        "database_dump": "Il dump del database è di nuovo recente.",
+        "weekly_copy": "Ogni account ha di nuovo una copia settimanale recente.",
+        "offhost_copies": "Ogni account ha di nuovo una copia fuori host recente.",
+        "restore_drill": "La prova di ripristino è di nuovo riuscita.",
+        "offhost_setup": "Le copie fuori host ora sono configurate.",
+        "recovery_kit": "Il kit di recupero è di nuovo confermato."
+      }
     }
   },
   "achievements": {
@@ -9065,6 +9200,14 @@
     "checkupReminders": {
       "title": "Promemoria dei controlli",
       "description": "Attiva o disattiva i singoli promemoria dei controlli."
+    },
+    "eventBackupHealth": "Stato dei backup",
+    "eventBackupHealthDesc": "Quando un backup si ferma, resta indietro o torna a funzionare. Inviato solo agli amministratori.",
+    "recoveryReadiness": {
+      "titleAttention": "I backup richiedono attenzione",
+      "titleFailing": "I backup sono a rischio",
+      "titleReminder": "I backup sono ancora a rischio",
+      "titleRecovered": "I backup sono tornati alla normalità"
     }
   },
   "i18n": {
@@ -11792,7 +11935,7 @@
       "dismiss": "Ignora",
       "empty": "Impossibile leggere questo documento.",
       "unavailableBody": "Configura un provider IA per suggerire titolo, tipo e data.",
-      "unavailableLocalOcr": "Attiva l'OCR locale nelle impostazioni IA per leggere le immagini su questo dispositivo.",
+      "unavailableLocalOcr": "Attiva «Leggi le scansioni su questo dispositivo» in Impostazioni → Moduli → Esami per leggere le immagini su questo dispositivo.",
       "unavailableAction": "Apri impostazioni IA",
       "errorGeneric": "Impossibile leggere il documento. Riprova.",
       "errorOcr": "Impossibile leggere il testo da questa immagine.",
@@ -11805,11 +11948,12 @@
       "errorFileType": "Questo tipo di file non può essere letto.",
       "errorNotIndexed": "Leggi prima il documento, poi estrai.",
       "errorOutputLimit": "Il fornitore di IA ha raggiunto il suo limite di output prima di restituire un solo valore. Prova con un modello che consente risposte più lunghe.",
-      "errorLocalOcrDisabled": "Attiva prima l'OCR locale nelle impostazioni IA.",
+      "errorLocalOcrDisabled": "Attiva prima «Leggi le scansioni su questo dispositivo» in Impostazioni → Moduli → Esami.",
       "errorProvider": "Nessun provider IA è configurato per questo.",
       "errorTextImageOnly": "L'OCR locale legge solo immagini, non questo file.",
       "errorConsent": "La lettura dei documenti con IA richiede prima il tuo consenso.",
-      "errorUnavailable": "La lettura dei documenti con IA non è disponibile qui al momento."
+      "errorUnavailable": "La lettura dei documenti con IA non è disponibile qui al momento.",
+      "unavailableLocalOcrAction": "Apri le impostazioni degli esami"
     },
     "summary": {
       "summarise": "Riassumi",

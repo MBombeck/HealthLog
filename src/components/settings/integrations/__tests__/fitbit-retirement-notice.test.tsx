@@ -31,7 +31,7 @@ describe("<FitbitRetirementNotice>", () => {
     expect(html).toContain("Google Health reads the same Fitbit and Pixel");
     expect(html).toContain("Everything already imported stays.");
     expect(html).toContain('href="#google-health"');
-    expect(html).toContain("/google-health");
+    expect(html).toContain("/guides/connect-google-health/");
   });
 
   it("says the connection has stopped once the day has come", () => {

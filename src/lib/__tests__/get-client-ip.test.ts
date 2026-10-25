@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  onTestFinished,
+  vi,
+} from "vitest";
 import {
   getClientIp,
   getClientIpOrTrustWarning,
@@ -361,5 +369,72 @@ describe("getClientIpOrTrustWarning shape (F-6, 2026-05-16)", () => {
     } finally {
       warn.mockRestore();
     }
+  });
+});
+
+/**
+ * A caller that reaches the server directly used to choose its own address:
+ * one trusted hop is the default, and the rightmost X-Forwarded-For entry is
+ * whatever the caller wrote when no proxy appended to it. Every per-IP limit
+ * became per-request. The server now stamps each request with its
+ * connection's peer (`@/lib/http/peer-address`), and forwarding headers are
+ * read only from a peer that could be a proxy.
+ */
+describe("getClientIp against the connection's own peer", () => {
+  const stamped = (peer: string, headers: Record<string, string> = {}) =>
+    makeRequest({ ...headers, "x-healthlog-peer-address": peer });
+
+  it("ignores forwarding headers from a public peer, however they rotate", () => {
+    const ips = ["203.0.113.1", "203.0.113.2", "203.0.113.3"].map((forged) =>
+      getClientIp(
+        stamped("198.51.100.7", {
+          "x-forwarded-for": forged,
+          "x-real-ip": forged,
+        }),
+      ),
+    );
+    expect(ips).toEqual(["198.51.100.7", "198.51.100.7", "198.51.100.7"]);
+  });
+
+  it("reads forwarding headers from a proxy on a private network or loopback", () => {
+    for (const proxy of ["172.18.0.2", "127.0.0.1", "::1", "100.101.102.103"]) {
+      expect(
+        getClientIp(stamped(proxy, { "x-forwarded-for": "203.0.113.5" })),
+      ).toBe("203.0.113.5");
+    }
+    expect(
+      getClientIp(stamped("10.0.0.2", { "x-real-ip": "203.0.113.6" })),
+    ).toBe("203.0.113.6");
+  });
+
+  it("reads an IPv4 peer that the socket reports in IPv6 form", () => {
+    expect(
+      getClientIp(
+        stamped("::ffff:198.51.100.7", { "x-forwarded-for": "203.0.113.1" }),
+      ),
+    ).toBe("198.51.100.7");
+  });
+
+  it("uses the peer itself with no proxy declared, instead of nothing", () => {
+    process.env.TRUST_PROXY_HOPS = "0";
+    expect(
+      getClientIp(
+        stamped("198.51.100.7", { "x-forwarded-for": "203.0.113.1" }),
+      ),
+    ).toBe("198.51.100.7");
+  });
+
+  it("trusts no forwarding header on a request the server did not stamp, once it stamps", async () => {
+    const { installPeerAddressStamp, __uninstallPeerAddressStampForTests } =
+      await import("../http/peer-address");
+    installPeerAddressStamp();
+    onTestFinished(__uninstallPeerAddressStampForTests);
+    expect(
+      getClientIp(makeRequest({ "x-forwarded-for": "203.0.113.1" })),
+    ).toBeNull();
+    // A stamp that is not an address (the socket was already gone).
+    expect(
+      getClientIp(stamped("", { "x-forwarded-for": "203.0.113.1" })),
+    ).toBeNull();
   });
 });

@@ -113,6 +113,25 @@ describe("loadShareViewData — KVNR default OFF", () => {
     expect(patient).not.toHaveProperty("kvnr");
   });
 
+  it("lists no document once the owner switched the documents module off", async () => {
+    moduleMap.mockResolvedValueOnce(modulesWithout("inboundDocuments"));
+    findDocs.mockResolvedValue([
+      {
+        document: {
+          id: "doc-a",
+          title: "Blood panel",
+          kind: "LAB_REPORT",
+          documentDate: null,
+          byteSize: 1,
+          mimeType: "application/pdf",
+        },
+      },
+    ]);
+    const { documents } = await loadShareViewData(ctx());
+    expect(documents).toEqual([]);
+    expect(findDocs).not.toHaveBeenCalled();
+  });
+
   it("lists the frozen document set as metadata only (never bytes)", async () => {
     findDocs.mockResolvedValue([
       {

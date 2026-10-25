@@ -91,9 +91,39 @@ function redactPathSegments(input: string): string {
   return out;
 }
 
+/**
+ * A Prisma client error describes its failed call by printing the call: the
+ * code frame around it, or with no source map the arguments object itself,
+ * health values and all. Everything between the "Invalid `prisma.x.y()`
+ * invocation" line and the stack frames goes; the reason line stays when it
+ * is one of the forms that name a field rather than a value.
+ */
+const PRISMA_INVOCATION = /Invalid `[^`\n]*` invocation[^\n]*/;
+const PRISMA_REASON =
+  /^(?:Argument `|Unknown argument `|Unknown field `|Invalid value for argument `|Unique constraint failed|Foreign key constraint|Null constraint violation|An operation failed because|Transaction )/;
+
+export function redactPrismaInvocation(input: string): string {
+  const head = PRISMA_INVOCATION.exec(input);
+  if (!head) return input;
+  const start = head.index + head[0].length;
+  const framesAt = input.indexOf("\n    at ", start);
+  const detail = input.slice(start, framesAt === -1 ? undefined : framesAt);
+  const reason = detail
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .at(-1);
+  return (
+    input.slice(0, start) +
+    "\n[query arguments removed]" +
+    (reason && PRISMA_REASON.test(reason) ? `\n${reason}` : "") +
+    (framesAt === -1 ? "" : input.slice(framesAt))
+  );
+}
+
 export function redactSecrets(input: string): string {
   return (
-    redactPathSegments(input)
+    redactPathSegments(redactPrismaInvocation(input))
       .replace(/Bearer\s+\S+/gi, "Bearer [REDACTED]")
       .replace(/bot\d+:[A-Za-z0-9_-]+/g, "bot[REDACTED]")
       // `sk-` is a common English-prefix substring (task-force, risk-

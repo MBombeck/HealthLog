@@ -1,5 +1,6 @@
 /**
- * The housekeeping queues: backups (weekly in-database, nightly off-host),
+ * The housekeeping queues: backups (the nightly whole-database dump, weekly
+ * in-database account copies, nightly off-host),
  * the restore drill and restores, every ledger and retention cleanup, the
  * medication maintenance passes, the imports (Apple Health, Health Connect,
  * medication intake), the converging encryption backfills, the document vault
@@ -47,6 +48,11 @@ import {
   DATA_BACKUP_QUEUE,
   DATA_BACKUP_SEND_OPTIONS,
 } from "@/lib/jobs/data-backup-policy";
+import {
+  DATABASE_BACKUP_CRON,
+  DATABASE_BACKUP_QUEUE,
+  DATABASE_BACKUP_SEND_OPTIONS,
+} from "@/lib/jobs/database-backup-queue";
 import {
   DAWARICH_SYNC_CRON,
   DAWARICH_SYNC_QUEUE,
@@ -173,6 +179,10 @@ import {
 } from "@/lib/jobs/pr-detection";
 import { PULSE_DAY_MEAN_QUEUE } from "@/lib/jobs/pulse-day-mean";
 import { cronIsTheRetry } from "@/lib/jobs/reminder/registrar-shared";
+import {
+  RECOVERY_READINESS_CRON,
+  RECOVERY_READINESS_QUEUE,
+} from "@/lib/jobs/recovery-readiness-queue";
 import {
   RESTORE_DRILL_CRON,
   RESTORE_DRILL_QUEUE,
@@ -304,6 +314,16 @@ const jobs: readonly JobDefinition[] = [
     lane: true,
     load: async () => (await backups()).handleDataBackup,
   }),
+  // The whole-database dump: the copy that rebuilds a lost server. Locked, so
+  // a retry that starts while a run is still dumping waits its turn.
+  defineJob({
+    queue: DATABASE_BACKUP_QUEUE,
+    cron: DATABASE_BACKUP_CRON,
+    scheduleOptions: DATABASE_BACKUP_SEND_OPTIONS,
+    work: { localConcurrency: 1 },
+    lock: () => WHOLE_PASS,
+    load: async () => (await backups()).handleDatabaseBackup,
+  }),
   prune(
     RATE_LIMIT_CLEANUP_QUEUE,
     RATE_LIMIT_CLEANUP_CRON,
@@ -346,6 +366,17 @@ const jobs: readonly JobDefinition[] = [
     lane: true,
     load: async () =>
       (await import("@/lib/jobs/restore-drill")).handleRestoreDrill,
+  }),
+  // Hourly: judge every backup signal and push each change to the admins.
+  // Single-flight and no retries; the next tick is the retry, and the notice
+  // claim keeps two evaluations from sending the same notice.
+  defineJob({
+    queue: RECOVERY_READINESS_QUEUE,
+    cron: RECOVERY_READINESS_CRON,
+    scheduleOptions: cronIsTheRetry,
+    work: { localConcurrency: 1 },
+    load: async () =>
+      (await import("@/lib/jobs/recovery-readiness")).handleRecoveryReadiness,
   }),
   // The nightly backstop for the purge an account deletion kicks at once.
   prune(

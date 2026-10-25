@@ -1,19 +1,18 @@
 import { z } from "zod/v4";
 
+import { fenceUserText } from "@/lib/ai/coach/data-fence";
 import { resolveMarkerForRead } from "@/lib/labs/biomarker-resolve";
 import { getLabHistory, LAB_HISTORY_MAX_LIMIT } from "@/lib/mcp/rich-reads";
 import { decodeOffsetCursor } from "@/lib/mcp/pagination";
 import type { McpAuthContext } from "../auth";
+import { coachReadOutput } from "./output-shapes";
 import { runCoachTool, whenModuleOn } from "./shared";
 import { READ_ONLY_ANNOTATIONS, type McpToolDefinition } from "./types";
 
 /** Output schema for `get_labs` — latest-per-biomarker OR a paginated history. */
 const getLabsOutput: z.ZodRawShape = {
-  present: z.boolean(),
-  reason: z.string().optional(),
-  // Latest-mode payload (the Coach labs section, carried opaque).
-  data: z.unknown().optional(),
-  grounding: z.string().optional(),
+  // Latest-mode payload, including typed empty-read availability metadata.
+  ...coachReadOutput,
   // History-mode payload (per-analyte trajectory + pagination).
   analyte: z.string().optional(),
   readings: z
@@ -31,6 +30,34 @@ const getLabsOutput: z.ZodRawShape = {
     .optional(),
   nextCursor: z.string().optional(),
 };
+
+/** The free-text fields of a lab reading: a document's words, never instructions. */
+const LAB_TEXT_KEYS = new Set([
+  "analyte",
+  "name",
+  "panel",
+  "unit",
+  "valueText",
+]);
+
+/**
+ * Fence every free-text field of a labs answer, at any depth. An analyte,
+ * panel or unit committed from an uploaded document is whatever a model read
+ * out of that file, so it reaches the client's model fenced, as the server
+ * instructions promise.
+ */
+function fenceLabText(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(fenceLabText);
+  if (value === null || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value).map(([key, inner]) => [
+      key,
+      typeof inner === "string" && LAB_TEXT_KEYS.has(key)
+        ? fenceUserText(inner)
+        : fenceLabText(inner),
+    ]),
+  );
+}
 
 /** `get_labs` behind its module gate: latest-per-biomarker or a history page. */
 function readLabs(
@@ -91,6 +118,8 @@ export const getLabsTool: McpToolDefinition = {
   annotations: READ_ONLY_ANNOTATIONS,
   outputShape: getLabsOutput,
   run(ctx, args) {
-    return whenModuleOn(ctx, "labs", "get_labs", () => readLabs(ctx, args));
+    return whenModuleOn(ctx, "labs", "get_labs", async () =>
+      fenceLabText(await readLabs(ctx, args)),
+    );
   },
 };

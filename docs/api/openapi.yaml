@@ -24899,9 +24899,9 @@ paths:
         **Auth is Bearer only.** A cookie session does not authenticate here: the route reads the `Authorization` header
         itself, hashes it and looks the token up, so a browser with a valid login and no token gets 401. The token must
         carry either the `*` wildcard or the `medication:ingest` scope — AND, once the named medication resolves, either
-        `*` or that medication's own `medication:{id}:ingest` scope. The second check runs after the lookup, which is
-        why a token scoped to one medication gets 404 for a name it may not touch only when the name does not exist, and
-        403 when it does.
+        `*` or that medication's own `medication:{id}:ingest` scope. The second check runs after the lookup. A token
+        scoped to one medication gets the same 403 for a name that does not exist as for one outside its scope, so it
+        cannot be used to learn which medications exist; only a `*` token gets 404 for an unknown name.
 
 
         **The operator can switch this off.** With the global API kill switch disabled every request is refused with 403
@@ -24909,8 +24909,9 @@ paths:
 
 
         **Replay is by `idempotencyKey`, and the status says which happened.** A key already stored for this token's
-        owner returns the existing row with **200**; a fresh dose returns **201**. Nothing else distinguishes them —
-        same body shape, same fields — so branch on the status code.
+        owner and the same medication returns the existing row with **200**; a fresh dose returns **201**; a key already
+        used for another medication returns **409** without its row. Replay is answered only after both scope checks.
+        Nothing else distinguishes them — same body shape, same fields — so branch on the status code.
 
 
         **A dose is attributed to its scheduled slot, not stamped ad-hoc.** When the take falls inside a schedule's
@@ -24954,14 +24955,22 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "403":
           description: Refused. Either the operator has the global API switch off (the message says so), or the token lacks
-            `medication:ingest` / `*`, or it lacks the resolved medication's own `medication:{id}:ingest` / `*` scope.
+            `medication:ingest` / `*`, or it lacks the resolved medication's own `medication:{id}:ingest` / `*` scope. A
+            token without `*` also gets this answer for a name that matches no active medication.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "404":
-          description: No ACTIVE medication of the token owner's matches `medicationName`. An inactive medication of the right
-            name is also a 404 — the name is only searched among active ones.
+          description: "Only for a `*` token: no ACTIVE medication of the token owner's matches `medicationName`. An inactive
+            medication of the right name is also a 404 — the name is only searched among active ones."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: The `idempotencyKey` is already stored for a dose of another medication. Nothing was written and that dose
+            is not returned.
           content:
             application/json:
               schema:
@@ -37174,6 +37183,7 @@ components:
             - SECURITY_ALERT
             - DAILY_BRIEFING
             - SHARED_RECORD_INTAKE
+            - BACKUP_HEALTH
         enabled:
           type: boolean
       required:
@@ -38558,7 +38568,7 @@ components:
                 documents.sources.tokenRequired, documents.sources.unavailable, documents.sources.unreachable,
                 documents.sources.versionTooOld; encounter — encounter.invalid, encounter.link.invalid,
                 encounter.practitioner-not-found, encounter.reminder-conflict, encounter.reminder-not-found; encryption
-                — encryption.keyBackup.stale, encryption.key_mismatch; environment — environment.backfill_pending,
+                — encryption.key_mismatch; environment — environment.backfill_pending,
                 environment.backfill_rate_limited, environment.invalid, environment.no_home,
                 environment.range_too_large, environment.travel.not_found, environment.travel_suggestion.not_found;
                 export — export.selection.empty, export.selection.unknown_leaf; familyHistory — familyHistory.invalid;
@@ -38619,8 +38629,9 @@ components:
                 profile.update.emailInUse, profile.update.emailRateLimited, profile.update.emailSecondFactorRequired,
                 profile.update.invalidBody, profile.update.nothingSaved; profile_claim — profile_claim.invalid,
                 profile_claim.oidc_only_unsupported, profile_claim.sso_unavailable, profile_claim.taken; record_write —
-                record_write.rate_limited; report-selection — report-selection.body.invalid_json,
-                report-selection.body.invalid_shape, report-selection.leaves.unknown; route — route.retired; search —
+                record_write.rate_limited; recovery — recovery.kit.stale; report-selection —
+                report-selection.body.invalid_json, report-selection.body.invalid_shape,
+                report-selection.leaves.unknown; request — request.cross_site; route — route.retired; search —
                 search.invalid; security_activity — security_activity.invalid; share-link —
                 share-link.document.decryptFailed, share-link.document.notFound, share-link.document.rateLimited,
                 share-link.documents.invalid, share-link.report.notFound, share-link.report.rateLimited,
@@ -82201,7 +82212,7 @@ components:
             - type: "null"
         syncHealth:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Present on the GET read; omitted from the PATCH echo."
+          description: "Deprecated, still served: read `health`. Present on the GET read; omitted from the PATCH echo."
           $ref: "#/components/schemas/SyncHealth"
         metricFreshness:
           description: Per-metric-type freshness for the `APPLE_HEALTH` source, with the per-type arrival facts. Present on the
@@ -82879,7 +82890,7 @@ components:
           type: boolean
         state:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           type: string
           enum:
             - connected
@@ -82902,14 +82913,14 @@ components:
             - type: "null"
         lastError:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Last recorded failure message, decrypted from the ledger.
-            Null when the last attempt succeeded or none has run."
+          description: "Deprecated, still served: read `health`. Last recorded failure message, decrypted from the ledger. Null
+            when the last attempt succeeded or none has run."
           type:
             - string
             - "null"
         syncHealth:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           $ref: "#/components/schemas/SyncHealth"
         health:
           description: The unified connection state. Present whenever the connection exists; null in the rare case it resolved to
@@ -83098,9 +83109,9 @@ components:
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         tokenExpired:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. The stored access token's expiry is in the past. Read
-            straight off the row — unlike the Withings status read, this endpoint does not refresh; the sync path
-            refreshes lazily instead."
+          description: "Deprecated, still served: read `health`. The stored access token's expiry is in the past. Read straight
+            off the row — unlike the Withings status read, this endpoint does not refresh; the sync path refreshes
+            lazily instead."
           type: boolean
         tokenExpiresAt:
           type: string
@@ -83189,8 +83200,7 @@ components:
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         tokenExpired:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. True after a refresh attempt that did not produce a live
-            token."
+          description: "Deprecated, still served: read `health`. True after a refresh attempt that did not produce a live token."
           type: boolean
         tokenRefreshFailed:
           description: The read tried to refresh an expired token and could not — either the per-user credentials are gone or
@@ -83210,8 +83220,8 @@ components:
             - "null"
         hasActivityScope:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Pre-computed convenience flag the reconnect banner reads. A
-            null `scope` counts as missing activity."
+          description: "Deprecated, still served: read `health`. Pre-computed convenience flag the reconnect banner reads. A null
+            `scope` counts as missing activity."
           type: boolean
         health:
           description: The unified connection state. Present whenever the connection exists; null in the rare case it resolved to
@@ -83520,8 +83530,8 @@ components:
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         tokenExpired:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Read straight off the row — this endpoint does not refresh;
-            the sync path refreshes lazily."
+          description: "Deprecated, still served: read `health`. Read straight off the row — this endpoint does not refresh; the
+            sync path refreshes lazily."
           type: boolean
         tokenExpiresAt:
           type: string
@@ -83691,8 +83701,8 @@ components:
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         tokenExpired:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Read straight off the row — this endpoint does not refresh;
-            the sync path refreshes lazily."
+          description: "Deprecated, still served: read `health`. Read straight off the row — this endpoint does not refresh; the
+            sync path refreshes lazily."
           type: boolean
         tokenExpiresAt:
           type: string
@@ -83742,7 +83752,7 @@ components:
             when every type was read to its start. Kept after the backfill completes; cleared on reconnect.
         needsReauth:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. The stored refresh token was rejected with `invalid_grant` —
+          description: "Deprecated, still served: read `health`. The stored refresh token was rejected with `invalid_grant` —
             Google expires it after 7 days while the OAuth client is in Testing publishing mode, and a user-revoked
             grant lands here too. Distinct from `parked` and from `disconnected`: the connection still exists, it just
             cannot mint a token until the user reconnects. Only Google Health has this field."
@@ -83946,7 +83956,7 @@ components:
           description: The user has stored their own BYO client id and secret.
         state:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           type: string
           enum:
             - connected
@@ -83969,13 +83979,13 @@ components:
             - type: "null"
         lastError:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           type:
             - string
             - "null"
         syncHealth:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           $ref: "#/components/schemas/SyncHealth"
         health:
           description: The unified connection state. Present whenever the connection exists; null in the rare case it resolved to
@@ -84370,7 +84380,7 @@ components:
             - disconnected
             - parked
             - unknown
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           deprecated: true
         lastSuccessAt:
           anyOf:
@@ -84386,7 +84396,7 @@ components:
             - type: "null"
         lastError:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           type:
             - string
             - "null"
@@ -84413,11 +84423,11 @@ components:
               additionalProperties: false
             - type: "null"
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Per-kind consecutive-failure counters, or null when the row
-            has never written a bucket payload. Compare against the top-level `threshold` to know how close the provider
-            is to the operator alert."
+          description: "Deprecated, still served: read `health`. Per-kind consecutive-failure counters, or null when the row has
+            never written a bucket payload. Compare against the top-level `threshold` to know how close the provider is
+            to the operator alert."
         syncHealth:
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           deprecated: true
           $ref: "#/components/schemas/SyncHealth"
         metricFreshness:
@@ -84454,7 +84464,7 @@ components:
             - type: "null"
         tokenExpired:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Null — not false — when there is no connection to judge."
+          description: "Deprecated, still served: read `health`. Null — not false — when there is no connection to judge."
           type:
             - boolean
             - "null"
@@ -84497,14 +84507,14 @@ components:
             - "null"
         hasActivityScope:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Withings only."
+          description: "Deprecated, still served: read `health`. Withings only."
           type: boolean
         planUnavailable:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Withings only. The readings this connection's Withings API
-            plan withholds (status 277 since the 2026-10-12 plan split), deduplicated and in display order. Empty when
-            the plan refuses nothing. The sync skips these and keeps importing everything else; the list refreshes when
-            the weekly re-probe asks again."
+          description: "Deprecated, still served: read `health`. Withings only. The readings this connection's Withings API plan
+            withholds (status 277 since the 2026-10-12 plan split), deduplicated and in display order. Empty when the
+            plan refuses nothing. The sync skips these and keeps importing everything else; the list refreshes when the
+            weekly re-probe asks again."
           type: array
           items:
             type: string
@@ -84533,7 +84543,7 @@ components:
               - weight
         needsReauth:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Google Health only."
+          description: "Deprecated, still served: read `health`. Google Health only."
           type: boolean
         available:
           description: Oura / Polar / Strava only.
@@ -84543,7 +84553,7 @@ components:
           type: boolean
         scopeReconnect:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Oura only. Collections the stored grant does not cover: Oura
+          description: "Deprecated, still served: read `health`. Oura only. Collections the stored grant does not cover: Oura
             refused them for a missing scope (named in its 401, or inferred when sibling collections succeeded with the
             same token), or the scopes Oura reported at connect leave theirs out. Not a failure and not counted toward
             the reconnect threshold; one reconnect asks for the missing scopes. Empty when the grant covers everything
@@ -84599,7 +84609,7 @@ components:
           description: The unified connection state, null when the provider is not connected (and for Fitbit once
             `retirement.ended`). It supersedes `state`, `lastError`, `consecutiveFailuresByKind`, `syncHealth`,
             `tokenExpired`, `needsReauth`, `hasActivityScope`, `planUnavailable` and `scopeReconnect` on this entry;
-            those nine are deprecated and removed in v1.44.
+            those nine are deprecated and still served for clients that predate `health`.
       required:
         - integration
         - state
@@ -88024,6 +88034,7 @@ components:
               - SECURITY_ALERT
               - DAILY_BRIEFING
               - SHARED_RECORD_INTAKE
+              - BACKUP_HEALTH
             description: Notification category a per-channel preference can toggle.
           additionalProperties:
             type: boolean
@@ -88045,6 +88056,7 @@ components:
             - SECURITY_ALERT
             - DAILY_BRIEFING
             - SHARED_RECORD_INTAKE
+            - BACKUP_HEALTH
           description: What each event does on a channel with no stored row, resolved for this account by the function delivery
             uses. Most are constant per category; the mood reminder follows the account's mood-reminder setting
             (`moodReminderEnabled` on `/api/user/profile`). Render a switch without a row from this map rather than from
@@ -88115,6 +88127,7 @@ components:
             - SECURITY_ALERT
             - DAILY_BRIEFING
             - SHARED_RECORD_INTAKE
+            - BACKUP_HEALTH
           description: Notification category a per-channel preference can toggle.
         enabled:
           type: boolean

@@ -202,7 +202,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "encounter.reminder-conflict",
       "encounter.reminder-not-found",
     ],
-    encryption: ["encryption.keyBackup.stale", "encryption.key_mismatch"],
+    encryption: ["encryption.key_mismatch"],
     environment: [
       "environment.backfill_pending",
       "environment.backfill_rate_limited",
@@ -401,11 +401,13 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "profile_claim.taken",
     ],
     record_write: ["record_write.rate_limited"],
+    recovery: ["recovery.kit.stale"],
     "report-selection": [
       "report-selection.body.invalid_json",
       "report-selection.body.invalid_shape",
       "report-selection.leaves.unknown",
     ],
+    request: ["request.cross_site"],
     route: ["route.retired"],
     search: ["search.invalid"],
     security_activity: ["security_activity.invalid"],

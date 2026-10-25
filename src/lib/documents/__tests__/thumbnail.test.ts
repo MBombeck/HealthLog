@@ -132,7 +132,15 @@ describe("generateThumbnail", () => {
   it("returns { ok: false } and never throws on malformed image bytes", async () => {
     await expect(
       generateThumbnail(Buffer.from("not a real image"), "image/png"),
-    ).resolves.toEqual({ ok: false, reason: "error" });
+    ).resolves.toEqual({ ok: false, reason: "size-unreadable" });
+  });
+
+  it("returns { ok: false } when a readable header fronts bytes that do not decode", async () => {
+    const header = sourceImage(8, 8, "image/png").subarray(0, 40);
+    await expect(generateThumbnail(header, "image/png")).resolves.toEqual({
+      ok: false,
+      reason: "error",
+    });
   });
 
   it("returns { ok: false } on a malformed PDF", async () => {
@@ -158,13 +166,65 @@ describe("generateThumbnail", () => {
   });
 
   it("refuses an oversize image the header sniff missed (post-decode cap)", async () => {
-    // Bytes the JPEG sniffer cannot read (no SOI) → the pre-decode guard is
-    // skipped and the code falls through to `loadImage`. The decoder is forced
-    // to return 30000×30000 = 900 MP, so only the post-decode backstop can
-    // catch it. Without that backstop this would OOM the serial worker.
+    // A readable header declaring a small image whose decoder is forced to
+    // return 30000×30000 = 900 MP: only the post-decode backstop can catch
+    // it.
     loadImageMock.mockResolvedValueOnce({ width: 30_000, height: 30_000 });
     await expect(
-      generateThumbnail(Buffer.from("desynced jpeg bytes"), "image/jpeg"),
+      generateThumbnail(sourceImage(16, 16, "image/jpeg"), "image/jpeg"),
     ).resolves.toEqual({ ok: false, reason: "pixel-cap" });
+  });
+
+  /**
+   * A JPEG whose frame header declares `width` × `height`, with `fill` 0xFF
+   * fill bytes after the start-of-image marker. The standard allows fill
+   * bytes before any marker and every decoder skips them.
+   */
+  function jpegDeclaring(width: number, height: number, fill: number): Buffer {
+    const base = sourceImage(16, 16, "image/jpeg");
+    const sof = base.indexOf(Buffer.from([0xff, 0xc0]));
+    const patched = Buffer.from(base);
+    patched.writeUInt16BE(height, sof + 5);
+    patched.writeUInt16BE(width, sof + 7);
+    return Buffer.concat([
+      patched.subarray(0, 2),
+      Buffer.alloc(fill, 0xff),
+      patched.subarray(2),
+    ]);
+  }
+
+  it("reads the size of a JPEG with fill bytes before a marker, and refuses a bomb before decoding", async () => {
+    loadImageMock.mockClear();
+    // 20000×20000 behind one fill byte: the old walker lost its place, read
+    // no size and let the decoder allocate 1.6 GB.
+    await expect(
+      generateThumbnail(jpegDeclaring(20_000, 20_000, 1), "image/jpeg"),
+    ).resolves.toEqual({ ok: false, reason: "pixel-cap" });
+    await expect(
+      generateThumbnail(jpegDeclaring(20_000, 20_000, 3), "image/jpeg"),
+    ).resolves.toEqual({ ok: false, reason: "pixel-cap" });
+    expect(loadImageMock).not.toHaveBeenCalled();
+  });
+
+  it("still previews an ordinary JPEG that carries fill bytes", async () => {
+    const result = await generateThumbnail(
+      jpegDeclaring(16, 16, 2),
+      "image/jpeg",
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it("refuses an image whose size cannot be read instead of decoding it", async () => {
+    loadImageMock.mockClear();
+    // Start of image, then straight into a scan: no frame header to read.
+    const noFrame = Buffer.from([0xff, 0xd8, 0xff, 0xda, 0x00, 0x08, 1, 2, 3]);
+    await expect(generateThumbnail(noFrame, "image/jpeg")).resolves.toEqual({
+      ok: false,
+      reason: "size-unreadable",
+    });
+    await expect(
+      generateThumbnail(Buffer.from("RIFF0000WEBPVP8Z"), "image/webp"),
+    ).resolves.toEqual({ ok: false, reason: "size-unreadable" });
+    expect(loadImageMock).not.toHaveBeenCalled();
   });
 });

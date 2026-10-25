@@ -14,6 +14,10 @@
  * stopped six weeks ago — every row it lists has a perfectly ordinary
  * timestamp either way.
  *
+ * The database row comes first in what an operator needs and last in this
+ * file: the nightly whole-database dump (`getDatabaseBackupHealth`), the
+ * one copy that rebuilds a lost server, read from its own ledger.
+ *
  * And alongside both, the off-host leg: one row per account saying when this
  * host last put that account's encrypted copy in the operator's bucket and how
  * stale that is against the nightly schedule. It comes from the ledger the
@@ -31,6 +35,7 @@ import {
 } from "@/lib/jobs/job-failures";
 import { readBackupPassActivity } from "@/lib/jobs/backup-pass-attempts";
 import { summariseBackupSchedule } from "@/lib/jobs/backup-schedule-status";
+import { getDatabaseBackupHealth } from "@/lib/database-backup/health";
 import {
   offhostBackupConfigured,
   probeOffhostLifecycle,
@@ -39,6 +44,7 @@ import { OFFHOST_BACKUP_QUEUE } from "@/lib/jobs/offhost-backup-queue";
 import { offhostPurgeDue } from "@/lib/jobs/offhost-purge-queue";
 import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { accountDeletionGraceDays } from "@/lib/account-deletion/grace";
+import { LIFECYCLE_UNKNOWN } from "@/lib/jobs/offhost-lifecycle";
 import {
   classifyOffhostBackup,
   OFFHOST_BACKUP_PERIOD_HOURS,
@@ -200,16 +206,15 @@ export const GET = apiHandler(async () => {
     readBackupPassActivity(prisma, DATA_BACKUP_QUEUE, weeklyRunningSince),
     readBackupPassActivity(prisma, OFFHOST_BACKUP_QUEUE, offhostRunningSince),
   ]);
-  const [purgeCount, oldestPurge, lifecycle] = await Promise.all([
+  const [purgeCount, oldestPurge, lifecycle, database] = await Promise.all([
     prisma.offhostPurgeRequest.count({ where: stillInBucket }),
     prisma.offhostPurgeRequest.findFirst({
       where: stillInBucket,
       orderBy: { requestedAt: "asc" },
       select: { requestedAt: true, lastFailure: true },
     }),
-    configured
-      ? probeOffhostLifecycle()
-      : Promise.resolve({ state: "unknown" as const, expirationDays: null }),
+    configured ? probeOffhostLifecycle() : Promise.resolve(LIFECYCLE_UNKNOWN),
+    getDatabaseBackupHealth(now),
   ]);
 
   const payload: BackupsList = {
@@ -241,6 +246,7 @@ export const GET = apiHandler(async () => {
       },
       lifecycle,
     },
+    database,
   };
 
   return apiSuccess(payload);

@@ -84,6 +84,12 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "continued",
   "conversation_titles_migrated",
   "created",
+  // The nightly whole-database dump: where it went and how big.
+  "database_backup_bytes",
+  "database_backup_local",
+  "database_backup_offhost",
+  "database_backup_removed",
+  "database_backup_status",
   "daily_rows_retired",
   "days_consolidated",
   "days_rebuilt",
@@ -241,6 +247,13 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "restore_drill_plaintext_bytes",
   "restore_drill_unchecked",
   "restore_drill_stale",
+  // The hourly recovery readiness evaluation: the overall verdict, how many
+  // signals need attention or are failing, notices sent, admins reached.
+  "recovery_readiness_admins",
+  "recovery_readiness_attention",
+  "recovery_readiness_failing",
+  "recovery_readiness_notices",
+  "recovery_readiness_state",
   "restore_fail_cause",
   "restore_failed",
   "restore_measurements",

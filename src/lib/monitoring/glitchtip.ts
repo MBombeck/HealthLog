@@ -1,3 +1,4 @@
+import { redactOptional, redactSecrets } from "@/lib/logging/redact";
 import { safeFetch } from "@/lib/safe-fetch";
 
 interface ParsedGlitchtipDsn {
@@ -245,7 +246,13 @@ export async function sendGlitchtipEvent(params: {
   }
 
   const eventId = createEventId();
-  const payload = buildEventPayload(eventId, params.input);
+  // The egress boundary: whatever a caller passed, the message and stack are
+  // scrubbed of credentials and of a Prisma call's printed arguments here.
+  const payload = buildEventPayload(eventId, {
+    ...params.input,
+    message: redactSecrets(params.input.message),
+    stack: redactOptional(params.input.stack),
+  });
   const envelopeBody = buildEnvelopeBody(config, eventId, payload);
 
   const envelopeResult = await tryEnvelope(config, envelopeBody);

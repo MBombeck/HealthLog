@@ -49,6 +49,9 @@ vi.mock("@/lib/rate-limit", () => ({
 }));
 
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
+vi.mock("@/lib/modules/gate", () => ({
+  isModuleEnabled: vi.fn(async () => true),
+}));
 vi.mock("@/lib/db-compat", () => ({
   ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
 }));
@@ -70,6 +73,7 @@ import {
 import { verifyUnlockValue } from "@/lib/clinician-share/unlock-cookie";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { encryptDocumentToBytes } from "@/lib/documents/store";
+import { isModuleEnabled } from "@/lib/modules/gate";
 
 const TOKEN = "hls_000000000000000000000000000000000000000000000000";
 const OWNER = "owner-1";
@@ -164,6 +168,17 @@ beforeEach(() => {
 });
 
 describe("GET /c/[token]/d/[id] — share document serve", () => {
+  it("answers 404 once the owner switched the documents module off", async () => {
+    seedMembership({ mimeType: "application/pdf", bytes: PDF_BYTES });
+    vi.mocked(isModuleEnabled).mockResolvedValueOnce(false);
+
+    const res = await callGet(makeReq("doc-1"), ctx("doc-1"));
+
+    expect(res.status).toBe(404);
+    expect(isModuleEnabled).toHaveBeenCalledWith(OWNER, "inboundDocuments");
+    expect(prisma.clinicianShareLinkDocument.findUnique).not.toHaveBeenCalled();
+  });
+
   it("serves a PDF inline through the token, confined to the frozen set", async () => {
     seedMembership({ mimeType: "application/pdf", bytes: PDF_BYTES });
 

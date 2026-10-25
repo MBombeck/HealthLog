@@ -13,11 +13,13 @@ Migrations land **before** the new app container takes traffic. The
 canonical command sequence on a single-instance host:
 
 ```sh
-# 0. Dump the database first. A migration is not undone by going back to
-#    the previous image; the dump is the way back. See "Updates" in
-#    docs/self-hosting/getting-started.md.
-docker compose exec -T db pg_dump -U healthlog healthlog \
-  | gzip > healthlog-before-update-$(date +%F).sql.gz
+# 0. Nothing to do by hand for the way back: when the new image brings
+#    migrations, its entrypoint first writes
+#    healthlog-<time>-pre-migration.dump into DB_BACKUP_DIR (the `backups`
+#    volume) and keeps the last two. A migration is not undone by going back
+#    to the previous image; that dump is the way back
+#    (docs/ops/disaster-recovery.md, "Going back to before a migration").
+#    Copy it off the host if the host itself is what you are worried about.
 
 # 1. Pull the new image. If you pin a version with HEALTHLOG_IMAGE_REF,
 #    set it to the new one first.
@@ -32,6 +34,14 @@ docker compose run --rm app sh -c 'exit 0'
 # 3. Recreate the app container so it picks up the new image.
 docker compose up -d app
 ```
+
+Step 2 takes the pre-migration dump too, in the one-off container, before it
+migrates. When the backups directory is writable and that dump fails (a full
+disk, most often), the entrypoint stops before migrating and says so; free
+the space and run the step again, or set `DB_BACKUP_BEFORE_MIGRATE=false` for
+one start without the dump. Without a writable directory (an install that
+runs the image without the `backups` volume) the log carries a warning, no
+dump is taken, and the migrations run.
 
 Use `docker compose run` rather than a plain `docker run` for step 2. A
 plain `docker run` starts outside the stack's network, where `db` does not
@@ -230,12 +240,15 @@ roll back:
 dev --create-only --name vX_Y_Z_rollback_<col>`), edit the SQL,
    commit, and re-deploy. Never `migrate resolve --rolled-back` against
    production unless you've taken a fresh `pg_dump` first.
-4. Rolling back from v1.40.2 or later to v1.40.1 or earlier: an account
-   that saved the Coach lookback "Last year" reads its whole Coach
-   preference blob as defaults on the older version, metric exclusions
-   included, until the setting is saved again. Ask affected accounts to
-   pick another lookback before the rollback, or re-save their exclusions
-   after it.
+
+When the data itself has to go back to before the update, restore the
+pre-migration dump with the previous image; the steps are in
+[`disaster-recovery.md`](disaster-recovery.md#going-back-to-before-a-migration). 4. Rolling back from v1.40.2 or later to v1.40.1 or earlier: an account
+that saved the Coach lookback "Last year" reads its whole Coach
+preference blob as defaults on the older version, metric exclusions
+included, until the setting is saved again. Ask affected accounts to
+pick another lookback before the rollback, or re-save their exclusions
+after it.
 
 ## Catalog templates
 
@@ -270,10 +283,13 @@ always confirm the served build after a deploy:
 ```sh
 # Asserts prod + demo serve 1.9.0, prints each target's buildSha,
 # exits non-zero on a mismatch or timeout after a bounded retry loop.
-pnpm dlx tsx scripts/assert-deploy.ts 1.9.0
+HEALTHLOG_PROD_URL=https://healthlog.example.com \
+  pnpm dlx tsx scripts/assert-deploy.ts 1.9.0
 ```
 
-Pass `--only=prod` / `--only=demo` to check a single target, or
+`HEALTHLOG_PROD_URL` is the base URL of your instance; it has no default and
+is required unless you pass `--only=demo`. Pass `--only=prod` /
+`--only=demo` to check a single target, or
 `--attempts=N --interval=ms` to widen the retry window while a slow
 pull settles.
 
@@ -506,29 +522,36 @@ low-friction default.
 
 ## Deploy-status webhook: replay protection
 
-`POST /api/internal/deploy-webhook` authenticates via the static
-`X-Deploy-Webhook-Secret` header. Since v1.16.4 it additionally
-enforces a freshness window: a request carrying an
-`X-Deploy-Webhook-Timestamp` header (unix seconds, unix milliseconds,
-or ISO-8601) is rejected with `401 {"status":"stale"}` when the
-timestamp lies more than **5 minutes** from server time — so a captured
-request cannot be replayed later to re-page admins or forge deploy
-outcomes in the audit log.
+`POST /api/internal/deploy-webhook` accepts two kinds of request.
 
-Two modes:
+- **Secret header.** `X-Deploy-Webhook-Secret` carries the shared secret.
+  This is what Coolify's stock notification sender can do. It does not
+  protect against a replay: anyone who captures one request holds the
+  secret and can send any request they like. An `X-Deploy-Webhook-Timestamp`
+  beside it is still checked (a stale or unparseable one is refused with
+  `401 {"status":"stale"}`), but it is covered by nothing, so treat it as a
+  staleness hint. Versions before 1.46 described it as replay protection.
+- **Signature.** `X-Deploy-Webhook-Signature: sha256=<hex>` is the
+  HMAC-SHA256, under `DEPLOY_WEBHOOK_SECRET`, of the
+  `X-Deploy-Webhook-Timestamp` value, a dot, and the exact request body. The
+  timestamp (unix seconds, unix milliseconds or ISO-8601) must lie within
+  **5 minutes** of server time. A signed request sends no secret, and a
+  captured one is useless once the window has passed.
 
-- **Default (tolerant).** Requests _without_ the header pass — Coolify's
-  stock notification sender does not attach one. A header that is
-  present but stale or unparseable is always rejected.
-- **Strict.** Set `DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP=true` in the app
-  environment to make the header mandatory, closing the replay window
-  completely. Use this when the sender (or a reverse proxy in front of
-  the app) can attach the timestamp, e.g.:
+Set `DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP=true` to accept signed requests only.
+Use it when the sender, or a small relay in front of the app, can sign:
 
-  ```sh
-  curl -X POST https://<host>/api/internal/deploy-webhook \
-    -H "X-Deploy-Webhook-Secret: $SECRET" \
-    -H "X-Deploy-Webhook-Timestamp: $(date +%s)" \
-    -H "Content-Type: application/json" \
-    -d '{"status":"success"}'
-  ```
+```sh
+TS=$(date +%s)
+BODY='{"status":"success"}'
+SIG=$(printf '%s.%s' "$TS" "$BODY" \
+  | openssl dgst -sha256 -hmac "$SECRET" | sed 's/^.*= //')
+curl -X POST https://<host>/api/internal/deploy-webhook \
+  -H "X-Deploy-Webhook-Timestamp: $TS" \
+  -H "X-Deploy-Webhook-Signature: sha256=$SIG" \
+  -H "Content-Type: application/json" \
+  -d "$BODY"
+```
+
+Before 1.46 the strict setting accepted the secret header plus a fresh
+timestamp. Such a sender now gets 401 in strict mode and has to sign.

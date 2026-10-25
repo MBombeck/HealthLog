@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { fenceUserText } from "@/lib/ai/coach/data-fence";
 import { medicationWindow } from "@/lib/medications/course-window";
 
 import { prisma } from "@/lib/db";
@@ -167,8 +168,10 @@ export const getMedicationScheduleTool: McpToolDefinition = {
         eraStart: eraStartByMedId.get(m.id) ?? null,
       });
       return {
-        name: m.name,
-        dose: m.dose,
+        // The person's own words: fenced as data, as the server
+        // instructions promise for medication names.
+        name: fenceUserText(m.name),
+        dose: m.dose === null ? null : fenceUserText(m.dose),
         nextDueAt: display ? display.at.toISOString() : null,
         overdue: display ? display.overdue : false,
         asNeeded: m.asNeeded,

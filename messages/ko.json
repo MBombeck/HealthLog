@@ -780,13 +780,13 @@
         "bmi": "kg/m²"
       }
     },
-    "keyBackupBanner": {
-      "title": "암호화 키를 백업하세요",
-      "body": "키 사본이 없으면 다시 설치한 뒤 데이터를 복구할 수 없습니다. 1분이면 됩니다.",
-      "action": "단계 열기"
-    },
     "quickAddSymptom": "증상 기록",
-    "todayCardVisible": "상단 카드 표시"
+    "todayCardVisible": "상단 카드 표시",
+    "recoveryKitBanner": {
+      "title": "복구 키트를 보관하세요",
+      "body": "이 서버가 사용하는 키의 사본이 없으면 다시 설치한 뒤 데이터를 복구할 수 없습니다. 몇 분이면 됩니다.",
+      "action": "키트 열기"
+    }
   },
   "measurements": {
     "title": "측정",
@@ -8306,7 +8306,23 @@
         "restoreSkippedEnvironmentLocationCiphertext": "이 서버에 없는 키로 암호화된 환경 기간 또는 날짜의 위치(암호화된 채 유지되며 해당 날짜는 새로 가져오지 않음)",
         "typePreWipe": "모든 데이터 삭제 전",
         "retentionNote": "주간 사본은 매주 일요일에 교체돼요. \"모든 데이터 삭제\" 전에 만든 사본은 {days}일 뒤에 삭제돼요. 올린 사본은 해당 계정이 지워질 때까지 남아요.",
-        "retentionNoteNoGrace": "주간 사본은 매주 일요일에 교체돼요. 올린 사본은 해당 계정이 지워질 때까지 남아요."
+        "retentionNoteNoGrace": "주간 사본은 매주 일요일에 교체돼요. 올린 사본은 해당 계정이 지워질 때까지 남아요.",
+        "database": {
+          "title": "데이터베이스 덤프",
+          "lastGood": "마지막 정상 덤프 {when}, {size}, {where}.",
+          "whereBoth": "이 서버와 외부 저장소에 보관됨",
+          "whereLocal": "이 서버에 보관됨",
+          "whereOffhost": "외부 저장소에만 있음",
+          "none": "아직 데이터베이스 덤프가 없습니다. 첫 덤프는 오늘 밤에 실행됩니다.",
+          "failedTitle": "마지막 데이터베이스 덤프가 실패했습니다",
+          "failedDescription": "{when}: {reason}",
+          "disabled": "데이터베이스 덤프가 꺼져 있습니다(DB_BACKUP_ENABLED=false). 다른 방법으로 데이터베이스를 백업하세요.",
+          "noDirectoryOffhost": "이 서버는 {dir}에 쓸 수 없어 덤프가 외부 저장소로만 가고 여기에는 보관되지 않습니다. 백업 볼륨을 마운트하세요.",
+          "noDirectory": "이 서버는 {dir}에 쓸 수 없고 외부 저장소도 설정되지 않아 데이터베이스 덤프를 만들 수 없습니다. 백업 볼륨을 마운트하세요.",
+          "retentionLocal": "삭제된 계정은 덤프가 만료될 때까지 덤프에 남습니다. 이 서버에는 최신 덤프 {nights}개가 보관됩니다.",
+          "retentionOffhost": "버킷의 수명 주기 규칙이 외부 사본을 {days}일 후에 삭제합니다.",
+          "retentionOffhostMissing": "버킷의 어떤 수명 주기 규칙도 database/를 다루지 않아 그곳의 덤프와 그 안의 삭제된 계정이 절대 삭제되지 않습니다. 이 접두사에 대한 규칙을 추가하세요."
+        }
       },
       "danger-zone": {
         "title": "위험 구역",
@@ -8527,47 +8543,6 @@
       "title": "페이지의 이 부분을 표시할 수 없습니다",
       "description": "페이지의 나머지 부분은 계속 작동합니다. 다시 시도하거나 계속 실패하면 새로고침하세요."
     },
-    "keyBackup": {
-      "title": "암호화 키를 백업하세요",
-      "description": "이 키의 사본이 없으면 암호화된 데이터와 이 서버의 백업을 다시는 읽을 수 없습니다.",
-      "loading": "키 백업 상태를 불러오는 중…",
-      "loadError": "키 백업 상태를 불러오지 못했습니다.",
-      "badgeDue": "해야 함",
-      "badgeDone": "백업됨",
-      "keyId": "활성 키 ID",
-      "fingerprint": "지문",
-      "whatIsLost": "키의 사본을 이 서버 밖, 예를 들어 비밀번호 관리자에 보관하세요. 서버가 다른 키로 다시 설치되면 HealthLog는 원래 키가 돌아올 때까지 서비스를 시작하지 않습니다.",
-      "fingerprintHint": "지문은 키의 SHA-256 해시 앞 12자입니다. 키를 드러내지 않고 식별하므로 사본과 비교할 수 있습니다.",
-      "checkLabel": "내 사본 확인",
-      "checkButton": "확인",
-      "checkNote": "붙여넣은 키는 활성 키와 비교한 뒤 버립니다. 저장하거나 기록하지 않습니다.",
-      "checkInsecureNote": "이 페이지는 https://로 제공되지 않으므로 붙여넣은 키가 비밀번호와 마찬가지로 암호화되지 않은 채 네트워크를 지나갑니다. 비교한 뒤 버리며 저장하거나 기록하지 않습니다.",
-      "checkMatches": "사본이 활성 키와 일치합니다.",
-      "checkNoMatch": "사본이 활성 키와 일치하지 않습니다. 전체 값을 복사했는지 확인하세요.",
-      "checkFailed": "확인하지 못했습니다.",
-      "confirmButton": "이 키를 백업했습니다",
-      "confirmed": "키 백업이 확인되었습니다.",
-      "confirmFailed": "확인을 저장하지 못했습니다.",
-      "stale": "이 페이지를 연 뒤 서버의 키가 바뀌었습니다. 새 키 ID와 지문을 확인한 뒤 다시 확인하세요.",
-      "confirmedAt": "{date}에 확인됨.",
-      "confirmedAtBy": "{date}에 {who}님이 확인함.",
-      "dueAgain": "키 {keyId}의 백업이 확인되었지만 서버는 이제 다른 키를 사용합니다. 현재 키를 백업하세요.",
-      "tileLabel": "암호화 키 백업",
-      "tileDue": "확인 안 됨",
-      "tileDone": "확인됨",
-      "platform": {
-        "composeLabel": "Compose",
-        "composeWhere": "키는 docker-compose.yml 옆 .env 파일의 ENCRYPTION_KEY(또는 ENCRYPTION_KEYS)입니다.",
-        "truenasLabel": "TrueNAS",
-        "truenasWhere": "Apps에서 HealthLog를 선택하고 Edit을 누르세요. 키는 HealthLog Configuration 아래의 Encryption Key 필드에 있습니다. YAML로 설치한 앱이라면 환경 설정의 ENCRYPTION_KEY입니다.",
-        "coolifyLabel": "Coolify",
-        "coolifyWhere": "Coolify에서 애플리케이션을 열고 Environment Variables에서 ENCRYPTION_KEY를 복사하세요.",
-        "unraidLabel": "Unraid",
-        "unraidWhere": "Docker 탭에서 HealthLog 컨테이너를 편집하고 템플릿에서, 또는 Compose Manager 스택의 .env에서 ENCRYPTION_KEY를 복사하세요.",
-        "portainerLabel": "Portainer",
-        "portainerWhere": "Portainer에서 HealthLog 스택을 열고 환경 변수에서 ENCRYPTION_KEY를 복사하세요."
-      }
-    },
     "keyMismatch": {
       "title": "HealthLog가 데이터를 열 수 없습니다",
       "body": "이 서버를 시작한 암호화 키가 데이터베이스를 기록할 때 쓴 키와 다릅니다. 데이터를 보호하기 위해 이 문제가 해결될 때까지 HealthLog는 아무것도 제공하지 않습니다.",
@@ -8598,6 +8573,166 @@
       "defaultAboveCeiling": "기본 단계는 최고 단계보다 높을 수 없어요.",
       "gapLabel": "동기화 후 카드 새로 고침 간격(시간, 표준 단계)",
       "gapHint": "1에서 48 사이의 정수 시간이에요. 비워 두면 AI_SYNC_REGEN_GAP_HOURS를, 없으면 6을 사용해요. 현재 적용 값: {hours}시간."
+    },
+    "recoveryKit": {
+      "title": "복구 키트",
+      "description": "이 서버를 복원하는 데 필요한 모든 키를 ID와 지문으로 보여 줍니다.",
+      "intro": "아래 각 키의 사본을 이 서버 밖, 예를 들어 비밀번호 관리자에 보관하세요. 키가 없으면 데이터베이스 덤프도 백업 사본도 다시 읽을 수 없으며, 필요한 키가 없으면 HealthLog는 시작하지 않습니다.",
+      "loading": "복구 키트를 불러오는 중…",
+      "loadError": "복구 키트를 불러오지 못했습니다.",
+      "badgeDue": "해야 함",
+      "badgeDone": "보관됨",
+      "keyId": "ID",
+      "fingerprint": "지문",
+      "noFingerprint": "이 서버에 없음",
+      "kind": {
+        "application": "애플리케이션 키 {id}",
+        "backup": "외부 보관 백업 키",
+        "backupPrevious": "이전 외부 보관 백업 키",
+        "token": "토큰 키"
+      },
+      "need": {
+        "active": "새 데이터를 암호화합니다.",
+        "configured": "이 서버에 있습니다.",
+        "storedCopies": "저장된 사본 {count}개에 필요합니다.",
+        "offhostUntil": "{date}까지 외부 보관 사본에 필요합니다.",
+        "offhostUnknown": "버킷이 외부 보관 사본을 보관하는 동안 필요합니다.",
+        "backupActive": "새 외부 보관 사본을 모두 봉인합니다.",
+        "backupPrevious": "마지막 키 변경 전에 기록된 외부 보관 사본을 엽니다.",
+        "token": "세션, 토큰, 공유 링크에 서명합니다. 이 키가 없으면 모두 로그아웃되지만 데이터는 잃지 않습니다."
+      },
+      "source": "{variable}에 설정됨.",
+      "status": {
+        "confirmed": "보관됨",
+        "new": "아직 보관 안 됨",
+        "notConfigured": "이 서버에 없음",
+        "unreadable": "유효한 키가 아님"
+      },
+      "notConfiguredHint": "아직 이 키가 필요한 백업이 있지만 이 서버에는 키가 없습니다. 다른 곳에 보관한 사본만 그 백업을 읽을 수 있습니다. 그 사본을 확보한 뒤 키트를 확인하세요.",
+      "unreadableHint": "변수는 설정되어 있지만 유효한 키가 들어 있지 않습니다. 외부 보관 사본에 의존하기 전에 고치세요.",
+      "fingerprintHint": "지문은 키의 SHA-256 해시 앞 12자입니다. 키를 드러내지 않고 식별하므로 사본과 비교할 수 있습니다.",
+      "whereTitle": "키가 설정된 위치",
+      "platform": {
+        "composeLabel": "Compose",
+        "composeWhere": "키는 docker-compose.yml 옆 .env 파일에 있습니다: ENCRYPTION_KEY 또는 ENCRYPTION_KEYS, API_TOKEN_HMAC_KEY, 그리고 외부 보관 사본을 쓰는 경우 BACKUP_ENCRYPTION_KEY.",
+        "truenasLabel": "TrueNAS",
+        "truenasWhere": "Apps에서 HealthLog를 선택하고 Edit을 누르세요. 키는 HealthLog Configuration 아래에 있습니다. YAML로 설치한 앱이라면 환경 설정의 ENCRYPTION_KEY, API_TOKEN_HMAC_KEY, BACKUP_ENCRYPTION_KEY입니다.",
+        "coolifyLabel": "Coolify",
+        "coolifyWhere": "Coolify에서 애플리케이션을 열고 Environment Variables에서 ENCRYPTION_KEY, API_TOKEN_HMAC_KEY, BACKUP_ENCRYPTION_KEY를 복사하세요.",
+        "unraidLabel": "Unraid",
+        "unraidWhere": "Docker 탭에서 HealthLog 컨테이너를 편집하고 템플릿에서, 또는 Compose Manager 스택의 .env에서 ENCRYPTION_KEY, API_TOKEN_HMAC_KEY, BACKUP_ENCRYPTION_KEY를 복사하세요.",
+        "portainerLabel": "Portainer",
+        "portainerWhere": "Portainer에서 HealthLog 스택을 열고 환경 변수에서 ENCRYPTION_KEY, API_TOKEN_HMAC_KEY, BACKUP_ENCRYPTION_KEY를 복사하세요."
+      },
+      "restoreTitle": "이 서버 복원하기",
+      "restoreBody": "같은 키로 HealthLog를 설치하고, 가장 최근의 데이터베이스 덤프를 빈 데이터베이스에 복원한 다음 앱을 시작하세요. 가이드에서 단계별로 안내합니다.",
+      "restoreLink": "재해 복구 가이드",
+      "checkLabel": "내 사본 확인",
+      "checkKeyLabel": "확인할 키",
+      "checkValueLabel": "내가 보관한 키 사본",
+      "checkButton": "확인",
+      "checkNote": "붙여넣은 키는 이 서버의 키와 비교한 뒤 버립니다. 저장하거나 기록하지 않습니다.",
+      "checkInsecureNote": "이 페이지는 https://로 제공되지 않으므로 붙여넣은 키가 비밀번호와 마찬가지로 암호화되지 않은 채 네트워크를 지나갑니다. 비교한 뒤 버리며 저장하거나 기록하지 않습니다.",
+      "checkMatches": "사본이 이 키와 일치합니다.",
+      "checkNoMatch": "사본이 이 키와 일치하지 않습니다. 전체 값을 복사했는지 확인하세요.",
+      "checkFailed": "확인하지 못했습니다.",
+      "confirmButton": "모든 키의 사본을 보관했습니다",
+      "confirmed": "복구 키트가 확인되었습니다.",
+      "confirmFailed": "확인을 저장하지 못했습니다.",
+      "stale": "이 페이지를 연 뒤 키트가 바뀌었습니다. 지금 표시된 키를 확인한 뒤 다시 확인하세요.",
+      "confirmedAt": "{date}에 확인됨.",
+      "confirmedAtBy": "{date}에 {who}님이 확인함.",
+      "dueAgain": "키트는 {date}에 확인되었습니다. 이제 {keys}도 포함되며, 그 확인은 이를 다루지 않았습니다. 각각의 사본을 저장하고 다시 확인하십시오."
+    },
+    "recoveryReadiness": {
+      "title": "복구 준비 상태",
+      "description": "이 서버가 만드는 모든 백업을 기준으로, 서버를 잃었을 때 되살릴 수 있는지 판단합니다.",
+      "loading": "백업을 확인하는 중…",
+      "loadError": "복구 준비 상태를 불러오지 못했습니다.",
+      "state": {
+        "ok": "준비됨",
+        "attention": "확인 필요",
+        "failing": "위험"
+      },
+      "signal": {
+        "database_dump": "데이터베이스 덤프",
+        "weekly_copy": "주간 계정 사본",
+        "offhost_copies": "외부 보관 사본",
+        "restore_drill": "복원 훈련",
+        "offhost_setup": "외부 보관 백업",
+        "recovery_kit": "복구 키트"
+      },
+      "at": {
+        "database_dump": "최신 덤프: {date}",
+        "weekly_copy": "가장 오래된 계정 사본: {date}",
+        "offhost_copies": "가장 오래된 외부 보관 사본: {date}",
+        "restore_drill": "마지막 훈련: {date}",
+        "recovery_kit": "확인: {date}"
+      },
+      "dueBy": "{date}까지",
+      "fix": {
+        "database_dump": "백업 열기",
+        "weekly_copy": "백업 열기",
+        "offhost_copies": "백업 열기",
+        "restore_drill": "백업 열기",
+        "offhost_setup": "백업 열기",
+        "recovery_kit": "키트 열기"
+      },
+      "reason": {
+        "database_dump": {
+          "not_available": "이 버전은 데이터베이스 덤프를 예약하지 않습니다.",
+          "disabled": "예약된 데이터베이스 덤프가 꺼져 있어 이 서버를 다시 구축할 수 있는 사본이 없습니다. 다시 켜려면 DB_BACKUP_ENABLED를 제거하거나 true로 설정한 뒤 HealthLog를 다시 시작하십시오.",
+          "unreadable": "데이터베이스 덤프 상태를 읽지 못했습니다.",
+          "never_succeeded": "아직 성공한 데이터베이스 덤프가 없으며 마지막 시도도 실패했습니다.",
+          "never_ran": "덤프를 켠 뒤 {hours}시간 동안 데이터베이스 덤프가 기록되지 않았습니다.",
+          "first_pending": "첫 데이터베이스 덤프가 아직 실행되지 않았습니다.",
+          "stale": "최신 데이터베이스 덤프가 {hours}시간 전 것입니다.",
+          "last_failed": "마지막 데이터베이스 덤프가 실패했습니다. 그 전 덤프는 아직 최근 것입니다.",
+          "fresh": "최신 데이터베이스 덤프가 최근 것입니다.",
+          "nowhere_to_write": "덤프 디렉터리 {directory}에 쓸 수 없고 외부 버킷도 설정되어 있지 않아 덤프를 보관할 수 없습니다."
+        },
+        "weekly_copy": {
+          "no_accounts": "아직 복사할 계정이 없습니다.",
+          "stale": "가장 오래된 주간 사본이 {days}일 전 것입니다. 뒤처진 계정: {accounts}.",
+          "never": "{days}일 동안 주간 사본이 없는 계정이 있습니다. 뒤처진 계정: {accounts}.",
+          "first_pending": "첫 주간 사본은 일요일 이른 시간에 만들어집니다.",
+          "fresh": "모든 계정에 지난주 사본이 있습니다."
+        },
+        "offhost_copies": {
+          "not_configured": "외부 보관 버킷이 설정되지 않았습니다.",
+          "stale": "외부 보관 사본이 이틀 밤 넘게 뒤처져 있습니다. 뒤처진 계정: {accounts}.",
+          "first_pending": "야간 외부 보관 실행이 아직 어떤 계정에도 도달하지 않았습니다.",
+          "fresh": "모든 계정의 최근 사본이 외부 보관 버킷에 있습니다."
+        },
+        "restore_drill": {
+          "not_configured": "훈련은 외부 보관 버킷을 읽는데, 버킷이 설정되지 않았습니다.",
+          "not_run_yet": "월간 복원 훈련이 아직 실행되지 않았습니다.",
+          "failed": "마지막 복원 훈련이 실패했습니다: 사본 {checked}개 중 {failed}개를 다시 읽지 못했습니다.",
+          "failed_run": "마지막 복원 훈련을 끝까지 마치지 못했습니다.",
+          "passed": "마지막 복원 훈련에서 사본 {checked}개를 다시 읽었습니다."
+        },
+        "offhost_setup": {
+          "configured": "사본이 매일 밤 이 서버 밖으로 나갑니다.",
+          "no_admin": "아직 관리자 계정이 없습니다.",
+          "not_configured": "외부 보관 버킷이 설정되지 않아 모든 사본이 이 서버에만 있습니다.",
+          "not_configured_grace": "외부 보관 버킷이 아직 설정되지 않아 모든 사본이 이 서버에만 있습니다."
+        },
+        "recovery_kit": {
+          "confirmed": "복원에 필요한 모든 키의 사본이 보관되어 있습니다.",
+          "out_of_date": "복구 키트에 이제 {keys}도 포함되며, 마지막 확인은 이를 다루지 않았습니다. 고장 난 것은 없습니다. 사본을 저장하고 키트를 다시 확인하십시오.",
+          "no_admin": "아직 관리자 계정이 없습니다.",
+          "not_confirmed": "복원에 필요한 키의 사본을 아무도 확인하지 않았습니다: {keys}.",
+          "not_confirmed_grace": "복원에 필요한 키의 사본을 보관하세요: {keys}."
+        }
+      },
+      "recovered": {
+        "database_dump": "데이터베이스 덤프가 다시 최신 상태입니다.",
+        "weekly_copy": "모든 계정에 다시 최근 주간 사본이 있습니다.",
+        "offhost_copies": "모든 계정에 다시 최근 외부 보관 사본이 있습니다.",
+        "restore_drill": "복원 훈련을 다시 통과했습니다.",
+        "offhost_setup": "이제 외부 보관 사본이 설정되었습니다.",
+        "recovery_kit": "복구 키트가 다시 확인되었습니다."
+      }
     }
   },
   "achievements": {
@@ -9065,6 +9200,14 @@
     "checkupReminders": {
       "title": "검진 리마인더",
       "description": "검진 리마인더를 개별로 켜거나 끕니다."
+    },
+    "eventBackupHealth": "백업 상태",
+    "eventBackupHealthDesc": "백업이 멈추거나 뒤처지거나 다시 정상으로 돌아오면 보내요. 관리자에게만 보내요.",
+    "recoveryReadiness": {
+      "titleAttention": "백업에 확인이 필요해요",
+      "titleFailing": "백업이 위험해요",
+      "titleReminder": "백업이 여전히 위험해요",
+      "titleRecovered": "백업이 다시 정상이에요"
     }
   },
   "i18n": {
@@ -11792,7 +11935,7 @@
       "dismiss": "닫기",
       "empty": "이 문서에서 읽어낼 내용이 없었어요.",
       "unavailableBody": "AI 제공자를 설정하면 제목·종류·날짜를 추천해요.",
-      "unavailableLocalOcr": "AI 설정에서 로컬 OCR을 켜면 이 기기에서 이미지를 읽어요.",
+      "unavailableLocalOcr": "설정 → 모듈 → 검사에서 “이 기기에서 스캔 읽기”를 켜면 이 기기에서 이미지를 읽어요.",
       "unavailableAction": "AI 설정 열기",
       "errorGeneric": "문서를 읽지 못했어요. 다시 시도해 주세요.",
       "errorOcr": "이 이미지에서 텍스트를 읽지 못했어요.",
@@ -11805,11 +11948,12 @@
       "errorFileType": "이 파일 형식은 읽을 수 없어요.",
       "errorNotIndexed": "문서를 먼저 읽은 뒤에 추출해 주세요.",
       "errorOutputLimit": "AI 제공자가 값을 하나도 돌려주기 전에 출력 한도에 도달했어요. 더 긴 답변을 허용하는 모델로 다시 시도해 주세요.",
-      "errorLocalOcrDisabled": "AI 설정에서 로컬 OCR을 먼저 켜 주세요.",
+      "errorLocalOcrDisabled": "설정 → 모듈 → 검사에서 “이 기기에서 스캔 읽기”를 먼저 켜 주세요.",
       "errorProvider": "이 작업에 쓸 AI 제공자가 설정돼 있지 않아요.",
       "errorTextImageOnly": "로컬 OCR은 이미지만 읽어요. 이 파일은 읽을 수 없어요.",
       "errorConsent": "AI로 문서를 읽으려면 먼저 동의가 필요합니다.",
-      "errorUnavailable": "지금 여기에서는 AI로 문서를 읽을 수 없습니다."
+      "errorUnavailable": "지금 여기에서는 AI로 문서를 읽을 수 없습니다.",
+      "unavailableLocalOcrAction": "검사 설정 열기"
     },
     "summary": {
       "summarise": "요약하기",

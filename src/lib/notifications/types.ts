@@ -125,6 +125,13 @@ export const EVENT_TYPES = [
   // dispatcher addresses a userId, and under record substitution that userId
   // is the owner by design). Default ON, see EVENT_DEFAULT_ENABLED.
   "SHARED_RECORD_INTAKE",
+  // Recovery readiness, for admins only: a backup signal turned to
+  // attention or failing, is still failing a day later, or is back to normal
+  // (`src/lib/recovery/readiness-notify.ts`). Default ON: the whole point is
+  // that a stopped backup is pushed rather than found on a page weeks later.
+  // An admin routes it per channel in the /notifications matrix, where only
+  // admins see the row (`eventTypesForRole`).
+  "BACKUP_HEALTH",
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
@@ -214,7 +221,20 @@ export const EVENT_DEFAULT_ENABLED: Record<EventType, boolean> = {
   // sits in the /notifications matrix from day one, so an owner who finds it
   // noisy silences it per channel with one switch.
   SHARED_RECORD_INTAKE: true,
+  // ON by default; see the note on `EVENT_TYPES`. Only admins are ever
+  // addressed, and at most once per state change per signal.
+  BACKUP_HEALTH: true,
 };
+
+/** Event types only an admin is ever sent, and only an admin is shown. */
+export const ADMIN_ONLY_EVENT_TYPES: readonly EventType[] = ["BACKUP_HEALTH"];
+
+/** The event types a person with `role` can receive, in matrix order. */
+export function eventTypesForRole(role: string): EventType[] {
+  return role === "ADMIN"
+    ? [...EVENT_TYPES]
+    : EVENT_TYPES.filter((type) => !ADMIN_ONLY_EVENT_TYPES.includes(type));
+}
 
 export const CHANNEL_TYPE_LABELS: Record<ChannelType, string> = {
   TELEGRAM: "Telegram",

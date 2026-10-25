@@ -3,7 +3,12 @@ import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
-import { apiSuccess, returnAllZodIssues, safeJson } from "@/lib/api-response";
+import {
+  apiSuccess,
+  returnAllZodIssues,
+  safeJson,
+  isJsonContentType,
+} from "@/lib/api-response";
 import { adminReminderCheckSchema } from "@/lib/validations/notifications";
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
 import { dispatchLocalisedNotification } from "@/lib/notifications/dispatch-localised";
@@ -76,9 +81,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // body and no content-type), so the parse only runs when a JSON body is
   // actually presented. An empty object is the same instance-wide sweep.
   let input: unknown = {};
-  if (
-    (request.headers.get("content-type") ?? "").includes("application/json")
-  ) {
+  if (isJsonContentType(request.headers.get("content-type"))) {
     const { data, error } = await safeJson(request, { maxBytes: 4 * 1024 });
     if (error) return error;
     input = data ?? {};

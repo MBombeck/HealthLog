@@ -135,6 +135,13 @@ const PINNED_AFFORDANCES: Record<
   // off-host copy is, and the state it paints green came out of the database
   // rather than out of a request this card just made.
   "src/components/admin/offhost-backups-section.tsx": { "text-success": 1 },
+  // Reads the server's verdict, writes nothing: the check and the green mark
+  // say a backup signal is ok as the readiness model judged it, not that a
+  // request this card made succeeded.
+  "src/components/admin/recovery-readiness-card.tsx": {
+    CheckCircle2: 2,
+    "text-success": 1,
+  },
   "src/components/admin/recent-audit-preview.tsx": {
     CheckCircle2: 2,
     "text-success": 1,

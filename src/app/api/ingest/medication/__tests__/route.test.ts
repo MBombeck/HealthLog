@@ -348,6 +348,7 @@ describe("POST /api/ingest/medication — slot attribution + convergence (v1.16.
     // The replay probe finds the original event.
     vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValue({
       id: "evt-original",
+      medicationId: "med-1",
     } as never);
     const res = await POST(
       postReq({
@@ -358,6 +359,53 @@ describe("POST /api/ingest/medication — slot attribution + convergence (v1.16.
     );
     expect(res.status).toBe(200);
     expect(consumeForIntake).not.toHaveBeenCalled();
+  });
+  /**
+   * A token handed to an automation for one medication used to tell a name
+   * it may not touch (403) from one that does not exist (404), and to replay
+   * any of the owner's doses by key before checking its scope.
+   */
+  function narrowToken(scopes: string[]) {
+    vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
+      id: "tok-2",
+      userId: "user-1",
+      permissions: ["medication:ingest", ...scopes],
+      revoked: false,
+      expiresAt: null,
+      lastUsedAt: null,
+    } as Awaited<ReturnType<typeof prisma.apiToken.findUnique>>);
+  }
+
+  it("gives a one-medication token the same 403 for an unknown and an out-of-scope name", async () => {
+    wireHappyPath();
+    narrowToken(["medication:med-other:ingest"]);
+    const known = await POST(
+      postReq({ medicationName: "Metformin", idempotencyKey: "k-known-1" }),
+    );
+    vi.mocked(prisma.medication.findFirst).mockResolvedValue(null);
+    const unknown = await POST(
+      postReq({ medicationName: "Nonexistent", idempotencyKey: "k-unknown-1" }),
+    );
+    expect(known.status).toBe(403);
+    expect(unknown.status).toBe(403);
+    expect((await unknown.json()).error).toBe((await known.json()).error);
+    // No replay was looked up for a medication outside the scope.
+    expect(prisma.medicationIntakeEvent.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("never replays another medication's dose to a scoped token", async () => {
+    wireHappyPath();
+    narrowToken(["medication:med-1:ingest"]);
+    vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValue({
+      id: "evt-other",
+      medicationId: "med-other",
+      takenAt: new Date(),
+    } as Awaited<ReturnType<typeof prisma.medicationIntakeEvent.findFirst>>);
+    const res = await POST(
+      postReq({ medicationName: "Metformin", idempotencyKey: "k-spent-1" }),
+    );
+    expect(res.status).toBe(409);
+    expect(JSON.stringify(await res.json())).not.toContain("evt-other");
   });
 });
 

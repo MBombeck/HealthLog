@@ -6,7 +6,7 @@ import en from "../../../../messages/en.json";
 const healthySchedule = {
   lastSuccessAt: "2026-09-01T03:00:00.000Z",
   lastSuccessAgeDays: 2,
-  staleAfterDays: 10,
+  staleAfterDays: 9,
   stale: false,
   lastRun: {
     at: "2026-09-01T03:00:12.000Z",

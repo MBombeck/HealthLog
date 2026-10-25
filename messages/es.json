@@ -780,13 +780,13 @@
         "bmi": "kg/m²"
       }
     },
-    "keyBackupBanner": {
-      "title": "Haz una copia de tu clave de cifrado",
-      "body": "Sin una copia de la clave, tus datos no se pueden recuperar tras una reinstalación. Es cuestión de un minuto.",
-      "action": "Abrir el paso"
-    },
     "quickAddSymptom": "Registrar síntoma",
-    "todayCardVisible": "Mostrar la tarjeta superior"
+    "todayCardVisible": "Mostrar la tarjeta superior",
+    "recoveryKitBanner": {
+      "title": "Guarda tu kit de recuperación",
+      "body": "Sin copias de las claves que usa este servidor, sus datos no se pueden recuperar tras una reinstalación. Es cuestión de unos minutos.",
+      "action": "Abrir el kit"
+    }
   },
   "measurements": {
     "title": "Mediciones",
@@ -8331,7 +8331,23 @@
         "restoreSkippedEnvironmentLocationCiphertext": "Ubicación de un periodo o día ambiental cifrada con una clave que este servidor no tiene (se conserva cifrada, esos días no se actualizan)",
         "typePreWipe": "Antes de eliminar todos los datos",
         "retentionNote": "La copia semanal se reemplaza cada domingo. Una copia tomada antes de «Eliminar todos los datos» se elimina al cabo de {days} días. Las copias subidas se quedan hasta que se borra su cuenta.",
-        "retentionNoteNoGrace": "La copia semanal se reemplaza cada domingo. Las copias subidas se quedan hasta que se borra su cuenta."
+        "retentionNoteNoGrace": "La copia semanal se reemplaza cada domingo. Las copias subidas se quedan hasta que se borra su cuenta.",
+        "database": {
+          "title": "Volcado de la base de datos",
+          "lastGood": "Último volcado correcto {when}, {size}, {where}.",
+          "whereBoth": "guardado en este servidor y fuera de él",
+          "whereLocal": "guardado en este servidor",
+          "whereOffhost": "solo fuera del servidor",
+          "none": "Aún no hay ningún volcado de la base de datos. El primero se hace esta noche.",
+          "failedTitle": "El último volcado de la base de datos falló",
+          "failedDescription": "{when}: {reason}",
+          "disabled": "Los volcados de la base de datos están desactivados (DB_BACKUP_ENABLED=false). Haz la copia de la base de datos de otra forma.",
+          "noDirectoryOffhost": "Este servidor no puede escribir en {dir}, así que los volcados solo se guardan fuera y aquí no queda ninguno. Monta el volumen de copias.",
+          "noDirectory": "Este servidor no puede escribir en {dir} y no hay almacenamiento externo configurado, así que no se puede hacer ningún volcado. Monta el volumen de copias.",
+          "retentionLocal": "Las cuentas eliminadas siguen en los volcados hasta que estos caducan: en este servidor se guardan los {nights} más recientes.",
+          "retentionOffhost": "La regla de ciclo de vida del bucket elimina las copias externas tras {days} días.",
+          "retentionOffhostMissing": "Ninguna regla de ciclo de vida del bucket cubre database/, así que los volcados de ahí, y las cuentas eliminadas que contienen, nunca se borran. Añade una regla para ese prefijo."
+        }
       },
       "danger-zone": {
         "title": "Zona de peligro",
@@ -8527,47 +8543,6 @@
       "title": "Esta parte de la página no se pudo mostrar",
       "description": "El resto de la página sigue funcionando; inténtalo de nuevo o recarga si el fallo continúa."
     },
-    "keyBackup": {
-      "title": "Haz una copia de tu clave de cifrado",
-      "description": "Sin una copia de esta clave, tus datos cifrados y las copias de este servidor no se podrán volver a leer.",
-      "loading": "Cargando el estado de la copia de la clave…",
-      "loadError": "No se pudo cargar el estado de la copia de la clave.",
-      "badgeDue": "Pendiente",
-      "badgeDone": "Guardada",
-      "keyId": "ID de la clave activa",
-      "fingerprint": "Huella",
-      "whatIsLost": "Guarda una copia de la clave fuera de este servidor, por ejemplo en un gestor de contraseñas. Si el servidor se reinstala con otra clave, HealthLog no vuelve a funcionar hasta que la clave original esté de vuelta.",
-      "fingerprintHint": "La huella son los primeros 12 caracteres del hash SHA-256 de la clave. Identifica la clave sin revelarla, para que puedas compararla con tu copia.",
-      "checkLabel": "Comprobar mi copia",
-      "checkButton": "Comprobar",
-      "checkNote": "La clave que pegues se compara con la clave activa y después se descarta. Nunca se guarda ni se registra.",
-      "checkInsecureNote": "Esta página no se sirve por https://, así que la clave que pegues viaja por la red sin cifrar, igual que tu contraseña. Se compara y se descarta, nunca se guarda ni se registra.",
-      "checkMatches": "Tu copia coincide con la clave activa.",
-      "checkNoMatch": "Tu copia no coincide con la clave activa. Comprueba que copiaste el valor completo.",
-      "checkFailed": "La comprobación ha fallado.",
-      "confirmButton": "He guardado esta clave",
-      "confirmed": "Copia de la clave confirmada.",
-      "confirmFailed": "No se pudo guardar la confirmación.",
-      "stale": "La clave del servidor cambió desde que se cargó esta página. Revisa el nuevo ID y la huella, y vuelve a confirmar.",
-      "confirmedAt": "Confirmada el {date}.",
-      "confirmedAtBy": "Confirmada el {date} por {who}.",
-      "dueAgain": "Se confirmó una copia de la clave {keyId}, pero el servidor usa ahora otra clave. Guarda una copia de la actual.",
-      "tileLabel": "Copia de la clave de cifrado",
-      "tileDue": "Sin confirmar",
-      "tileDone": "Confirmada",
-      "platform": {
-        "composeLabel": "Compose",
-        "composeWhere": "La clave es ENCRYPTION_KEY (o ENCRYPTION_KEYS) en el archivo .env junto a docker-compose.yml.",
-        "truenasLabel": "TrueNAS",
-        "truenasWhere": "Abre Apps, selecciona HealthLog y elige Editar. La clave está en el campo Encryption Key de HealthLog Configuration; en una app instalada con YAML, es ENCRYPTION_KEY en las variables de entorno.",
-        "coolifyLabel": "Coolify",
-        "coolifyWhere": "Abre la aplicación en Coolify y copia ENCRYPTION_KEY de sus Environment Variables.",
-        "unraidLabel": "Unraid",
-        "unraidWhere": "En la pestaña Docker, edita el contenedor de HealthLog y copia ENCRYPTION_KEY de la plantilla, o del .env de tu stack de Compose Manager.",
-        "portainerLabel": "Portainer",
-        "portainerWhere": "Abre el stack de HealthLog en Portainer y copia ENCRYPTION_KEY de sus variables de entorno."
-      }
-    },
     "keyMismatch": {
       "title": "HealthLog no puede abrir sus datos",
       "body": "La clave de cifrado con la que se inició este servidor no es la clave con la que se escribió su base de datos. Para proteger tus datos, HealthLog no sirve nada hasta que se corrija.",
@@ -8598,6 +8573,166 @@
       "defaultAboveCeiling": "El nivel predeterminado no puede estar por encima del nivel más alto.",
       "gapLabel": "Horas entre actualizaciones de tarjetas tras una sincronización (Estándar)",
       "gapHint": "Horas enteras de 1 a 48. Déjalo vacío para usar AI_SYNC_REGEN_GAP_HOURS, si no 6. Vigente ahora: {hours} h."
+    },
+    "recoveryKit": {
+      "title": "Kit de recuperación",
+      "description": "Cada clave que necesita una restauración de este servidor, con su ID y su huella.",
+      "intro": "Guarda una copia de cada clave de abajo fuera de este servidor, por ejemplo en un gestor de contraseñas. Sin ellas no se puede volver a leer ni un volcado de la base de datos ni una copia de seguridad, y HealthLog se niega a arrancar si falta una clave que necesita.",
+      "loading": "Cargando el kit de recuperación…",
+      "loadError": "No se pudo cargar el kit de recuperación.",
+      "badgeDue": "Pendiente",
+      "badgeDone": "Guardado",
+      "keyId": "ID",
+      "fingerprint": "Huella",
+      "noFingerprint": "No está en este servidor",
+      "kind": {
+        "application": "Clave de aplicación {id}",
+        "backup": "Clave de las copias fuera del host",
+        "backupPrevious": "Clave anterior de las copias fuera del host",
+        "token": "Clave de tokens"
+      },
+      "need": {
+        "active": "Cifra los datos nuevos.",
+        "configured": "Está en este servidor.",
+        "storedCopies": "La necesitan {count} copias guardadas.",
+        "offhostUntil": "La necesitan las copias fuera del host hasta el {date}.",
+        "offhostUnknown": "La necesitan las copias fuera del host mientras el bucket las conserve.",
+        "backupActive": "Sella cada nueva copia fuera del host.",
+        "backupPrevious": "Abre las copias fuera del host escritas antes del último cambio de clave.",
+        "token": "Firma sesiones, tokens y enlaces para compartir. Sin ella se cierra la sesión de todo el mundo, pero no se pierden datos."
+      },
+      "source": "Definida en {variable}.",
+      "status": {
+        "confirmed": "Guardada",
+        "new": "Aún sin guardar",
+        "notConfigured": "No está en este servidor",
+        "unreadable": "No es una clave válida"
+      },
+      "notConfiguredHint": "Una copia de seguridad aún necesita esta clave y este servidor no la tiene. Solo una copia que guardes en otro lugar puede leer esas copias de seguridad. Confirma el kit cuando tengas esa copia.",
+      "unreadableHint": "La variable está definida pero no contiene una clave válida. Corrígela antes de confiar en las copias fuera del host.",
+      "fingerprintHint": "La huella son los primeros 12 caracteres del hash SHA-256 de una clave. Identifica la clave sin revelarla, para que puedas compararla con tu copia.",
+      "whereTitle": "Dónde se definen las claves",
+      "platform": {
+        "composeLabel": "Compose",
+        "composeWhere": "Las claves están en el archivo .env junto a docker-compose.yml: ENCRYPTION_KEY o ENCRYPTION_KEYS, API_TOKEN_HMAC_KEY y, con copias fuera del host, BACKUP_ENCRYPTION_KEY.",
+        "truenasLabel": "TrueNAS",
+        "truenasWhere": "Abre Apps, selecciona HealthLog y elige Edit. Las claves están en HealthLog Configuration; en una app instalada con YAML, son ENCRYPTION_KEY, API_TOKEN_HMAC_KEY y BACKUP_ENCRYPTION_KEY en los ajustes de entorno.",
+        "coolifyLabel": "Coolify",
+        "coolifyWhere": "Abre la aplicación en Coolify y copia ENCRYPTION_KEY, API_TOKEN_HMAC_KEY y BACKUP_ENCRYPTION_KEY de sus Environment Variables.",
+        "unraidLabel": "Unraid",
+        "unraidWhere": "En la pestaña Docker, edita el contenedor de HealthLog y copia ENCRYPTION_KEY, API_TOKEN_HMAC_KEY y BACKUP_ENCRYPTION_KEY de la plantilla, o del .env de tu stack de Compose Manager.",
+        "portainerLabel": "Portainer",
+        "portainerWhere": "Abre el stack de HealthLog en Portainer y copia ENCRYPTION_KEY, API_TOKEN_HMAC_KEY y BACKUP_ENCRYPTION_KEY de sus variables de entorno."
+      },
+      "restoreTitle": "Restaurar este servidor",
+      "restoreBody": "Instala HealthLog con las mismas claves, restaura el volcado de la base de datos más reciente en una base de datos vacía y luego arranca la app. La guía explica cada paso.",
+      "restoreLink": "Guía de recuperación ante desastres",
+      "checkLabel": "Comprobar mi copia",
+      "checkKeyLabel": "Clave que comprobar",
+      "checkValueLabel": "Tu copia de la clave",
+      "checkButton": "Comprobar",
+      "checkNote": "La clave que pegues se compara con la que tiene este servidor y después se descarta. Nunca se guarda ni se registra.",
+      "checkInsecureNote": "Esta página no se sirve por https://, así que la clave que pegues viaja por la red sin cifrar, igual que tu contraseña. Se compara y se descarta, nunca se guarda ni se registra.",
+      "checkMatches": "Tu copia coincide con esta clave.",
+      "checkNoMatch": "Tu copia no coincide con esta clave. Comprueba que copiaste el valor completo.",
+      "checkFailed": "La comprobación ha fallado.",
+      "confirmButton": "Tengo una copia de cada clave",
+      "confirmed": "Kit de recuperación confirmado.",
+      "confirmFailed": "No se pudo guardar la confirmación.",
+      "stale": "El kit cambió desde que se cargó esta página. Revisa las claves que muestra ahora y vuelve a confirmar.",
+      "confirmedAt": "Confirmado el {date}.",
+      "confirmedAtBy": "Confirmado el {date} por {who}.",
+      "dueAgain": "El kit se confirmó el {date}. Ahora también incluye {keys}, que esa confirmación no cubría. Guarda una copia de cada una y vuelve a confirmar."
+    },
+    "recoveryReadiness": {
+      "title": "Preparación para la recuperación",
+      "description": "Si este servidor se podría recuperar tras una pérdida, a juzgar por cada copia de seguridad que hace.",
+      "loading": "Comprobando las copias de seguridad…",
+      "loadError": "No se pudo cargar la preparación para la recuperación.",
+      "state": {
+        "ok": "Listo",
+        "attention": "Necesita atención",
+        "failing": "En riesgo"
+      },
+      "signal": {
+        "database_dump": "Volcado de la base de datos",
+        "weekly_copy": "Copias semanales de las cuentas",
+        "offhost_copies": "Copias fuera del host",
+        "restore_drill": "Simulacro de restauración",
+        "offhost_setup": "Copia fuera del host",
+        "recovery_kit": "Kit de recuperación"
+      },
+      "at": {
+        "database_dump": "Volcado más reciente: {date}",
+        "weekly_copy": "Copia de cuenta más antigua: {date}",
+        "offhost_copies": "Copia fuera del host más antigua: {date}",
+        "restore_drill": "Último simulacro: {date}",
+        "recovery_kit": "Confirmado: {date}"
+      },
+      "dueBy": "Vence el {date}",
+      "fix": {
+        "database_dump": "Abrir copias de seguridad",
+        "weekly_copy": "Abrir copias de seguridad",
+        "offhost_copies": "Abrir copias de seguridad",
+        "restore_drill": "Abrir copias de seguridad",
+        "offhost_setup": "Abrir copias de seguridad",
+        "recovery_kit": "Abrir el kit"
+      },
+      "reason": {
+        "database_dump": {
+          "not_available": "Esta versión no programa un volcado de la base de datos.",
+          "disabled": "El volcado programado de la base de datos está desactivado, así que ninguna copia puede reconstruir este servidor. Para volver a activarlo, quita DB_BACKUP_ENABLED o ponlo en true y reinicia HealthLog.",
+          "unreadable": "No se pudo leer el estado del volcado de la base de datos.",
+          "never_succeeded": "Ningún volcado de la base de datos ha salido bien todavía, y el último intento falló.",
+          "never_ran": "No se ha escrito ningún volcado de la base de datos en las {hours} horas transcurridas desde que se activaron los volcados.",
+          "first_pending": "El primer volcado de la base de datos aún no se ha ejecutado.",
+          "stale": "El volcado de la base de datos más reciente tiene {hours} horas.",
+          "last_failed": "El último volcado de la base de datos falló. El anterior sigue siendo reciente.",
+          "fresh": "El último volcado de la base de datos es reciente.",
+          "nowhere_to_write": "No se puede escribir en el directorio de volcados {directory} y no hay ningún bucket externo configurado, así que no se puede guardar ningún volcado."
+        },
+        "weekly_copy": {
+          "no_accounts": "Todavía no hay cuentas que copiar.",
+          "stale": "La copia semanal más antigua tiene {days} días. Cuentas con retraso: {accounts}.",
+          "never": "Una cuenta lleva {days} días sin copia semanal. Cuentas con retraso: {accounts}.",
+          "first_pending": "La primera copia semanal se hace el domingo de madrugada.",
+          "fresh": "Cada cuenta tiene una copia de la última semana."
+        },
+        "offhost_copies": {
+          "not_configured": "No hay ningún bucket fuera del host configurado.",
+          "stale": "Las copias fuera del host llevan más de dos noches de retraso. Cuentas con retraso: {accounts}.",
+          "first_pending": "La ejecución nocturna fuera del host aún no ha llegado a ninguna cuenta.",
+          "fresh": "Cada cuenta tiene una copia reciente en el bucket fuera del host."
+        },
+        "restore_drill": {
+          "not_configured": "El simulacro lee el bucket fuera del host, que no está configurado.",
+          "not_run_yet": "El simulacro de restauración mensual aún no se ha ejecutado.",
+          "failed": "El último simulacro de restauración falló: no se pudieron volver a leer {failed} de {checked} copias.",
+          "failed_run": "El último simulacro de restauración no pudo terminar.",
+          "passed": "El último simulacro de restauración volvió a leer {checked} copias."
+        },
+        "offhost_setup": {
+          "configured": "Las copias salen de este servidor cada noche.",
+          "no_admin": "Todavía no hay ninguna cuenta de administrador.",
+          "not_configured": "No hay ningún bucket fuera del host configurado, así que cada copia está solo en este servidor.",
+          "not_configured_grace": "Aún no hay ningún bucket fuera del host configurado, así que cada copia está solo en este servidor."
+        },
+        "recovery_kit": {
+          "confirmed": "Se guarda una copia de cada clave que necesita una restauración.",
+          "out_of_date": "El kit de recuperación ahora también incluye {keys}, que la última confirmación no cubría. No hay nada roto: guarda una copia y vuelve a confirmar el kit.",
+          "no_admin": "Todavía no hay ninguna cuenta de administrador.",
+          "not_confirmed": "Nadie ha confirmado una copia de las claves que necesita una restauración: {keys}.",
+          "not_confirmed_grace": "Guarda una copia de las claves que necesita una restauración: {keys}."
+        }
+      },
+      "recovered": {
+        "database_dump": "El volcado de la base de datos vuelve a ser reciente.",
+        "weekly_copy": "Cada cuenta vuelve a tener una copia semanal reciente.",
+        "offhost_copies": "Cada cuenta vuelve a tener una copia fuera del host reciente.",
+        "restore_drill": "El simulacro de restauración vuelve a superarse.",
+        "offhost_setup": "Las copias fuera del host ya están configuradas.",
+        "recovery_kit": "El kit de recuperación vuelve a estar confirmado."
+      }
     }
   },
   "achievements": {
@@ -9065,6 +9200,14 @@
     "checkupReminders": {
       "title": "Recordatorios de chequeos",
       "description": "Activa o desactiva recordatorios de chequeos concretos."
+    },
+    "eventBackupHealth": "Estado de las copias de seguridad",
+    "eventBackupHealthDesc": "Cuando una copia de seguridad se detiene, se retrasa o se recupera. Solo se envía a los administradores.",
+    "recoveryReadiness": {
+      "titleAttention": "Las copias de seguridad necesitan atención",
+      "titleFailing": "Las copias de seguridad están en riesgo",
+      "titleReminder": "Las copias de seguridad siguen en riesgo",
+      "titleRecovered": "Las copias de seguridad vuelven a la normalidad"
     }
   },
   "i18n": {
@@ -11792,7 +11935,7 @@
       "dismiss": "Descartar",
       "empty": "No se pudo leer nada de este documento.",
       "unavailableBody": "Configura un proveedor de IA para sugerir título, tipo y fecha.",
-      "unavailableLocalOcr": "Activa el OCR local en los ajustes de IA para leer imágenes en este dispositivo.",
+      "unavailableLocalOcr": "Activa «Leer escaneos en este dispositivo» en Ajustes → Módulos → Laboratorio para leer imágenes en este dispositivo.",
       "unavailableAction": "Abrir ajustes de IA",
       "errorGeneric": "No se pudo leer el documento. Inténtalo de nuevo.",
       "errorOcr": "No se pudo leer texto de esta imagen.",
@@ -11805,11 +11948,12 @@
       "errorFileType": "Este tipo de archivo no se puede leer.",
       "errorNotIndexed": "Primero lee el documento y luego extrae.",
       "errorOutputLimit": "El proveedor de IA alcanzó su límite de salida antes de devolver un solo valor. Prueba con un modelo que permita respuestas más largas.",
-      "errorLocalOcrDisabled": "Activa primero el OCR local en los ajustes de IA.",
+      "errorLocalOcrDisabled": "Activa primero «Leer escaneos en este dispositivo» en Ajustes → Módulos → Laboratorio.",
       "errorProvider": "No hay ningún proveedor de IA configurado para esto.",
       "errorTextImageOnly": "El OCR local solo lee imágenes, no este archivo.",
       "errorConsent": "Leer documentos con IA necesita primero tu consentimiento.",
-      "errorUnavailable": "Leer documentos con IA no está disponible aquí ahora mismo."
+      "errorUnavailable": "Leer documentos con IA no está disponible aquí ahora mismo.",
+      "unavailableLocalOcrAction": "Abrir ajustes de laboratorio"
     },
     "summary": {
       "summarise": "Resumir",

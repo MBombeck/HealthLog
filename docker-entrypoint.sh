@@ -88,6 +88,15 @@ echo "HealthLog: Database is reachable."
 # Say how many migrations this image is about to apply, with a reminder to
 # back up first. Reporting only: it never stops the boot.
 node scripts/pending-migrations.mjs || true
+# When migrations are pending, dump the database into DB_BACKUP_DIR first, so
+# the state before them can be restored (docs/ops/disaster-recovery.md). No
+# writable directory: a warning, and the boot goes on. A writable directory
+# and a failed dump: the boot stops here, before anything is migrated.
+if ! node scripts/db-dump.mjs pre-migration; then
+  echo "HealthLog: ERROR — not migrating without the dump. Free disk space or fix the error above and start again." >&2
+  echo "HealthLog: to migrate without a dump this once, set DB_BACKUP_BEFORE_MIGRATE=false." >&2
+  exit 1
+fi
 # `migrate-deploy.mjs` runs `prisma migrate deploy` and retries only a
 # migration that timed out on a lock and is marked safe to re-run; any other
 # failure stops the boot with Prisma's exit code (docs/ops/deploy.md).
