@@ -8177,7 +8177,6 @@
         "colSize": "Rozmiar",
         "colCreatedAt": "Ostatnia migawka",
         "colActions": "Akcje",
-        "retentionLabel": "Przechowywanie: {days} dni",
         "scheduleStaleTitle": "Cotygodniowa kopia zapasowa przestała powstawać",
         "scheduleStaleDescription": "Najnowsza zaplanowana kopia ma {days} dni. Działające cotygodniowe uruchomienie nigdy nie zostawia kopii starszej niż {threshold} dni.",
         "scheduleFailedTitle": "Ostatnie zaplanowane uruchomienie kopii zapasowej nie powiodło się",
@@ -8330,7 +8329,9 @@
         "restoreSkippedVisitCiphertext": "Tekst wizyty lub lekarza zaszyfrowany kluczem, którego ten serwer nie ma (zachowany bez niego)",
         "restoreSkippedVaccinationCiphertext": "Notatka szczepienia zaszyfrowana kluczem, którego ten serwer nie ma (dawka zachowana bez niej)",
         "restoreSkippedEnvironmentLocationCiphertext": "Lokalizacja okresu lub dnia środowiskowego zaszyfrowana kluczem, którego ten serwer nie ma (zachowana w postaci zaszyfrowanej, te dni nie są odświeżane)",
-        "typePreWipe": "Przed usunięciem wszystkich danych"
+        "typePreWipe": "Przed usunięciem wszystkich danych",
+        "retentionNote": "Cotygodniowa kopia jest zastępowana w każdą niedzielę. Kopia wykonana przed „Usuń wszystkie dane” jest usuwana po {days} dniach. Przesłane kopie zostają, dopóki ich konto nie zostanie usunięte.",
+        "retentionNoteNoGrace": "Cotygodniowa kopia jest zastępowana w każdą niedzielę. Przesłane kopie zostają, dopóki ich konto nie zostanie usunięte."
       },
       "danger-zone": {
         "title": "Strefa zagrożenia",

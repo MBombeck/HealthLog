@@ -49,7 +49,7 @@ vi.mock("@tanstack/react-query", () => ({
             createdAt: "2026-09-01T03:00:00.000Z",
           },
         ],
-        retentionDays: 30,
+        preWipeCopyDays: 14,
         schedule: {
           lastSuccessAt: "2026-09-01T03:00:00.000Z",
           lastSuccessAgeDays: 2,

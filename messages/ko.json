@@ -8152,7 +8152,6 @@
         "colSize": "크기",
         "colCreatedAt": "최근 스냅샷",
         "colActions": "동작",
-        "retentionLabel": "보관 기간: {days}일",
         "scheduleStaleTitle": "주간 백업이 중단되었습니다",
         "scheduleStaleDescription": "가장 최근의 예약 사본이 {days}일 전 것입니다. 정상적으로 도는 주간 실행은 {threshold}일보다 오래된 사본을 남기지 않습니다.",
         "scheduleFailedTitle": "마지막 예약 백업 실행이 실패했습니다",
@@ -8305,7 +8304,9 @@
         "restoreSkippedVisitCiphertext": "이 서버에 없는 키로 암호화된 진료 또는 의료진 텍스트(해당 내용 없이 유지됨)",
         "restoreSkippedVaccinationCiphertext": "이 서버에 없는 키로 암호화된 예방접종 메모(접종 기록은 메모 없이 유지됨)",
         "restoreSkippedEnvironmentLocationCiphertext": "이 서버에 없는 키로 암호화된 환경 기간 또는 날짜의 위치(암호화된 채 유지되며 해당 날짜는 새로 가져오지 않음)",
-        "typePreWipe": "모든 데이터 삭제 전"
+        "typePreWipe": "모든 데이터 삭제 전",
+        "retentionNote": "주간 사본은 매주 일요일에 교체돼요. \"모든 데이터 삭제\" 전에 만든 사본은 {days}일 뒤에 삭제돼요. 올린 사본은 해당 계정이 지워질 때까지 남아요.",
+        "retentionNoteNoGrace": "주간 사본은 매주 일요일에 교체돼요. 올린 사본은 해당 계정이 지워질 때까지 남아요."
       },
       "danger-zone": {
         "title": "위험 구역",

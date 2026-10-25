@@ -8177,7 +8177,6 @@
         "colSize": "Grootte",
         "colCreatedAt": "Laatste snapshot",
         "colActions": "Acties",
-        "retentionLabel": "Bewaartermijn: {days} dagen",
         "scheduleStaleTitle": "De wekelijkse back-up is gestopt",
         "scheduleStaleDescription": "De nieuwste geplande kopie is {days} dagen oud. Een goed werkende wekelijkse run laat nooit een kopie ouder worden dan {threshold} dagen.",
         "scheduleFailedTitle": "De laatste geplande back-uprun is mislukt",
@@ -8330,7 +8329,9 @@
         "restoreSkippedVisitCiphertext": "Tekst van bezoek of zorgverlener versleuteld met een sleutel die deze server niet heeft (behouden zonder)",
         "restoreSkippedVaccinationCiphertext": "Vaccinatienotitie versleuteld met een sleutel die deze server niet heeft (dosis behouden zonder)",
         "restoreSkippedEnvironmentLocationCiphertext": "Locatie van een omgevingsperiode of -dag versleuteld met een sleutel die deze server niet heeft (versleuteld behouden, die dagen worden niet bijgewerkt)",
-        "typePreWipe": "Voor het verwijderen van alle gegevens"
+        "typePreWipe": "Voor het verwijderen van alle gegevens",
+        "retentionNote": "De wekelijkse kopie wordt elke zondag vervangen. Een kopie die vóór 'Alle gegevens verwijderen' is gemaakt, wordt na {days} dagen verwijderd. Geüploade kopieën blijven tot hun account gewist wordt.",
+        "retentionNoteNoGrace": "De wekelijkse kopie wordt elke zondag vervangen. Geüploade kopieën blijven tot hun account gewist wordt."
       },
       "danger-zone": {
         "title": "Gevarenzone",

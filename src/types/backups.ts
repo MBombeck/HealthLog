@@ -102,11 +102,12 @@ export interface BackupsList {
    */
   offhost: OffhostBackupOverview;
   /**
-   * Soft retention hint — the worker is configured for weekly backups
-   * (see `DATA_BACKUP_CRON` in `src/lib/jobs/reminder-worker.ts`), and
-   * the model upserts in-place per (userId, type), so each user has
-   * exactly one current snapshot. The frontend uses this to label the
-   * grid; no server-side enforcement.
+   * How long a copy taken before "Delete all data" is kept: the deletion
+   * grace window, after which the account-deletion purge deletes it. 0 when
+   * there is no window and no such copy is taken. Nothing else ages a stored
+   * copy out: the weekly copy is replaced in place, one per account, and an
+   * uploaded copy stays until its account is erased. The page states exactly
+   * that.
    */
-  retentionDays: number;
+  preWipeCopyDays: number;
 }

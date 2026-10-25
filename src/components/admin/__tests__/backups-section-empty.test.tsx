@@ -19,7 +19,7 @@ const healthySchedule = {
 const mocks = vi.hoisted(() => ({
   // Mutable so one file can render both a healthy schedule and a broken one;
   // the query mock reads it on every render.
-  queryData: { rows: [], retentionDays: 30 } as Record<string, unknown>,
+  queryData: { rows: [], preWipeCopyDays: 14 } as Record<string, unknown>,
 }));
 
 /**
@@ -80,7 +80,7 @@ primeLocales("de");
 function render(locale: "en" | "de" = "en") {
   mocks.queryData = {
     rows: [],
-    retentionDays: 30,
+    preWipeCopyDays: 14,
     schedule: healthySchedule,
   };
   return renderToStaticMarkup(
@@ -159,7 +159,7 @@ describe("BackupsSection — empty state", () => {
  */
 describe("BackupsSection — schedule health", () => {
   function withSchedule(schedule: Record<string, unknown>) {
-    mocks.queryData = { rows: [], retentionDays: 30, schedule };
+    mocks.queryData = { rows: [], preWipeCopyDays: 14, schedule };
     return renderToStaticMarkup(
       <I18nProvider initialLocale="en">
         <BackupsSection />
@@ -203,7 +203,7 @@ describe("BackupsSection — schedule health", () => {
   });
 
   it("survives a response that predates the schedule field", () => {
-    mocks.queryData = { rows: [], retentionDays: 30 };
+    mocks.queryData = { rows: [], preWipeCopyDays: 14 };
     expect(() =>
       renderToStaticMarkup(
         <I18nProvider initialLocale="en">

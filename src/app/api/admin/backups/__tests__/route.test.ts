@@ -153,6 +153,16 @@ describe("GET /api/admin/backups — off-host freshness", () => {
     expect(byName.get("account-five")?.lastAttemptAt).toBeNull();
   });
 
+  it("states what ages a stored copy out, and invents no retention", async () => {
+    configuredMock.mockReturnValue(false);
+    findManyMock.mockResolvedValue([]);
+    vi.stubEnv("ACCOUNT_DELETION_GRACE_DAYS", "21");
+    const body = await read();
+    vi.unstubAllEnvs();
+    expect(body.preWipeCopyDays).toBe(21);
+    expect(body).not.toHaveProperty("retentionDays");
+  });
+
   it("says so when neither the environment nor the ledger knows of any upload", async () => {
     configuredMock.mockReturnValue(false);
     findManyMock.mockResolvedValue([

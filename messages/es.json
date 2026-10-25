@@ -8177,7 +8177,6 @@
         "colSize": "Tamaño",
         "colCreatedAt": "Última instantánea",
         "colActions": "Acciones",
-        "retentionLabel": "Conservación: {days} días",
         "scheduleStaleTitle": "La copia de seguridad semanal se ha detenido",
         "scheduleStaleDescription": "La copia programada más reciente tiene {days} días. Una ejecución semanal que funciona nunca deja ninguna con más de {threshold} días.",
         "scheduleFailedTitle": "La última ejecución programada de la copia de seguridad falló",
@@ -8330,7 +8329,9 @@
         "restoreSkippedVisitCiphertext": "Texto de visita o profesional cifrado con una clave que este servidor no tiene (se conserva sin él)",
         "restoreSkippedVaccinationCiphertext": "Nota de vacunación cifrada con una clave que este servidor no tiene (la dosis se conserva sin ella)",
         "restoreSkippedEnvironmentLocationCiphertext": "Ubicación de un periodo o día ambiental cifrada con una clave que este servidor no tiene (se conserva cifrada, esos días no se actualizan)",
-        "typePreWipe": "Antes de eliminar todos los datos"
+        "typePreWipe": "Antes de eliminar todos los datos",
+        "retentionNote": "La copia semanal se reemplaza cada domingo. Una copia tomada antes de «Eliminar todos los datos» se elimina al cabo de {days} días. Las copias subidas se quedan hasta que se borra su cuenta.",
+        "retentionNoteNoGrace": "La copia semanal se reemplaza cada domingo. Las copias subidas se quedan hasta que se borra su cuenta."
       },
       "danger-zone": {
         "title": "Zona de peligro",

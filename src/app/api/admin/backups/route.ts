@@ -38,6 +38,7 @@ import {
 import { OFFHOST_BACKUP_QUEUE } from "@/lib/jobs/offhost-backup-queue";
 import { offhostPurgeDue } from "@/lib/jobs/offhost-purge-queue";
 import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
+import { accountDeletionGraceDays } from "@/lib/account-deletion/grace";
 import {
   classifyOffhostBackup,
   OFFHOST_BACKUP_PERIOD_HOURS,
@@ -213,9 +214,11 @@ export const GET = apiHandler(async () => {
 
   const payload: BackupsList = {
     rows: list,
-    // Matches the retention window the backup-prune job enforces so the
-    // backups page states the same number the worker acts on.
-    retentionDays: 90,
+    // What ages these copies out, and nothing more: no job prunes stored
+    // copies by age. The weekly copy is replaced in place, a pre-wipe copy
+    // is deleted by the account-deletion purge when its window ends, and an
+    // uploaded copy stays until its account is erased.
+    preWipeCopyDays: accountDeletionGraceDays(),
     schedule: summariseBackupSchedule({
       scheduledCreatedAt: rows
         .filter((row) => row.type === SCHEDULED_BACKUP_TYPE)

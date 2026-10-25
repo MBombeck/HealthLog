@@ -197,9 +197,11 @@ export function BackupsSection() {
           <BackupRowsCards rows={rows} {...rowActions} />
 
           <p className="text-muted-foreground mt-2 text-xs">
-            {t("admin.section.backups.retentionLabel", {
-              days: data!.retentionDays,
-            })}
+            {data!.preWipeCopyDays > 0
+              ? t("admin.section.backups.retentionNote", {
+                  days: data!.preWipeCopyDays,
+                })
+              : t("admin.section.backups.retentionNoteNoGrace")}
           </p>
         </div>
       )}

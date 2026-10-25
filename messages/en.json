@@ -8177,7 +8177,6 @@
         "colSize": "Size",
         "colCreatedAt": "Last snapshot",
         "colActions": "Actions",
-        "retentionLabel": "Retention: {days} days",
         "scheduleStaleTitle": "The weekly backup has stopped",
         "scheduleStaleDescription": "The newest scheduled copy is {days} days old. A working weekly run never leaves one older than {threshold} days.",
         "scheduleFailedTitle": "The last scheduled backup run failed",
@@ -8330,7 +8329,9 @@
         "restoreSkippedVisitCiphertext": "Visit or practitioner text sealed with a key this server does not hold (kept without it)",
         "restoreSkippedVaccinationCiphertext": "Vaccination note sealed with a key this server does not hold (dose kept without it)",
         "restoreSkippedEnvironmentLocationCiphertext": "Location of an environment period or day sealed with a key this server does not hold (kept sealed, those days are not refreshed)",
-        "typePreWipe": "Before all data was deleted"
+        "typePreWipe": "Before all data was deleted",
+        "retentionNote": "The weekly copy is replaced every Sunday. A copy taken before \"Delete all data\" is deleted after {days} days. Uploaded copies stay until their account is erased.",
+        "retentionNoteNoGrace": "The weekly copy is replaced every Sunday. Uploaded copies stay until their account is erased."
       },
       "danger-zone": {
         "title": "Danger zone",

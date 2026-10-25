@@ -8177,7 +8177,6 @@
         "colSize": "Taille",
         "colCreatedAt": "Dernier instantané",
         "colActions": "Actions",
-        "retentionLabel": "Conservation : {days} jours",
         "scheduleStaleTitle": "La sauvegarde hebdomadaire s'est arrêtée",
         "scheduleStaleDescription": "La copie planifiée la plus récente date de {days} jours. Une exécution hebdomadaire qui fonctionne n'en laisse jamais une dépasser {threshold} jours.",
         "scheduleFailedTitle": "La dernière exécution planifiée de la sauvegarde a échoué",
@@ -8330,7 +8329,9 @@
         "restoreSkippedVisitCiphertext": "Texte de consultation ou de praticien chiffré avec une clé que ce serveur ne possède pas (conservé sans)",
         "restoreSkippedVaccinationCiphertext": "Note de vaccination chiffrée avec une clé que ce serveur ne possède pas (dose conservée sans)",
         "restoreSkippedEnvironmentLocationCiphertext": "Lieu d'une période ou d'un jour environnemental chiffré avec une clé que ce serveur ne possède pas (conservé chiffré, ces jours ne sont pas actualisés)",
-        "typePreWipe": "Avant la suppression de toutes les données"
+        "typePreWipe": "Avant la suppression de toutes les données",
+        "retentionNote": "La copie hebdomadaire est remplacée chaque dimanche. Une copie prise avant « Supprimer toutes les données » est supprimée au bout de {days} jours. Les copies téléversées restent jusqu’à l’effacement de leur compte.",
+        "retentionNoteNoGrace": "La copie hebdomadaire est remplacée chaque dimanche. Les copies téléversées restent jusqu’à l’effacement de leur compte."
       },
       "danger-zone": {
         "title": "Zone de danger",

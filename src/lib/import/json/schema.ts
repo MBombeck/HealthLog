@@ -37,7 +37,7 @@ import { SLEEP_STAGE_NAMES } from "@/lib/validations/sleep-stage-entry";
 import { fallbackMoodDateStart } from "./mood-instant";
 
 import { JSON_IMPORT_MAX_ROWS } from "./limits";
-export { JSON_IMPORT_MAX_BYTES, JSON_IMPORT_MAX_ROWS } from "./limits";
+export { JSON_IMPORT_MAX_BYTES } from "./limits";
 
 // The type is the canonical enum, so every type the exporters write comes
 // back; a hand-kept subset once dropped four of eleven.

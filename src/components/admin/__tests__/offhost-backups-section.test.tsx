@@ -36,7 +36,7 @@ function render(data: BackupsList["offhost"] | null): string {
         ? null
         : ({
             rows: [],
-            retentionDays: 90,
+            preWipeCopyDays: 14,
             schedule: null,
             offhost: data,
           } as unknown as BackupsList),

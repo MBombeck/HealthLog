@@ -8177,7 +8177,6 @@
         "colSize": "Größe",
         "colCreatedAt": "Letzter Snapshot",
         "colActions": "Aktionen",
-        "retentionLabel": "Aufbewahrung: {days} Tage",
         "scheduleStaleTitle": "Die wöchentliche Sicherung läuft nicht mehr",
         "scheduleStaleDescription": "Die neueste geplante Kopie ist {days} Tage alt. Ein funktionierender wöchentlicher Lauf lässt keine älter als {threshold} Tage werden.",
         "scheduleFailedTitle": "Der letzte geplante Sicherungslauf ist fehlgeschlagen",
@@ -8330,7 +8329,9 @@
         "restoreSkippedVisitCiphertext": "Text zu Arztbesuch oder Praxis mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (ohne ihn behalten)",
         "restoreSkippedVaccinationCiphertext": "Impf-Notiz mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (Impfung ohne sie behalten)",
         "restoreSkippedEnvironmentLocationCiphertext": "Ort eines Umweltzeitraums oder -tags mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (verschlüsselt behalten, diese Tage werden nicht neu abgerufen)",
-        "typePreWipe": "Vor dem Löschen aller Daten"
+        "typePreWipe": "Vor dem Löschen aller Daten",
+        "retentionNote": "Die wöchentliche Kopie wird jeden Sonntag ersetzt. Eine Kopie, die vor „Alle Daten löschen“ angelegt wurde, wird nach {days} Tagen gelöscht. Hochgeladene Kopien bleiben, bis ihr Konto gelöscht wird.",
+        "retentionNoteNoGrace": "Die wöchentliche Kopie wird jeden Sonntag ersetzt. Hochgeladene Kopien bleiben, bis ihr Konto gelöscht wird."
       },
       "danger-zone": {
         "title": "Gefahrenzone",

@@ -8177,7 +8177,6 @@
         "colSize": "Dimensione",
         "colCreatedAt": "Ultima istantanea",
         "colActions": "Azioni",
-        "retentionLabel": "Conservazione: {days} giorni",
         "scheduleStaleTitle": "Il backup settimanale si è fermato",
         "scheduleStaleDescription": "La copia pianificata più recente ha {days} giorni. Un'esecuzione settimanale funzionante non ne lascia mai una più vecchia di {threshold} giorni.",
         "scheduleFailedTitle": "L'ultima esecuzione pianificata del backup non è riuscita",
@@ -8330,7 +8329,9 @@
         "restoreSkippedVisitCiphertext": "Testo di visita o professionista cifrato con una chiave che questo server non possiede (mantenuto senza)",
         "restoreSkippedVaccinationCiphertext": "Nota di vaccinazione cifrata con una chiave che questo server non possiede (dose mantenuta senza)",
         "restoreSkippedEnvironmentLocationCiphertext": "Luogo di un periodo o giorno ambientale cifrato con una chiave che questo server non possiede (mantenuto cifrato, quei giorni non vengono aggiornati)",
-        "typePreWipe": "Prima dell’eliminazione di tutti i dati"
+        "typePreWipe": "Prima dell’eliminazione di tutti i dati",
+        "retentionNote": "La copia settimanale viene sostituita ogni domenica. Una copia presa prima di «Elimina tutti i dati» viene eliminata dopo {days} giorni. Le copie caricate restano finché il loro account non viene cancellato.",
+        "retentionNoteNoGrace": "La copia settimanale viene sostituita ogni domenica. Le copie caricate restano finché il loro account non viene cancellato."
       },
       "danger-zone": {
         "title": "Zona pericolosa",
