@@ -293,8 +293,13 @@ function factPage(raw: ExtractedFactRaw, chunk: OcrChunk): number | null {
     : null;
 }
 
-/** The identity of a fact for the merge: the same fact in two reads is one. */
-function factKey(raw: ExtractedFactRaw): string {
+/**
+ * The identity of a fact for the merge: the same fact in two reads is one.
+ * A fact without a date of its own is keyed on the date of the report its
+ * read belongs to, as the lab scan keys a row, so the same value on two
+ * reports of different days stays two facts.
+ */
+function factKey(raw: ExtractedFactRaw, readDate: string | null): string {
   return [
     raw.type,
     raw.label.trim().toLowerCase(),
@@ -303,7 +308,7 @@ function factKey(raw: ExtractedFactRaw): string {
     (raw.unit ?? "").trim().toLowerCase(),
     (raw.referenceText ?? "").trim().toLowerCase(),
     (raw.dose ?? "").trim().toLowerCase(),
-    normaliseDate(raw.effectiveDate) ?? "",
+    normaliseDate(raw.effectiveDate) ?? readDate ?? "",
   ].join("|");
 }
 
@@ -345,9 +350,12 @@ export async function runInboundExtraction(
   let droppedFacts = 0;
   for (const { envelope, chunk } of reads.reads) {
     droppedFacts += envelope.droppedFacts;
+    // A read that prints its own date keeps it; the others read under the
+    // report's.
+    const readDate = normaliseDate(envelope.reportDate) ?? reportDate;
     const readKeys: string[] = [];
     for (const raw of envelope.facts) {
-      const key = factKey(raw);
+      const key = factKey(raw, readDate);
       if (seen.has(key)) {
         mergedDuplicates += 1;
         continue;

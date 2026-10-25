@@ -103,6 +103,24 @@ describe("runInboundExtraction over several reads", () => {
     expect(result.incomplete).toBe(false);
   });
 
+  it("keeps a value two reads list for different report dates, and merges it on the same date", async () => {
+    const page = (reportDate: string | null) => ({
+      content: JSON.stringify({ reportDate, facts: [observation("Hb", 14)] }),
+    });
+    // Two reports of different days, one value each with no date of its own.
+    const twoDays = await run(
+      scripted([page("2026-09-01"), page("2026-09-30")]),
+      reads(2),
+    );
+    expect(twoDays.facts).toHaveLength(2);
+    // A page without a date reads under the report's, as the lab scan does.
+    const sameDay = await run(
+      scripted([page("2026-09-01"), page(null)]),
+      reads(2),
+    );
+    expect(sameDay.facts).toHaveLength(1);
+  });
+
   it("keeps the lab scan's row cap, and says when a report holds more", async () => {
     expect(INBOUND_MAX_FACTS).toBe(OCR_MAX_ROWS);
     const reply = (r: number) => ({
