@@ -62,7 +62,13 @@ docker compose ps db
 docker compose exec -T db pg_restore -U healthlog -d healthlog --no-owner \
   < healthlog-pg16-<date>.dump
 
-# 7. Start the app (and app-worker, if you run it) and confirm it.
+# 7. Gather the planner statistics. A restore brings the rows but not the
+#    statistics, and until autovacuum gets round to every table the planner
+#    guesses at their sizes, which can turn a sub-second page into one that
+#    takes many seconds.
+docker compose exec -T db vacuumdb -U healthlog -d healthlog --analyze-in-stages
+
+# 8. Start the app (and app-worker, if you run it) and confirm it.
 docker compose up -d app
 curl -s http://localhost:3000/api/version
 ```
