@@ -73,6 +73,14 @@ export const ALL_FENCE_MARKERS: readonly string[] = [
  */
 const SCRUB_PASSES = 8;
 
+/** Every fence marker, in any case and with any spacing inside the brackets. */
+const FENCE_MARKER_ANY_SPELLING = new RegExp(
+  ALL_FENCE_MARKERS.map(
+    (marker) => `<<<\\s*${marker.slice(3, -3)}\\s*>>>`,
+  ).join("|"),
+  "gi",
+);
+
 /**
  * Strip every known fence marker out of `text`, so the result contains none.
  *
@@ -89,10 +97,9 @@ const SCRUB_PASSES = 8;
 export function scrubFenceMarkers(text: string): string {
   let out = text;
   for (let pass = 0; pass < SCRUB_PASSES; pass += 1) {
-    let next = out;
-    for (const marker of ALL_FENCE_MARKERS) {
-      next = next.replaceAll(marker, "");
-    }
+    // Any spelling of a marker: a model reads `<<<user_text_end>>>` or
+    // `<<< USER_TEXT_END >>>` as the boundary just as well as the exact one.
+    const next = out.replace(FENCE_MARKER_ANY_SPELLING, "");
     if (next === out) return out;
     out = next;
   }
