@@ -109,6 +109,20 @@ that for you, and each boot retries). Anything else is a session you can
 judge: a stuck client may be ended with `SELECT pg_terminate_backend(<pid>)`.
 You never need to run `migrate resolve` by hand for this case.
 
+### A concurrent index build that failed
+
+A migration that builds an index `CONCURRENTLY` (0477 is one) and fails
+half-way, on a constraint violation, a cancel or a killed container, leaves an
+INVALID index behind and its attempt on record as failed. Once you have mended
+the cause and run `prisma migrate resolve --rolled-back <migration>`, the next
+boot drops that INVALID index before it migrates, logs
+`dropped the invalid index …`, and the re-run builds it again. Without that
+step the re-run would find the index by name and skip it.
+
+An INVALID index whose migration is already recorded applied is not touched at
+boot. The boot names it on stderr with `WARNING — index … is INVALID`; rebuild
+it with `REINDEX INDEX CONCURRENTLY "<index>";` when the database is quiet.
+
 ### v1.45.0 notes
 
 A single-container install (`HEALTHLOG_PROCESS_TYPE=all`, the shipped

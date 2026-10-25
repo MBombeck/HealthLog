@@ -22,7 +22,9 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  concurrentIndexesIn,
   decideLockRetry,
+  invalidIndexPlan,
   lockTimeoutInReport,
   prismaEnv,
   retryDelays,
@@ -384,5 +386,50 @@ process.exit(0);
     expect(result.status).toBe(1);
     expect(calls()).toEqual(["migrate deploy --schema x"]);
     expect(result.stderr).toContain("not marked safe to re-run");
+  });
+});
+
+describe("the invalid indexes a failed concurrent build leaves", () => {
+  it("reads the index each concurrent migration builds", () => {
+    const sql = readFileSync(
+      join(
+        process.cwd(),
+        "prisma",
+        "migrations",
+        "0477_measurements_ingest_token_index",
+        "migration.sql",
+      ),
+      "utf8",
+    );
+    expect(concurrentIndexesIn(sql)).toEqual([
+      "measurements_ingest_token_id_id_idx",
+    ]);
+    expect(
+      concurrentIndexesIn(
+        '-- CREATE INDEX CONCURRENTLY IF NOT EXISTS "commented"\nCREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "u" ON "t" ("c");',
+      ),
+    ).toEqual(["u"]);
+    expect(concurrentIndexesIn('CREATE INDEX "plain" ON "t" ("c");')).toEqual(
+      [],
+    );
+  });
+
+  it("drops only an index whose building migration has not been applied", () => {
+    const builtBy = new Map([
+      ["pending_idx", "0477_pending"],
+      ["applied_idx", "0300_applied"],
+    ]);
+    const plan = invalidIndexPlan({
+      invalid: ["pending_idx", "applied_idx", "stray_idx"],
+      builtBy,
+      applied: new Set(["0300_applied"]),
+    });
+    expect(plan.drop).toEqual([
+      { index: "pending_idx", migration: "0477_pending" },
+    ]);
+    expect(plan.report).toEqual([
+      { index: "applied_idx", migration: "0300_applied" },
+      { index: "stray_idx", migration: null },
+    ]);
   });
 });
