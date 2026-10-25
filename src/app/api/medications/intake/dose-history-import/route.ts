@@ -35,6 +35,7 @@ import {
   apiSuccess,
   getClientIp,
   readBodyText,
+  isJsonContentType,
 } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
@@ -127,7 +128,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   const contentType = (request.headers.get("content-type") ?? "").toLowerCase();
-  const isJson = contentType.includes("application/json");
+  const isJson = isJsonContentType(contentType);
   const isText =
     contentType.includes("text/csv") || contentType.includes("text/plain");
   if (!isJson && !isText) {

@@ -17,7 +17,7 @@
  * guesser cannot multiply the budget by rotating between routes.
  */
 import { prisma } from "@/lib/db";
-import { apiError } from "@/lib/api-response";
+import { apiError, isJsonContentType } from "@/lib/api-response";
 import { REPROOF_REQUIRED_CODE } from "@/lib/api-errors";
 import { auditLog } from "@/lib/auth/audit";
 import { annotate } from "@/lib/logging/context";
@@ -323,7 +323,7 @@ export function isSecondFactorProof(
 async function readProof(
   request: Request,
 ): Promise<ExistingFactorProof | "absent" | "invalid"> {
-  if (!request.headers.get("content-type")?.includes("application/json")) {
+  if (!isJsonContentType(request.headers.get("content-type"))) {
     return "absent";
   }
   let raw: string;

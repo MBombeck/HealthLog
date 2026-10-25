@@ -435,6 +435,17 @@ export async function readBodyText(
 }
 
 /**
+ * Whether a `Content-Type` names JSON: the media type itself, compared
+ * exactly, with any parameters after it (`; charset=utf-8`). A substring
+ * test accepted `text/plain; x=application/json`, a type a page on another
+ * origin can send without a CORS preflight.
+ */
+export function isJsonContentType(value: string | null | undefined): boolean {
+  if (!value) return false;
+  return value.split(";", 1)[0]!.trim().toLowerCase() === "application/json";
+}
+
+/**
  * Safely parse JSON body from a request.
  * Returns the parsed body or a 400 error response if parsing fails.
  *
@@ -450,8 +461,7 @@ export async function safeJson<T = unknown>(
   request: Request,
   opts?: { maxBytes?: number },
 ): Promise<{ data: T; error?: never } | { data?: never; error: Response }> {
-  const ct = request.headers.get("content-type");
-  if (!ct || !ct.includes("application/json")) {
+  if (!isJsonContentType(request.headers.get("content-type"))) {
     return { error: apiError("Content-Type must be application/json", 415) };
   }
   if (opts?.maxBytes !== undefined) {

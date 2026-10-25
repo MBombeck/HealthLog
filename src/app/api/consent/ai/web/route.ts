@@ -17,7 +17,7 @@
  * grants.
  */
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiError, apiSuccess } from "@/lib/api-response";
+import { apiError, apiSuccess, isJsonContentType } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -47,7 +47,7 @@ export const POST = apiHandler(async (req: Request) => {
   // empty object, the retired `{ intent }` shape) is not the consent act.
   let confirmed = false;
   const contentType = req.headers.get("content-type") ?? "";
-  if (contentType.includes("application/json")) {
+  if (isJsonContentType(contentType)) {
     const parsed = await parseJsonBody(req, webConsentGrantBody, {
       maxBytes: 1024,
       action: "consent.ai.web-grant.invalid_shape",

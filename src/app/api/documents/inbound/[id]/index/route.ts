@@ -40,6 +40,7 @@ import {
   getClientIp,
   safeJson,
   sanitiseZodIssues,
+  isJsonContentType,
 } from "@/lib/api-response";
 import { requireAiCapability } from "@/lib/ai/capabilities/gate";
 import {
@@ -92,7 +93,7 @@ export const POST = apiHandler(
 
     const background = prefersRespondAsync(request);
     const contentType = request.headers.get("content-type") ?? "";
-    if (contentType.includes("application/json")) {
+    if (isJsonContentType(contentType)) {
       return handleTextIndex(request, user.id, document, background);
     }
     return handleVisionIndex(request, user.id, document, background);

@@ -14,7 +14,7 @@ import {
   isProxyBypassRoute,
 } from "@/lib/http/proxy-bypass-routes";
 import { WideEventBuilder } from "./logging/event-builder";
-import { eventStorage } from "./logging/context";
+import { annotate, eventStorage } from "./logging/context";
 import { emitIfSampled } from "./logging/transports";
 import { redactOptional, redactSecrets } from "./logging/redact";
 import { routeTemplateFor } from "./logging/route-template";
@@ -24,6 +24,7 @@ import { attachRecordContextEcho } from "./sharing/record-session-fence";
 import { refuseOnKeyMismatch } from "./boot/key-mismatch-refusal";
 import { acceptIncomingRequestId } from "./http/request-id";
 import { getClientIp, withErrorEnvelopeDefaults } from "./api-response";
+import { refuseCrossSiteWrite } from "./http/cross-site-guard";
 import {
   capturedRateLimit,
   rateLimitResponseHeaders,
@@ -128,6 +129,24 @@ function safeRequestProp<R>(
   }
 }
 
+/**
+ * A state change a browser sent from another site, refused before auth and
+ * before the handler (`./http/cross-site-guard.ts`).
+ */
+function crossSiteRefusal(request: unknown, pathname: string): Response | null {
+  const refused = safeRequestProp(
+    request,
+    (r) => refuseCrossSiteWrite(r, pathname),
+    null,
+  );
+  if (!refused) return null;
+  annotate({
+    action: { name: "http.cross_site.refused" },
+    meta: { reason: refused.reason },
+  });
+  return refused.response;
+}
+
 /** @internal — exposed for unit tests of the narrow-catch contract. */
 export const __testables = {
   safeRequestProp,
@@ -202,7 +221,9 @@ export function apiHandler<T extends (...args: any[]) => Promise<Response>>(
           // The boot key check found that the configured encryption key
           // cannot open this database. Refuse before auth, before the
           // handler: nothing here may read or write encrypted data.
-          const refusal = refuseOnKeyMismatch(url.pathname);
+          const refusal =
+            refuseOnKeyMismatch(url.pathname) ??
+            crossSiteRefusal(request, url.pathname);
           if (refusal) {
             response = refusal;
           } else {
