@@ -36,8 +36,10 @@ If any step fails, the new database stays empty, the app does not start, and
 the log says what happened. A move cut short by a restart or a full disk is
 run again from scratch on the next `docker compose up -d`.
 
-The old `pgdata` volume is read and never changed, apart from the marker
-file. That is the way back.
+The old `pgdata` volume keeps the database as it was. Postgres 16 runs on it
+during the move, so it writes a checkpoint there (and recovers first after an
+unclean stop), and the marker file is added; no data in it changes. That is
+the way back.
 
 ## Going back
 
