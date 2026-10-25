@@ -8662,7 +8662,8 @@
         "offhost_copies": "Externe Kopien",
         "restore_drill": "Wiederherstellungsprobe",
         "offhost_setup": "Externe Sicherung",
-        "recovery_kit": "Wiederherstellungs-Kit"
+        "recovery_kit": "Wiederherstellungs-Kit",
+        "dump_retention": "Dumps im Bucket"
       },
       "at": {
         "database_dump": "Neuester Dump: {date}",
@@ -8678,7 +8679,8 @@
         "offhost_copies": "Sicherungen öffnen",
         "restore_drill": "Sicherungen öffnen",
         "offhost_setup": "Sicherungen öffnen",
-        "recovery_kit": "Kit öffnen"
+        "recovery_kit": "Kit öffnen",
+        "dump_retention": "Sicherungen öffnen"
       },
       "reason": {
         "database_dump": {
@@ -8727,6 +8729,13 @@
           "no_admin": "Es gibt noch kein Admin-Konto.",
           "not_confirmed": "Niemand hat eine Kopie der Schlüssel bestätigt, die eine Wiederherstellung braucht: {keys}.",
           "not_confirmed_grace": "Sichere eine Kopie der Schlüssel, die eine Wiederherstellung braucht: {keys}."
+        },
+        "dump_retention": {
+          "not_configured": "Es ist kein externer Bucket eingerichtet.",
+          "no_offhost_dumps": "Es geht kein Datenbank-Dump in den Bucket.",
+          "missing": "Keine Lebenszyklus-Regel im Bucket gilt für database/. Dumps dort und die gelöschten Konten darin werden deshalb nie entfernt. Lege eine Regel für dieses Präfix an.",
+          "configured": "Der Bucket entfernt Dumps nach {days} Tagen.",
+          "unknown": "Der Bucket gibt nicht an, ob eine Regel alte Dumps entfernt. Prüfe, ob eine Lebenszyklus-Regel database/ erfasst."
         }
       },
       "recovered": {
@@ -8735,7 +8744,8 @@
         "offhost_copies": "Jedes Konto hat wieder eine aktuelle externe Kopie.",
         "restore_drill": "Die Wiederherstellungsprobe ist wieder bestanden.",
         "offhost_setup": "Externe Kopien sind jetzt eingerichtet.",
-        "recovery_kit": "Das Wiederherstellungs-Kit ist wieder bestätigt."
+        "recovery_kit": "Das Wiederherstellungs-Kit ist wieder bestätigt.",
+        "dump_retention": "Eine Lebenszyklus-Regel im Bucket erfasst jetzt die Datenbank-Dumps."
       }
     }
   },

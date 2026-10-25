@@ -8662,7 +8662,8 @@
         "offhost_copies": "Externe kopieën",
         "restore_drill": "Hersteltest",
         "offhost_setup": "Externe back-up",
-        "recovery_kit": "Herstelkit"
+        "recovery_kit": "Herstelkit",
+        "dump_retention": "Dumps in de bucket"
       },
       "at": {
         "database_dump": "Nieuwste dump: {date}",
@@ -8678,7 +8679,8 @@
         "offhost_copies": "Back-ups openen",
         "restore_drill": "Back-ups openen",
         "offhost_setup": "Back-ups openen",
-        "recovery_kit": "Kit openen"
+        "recovery_kit": "Kit openen",
+        "dump_retention": "Back-ups openen"
       },
       "reason": {
         "database_dump": {
@@ -8727,6 +8729,13 @@
           "no_admin": "Er is nog geen beheerdersaccount.",
           "not_confirmed": "Niemand heeft een kopie bevestigd van de sleutels die een herstel nodig heeft: {keys}.",
           "not_confirmed_grace": "Bewaar een kopie van de sleutels die een herstel nodig heeft: {keys}."
+        },
+        "dump_retention": {
+          "not_configured": "Er is geen externe bucket ingesteld.",
+          "no_offhost_dumps": "Er gaat geen databasedump naar de bucket.",
+          "missing": "Geen levenscyclusregel in de bucket geldt voor database/, dus dumps daar, en de verwijderde accounts erin, worden nooit verwijderd. Voeg een regel voor dat voorvoegsel toe.",
+          "configured": "De bucket verwijdert dumps na {days} dagen.",
+          "unknown": "De bucket zegt niet of een regel oude dumps verwijdert. Controleer of een levenscyclusregel database/ dekt."
         }
       },
       "recovered": {
@@ -8735,7 +8744,8 @@
         "offhost_copies": "Elk account heeft weer een recente externe kopie.",
         "restore_drill": "De hersteltest is weer geslaagd.",
         "offhost_setup": "Externe kopieën zijn nu ingesteld.",
-        "recovery_kit": "De herstelkit is weer bevestigd."
+        "recovery_kit": "De herstelkit is weer bevestigd.",
+        "dump_retention": "Een levenscyclusregel in de bucket dekt nu de databasedumps."
       }
     }
   },

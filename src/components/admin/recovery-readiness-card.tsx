@@ -3,7 +3,8 @@
 /**
  * `<RecoveryReadinessCard>` — every backup signal on one card: the database
  * dump, the weekly account copies, the off-host copies, the last restore
- * drill, the off-host setup and the recovery kit. Each row says its verdict,
+ * drill, the off-host setup, the bucket's rule for the dumps and the recovery
+ * kit. Each row says its verdict,
  * the time it is about and where to fix it.
  *
  * No time window anywhere: a failed drill stays on this card until a later

@@ -8662,7 +8662,8 @@
         "offhost_copies": "Off-host copies",
         "restore_drill": "Restore drill",
         "offhost_setup": "Off-host backup",
-        "recovery_kit": "Recovery kit"
+        "recovery_kit": "Recovery kit",
+        "dump_retention": "Dumps in the bucket"
       },
       "at": {
         "database_dump": "Newest dump: {date}",
@@ -8678,7 +8679,8 @@
         "offhost_copies": "Open backups",
         "restore_drill": "Open backups",
         "offhost_setup": "Open backups",
-        "recovery_kit": "Open the kit"
+        "recovery_kit": "Open the kit",
+        "dump_retention": "Open backups"
       },
       "reason": {
         "database_dump": {
@@ -8727,6 +8729,13 @@
           "no_admin": "There is no admin account yet.",
           "not_confirmed": "Nobody has confirmed a copy of the keys a restore needs: {keys}.",
           "not_confirmed_grace": "Save a copy of the keys a restore needs: {keys}."
+        },
+        "dump_retention": {
+          "not_configured": "No off-host bucket is set up.",
+          "no_offhost_dumps": "No database dump goes to the bucket.",
+          "missing": "No lifecycle rule in the bucket covers database/, so dumps there, and the deleted accounts inside them, are never removed. Add a rule for that prefix.",
+          "configured": "The bucket removes dumps after {days} days.",
+          "unknown": "The bucket does not say whether a rule removes old dumps. Check that a lifecycle rule covers database/."
         }
       },
       "recovered": {
@@ -8735,7 +8744,8 @@
         "offhost_copies": "Every account has a recent off-host copy again.",
         "restore_drill": "The restore drill passed again.",
         "offhost_setup": "Off-host copies are set up now.",
-        "recovery_kit": "The recovery kit is confirmed again."
+        "recovery_kit": "The recovery kit is confirmed again.",
+        "dump_retention": "A lifecycle rule in the bucket covers the database dumps now."
       }
     }
   },

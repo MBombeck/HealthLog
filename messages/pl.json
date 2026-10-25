@@ -8662,7 +8662,8 @@
         "offhost_copies": "Kopie poza hostem",
         "restore_drill": "Próba przywracania",
         "offhost_setup": "Kopia poza hostem",
-        "recovery_kit": "Zestaw odzyskiwania"
+        "recovery_kit": "Zestaw odzyskiwania",
+        "dump_retention": "Zrzuty w buckecie"
       },
       "at": {
         "database_dump": "Najnowszy zrzut: {date}",
@@ -8678,7 +8679,8 @@
         "offhost_copies": "Otwórz kopie zapasowe",
         "restore_drill": "Otwórz kopie zapasowe",
         "offhost_setup": "Otwórz kopie zapasowe",
-        "recovery_kit": "Otwórz zestaw"
+        "recovery_kit": "Otwórz zestaw",
+        "dump_retention": "Otwórz kopie zapasowe"
       },
       "reason": {
         "database_dump": {
@@ -8727,6 +8729,13 @@
           "no_admin": "Nie ma jeszcze konta administratora.",
           "not_confirmed": "Nikt nie potwierdził kopii kluczy potrzebnych do przywrócenia: {keys}.",
           "not_confirmed_grace": "Zapisz kopię kluczy potrzebnych do przywrócenia: {keys}."
+        },
+        "dump_retention": {
+          "not_configured": "Zewnętrzny bucket nie jest ustawiony.",
+          "no_offhost_dumps": "Żaden zrzut bazy nie trafia do bucketu.",
+          "missing": "Żadna reguła cyklu życia bucketu nie obejmuje database/, więc zrzuty tam, wraz z usuniętymi kontami w nich, nigdy nie są usuwane. Dodaj regułę dla tego prefiksu.",
+          "configured": "Bucket usuwa zrzuty po {days} dniach.",
+          "unknown": "Bucket nie podaje, czy jakaś reguła usuwa stare zrzuty. Sprawdź, czy reguła cyklu życia obejmuje database/."
         }
       },
       "recovered": {
@@ -8735,7 +8744,8 @@
         "offhost_copies": "Każde konto znów ma aktualną kopię poza hostem.",
         "restore_drill": "Próba przywracania znów się powiodła.",
         "offhost_setup": "Kopie poza hostem są już skonfigurowane.",
-        "recovery_kit": "Zestaw odzyskiwania jest znów potwierdzony."
+        "recovery_kit": "Zestaw odzyskiwania jest znów potwierdzony.",
+        "dump_retention": "Reguła cyklu życia w buckecie obejmuje teraz zrzuty bazy."
       }
     }
   },

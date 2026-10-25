@@ -11,12 +11,17 @@
  *   - the off-host copies: the per-account ledger the nightly run writes, and
  *     the same "configured" rule the backups page uses (the environment, or a
  *     ledger row as proof that an upload happened);
+ *   - the bucket's lifecycle rule for `database/`: the same cached probe the
+ *     backups page shows, asked only when a bucket is configured;
  *   - the drill: its persisted last outcome, with no time window;
  *   - the kit: the same assessment the kit card shows;
  *   - the dump: whatever the dump module reports, through a provider.
  */
 import { prisma } from "@/lib/db";
-import { offhostBackupConfigured } from "@/lib/jobs/offhost-backup";
+import {
+  offhostBackupConfigured,
+  probeOffhostLifecycle,
+} from "@/lib/jobs/offhost-backup";
 import {
   readDatabaseBackupHealth,
   type DatabaseBackupHealthProvider,
@@ -74,6 +79,10 @@ export async function readReadinessInputs(
   const configured =
     offhostBackupConfigured() ||
     accounts.some((account) => account.offhostBackupState !== null);
+  // Never throws: a bucket that cannot be asked answers `unknown`.
+  const databaseLifecycle = configured
+    ? (await probeOffhostLifecycle()).database
+    : null;
 
   return {
     now,
@@ -88,6 +97,7 @@ export async function readReadinessInputs(
     },
     offhost: {
       configured,
+      databaseLifecycle,
       accounts: accounts.map((account) => ({
         lastAttemptAt: account.offhostBackupState?.lastAttemptAt ?? null,
         lastSuccessAt: account.offhostBackupState?.lastSuccessAt ?? null,

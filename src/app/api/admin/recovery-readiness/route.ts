@@ -4,7 +4,8 @@
  * Every backup signal with its verdict, its time and where to fix it: the
  * database dump, the weekly copy, the off-host copies, the last restore drill
  * (no time window: a failed drill stays failed until a later one passes), the
- * off-host setup and the recovery kit. The same judgement the hourly
+ * off-host setup, whether the bucket ever removes the database dumps, and the
+ * recovery kit. The same judgement the hourly
  * evaluation pushes to the admins (`src/lib/recovery/readiness-model.ts`).
  * Cookie-only admin.
  */

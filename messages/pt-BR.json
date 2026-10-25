@@ -8662,7 +8662,8 @@
         "offhost_copies": "Cópias fora do host",
         "restore_drill": "Teste de restauração",
         "offhost_setup": "Backup fora do host",
-        "recovery_kit": "Kit de recuperação"
+        "recovery_kit": "Kit de recuperação",
+        "dump_retention": "Dumps no bucket"
       },
       "at": {
         "database_dump": "Dump mais recente: {date}",
@@ -8678,7 +8679,8 @@
         "offhost_copies": "Abrir backups",
         "restore_drill": "Abrir backups",
         "offhost_setup": "Abrir backups",
-        "recovery_kit": "Abrir o kit"
+        "recovery_kit": "Abrir o kit",
+        "dump_retention": "Abrir backups"
       },
       "reason": {
         "database_dump": {
@@ -8727,6 +8729,13 @@
           "no_admin": "Ainda não há uma conta de administrador.",
           "not_confirmed": "Ninguém confirmou uma cópia das chaves de que uma restauração precisa: {keys}.",
           "not_confirmed_grace": "Guarde uma cópia das chaves de que uma restauração precisa: {keys}."
+        },
+        "dump_retention": {
+          "not_configured": "Nenhum bucket externo está configurado.",
+          "no_offhost_dumps": "Nenhum dump do banco vai para o bucket.",
+          "missing": "Nenhuma regra de ciclo de vida do bucket cobre database/, então os dumps ali, e as contas excluídas dentro deles, nunca são removidos. Adicione uma regra para esse prefixo.",
+          "configured": "O bucket remove os dumps após {days} dias.",
+          "unknown": "O bucket não informa se alguma regra remove dumps antigos. Confira se uma regra de ciclo de vida cobre database/."
         }
       },
       "recovered": {
@@ -8735,7 +8744,8 @@
         "offhost_copies": "Todas as contas têm novamente uma cópia recente fora do host.",
         "restore_drill": "O teste de restauração passou novamente.",
         "offhost_setup": "As cópias fora do host estão configuradas agora.",
-        "recovery_kit": "O kit de recuperação está confirmado novamente."
+        "recovery_kit": "O kit de recuperação está confirmado novamente.",
+        "dump_retention": "Agora uma regra de ciclo de vida do bucket cobre os dumps do banco."
       }
     }
   },

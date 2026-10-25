@@ -8662,7 +8662,8 @@
         "offhost_copies": "외부 보관 사본",
         "restore_drill": "복원 훈련",
         "offhost_setup": "외부 보관 백업",
-        "recovery_kit": "복구 키트"
+        "recovery_kit": "복구 키트",
+        "dump_retention": "버킷의 덤프"
       },
       "at": {
         "database_dump": "최신 덤프: {date}",
@@ -8678,7 +8679,8 @@
         "offhost_copies": "백업 열기",
         "restore_drill": "백업 열기",
         "offhost_setup": "백업 열기",
-        "recovery_kit": "키트 열기"
+        "recovery_kit": "키트 열기",
+        "dump_retention": "백업 열기"
       },
       "reason": {
         "database_dump": {
@@ -8727,6 +8729,13 @@
           "no_admin": "아직 관리자 계정이 없습니다.",
           "not_confirmed": "복원에 필요한 키의 사본을 아무도 확인하지 않았습니다: {keys}.",
           "not_confirmed_grace": "복원에 필요한 키의 사본을 보관하세요: {keys}."
+        },
+        "dump_retention": {
+          "not_configured": "외부 버킷이 설정되지 않았습니다.",
+          "no_offhost_dumps": "버킷으로 가는 데이터베이스 덤프가 없습니다.",
+          "missing": "버킷의 어떤 수명 주기 규칙도 database/를 다루지 않아 그곳의 덤프와 그 안의 삭제된 계정이 절대 삭제되지 않습니다. 이 접두사에 대한 규칙을 추가하세요.",
+          "configured": "버킷은 {days}일 후에 덤프를 삭제합니다.",
+          "unknown": "버킷이 오래된 덤프를 삭제하는 규칙이 있는지 알려 주지 않습니다. 수명 주기 규칙이 database/를 포함하는지 확인하세요."
         }
       },
       "recovered": {
@@ -8735,7 +8744,8 @@
         "offhost_copies": "모든 계정에 다시 최근 외부 보관 사본이 있습니다.",
         "restore_drill": "복원 훈련을 다시 통과했습니다.",
         "offhost_setup": "이제 외부 보관 사본이 설정되었습니다.",
-        "recovery_kit": "복구 키트가 다시 확인되었습니다."
+        "recovery_kit": "복구 키트가 다시 확인되었습니다.",
+        "dump_retention": "이제 버킷의 수명 주기 규칙이 데이터베이스 덤프를 포함합니다."
       }
     }
   },

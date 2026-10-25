@@ -8662,7 +8662,8 @@
         "offhost_copies": "Copie fuori host",
         "restore_drill": "Prova di ripristino",
         "offhost_setup": "Backup fuori host",
-        "recovery_kit": "Kit di recupero"
+        "recovery_kit": "Kit di recupero",
+        "dump_retention": "Dump nel bucket"
       },
       "at": {
         "database_dump": "Dump più recente: {date}",
@@ -8678,7 +8679,8 @@
         "offhost_copies": "Apri i backup",
         "restore_drill": "Apri i backup",
         "offhost_setup": "Apri i backup",
-        "recovery_kit": "Apri il kit"
+        "recovery_kit": "Apri il kit",
+        "dump_retention": "Apri i backup"
       },
       "reason": {
         "database_dump": {
@@ -8727,6 +8729,13 @@
           "no_admin": "Non esiste ancora un account amministratore.",
           "not_confirmed": "Nessuno ha confermato una copia delle chiavi necessarie per un ripristino: {keys}.",
           "not_confirmed_grace": "Salva una copia delle chiavi necessarie per un ripristino: {keys}."
+        },
+        "dump_retention": {
+          "not_configured": "Non è configurato alcun bucket esterno.",
+          "no_offhost_dumps": "Nessun dump del database va nel bucket.",
+          "missing": "Nessuna regola del ciclo di vita del bucket copre database/, quindi i dump lì, e gli account eliminati che contengono, non vengono mai rimossi. Aggiungi una regola per quel prefisso.",
+          "configured": "Il bucket rimuove i dump dopo {days} giorni.",
+          "unknown": "Il bucket non dice se una regola rimuove i dump vecchi. Verifica che una regola di ciclo di vita copra database/."
         }
       },
       "recovered": {
@@ -8735,7 +8744,8 @@
         "offhost_copies": "Ogni account ha di nuovo una copia fuori host recente.",
         "restore_drill": "La prova di ripristino è di nuovo riuscita.",
         "offhost_setup": "Le copie fuori host ora sono configurate.",
-        "recovery_kit": "Il kit di recupero è di nuovo confermato."
+        "recovery_kit": "Il kit di recupero è di nuovo confermato.",
+        "dump_retention": "Ora una regola di ciclo di vita del bucket copre i dump del database."
       }
     }
   },

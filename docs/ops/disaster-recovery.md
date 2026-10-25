@@ -40,7 +40,8 @@ A dump holds every account that existed when it was taken, including one
 deleted since. Deleted accounts leave the dumps as they age out: after
 `DB_BACKUP_KEEP` nights on the server, and after your lifecycle rule in the
 bucket. Give that rule a prefix that covers `database/` too; the admin
-backups page reads the bucket's rules and says when none does. This is the
+backups page reads the bucket's rules and says when none does, and the
+recovery readiness card calls it attention and tells the admins once. This is the
 retention period to state where you tell people that deleting their account
 deletes their data.
 
