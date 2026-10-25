@@ -32,10 +32,11 @@ export async function pendingDeletionOf(
  *
  * Call it only after the credential was proved, never before: the refusal
  * says the account exists and is pending, which is not something to tell a
- * caller who has not shown they could sign in to it. Every primitive that
- * mints a sign-in (`createSession`, `issueApiToken`) calls it too, so a
- * surface that forgets is still refused; the explicit calls in the sign-in
- * routes are there to refuse before a second factor is asked for.
+ * caller who has not shown they could sign in to it. Every sign-in route ends
+ * in the shared login response (`src/lib/auth/login-response.ts`), which
+ * refuses a pending account, and the second-factor challenge refuses before
+ * a code is asked for. Credentials issued before the deletion are not checked
+ * here: the deletion revokes them, so they answer 401 like any revoked one.
  */
 export async function assertAccountNotPendingDeletion(
   userId: string,

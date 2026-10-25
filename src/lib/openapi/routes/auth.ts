@@ -939,7 +939,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         "403": {
           description:
             "Password login is disabled — the operator runs `OIDC_ONLY=true`. `meta.errorCode` = `oidc_only`; sign in through SSO instead. The one exception is a browser the SSO callback sent back with a pending link to confirm an existing account: it may sign in with that one account's password, which links the account. A sign-in to any other account on that browser is refused before its password is checked, so the answer is the same whether the password was right or wrong.\n\n" +
-            "Also 403 `auth.account.deletion_pending`, after the password was proved and before a second factor is asked for: the account is pending deletion and locked. `meta.purgeAt` is when it is erased; an admin can undo the deletion until then. Every other sign-in surface (passkey, second-factor completion, refresh, the native token exchanges) refuses with the same code.",
+            "Also 403 `auth.account.deletion_pending`, after the password was proved and before a second factor is asked for: the account is pending deletion and locked. `meta.purgeAt` is when it is erased; an admin can undo the deletion until then. Every other sign-in surface (passkey, second-factor completion, the native token exchanges) refuses with the same code. A session, refresh token or API token issued before the deletion is revoked by it, so those answer 401 (`auth.refresh.revoked` on refresh), the same as for a signed-out session.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,

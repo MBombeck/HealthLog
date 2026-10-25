@@ -2211,8 +2211,10 @@ paths:
 
             Also 403 `auth.account.deletion_pending`, after the password was proved and before a second factor is asked
             for: the account is pending deletion and locked. `meta.purgeAt` is when it is erased; an admin can undo the
-            deletion until then. Every other sign-in surface (passkey, second-factor completion, refresh, the native
-            token exchanges) refuses with the same code.
+            deletion until then. Every other sign-in surface (passkey, second-factor completion, the native token
+            exchanges) refuses with the same code. A session, refresh token or API token issued before the deletion is
+            revoked by it, so those answer 401 (`auth.refresh.revoked` on refresh), the same as for a signed-out
+            session.
           content:
             application/json:
               schema:
