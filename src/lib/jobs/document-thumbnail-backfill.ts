@@ -49,8 +49,8 @@ const THUMBNAILABLE_MIMES = [
 
 /**
  * Render refusals that the same bytes will always get again: the first page
- * renders blank, the render comes out empty, the image is past the pixel cap,
- * the PDF crossed the renderer's memory or time bound. One attempt settles
+ * renders blank, the render comes out empty, the image is past the pixel cap
+ * or its size cannot be read, the PDF crossed the renderer's memory or time bound. One attempt settles
  * them; queueing a document that exhausts the renderer again at every boot
  * would only repeat the exhaustion.
  */
@@ -58,6 +58,7 @@ const FINAL_THUMBNAIL_FAILURES = [
   "raster-failed",
   "empty-render",
   "pixel-cap",
+  "size-unreadable",
   "resource-limit",
 ] as const;
 
