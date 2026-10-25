@@ -58,9 +58,13 @@ Anything written after the move lives only in the Postgres 18 volume.
 
 ## Afterwards
 
-Keep the old volume until the new database has run for a while. When you are
-sure, remove it (`docker volume ls` shows its full name, prefixed with the
-compose project):
+Keep the old volume until the new database has run for a while, then remove
+it. It is a complete copy of the database as it stood before the move, and
+nothing that happens afterwards reaches it: an account deleted, a document
+purged from the trash, or a key rotated after a leak is still there in the
+old volume, and so is everything else for anyone who can read the host's
+Docker volumes. Removing it is part of the move, not optional tidying.
+`docker volume ls` shows its full name, prefixed with the compose project:
 
 ```bash
 docker volume rm <project>_pgdata
