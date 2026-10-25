@@ -82,6 +82,7 @@ function answersAfter(afterMs: number) {
                 tokensUsed: 80,
               },
               workingProvider: { providerType: "local" },
+              tokensSpent: 0,
             }),
           afterMs,
         ),

@@ -15429,45 +15429,6 @@ paths:
         "403": *a9
         "422": *a4
         "429": *a5
-  /api/settings/preview-features:
-    get:
-      tags:
-        - Meta
-      summary: Get the preview-feature opt-ins
-      description: Every flag, off unless the caller switched it on.
-      responses:
-        "200":
-          description: The opt-ins.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PreviewFeaturesEnvelope"
-        "401": *a1
-        "403": *a9
-        "422": *a4
-        "429": *a5
-    patch:
-      tags:
-        - Meta
-      summary: Switch preview features on or off
-      description: Sets the flags the body names and keeps the rest. An unknown flag or an empty body is refused with 422.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/PreviewFeaturesPatchBody"
-      responses:
-        "200":
-          description: The opt-ins as stored.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PreviewFeaturesSavedEnvelope"
-        "401": *a1
-        "403": *a9
-        "422": *a4
-        "429": *a5
   /api/settings/privacy-summary:
     get:
       tags:
@@ -27216,6 +27177,61 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+  /api/settings/preview-features:
+    get:
+      security: []
+      deprecated: true
+      tags:
+        - Retired
+      summary: GET /api/settings/preview-features — removed in v1.46.0
+      description: >-
+        Removed in v1.46.0. Every request to this path answers 410 Gone, whatever the method and whatever credential it
+        carries. There is no replacement; the capability is gone rather than moved.
+
+
+        Stored per-account opt-ins to preview features, of which there was one, the topic overview pages. Those pages
+        were dropped before they shipped, so the switch governed nothing; the route and its column are gone, and no
+        preview is gated per account.
+
+
+        Retiring a path is deliberate, so the answer says so rather than leaving a client to read a 404 as a broken
+        deployment and retry forever. Treat 410 as terminal: drop the call, degrade the surface that depended on it, and
+        do not offer a retry.
+      responses:
+        "410":
+          description: The path was removed in v1.46.0 and will not answer again. `meta.errorCode` = `route.retired`,
+            `meta.removedIn` carries the version, and `meta.replacedBy` carries the replacement path or null.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    patch:
+      security: []
+      deprecated: true
+      tags:
+        - Retired
+      summary: PATCH /api/settings/preview-features — removed in v1.46.0
+      description: >-
+        Removed in v1.46.0. Every request to this path answers 410 Gone, whatever the method and whatever credential it
+        carries. There is no replacement; the capability is gone rather than moved.
+
+
+        Stored per-account opt-ins to preview features, of which there was one, the topic overview pages. Those pages
+        were dropped before they shipped, so the switch governed nothing; the route and its column are gone, and no
+        preview is gated per account.
+
+
+        Retiring a path is deliberate, so the answer says so rather than leaving a client to read a 404 as a broken
+        deployment and retry forever. Treat 410 as terminal: drop the call, degrade the surface that depended on it, and
+        do not offer a retry.
+      responses:
+        "410":
+          description: The path was removed in v1.46.0 and will not answer again. `meta.errorCode` = `route.retired`,
+            `meta.removedIn` carries the version, and `meta.replacedBy` carries the replacement path or null.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
 components:
   schemas:
     CreateCycleCustomSymptomRequest:
@@ -33267,12 +33283,6 @@ components:
       required:
         - version
         - list
-      additionalProperties: false
-    PreviewFeaturesPatchBody:
-      type: object
-      properties:
-        topics:
-          type: boolean
       additionalProperties: false
     ConsentPostBody:
       type: object
@@ -73591,50 +73601,6 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/ModuleListLayout"
-        error:
-          type: "null"
-        meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
-      required:
-        - data
-        - error
-      additionalProperties: false
-    PreviewFeaturesEnvelope:
-      type: object
-      properties:
-        data:
-          $ref: "#/components/schemas/PreviewFeatures"
-        error:
-          type: "null"
-        meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
-      required:
-        - data
-        - error
-      additionalProperties: false
-    PreviewFeatures:
-      type: object
-      properties:
-        topics:
-          type: boolean
-          description: Topic overview pages above the single-metric Insights pages. Off by default.
-      required:
-        - topics
-      additionalProperties: false
-      description: Per-user opt-in to preview features, one boolean per flag, every flag off by default.
-    PreviewFeaturesSavedEnvelope:
-      type: object
-      properties:
-        data:
-          $ref: "#/components/schemas/PreviewFeatures"
         error:
           type: "null"
         meta:

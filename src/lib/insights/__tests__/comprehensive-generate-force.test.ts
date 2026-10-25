@@ -301,6 +301,7 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
       },
       workingProvider: { providerType: "openai" },
       fallbackHops: [],
+      tokensSpent: 0,
     });
 
     const outcome = await generateComprehensiveInsight("u1", {
@@ -353,6 +354,7 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
       },
       workingProvider: { providerType: "openai" },
       fallbackHops: [],
+      tokensSpent: 0,
     });
 
     // The kilogram fingerprint no longer matches: a unit switch regenerates.
@@ -429,6 +431,7 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
       },
       workingProvider: { providerType: "openai" },
       fallbackHops: [],
+      tokensSpent: 0,
     });
 
     const outcome = await generateComprehensiveInsight("u1", {
@@ -467,6 +470,7 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
       },
       workingProvider: { providerType: "openai" },
       fallbackHops: [],
+      tokensSpent: 0,
     });
 
     const outcome = await generateComprehensiveInsight("u1", {
@@ -503,6 +507,7 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
       },
       workingProvider: { providerType: "openai" },
       fallbackHops: [],
+      tokensSpent: 0,
     });
 
     const outcome = await generateComprehensiveInsight("u1", {
@@ -553,6 +558,7 @@ describe("generateComprehensiveInsight — usage level", () => {
       },
       workingProvider: { providerType: "openai" },
       fallbackHops: [],
+      tokensSpent: 0,
     });
   }
 

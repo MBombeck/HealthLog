@@ -264,6 +264,7 @@ async function noToolTurn(content: string): Promise<string> {
   runStreamingRawCompletionWithFallback.mockResolvedValue({
     result: { content, tokensUsed: 42, model: "m" },
     workingProvider: { providerType: "anthropic" },
+    tokensSpent: 0,
   });
   const res = await post(chatReq({ message: "How is my BP?" }));
   await sse.done;

@@ -232,7 +232,7 @@ describe("Local reasoning replies", () => {
     expect(result.reasoning?.summary).toEqual(["The user asks about sleep."]);
   });
 
-  it("never answers with unlabelled text that filled the reasoning ceiling", async () => {
+  it("never answers with unlabelled text that filled the reasoning ceiling, once the model reasons", async () => {
     const cut = async () =>
       new Response(
         JSON.stringify({
@@ -245,15 +245,47 @@ describe("Local reasoning replies", () => {
         }),
         { status: 200 },
       );
-    const mock = vi.fn().mockImplementation(cut);
+    // The model has answered with a reasoning field before.
+    const mock = vi
+      .fn()
+      .mockImplementationOnce(
+        buffered({ content: "ok", reasoning: "Thinking first" }),
+      )
+      .mockImplementation(cut);
     vi.stubGlobal("fetch", mock);
-    await expect(
-      client().generateCompletion(
-        params({ reasoning: { effort: "medium", summaries: true } }),
-      ),
-    ).rejects.toMatchObject({ httpStatus: 0, kind: "reasoning_only" });
+    const c = client();
+    const wanted = params({ reasoning: { effort: "medium", summaries: true } });
+    expect((await c.generateCompletion(wanted)).content).toBe("ok");
+    await expect(c.generateCompletion(wanted)).rejects.toMatchObject({
+      httpStatus: 0,
+      kind: "reasoning_only",
+    });
     // Asked once more with `none` (#1267), which this model ignores.
-    expect(mock).toHaveBeenCalledTimes(2);
+    expect(mock).toHaveBeenCalledTimes(3);
+  });
+
+  it("keeps a cut answer from a model never seen reasoning, whatever the level", async () => {
+    const mock = vi.fn().mockImplementation(
+      async () =>
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: { content: '{"summary": "Steady and' },
+                finish_reason: "length",
+              },
+            ],
+          }),
+          { status: 200 },
+        ),
+    );
+    vi.stubGlobal("fetch", mock);
+    const result = await client().generateCompletion(
+      params({ reasoning: { effort: "medium", summaries: true } }),
+    );
+    expect(result.content).toBe('{"summary": "Steady and');
+    expect(result.finishReason).toBe("length");
+    expect(mock).toHaveBeenCalledTimes(1);
   });
 
   it("keeps a cut answer when the ceiling held no room for reasoning", async () => {

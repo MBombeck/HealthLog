@@ -1,13 +1,7 @@
-import { safeFetch } from "@/lib/safe-fetch";
 import { callTimeoutMs } from "./effective-timeout";
 import { annotate } from "@/lib/logging/context";
 import { aiEgressPolicyFor } from "./local-host-allowlist";
-import type {
-  AIProvider,
-  AiMessage,
-  CompletionParams,
-  CompletionResult,
-} from "./types";
+import type { AIProvider, CompletionParams, CompletionResult } from "./types";
 import {
   buildOpenAIMessages,
   mapFinishReason,
@@ -24,24 +18,29 @@ import {
   resetJsonModeDialectCache,
   type JsonModeDialect,
 } from "./json-dialect";
+import { emptyReplyError, withStrictJsonPrefix } from "./local-wire";
+import { RequestHops } from "./request-hops";
+import { learnFromRefusal } from "./wire-refusal";
 import type { ReasoningEffort } from "./reasoning-effort";
 import {
   ANSWERS_ONLY_UNREASONED,
-  annotateReasoningDowngrade,
-  isReasoningParameterRejection,
   learnedReasoningDialect,
-  rememberReasoningDialect,
+  noteReasoningSeen,
+  refusesReasoningField,
 } from "./reasoning/dialect-cache";
 import { uncontrolledThinkingRoom } from "./reasoning/levels";
 import {
   askAgainUnreasoned,
+  knownReasoner,
   reasonsUnasked,
-  withEarlierSpend,
+  repeatUnreasoned,
 } from "./reasoning/answerless";
 import {
   ReasoningCollector,
+  StreamedThinkSplitter,
   separateMessage,
   takeReasoning,
+  type LocalReasoner,
 } from "./local-reasoning";
 
 interface LocalClientConfig {
@@ -57,16 +56,10 @@ interface LocalClientConfig {
   operatorTrusted?: boolean;
 }
 
-const STRICT_JSON_PREFIX =
-  "Return strict JSON only, no markdown, no commentary.\n\n";
-
 /**
- * v1.28.28 (#470) — per-endpoint JSON-mode dialect, learned at runtime.
- * v1.33.1 — the machinery moved to `json-dialect.ts` when the
- * OpenAI-compatible gateway provider needed the same learning; the two
- * clients share one cache keyed by base URL. The names below stay exported
- * from here because this client's tests and call sites were the first
- * consumers.
+ * #470 — the per-endpoint JSON-mode dialect, learned at runtime in
+ * `json-dialect.ts` (one cache keyed by base URL, shared with the gateway
+ * client). The names stay exported here for this client's first consumers.
  */
 type LocalJsonDialect = JsonModeDialect;
 
@@ -76,57 +69,10 @@ export const resetLocalJsonDialectCache = resetJsonModeDialectCache;
 export { isResponseFormatRejection };
 
 /**
- * v1.22 (#89) — absolute backstop for the streaming path. The real ceiling is
- * the per-idle-gap timer (`CompletionParams.timeoutMs`); this only stops a
- * server that streams forever from pinning a worker. Ten minutes is far beyond
- * any legitimate single Coach turn.
+ * #89 — the streaming path's absolute backstop. The real ceiling is the
+ * per-idle-gap timer; this only stops a server that streams forever.
  */
 const STREAM_ABSOLUTE_CEILING_MS = 10 * 60_000;
-
-/**
- * Prepend the strict-JSON instruction to the FIRST user turn's text. Local
- * model templates respect an in-message instruction reliably, so it is sent
- * in BOTH dialects — it is the only JSON steering left when an endpoint
- * rejects `response_format` (dialect `"none"`). Mirrors the pre-refactor
- * behaviour, which prepended to the single user prompt.
- */
-function withStrictJsonPrefix(messages: AiMessage[]): AiMessage[] {
-  const idx = messages.findIndex((m) => m.role === "user");
-  if (idx === -1) return messages;
-  const out = [...messages];
-  const target = out[idx];
-  if (typeof target.content === "string") {
-    out[idx] = { ...target, content: `${STRICT_JSON_PREFIX}${target.content}` };
-  } else {
-    // Vision parts: prepend a leading text part with the instruction.
-    out[idx] = {
-      ...target,
-      content: [{ type: "text", text: STRICT_JSON_PREFIX }, ...target.content],
-    };
-  }
-  return out;
-}
-
-/**
- * The empty-reply error. `httpStatus: 0` is the sentinel the chain classifier
- * treats as a hard failure; `kind` says whether the reply held reasoning and
- * no answer, or nothing at all, so the log names it instead of "network".
- */
-function emptyReplyError(hadReasoning: boolean, spent: number | null): Error {
-  const err = new Error(
-    hadReasoning
-      ? "Local AI returned reasoning but no answer"
-      : "Local AI returned empty content",
-  );
-  Object.assign(err, {
-    httpStatus: 0,
-    kind: hadReasoning ? "reasoning_only" : "empty_response",
-    upstream: "local",
-    // #1279 — what the reply cost, for the day's ledger to charge.
-    ...(spent !== null ? { tokensUsed: spent } : {}),
-  });
-  return err;
-}
 
 /**
  * Talks to OpenAI-compatible servers: local runtimes (Ollama, LocalAI,
@@ -138,12 +84,10 @@ function emptyReplyError(hadReasoning: boolean, spent: number | null): Error {
  * `LocalJsonDialect` above). The strict-JSON instruction prepended to the
  * user message stays in both dialects.
  *
- * v1.20.0 — tool-calling DEGRADES silently here: most local servers reject an
- * unknown `tools` field, so the client never forwards it (capability flag
- * below). F1's tool loop must therefore tolerate a provider that never returns
- * `toolCalls` and answer from base context. Prompt-caching, where the local
- * server supports it (vLLM / Ollama prefix cache), is transparent — no flag,
- * no harm.
+ * Tool calling degrades silently: most local servers reject an unknown
+ * `tools` field, so the client never forwards it (`supportsTools`), and the
+ * Coach's tool loop answers from base context. Prompt caching, where the
+ * server has it (vLLM / Ollama prefix cache), is transparent.
  */
 export class LocalOpenAICompatibleClient implements AIProvider {
   readonly type = "local" as const;
@@ -228,7 +172,11 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       // v1.41 — a call that carries its own resolved level wins over it.
       // #1267 — once a model answered nothing while reasoning, the entry's
       // setting gives way to the `none` that `callReasoningEffort` sends.
-      ...(!params.reasoning && this.reasoningEffort && callEffort === null
+      // #1279 — not once the endpoint refused the field.
+      ...(!params.reasoning &&
+      this.reasoningEffort &&
+      callEffort === null &&
+      this.sentReasoningEffort(params) !== null
         ? { reasoning_effort: this.reasoningEffort }
         : {}),
       ...(callEffort ? { reasoning_effort: callEffort } : {}),
@@ -279,19 +227,36 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     // expires, a call without a level of its own included.
     if (learned === ANSWERS_ONLY_UNREASONED) return "none";
     if (!params.reasoning) return null;
-    if (learned === "none") return null;
+    if (refusesReasoningField(learned)) return null;
     return params.reasoning.effort === "off" ? "none" : params.reasoning.effort;
   }
 
   /**
+   * #1276 — what this endpoint and model have shown of their reasoning, for
+   * one request (`LocalReasoner`). Seen on a request that asked to reason
+   * counts only for requests that ask too.
+   */
+  private reasoner(params: CompletionParams, room: boolean): LocalReasoner {
+    const key = this.reasoningDialectKey();
+    const sent = this.sentReasoningEffort(params);
+    const asked = sent !== null && sent !== "none";
+    return {
+      room,
+      known: knownReasoner(key, asked),
+      seen: () => noteReasoningSeen(key, asked),
+    };
+  }
+
+  /**
    * The `reasoning_effort` this request carries, whichever level decided it:
-   * the call's own (`callReasoningEffort`), else the entry's #1126 setting.
+   * the call's own (`callReasoningEffort`), else the entry's #1126 setting,
+   * unless the endpoint refused the field (#1279).
    */
   private sentReasoningEffort(params: CompletionParams): string | null {
-    return (
-      this.callReasoningEffort(params) ??
-      (params.reasoning ? null : this.reasoningEffort)
-    );
+    const call = this.callReasoningEffort(params);
+    if (call !== null || params.reasoning) return call;
+    const learned = learnedReasoningDialect(this.reasoningDialectKey());
+    return refusesReasoningField(learned) ? null : this.reasoningEffort;
   }
 
   /**
@@ -308,31 +273,93 @@ export class LocalOpenAICompatibleClient implements AIProvider {
    */
   private learnAnswerlessReasoning(
     params: CompletionParams,
+    hops: RequestHops,
     hadReasoning: boolean,
     finishReason: string | undefined,
   ): boolean {
-    return askAgainUnreasoned({
-      key: this.reasoningDialectKey(),
-      provider: "local",
-      signals: "ai.local",
-      sent: this.sentReasoningEffort(params),
-      hadReasoning,
-      finishReason,
+    return (
+      // The lesson holds even when the budget leaves no repeat for it.
+      askAgainUnreasoned({
+        key: this.reasoningDialectKey(),
+        provider: "local",
+        signals: "ai.local",
+        sent: this.sentReasoningEffort(params),
+        hadReasoning,
+        finishReason,
+      }) && hops.canSend
+    );
+  }
+
+  /**
+   * #1279 — the call once more with `none` (streamed when `onDelta` is
+   * given), carrying this reply's spend; see `repeatUnreasoned`.
+   */
+  private askUnreasoned(
+    params: CompletionParams,
+    hops: RequestHops,
+    reply: { hadReasoning: boolean; spent: number | null },
+    onDelta?: (delta: string) => void,
+  ): Promise<CompletionResult> {
+    return repeatUnreasoned(
+      onDelta
+        ? this.generateCompletionStream(params, onDelta, hops)
+        : this.generateCompletion(params, hops),
+      reply.spent,
+      () => emptyReplyError(reply.hadReasoning, reply.spent),
+    );
+  }
+
+  /**
+   * A non-2xx reply. A refused reasoning field or JSON flag is learned and
+   * the call asked once more without it (`wire-refusal.ts`), and a refused
+   * stream (`streamed`; some servers 400 on `stream` / `stream_options`)
+   * once more buffered, while the call's request budget allows. Otherwise
+   * the structured error; local endpoints and their proxies commonly leak
+   * bearer tokens in error envelopes, so the excerpt is stripped first.
+   */
+  private async failed(
+    res: Response,
+    params: CompletionParams,
+    hops: RequestHops,
+    sent: { effort: string | null; json: boolean; streamed: boolean },
+  ): Promise<CompletionResult> {
+    const bodyExcerpt = sanitiseBodyExcerpt(await res.text().catch(() => ""));
+    const lesson = learnFromRefusal({
+      status: res.status,
+      body: bodyExcerpt,
+      model: this.config.model,
+      reasoning: sent.effort
+        ? {
+            sent: sent.effort,
+            key: this.reasoningDialectKey(),
+            provider: "local",
+            names: /reasoning|think/i,
+          }
+        : null,
+      json: sent.json
+        ? { endpoint: this.config.baseUrl, action: "ai.local.jsonDialect" }
+        : null,
+    });
+    if ((lesson || sent.streamed) && hops.canSend) {
+      return this.generateCompletion(params, hops);
+    }
+    throw Object.assign(new Error(`Local AI request failed (${res.status})`), {
+      httpStatus: res.status,
+      upstream: "local",
+      model: this.config.model,
+      baseUrl: this.config.baseUrl,
+      bodyExcerpt,
+      ...(lesson === "reasoning" ? { reasoningRefused: true } : {}),
     });
   }
 
-  /** #1279 — the streamed call once more, carrying this reply's spend. */
-  private streamAgain(
-    params: CompletionParams,
-    onDelta: (delta: string) => void,
-    spent: number | null,
-  ): Promise<CompletionResult> {
-    const again = this.generateCompletionStream(params, onDelta);
-    return withEarlierSpend(again, spent);
-  }
-
+  /**
+   * `hops` is the call's request budget (`request-hops.ts`): a caller never
+   * passes it, every repeat inside the call hands it on.
+   */
   async generateCompletion(
     params: CompletionParams,
+    hops: RequestHops = new RequestHops(),
   ): Promise<CompletionResult> {
     const { url, headers, body, jsonDialect, room } = this.buildRequest(
       params,
@@ -357,7 +384,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     const egress = aiEgressPolicyFor(url, {
       operatorTrusted: this.config.operatorTrusted,
     });
-    const res = await safeFetch(
+    const res = await hops.fetch(
       url,
       {
         method: "POST",
@@ -375,55 +402,12 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     );
 
     if (!res.ok) {
-      // Mirror the openai-client structured-error pattern. Local endpoints
-      // also commonly leak bearer tokens in error envelopes (proxies), so
-      // strip anything that looks like a key before logging.
-      const rawBody = await res.text().catch(() => "");
-      const bodyExcerpt = sanitiseBodyExcerpt(rawBody);
-      // v1.41 — a server that refuses the reasoning field is asked once more
-      // without it and remembers. Before the JSON dialect, so a complaint
-      // about reasoning never switches JSON mode off.
-      const sentEffort = this.callReasoningEffort(params);
-      if (
-        sentEffort &&
-        isReasoningParameterRejection(
-          res.status,
-          bodyExcerpt,
-          /reasoning|think/i,
-          this.config.model,
-        )
-      ) {
-        rememberReasoningDialect(this.reasoningDialectKey(), "none");
-        annotateReasoningDowngrade("local", sentEffort, "none");
-        return this.generateCompletion(params);
-      }
-      // v1.28.28 (#470) — dialect self-heal. A 4xx whose body names
-      // `response_format` (or an unknown parameter) means this endpoint
-      // rejects the standard JSON flag: learn the no-flag dialect for the
-      // baseUrl and retry ONCE without it (the recursion terminates because
-      // the cached dialect is now "none"). Unrelated 4xx/5xx errors are not
-      // retried.
-      if (
-        params.responseFormat === "json" &&
-        jsonDialect === "response_format" &&
-        isResponseFormatRejection(res.status, bodyExcerpt)
-      ) {
-        rememberJsonModeDialect(this.config.baseUrl, "none");
-        annotate({
-          action: { name: "ai.local.jsonDialect" },
-          meta: { dialect: "none", httpStatus: res.status },
-        });
-        return this.generateCompletion(params);
-      }
-      const err = new Error(`Local AI request failed (${res.status})`);
-      Object.assign(err, {
-        httpStatus: res.status,
-        upstream: "local",
-        model: this.config.model,
-        baseUrl: this.config.baseUrl,
-        bodyExcerpt,
+      return this.failed(res, params, hops, {
+        effort: this.sentReasoningEffort(params),
+        json:
+          params.responseFormat === "json" && jsonDialect === "response_format",
+        streamed: false,
       });
-      throw err;
     }
 
     // v1.28.28 (#470) — the standard `response_format` request succeeded:
@@ -470,12 +454,12 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       params,
       json.choices?.[0]?.message,
       finish,
-      room,
+      this.reasoner(params, room),
     );
     if (!content) {
       const spent = json.usage?.total_tokens ?? null;
-      if (this.learnAnswerlessReasoning(params, hadReasoning, finish)) {
-        return withEarlierSpend(this.generateCompletion(params), spent);
+      if (this.learnAnswerlessReasoning(params, hops, hadReasoning, finish)) {
+        return this.askUnreasoned(params, hops, { hadReasoning, spent });
       }
       // The reasoning that did arrive still reaches `onReasoning`, as before.
       collector.result(
@@ -508,6 +492,68 @@ export class LocalOpenAICompatibleClient implements AIProvider {
   }
 
   /**
+   * A server that ignored the stream flag and answered buffered (or sent no
+   * readable body): parsed like the non-streaming path rather than paying a
+   * second round-trip, and the answer handed to `onDelta` whole.
+   */
+  private async bufferedInsteadOfStream(
+    res: Response,
+    params: CompletionParams,
+    onDelta: (delta: string) => void,
+    hops: RequestHops,
+    room: boolean,
+  ): Promise<CompletionResult> {
+    const json = (await res.json().catch(() => null)) as {
+      choices?: Array<{
+        message?: { content?: string };
+        finish_reason?: string;
+      }>;
+      usage?: {
+        total_tokens?: number;
+        prompt_tokens_details?: { cached_tokens?: number };
+      };
+    } | null;
+    // The server ignored `stream` and answered buffered — the embedded
+    // failure can ride this body exactly as it rides the non-streaming one.
+    raiseEmbeddedError(json, {
+      upstream: "local",
+      label: "local AI endpoint",
+      model: this.config.model,
+    });
+    const { content, hadReasoning, collector } = separateMessage(
+      params,
+      json?.choices?.[0]?.message,
+      json?.choices?.[0]?.finish_reason,
+      this.reasoner(params, room),
+    );
+    if (!content) {
+      const spent = json?.usage?.total_tokens ?? null;
+      const finish = json?.choices?.[0]?.finish_reason;
+      if (this.learnAnswerlessReasoning(params, hops, hadReasoning, finish)) {
+        return this.askUnreasoned(
+          params,
+          hops,
+          { hadReasoning, spent },
+          onDelta,
+        );
+      }
+      collector.result(null);
+      throw emptyReplyError(hadReasoning, spent);
+    }
+    const reasoning = collector.result(null);
+    onDelta(content);
+    return {
+      content,
+      tokensUsed: json?.usage?.total_tokens ?? null,
+      cachedInputTokens: json ? parseCachedTokens(json) : null,
+      model: this.config.model,
+      providerType: "local",
+      finishReason: mapFinishReason(json?.choices?.[0]?.finish_reason),
+      ...(reasoning ? { reasoning } : {}),
+    };
+  }
+
+  /**
    * v1.22 (#89) — true token streaming over the OpenAI-compatible
    * `stream: true` wire. POSTs with `stream: true`, reads the SSE response body
    * incrementally, and emits each `choices[0].delta.content` chunk through
@@ -530,8 +576,12 @@ export class LocalOpenAICompatibleClient implements AIProvider {
   async generateCompletionStream(
     params: CompletionParams,
     onDelta: (delta: string) => void,
+    hops: RequestHops = new RequestHops(),
   ): Promise<CompletionResult> {
-    const { url, headers, body, room } = this.buildRequest(params, true);
+    const { url, headers, body, jsonDialect, room } = this.buildRequest(
+      params,
+      true,
+    );
     const egress = aiEgressPolicyFor(url, {
       operatorTrusted: this.config.operatorTrusted,
     });
@@ -547,7 +597,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
 
     let res: Response;
     try {
-      res = await safeFetch(
+      res = await hops.fetch(
         url,
         { method: "POST", headers, body },
         {
@@ -558,68 +608,26 @@ export class LocalOpenAICompatibleClient implements AIProvider {
           signal,
         },
       );
-    } catch {
+    } catch (err) {
       // Network / private-host / abort before the stream opened → fall back to
       // the buffered path, which surfaces the structured error the chain runner
       // understands (or succeeds on a server that simply doesn't stream).
-      return this.generateCompletion(params);
+      if (!hops.canSend) throw err;
+      return this.generateCompletion(params, hops);
     }
 
     if (!res.ok) {
-      // The server rejected the streaming request (some servers 400 on
-      // `stream`/`stream_options`). Retry once on the buffered path so a
-      // non-streaming server still works and surfaces its real status.
-      return this.generateCompletion(params);
+      return this.failed(res, params, hops, {
+        effort: this.sentReasoningEffort(params),
+        json:
+          params.responseFormat === "json" && jsonDialect === "response_format",
+        streamed: true,
+      });
     }
 
     const contentType = res.headers.get("content-type") ?? "";
     if (!contentType.includes("text/event-stream") || !res.body) {
-      // The server ignored the stream flag and returned a buffered completion
-      // (or there is no readable body). Parse it like the non-streaming path
-      // rather than paying a second round-trip.
-      const json = (await res.json().catch(() => null)) as {
-        choices?: Array<{
-          message?: { content?: string };
-          finish_reason?: string;
-        }>;
-        usage?: {
-          total_tokens?: number;
-          prompt_tokens_details?: { cached_tokens?: number };
-        };
-      } | null;
-      // The server ignored `stream` and answered buffered — the embedded
-      // failure can ride this body exactly as it rides the non-streaming one.
-      raiseEmbeddedError(json, {
-        upstream: "local",
-        label: "local AI endpoint",
-        model: this.config.model,
-      });
-      const { content, hadReasoning, collector } = separateMessage(
-        params,
-        json?.choices?.[0]?.message,
-        json?.choices?.[0]?.finish_reason,
-        room,
-      );
-      if (!content) {
-        const spent = json?.usage?.total_tokens ?? null;
-        const finish = json?.choices?.[0]?.finish_reason;
-        if (this.learnAnswerlessReasoning(params, hadReasoning, finish)) {
-          return this.streamAgain(params, onDelta, spent);
-        }
-        collector.result(null);
-        throw emptyReplyError(hadReasoning, spent);
-      }
-      const reasoning = collector.result(null);
-      onDelta(content);
-      return {
-        content,
-        tokensUsed: json?.usage?.total_tokens ?? null,
-        cachedInputTokens: json ? parseCachedTokens(json) : null,
-        model: this.config.model,
-        providerType: "local",
-        finishReason: mapFinishReason(json?.choices?.[0]?.finish_reason),
-        ...(reasoning ? { reasoning } : {}),
-      };
+      return this.bufferedInsteadOfStream(res, params, onDelta, hops, room);
     }
 
     const reader = res.body.getReader();
@@ -636,44 +644,12 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     // reasoning never reaches `onDelta`; it would otherwise show up as the
     // answer. #1276 — for every caller (only one that asked is told).
     const collector = new ReasoningCollector(params);
-    let thinkState: "detect" | "inside" | "passthrough" = "detect";
-    let pending = "";
-    const passContent = (text: string) => {
+    const splitter = new StreamedThinkSplitter(collector, (text) => {
       if (!text) return;
       collector.finish();
       content += text;
       onDelta(text);
-    };
-    const onContent = (delta: string) => {
-      if (thinkState === "passthrough") {
-        passContent(delta);
-        return;
-      }
-      pending += delta;
-      if (thinkState === "detect") {
-        const lead = pending.replace(/^\s+/, "");
-        if (lead.length < "<think>".length && "<think>".startsWith(lead)) {
-          return;
-        }
-        if (!lead.startsWith("<think>")) {
-          thinkState = "passthrough";
-          const out = pending;
-          pending = "";
-          passContent(out);
-          return;
-        }
-        thinkState = "inside";
-        pending = lead.slice("<think>".length);
-      }
-      const close = pending.indexOf("</think>");
-      if (close === -1) return;
-      collector.add(pending.slice(0, close));
-      collector.finish();
-      const rest = pending.slice(close + "</think>".length).replace(/^\s+/, "");
-      pending = "";
-      thinkState = "passthrough";
-      passContent(rest);
-    };
+    });
 
     // An SSE frame can carry the same embedded failure the buffered body
     // carries. Remember the first one; it only matters if the stream ends
@@ -741,7 +717,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
             collector.add(reasoningDelta);
           }
           const delta = choiceDelta?.content;
-          if (delta) onContent(delta);
+          if (delta) splitter.push(delta);
           if (typeof chunk.usage?.total_tokens === "number") {
             tokensUsed = chunk.usage.total_tokens;
           }
@@ -773,24 +749,16 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       reader.cancel().catch(() => {});
     }
 
-    // A reply short enough to still sit in the `<think>` detector is prose;
-    // an unclosed block is reasoning that ran out of budget.
-    // (The closures above move `thinkState`; read it afresh.)
-    const endState = thinkState as "detect" | "inside" | "passthrough";
-    if (endState === "detect") {
-      thinkState = "passthrough";
-      passContent(pending);
-    } else if (endState === "inside") {
-      collector.add(pending);
-    }
-    pending = "";
+    const { unclosed } = splitter.end();
     // #1276 — a lone `</think>`, or unlabelled text that filled the ceiling.
     // Sent deltas are a liveness signal only; the guards read `content`.
+    const reasoner = this.reasoner(params, room);
     const tail = takeReasoning(collector, content, {
       fieldedReasoning: streamedReasoning,
       finishReason,
-      reasoningRoom: room,
+      reasoner,
     });
+    if (streamedReasoning || splitter.opened || tail.took) reasoner.seen();
     content = tail.content;
     if (!content) {
       // A stream that ended with a failure frame and no token reports the
@@ -801,10 +769,16 @@ export class LocalOpenAICompatibleClient implements AIProvider {
         model: this.config.model,
       });
       // An unclosed inline `<think>` block is reasoning too.
-      const hadReasoning =
-        streamedReasoning || endState === "inside" || tail.took;
-      if (this.learnAnswerlessReasoning(params, hadReasoning, finishReason)) {
-        return this.streamAgain(params, onDelta, tokensUsed);
+      const hadReasoning = streamedReasoning || unclosed || tail.took;
+      if (
+        this.learnAnswerlessReasoning(params, hops, hadReasoning, finishReason)
+      ) {
+        return this.askUnreasoned(
+          params,
+          hops,
+          { hadReasoning, spent: tokensUsed },
+          onDelta,
+        );
       }
       collector.result(reasoningTokens);
       throw emptyReplyError(hadReasoning, tokensUsed);

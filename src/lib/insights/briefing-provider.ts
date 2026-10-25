@@ -104,6 +104,23 @@ export interface RunBriefingCompletionArgs {
    * budget; the client adds the thinking budget itself.
    */
   reasoningJob?: BackgroundReasoningJob;
+  /**
+   * #1279 — a person is waiting on this call: the on-demand "Re-run
+   * analysis". It keeps the background share of the day's ceiling, and walks
+   * a provider the health ledger benched at the tail of the chain instead of
+   * leaving it out, so the person gets that provider's own answer or refusal.
+   * Absent for the scheduled generator.
+   */
+  interactive?: boolean;
+  /**
+   * #1279 — the caller's outer bound (the nightly and forced warms, the
+   * morning refresh). It reaches every provider call, so a call the bound
+   * gave up on is torn down, and once it fired no further call is reserved
+   * or sent: a briefing that outlives its bound does not keep running
+   * detached. The on-demand route passes none on purpose: it finishes and
+   * writes its briefing after the browser stopped waiting (#786).
+   */
+  signal?: AbortSignal;
 }
 
 /**
@@ -123,6 +140,7 @@ export interface RunBriefingCompletionArgs {
 export async function runBriefingCompletion(
   args: RunBriefingCompletionArgs,
 ): Promise<RunRawWithFallbackResult> {
+  args.signal?.throwIfAborted();
   const dateKey = args.dateKey ?? (await buildDateKey(args.userId));
 
   // v1.41 — one resolution per call: the operator's switch and cap, the payer
@@ -175,9 +193,9 @@ export async function runBriefingCompletion(
   try {
     outcome = await runRawCompletionWithFallback({
       userId: args.userId,
-      // A background generator: an operator-funded fallback hop is rationed at
-      // the job share, exactly as the reservation above was.
+      // Rationed at the job share, exactly as the reservation above was.
       surface: "job",
+      ...(args.interactive ? { interactive: true } : {}),
       providers: args.chain,
       params: {
         ...singleUserTurn({
@@ -187,6 +205,7 @@ export async function runBriefingCompletion(
           maxTokens: args.maxTokens,
           seed: args.seed,
           timeoutMs: args.timeoutMs,
+          signal: args.signal,
           // Every briefing call parses its reply with `JSON.parse`, so opt the
           // chains with a native JSON mode into it.
           responseFormat: "json",
@@ -219,7 +238,9 @@ export async function runBriefingCompletion(
     throw err;
   }
 
-  const actualTokens = outcome.result.tokensUsed ?? reservation.reserved;
+  // #1279 — plus what the hops that failed before it spent.
+  const actualTokens =
+    (outcome.result.tokensUsed ?? reservation.reserved) + outcome.tokensSpent;
   await reconcileSpend(
     args.userId,
     reservation.reserved,

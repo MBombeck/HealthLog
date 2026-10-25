@@ -166,6 +166,7 @@ beforeEach(() => {
     result: { content: VALID, tokensUsed: 900, model: "m" },
     workingProvider: { providerType: "admin-openai" },
     fallbackHops: [],
+    tokensSpent: 0,
   });
 });
 
@@ -269,11 +270,13 @@ describe("generateComprehensiveInsight — daily token ceiling", () => {
         result: { content: "not json", tokensUsed: 400, model: "m" },
         workingProvider: { providerType: "admin-openai" },
         fallbackHops: [],
+        tokensSpent: 0,
       })
       .mockResolvedValueOnce({
         result: { content: VALID, tokensUsed: 900, model: "m" },
         workingProvider: { providerType: "admin-openai" },
         fallbackHops: [],
+        tokensSpent: 0,
       });
 
     const outcome = await generateComprehensiveInsight("u1", { locale: "de" });

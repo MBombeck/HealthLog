@@ -28,12 +28,6 @@ const MEASUREMENT_SELECT = {
   ingestToken: APPLE_HEALTH_MIRROR_SELECT.ingestToken,
 } satisfies Prisma.MeasurementSelect;
 
-const MEASUREMENT_MIRROR_SELECT = {
-  id: true,
-  source: true,
-  ingestToken: { select: { mirrorToAppleHealth: true, mirrorChangedAt: true } },
-} satisfies Prisma.MeasurementSelect;
-
 const MOOD_SELECT = {
   id: true,
   date: true,
@@ -81,8 +75,15 @@ export type CycleDayRow = Prisma.CycleDayLogGetPayload<{
   include: typeof dayLogSymptomInclude;
 }>;
 export type CycleRow = Prisma.MenstrualCycleGetPayload<object>;
+/** A reading the mirror walk re-delivers, with its token's current setting. */
 export type MeasurementMirrorRow = Prisma.MeasurementGetPayload<{
-  select: typeof MEASUREMENT_MIRROR_SELECT;
+  select: {
+    id: true;
+    source: true;
+    ingestToken: {
+      select: { mirrorToAppleHealth: true; mirrorChangedAt: true };
+    };
+  };
 }>;
 
 /**
@@ -109,41 +110,94 @@ export interface DomainRows {
   measurementMirror: MeasurementMirrorRow[];
 }
 
+const MEASUREMENT_MIRROR_ROW_SELECT = {
+  id: true,
+  source: true,
+} satisfies Prisma.MeasurementSelect;
+
 /**
  * The live readings of every token whose Apple Health setting changed past
  * the watermark, in `(token.mirrorChangedAt, measurement.id)` order. Switching
  * the setting writes the token row only, so the readings keep their
  * `updatedAt` (nothing keyed on it recomputes) and arrive through this walk
  * instead of the measurement one.
+ *
+ * The walk starts from the tokens, not the readings. Ordering readings by a
+ * column of the joined token row cannot use any index on `measurements`, so
+ * the single-query form sorted every row of every token that had ever been
+ * switched, on every poll, even when nothing had changed since the client's
+ * watermark. Reading the switched tokens first is a lookup on a handful of
+ * rows; nearly every poll finds none and ends there. Otherwise the readings
+ * are walked one change stamp at a time, by `(ingest_token_id, id)`, which is
+ * the order the index already holds. Tokens that share a stamp are walked
+ * together so their rows interleave by id exactly as the one-query form
+ * ordered them.
+ *
+ * The token lookup filters on the token's owner. That is exact because a
+ * reading only ever links to a token of its own account: the link is written
+ * for a narrow `measurements:write` Bearer, which never acts on another record
+ * (`requireRecordAuth` refuses the carrier), and a restore keeps the link only
+ * for a token the restoring account holds.
  */
-function readMeasurementMirrorRows(
+async function readMeasurementMirrorRows(
   userId: string,
   wm: DomainWatermark | undefined,
   limit: number,
 ): Promise<MeasurementMirrorRow[]> {
   const at = wm ? new Date(wm.updatedAtMs) : null;
-  return prisma.measurement.findMany({
+  const tokens = await prisma.apiToken.findMany({
     where: {
       userId,
-      deletedAt: null,
-      ingestToken: { mirrorChangedAt: { not: null } },
-      ...(at &&
-        wm && {
-          OR: [
-            { ingestToken: { mirrorChangedAt: { gt: at } } },
-            {
-              AND: [
-                { ingestToken: { mirrorChangedAt: at } },
-                { id: { gt: wm.id } },
-              ],
-            },
-          ],
-        }),
+      mirrorChangedAt: at ? { gte: at } : { not: null },
     },
-    orderBy: [{ ingestToken: { mirrorChangedAt: "asc" } }, { id: "asc" }],
-    take: limit + 1,
-    select: MEASUREMENT_MIRROR_SELECT,
+    orderBy: [{ mirrorChangedAt: "asc" }, { id: "asc" }],
+    select: { id: true, mirrorToAppleHealth: true, mirrorChangedAt: true },
   });
+  if (tokens.length === 0) return [];
+
+  // One group per change stamp, in stamp order.
+  const groups: { stampMs: number; tokens: typeof tokens }[] = [];
+  for (const token of tokens) {
+    const stampMs = token.mirrorChangedAt!.getTime();
+    const last = groups[groups.length - 1];
+    if (last && last.stampMs === stampMs) last.tokens.push(token);
+    else groups.push({ stampMs, tokens: [token] });
+  }
+
+  const out: MeasurementMirrorRow[] = [];
+  for (const group of groups) {
+    const want = limit + 1 - out.length;
+    if (want <= 0) break;
+    // The watermark's own stamp resumes after the last row delivered; every
+    // later stamp starts from its first row.
+    const resume = wm && group.stampMs === wm.updatedAtMs ? wm.id : null;
+    const byId = new Map(group.tokens.map((t) => [t.id, t]));
+    const rows = await prisma.measurement.findMany({
+      where: {
+        ingestTokenId:
+          group.tokens.length === 1
+            ? group.tokens[0].id
+            : { in: group.tokens.map((t) => t.id) },
+        userId,
+        deletedAt: null,
+        ...(resume !== null && { id: { gt: resume } }),
+      },
+      orderBy: { id: "asc" },
+      take: want,
+      select: { ...MEASUREMENT_MIRROR_ROW_SELECT, ingestTokenId: true },
+    });
+    for (const { ingestTokenId, ...row } of rows) {
+      const token = byId.get(ingestTokenId!)!;
+      out.push({
+        ...row,
+        ingestToken: {
+          mirrorToAppleHealth: token.mirrorToAppleHealth,
+          mirrorChangedAt: token.mirrorChangedAt,
+        },
+      });
+    }
+  }
+  return out;
 }
 
 /**

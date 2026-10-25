@@ -349,6 +349,7 @@ export function streamingResult(content: string) {
         model: "m-local",
       },
       workingProvider: { providerType: "local" },
+      tokensSpent: 0,
     };
   };
 }

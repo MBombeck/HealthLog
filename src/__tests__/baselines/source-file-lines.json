@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 87,
-  "total": 97455,
+  "count": 86,
+  "total": 96631,
   "entries": {
     "app/medications/page-client.tsx": 839,
     "components/charts/mood-chart.tsx": 1166,
@@ -29,7 +29,6 @@
     "lib/ai/coach/stream-events.ts": 817,
     "lib/ai/coach/types.ts": 1011,
     "lib/ai/codex-client.ts": 1045,
-    "lib/ai/local-client.ts": 824,
     "lib/ai/prompts/insight-generator.ts": 1110,
     "lib/ai/provider.ts": 1632,
     "lib/analytics/score/reader.ts": 998,

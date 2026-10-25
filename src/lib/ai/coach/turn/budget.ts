@@ -41,8 +41,10 @@ export interface TurnLedger extends RoundSpend {
   /**
    * Give back everything still reserved and not settled. Called once the
    * turn is over, whatever way it ended; a second call does nothing.
+   * #1279 — `spent`, what a failed provider call reported spending, stays
+   * charged: a model that reasons without answering is billed for it.
    */
-  close(): Promise<void>;
+  close(spent?: number): Promise<void>;
 }
 
 export async function reserveTurnBudget(args: {
@@ -193,13 +195,13 @@ export function createTurnLedger(args: {
       }
       await settle(portion, tokens, cachedTokens, servedBy);
     },
-    async close() {
+    async close(spent = 0) {
       if (closed) return;
       closed = true;
       const unused = open.reduce((sum, n) => sum + n, 0) + finalHeld;
       open.length = 0;
       finalHeld = 0;
-      if (unused > 0) await settle(unused, 0, 0, null);
+      if (unused > 0 || spent > 0) await settle(unused, spent, 0, null);
     },
   };
 }

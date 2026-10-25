@@ -111,6 +111,19 @@ describe("#1279: background work and a benched provider", () => {
       ]);
     }
     expect(gateway.calls).toBe(HARD_FAILURE_SKIP_THRESHOLD);
+    // The bench sent nothing; a hop that reached the provider did.
+    const benched = await walk(
+      "job",
+      "u-bench",
+      "openai-compatible",
+      gateway,
+      ledger,
+    ).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(benched).toBeInstanceOf(AllProvidersFailedError);
+    expect((benched as AllProvidersFailedError).sentNothing).toBe(true);
     // One line for the window, not one per job.
     expect(signals("ai.chain.background_paused")).toHaveLength(1);
     expect(signals("ai.chain.background_paused")[0].meta).toMatchObject({
@@ -135,6 +148,30 @@ describe("#1279: background work and a benched provider", () => {
       gateway,
       ledger,
     ).catch((e) => e);
+    expect(gateway.calls).toBe(before + 1);
+    expect((err as AllProvidersFailedError).attempts[0].failureKind).toBe(
+      "reasoning_only",
+    );
+    expect((err as AllProvidersFailedError).sentNothing).toBe(false);
+  });
+
+  it("walks the benched provider for a job-rationed call a person waits on", async () => {
+    const ledger = createInMemoryProviderHealthLedger();
+    const gateway = new AnswerlessProvider();
+    for (let i = 0; i < PROVIDER_PAUSE_THRESHOLD; i += 1) {
+      await walk("job", "u-rerun", "openai-compatible", gateway, ledger).catch(
+        () => undefined,
+      );
+    }
+    const before = gateway.calls;
+    const err = await runRawCompletionWithFallback({
+      userId: "u-rerun",
+      surface: "job",
+      interactive: true,
+      providers: [{ providerType: "openai-compatible", instance: gateway }],
+      params: singleUserTurn({ system: "s", user: "u" }),
+      ledger,
+    }).catch((e) => e);
     expect(gateway.calls).toBe(before + 1);
     expect((err as AllProvidersFailedError).attempts[0].failureKind).toBe(
       "reasoning_only",
@@ -185,6 +222,36 @@ describe("#1279: background work and a benched provider", () => {
     await walk("job", "u-local", "local", local, ledger).catch(() => undefined);
     await walk("job", "u-local", "local", local, ledger).catch(() => undefined);
     expect(local.calls).toBe(PROVIDER_PAUSE_THRESHOLD);
+  });
+
+  it("reports what the hops before the answering one spent", async () => {
+    const ledger = createInMemoryProviderHealthLedger();
+    const out = await runRawCompletionWithFallback({
+      userId: "u-spent-then-answered",
+      surface: "job",
+      providers: [
+        {
+          providerType: "openai-compatible",
+          instance: new AnswerlessProvider(),
+        },
+        {
+          providerType: "anthropic",
+          instance: {
+            type: "anthropic",
+            generateCompletion: async () => ({
+              content: "ok",
+              tokensUsed: 100,
+              model: "m",
+              providerType: "anthropic",
+            }),
+          } as AIProvider,
+        },
+      ],
+      params: singleUserTurn({ system: "s", user: "u" }),
+      ledger,
+    });
+    expect(out.result.tokensUsed).toBe(100);
+    expect(out.tokensSpent).toBe(2700);
   });
 
   it("sums what the failed hops reported spending", async () => {

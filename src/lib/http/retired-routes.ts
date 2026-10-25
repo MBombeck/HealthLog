@@ -160,6 +160,14 @@ export const RETIRED_ROUTES: readonly RetiredRoute[] = [
       "Research Mode was an opt-in for the estimated drug-level curve. The chart had stopped consulting the flag several releases earlier and painted for every account regardless, so the switch governed nothing. The curve is simply part of the medication page now and needs no preference read.",
     methods: ["GET", "POST", "DELETE"],
   },
+  {
+    path: "/api/settings/preview-features",
+    removedIn: "1.46.0",
+    replacedBy: null,
+    reason:
+      "Stored per-account opt-ins to preview features, of which there was one, the topic overview pages. Those pages were dropped before they shipped, so the switch governed nothing; the route and its column are gone, and no preview is gated per account.",
+    methods: ["GET", "PATCH"],
+  },
 ];
 
 const BY_PATH: ReadonlyMap<string, RetiredRoute> = new Map(

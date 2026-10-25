@@ -98,6 +98,7 @@ async function capTurn(
       result: await client.generateCompletion({ ...params, ...extra }),
       workingProvider: { providerType },
       fallbackHops: [],
+      tokensSpent: 0,
     }),
   );
   return runCoachToolLoop({

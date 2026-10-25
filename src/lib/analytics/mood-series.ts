@@ -12,6 +12,8 @@
  */
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import { runDetached } from "@/lib/logging/detached";
+import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import { summarize, type DataPoint } from "@/lib/analytics/trends";
 import {
   ensureUserMoodRollupsFresh,
@@ -94,7 +96,9 @@ export async function buildMoodDailySeries(
 ): Promise<MoodDailySeries> {
   // Fire-and-forget warm-up so the next cold mount for this user lands on
   // the rollup tier even when the boot-time backfill hasn't reached them.
-  void ensureUserMoodRollupsFresh(userId);
+  // Registered so a caller that must know when the request's work is over
+  // (the suite's settle hook, the statement counter) can await it.
+  trackBackgroundTask(runDetached(() => ensureUserMoodRollupsFresh(userId)));
 
   const since = new Date(Date.now() - MOOD_SERIES_WINDOW_MS);
   const rollups = await readMoodDayRollups(userId, since);

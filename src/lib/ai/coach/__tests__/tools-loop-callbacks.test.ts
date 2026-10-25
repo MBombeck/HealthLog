@@ -37,6 +37,7 @@ function round(content: string, toolCalls?: Call[]) {
     },
     workingProvider: { providerType: "anthropic" },
     fallbackHops: [],
+    tokensSpent: 0,
   };
 }
 

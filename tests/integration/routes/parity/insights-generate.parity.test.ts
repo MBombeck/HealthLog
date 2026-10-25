@@ -171,6 +171,7 @@ vi.mock("@/lib/ai/provider-runner", async (importOriginal) => {
         },
         workingProvider: args.providers[0],
         fallbackHops: [],
+        tokensSpent: 0,
       };
     },
   };

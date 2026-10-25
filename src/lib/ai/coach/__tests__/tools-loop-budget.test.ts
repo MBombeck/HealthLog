@@ -61,6 +61,7 @@ function round(
     },
     workingProvider: { providerType: "codex" },
     fallbackHops: [],
+    tokensSpent: 0,
   };
 }
 

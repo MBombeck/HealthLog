@@ -56,12 +56,15 @@ function code(rel: string): string {
   return stripComments(readFileSync(join(SRC, rel), "utf8"));
 }
 
-/** The wire clients: every `*-client.ts` that dials through `safeFetch`. */
+/**
+ * The wire clients: every `*-client.ts` that dials through `safeFetch`, or
+ * through the call's request budget (`hops.fetch`, `request-hops.ts`).
+ */
 function wireClients(): string[] {
   return readdirSync(AI_DIR)
     .filter((f) => f.endsWith("-client.ts"))
     .map((f) => `lib/ai/${f}`)
-    .filter((rel) => /\bsafeFetch\s*\(/.test(code(rel)))
+    .filter((rel) => /\b(?:safeFetch|hops\.fetch)\s*\(/.test(code(rel)))
     .sort();
 }
 

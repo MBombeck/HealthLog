@@ -401,7 +401,7 @@ export async function runCoachToolLoop(args: {
     });
     if (spend) {
       await spend.settleRound({
-        tokens: result.tokensUsed ?? 0,
+        tokens: (result.tokensUsed ?? 0) + fallback.tokensSpent,
         cachedTokens: result.cachedInputTokens ?? 0,
         servedBy: fallback.workingProvider.providerType as ProviderChainType,
         final: isFinal,

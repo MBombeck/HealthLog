@@ -275,16 +275,25 @@ export function reasoningTitleOf(text: string): string | null {
  *
  * #1276 — a reply can also carry only the closing tag: GLM, Qwen3 and
  * DeepSeek-R1 chat templates end the generation prompt with `<think>`, so the
- * model's output starts inside the block. Everything before the first
- * `</think>` of such a reply is reasoning.
+ * model's output starts inside the block. Everything before that `</think>`
+ * is reasoning when the tag opens a line (the templates close the block on a
+ * line of its own, or at the very start), or anywhere once the model is known
+ * to reason (`knownReasoner`). An ordinary answer that mentions the tag in a
+ * sentence is left whole.
  */
-export function splitThinkTags(content: string): {
+export function splitThinkTags(
+  content: string,
+  knownReasoner = false,
+): {
   content: string;
   reasoning: string | null;
 } {
   const m =
     /^\s*<think>([\s\S]*?)(<\/think>|$)/.exec(content) ??
-    /^([\s\S]*?)(<\/think>)/.exec(content);
+    (knownReasoner
+      ? /^([\s\S]*?)(<\/think>)/
+      : /^((?:[\s\S]*?\n)?)[ \t]*(<\/think>)/
+    ).exec(content);
   if (!m) return { content, reasoning: null };
   const reasoning = m[1].trim();
   const rest = m[2] ? content.slice(m[0].length).replace(/^\s+/, "") : "";
@@ -299,10 +308,12 @@ export function splitThinkTags(content: string): {
  *    off by {@link splitThinkTags}.
  *  - A reply that ran into a ceiling which held room for reasoning
  *    (`finish_reason: "length"`, `reasoningRoom`), with no reasoning field
- *    beside it, no tag and no tool call, is reasoning the server did not
- *    separate: the budget was sized for thinking plus an answer, so text
- *    that fills all of it unlabelled is the thought, cut off. It is never
- *    the answer.
+ *    beside it, no tag and no tool call, from a model known to reason
+ *    (`knownReasoner`), is reasoning the server did not separate: the budget
+ *    was sized for thinking plus an answer, so text that fills all of it
+ *    unlabelled is the thought, cut off. From any other model it is the
+ *    answer, cut off, and the caller reads `finish_reason` (a model that
+ *    does not reason, asked with any level, still answers).
  *
  * `reasoning` is the text taken out of `content`, for the reasoning channel.
  * `unseparated` marks the second case so the caller can say so in its log.
@@ -316,11 +327,13 @@ export function answerOf(
     hasToolCalls: boolean;
     /** The request's ceiling held room for reasoning on top of the answer. */
     reasoningRoom: boolean;
+    /** This endpoint and model have shown they reason (`knownReasoner`). */
+    knownReasoner: boolean;
   },
 ): { content: string; reasoning: string | null; unseparated: boolean } {
   const text = content ?? "";
   if (!text) return { content: "", reasoning: null, unseparated: false };
-  const split = splitThinkTags(text);
+  const split = splitThinkTags(text, reply.knownReasoner);
   if (split.content !== text || split.reasoning !== null) {
     return {
       content: split.content,
@@ -331,6 +344,7 @@ export function answerOf(
   if (
     reply.finishReason === "length" &&
     reply.reasoningRoom &&
+    reply.knownReasoner &&
     !reply.fieldedReasoning &&
     !reply.hasToolCalls
   ) {

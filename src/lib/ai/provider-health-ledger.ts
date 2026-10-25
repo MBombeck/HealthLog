@@ -64,12 +64,14 @@ export const HARD_FAILURE_SKIP_THRESHOLD = 3;
  * From `PROVIDER_PAUSE_THRESHOLD` consecutive hard failures on, each failure
  * re-arms the skip window at `PROVIDER_PAUSE_BASE_MS` doubled per further
  * failure, capped at `PROVIDER_PAUSE_MAX_MS`. Paused is the same skip as
- * backoff (the provider moves to the tail of the chain, behind everything
- * healthy, and is still walked as a last resort, so a chain never loses its
- * only provider). When the window lifts, the next call tries it again: one
- * success clears the count and resumes it in place, one more failure doubles
- * the pause. Nothing needs to be reset by hand. The admin provider-health card
- * shows a paused provider and until when.
+ * backoff: an interactive call moves the provider to the tail of the chain,
+ * behind everything healthy, and still walks it as a last resort, so a person
+ * never loses their only provider; background work leaves it out until the
+ * window lifts (#1279, `background-bench.ts`). When the window lifts, the next
+ * call tries it again: one success clears the count and resumes it in place,
+ * one more failure doubles the pause. Saving a fixed provider forgets its
+ * record (`forgetProviderHealth`). The admin provider-health card shows a
+ * paused provider and until when.
  *
  * Conservative on purpose: five failures in a row is far past a brown-out,
  * the first pause is half an hour, and the ceiling is a day, so a provider
@@ -283,12 +285,12 @@ export const postgresProviderHealthLedger: ProviderHealthLedger = {
  * Drop the recorded outcomes of a credential that has just been replaced.
  *
  * The ledger describes a credential, not a provider slot: once the person
- * (or, for `admin-codex`, the operator) signs in again, the `auth_failed`
- * row of the refused credential would otherwise keep the fresh one at the
- * tail of the chain and reported as expired for the rest of its cooldown.
- * Without `userId` the rows of every account are dropped — the operator's
- * central connection is one credential shared by all of them. Best effort,
- * like every ledger write.
+ * (or, for the `admin-*` providers, the operator) signs in again or saves a
+ * fixed setup, the row of the refused one would otherwise keep the fresh one
+ * at the tail of every interactive chain, out of background work entirely
+ * (#1279), and reported as expired for the rest of its window. Without
+ * `userId` the rows of every account are dropped: an operator provider is one
+ * credential shared by all of them. Best effort, like every ledger write.
  */
 export async function forgetProviderHealth(target: {
   providerType: ProviderChainType;
@@ -302,7 +304,8 @@ export async function forgetProviderHealth(target: {
       },
     });
   } catch {
-    // A stale row only deprioritises; it never blocks.
+    // A stale row lapses with its window; until then it keeps background
+    // work off the replaced credential (#1279).
   }
 }
 

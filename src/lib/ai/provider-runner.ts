@@ -38,49 +38,35 @@ import {
 const NEVER_SKIP: ReadonlySet<ProviderChainType> = new Set(["local"]);
 
 /**
- * v1.4.16 — multi-provider redundancy runner.
+ * The multi-provider redundancy runner: a provider completion with a
+ * hard-failure walk across an ordered list of providers, so one provider's
+ * outage (a 401 from an expired Codex sign-in, a 503 brown-out, a network
+ * reset) cascades to the next configured provider instead of failing the
+ * request.
  *
- * The chain runner wraps a provider completion with a hard-failure
- * walkthrough across an ordered list of providers. The motivation is
- * the maintainer's "ein Provider-Ausfall darf die Insights nicht zerschiessen"
- * mandate: a 401 from Codex (OAuth expired), a 503 from OpenAI
- * (upstream brown-out), or a network reset MUST cascade to the next
- * configured provider rather than 422-ing the whole request.
+ * Hard failures (`isHardProviderFailure`) cascade. A malformed-JSON reply is
+ * NOT a hard failure — it is a prompt-following issue, so it bubbles to the
+ * caller's own validator rather than masking itself as provider
+ * unavailability and walking the chain. Every provider receives the same
+ * enriched system prompt; `outcome.workingProvider.providerType` attributes
+ * feedback per provider.
  *
- * Hard failures (`isHardProviderFailure`) cascade. A malformed-JSON
- * reply is NOT a hard failure — it is a prompt-following issue, so it
- * bubbles to the caller's own validator rather than masking itself as
- * provider unavailability and walking the chain.
- *
- * Cross-feature coupling:
- *   - B5a's `MEDICAL_REFERENCES` is shared via the system prompt; each
- *     provider in the chain receives the same enriched context.
- *   - B5e (planned v1.4.17) reads `outcome.workingProvider.providerType`
- *     to attribute feedback per provider; that's why we re-export it
- *     out of the runner instead of the wrapper.
- *
- * The cache: a provider that worked on the last call gets first crack
- * on the next, so a user whose Codex OAuth lapsed doesn't re-burn the
- * 401 round-trip on every request for the next hour. Cache is
- * in-process (per worker), keyed by `userId`, TTL 1h. No coordination
- * across workers — when scaling out we'd move this to Redis, but for
- * v1.4.16 the per-worker cache is enough to absorb the typical
- * "polling reload" pattern.
- *
- * v1.18.7 — DECISION: the volatile per-worker hint is left
- * in-process and NOT folded into the durable Postgres health ledger. The
- * ledger already shares the load-bearing signal across workers (the
- * skip-hint reorder in `resolveChainOrder` pushes a dead-credential /
- * backoff provider to the chain tail for every worker), so the only thing
+ * The cache: a provider that worked on the last call gets first crack on the
+ * next, so a user whose Codex sign-in lapsed doesn't re-burn the 401
+ * round-trip on every request for the next hour. In-process (per worker),
+ * keyed by `userId`, TTL 1h. It stays out of the durable Postgres health
+ * ledger on purpose: the ledger already shares the load-bearing signal across
+ * workers (the skip-hint reorder in `resolveChainOrder`), so the only thing
  * uncoordinated is a soft "tried this one last, put it first" reorder whose
- * worst case is a single redundant first-hop per worker per hour — exactly
- * the bound the v1.18.7 AI audit deemed acceptable at single-maintainer
- * scale. Promoting the hint to a per-request ledger write would add write
- * amplification on the hot path for a negligible saving; revisit only if a
- * multi-worker deploy shows measurable redundant-hop cost.
+ * worst case is one redundant first hop per worker per hour. Promoting it to
+ * a per-request ledger write would add write amplification on the hot path;
+ * revisit only if a multi-worker deploy shows measurable redundant-hop cost.
  */
 
 const LAST_WORKING_TTL_MS = 60 * 60 * 1000; // 1h
+
+/** The `failureReason` of a hop the operator cost cap refused unsent. */
+const OPERATOR_CAP_REFUSAL = "operator-cost-cap-exhausted";
 
 interface CacheEntry {
   providerType: ProviderChainType;
@@ -223,6 +209,13 @@ export class AllProvidersFailedError extends Error {
    * a model that reasons without answering is paid for every time.
    */
   readonly tokensSpent: number;
+  /**
+   * #1279 — true when no hop sent a request: every provider was benched for
+   * background work or refused by the operator cost cap. Such a failure says
+   * nothing about what was asked, so a caller that backs off the record it
+   * failed on does not count it.
+   */
+  readonly sentNothing: boolean;
 
   constructor(attempts: FallbackHop[]) {
     super(
@@ -236,6 +229,13 @@ export class AllProvidersFailedError extends Error {
       (sum, a) => sum + (a.tokensSpent ?? 0),
       0,
     );
+    this.sentNothing =
+      attempts.length > 0 &&
+      attempts.every(
+        (a) =>
+          a.failureKind === "paused" ||
+          a.failureReason === OPERATOR_CAP_REFUSAL,
+      );
     const first = attempts[0];
     this.primaryCredentialExpired =
       first !== undefined &&
@@ -327,7 +327,7 @@ async function resolveChainOrder(
   userId: string,
   providers: ProviderChainResolved[],
   ledger: ProviderHealthLedger,
-  surface: BudgetSurface,
+  background: boolean,
 ): Promise<{
   ordered: ProviderChainResolved[];
   benched: Array<BenchedProvider<ProviderChainResolved>>;
@@ -344,10 +344,9 @@ async function resolveChainOrder(
     });
   }
   // #1279 — background work leaves a benched provider out entirely.
-  const { walkable, benched } =
-    surface === "job"
-      ? partitionForBackgroundWork(providers, skips, (t) => NEVER_SKIP.has(t))
-      : { walkable: providers, benched: [] };
+  const { walkable, benched } = background
+    ? partitionForBackgroundWork(providers, skips, (t) => NEVER_SKIP.has(t))
+    : { walkable: providers, benched: [] };
   const afterSkips = applyHealthLedgerSkips(walkable, skips);
   return { ordered: applyLastWorkingCache(userId, afterSkips), benched };
 }
@@ -511,6 +510,29 @@ function signalFailedHops(
   }
 }
 
+/** What both raw runners take. */
+interface ChainWalkArgs {
+  userId: string;
+  providers: ProviderChainResolved[];
+  params: CompletionParams;
+  /**
+   * Which ceiling an operator-funded FALLBACK hop is rationed against.
+   * `"job"` gets the background share, exactly as the reservation did;
+   * `"coach"` gets the whole ceiling.
+   */
+  surface: BudgetSurface;
+  /**
+   * #1279 — a person is waiting on this call although it is rationed as
+   * background work (the on-demand briefing). A `"job"` walk otherwise leaves
+   * every provider the health ledger benched out (`background-bench.ts`);
+   * this one walks them at the tail of the chain like any interactive call,
+   * so the person gets the provider's own answer or refusal.
+   */
+  interactive?: boolean;
+  /** The health ledger; the durable Postgres one unless a test passes its own. */
+  ledger?: ProviderHealthLedger;
+}
+
 /**
  * Shared chain walker for the two RAW runners (streaming + buffered). Owns the
  * one set of chain / fallback / health-ledger semantics — empty-chain guard,
@@ -522,13 +544,7 @@ function signalFailedHops(
  * Schema-class failures still bubble (they are not hard) exactly as before.
  */
 async function runRawChain(
-  args: {
-    userId: string;
-    providers: ProviderChainResolved[];
-    params: CompletionParams;
-    surface: BudgetSurface;
-    ledger?: ProviderHealthLedger;
-  },
+  args: ChainWalkArgs,
   // v1.41 — `params` reaches every candidate unchanged, `reasoning` and
   // `onReasoning` included. A fallback hop may see `providerState` another
   // provider made on an earlier round; each client re-inserts only its own
@@ -549,7 +565,7 @@ async function runRawChain(
     userId,
     providers,
     ledger,
-    surface,
+    surface === "job" && !args.interactive,
   );
   const hops: FallbackHop[] = [];
   const failedHops: HopSignal[] = [];
@@ -615,7 +631,7 @@ async function runRawChain(
         const hop: FallbackHop = {
           providerType: candidate.providerType,
           attempt: i + 1,
-          failureReason: "operator-cost-cap-exhausted",
+          failureReason: OPERATOR_CAP_REFUSAL,
           httpStatus: null,
         };
         hops.push(hop);
@@ -658,6 +674,7 @@ async function runRawChain(
         result,
         workingProvider: candidate,
         fallbackHops: hops,
+        tokensSpent: hops.reduce((sum, h) => sum + (h.tokensSpent ?? 0), 0),
       };
     } catch (error) {
       if (!isHardProviderFailure(error)) {
@@ -720,21 +737,12 @@ async function runRawChain(
  * full reply — to confirm real tokens flowed. The returned shape matches the
  * buffered runner so the route is path-agnostic.
  */
-export async function runStreamingRawCompletionWithFallback(args: {
-  userId: string;
-  providers: ProviderChainResolved[];
-  params: CompletionParams;
-  /**
-   * v1.38.19 — which ceiling an operator-funded FALLBACK
-   * hop is rationed against. `"job"` gets the background share, exactly as the
-   * reservation did; `"coach"` gets the whole ceiling.
-   */
-  surface: BudgetSurface;
-  /** Called once per streamed token/chunk for providers that stream. */
-  onDelta: (delta: string) => void;
-  /** See `RunWithFallbackParams.ledger`. */
-  ledger?: ProviderHealthLedger;
-}): Promise<RunRawWithFallbackResult> {
+export async function runStreamingRawCompletionWithFallback(
+  args: ChainWalkArgs & {
+    /** Called once per streamed token/chunk for providers that stream. */
+    onDelta: (delta: string) => void;
+  },
+): Promise<RunRawWithFallbackResult> {
   return runRawChain(
     args,
     // Prefer the provider's streaming wire; fall back to the buffered call for
@@ -759,6 +767,12 @@ export interface RunRawWithFallbackResult {
   result: CompletionResult;
   workingProvider: ProviderChainResolved;
   fallbackHops: FallbackHop[];
+  /**
+   * #1279 — tokens the hops that failed before `workingProvider` answered
+   * reported spending, summed. Not in `result.tokensUsed`, which is the
+   * answering call's alone; a caller that reconciles budget charges both.
+   */
+  tokensSpent: number;
 }
 
 /**
@@ -772,15 +786,9 @@ export interface RunRawWithFallbackResult {
  * last-working cache + structured logging are shared with the streaming
  * sibling via `runRawChain`.
  */
-export async function runRawCompletionWithFallback(args: {
-  userId: string;
-  providers: ProviderChainResolved[];
-  params: CompletionParams;
-  /** See {@link runStreamingRawCompletionWithFallback}'s `surface`. */
-  surface: BudgetSurface;
-  /** See `RunWithFallbackParams.ledger`. */
-  ledger?: ProviderHealthLedger;
-}): Promise<RunRawWithFallbackResult> {
+export async function runRawCompletionWithFallback(
+  args: ChainWalkArgs,
+): Promise<RunRawWithFallbackResult> {
   return runRawChain(args, (candidate) =>
     candidate.instance.generateCompletion(args.params),
   );

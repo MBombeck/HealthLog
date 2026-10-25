@@ -63,9 +63,6 @@
       "moduleListLayoutJson": {
         "roundTrip": "rt-User-moduleListLayoutJson"
       },
-      "previewFeaturesJson": {
-        "roundTrip": "rt-User-previewFeaturesJson"
-      },
       "activityGoalsJson": {
         "stepsPerMonth": 250000,
         "workoutsPerWeek": 4
@@ -1734,9 +1731,6 @@
       },
       "moduleListLayoutJson": {
         "roundTrip": "rt-User-moduleListLayoutJson"
-      },
-      "previewFeaturesJson": {
-        "roundTrip": "rt-User-previewFeaturesJson"
       },
       "activityGoalsJson": {
         "stepsPerMonth": 250000,

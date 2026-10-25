@@ -569,6 +569,7 @@ describe("coach chat — tool-mode routing (F1)", () => {
     runStreamingRawCompletionWithFallback.mockResolvedValue({
       result: { content: "Your BP is steady.", tokensUsed: 42, model: "m" },
       workingProvider: { providerType: "anthropic" },
+      tokensSpent: 0,
     });
     await postAndDrain({ message: "How is my BP?" });
 

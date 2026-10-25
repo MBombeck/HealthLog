@@ -65,6 +65,7 @@ describe("coach tool loop — which results reach the grounding guard", () => {
         },
         workingProvider: { providerType: "anthropic" },
         fallbackHops: [],
+        tokensSpent: 0,
       })
       .mockResolvedValueOnce({
         result: {
@@ -76,6 +77,7 @@ describe("coach tool loop — which results reach the grounding guard", () => {
         },
         workingProvider: { providerType: "anthropic" },
         fallbackHops: [],
+        tokensSpent: 0,
       });
 
     const loop = await runCoachToolLoop(baseArgs);
@@ -110,6 +112,7 @@ describe("coach tool loop — which results reach the grounding guard", () => {
         },
         workingProvider: { providerType: "anthropic" },
         fallbackHops: [],
+        tokensSpent: 0,
       })
       .mockResolvedValueOnce({
         result: {
@@ -121,6 +124,7 @@ describe("coach tool loop — which results reach the grounding guard", () => {
         },
         workingProvider: { providerType: "anthropic" },
         fallbackHops: [],
+        tokensSpent: 0,
       });
 
     const loop = await runCoachToolLoop(baseArgs);

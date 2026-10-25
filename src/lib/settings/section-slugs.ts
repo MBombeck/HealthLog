@@ -114,10 +114,6 @@ export const SETTINGS_SECTION_SLUGS = [
   // pieces into one coherent privacy pane. Sits next to `advanced` (the
   // destructive-action home) and before `about`.
   "privacy",
-  // v1.44 — "Preview features" (per-user opt-ins, Settings > System) is not
-  // listed until the first preview it switches, the topic pages, ships: a
-  // switch that changes nothing is a promise the page cannot keep. The stored
-  // flag, `/api/settings/preview-features` and its backup round-trip stay.
   "about",
 ] as const;
 

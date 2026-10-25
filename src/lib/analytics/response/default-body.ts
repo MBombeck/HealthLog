@@ -5,6 +5,8 @@
  * the sleep stages. The stages run in the order the route always ran them.
  */
 import type { SessionUser } from "@/lib/auth/session-user";
+import { runDetached } from "@/lib/logging/detached";
+import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import { annotate } from "@/lib/logging/context";
 import type { Locale } from "@/lib/i18n/config";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
@@ -42,7 +44,7 @@ export async function buildAnalyticsResponse(
   // measurement lands, and the next request returns the up-to-date
   // value once the background refresh completes. `ensureUserRollupsFresh`
   // wraps its own try/catch, so the void call cannot reject.
-  void ensureUserRollupsFresh(user.id);
+  trackBackgroundTask(runDetached(() => ensureUserRollupsFresh(user.id)));
 
   // Single per-type coverage probe shared by the
   // bp_in_target / healthScore / correlations branches below. The

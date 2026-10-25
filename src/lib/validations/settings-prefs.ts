@@ -1,8 +1,8 @@
 /**
  * Request schemas for the per-user Settings preferences that are not part of
  * the account payload: the list presentation of the labs, illness and
- * checkups lists, and the preview-feature opt-ins. Shared by the routes and
- * the OpenAPI registry so the wire contract has one source.
+ * checkups lists. Shared by the route and the OpenAPI registry so the wire
+ * contract has one source.
  */
 import { z } from "zod/v4";
 
@@ -26,12 +26,3 @@ export const moduleListLayoutPutSchema = z
     sortDir: z.enum(MODULE_SORT_DIRS).optional(),
   })
   .strict();
-
-export const previewFeaturesPatchSchema = z
-  .object({
-    topics: z.boolean().optional(),
-  })
-  .strict()
-  .refine((body) => Object.keys(body).length > 0, {
-    message: "Name at least one preview feature.",
-  });

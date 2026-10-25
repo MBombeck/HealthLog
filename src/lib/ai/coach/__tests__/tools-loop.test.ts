@@ -42,6 +42,7 @@ function completion(opts: {
     },
     workingProvider: { providerType: "anthropic" },
     fallbackHops: [],
+    tokensSpent: 0,
   };
 }
 

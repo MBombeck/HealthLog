@@ -387,11 +387,6 @@ model User {
   // copies a stored browser value up once when the server has none for that list.
   // Shape: { "version": 1, "labs": { "view": "list", "order": ["<id>"], "sortDir": "manual" }, ... }
   moduleListLayoutJson     Json?                @map("module_list_layout_json")
-  /// Per-user opt-in to preview features, one boolean per flag, all off by
-  /// default (`src/lib/settings/preview-features.ts`). Read and written
-  /// through `/api/settings/preview-features` and carried by the backup.
-  /// @pending-consumer(topics preview) the `topics` flag is stored, but no surface reads it and the Settings > System switch is unlisted until the topic overview pages ship.
-  previewFeaturesJson      Json?                @map("preview_features_json")
   /// Optional activity goals the person set for themselves: workouts, active
   /// minutes and steps per week, steps per month. Null or an absent key = no
   /// goal. Parsed by `src/lib/validations/activity-goals.ts`, written through

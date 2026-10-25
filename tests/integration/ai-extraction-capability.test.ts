@@ -105,6 +105,7 @@ vi.mock("@/lib/ai/provider-runner", async (importOriginal) => ({
     },
     workingProvider: { providerType: "anthropic" },
     fallbackHops: [],
+    tokensSpent: 0,
   })),
 }));
 
