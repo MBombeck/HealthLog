@@ -2,7 +2,7 @@
 <!--
   HealthLog — Unraid Community Applications template.
 
-  CA templates describe ONE container. HealthLog needs PostgreSQL 16, so
+  CA templates describe ONE container. HealthLog needs PostgreSQL (18, or 16), so
   install a PostgreSQL container FIRST (CA has community PostgreSQL templates),
   create a `healthlog` database + user, then point DATABASE_URL below at it.
   Full walkthrough: docs/self-hosting/unraid.md.
@@ -26,7 +26,7 @@
     cycle, and medications on one encrypted timeline. AES-256-GCM at rest, no
     vendor cloud, no telemetry.
 
-    REQUIRES a separate PostgreSQL 16 container — install one first (CA has
+    REQUIRES a separate PostgreSQL 18 (or 16) container — install one first (CA has
     community PostgreSQL templates), create a database and user, then set
     DATABASE_URL below. Step-by-step guide:
     https://github.com/MBombeck/HealthLog/blob/main/docs/self-hosting/unraid.md
