@@ -25,6 +25,12 @@
  * `--max-old-space-size=524` it ran out of heap; the streamed route holds a
  * few megabytes. Run it under that flag for the production ceiling:
  * `NODE_OPTIONS=--max-old-space-size=524`.
+ *
+ * The second file is the same shape with ECG strips in place of documents: a
+ * long watch history, every strip's trace stored as ciphertext. The shared
+ * reader kept the strips whole, traces included, after it had stopped doing
+ * so for the documents; it now keeps them without their traces too, and the
+ * restore reads the traces again one strip at a time.
  */
 import { randomBytes } from "node:crypto";
 import { createReadStream, createWriteStream } from "node:fs";
@@ -50,6 +56,12 @@ const prisma = getPrismaClient();
 /** A hundred documents of 2.75 MiB of base64 each: about 275 MB of vault. */
 const DOCUMENTS = 100;
 const DOCUMENT_BYTES = 2 * 1024 * 1024;
+/**
+ * A hundred and fifty strips of 100,000 samples each, about 1.4 MB of stored
+ * trace per strip once in the file: about 210 MB of ECG history.
+ */
+const ECG_STRIPS = 150;
+const ECG_SAMPLES = 100_000;
 /** Readings after the vault, so the route is sampled once it has gone past. */
 const MEASUREMENTS = 30_000;
 /** Take a reading every this many chunks of the request body. */
@@ -78,11 +90,16 @@ function liveHeapBytes(): number {
 const mb = (bytes: number): number => Math.round(bytes / 1024 / 1024);
 
 let directory = "";
-let filePath = "";
-let fileBytes = 0;
-/** Where the documents section ends in the file, in bytes. */
-let vaultEndsAt = 0;
 let adminId = "";
+
+/** A file on disk, and where its heavy section ends in it, in bytes. */
+interface HeavyFile {
+  path: string;
+  bytes: number;
+  heavyEndsAt: number;
+}
+let documentFile: HeavyFile;
+let ecgFile: HeavyFile;
 
 /** Write one piece of the file, waiting when the stream asks for it. */
 async function put(
@@ -93,20 +110,19 @@ async function put(
 }
 
 /**
- * The backup file, written a piece at a time so the test never holds it: the
- * documents first, each carrying the same real document ciphertext (the key
- * check reads its key id), then the readings.
+ * A backup file, written a piece at a time so the test never holds it: the
+ * heavy section first (`heavy` writes its elements), then the readings.
  */
-async function writeBackupFile(ownerId: string): Promise<void> {
-  const { encryptDocumentContent } = await import("@/lib/documents/store");
+async function writeBackupFile(
+  path: string,
+  ownerId: string,
+  section: string,
+  count: number,
+  element: (index: number) => unknown,
+): Promise<HeavyFile> {
   const { BACKUP_SCHEMA_VERSION } =
     await import("@/lib/validations/backup-summary");
-  const { content, codec } = encryptDocumentContent(
-    randomBytes(DOCUMENT_BYTES),
-  );
-  const base64 = Buffer.from(content).toString("base64");
-
-  const out = createWriteStream(filePath);
+  const out = createWriteStream(path);
   let written = 0;
   const write = async (text: string) => {
     written += Buffer.byteLength(text);
@@ -121,25 +137,12 @@ async function writeBackupFile(ownerId: string): Promise<void> {
     moodEntries: [],
   };
   await write(JSON.stringify(head).slice(0, -1));
-  await write(',"documents":[');
-  for (let i = 0; i < DOCUMENTS; i++) {
-    const document = {
-      id: `upload-memory-doc-${i}`,
-      kind: "DOCTOR_REPORT",
-      title: `Report ${i}`,
-      filename: `report-${i}.pdf`,
-      mimeType: "application/pdf",
-      byteSize: content.byteLength,
-      status: "STORED",
-      contentEncrypted: base64,
-      contentCodec: codec,
-      createdAt: "2026-01-01T00:00:00.000Z",
-      updatedAt: "2026-01-01T00:00:00.000Z",
-    };
-    await write((i === 0 ? "" : ",") + JSON.stringify(document));
+  await write(`,"${section}":[`);
+  for (let i = 0; i < count; i++) {
+    await write((i === 0 ? "" : ",") + JSON.stringify(element(i)));
   }
   await write("]");
-  vaultEndsAt = written;
+  const heavyEndsAt = written;
   await write(',"measurements":[');
   for (let i = 0; i < MEASUREMENTS; i++) {
     const reading = {
@@ -156,7 +159,68 @@ async function writeBackupFile(ownerId: string): Promise<void> {
   await write("]}");
   out.end();
   await once(out, "finish");
-  fileBytes = (await stat(filePath)).size;
+  return { path, bytes: (await stat(path)).size, heavyEndsAt };
+}
+
+/** Documents, each carrying the same real document ciphertext. */
+async function writeDocumentFile(ownerId: string): Promise<HeavyFile> {
+  const { encryptDocumentContent } = await import("@/lib/documents/store");
+  const { content, codec } = encryptDocumentContent(
+    randomBytes(DOCUMENT_BYTES),
+  );
+  const base64 = Buffer.from(content).toString("base64");
+  return writeBackupFile(
+    join(directory, "documents.json"),
+    ownerId,
+    "documents",
+    DOCUMENTS,
+    (i) => ({
+      id: `upload-memory-doc-${i}`,
+      kind: "DOCTOR_REPORT",
+      title: `Report ${i}`,
+      filename: `report-${i}.pdf`,
+      mimeType: "application/pdf",
+      byteSize: content.byteLength,
+      status: "STORED",
+      contentEncrypted: base64,
+      contentCodec: codec,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    }),
+  );
+}
+
+/** ECG strips, each carrying the same real trace ciphertext. */
+async function writeEcgFile(ownerId: string): Promise<HeavyFile> {
+  const { encryptWaveformToBytes } =
+    await import("@/lib/withings/ecg-waveform-codec");
+  const samples = Array.from(
+    { length: ECG_SAMPLES },
+    (_, i) => Math.round(Math.sin(i / 25) * 120_000) / 100,
+  );
+  const trace = Buffer.from(encryptWaveformToBytes(samples)).toString("base64");
+  return writeBackupFile(
+    join(directory, "ecg.json"),
+    ownerId,
+    "ecgRecordings",
+    ECG_STRIPS,
+    (i) => ({
+      id: `upload-memory-ecg-${i}`,
+      source: "WITHINGS",
+      externalRecordingId: `strip-${i}`,
+      recordedAt: new Date(Date.UTC(2025, 0, 1) + i * 86_400_000).toISOString(),
+      waveformEncrypted: trace,
+      samplingFrequency: 300,
+      sampleCount: ECG_SAMPLES,
+      durationSeconds: 30,
+      lead: "I",
+      averageHeartRate: 64,
+      rhythmClassification: null,
+      measurementId: null,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    }),
+  );
 }
 
 beforeAll(async () => {
@@ -177,8 +241,8 @@ beforeAll(async () => {
   cookieJar.set("healthlog_session", session.id);
 
   directory = await mkdtemp(join(tmpdir(), "backup-upload-memory-"));
-  filePath = join(directory, "backup.json");
-  await writeBackupFile(admin.id);
+  documentFile = await writeDocumentFile(admin.id);
+  ecgFile = await writeEcgFile(admin.id);
 }, 240_000);
 
 afterAll(async () => {
@@ -186,62 +250,73 @@ afterAll(async () => {
   await truncateAllTables(prisma);
 });
 
-describe("backup upload of a document vault under a memory budget", () => {
-  it("holds a bounded amount while it checks and stores the file", async () => {
-    expect(fileBytes).toBeGreaterThan(DOCUMENTS * DOCUMENT_BYTES);
+/**
+ * Send `file` through the real upload route, reading the heap every few
+ * chunks of the body, and answer what the route held at its peak and once
+ * the heavy section had gone past.
+ */
+async function uploadUnderWatch(file: HeavyFile, label: string) {
+  const { POST } = await import("@/app/api/admin/backups/upload/route");
+  // Modules loaded once per process, not memory that grows with the file:
+  // loaded before the baseline, as a running server has long since done.
+  await import("@/lib/validations/backup");
+  const baseline = liveHeapBytes();
 
-    const { POST } = await import("@/app/api/admin/backups/upload/route");
-    // Modules loaded once per process, not memory that grows with the file:
-    // loaded before the baseline, as a running server has long since done.
-    await import("@/lib/validations/backup");
-    const baseline = liveHeapBytes();
-
-    let bytesSent = 0;
-    let chunks = 0;
-    let peakHeld = 0;
-    let samplesPastVault = 0;
-    let peakPastVault = 0;
-    async function* body(): AsyncGenerator<Buffer> {
-      for await (const chunk of createReadStream(filePath)) {
-        const buffer = chunk as Buffer;
-        bytesSent += buffer.byteLength;
-        if (chunks++ % SAMPLE_EVERY_CHUNKS === 0) {
-          const held = liveHeapBytes() - baseline;
-          peakHeld = Math.max(peakHeld, held);
-          // The route has had the whole vault once it asks for the chunk
-          // after the one that closed it.
-          if (bytesSent - buffer.byteLength > vaultEndsAt) {
-            samplesPastVault++;
-            peakPastVault = Math.max(peakPastVault, held);
-          }
+  let bytesSent = 0;
+  let chunks = 0;
+  let peakHeld = 0;
+  let samplesPastHeavy = 0;
+  let peakPastHeavy = 0;
+  async function* body(): AsyncGenerator<Buffer> {
+    for await (const chunk of createReadStream(file.path)) {
+      const buffer = chunk as Buffer;
+      bytesSent += buffer.byteLength;
+      if (chunks++ % SAMPLE_EVERY_CHUNKS === 0) {
+        const held = liveHeapBytes() - baseline;
+        peakHeld = Math.max(peakHeld, held);
+        // The route has had the whole heavy section once it asks for the
+        // chunk after the one that closed it.
+        if (bytesSent - buffer.byteLength > file.heavyEndsAt) {
+          samplesPastHeavy++;
+          peakPastHeavy = Math.max(peakPastHeavy, held);
         }
-        yield buffer;
       }
+      yield buffer;
     }
+  }
 
-    const request = new Request("http://localhost/api/admin/backups/upload", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "content-length": String(fileBytes),
-      },
-      body: Readable.toWeb(Readable.from(body())) as ReadableStream,
-      duplex: "half",
-    } as RequestInit & { duplex: "half" });
-    const res = await POST(request as unknown as Parameters<typeof POST>[0]);
-    peakHeld = Math.max(peakHeld, liveHeapBytes() - baseline);
+  const request = new Request("http://localhost/api/admin/backups/upload", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "content-length": String(file.bytes),
+    },
+    body: Readable.toWeb(Readable.from(body())) as ReadableStream,
+    duplex: "half",
+  } as RequestInit & { duplex: "half" });
+  const res = await POST(request as unknown as Parameters<typeof POST>[0]);
+  peakHeld = Math.max(peakHeld, liveHeapBytes() - baseline);
 
-    process.stderr.write(
-      `[upload-document-memory] ${mb(fileBytes)} MB file, ${DOCUMENTS} documents: ` +
-        `peak held ${mb(peakHeld)} MB, past the vault ${mb(peakPastVault)} MB ` +
-        `(${samplesPastVault} samples), ` +
-        `${mb(v8.getHeapStatistics().heap_size_limit)} MB heap limit\n`,
-    );
+  process.stderr.write(
+    `[upload-memory] ${label}, ${mb(file.bytes)} MB file: ` +
+      `peak held ${mb(peakHeld)} MB, past the heavy section ` +
+      `${mb(peakPastHeavy)} MB (${samplesPastHeavy} samples), ` +
+      `${mb(v8.getHeapStatistics().heap_size_limit)} MB heap limit\n`,
+  );
 
-    const answer = (await res.json()) as {
-      data: { id: string; summary: Record<string, unknown> } | null;
-      error: string | null;
-    };
+  const answer = (await res.json()) as {
+    data: { id: string; summary: Record<string, unknown> } | null;
+    error: string | null;
+  };
+  return { res, answer, bytesSent, peakHeld, samplesPastHeavy };
+}
+
+describe("backup upload of a heavy file under a memory budget", () => {
+  it("holds a bounded amount while it checks and stores a document vault", async () => {
+    expect(documentFile.bytes).toBeGreaterThan(DOCUMENTS * DOCUMENT_BYTES);
+    const { res, answer, bytesSent, peakHeld, samplesPastHeavy } =
+      await uploadUnderWatch(documentFile, `${DOCUMENTS} documents`);
+
     expect(res.status, JSON.stringify(answer.error)).toBe(201);
     expect(answer.data!.summary).toMatchObject({
       documents: DOCUMENTS,
@@ -256,11 +331,29 @@ describe("backup upload of a document vault under a memory budget", () => {
 
     // Not vacuous: the whole file went through the route, and the route was
     // sampled after the vault had gone past it.
-    expect(bytesSent).toBe(fileBytes);
-    expect(samplesPastVault).toBeGreaterThan(3);
+    expect(bytesSent).toBe(documentFile.bytes);
+    expect(samplesPastHeavy).toBeGreaterThan(3);
     expect(
       peakHeld,
-      `the upload held ${mb(peakHeld)} MB of a ${mb(fileBytes)} MB file`,
+      `the upload held ${mb(peakHeld)} MB of a ${mb(documentFile.bytes)} MB file`,
+    ).toBeLessThan(HELD_BUDGET_BYTES);
+  }, 600_000);
+
+  it("holds a bounded amount while it checks and stores an ECG history", async () => {
+    expect(ecgFile.bytes).toBeGreaterThan(150 * 1024 * 1024);
+    const { res, answer, bytesSent, peakHeld, samplesPastHeavy } =
+      await uploadUnderWatch(ecgFile, `${ECG_STRIPS} ECG strips`);
+
+    expect(res.status, JSON.stringify(answer.error)).toBe(201);
+    expect(answer.data!.summary).toMatchObject({
+      ecgRecordings: ECG_STRIPS,
+      measurements: MEASUREMENTS,
+    });
+    expect(bytesSent).toBe(ecgFile.bytes);
+    expect(samplesPastHeavy).toBeGreaterThan(3);
+    expect(
+      peakHeld,
+      `the upload held ${mb(peakHeld)} MB of a ${mb(ecgFile.bytes)} MB file`,
     ).toBeLessThan(HELD_BUDGET_BYTES);
   }, 600_000);
 });

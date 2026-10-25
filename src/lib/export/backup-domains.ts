@@ -420,6 +420,7 @@ export const RESTORE_STEPS: readonly RestoreStep[] = [
           ctx.payload,
           ctx.links.writtenReferencedMeasurementIds,
           ctx.skips,
+          (fn) => ctx.streamed.forEachEcgTrace(fn),
         ),
       );
     },
