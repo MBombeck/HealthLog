@@ -299,16 +299,18 @@ x-healthlog-env: &healthlog_env
   OIDC_SCOPES: "${OIDC_SCOPES:-}"
   OIDC_BUTTON_LABEL: "${OIDC_BUTTON_LABEL:-}"
   OIDC_ONLY: "${OIDC_ONLY:-}"
-  # Deploy-result webhook (optional). DEPLOY_WEBHOOK_SECRET authenticates
-  # POST /api/internal/deploy-webhook; DEPLOY_LOGS_URL is the
-  # deployment-dashboard URL (e.g. the Coolify UI) linked in
-  # deploy-failure notifications. Listed here so operator values in
-  # .env reach the container (the `environment:` block is a whitelist).
+  # Deploy-result webhook (optional). POST /api/internal/deploy-webhook
+  # authenticates either with DEPLOY_WEBHOOK_SECRET in the
+  # X-Deploy-Webhook-Secret header (what Coolify's stock sender can do; no
+  # replay protection) or with X-Deploy-Webhook-Signature: sha256=<HMAC of
+  # "<X-Deploy-Webhook-Timestamp>.<body>" under the secret>, the timestamp
+  # within 5 minutes. DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP=true accepts signed
+  # requests only. DEPLOY_LOGS_URL is the deployment-dashboard URL (e.g. the
+  # Coolify UI) linked in deploy-failure notifications. Listed here so
+  # operator values in .env reach the container (the `environment:` block is
+  # a whitelist). See docs/ops/deploy.md.
   DEPLOY_WEBHOOK_SECRET: "${DEPLOY_WEBHOOK_SECRET:-}"
   DEPLOY_LOGS_URL: "${DEPLOY_LOGS_URL:-}"
-  # Optional replay hardening: when "true", the deploy webhook
-  # requires a fresh X-Deploy-Webhook-Timestamp header (±5 min).
-  # See docs/ops/deploy.md.
   DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP: "${DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP:-}"
   # TLS leaf SPKI-change alarm baseline (optional). The native client
   # pins the served TLS leaf; this is the known-good pin set the monitor
