@@ -57,6 +57,24 @@ vi.mock("@/lib/jobs/offhost-backup", () => ({
   }),
 }));
 
+const databaseHealth = {
+  enabled: true,
+  directory: "/var/lib/healthlog/backups",
+  localDirWritable: true,
+  offhostConfigured: true,
+  lastGood: {
+    at: "2026-09-21T23:31:40.000Z",
+    fileName: "healthlog-20260921T233000Z-daily.dump",
+    sizeBytes: 52_428_800,
+    local: true,
+    offhost: true,
+  },
+  lastFailure: null,
+};
+vi.mock("@/lib/database-backup/health", () => ({
+  getDatabaseBackupHealth: async () => databaseHealth,
+}));
+
 import { GET } from "../route";
 import type { BackupsList } from "@/types/backups";
 
@@ -283,5 +301,12 @@ describe("GET /api/admin/backups — a run in progress and one a process died un
       runningSince: null,
       interrupted: [],
     });
+  });
+});
+
+describe("GET /api/admin/backups — the database dump", () => {
+  it("carries the dump's health beside the account copies", async () => {
+    const body = await read();
+    expect(body.database).toEqual(databaseHealth);
   });
 });

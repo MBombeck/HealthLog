@@ -8310,7 +8310,20 @@
         "restoreSkippedMoodLabelCiphertext": "Nombre de etiqueta o grupo de ánimo cifrado con una clave que este servidor no tiene (se conserva sin el nombre)",
         "restoreSkippedVisitCiphertext": "Texto de visita o profesional cifrado con una clave que este servidor no tiene (se conserva sin él)",
         "restoreSkippedVaccinationCiphertext": "Nota de vacunación cifrada con una clave que este servidor no tiene (la dosis se conserva sin ella)",
-        "restoreSkippedEnvironmentLocationCiphertext": "Ubicación de un periodo o día ambiental cifrada con una clave que este servidor no tiene (se conserva cifrada, esos días no se actualizan)"
+        "restoreSkippedEnvironmentLocationCiphertext": "Ubicación de un periodo o día ambiental cifrada con una clave que este servidor no tiene (se conserva cifrada, esos días no se actualizan)",
+        "database": {
+          "title": "Volcado de la base de datos",
+          "lastGood": "Último volcado correcto {when}, {size}, {where}.",
+          "whereBoth": "guardado en este servidor y fuera de él",
+          "whereLocal": "guardado en este servidor",
+          "whereOffhost": "solo fuera del servidor",
+          "none": "Aún no hay ningún volcado de la base de datos. El primero se hace esta noche.",
+          "failedTitle": "El último volcado de la base de datos falló",
+          "failedDescription": "{when}: {reason}",
+          "disabled": "Los volcados de la base de datos están desactivados (DB_BACKUP_ENABLED=false). Haz la copia de la base de datos de otra forma.",
+          "noDirectoryOffhost": "Este servidor no puede escribir en {dir}, así que los volcados solo se guardan fuera y aquí no queda ninguno. Monta el volumen de copias.",
+          "noDirectory": "Este servidor no puede escribir en {dir} y no hay almacenamiento externo configurado, así que no se puede hacer ningún volcado. Monta el volumen de copias."
+        }
       },
       "danger-zone": {
         "title": "Zona de peligro",

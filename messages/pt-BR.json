@@ -8310,7 +8310,20 @@
         "restoreSkippedMoodLabelCiphertext": "Etiqueta ou nome de grupo de humor selado com uma chave que este servidor não possui (mantido sem o nome)",
         "restoreSkippedVisitCiphertext": "Texto de consulta ou profissional selado com uma chave que este servidor não possui (mantido sem ele)",
         "restoreSkippedVaccinationCiphertext": "Nota de vacinação selada com uma chave que este servidor não possui (dose mantida sem ela)",
-        "restoreSkippedEnvironmentLocationCiphertext": "Local de um período ou dia de ambiente selado com uma chave que este servidor não possui (mantido selado, esses dias não são atualizados)"
+        "restoreSkippedEnvironmentLocationCiphertext": "Local de um período ou dia de ambiente selado com uma chave que este servidor não possui (mantido selado, esses dias não são atualizados)",
+        "database": {
+          "title": "Dump do banco de dados",
+          "lastGood": "Último dump válido {when}, {size}, {where}.",
+          "whereBoth": "guardado neste servidor e fora dele",
+          "whereLocal": "guardado neste servidor",
+          "whereOffhost": "somente fora do servidor",
+          "none": "Ainda não há dump do banco de dados. O primeiro é feito esta noite.",
+          "failedTitle": "O último dump do banco de dados falhou",
+          "failedDescription": "{when}: {reason}",
+          "disabled": "Os dumps do banco de dados estão desligados (DB_BACKUP_ENABLED=false). Faça o backup do banco de outra forma.",
+          "noDirectoryOffhost": "Este servidor não consegue gravar em {dir}, então os dumps vão só para fora e nenhum fica aqui. Monte o volume de backups.",
+          "noDirectory": "Este servidor não consegue gravar em {dir} e não há armazenamento externo configurado, então nenhum dump pode ser feito. Monte o volume de backups."
+        }
       },
       "danger-zone": {
         "title": "Zona de perigo",

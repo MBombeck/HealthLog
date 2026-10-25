@@ -8310,7 +8310,20 @@
         "restoreSkippedMoodLabelCiphertext": "Mood tag or group name sealed with a key this server does not hold (kept without its name)",
         "restoreSkippedVisitCiphertext": "Visit or practitioner text sealed with a key this server does not hold (kept without it)",
         "restoreSkippedVaccinationCiphertext": "Vaccination note sealed with a key this server does not hold (dose kept without it)",
-        "restoreSkippedEnvironmentLocationCiphertext": "Location of an environment period or day sealed with a key this server does not hold (kept sealed, those days are not refreshed)"
+        "restoreSkippedEnvironmentLocationCiphertext": "Location of an environment period or day sealed with a key this server does not hold (kept sealed, those days are not refreshed)",
+        "database": {
+          "title": "Database dump",
+          "lastGood": "Last good dump {when}, {size}, {where}.",
+          "whereBoth": "kept on this server and off-host",
+          "whereLocal": "kept on this server",
+          "whereOffhost": "off-host only",
+          "none": "No database dump yet. The first one runs tonight.",
+          "failedTitle": "The last database dump failed",
+          "failedDescription": "{when}: {reason}",
+          "disabled": "Database dumps are switched off (DB_BACKUP_ENABLED=false). Back the database up another way.",
+          "noDirectoryOffhost": "This server cannot write to {dir}, so dumps go off-host only and none is kept here. Mount the backups volume.",
+          "noDirectory": "This server cannot write to {dir} and no off-host bucket is set, so no database dump can be taken. Mount the backups volume."
+        }
       },
       "danger-zone": {
         "title": "Danger zone",

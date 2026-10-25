@@ -8310,7 +8310,20 @@
         "restoreSkippedMoodLabelCiphertext": "Stemmingslabel of groepsnaam versleuteld met een sleutel die deze server niet heeft (behouden zonder naam)",
         "restoreSkippedVisitCiphertext": "Tekst van bezoek of zorgverlener versleuteld met een sleutel die deze server niet heeft (behouden zonder)",
         "restoreSkippedVaccinationCiphertext": "Vaccinatienotitie versleuteld met een sleutel die deze server niet heeft (dosis behouden zonder)",
-        "restoreSkippedEnvironmentLocationCiphertext": "Locatie van een omgevingsperiode of -dag versleuteld met een sleutel die deze server niet heeft (versleuteld behouden, die dagen worden niet bijgewerkt)"
+        "restoreSkippedEnvironmentLocationCiphertext": "Locatie van een omgevingsperiode of -dag versleuteld met een sleutel die deze server niet heeft (versleuteld behouden, die dagen worden niet bijgewerkt)",
+        "database": {
+          "title": "Databasedump",
+          "lastGood": "Laatste geldige dump {when}, {size}, {where}.",
+          "whereBoth": "bewaard op deze server en extern",
+          "whereLocal": "bewaard op deze server",
+          "whereOffhost": "alleen extern",
+          "none": "Nog geen databasedump. De eerste wordt vannacht gemaakt.",
+          "failedTitle": "De laatste databasedump is mislukt",
+          "failedDescription": "{when}: {reason}",
+          "disabled": "Databasedumps staan uit (DB_BACKUP_ENABLED=false). Maak op een andere manier een back-up van de database.",
+          "noDirectoryOffhost": "Deze server kan niet schrijven naar {dir}, dus dumps gaan alleen extern en hier wordt er geen bewaard. Koppel het back-upvolume.",
+          "noDirectory": "Deze server kan niet schrijven naar {dir} en er is geen externe opslag ingesteld, dus er kan geen databasedump worden gemaakt. Koppel het back-upvolume."
+        }
       },
       "danger-zone": {
         "title": "Gevarenzone",

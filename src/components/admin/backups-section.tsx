@@ -28,6 +28,7 @@ import type { BackupRow, BackupsList } from "@/types/backups";
 
 import { RestoreJobStatus, visibleRestoreJobs } from "./backup-restore-status";
 import { BackupRowsCards, BackupRowsTable } from "./backups/backup-rows";
+import { DatabaseDumpRow } from "./backups/database-dump-row";
 import { BackupUploadCard } from "./backups/backup-upload-card";
 import {
   RestoreRefusalNotice,
@@ -110,6 +111,7 @@ export function BackupsSection() {
         }
       />
 
+      {data?.database ? <DatabaseDumpRow health={data.database} /> : null}
       {data?.schedule ? (
         <ScheduleHealthNotice schedule={data.schedule} />
       ) : null}
