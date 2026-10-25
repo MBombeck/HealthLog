@@ -43,6 +43,7 @@ import {
 import { NextRequest } from "next/server";
 import { dueSchedules } from "@/lib/medications/intake-tracking";
 import { floorWhole } from "@/lib/medications/units-per-dose";
+import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -90,7 +91,7 @@ export const GET = apiHandler(
           take: 12,
           select: { takenAt: true, injectionSite: true },
         },
-        schedules: true,
+        schedules: { orderBy: MEDICATION_SCHEDULE_ORDER },
       },
     });
 

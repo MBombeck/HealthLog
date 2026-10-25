@@ -57,7 +57,6 @@ interface Read {
   model: string;
   orders: string[];
   variableOrder: boolean;
-  unorderedSchedules: boolean;
 }
 
 function reads(): Read[] {
@@ -83,7 +82,6 @@ function reads(): Read[] {
         model: match[1]!,
         orders,
         variableOrder: /\borderBy\s*(?:,|\})/.test(call),
-        unorderedSchedules: /\bschedules\s*:\s*true\b/.test(call),
       });
     }
   }
@@ -121,9 +119,24 @@ describe("medication reads order their ties", () => {
   });
 
   it("never includes a medication's schedules unordered", () => {
-    expect(
-      ALL.filter((read) => read.unorderedSchedules).map((read) => read.where),
-    ).toEqual([]);
+    // Any read or write that returns rows, not only the list reads above: a
+    // `findUnique` or an `update` that includes the schedules hands them to a
+    // client in whatever order Postgres found them.
+    const unordered: string[] = [];
+    for (const rel of walkSourceFiles(SRC, { floor: 2000 }).filter(
+      (file) => !file.startsWith("generated/") && !file.includes("__tests__"),
+    )) {
+      const text = stripComments(readSourceText(join(SRC, rel)), rel);
+      for (const match of text.matchAll(/\bschedules\s*:\s*true\b/g)) {
+        const before = text.slice(Math.max(0, match.index! - 200), match.index);
+        // `_count: { select: { schedules: true } }` counts; it returns no rows.
+        if (/_count\s*:\s*\{\s*select\s*:\s*\{[^}]*$/.test(before)) continue;
+        unordered.push(
+          `${rel}:${text.slice(0, match.index).split("\n").length}`,
+        );
+      }
+    }
+    expect(unordered).toEqual([]);
   });
 
   it("names every order held in a variable, and nothing else", () => {

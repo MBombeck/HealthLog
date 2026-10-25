@@ -406,7 +406,7 @@ function insertMedication(
         create: scheduleInputs.map((s) => scheduleCreateData(s, oneShot)),
       },
     },
-    include: { schedules: true },
+    include: { schedules: { orderBy: MEDICATION_SCHEDULE_ORDER } },
   });
 }
 

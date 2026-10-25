@@ -48,6 +48,7 @@ import {
   type EraTrail,
   type MedicationEditWrite,
 } from "./write";
+import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 
 type EditUser = ReadUser;
 type EditedMedication = Awaited<ReturnType<typeof writeMedicationEdit>>;
@@ -204,7 +205,7 @@ async function settleAfterCommit(
     });
     const refreshed = await prisma.medication.findUnique({
       where: { id },
-      include: { schedules: true },
+      include: { schedules: { orderBy: MEDICATION_SCHEDULE_ORDER } },
     });
     if (refreshed) {
       return refreshed;

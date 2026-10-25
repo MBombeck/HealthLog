@@ -27,12 +27,13 @@ import {
   type EfficacySegmented,
   type SegmentedEffectInput,
 } from "./segmented-effect";
+import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** The medication shape the effect needs: the efficacy builder's include. */
 export const EFFECT_MEDICATION_INCLUDE = {
-  schedules: true,
+  schedules: { orderBy: MEDICATION_SCHEDULE_ORDER },
   scheduleRevisions: { orderBy: { validFrom: "asc" } },
   pauseEras: { select: { pausedAt: true, resumedAt: true } },
   courses: COURSES_COMPLIANCE_SELECT,

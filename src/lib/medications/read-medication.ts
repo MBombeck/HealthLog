@@ -40,6 +40,7 @@ import {
   courseActionAuthority,
   withCourseActionAuthority,
 } from "@/lib/medications/course-authority";
+import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 
 export type ReadUser = Pick<SessionUser, "id" | "timezone" | "locale">;
 type MedicationWithSchedules = Medication & {
@@ -193,7 +194,7 @@ export async function readMedication(input: {
   const { user, grantId, id } = input;
   const medication = await prisma.medication.findUnique({
     where: { id },
-    include: { schedules: true },
+    include: { schedules: { orderBy: MEDICATION_SCHEDULE_ORDER } },
   });
 
   if (!medication || medication.userId !== user.id) {

@@ -24,6 +24,7 @@ import { getUserTodayBounds } from "@/lib/tz/local-day";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import type { EditableMedication } from "./preflight";
 import type { MedicationEdit, NormalisedSchedule } from "./schedule-normalise";
+import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 
 /**
  * C7. What a schedule replacement destroys, captured for the audit row: the
@@ -431,7 +432,7 @@ export async function writeMedicationEdit(edit: MedicationEditWrite) {
     const updated = await tx.medication.update({
       where: { id },
       data: { ...baseUpdateData, ...edit.pausedAtPatch },
-      include: { schedules: true },
+      include: { schedules: { orderBy: MEDICATION_SCHEDULE_ORDER } },
     });
 
     await recordPauseTransition(tx, edit);

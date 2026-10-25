@@ -61,27 +61,6 @@
         {
           "id": "<id:4>",
           "medicationId": "<id:1>",
-          "windowStart": "21:00",
-          "windowEnd": "22:00",
-          "label": null,
-          "dose": null,
-          "unitsPerDose": null,
-          "daysOfWeek": "i2;1,3,5",
-          "timesOfDay": [
-            "21:00"
-          ],
-          "reminderGraceMinutes": null,
-          "rrule": null,
-          "rollingIntervalDays": null,
-          "scheduleType": "SCHEDULED",
-          "cyclicOnWeeks": null,
-          "cyclicOffWeeks": null,
-          "doseWindows": null,
-          "resolvedUnitsPerDose": 1
-        },
-        {
-          "id": "<id:5>",
-          "medicationId": "<id:1>",
           "windowStart": "12:00",
           "windowEnd": "13:00",
           "label": null,
@@ -94,6 +73,27 @@
           "reminderGraceMinutes": null,
           "rrule": null,
           "rollingIntervalDays": 3,
+          "scheduleType": "SCHEDULED",
+          "cyclicOnWeeks": null,
+          "cyclicOffWeeks": null,
+          "doseWindows": null,
+          "resolvedUnitsPerDose": 1
+        },
+        {
+          "id": "<id:5>",
+          "medicationId": "<id:1>",
+          "windowStart": "21:00",
+          "windowEnd": "22:00",
+          "label": null,
+          "dose": null,
+          "unitsPerDose": null,
+          "daysOfWeek": "i2;1,3,5",
+          "timesOfDay": [
+            "21:00"
+          ],
+          "reminderGraceMinutes": null,
+          "rrule": null,
+          "rollingIntervalDays": null,
           "scheduleType": "SCHEDULED",
           "cyclicOnWeeks": null,
           "cyclicOffWeeks": null,
@@ -433,7 +433,7 @@
         "doseWindows": null
       },
       {
-        "id": "<id:5>",
+        "id": "<id:4>",
         "medicationId": "<id:1>",
         "windowStart": "12:00",
         "windowEnd": "13:00",
@@ -479,7 +479,7 @@
         ]
       },
       {
-        "id": "<id:4>",
+        "id": "<id:5>",
         "medicationId": "<id:1>",
         "windowStart": "21:00",
         "windowEnd": "22:00",
