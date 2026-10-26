@@ -102,10 +102,10 @@ function Chart({ width = 720 }: { width?: number }) {
             heightPct: 0,
             label: zoneLabel,
             textColor: undefined,
+            labelInside: !besidePlot,
           },
         ],
         POINTS.length - 1,
-        besidePlot,
       )}
       {baselineLayers(
         true,

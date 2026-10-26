@@ -350,6 +350,9 @@ export function gridYear(timestamp: number): number {
   return date.getUTCMonth() >= 6 ? year + 1 : year;
 }
 
+/** A date with a two-digit day and month: the widest an x label gets. */
+const X_LABEL_SAMPLE_DATE = new Date(Date.UTC(2000, 11, 31, 12));
+
 /**
  * The x axis's props: one point per index, labelled with its date. Recharts
  * ignores `interval` on a numeric axis, so the calendar grid arrives as
@@ -360,13 +363,23 @@ export function pointIndexXAxis({
   chartData,
   formatDate,
   viewportWidth,
-  layout,
+  containerWidth,
+  yAxisWidth,
+  rightRoom,
 }: {
   chartData: ChartDataPoint[] | undefined;
   formatDate: (date: Date) => string;
   viewportWidth: number;
-  layout: TickLayout | undefined;
+  containerWidth: number | null;
+  yAxisWidth: number;
+  rightRoom: number;
 }) {
+  const layout = xTickLayout(
+    containerWidth,
+    yAxisWidth,
+    rightRoom,
+    formatDate(X_LABEL_SAMPLE_DATE),
+  );
   const grid = computeTickGrid(chartData ?? [], viewportWidth, layout);
   return {
     type: "number" as const,

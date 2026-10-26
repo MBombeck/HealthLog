@@ -183,4 +183,6 @@ export interface VisibleTargetZone {
   label: string | undefined;
   textColor: string | undefined;
   lineOpacity: number;
+  /** The label sits inside the zone: the chart is too narrow for room beside it. */
+  labelInside?: boolean;
 }

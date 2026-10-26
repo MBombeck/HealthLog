@@ -28,7 +28,6 @@ type Translate = (key: string) => string;
 export function targetZoneLayers(
   zones: VisibleTargetZone[],
   maxPointIndex: number,
-  besidePlot = true,
 ) {
   return [
     zones.map((zone) => (
@@ -68,7 +67,7 @@ export function targetZoneLayers(
                 value: zone.label,
                 // On a narrow chart, inside the zone at its top right: the
                 // plot keeps no room beside it there (`labelsBesidePlot`).
-                position: besidePlot ? "right" : "insideTopRight",
+                position: zone.labelInside ? "insideTopRight" : "right",
                 offset: BASELINE_LABEL_GAP,
                 fill: zone.textColor ?? zone.color,
                 fontSize: BASELINE_LABEL_FONT_SIZE,

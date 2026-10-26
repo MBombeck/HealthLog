@@ -51,12 +51,10 @@ import {
   axisValueFormatters,
   dayFocusFor,
   getTypeLabel,
-  labelsBesidePlot,
   makeDayKeyFormatter,
   pointIndexXAxis,
   resolveAnnotationPositions,
   resolveVerticalMarkerPositions,
-  xTickLayout,
 } from "./health-chart/series-math";
 import type { HealthChartProps } from "./health-chart/types";
 import {
@@ -66,9 +64,6 @@ import {
 import { useHealthChartSeries } from "./health-chart/use-health-chart-series";
 import { useHealthChartView } from "./health-chart/use-health-chart-view";
 import { resolveMiniRangePoints } from "./mini-window";
-
-/** A date with a two-digit day and month: the widest an x label gets. */
-const X_LABEL_SAMPLE_DATE = new Date(Date.UTC(2000, 11, 31, 12));
 
 /**
  * A metric over time: the line, the overlays a person can switch on (the
@@ -216,6 +211,7 @@ export function HealthChart({
     onVisibleStats,
   });
 
+  const [containerWidth, setContainerWidth] = useState<number | null>(null);
   const overlays = useHealthChartOverlays({
     showBands,
     showTrend,
@@ -228,16 +224,13 @@ export function HealthChart({
     valueMode,
     t,
     fmt,
+    plotWidth: containerWidth ?? viewportWidth,
   });
   const { visibleBands, visibleTargetZones, trendInfo, personalBaselines } =
     overlays;
 
-  const [containerWidth, setContainerWidth] = useState<number | null>(null);
   const { useDecimalAxis, formatAxisValue, formatTooltipValue } =
     axisValueFormatters(yDomain, fmt, yTicks);
-  // Until the container is measured, the viewport stands in for its width.
-  const besidePlot = labelsBesidePlot(containerWidth ?? viewportWidth);
-  const rightRoom = besidePlot ? overlays.rightRoom : 0;
 
   const { primaryType, chartAriaLabel, dataTableColumns } =
     useHealthChartLabels({
@@ -405,7 +398,7 @@ export function HealthChart({
                   data={chartDataWithCompare ?? chartData}
                   margin={{
                     top: 10,
-                    right: 8 + rightRoom,
+                    right: 8 + overlays.rightRoom,
                     bottom: 8,
                     left: 8,
                   }}
@@ -422,12 +415,9 @@ export function HealthChart({
                       chartData,
                       formatDate: tzFmt.date,
                       viewportWidth,
-                      layout: xTickLayout(
-                        containerWidth,
-                        yAxisWidth,
-                        rightRoom,
-                        tzFmt.date(X_LABEL_SAMPLE_DATE),
-                      ),
+                      containerWidth,
+                      yAxisWidth,
+                      rightRoom: overlays.rightRoom,
                     })}
                   />
                   <YAxis
@@ -451,11 +441,7 @@ export function HealthChart({
                         : undefined
                     }
                   />
-                  {targetZoneLayers(
-                    visibleTargetZones,
-                    maxPointIndex,
-                    besidePlot,
-                  )}
+                  {targetZoneLayers(visibleTargetZones, maxPointIndex)}
                   {annotationLayers(annotationPositions, viewportWidth)}
                   {verticalMarkerLayers(verticalMarkerPositions, yDomain)}
                   {openDayLayers(openDayIndex, openDayPoint, types, colors)}
@@ -465,7 +451,7 @@ export function HealthChart({
                     colors,
                     personalBaselines,
                     t,
-                    besidePlot,
+                    overlays.besidePlot,
                   )}
                   <Tooltip
                     filterNull={false}
@@ -534,7 +520,7 @@ export function HealthChart({
               // The plot's margin (8) + the y axis + the x axis padding (10)
               // on the left, margin + padding on the right.
               insetLeft={8 + yAxisWidth + 10}
-              insetRight={8 + rightRoom + 10}
+              insetRight={8 + overlays.rightRoom + 10}
             />
           ) : null}
           {/* The points the chart just drew, as a table, read from the same
