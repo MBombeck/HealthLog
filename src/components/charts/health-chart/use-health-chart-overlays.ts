@@ -11,7 +11,11 @@ import type { useFormatters } from "@/lib/i18n/context";
 
 import type { ChartDataTableColumn } from "../chart-data-table";
 
-import { computePersonalBaseline, getTypeLabel } from "./series-math";
+import {
+  computePersonalBaseline,
+  getTypeLabel,
+  labelsBesidePlot,
+} from "./series-math";
 import type {
   ChartDataPoint,
   ChartTargetZone,
@@ -62,6 +66,7 @@ export function useHealthChartOverlays({
   valueMode,
   t,
   fmt,
+  plotWidth,
 }: {
   showBands: boolean;
   showTrend: boolean;
@@ -74,6 +79,8 @@ export function useHealthChartOverlays({
   valueMode: "raw" | "bmi";
   t: Translate;
   fmt: Formatters;
+  /** The chart's width, which decides whether its labels sit beside the plot. */
+  plotWidth: number;
 }) {
   const visibleBands = useMemo<VisibleValueBand[]>(() => {
     if (!showBands || !valueBands?.length || !yDomain) return [];
@@ -99,6 +106,7 @@ export function useHealthChartOverlays({
       );
   }, [showBands, valueBands, yDomain]);
 
+  const besidePlot = labelsBesidePlot(plotWidth);
   const visibleTargetZones = useMemo<VisibleTargetZone[]>(() => {
     if (!showBands || !targetZones?.length || !yDomain) return [];
     const span = yDomain[1] - yDomain[0];
@@ -116,10 +124,11 @@ export function useHealthChartOverlays({
         label: zone.label ?? undefined,
         textColor: zone.textColor ?? undefined,
         lineOpacity: zone.lineOpacity ?? 0.42,
+        labelInside: !besidePlot,
       });
     }
     return zones;
-  }, [showBands, targetZones, yDomain]);
+  }, [showBands, targetZones, yDomain, besidePlot]);
 
   const trendInfo = useMemo(() => {
     if (!showTrend || !chartData?.length) return [];
@@ -226,10 +235,14 @@ export function useHealthChartOverlays({
     visibleTargetZones,
     trendInfo,
     personalBaselines,
-    rightRoom: rightLabelRoom([
-      baselineLabel,
-      ...visibleTargetZones.map((zone) => zone.label),
-    ]),
+    besidePlot,
+    // No room beside the plot on a narrow chart: its labels sit inside it.
+    rightRoom: besidePlot
+      ? rightLabelRoom([
+          baselineLabel,
+          ...visibleTargetZones.map((zone) => zone.label),
+        ])
+      : 0,
   };
 }
 

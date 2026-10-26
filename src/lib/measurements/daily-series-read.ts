@@ -104,7 +104,7 @@ export async function readDailySeries(opts: {
       });
     }
     if (tiered && tiered.rows.length > 0) {
-      return tiered.rows;
+      return withLiveHead(tiered, { userId, type, from, priorityJson, opts });
     }
     // Coverage miss at every tier — fall through to the daily path, which
     // folds the live table. The daily fallback still caps at `cap`; the
@@ -144,6 +144,88 @@ export async function readDailySeries(opts: {
     meta: { total: rows.length, type, aggregate: "daily", source: "live" },
   });
   return rows;
+}
+
+/** The shortest bucket of a live grain, in days (a month is at least 28). */
+const GRAIN_MIN_DAYS: Record<Exclude<AggregateGrain, "raw">, number> = {
+  daily: 1,
+  weekly: 7,
+  monthly: 28,
+};
+
+/** The live grain that matches a rollup tier's buckets. */
+const TIER_GRAIN: Record<string, Exclude<AggregateGrain, "raw">> = {
+  DAY: "daily",
+  WEEK: "weekly",
+  MONTH: "monthly",
+};
+
+/**
+ * The tiered rollup rows, with the window's older history in front of them.
+ *
+ * Rollups are kept for the last five years (`ROLLUP_FOLD_WINDOW_MS`), so on
+ * a record that goes back further the tier read starts where they start, and
+ * the "All" range showed nothing before it: a weight history from 2015
+ * charted from late 2021. The readings older than the first rollup day are
+ * folded live, at the tier's grain, and lead the series. One indexed lookup
+ * when there are none.
+ */
+async function withLiveHead(
+  tiered: NonNullable<Awaited<ReturnType<typeof readTieredRollupSeries>>>,
+  ctx: {
+    userId: string;
+    type: MeasurementType;
+    from: Date;
+    priorityJson: unknown;
+    opts: { timeZone?: string };
+  },
+): Promise<DailySeriesRow[]> {
+  const { userId, type, from, priorityJson } = ctx;
+  const grain = TIER_GRAIN[tiered.granularity];
+  // The first tier row's bucket holds the first rollup day; the head ends
+  // where that bucket starts, so no reading is counted in both.
+  const firstRowAt = new Date(tiered.rows[0]!.measuredAt);
+  const headEnd = new Date(
+    Math.min(tiered.firstDay.getTime(), firstRowAt.getTime() - 12 * 3_600_000),
+  );
+  if (!grain || headEnd <= from) return tiered.rows;
+  const older = await prisma.measurement.findFirst({
+    where: {
+      userId,
+      type,
+      deletedAt: null,
+      measuredAt: { gte: from, lt: headEnd },
+    },
+    select: { id: true },
+  });
+  if (!older) return tiered.rows;
+  const timeZone = ctx.opts.timeZone ?? (await resolveUserTimezone(userId));
+  const head = await readLiveBuckets({
+    userId,
+    type,
+    from,
+    to: new Date(headEnd.getTime() - 1),
+    // Enough buckets for the whole head (the grain's default cap is sized
+    // for a window, and the head of an "All" range can be years long).
+    cap: Math.max(
+      BUCKET_CAP[grain],
+      Math.ceil(
+        (headEnd.getTime() - from.getTime()) /
+          (GRAIN_MIN_DAYS[grain] * 86_400_000),
+      ) + 2,
+    ),
+    priorityJson,
+    grain,
+    timeZone,
+  });
+  annotate({
+    meta: {
+      tiered_series_live_head: head.length,
+      type,
+      granularity: tiered.granularity,
+    },
+  });
+  return [...head, ...tiered.rows];
 }
 
 /** SQL `date_trunc` unit per aggregate grain (a closed map, never input). */

@@ -394,6 +394,8 @@ export async function readTieredRollupSeries(opts: {
 }): Promise<{
   granularity: RollupGranularity;
   rows: TieredSeriesRow[];
+  /** The first DAY bucket in the window: where the rollups' history starts. */
+  firstDay: Date;
 } | null> {
   const { userId, type, from, to, priorityJson } = opts;
   // Tier selection keys off the window WIDTH; derive it the same way the
@@ -454,6 +456,7 @@ export async function readTieredRollupSeries(opts: {
   });
   return {
     granularity,
+    firstDay: first,
     rows: rows.map((r) => ({
       type,
       // The chart's quantity at every tier: the average day of the bucket,

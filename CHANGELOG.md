@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.46.1] — 2026-10-26
+
+### Fixed
+
+- **Charts on a phone are their old size again.** 1.46 moved the labels
+  for your usual level and for a target zone out of the chart and beside
+  it. On a phone that room took about a third of the chart's width, and
+  the legend took more of its height. On a narrow screen the labels sit
+  inside the chart again, as they did before; a tablet or a wide window
+  keeps them beside it.
+- **The date axis shows more than one date on a phone.** A 90-day chart
+  is labelled with the first of each month again, and the All range with
+  the years.
+- **The value axis writes whole numbers when its steps are whole**: 57,
+  58, 59 bpm rather than 57.0, 58.0, 59.0.
+- **The All range shows your whole history.** Long ranges are read from
+  summaries the server keeps for the last five years, and readings older
+  than that did not appear: a weight history going back to 2015 started
+  in late 2021. The older readings are now read directly and lead the
+  chart.
+
 ## [1.46.0] — 2026-10-25
 
 ### Added
@@ -99,7 +120,7 @@
   fails, the app does not start and the log says why; a move cut short is
   run again from scratch on the next start. The old `pgdata` volume is
   left as it was, so going back is the previous image and two lines of the
-  compose file. On a real 600 MB instance the move took eleven seconds.
+  compose file. On a real 600 MB instance the move took 29 seconds.
   HealthLog keeps running on Postgres 16 for installs that bring their own
   database, and the tests run on both. (discussion #1282)
 - **A quicker, lighter start.** On an account with ten years of data the

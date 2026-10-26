@@ -55,7 +55,6 @@ import {
   pointIndexXAxis,
   resolveAnnotationPositions,
   resolveVerticalMarkerPositions,
-  xTickLayout,
 } from "./health-chart/series-math";
 import type { HealthChartProps } from "./health-chart/types";
 import {
@@ -212,6 +211,7 @@ export function HealthChart({
     onVisibleStats,
   });
 
+  const [containerWidth, setContainerWidth] = useState<number | null>(null);
   const overlays = useHealthChartOverlays({
     showBands,
     showTrend,
@@ -224,13 +224,13 @@ export function HealthChart({
     valueMode,
     t,
     fmt,
+    plotWidth: containerWidth ?? viewportWidth,
   });
   const { visibleBands, visibleTargetZones, trendInfo, personalBaselines } =
     overlays;
 
-  const [containerWidth, setContainerWidth] = useState<number | null>(null);
   const { useDecimalAxis, formatAxisValue, formatTooltipValue } =
-    axisValueFormatters(yDomain, fmt);
+    axisValueFormatters(yDomain, fmt, yTicks);
 
   const { primaryType, chartAriaLabel, dataTableColumns } =
     useHealthChartLabels({
@@ -415,11 +415,9 @@ export function HealthChart({
                       chartData,
                       formatDate: tzFmt.date,
                       viewportWidth,
-                      layout: xTickLayout(
-                        containerWidth,
-                        yAxisWidth,
-                        overlays.rightRoom,
-                      ),
+                      containerWidth,
+                      yAxisWidth,
+                      rightRoom: overlays.rightRoom,
                     })}
                   />
                   <YAxis
@@ -453,6 +451,7 @@ export function HealthChart({
                     colors,
                     personalBaselines,
                     t,
+                    overlays.besidePlot,
                   )}
                   <Tooltip
                     filterNull={false}

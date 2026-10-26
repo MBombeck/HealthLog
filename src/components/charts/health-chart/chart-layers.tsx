@@ -65,7 +65,9 @@ export function targetZoneLayers(
           zone.label
             ? {
                 value: zone.label,
-                position: "right",
+                // On a narrow chart, inside the zone at its top right: the
+                // plot keeps no room beside it there (`labelsBesidePlot`).
+                position: zone.labelInside ? "insideTopRight" : "right",
                 offset: BASELINE_LABEL_GAP,
                 fill: zone.textColor ?? zone.color,
                 fontSize: BASELINE_LABEL_FONT_SIZE,
@@ -231,7 +233,8 @@ export function rightLabelRoom(
  * The personal baseline per type, only while the trend overlay is shown (an
  * always-on mean line was rejected). Only the first type carries the label,
  * so a multi-type chart does not paint it twice; it is drawn to the right of
- * the plot, in the room `rightLabelRoom` keeps there.
+ * the plot, in the room `rightLabelRoom` keeps there, or inside the plot on a
+ * chart too narrow to keep that room.
  */
 export function baselineLayers(
   showTrend: boolean,
@@ -239,6 +242,7 @@ export function baselineLayers(
   colors: string[],
   personalBaselines: Map<string, number>,
   t: Translate,
+  besidePlot = true,
 ) {
   return (
     showTrend &&
@@ -258,7 +262,9 @@ export function baselineLayers(
             i === 0
               ? {
                   value: t("charts.personalBaseline"),
-                  position: "right",
+                  // Inside the plot at the top left on a narrow chart, as
+                  // before the room beside it existed.
+                  position: besidePlot ? "right" : "insideTopLeft",
                   offset: BASELINE_LABEL_GAP,
                   fill: "var(--muted-foreground)",
                   fontSize: BASELINE_LABEL_FONT_SIZE,

@@ -169,7 +169,7 @@ export function getViewportWidth(): number {
  * 90-day blood-pressure chart with a few missed days the labels fell 18, 14,
  * 13, 17 and 23 days apart, and the forced last label crowded its neighbour.
  * So the step is a calendar one (a day, two days, a week, two weeks, a month,
- * a quarter, half a year, a year), the smallest that keeps the labels under
+ * a quarter, half a year, a year, two years), the smallest that keeps the labels under
  * the width's cap, and each tick is the point on that grid's date: Mondays
  * for the week steps (an even-week grid for two), the first of the month for
  * the month steps. A grid date with no point of its own takes the nearest
@@ -184,9 +184,22 @@ export function computeTickPositions(
   viewportWidth: number,
   layout?: TickLayout,
 ): number[] {
+  return computeTickGrid(chartData, viewportWidth, layout).ticks;
+}
+
+/**
+ * The tick positions and whether they fall on a grid of whole years, where a
+ * label needs only the year: "2024" rather than "01/01/2024". A year label is
+ * also narrower, so on a phone every year of a long history gets one.
+ */
+export function computeTickGrid(
+  chartData: ReadonlyArray<{ timestamp: number } | unknown>,
+  viewportWidth: number,
+  layout?: TickLayout,
+): { ticks: number[]; yearly: boolean } {
   const length = chartData?.length ?? 0;
-  if (length <= 0) return [];
-  if (length === 1) return [0];
+  if (length <= 0) return { ticks: [], yearly: false };
+  if (length === 1) return { ticks: [0], yearly: false };
 
   const days = chartData.map((point) =>
     Math.floor(
@@ -194,7 +207,10 @@ export function computeTickPositions(
     ),
   );
   if (days.some((day) => !Number.isFinite(day))) {
-    return Array.from({ length }, (_, index) => index);
+    return {
+      ticks: Array.from({ length }, (_, index) => index),
+      yearly: false,
+    };
   }
   const first = days[0]!;
   const last = days[length - 1]!;
@@ -224,28 +240,42 @@ export function computeTickPositions(
   // the days, are spaced evenly, so two grid dates can sit closer than their
   // step where the series is dense. Recharts dropped such a colliding label
   // itself, which left the grid with holes. Without a width, the count cap.
-  const fits = (ticks: number[]) => {
+  const fits = (ticks: number[], step: CalendarStep) => {
     if (!layout) return ticks.length <= maxTicks;
     const perIndex = layout.plotWidth / Math.max(1, length - 1);
+    const labelWidth =
+      isYearly(step) && layout.yearLabelWidth
+        ? layout.yearLabelWidth
+        : layout.labelWidth;
     return ticks.every(
-      (tick, i) =>
-        i === 0 || (tick - ticks[i - 1]!) * perIndex >= layout.labelWidth,
+      (tick, i) => i === 0 || (tick - ticks[i - 1]!) * perIndex >= labelWidth,
     );
   };
   for (const step of CALENDAR_STEPS) {
     const count = Math.floor((last - first) / step.approxDays) + 1;
     if (!layout && count > maxTicks) continue;
     const ticks = ticksFor(step);
-    if (ticks.length > 0 && fits(ticks)) return ticks;
+    if (ticks.length > 0 && fits(ticks, step)) {
+      return { ticks, yearly: isYearly(step) };
+    }
   }
-  const widest = ticksFor(CALENDAR_STEPS[CALENDAR_STEPS.length - 1]!);
-  return widest.length > 0 ? widest : [0];
+  const widestStep = CALENDAR_STEPS[CALENDAR_STEPS.length - 1]!;
+  const widest = ticksFor(widestStep);
+  return widest.length > 0
+    ? { ticks: widest, yearly: isYearly(widestStep) }
+    : { ticks: [0], yearly: false };
+}
+
+function isYearly(step: CalendarStep): boolean {
+  return step.kind === "months" && step.size >= 12;
 }
 
 /** Where the ticks are drawn: the plot's width and a label's width, in px. */
 export interface TickLayout {
   plotWidth: number;
   labelWidth: number;
+  /** A year-only label's width, for the yearly grid; else `labelWidth`. */
+  yearLabelWidth?: number;
 }
 
 const DAY_MS = 86_400_000;
@@ -271,6 +301,7 @@ const CALENDAR_STEPS: ReadonlyArray<CalendarStep> = [
   { kind: "months", size: 3, approxDays: 91 },
   { kind: "months", size: 6, approxDays: 182 },
   { kind: "months", size: 12, approxDays: 365 },
+  { kind: "months", size: 24, approxDays: 730 },
 ];
 
 /** The grid's dates (as day numbers) from `first` to `last`, both included. */

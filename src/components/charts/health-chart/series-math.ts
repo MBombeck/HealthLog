@@ -7,10 +7,7 @@ import { chartPointDayKey } from "@/components/day/chart-day";
 import { isWholeNumberType } from "@/components/day/use-day-value-format";
 import { translateOrNull } from "@/lib/i18n/translate-code";
 
-import {
-  computeTickPositions,
-  type TickLayout,
-} from "@/lib/charts/x-axis-density";
+import { computeTickGrid, type TickLayout } from "@/lib/charts/x-axis-density";
 
 import type { ChartDataPoint } from "./types";
 
@@ -229,9 +226,11 @@ export function resolveAnnotationPositions(
 }
 
 /**
- * The value axis's and the tooltip's number formats. One decimal on the axis
- * while the visible domain spans under 6 units, so two gridlines never round
- * to the same integer (82.8 vs 83.5 kg).
+ * The value axis's and the tooltip's number formats. The axis shows as many
+ * decimals as its tick step needs: none for a step of 1 or more (57, 58, 59
+ * bpm rather than 57.0, 58.0, 59.0), one for 0.5 or 0.2, two for 0.05. Without
+ * ticks, one decimal while the visible domain spans under 6 units, so two
+ * gridlines never round to the same integer (82.8 vs 83.5 kg).
  */
 export function axisValueFormatters(
   yDomain: [number, number] | undefined,
@@ -239,15 +238,41 @@ export function axisValueFormatters(
     number: (value: number, digits: number) => string;
     integer: (value: number) => string;
   },
+  yTicks?: ReadonlyArray<number>,
 ) {
-  const span = yDomain ? yDomain[1] - yDomain[0] : null;
-  const useDecimalAxis = span !== null && span < 6;
+  const digits = axisDecimals(yDomain, yTicks);
   return {
-    useDecimalAxis,
+    useDecimalAxis: digits > 0,
     formatAxisValue: (value: number) =>
-      useDecimalAxis ? fmt.number(value, 1) : fmt.integer(value),
+      digits > 0 ? fmt.number(value, digits) : fmt.integer(value),
     formatTooltipValue: (value: number) => fmt.number(value, 1),
   };
+}
+
+function axisDecimals(
+  yDomain: [number, number] | undefined,
+  yTicks?: ReadonlyArray<number>,
+): number {
+  if (yTicks && yTicks.length >= 2) {
+    const step = Math.abs(yTicks[1]! - yTicks[0]!);
+    if (step >= 1 || step === 0) return 0;
+    return Math.min(2, Math.ceil(-Math.log10(step) - 1e-9));
+  }
+  const span = yDomain ? yDomain[1] - yDomain[0] : null;
+  return span !== null && span < 6 ? 1 : 0;
+}
+
+/**
+ * Below this chart width the labels beside the plot (the average's, the target
+ * zones') move into it, as they were drawn before 1.46. On a phone the room
+ * beside the plot took about a third of its width, and the legend, wrapping
+ * into the narrower space, took more of its height.
+ */
+export const LABELS_BESIDE_PLOT_MIN_WIDTH = 520;
+
+/** Whether a chart this wide keeps its labels beside the plot. */
+export function labelsBesidePlot(width: number): boolean {
+  return width >= LABELS_BESIDE_PLOT_MIN_WIDTH;
 }
 
 /**
@@ -291,36 +316,71 @@ export function dayFocusFor(
  * chart margins, the y axis, the right-hand label room and the axis padding)
  * and the width a date label takes, with room between two. Null until the
  * container has been measured; the ticks then fall back to the count cap.
+ *
+ * The label's width comes from a date in the reader's own format: at the
+ * axis's 11 px a digit or a separator is under 6 px wide (10/01/2026 draws at
+ * 58 px). A fixed 80 px kept the month grid off a 90-day chart on a phone,
+ * whose month starts sit about 78 px apart, and left it one date.
  */
 export function xTickLayout(
   containerWidth: number | null,
   yAxisWidth: number,
   rightRoom: number,
-): { plotWidth: number; labelWidth: number } | undefined {
+  sampleLabel?: string,
+): TickLayout | undefined {
   if (!containerWidth) return undefined;
   const plotWidth = containerWidth - 16 - yAxisWidth - rightRoom - 20;
   if (plotWidth <= 0) return undefined;
-  // A day-month-year date at the axis's 11 px, with a gap of its own size
-  // between two labels so the row reads as separate dates.
-  return { plotWidth, labelWidth: 64 + 16 };
+  const textWidth = sampleLabel ? Math.ceil(sampleLabel.length * 5.8) : 58;
+  return {
+    plotWidth,
+    labelWidth: textWidth + 8,
+    yearLabelWidth: Math.ceil(4 * 5.8) + 8,
+  };
 }
+
+/**
+ * The year a tick on the yearly grid stands for. The tick sits on the point
+ * nearest January 1, which may be one from the December before when the
+ * series has a gap there; it still marks the new year.
+ */
+export function gridYear(timestamp: number): number {
+  const date = new Date(timestamp);
+  const year = date.getUTCFullYear();
+  return date.getUTCMonth() >= 6 ? year + 1 : year;
+}
+
+/** A date with a two-digit day and month: the widest an x label gets. */
+const X_LABEL_SAMPLE_DATE = new Date(Date.UTC(2000, 11, 31, 12));
 
 /**
  * The x axis's props: one point per index, labelled with its date. Recharts
  * ignores `interval` on a numeric axis, so the calendar grid arrives as
- * explicit tick positions (`computeTickPositions`).
+ * explicit tick positions (`computeTickGrid`), and a yearly grid is labelled
+ * with the year alone.
  */
 export function pointIndexXAxis({
   chartData,
   formatDate,
   viewportWidth,
-  layout,
+  containerWidth,
+  yAxisWidth,
+  rightRoom,
 }: {
   chartData: ChartDataPoint[] | undefined;
   formatDate: (date: Date) => string;
   viewportWidth: number;
-  layout: TickLayout | undefined;
+  containerWidth: number | null;
+  yAxisWidth: number;
+  rightRoom: number;
 }) {
+  const layout = xTickLayout(
+    containerWidth,
+    yAxisWidth,
+    rightRoom,
+    formatDate(X_LABEL_SAMPLE_DATE),
+  );
+  const grid = computeTickGrid(chartData ?? [], viewportWidth, layout);
   return {
     type: "number" as const,
     dataKey: "pointIndex",
@@ -329,11 +389,13 @@ export function pointIndexXAxis({
     tick: { fontSize: 11, fill: "var(--muted-foreground)" },
     tickLine: false,
     axisLine: false,
-    tickFormatter: (value: number) =>
-      formatDate(
-        new Date(chartData?.[Math.round(value)]?.timestamp ?? Date.now()),
-      ),
-    ticks: computeTickPositions(chartData ?? [], viewportWidth, layout),
+    tickFormatter: (value: number) => {
+      const timestamp = chartData?.[Math.round(value)]?.timestamp ?? Date.now();
+      return grid.yearly
+        ? String(gridYear(timestamp))
+        : formatDate(new Date(timestamp));
+    },
+    ticks: grid.ticks,
     padding: { left: 10, right: 10 },
     tickMargin: 10,
   };
